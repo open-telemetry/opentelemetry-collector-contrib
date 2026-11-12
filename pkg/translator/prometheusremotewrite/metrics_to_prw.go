@@ -15,8 +15,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type Settings struct {
@@ -80,16 +78,13 @@ func getTranslationConfiguration(settings Settings) (withSuffixes, utf8Allowed b
 
 func newPrometheusConverter(settings Settings) *prometheusConverter {
 	withSuffixes, utf8Allowed := getTranslationConfiguration(settings)
-	permissiveSanitization := prometheus.DropSanitizationGate.IsEnabled()
 
 	return &prometheusConverter{
 		unique:      map[uint64]*prompb.TimeSeries{},
 		conflicts:   map[uint64][]*prompb.TimeSeries{},
 		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: withSuffixes, Namespace: settings.Namespace, UTF8Allowed: utf8Allowed},
-		// TODO: SA1019: (github.com/prometheus/otlptranslator.LabelNamer).UnderscoreLabelSanitization is deprecated: This will be removed in a future version of otlptranslator.
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50429
-		labelNamer: otlptranslator.LabelNamer{UnderscoreLabelSanitization: !permissiveSanitization, PreserveMultipleUnderscores: permissiveSanitization, UTF8Allowed: utf8Allowed}, //nolint:staticcheck
-		unitNamer:  otlptranslator.UnitNamer{UTF8Allowed: utf8Allowed},
+		labelNamer:  otlptranslator.LabelNamer{PreserveMultipleUnderscores: true, UTF8Allowed: utf8Allowed},
+		unitNamer:   otlptranslator.UnitNamer{UTF8Allowed: utf8Allowed},
 	}
 }
 
@@ -107,6 +102,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 			scopeMetrics := scopeMetricsSlice.At(j)
 			metricSlice := scopeMetrics.Metrics()
 			scope := scopeMetrics.Scope()
+			schemaURL := scopeMetrics.SchemaUrl()
 
 			// TODO: decide if instrumentation library information should be exported as labels
 			for k := 0; k < metricSlice.Len(); k++ {
@@ -133,7 +129,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 						break
 					}
-					errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, scope, settings, promName))
+					errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, scope, schemaURL, settings, promName))
 				case pmetric.MetricTypeSum:
 					dataPoints := metric.Sum().DataPoints()
 					if dataPoints.Len() == 0 {
@@ -141,9 +137,9 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 						break
 					}
 					if metric.Sum().IsMonotonic() {
-						errs = multierr.Append(errs, c.addSumNumberDataPoints(dataPoints, resource, scope, metric, settings, promName))
+						errs = multierr.Append(errs, c.addSumNumberDataPoints(dataPoints, resource, scope, schemaURL, metric, settings, promName))
 					} else {
-						errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, scope, settings, promName))
+						errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, scope, schemaURL, settings, promName))
 					}
 				case pmetric.MetricTypeHistogram:
 					dataPoints := metric.Histogram().DataPoints()
@@ -151,7 +147,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 						break
 					}
-					errs = multierr.Append(errs, c.addHistogramDataPoints(dataPoints, resource, scope, settings, promName))
+					errs = multierr.Append(errs, c.addHistogramDataPoints(dataPoints, resource, scope, schemaURL, settings, promName))
 				case pmetric.MetricTypeExponentialHistogram:
 					dataPoints := metric.ExponentialHistogram().DataPoints()
 					if dataPoints.Len() == 0 {
@@ -162,6 +158,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 						dataPoints,
 						resource,
 						scope,
+						schemaURL,
 						settings,
 						promName,
 					))
@@ -171,7 +168,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 						break
 					}
-					errs = multierr.Append(errs, c.addSummaryDataPoints(dataPoints, resource, scope, settings, promName))
+					errs = multierr.Append(errs, c.addSummaryDataPoints(dataPoints, resource, scope, schemaURL, settings, promName))
 				default:
 					errs = multierr.Append(errs, errors.New("unsupported metric type"))
 				}

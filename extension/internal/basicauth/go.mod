@@ -4,11 +4,11 @@ go 1.26.0
 
 require (
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/client v1.69.1-0.20261015205720-932ee30af2c0
-	google.golang.org/grpc v1.84.0
+	go.opentelemetry.io/collector/client v1.71.1-0.20261112090518-6cdf06bb71bc
+	google.golang.org/grpc v1.85.0
 )
 
 require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
+	google.golang.org/protobuf v1.36.12 // indirect
 )

@@ -7,6 +7,574 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.4.1/v0.165.1
+
+### 🧰 Bug fixes 🧰
+
+- `processor/resourcedetection` Revert consul api/v2 bump and pin api to <2.0.0 (#52874)
+
+## v1.4.0/v0.165.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Remove the deprecated SignalFx receiver. Use the OTLP receiver instead. (#51934)
+- `connector/service_graph`: Remove deprecated feature gates connector.servicegraph.legacyLatencyMetricNames and connector.servicegraph.legacyLatencyUnitMs (#52246)
+- `exporter/elasticsearch`: Remove the deprecated `mapping::mode`, `retry::max_requests`, `logs_dynamic_index`, `metrics_dynamic_index` and `traces_dynamic_index` config options. (#52027)
+  Configurations that still set these options will fail to load.
+  Use `retry::max_retries` instead of `retry::max_requests`, and the `X-Elastic-Mapping-Mode` client metadata key or the `elastic.mapping.mode` scope attribute instead of `mapping::mode`.
+  
+- `exporter/signalfx`: Stop producing `disk_ops.total` and `disk_ops.pending` metrics with the default translation rules. (#52729)
+  Use `system.disk.operations` instead of `disk_ops.total`. It is sent by default as a cumulative counter, so the per-period
+  number of operations on a host can be charted with SignalFlow, for example:
+  ```
+  data('system.disk.operations', rollup='delta').sum(by=['host.name'])
+  ```
+  Use `system.disk.pending_operations` instead of `disk_ops.pending`. Both are excluded by default, so replace
+  `disk_ops.pending` with `system.disk.pending_operations` in `include_metrics`:
+  ```yaml
+  exporters:
+    signalfx:
+      include_metrics:
+        - metric_name: system.disk.pending_operations
+  ```
+  
+- `pkg/coreinternal`: Promote internal.coreinternal.goldendataset.EmitV1DatabaseConventions and internal.coreinternal.goldendataset.DontEmitV0DatabaseConventions feature gates from Alpha to Beta. (#52690)
+  The gates are now enabled by default, so goldendataset generates db.system.name (semconv v1.40.0)
+  instead of the deprecated db.system (semconv v1.28.0). The migration remains reversible by disabling
+  the gates.
+  
+- `pkg/coreinternal`: Promote internal.coreinternal.goldendataset.EmitV1NetworkConventions and internal.coreinternal.goldendataset.DontEmitV0NetworkConventions feature gates to Stable. (#52503)
+  The gates can no longer be disabled. goldendataset now always generates `network.local.address`,
+  `network.peer.address`, and `server.address`, and no longer generates the deprecated `net.host.ip`,
+  `net.peer.ip`, `http.host`, and `http.server_name` attributes.
+  
+- `pkg/coreinternal`: Promote internal.coreinternal.goldendataset.EmitV1RPCConventions and internal.coreinternal.goldendataset.DontEmitV0RPCConventions feature gates to Stable. (#52219)
+  The gates can no longer be disabled. goldendataset now always generates `rpc.method` and
+  `service.peer.name`, and no longer generates the deprecated `rpc.service` and `peer.service`
+  attributes.
+  
+- `pkg/jaeger`: Promote "pkg.translator.jaeger.EmitV1HttpConventions" and "pkg.translator.jaeger.DontEmitV0HttpConventions" feature gates to Beta. (#52146)
+  The Jaeger translator now emits `http.response.status_code` instead of the deprecated `http.status_code` by default.
+  
+- `pkg/zipkin`: Promote "pkg.translator.zipkin.EmitV1CloudResourceConventions" and "pkg.translator.zipkin.DontEmitV0CloudResourceConventions" feature gates to Beta. (#52148)
+  The Zipkin translator now emits `cloud.resource_id` instead of the deprecated `faas.id` by default.
+  
+- `pkg/zipkin`: Promote "pkg.translator.zipkin.EmitV1NetworkConventions" and "pkg.translator.zipkin.DontEmitV0NetworkConventions" feature gates to Stable. (#52250)
+  The gates can no longer be disabled. The Zipkin translator now always emits `network.local.address`,
+  `network.peer.address`, and `service.peer.name`, and no longer emits the deprecated `net.host.ip`,
+  `net.peer.ip`, and `peer.service` attributes.
+  
+- `processor/resource_detection`: The `system` and `docker` detectors now set `os.type` to `zos` instead of the deprecated `z_os` on z/OS. (#52804)
+- `processor/transform`: Remove the deprecated `flatten_data` config option. Use `flatten.log` instead. (#32080)
+- `receiver/file_log`: Remove stable gate filelog.protobufCheckpointEncoding (#52387)
+- `receiver/kafka_metrics`: Remove stable receiver.kafkametricsreceiver.UseFranzGo gate (#52241)
+- `receiver/prometheus`: `__scheme__` and `__metrics_path__` labels on scraped samples are no longer dropped from datapoint attributes. (#52736)
+
+### 🚩 Deprecations 🚩
+
+- `connector/routing`: Stabilizing gate connector.routing.defaultErrorModeIgnore (#52352)
+- `processor/resource_detection`: The `system` detector adds the `os.build_id` resource attribute and deprecates `os.build.id`. (#52806)
+- `processor/resource_detection`: Deprecate the `azure.resourcegroup.name` resource attribute in favor of `azure.resource_group.name`, behind the `processor.azuredetector.RenameResourceGroupAttribute` feature gate (#49079)
+  The new `processor.azuredetector.RenameResourceGroupAttribute` feature gate is alpha
+  and disabled by default, so the azure detector continues to emit `azure.resourcegroup.name` and
+  there is no change in behavior. Enabling the gate makes the detector emit
+  `azure.resource_group.name` instead, matching the naming convention used by other semantic
+  convention attributes such as `cloud.availability_zone`. The gate is intended to be promoted to
+  beta, and enabled by default, in a future release, giving users time to migrate any
+  configuration that filters or routes on `azure.resourcegroup.name`.
+  
+
+### 💡 Enhancements 💡
+
+- `connector/datadog`: Use `url.template` for HTTP client span resource names when it is present. (#52553)
+  From updated github.com/DataDog/datadog-agent modules: with the default resource name logic, HTTP client spans get resource names like `GET /users/{id}` from `url.template`, and otherwise just the method (DataDog/datadog-agent#54496).
+  
+- `connector/span_metrics`: Reduce consume-path allocations by reusing shared metric keys, avoiding per-event attribute map copies, and filtering resource key attributes without a full map copy. (#49860)
+  When `calls_dimensions` and `histogram.dimensions` are both empty, the duration
+  histogram reuses the calls metric key. Delta timestamp maps are allocated only
+  for delta temporality. With `events.enabled`, dimensions are resolved from span,
+  event, and resource attributes without building a merged map per event. When
+  `resource_metrics_key_attributes` is set, only the configured attributes are
+  copied into the resource key hash.
+  
+- `exporter/azuredataexplorer`: Restore the stability of the exporter from `unmaintained` to `beta` (#52282)
+- `exporter/clickhouse`: Size the ClickHouse client connection pool from `sending_queue.num_consumers` by default. (#52350)
+  The metrics exporter uses one connection per metric type per consumer.
+  `max_open_conns` and `max_idle_conns` set in `endpoint` or `connection_params` still take precedence.
+  
+- `exporter/clickhouse`: Change the default column codec in the base table schemas from `ZSTD(1)` to `ZSTD(3)`. (#52705)
+  Only applies to newly created tables, existing tables are not altered.
+- `exporter/datadog`: Use `url.template` for HTTP client span resource names when it is present. (#52553)
+  From updated github.com/DataDog/datadog-agent modules: with the default resource name logic, HTTP client spans get resource names like `GET /users/{id}` from `url.template`, and otherwise just the method (DataDog/datadog-agent#54496).
+  
+- `exporter/datadog`: Map the instrumentation scope name and version on logs to `otel.scope.name` and `otel.scope.version`. (#52553)
+  From updated github.com/DataDog/datadog-agent modules: the deprecated `otel.library.*` attributes are remapped to the new names (DataDog/datadog-agent#52945).
+  
+- `exporter/datadog`: Add the alpha feature gate `datadog.serializerexporter.EnableGaugeInterval` to use the `datadog.gauge.interval` attribute as the gauge reporting interval. (#52553)
+  From updated github.com/DataDog/datadog-agent modules (DataDog/datadog-agent#58408).
+  
+- `exporter/elasticsearch`: Add cumulative temporality support for histograms and exponential histograms (#52547)
+  Also adds a `temporality` field to serialized histograms and exponential
+  histograms documents in OTel mode.
+  
+- `exporter/load_balancing`: Route logs without `service.name` by a hash of their resource attributes with `routing_key: service`, instead of sending all of them to one backend. (#52483)
+  Logs without `service.name` now spread over several backends instead of one. Setups with stateful processing behind the exporter will see a one-time rebalance after the upgrade.
+- `exporter/opensearch`: Add opt-in ISM rollover and custom index-template mapping support for otel-v1 mode. (#48585)
+  `mapping.ism.enabled` provisions an Index State Management rollover policy and an initial
+  write-aliased index on startup so otel-v1 indices roll over by size/age. `mapping.index_template_file`
+  deep-merges a user-supplied JSON overlay over the built-in otel-v1 template, letting operators uplift
+  attributes to typed fields or keep them un-indexed to avoid mapping explosion. Both options are
+  best-effort and only valid with `mapping.mode: otel-v1`.
+  
+- `exporter/prometheus`: Add the pkg.prometheus.KeepIdentifyingResourceAttributes feature gate to preserve service.name, service.namespace, and service.instance.id on target_info. (#48890)
+- `exporter/prometheus_remote_write`: Add the pkg.prometheus.KeepIdentifyingResourceAttributes feature gate to preserve service.name, service.namespace, and service.instance.id on target_info. (#48890)
+- `exporter/prometheus_remote_write`: Add `otelcol_exporter_prometheusremotewrite_wal_send_failed_batches` and `otelcol_exporter_prometheusremotewrite_wal_send_failed_samples` to count batches the write-ahead log drops after the remote endpoint rejects them (#51710)
+- `exporter/pulsar`: Enable FreeBSD/amd64 builds for the Pulsar exporter. (#15781)
+- `exporter/splunk_hec`: Map eBPF CPU and allocation profiles to AlwaysOn Profiling and count dropped unsupported profile records. (#52218)
+- `extension/aws_iam_db_auth`: This adds a config schema generated via schemagen to this component. (#52836)
+- `extension/aws_logs_encoding`: Promote `extension.encoding.awslogsencoding.DontEmitV0RPCConventions` feature gate to beta. (#52432)
+  The CloudTrail log unmarshaler no longer emits the deprecated rpc.system and rpc.service (semconv v1.38.0) attributes by default; only rpc.system.name (semconv v1.40.0) is emitted. Disable extension.encoding.awslogsencoding.DontEmitV0RPCConventions to restore the deprecated attributes.
+- `extension/azure_auth`: Implement the database credential provider interface for Azure authentication extensions. (#50294)
+- `extension/bearertokenauth`: Expose the configured token as an OAuth2 token so the extension can be used as a token source (#50574)
+  This allows `bearertokenauth` to be referenced as the `oauthbearer_token_source` of the Kafka
+  exporter and receiver, so a SASL/OAUTHBEARER token can be read from a file that is populated
+  out of band, such as a Kubernetes projected service account token.
+  
+- `extension/google_client_auth`: Migrate credential detection to `cloud.google.com/go/auth` to support X.509 certificate-based Workload Identity Federation (WIF). (#52488)
+- `pkg/faro`: Add a `timestamp_micros` key with the epoch microseconds to the log body when a Faro timestamp has sub-millisecond precision. (#52357)
+- `pkg/faro`: Translate the new Faro mobile metadata fields in `meta.device`, `meta.os`, and `meta.network` to and from logs. (#52314)
+- `pkg/kafka/configkafka`: Add `producer::max_inflight_requests_per_broker` to configure the number of produce requests kept in flight per broker. (#52780)
+  Defaults to 1, preserving the previous behavior. Only takes effect with `required_acks` 0 or 1;
+  values above 1 are rejected with `required_acks: all`.
+  
+- `pkg/ottl`: Use substring matching for literal-only patterns in IsMatch, delete_matching_keys, keep_matching_keys, replace_pattern and replace_all_patterns without changing regex semantics. (#52593)
+- `pkg/ottl`: Allow converters and paths as keys in map literals, e.g. `{ToUpperCase("key"): "value"}`. (#52210)
+  Enable the `pkg.ottl.enableDynamicMapKeys` feature gate to use this feature.
+  
+- `pkg/ottl`: Improve StandardStringLikeGetter performance by adding direct string conversion for int64 and bool values, avoiding unnecessary JSON marshaling. (#52596)
+- `pkg/ottl/contexts/xspanlink`: Add `ottlspanlink` context, in the new experimental `xspanlink` module, exposing per-span-link fields (`trace_id`, `span_id`, `trace_state`, `attributes`, `dropped_attributes_count`, `flags`) for use in OTTL statements. (#26660)
+- `pkg/ottl/xottl`: Add the experimental `ToValidUTF8` converter to replace invalid UTF-8 byte sequences in a string with a replacement string (#51717)
+- `pkg/stanza`: Add an `otelcol` operator that parses the collector's own self-logs, promoting `ts`, `level`, `msg`, and `resource` onto the log record's Timestamp, Severity, Body, and Resource. (#49525)
+- `processor/aws_ecs_attributes`: Add the ECS metadata enrichment logic that attaches AWS ECS attributes to logs, metrics, traces and profiles. (#44476)
+- `processor/log_dedup`: Add `timestamp_mode` configuration option (`aggregated` (default) or `preserved`) and new attributes `first_event_timestamp` and `last_event_timestamp` to the logdedup processor. (#43647)
+  - `aggregated` sets the emitted log's timestamp to export time (default behavior) and adds `first_event_timestamp` to capture the original timestamp.
+  - `preserved` retains the timestamp from the first log received in the aggregation window (omitting redundant `first_event_timestamp`).
+  - `last_event_timestamp` records the timestamp of the last log received in the window in all modes.
+  
+- `processor/redaction`: Adds the `masking_string` configuration to allow for configurable masking (#50801)
+- `processor/redaction`: Reject `hash_function` values `md5` and `sha1` at startup when the collector runs in FIPS 140-3 mode. (#52501)
+  MD5 and SHA-1 are not FIPS 140-3 approved. A collector built with the Go FIPS module and run with
+  `GODEBUG=fips140=on` would mark itself non-compliant on the first masked value and `GODEBUG=fips140=only`
+  would panic. The processor now fails configuration validation in FIPS mode. Nothing changes outside FIPS mode.
+  
+- `processor/resource_detection`: Trimmed builds no longer link dependencies for resource detectors that are not compiled (#47218)
+- `processor/resource_detection`: Keep Kubernetes and OpenShift clients out of resource detector configuration imports. (#47218)
+- `processor/resource_detection`: Add opt-in `host.id` attribute to the `k8s_api` detector, set from the node's `status.nodeInfo.machineID`. (#52194)
+- `processor/resource_detection`: Add the `processor.resourcedetection.openshift.removeCloudNameRegion` feature gate to stop the `openshift` detector from reporting `cloud.region` on Azure and OpenStack clusters. (#48159)
+  The value was the Azure cloud environment name (e.g. `azurepubliccloud`) or the name of the OpenStack `clouds.yaml` entry, not a region. The `openshift` detector now uses the go-contrib SDK detector; while the gate is disabled the legacy value is still reported. It will be removed once the gate is stable.
+- `processor/rolling_span_latency`: Add `span_kinds` and `always_include_root_spans` options to scope which spans are tracked and labeled. (#52061)
+- `processor/rolling_span_latency`: This adds a config schema generated via schemagen to this component. (#52837)
+- `processor/transform`: Add the `processor.transform.enableExperimentalFunctions` feature gate, which new transform processor functions will require while they are experimental. (#52523)
+- `processor/verify`: Add cryptographic log record integrity verification to `verifyprocessor`. (#51383)
+- `receiver/flink_metrics`: Add opt-in `flink.job.id` resource attribute to uniquely identify a job submission on job, task and operator metrics. (#49624)
+  The value is the `jid` already returned by the Flink REST API. The attribute is disabled by default.
+- `receiver/google_cloud_spanner`: Update `operations_by_table_json_string` label in top minute transaction stats from raw `string` to `operations_by_table_json` `value_type` so table operations are parsed and formatted as `{table_name,insert_or_update_count,insert_or_update_bytes}`. (#52267)
+- `receiver/google_cloud_spanner`: Add user split points metrics (`user_split_points/split_points_count`) with `table_name`, `index_name`, `initiator`, `split_key`, and `expire_time` labels (including `hide_split_stats_keys` PII masking support for `split_key`) in `googlecloudspannerreceiver`. (#52151)
+- `receiver/google_cloud_spanner`: To support both GoogleSQL and PostgreSQL dialects, the `sample_lock_requests` metric label now reads from the `SAMPLE_LOCK_REQUESTS_JSON_STRING` column in SPANNER_SYS.TOP_MINUTE_LOCK_STATS. (#51637)
+- `receiver/google_cloud_spanner`: Add remaining labels (`start_time`, `query_text_fingerprint`, `query_text`, `query_text_truncated`, `session_id`, `query_id`, `api_client_header`, `user_agent_header`, `server_region`, `priority`, `transaction_type`) and `truncate_text` support to `oldest_active_queries` metrics to help identify and troubleshoot long-running active queries. (#52257)
+- `receiver/google_cloud_spanner`: Add active partitioned DMLs metrics (`num_partitions_total`, `num_partitions_complete`, `num_trivial_partitions_complete`, `rows_processed`) to monitor the progress and execution of currently running Partitioned DML statements. (#52254)
+- `receiver/googlecloudmonitoring`: Add support for GCP metrics with value type `DISTRIBUTION` and metric kind `CUMULATIVE`, converted to histograms with cumulative aggregation temporality. (#39600)
+- `receiver/host_metrics`: Suppress warnings on Windows for not ready removable disks (#52723)
+- `receiver/kafka`: Pass message metadata to opt-in message encoding extensions for all signals. (#51752)
+- `receiver/mongodb_atlas`: Set the User-Agent header on MongoDB Atlas API requests to the collector name and version. (#52742)
+- `receiver/mysql`: Add `mysql.wait_event.type` and `mysql.wait_event.name` attributes to `db.server.query_sample`, classifying the current wait as `io`, `lock`, `synch`, or `CPU`/`User sleep`/`other`. (#51432)
+- `receiver/oracledb`: Add `oracledb.wait.start_time` attribute to `db.server.query_sample` event to capture the timestamp when the current wait started. (#52770)
+- `receiver/postgresql`: Add the `postgresql.backend.type` attribute to the `db.server.query_sample` event. (#52615)
+- `receiver/postgresql`: Extract the trace context of `db.server.query_sample` records from a SQLCommenter `traceparent` comment in the sampled query. (#52227)
+  A `traceparent` in `application_name` keeps precedence.
+- `receiver/prometheus`: Introduce alpha feature gate `receiver.prometheus.UseTargetUrlForServerAddress` to populate `server.address`, `server.port`, and `url.scheme` from post-relabeling `__address__` and `__scheme__` target labels instead of parsing `instance` and pre-relabeling service discovery labels. (#52565, #52570)
+- `receiver/prometheus_simple`: Log a warning at start naming the `tls` settings that cannot be forwarded to the Prometheus scrape config when the target is scraped over https. (#52081)
+- `receiver/receiver_creator`: Improve extensibility of `receivercreator` rules by allowing use of custom `observer.EndpointDetails` "types" (#50548)
+  The `receivercreator` configuration validation no longer requires that the rule's `type == <endpoint_details>`
+  prefix match one of the `observer.EndpointDetails` "types" defined in this repository. Now it only enforces the syntax requirements.
+  The old enforcement didn't allow downstream distributions to create their own `observer.EndpointDetails` maps
+  making harder to developer new observers that could be used with the `receivercreator`.
+  
+- `receiver/sql_query`: Support Microsoft Entra authentication for Azure SQL and Azure Database for PostgreSQL, including managed identities. (#50294)
+- `receiver/sql_server`: Support database credential providers through `db_auth`. (#50294)
+- `receiver/sql_server`: Add `databases` and `exclude_databases` options to limit the databases that metrics and events report on. (#52529)
+- `receiver/udp_log`: Add `resolve_names` option to allow disabling reverse DNS lookups when network attributes are enabled. (#52603)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/opampsupervisor`: Stop losing the last lines of Collector output when passthrough logging is enabled. (#52675)
+  The Supervisor read the Collector's stdout and stderr through pipes that `exec.Cmd.Wait` closes as soon
+  as the process exits, so output still in flight, such as a final error line before a crash, could be dropped.
+  
+- `connector/datadog`: Update go-sqllexer to v0.2.6 for SQL obfuscation. (#52553)
+  Fixes PostgreSQL strings containing backslashes being truncated, MySQL `db . table` identifiers being altered, and Db2 literals with backslashes (DataDog/datadog-agent#57039, DataDog/datadog-agent#58950).
+  
+- `connector/datadog`: Fix several APM stats computation issues. (#52553)
+  From updated github.com/DataDog/datadog-agent modules:
+  - `traces.ignore_resources` now matches as a regular expression, as documented, instead of by exact name (DataDog/datadog-agent#58619).
+  - Spans whose stats were already computed by the tracer (`_dd.stats_computed`) are skipped, so they are no longer counted twice (DataDog/datadog-agent#54280).
+  - Malformed spans are normalized before stats are computed (DataDog/datadog-agent#56205).
+  - Spans with timestamps far in the future are counted in the current stats bucket instead of creating future buckets (DataDog/datadog-agent#56608).
+  
+- `connector/span_metrics`: Fix delta timestamp collisions between resources with matching dimensions, preventing downstream cumulative counters from resetting. (#52145)
+  Metric names, attributes, and delta values are unchanged.
+  When unset, `metric_timestamp_cache_size` now defaults to 10 times `resource_metrics_cache_size`, with a minimum of 1000 (10000 with default settings).
+  Users who explicitly set `metric_timestamp_cache_size` may need to increase it because cache entries now include resource identity.
+  The "Evicting cached delta timestamp" log level changes from Info to Debug.
+  
+- `exporter/awss3`: Wrap the `AssumeRoleProvider` in a credentials cache when `s3uploader::role_arn` is set, so STS `AssumeRole` is not called on every S3 request (#52109)
+- `exporter/azuredataexplorer`: Propagate caller's context to Kusto ingestion submission so configured timeouts and cancellations are honored (#51872)
+  Previously, ingestion calls used context.Background(), causing exports to ignore configured timeout deadlines.
+  The default configuration (`timeout: 0`) is unchanged and still runs without a deadline; only an explicitly
+  configured `timeout` is now enforced.
+  
+- `exporter/datadog`: Obfuscate SQL span attributes, keep the tracer's sampling decision maker, and let numeric span attributes take precedence over resource attributes. (#52553)
+  From updated github.com/DataDog/datadog-agent modules:
+  - `db.statement` and `db.query.text` on SQL and Cassandra spans are now obfuscated instead of sent raw, and `sql.query` is no longer added unless the tracer set it (DataDog/datadog-agent#57166).
+  - The sampling decision maker `_dd.p.dm` set by a Datadog SDK is preserved instead of being overwritten with `-4` (DataDog/datadog-agent#58471).
+  - A numeric span attribute now overrides a resource attribute with the same key instead of both being emitted (DataDog/datadog-agent#58893).
+  
+- `exporter/datadog`: Fix histogram edge cases and serverless host attribution, and stop sending an empty host resource on hostless series. (#52553)
+  From updated github.com/DataDog/datadog-agent modules:
+  - Histogram and exponential histogram points with more than about 268M observations are dropped with a warning instead of exhausting memory, and a cumulative count that drops without a reset no longer reports huge `.count` values (DataDog/datadog-agent#57002).
+  - Distributions made from OTLP histograms no longer have a minimum greater than their maximum (DataDog/datadog-agent#57109).
+  - The serverless source is derived from `cloud.resource_id`, so valid serverless resources no longer fall back to the Collector hostname (DataDog/datadog-agent#57852).
+  - Azure Container Apps detection now requires `replica` (or `service.instance.id`); incomplete resources fall back to hostname detection (DataDog/datadog-agent#57323).
+  - Series without a hostname, such as `otel.datadog_exporter.metrics.running.*`, no longer carry an empty `host` resource (DataDog/datadog-agent#56455).
+  
+- `exporter/datadog`: Update go-sqllexer to v0.2.6 for SQL obfuscation. (#52553)
+  Fixes PostgreSQL strings containing backslashes being truncated, MySQL `db . table` identifiers being altered, and Db2 literals with backslashes (DataDog/datadog-agent#57039, DataDog/datadog-agent#58950).
+  
+- `exporter/elasticsearch`: Fix failed document log fields accumulating across documents in a bulk response, which leaked previous documents' fields and input into later error logs. (#52714)
+- `exporter/elasticsearch`: Add authentication credential support to the Elasticsearch Exporter version check (#52437)
+- `exporter/file`: Fix race condition in fileExporter Shutdown causing nil pointer dereference panic when concurrent exports are in-flight (#46871)
+  Calls to export telemetry after or during shutdown now return io.ErrClosedPipe
+  instead of panicking, and repeated calls to Shutdown are idempotent.
+  Shutdown also now waits for any active background flush to complete before closing the file.
+  
+- `exporter/file`: Log the first periodic flush error for each output file writer. (#52574)
+- `exporter/file`: Report file close errors during shutdown when group_by is enabled. (#52587)
+- `exporter/prometheus_remote_write`: Unblock the write-ahead log when the remote endpoint rejects the record at the head of the queue (#51710)
+- `exporter/signalfx`: Replace queued entity event dimension updates with the latest entity state instead of merging them. (#52610)
+- `exporter/signalfx`: Apply `dimension_client::strip_k8s_label_prefix` and the `kubernetes_service_` property rename to dimension updates converted from entity events. (#52607)
+- `extension/aws_logs_encoding`: Parse ELB access logs whose client and target addresses use unbracketed IPv6 host:port form. (#52532)
+- `extension/http_forwarder`: Preserve all values of HTTP response headers, including multiple Set-Cookie headers. (#52453)
+- `extension/http_forwarder`: Avoid false response truncation warnings for chunked and HEAD responses. (#52589)
+- `extension/opamp`: Report health updates when only nested component statuses change. (#51862)
+- `internal/docker`: Close underlying Docker sdk client transport on Client.Close() to prevent socket leak. (#51972)
+- `pkg/coreinternal`: Fix strptime time parsing never returning for a format that repeats a directive, such as `%H %H`. (#52627)
+- `pkg/fileconsumer`: Fix log loss on graceful shutdown under back pressure (#52067)
+  Logs interrupted by shutdown are now re-read after restart instead of being skipped, so delivery is at-least-once and some logs may be duplicated.
+  This only holds with the `stanza.synchronousLogEmitter` feature gate enabled; with the default batching emitter, buffered logs can still be lost on shutdown.
+  For gzip files, the whole interrupted file chunk is re-read instead of being skipped.
+  
+- `pkg/ottl`: Make the `MD5`, `SHA1` and `CommunityID` converters work when the collector runs in strict FIPS 140-3 mode (`GODEBUG=fips140=only`). (#52479)
+  These converters hash telemetry data for non-security purposes. The digest is now computed with
+  `crypto/fips140.WithoutEnforcement`, so a collector built with the Go FIPS 140-3 module and run with
+  `GODEBUG=fips140=only` no longer fails or panics when a statement uses them. The algorithms themselves
+  are still not FIPS approved and must not be used for any security function.
+  
+- `pkg/prometheus`: Correct UCUM time and byte unit conversions behind the pkg.translator.prometheus.CorrectUCUMUnits feature gate. (#52480)
+- `pkg/stanza`: Preserve multiline message bodies in the syslog parser for RFC3164 records without octet counting. (#51554)
+- `processor/cardinality_guardian`: Fix growth detection so a label producing a steady stream of new values each epoch is enforced after its first epoch, not only during it (#50403)
+- `processor/cumulative_to_delta`: Return an error when an invalid regexp is configured in `include` or `exclude` instead of panicking on the first metric batch (#51963)
+- `processor/log_dedup`: Flush pending aggregated logs on shutdown with a non-cancelled context so downstream consumers do not reject them (#52316)
+- `processor/redaction`: Record the `body` key in the redaction summary attributes when a string log body matches an allowed value (#50417)
+  Previously the processor returned early without recording the allowed value, so an
+  allowed string log body was never reflected in `redaction.body.allowed.keys` /
+  `redaction.body.allowed.count`.
+  
+- `processor/redaction`: Mask a whole multi-line value matched by blocked_key_patterns with a single mask or hash. (#50296)
+- `processor/resource_detection`: The `eks`, `k8s_api` and `kubeadm` detectors no longer fail at startup when the Collector is not running in Kubernetes; they return no attributes, or fail detection when `fail_on_missing_metadata` is enabled. (#52552)
+- `processor/tail_sampling`: Preserve resource and scope schema URLs when splitting incoming spans by trace ID. (#51524)
+- `receiver/awsecscontainermetrics`: Prevent a panic in getResourceFromARN when the task ARN has fewer than 5 colon-separated segments. (#51810)
+- `receiver/azure_blob`: Fix a panic in Event Hub mode when a blob is created in a container whose signal has no configured pipeline. (#52448)
+- `receiver/azure_event_hub`: Report the number of log records, metric data points and spans in the receiver accepted and refused metrics, instead of the number of Event Hub events. (#52785)
+- `receiver/cloudflare`: Apply `max_request_body_size` to the HTTP server so configured limits above 20MiB are honored. (#51897)
+- `receiver/docker_stats`: Fix `ContainerEnvToMap` truncating env var values that contain `=` (e.g. `JAVA_OPTS=-Xmx=512m`, base64 strings, connection strings). Split on only the first `=` to preserve the full value. (#51948)
+- `receiver/flink_metrics`: Record JVM garbage collector metrics for the JobManager and TaskManagers with both the G1 and Parallel collectors. (#52405)
+  The receiver mapped only PS_* collector names for the JobManager and only G1_* names for the TaskManagers.
+  With G1, the JVM's default collector, the JobManager reported no `flink.jvm.gc.collections.count` or
+  `flink.jvm.gc.collections.time` data points.
+  
+- `receiver/googlecloudmonitoring`: Preserve distribution sums when converting Google Cloud Monitoring distributions to histograms. (#49409)
+- `receiver/googlecloudmonitoring`: Skip metrics with unsupported value type and metric kind combinations instead of forwarding metrics with no data, which broke downstream exporters with errors like "metrics type is unset". (#39600)
+- `receiver/k8s_cluster`: Don't emit container entity events for containers that don't have a container ID yet. (#52722)
+- `receiver/k8s_cluster`: Use the pod spec image for `container.image.name` and `container.image.tag`, consistent with `k8sattributesprocessor`. (#46541)
+  Previously the status image was used, which some runtimes report as a bare digest (`sha256:<hex>`).
+  Values may change for images without a fully qualified registry (e.g. `nginx` instead of `docker.io/library/nginx`).
+  Previously the status image was used, which some runtimes report as a bare digest (`sha256:<hex>`).
+  Values may change for images without a fully qualified registry (e.g. `nginx` instead of `docker.io/library/nginx`).
+  
+- `receiver/libhoney`: Fix panics when event fields have an unexpected type, such as an integer `duration_ms` or a null `trace.parent_id` (#52072)
+  Values from the request body were converted with unchecked type assertions, so a valid but unexpected type
+  (for example an integer duration sent with msgpack, or a JSON null parent id) panicked the request handler and
+  dropped the whole batch. Integer durations are now accepted, and fields with an unexpected type are ignored.
+  
+- `receiver/libhoney`: Enforce decompressed body size limit to prevent OOM (#51985)
+- `receiver/mongodb`: Derive the UUID v5 `service.instance.id` outside FIPS 140-3 strict enforcement so the receiver no longer panics under `GODEBUG=fips140=only`. (#52539)
+  The identifier is derived with `uuid.NewSHA1`, which is not a security use of SHA-1. The value is unchanged.
+  
+- `receiver/mysql`: Derive the UUID v5 `service.instance.id` outside FIPS 140-3 strict enforcement so the receiver no longer panics under `GODEBUG=fips140=only`. (#52539)
+  The identifier is derived with `uuid.NewSHA1`, which is not a security use of SHA-1. The value is unchanged.
+  
+- `receiver/postgresql`: Derive the UUID v5 `service.instance.id` outside FIPS 140-3 strict enforcement so the receiver no longer panics under `GODEBUG=fips140=only`. (#52539)
+  The identifier is derived with `uuid.NewSHA1`, which is not a security use of SHA-1. The value is unchanged.
+  
+- `receiver/prometheus`: Keep credentials in `proxy_url` and other URL fields on config reload instead of replacing the password with `xxxxx`. (#52337)
+- `receiver/prometheus_remote_write`: Answer `400 Bad Request` instead of `204 No Content` when a native histogram is dropped for its bounds or buckets and Prometheus' own validation refuses it too. (#50340)
+- `receiver/prometheus_remote_write`: Report zero in the `X-Prometheus-Remote-Write-*-Written` response headers when a request is refused as invalid. (#50340)
+- `receiver/prometheus_remote_write`: Count the samples of dropped classic histogram and summary series in the `X-Prometheus-Remote-Write-Samples-Written` response header, count the dropped series in the new `otelcol_receiver_prometheusremotewrite_dropped_series` internal metric, and log each one at Debug level instead of Info. (#52224)
+- `receiver/prometheus_remote_write`: Drop float flavored native histograms and rebuild the data point count from the translated buckets. (#50337)
+  A count can be lower than the one Prometheus sent, because observations that
+  no bucket represents are not counted. A custom bucket histogram whose bounds
+  or buckets cannot be represented is now dropped and logged at error level.
+  
+- `receiver/splunk_enterprise`: Close the HTTP response body when setting the search job TTL (#51986)
+  The response body of the search job TTL request was never closed on a successful response, or when reading it failed.
+  This leaked a connection on every search scrape. The body is now always closed.
+  
+
+<!-- previous-version -->
+
+## v1.3.1/v0.164.1
+
+### 🧰 Bug fixes 🧰
+
+- `all`: Fix modules requiring the nonexistent v1.2.0 of `pkg/ottl` and `processor/k8sattributesprocessor`. (#52356)
+
+<!-- previous-version -->
+
+## v1.3.0/v0.164.0
+
+### 🛑 Breaking changes 🛑
+
+- `connector/service_graph`: Remove stable connector.servicegraph.virtualNode gate (#52239)
+- `exporter/prometheus`: Always preserve leading and consecutive underscores in label names. (#50429)
+  Remove `-pkg.translator.prometheus.PermissiveLabelSanitization` from `--feature-gates`; disabling this gate now causes a startup error.
+  
+- `exporter/prometheus_remote_write`: Always preserve leading and consecutive underscores in label names. (#50429)
+  Remove `-pkg.translator.prometheus.PermissiveLabelSanitization` from `--feature-gates`; disabling this gate now causes a startup error.
+  
+- `pkg/azurelogs`: Promote the `pkg.translator.azurelogs.EmitV1LogConventions` and `pkg.translator.azurelogs.DontEmitV0LogConventions` feature gates to beta. (#52096)
+  `code.function.name` and `code.file.path` are now emitted instead of `code.function` and `code.filepath` by default.
+  The gates no longer control the `event.name` resource attribute, which is always emitted.
+  
+- `pkg/coreinternal`: Promote internal.coreinternal.goldendataset.DontEmitV0HTTPConventions and internal.coreinternal.goldendataset.EmitV1HTTPConventions feature gates to Beta (#45293, #45089)
+  Both feature gates should be promoted together as per RFC.
+  goldendataset now generates spans with user_agent.original, network.protocol.name,
+  network.protocol.version, client.address, and http.response.status_code (semconv v1.40.0)
+  by default, and no longer generates the deprecated http.user_agent, http.flavor
+  (semconv v1.19.0), http.client_ip, and http.status_code (semconv v1.25.0) attributes.
+  The http.status_code migration is now wired to these gates so that round-trip translation
+  stays consistent with pkg.translator.zipkin's HTTP semantic convention feature gates.
+  
+- `pkg/ottl`: Remove the stable `ottl.set.allowNil` feature gate. (#48714)
+- `pkg/translator/pprof`: Return an error instead of panicking when profiling data contains invalid profile references. (#51908)
+- `pkg/zipkin`: Promote "pkg.translator.zipkin.EmitV1HttpConventions", "pkg.translator.zipkin.DontEmitV0HttpConventions", "pkg.translator.zipkin.EmitV1ScopeConventions", and "pkg.translator.zipkin.DontEmitV0ScopeConventions" feature gates to Beta. (#50909)
+  This changes the default behavior to emit the new semantic convention attributes instead of the old deprecated ones.
+  The Zipkin translator will now use `http.response.status_code` (replacing `http.status_code`), `otel.scope.name`
+  (replacing `otel.library.name`), and `otel.scope.version` (replacing `otel.library.version`) by default when emitting spans.
+  
+- `processor/drain`: Reject invalid configurations at startup, including negative `max_clusters` and empty attribute names. (#51677)
+  Startup validation now rejects `max_node_children` <= 0, negative `max_clusters`, empty `template_attribute`,
+  empty `wildcards_attribute` when `emit_wildcards` is set, and empty `parameter_key_prefix` when `masking_rules` are configured.
+  
+- `processor/filter`: remove stable processor.filter.defaultErrorModeIgnore gate (#52238)
+- `receiver/file_log`: Promote the `filelog.protobufCheckpointEncoding` feature gate to stable. Checkpoints are always written as protobuf. (#43266, #52037)
+  The feature gate can no longer be disabled and will be removed in v0.165.0.
+  Existing JSON checkpoints are still read and are rewritten as protobuf on the next save.
+  
+- `receiver/kubelet_stats`: Remove the deprecated `aws.volume.id`, `fs.type`, `gce.pd.name`, `glusterfs.endpoints.name`, `glusterfs.path` and `partition` resource attributes. (#40477)
+- `receiver/mongodb`: Change `mongodb.operation.latency.time` from a gauge to a monotonic cumulative sum (#51909)
+  `opLatencies.*.latency` is a cumulative total, so the metric is now a monotonic sum like every
+  other cumulative duration in the receiver. It is `enabled: false` and `stability: development`.
+  
+- `receiver/prometheus`: Remove the stable `receiver.prometheusreceiver.IgnoreScopeInfoMetric` feature gate. (#47312)
+
+### 🚩 Deprecations 🚩
+
+- `exporter/azuredataexplorer`: Mark component as unmaintained (#52055)
+- `exporter/logicmonitor`: Mark component as unmaintained (#52152)
+- `extension/google_client_auth`: Rename the googleclientauth extension to google_client_auth. The old name remains available as a deprecated alias. (#45339)
+- `processor/probabilistic_sampler`: Add the `otelcol_processor_probabilistic_sampler_count_spans_processed` metric and deprecate `otelcol_processor_probabilistic_sampler_count_traces_sampled` in favor of it. (#50954)
+  The deprecated metric remains available for compatibility.
+- `processor/transform`: Deprecate the `flatten_data` option in favor of the new `flatten.log` option. (#51766)
+  Replace `flatten_data: true` with `flatten: {log: true}`. `flatten_data` will be removed in a future release.
+- `receiver/kafka`: Deprecate the built-in `jaeger_proto` and `jaeger_json` encodings in favour of `jaegerencodingextension`. (#39113)
+- `receiver/kafka`: Deprecate `partition_processing.max_buffered_batches` in favour of `partition_processing.max_prefetch.batches`. It will be removed in v0.166.0. (#52253)
+- `receiver/kafka`: Deprecate the built-in `json` logs encoding in favour of `jsonlogencodingextension`. (#39113)
+- `receiver/riak`: Update the stability of the receiver from `beta` to `unmaintained` (#52051)
+
+### 🚀 New components 🚀
+
+- `extension/redis_fleet_tracker`: Add the redis_fleet_tracker extension, which reports a collector fleet's live member count so adaptive_tail_sampling can treat goal_throughput as a fleet-wide budget. (#50577)
+- `processor/verify`: Add `verifyprocessor`, a new processor that verifies RFC 8785 (JCS) canonical integrity attributes (`audit.integrity.value`) on log records using HMAC and/or certificate public keys. Designed as the verification counterpart to `signingprocessor` for the OpenTelemetry Audit Logging signal. (#51383)
+  This initial PR donates the component skeleton (config, factory, README). Concrete verification logic follows in a subsequent PR.
+  
+- `receiver/gnmi`: Introduce the gNMI receiver (#50848)
+- `receiver/nats`: Add the NATS receiver to receive traces, metrics, and logs from a NATS server (skeleton; in development). (#50735)
+
+### 💡 Enhancements 💡
+
+- `cmd/opampsupervisor`: Add an `agent::stop_grace_period` config option to control how long the Supervisor waits for the Collector to exit after a graceful shutdown signal before forcibly killing it. (#50000)
+  Defaults to 10s when unset.
+- `exporter/awscloudwatchlogs`: resolve {ClusterName} placeholder via k8s.cluster.name attribute (#51601)
+- `exporter/awss3`: Add `access_key` and `secret_key` options to configure static AWS credentials (#52140)
+- `exporter/awsxray`: Add feature gates to migrate semantic conventions from v1.12.0 to v1.40.0 (#46537)
+  Four new alpha feature gates control the migration:
+  - `exporter.awsxray.EmitV1HTTPNetworkConventions`: reads HTTP/network span attributes using semconv v1.40.0 keys (e.g. http.request.method, server.address, server.port, client.address).
+  - `exporter.awsxray.DontEmitV0HTTPNetworkConventions`: stops reading deprecated v1.12.0 HTTP/network attribute keys. Requires EmitV1HTTPNetworkConventions to also be enabled.
+  - `exporter.awsxray.EmitV1DBConventions`: reads database span attributes using semconv v1.40.0 keys (db.namespace, db.system.name, db.query.text, user.name).
+  - `exporter.awsxray.DontEmitV0DBConventions`: stops reading deprecated v1.12.0 database attribute keys. Requires EmitV1DBConventions to also be enabled.
+  All gates default to disabled, preserving existing behavior. Enable the EmitV1 gate first for dual-read, then enable the DontEmitV0 gate once upstream instrumentation has migrated.
+  
+- `exporter/clickhouse`: Added a Bloom Filter data skipping index (idx_event_name) to the EventName column with a 0.01 false positive rate and granularity 1. (#49310)
+- `exporter/elasticsearch`: Additionally retry context deadlines that expire before the connection is ready, including DNS, TCP handshake, and TLS handshake timeouts. (#52102)
+  A context deadline after the connection is ready, including while the request is being written or while waiting for the response, is still not retried.
+  
+- `exporter/elasticsearch`: Add opt-in `telemetry::include_destination_index` to add the destination index as an attribute to the `otelcol.elasticsearch.docs.processed` metric (#52108)
+- `exporter/elasticsearch`: Convert explicit bounds OTLP histograms to exponential histograms (#52113)
+  In OTel mapping mode, explicit-bounds histograms are stored as the native `exponential_histogram` field when
+  connected to Elasticsearch 9.4.0 or later; set `version_detection.enabled: false` to keep T-Digest histograms.
+  
+- `extension/json_log_encoding`: Set the observed timestamp of unmarshaled log records to the time the payload was decoded. (#39113)
+- `extension/opamp`: Report component status attributes in OpAMP health messages. (#50330)
+- `extension/opamp`: Add `reports_heartbeat` capability, enabled by default, to allow the OpAMP server to configure the agent's heartbeat interval (#51427)
+- `extension/redis_storage`: Add `IncrementBy` and `BatchIncrementBy` for atomic integer counters shared across Collector instances. (#51567)
+- `pkg/kafka/configkafka`: Add `dial_timeout` configuration option to control the timeout for establishing connections to Kafka brokers. (#51910)
+- `pkg/ottl`: Promote traces, metrics, and logs signals from beta to stable. (#51068, #47305)
+- `processor/adaptive_tail_sampling`: Add a metric to track multiple root span condition matches (#51458)
+  Adds the otelcol_processor_adaptive_tail_sampling_root_span_condition_multiple_matches
+  histogram, which records the number of spans matching the root span condition
+  for traces where the condition matches more than once.
+  
+- `processor/cardinality_guardian`: Reuse sparse HLL sketches on epoch rotation to cut allocations (#51059)
+- `processor/k8s_attributes`: Add experimental kubelet `/pods` polling as an opt-in pod metadata source. (#14475)
+- `processor/partitioning`: Promote logs, metrics and traces to alpha and add the processor to the contrib distribution. (#39199)
+- `processor/partitioning`: Add `otelcol.processor.partitioning.partitions` and `otelcol.processor.partitioning.key_evaluation.errors` internal telemetry metrics. (#39199)
+- `processor/resource_detection`: Add `attributes.included` and `attributes.excluded` options to the `env` detector to filter which attribute keys from `OTEL_RESOURCE_ATTRIBUTES` are emitted. Both lists support `*` and `?` as wildcards, and `excluded` is applied after `included`. (#49970)
+- `processor/resource_detection`: Define EC2 retry defaults locally instead of importing them from the AWS SDK. Defaults remain 3 attempts and 20s maximum backoff. (#47218)
+- `receiver/google_cloud_spanner`: Add date value type for labels to support Spanner DATE columns & add Supported Optimizer Version table (#51734)
+- `receiver/google_cloud_spanner`: Add table sizes per locality group metrics (`used_ssd_bytes`, `used_hdd_bytes`) to monitor SSD and HDD storage usage. (#51550)
+- `receiver/google_cloud_spanner`: Add row deletion policies metrics and `timestamp` label `value_type` support in `googlecloudspannerreceiver`. (#52030)
+- `receiver/google_cloud_spanner`: Add new SSD, HDD, and Columnar table size metrics for Spanner. (#51269)
+- `receiver/google_cloud_spanner`: Add column operations stats metrics (`read_count`, `query_count`, `write_count`) to monitor how table columns are accessed and modified. (#51545)
+- `receiver/google_cloud_spanner`: Add missing labels and execution metrics to top minute query stats in `googlecloudspannerreceiver`. (#51809)
+- `receiver/google_cloud_spanner`: Add missing columns of top and total minute read stats (#51733)
+- `receiver/google_cloud_spanner`: Add table operations stats metrics (`read_query_count`, `write_count`, `delete_count`) to monitor how tables are accessed and modified. (#51336)
+- `receiver/google_cloud_spanner`: Add oldest active queries metrics and `hide_client_ip_address` configuration to mask `client_ip_address` in oldest_active_queries in `googlecloudspannerreceiver`. (#52089)
+- `receiver/k8s_objects`: Add an opt-in informer-based observer behind the `receiver.k8sobjects.useInformerObserver` feature gate. (#43602)
+- `receiver/kafka`: Make `max_decompress_batch_bytes` configurable in the Kafka receiver consumer configuration. (#51845)
+- `receiver/kafka`: Add `partition_processing.max_in_flight.window`. Set it to `cross_fetch` so exporters that wait to fill a batch, for example with `sending_queue.wait_for_result` and `batch.min_size`, get records from more than one fetch instead of sending small batches on the flush timeout. (#51804)
+- `receiver/kafka`: Add `partition_processing.max_in_flight.bytes` to limit the record bytes each partition holds while it processes records concurrently. Use it to bound memory when record sizes vary. (#51804)
+- `receiver/kafka`: Add `partition_processing.max_prefetch.bytes` to cap the bytes of fetched batches waiting for each partition worker. Use it to bound memory when batch sizes vary. (#52253)
+- `receiver/kubelet_stats`: Promote `container.cpu.time` to beta stability and align it with Semantic Conventions v1.43.0. (#52197)
+- `receiver/mongodb`: Add operation latency count and non-tailable collection scan metrics (#51909)
+  Adds `mongodb.operation.latency.count` and
+  `mongodb.query_executor.collection_scan.non_tailable.count`, both disabled by default.
+  
+- `receiver/mysql`: Add `mysql.client.name` to `db.server.query_sample`, the client driver's self-reported identity. (#51317)
+- `receiver/prometheus_remote_write`: Add the `otelcol_receiver_prometheusremotewrite_resource_cache_evictions` internal metric counting evictions from the resource metrics cache. (#52195)
+- `receiver/prometheus_remote_write`: Add `resource_cache_size` to configure the number of job/instance pairs kept in the resource metrics cache. (#52195)
+  The default remains 1000.
+- `receiver/prometheus_simple`: `headers` and `proxy_url` are now applied to the scrape. Reserved header names and `proxy_url` credentials are rejected at validation. (#52081)
+- `receiver/prometheus_simple`: `timeout` now sets the scrape timeout, capped at `collection_interval`. Previously it had no effect. (#52081)
+- `receiver/sql_server`: Add `db.server.procedure_definition` event to capture the DDL definition of stored procedures observed in `db.server.top_procedure`. (#51946)
+- `receiver/sql_server`: Add `sqlserver.tempdb.file.size` and `sqlserver.tempdb.allocation.waiters.count` metrics, and extend `sqlserver.database.tempdb.space`. (#52057)
+  The two new metrics are disabled by default.
+
+### 🧰 Bug fixes 🧰
+
+- `connector/failover`: Fix recovery after a new failover immediately follows primary pipeline recovery. (#48668)
+- `connector/failover`: Prevent data loss when a downstream pipeline mutates data before returning an error. (#52119)
+- `exporter/elasticsearch`: Change the exponential histogram support from ES `v9.3.0` to ES `v9.4.0` (#52222)
+  In Elasticsearch OTLP endpoint exponential histograms were added as a tech preview in ES `v9.3.0`.
+  This did not have full backwards compatibility for queryDSL on histograms. Full support was added
+  in ES `v9.4.0`.
+  
+- `exporter/faro`: Return an error instead of panicking when a stack trace frame cannot be parsed. (#52064)
+- `exporter/prometheus`: Fix double-counting of buckets when downscaling delta exponential histograms. (#51705)
+- `exporter/prometheus`: Drop exponential histogram data points without a sum instead of exporting a zero sum. (#52231)
+- `exporter/prometheus_remote_write`: Drop exponential histogram data points without a sum instead of exporting a zero sum. (#52232)
+- `exporter/prometheus_remote_write`: Apply the `timeout` to each attempt to send a request instead of to the whole retry loop, so that failed requests are retried until `retry_on_failure.max_elapsed_time` instead of being dropped after `timeout`. (#51983)
+  Previously a backend outage longer than `timeout` (5s by default) dropped all the data, as the exporter retried a request only for the duration of the `timeout`.
+  The retry delay now also grows up to `retry_on_failure.max_interval`. It was not passed to the backoff and stayed at `retry_on_failure.initial_interval`, which would send a request every 50ms by default for the whole `max_elapsed_time`. The retries are also interrupted when the exporter shuts down.
+  `retry_on_failure.max_elapsed_time` bounds the export of a batch of metrics as a whole, also when the batch is split into several requests (`max_batch_size_bytes`), and the deadline of the shutdown bounds the flush of the queue.
+  When only one of `timeout` and `http.timeout` is set, the other one now takes the same value instead of staying at its `5s` default, which would otherwise cap every attempt at `5s`.
+  
+- `exporter/signalfx`: Treat non-retryable 4xx responses as permanent errors instead of retrying them indefinitely (#51389)
+  The SignalFx exporter shares the `HandleHTTPCode` helper with the Splunk HEC
+  exporter. Previously only 400, 401, and 403 were classified as permanent; every
+  other 4xx (404, 405, 410, 413, 414, 415, 422, ...) fell through and was
+  retried forever even though retrying an identical request cannot succeed. Those
+  4xx responses are now permanent, except 408 Request Timeout and 409 Conflict
+  (transient) and 429 Too Many Requests (throttle). 5xx responses remain
+  retryable, and 503 continues to honor Retry-After.
+  
+- `exporter/splunk_hec`: Fix inverted condition in multi-metric batching that prematurely terminated batching and dropped valid metrics when encountering an oversized event. (#52142)
+- `exporter/splunk_hec`: Treat non-retryable 4xx responses as permanent errors instead of retrying them indefinitely (#51389)
+  Previously only 400, 401, and 403 were classified as permanent; every other
+  4xx (404, 405, 410, 413, 414, 415, 422, ...) fell through and was retried
+  forever even though retrying an identical request cannot succeed. The shared
+  `HandleHTTPCode` helper now treats all 4xx as permanent except 408 Request
+  Timeout and 409 Conflict (transient) and 429 Too Many Requests (throttle).
+  5xx responses remain retryable, and 503 continues to honor Retry-After. This
+  helper is shared with the SignalFx exporter, whose retry classification
+  changes in the same way.
+  
+- `extension/awscloudwatchmetricstreams_encoding`: Stop sizing the read buffer from the record's length prefix in the `opentelemetry1.0` format, so a malformed length can no longer crash the collector with an oversized allocation. (#51744)
+- `extension/docker_observer`: Fix endpoint flapping by selecting a stable IP address for containers attached to multiple networks. (#51726)
+- `extension/google_cloud_logentry_encoding`: Do not drop log entries with an unparseable `httpRequest.requestUrl`. (#52044)
+  The raw value is kept in `url.full`; `url.path`, `url.query` and `url.domain` are omitted.
+- `internal/kafka`: Reject extensions that do not implement Token(context.Context) during OAUTHBEARER SASL configuration instead of panicking at runtime. (#51958)
+- `pkg/faro`: Keep the `warn` log level when translating logs to a Faro payload (#52114)
+- `pkg/ottl`: Fix context inference for statements that pass an all-uppercase converter name, such as `SHA256`, as a function argument. (#52192)
+- `pkg/winperfcounters`: Close the PDH query when adding the counter fails, preventing a handle leak on counter initialization errors. (#51048)
+- `processor/cumulative_to_delta`: Handle NaN sums on exponential histograms like on histograms, so the next sum is no longer emitted as a NaN delta (#51965)
+- `processor/cumulative_to_delta`: Include the scope attributes in the identity of a stream, so scopes that only differ in their attributes are no longer converted as one stream (#52162)
+- `processor/resource_detection`: Fix a panic in the ECS detector when the task ARN has only 5 colon-separated parts (#52074)
+  `parseTaskARN` checked for at least 5 parts but read the 6th one, so a task ARN without a resource part
+  caused an index out of range panic during detection.
+  
+- `processor/resource_detection`: Bypass environment proxies for EKS detector requests to the in-cluster Kubernetes API. (#52301)
+  Besides this, the EKS detector configuration now accepts API server configuration to control
+  how it connections to the Kubernetes API server.
+  
+- `receiver/aws_cloudwatch`: Persist acknowledged log checkpoints so failed polls can retry unread logs after a restart when storage is enabled. (#51944)
+- `receiver/mongodb`: Skip top command when mongodb.operation.time is disabled and log warning on BSONObjectTooLarge error (#50712)
+- `receiver/postgresql`: Fix a scrape error that discarded every metric for a table or index dropped while the receiver was collecting (#52041)
+- `receiver/pprof`: Fix the HTTP scraper to return an error for non-2xx responses, close the response body, and honor the scrape context. (#52256)
+- `receiver/prometheus`: Fix config reload failing for multi-line secrets such as an inline `tls_config.key` (#52080)
+- `receiver/prometheus_remote_write`: Refuse an out of range symbol reference on a target_info series, as on every other metric name. (#52070)
+  A request carrying one now gets a 400 where it used to get a 204 with the
+  sample counted as written.
+  
+- `receiver/prometheus_simple`: Forward inline TLS PEM (`ca_pem`, `cert_pem`, `key_pem`) and `server_name_override` to the underlying Prometheus receiver instead of silently dropping them. (#52029)
+- `receiver/prometheus_simple`: Forward the `tls` `min_version` and `max_version` settings to the scrape config; previously they had no effect. (#52081)
+- `receiver/snmp`: Create the datapoint with an empty attribute when an indexed attribute column returns an empty value, instead of failing the scrape. (#51875)
+  An empty OCTET STRING, such as ifPhysAddress on a loopback or null interface, is a valid value.
+  Previously every scrape of such a device reported "metric OID attribute value is blank" and dropped those datapoints.
+  A row the attribute column does not return at all still fails as before.
+  
+- `receiver/snmp`: Add `max_repetitions` configuration option (defaulting to 25) for GETBULK requests to prevent request timeouts on MTU boundaries. (#51925)
+- `receiver/splunk_enterprise`: Send the search job TTL to Splunk in seconds instead of nanoseconds (#50940)
+  The receiver sets a TTL on every search job it dispatches, derived from the configured
+  `timeout`. The value was formatted from a Go duration with `%d`, which emits its raw
+  nanosecond count, and Splunk's `setttl` action reads the argument as seconds. A default
+  `timeout: 60s` therefore asked Splunk to retain each dispatched job for roughly 1900 years,
+  so search artifacts accumulated until the search dispatch directory filled and Splunk
+  reported extreme search lag. The duration is now converted to whole seconds.
+  
+- `receiver/yang_grpc`: Log a warning when duplicate YANG module definitions are loaded, identifying conflicting source paths. (#50917)
+
+<!-- previous-version -->
+
 ## v1.2.0/v0.163.0
 
 ### 🛑 Breaking changes 🛑

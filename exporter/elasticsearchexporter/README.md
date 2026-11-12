@@ -127,18 +127,9 @@ This can be customised through the following settings:
 
 - `logs_index` (optional): The [index] or [data stream] name to publish logs (and span events in OTel mapping mode) to. `logs_index` should be empty unless all logs should be sent to the same index.
 
-- `logs_dynamic_index` (optional): uses resource, scope, or log record attributes to dynamically construct index name.
-  - `enabled`(DEPRECATED): No-op. Documents are now always routed dynamically unless `logs_index` is not empty. Will be removed in a future version.
-
 - `metrics_index` (optional): The [index] or [data stream] name to publish metrics to. `metrics_index` should be empty unless all metrics should be sent to the same index. Note that metrics support is currently in development.
 
-- `metrics_dynamic_index` (optional): uses resource, scope or data point attributes to dynamically construct index name.
-  - `enabled`(DEPRECATED): No-op. Documents are now always routed dynamically unless `metrics_index` is not empty. Will be removed in a future version.
-
 - `traces_index` (optional): The [index] or [data stream] name to publish traces to. `traces_index` should be empty unless all traces should be sent to the same index.
-
-- `traces_dynamic_index` (optional): uses resource, scope, or span attributes to dynamically construct index name.
-  - `enabled`(DEPRECATED): No-op. Documents are now always routed dynamically unless `traces_index` is not empty. Will be removed in a future version.
 
 - `logstash_format` (optional): Logstash format compatibility. Logs, metrics and traces can be written into an index in Logstash format.
   - `enabled`(default=false):  Enable/disable Logstash format compatibility. When `logstash_format::enabled` is `true`, the index name is composed using the above dynamic routing rules as prefix and the date as suffix,
@@ -174,7 +165,6 @@ The Elasticsearch exporter supports several document schemas and preprocessing
 behaviours, which may be configured through the following settings:
 
 - `mapping`:
-  - `mode` (DEPRECATED): The mapping mode if supplied via config file is ignored. Use the `X-Elastic-Mapping-Mode` client metadata key or the `elastic.mapping.mode` scope attribute instead. If not specified via these methods, the default mapping mode is `otel`.
   - `allowed_modes` (defaults to all mapping modes): A list of allowed mapping modes.
     If `otel` is included in the list, it is used as the default mapping mode.
     Otherwise, the first entry in the list is used as the default.
@@ -362,9 +352,10 @@ The deprecated `num_workers` and `flush` settings have been removed. Existing co
 | `num_workers` | `sending_queue::num_consumers` |
 | `flush::interval` | `sending_queue::batch::flush_timeout` |
 | `flush::bytes` | `sending_queue::batch::max_size` with `sending_queue::batch::sizer` set to `bytes` |
+| `retry::max_requests` | `retry::max_retries` |
 
 - `retry`: Elasticsearch bulk request retry settings
-  - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
+  - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff. If the request is canceled, e.g. during a shutdown, it is not retried. Timeout errors are retried only before the connection is ready, including during DNS, the TCP handshake, and the TLS handshake. A timeout after the connection is ready, including while the request is being written or while waiting for the response, is not retried, to avoid duplicates. Other transport errors are retried.
   - `max_requests` (DEPRECATED, use retry::max_retries instead): Number of HTTP request retries including the initial attempt. If used, `retry::max_retries` will be set to `max_requests - 1`.
   - `max_retries` (default=2): Number of HTTP request retries. To disable retries, set `retry::enabled` to `false` instead of setting `max_retries` to `0`.
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
@@ -461,28 +452,40 @@ The metric types supported are:
 
 - Gauge
 - Sum
-- Histogram (Delta temporality only)
-- Exponential histogram (Delta temporality only)
+- Histogram (Both Delta and Cumulative temporality supported)
+- Exponential histogram (Both Delta and Cumulative temporality supported)
 - Summary
 
 ### Histogram storage
 
 In OTel mapping mode, OTLP exponential histograms are stored in Elasticsearch's
 native [`exponential_histogram`](https://www.elastic.co/docs/reference/elasticsearch/mapping-reference/exponential-histogram)
-field when connected to Elasticsearch 9.3.0 or later. This preserves the
+field when connected to Elasticsearch 9.4.0 or later. This preserves the
 exponential bucket layout (scale, zero bucket, positive/negative buckets, sum,
 min, max) losslessly.
 
 This is enabled automatically via [version detection](#elasticsearch-version-detection): when
 version detection is disabled (`version_detection.enabled: false`) or the
-connected Elasticsearch is older than 9.3.0, exponential histograms fall back to
+connected Elasticsearch is older than 9.4.0, exponential histograms fall back to
 a T-Digest `histogram` field. Explicit-bucket histograms are always stored as a
 `histogram` field.
+
+Explicit-bounds histograms are converted to exponential histograms
+when the Elasticsearch version is 9.4.0 or later. This can be disabled via `version_detection.enabled: false`, which stores
+explicit-bounds histograms as `histogram` field.
 
 Per-data-point mapping hints still apply and take precedence: `histogram:raw`
 stores a `histogram` field using raw bucket bounds, and `aggregate_metric_double`
 stores a `{sum, value_count}` summary. The native `exponential_histogram` field
 is only used in OTel mapping mode.
+
+### Temporality
+
+In OTel mapping mode, metric documents for histograms and exponential histograms contain a `temporality` field,
+set to `delta` or `cumulative`. This matches the ES OTLP endpoint. This field is only written when the temporality is known.
+
+`temporality` is a time series dimension: cumulative and delta series with the same name and attributes are stored as **separate**
+time series. This allows aggregations to apply the correct semantics (sum for delta, and subtraction for cumulative).
 
 ### Metrics dynamic templates
 
@@ -494,7 +497,7 @@ The index template must define dynamic templates whose names match the values se
 
 | Mapping mode | Field path in document | Template names sent | Notes |
 | ------------ | ---------------------- | -------------------- | ----- |
-| **OTel**     | `metrics.<metric name>` | `histogram`, `exponential_histogram`, `summary`, `gauge_double`, `gauge_long`, `counter_double`, `counter_long` | The OTel data plugin defines more specific templates. `exponential_histogram` requires Elasticsearch 9.3.0 or later. |
+| **OTel**     | `metrics.<metric name>` | `histogram`, `exponential_histogram`, `summary`, `gauge_double`, `gauge_long`, `counter_double`, `counter_long` | The OTel data plugin defines more specific templates. `exponential_histogram` requires Elasticsearch 9.4.0 or later. |
 | **ECS**      | `metric.<metric name>`  | `histogram_metrics`, `summary_metrics`, `double_metrics` | Relies on core templates in [metrics@mappings](https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json). Intended to match the [APM metrics ingest pipeline](https://github.com/elastic/elasticsearch/blob/b34960a2b450869aee2866e91c647e0026dd6953/x-pack/plugin/apm-data/src/main/resources/ingest-pipelines/metrics-apm%40pipeline.yaml). |
 
 - **OTel**: Each metric is written under the `metrics` object; the bulk action maps full field names (e.g. `metrics.my_metric`) to one of the OTel template names above based on metric type (histogram, summary, gauge, or counter) and value type.
@@ -790,27 +793,40 @@ This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the defaul
 To resolve this, upgrade Elasticsearch to 8.12+; for OTel mapping mode, 8.16+ is recommended.
 Alternatively, try other mapping modes, but the document structure will be different.
 
-### "dropping cumulative temporality histogram" and "dropping cumulative temporality exponential histogram"
+### "dropping cumulative temporality histogram" / "only supported when stored as exponential_histogram"
 
-Symptom: `elasticsearchexporter` logs a warning `dropping cumulative temporarily histogram` similar to:
+Symptom: `elasticsearchexporter` logs a warning under `validation errors` similar to:
 
 ```
-warn    elasticsearchexporter@v0.132.0/exporter.go:340  validation errors
+warn    elasticsearchexporter/exporter.go:387  validation errors
 {
-  "resource": {
-    "service.instance.id": "33ffe7e8-e944-4f92-8fce-9094f4b61d1d",
-    "service.name": "./elastic-agent",
-    "service.version": "9.1.5"
-  },
   "otelcol.component.id": "elasticsearch/otel",
   "otelcol.component.kind": "exporter",
   "otelcol.signal": "metrics",
-  "error": "dropping cumulative temporality histogram \"http.client.request.duration\""
+  "error": "dropping cumulative temporality histogram \"http.client.request.duration\": requires Elasticsearch >= 9.5.0"
 }
 ```
 
-This issue occurs because Elasticsearch does not support **cumulative temporality** for histograms.
-As a workaround, you can either:
+or:
+
+```
+  "error": "cumulative temporality histogram \"http.client.request.duration\" is only supported when stored as exponential_histogram"
+```
+
+Cumulative temporality histograms (both explicit bucket and exponential histograms) are
+supported only when **all** of the following are true:
+
+- The exporter uses `otel` mapping mode, so histograms are stored in the Elasticsearch
+  `exponential_histogram` field. Data points overridden to a lossy mapping via a mapping hint
+  (`aggregate_metric_double`, or `histogram:raw`) are not supported for cumulative temporality.
+- Elasticsearch is version 9.5.0 or later. (Delta temporality histograms are supported from
+  Elasticsearch 9.4.0 onwards.)
+
+When these conditions are not met, cumulative histogram data points are dropped with one of the
+warnings above. To resolve this, you can either:
+
+- Upgrade Elasticsearch to 9.5.0 or later and use `otel` mapping mode, or
 - Export histogram metrics using **delta temporality**, or
 - Apply a `cumulativetodelta` processor.
+
 For more details, see [Metrics data ingestion](https://www.elastic.co/docs/reference/opentelemetry/compatibility/limitations#metrics-data-ingestion).

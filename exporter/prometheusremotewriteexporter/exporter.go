@@ -9,14 +9,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
 	"net/url"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/cenkalti/backoff/v5"
+	"github.com/cenkalti/backoff/v7"
 	"github.com/golang/snappy"
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/otlptranslator"
@@ -34,7 +34,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 )
 
@@ -113,14 +112,21 @@ func (b *buffer) MarshalAndEncode(req gogoProto) ([]byte, error) {
 	return snappy.Encode(b.snappy, b.protobuf), nil
 }
 
-// A reusable buffer pool for serializing protobufs and compressing them with Snappy.
-var bufferPool = sync.Pool{
-	New: func() any {
-		return &buffer{
-			protobuf: nil,
-			snappy:   nil,
-		}
-	},
+// newEncodeBuffers returns a channel that holds the buffers of an exporter for serializing
+// protobufs and compressing them with Snappy.
+//
+// It holds min(encoders, GOMAXPROCS) buffers, encoders being the number of goroutines of the exporter
+// that can encode a request at the same time. The buffers are given back before the payload is sent,
+// so that encoding only uses the CPU, and more buffers would not encode more requests at the same
+// time. Every buffer grows to the size of the largest request it encoded, so the number of buffers
+// bounds the memory they keep.
+func newEncodeBuffers(encoders int) chan *buffer {
+	n := max(1, min(encoders, runtime.GOMAXPROCS(0)))
+	buffers := make(chan *buffer, n)
+	for range n {
+		buffers <- &buffer{}
+	}
+	return buffers
 }
 
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
@@ -144,6 +150,9 @@ type prwExporter struct {
 	// HTTP headers on every outbound remote write request.
 	includeMetadataKeys []string
 
+	// encodeBuffers holds the buffers for serializing and compressing requests. See encodeRequest.
+	encodeBuffers chan *buffer
+
 	// When concurrency is enabled, concurrent goroutines would potentially
 	// fight over the same batchState object. To avoid this, we use a pool
 	// to provide each goroutine with its own state.
@@ -161,6 +170,30 @@ type prwExporter struct {
 	// flight and the ones of the requests still queued give up.
 	shutdownCtx       context.Context
 	cancelShutdownCtx context.CancelFunc
+}
+
+// encodeRequest serializes req and compresses it with Snappy into a payload of its own.
+//
+// It waits for one of the buffers of the exporter, and returns the cause of ctx if ctx is done
+// first. An error serializing req is permanent, since a retry would not serialize it either.
+//
+// The protobuf and Snappy buffers are sized for the uncompressed request, which is often an order of
+// magnitude larger than the payload, and they are given back before the payload is sent.
+// A request that waits for a slow endpoint or between retries then holds only the compressed
+// payload, instead of both buffers for the whole duration of the send.
+func (prwe *prwExporter) encodeRequest(ctx context.Context, req gogoProto) ([]byte, error) {
+	var buf *buffer
+	select {
+	case buf = <-prwe.encodeBuffers:
+	case <-ctx.Done():
+		return nil, context.Cause(ctx)
+	}
+	defer func() { prwe.encodeBuffers <- buf }()
+	compressed, err := buf.MarshalAndEncode(req)
+	if err != nil {
+		return nil, consumererror.NewPermanent(err)
+	}
+	return bytes.Clone(compressed), nil
 }
 
 func newPRWTelemetry(set exporter.Settings, endpointURL *url.URL) (prwTelemetry, error) {
@@ -216,6 +249,15 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 	// Set the desired number of consumers as a metric for the exporter.
 	telemetry.setNumberConsumer(context.Background(), int64(concurrency))
 
+	// Every call to export encodes with up to concurrency workers. With the feature gate enabled, the
+	// queue calls PushMetrics from num_consumers goroutines at the same time, unless the WAL holds the
+	// requests: a single goroutine then exports them.
+	encoders := concurrency
+	if metadata.ExporterPrometheusremotewritexporterEnableMultipleWorkersFeatureGate.IsEnabled() &&
+		cfg.RemoteWriteQueue.Enabled && !cfg.WAL.HasValue() {
+		encoders *= max(1, cfg.RemoteWriteQueue.NumConsumers)
+	}
+
 	shutdownCtx, cancelShutdownCtx := context.WithCancel(context.Background())
 	prwe := &prwExporter{
 		endpointURL:         endpointURL,
@@ -226,6 +268,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		userAgentHeader:     userAgentHeader,
 		maxBatchSizeBytes:   cfg.MaxBatchSizeBytes,
 		concurrency:         concurrency,
+		encodeBuffers:       newEncodeBuffers(encoders),
 		clientSettings:      &cfg.HTTP,
 		settings:            set.TelemetrySettings,
 		retrySettings:       cfg.BackOffConfig,
@@ -420,13 +463,9 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 
 func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	utf8Allowed := cfg.TranslationStrategy == noUTF8EscapingWithSuffixes || cfg.TranslationStrategy == noTranslation
-	permissiveSanitization := prometheustranslator.DropSanitizationGate.IsEnabled()
 	namer := otlptranslator.LabelNamer{
-		UTF8Allowed: utf8Allowed,
-		// TODO: SA1019: (github.com/prometheus/otlptranslator.LabelNamer).UnderscoreLabelSanitization is deprecated: This will be removed in a future version of otlptranslator.
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50429
-		UnderscoreLabelSanitization: !permissiveSanitization, //nolint:staticcheck
-		PreserveMultipleUnderscores: permissiveSanitization,
+		UTF8Allowed:                 utf8Allowed,
+		PreserveMultipleUnderscores: true,
 	}
 	sanitizedLabels := make(map[string]string)
 	for key, value := range cfg.ExternalLabels {
@@ -474,20 +513,28 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 	return nil
 }
 
-// export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
+// export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order.
+// It does not modify requests, which the WAL keeps.
 func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteRequest) error {
+	// The channel is filled in a function of its own, and the workers only get the channel. A request
+	// is then referenced by the channel, which clears its slot when the request is received, and by
+	// the worker that encodes it, so that its time series can be reclaimed while its payload waits
+	// for the endpoint or between retries. Filling the channel in the function that waits for the
+	// workers kept the requests reachable until the export ended.
+	return prwe.exportQueued(ctx, queueRequests(requests))
+}
+
+// exportQueued sends the requests of input, a channel filled and closed by queueRequests.
+func (prwe *prwExporter) exportQueued(ctx context.Context, input chan *prompb.WriteRequest) error {
 	ctx, cancel := prwe.exportContext(ctx)
 	defer cancel()
 
-	input := make(chan *prompb.WriteRequest, len(requests))
-	for _, request := range requests {
-		input <- request
-	}
-	close(input)
+	// queueRequests sizes the channel for the requests.
+	total := cap(input)
 
 	var wg sync.WaitGroup
 
-	concurrencyLimit := int(math.Min(float64(prwe.concurrency), float64(len(requests))))
+	concurrencyLimit := min(prwe.concurrency, total)
 	wg.Add(concurrencyLimit) // used to wait for workers to be finished
 
 	var mu sync.Mutex
@@ -507,13 +554,21 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 	}
 	wg.Wait()
 
-	return appendUnsentRequestsError(ctx, errs, len(input), len(requests))
+	return appendUnsentRequestsError(ctx, errs, len(input), total)
+}
+
+// queueRequests returns a closed channel that holds the requests, from which the workers receive them.
+func queueRequests[T any](requests []T) chan T {
+	input := make(chan T, len(requests))
+	for _, request := range requests {
+		input <- request
+	}
+	close(input)
+	return input
 }
 
 func (prwe *prwExporter) handleRequests(ctx context.Context, input chan *prompb.WriteRequest) error {
 	var errs error
-	buf := bufferPool.Get().(*buffer)
-	defer bufferPool.Put(buf)
 	for {
 		// Stop as soon as the context is done. The input channel is closed once it was filled, so
 		// receiving from it never blocks.
@@ -524,16 +579,61 @@ func (prwe *prwExporter) handleRequests(ctx context.Context, input chan *prompb.
 		if !ok {
 			return errs
 		}
-
-		reqBuf, errMarshal := buf.MarshalAndEncode(request)
+		reqBuf, errMarshal := prwe.encodeRequest(ctx, request)
 		if errMarshal != nil {
-			return multierr.Append(errs, consumererror.NewPermanent(errMarshal))
+			return multierr.Append(errs, errMarshal)
 		}
+		// The request is not used after this point: the attempts send reqBuf.
+		sampleCount := writeRequestSampleCount(request)
 
 		if errExecute := prwe.execute(ctx, reqBuf); errExecute != nil {
+			if rejected, ok := errors.AsType[*payloadRejectionError](errExecute); ok {
+				rejected.sampleCount = sampleCount
+			}
 			errs = multierr.Append(errs, errExecute)
 		}
 	}
+}
+
+// payloadRejectionError reports that the remote endpoint rejected the content
+// of a write request, so the identical payload will be rejected again and no
+// amount of retrying can make it succeed. It is distinct from a permanent error,
+// which also covers a retryable failure that merely ran out of retry budget, and
+// from a status such as 401 that rejects every request regardless of content.
+type payloadRejectionError struct {
+	StatusCode int
+	// sampleCount is the number of samples the rejected request carried.
+	sampleCount int
+	err         error
+}
+
+func (e *payloadRejectionError) Error() string {
+	return fmt.Sprintf("%s (http status %d)", e.err.Error(), e.StatusCode)
+}
+
+func (e *payloadRejectionError) Unwrap() error { return e.err }
+
+// isPayloadRejection reports whether status rejects the content of the request rather than every request.
+func isPayloadRejection(status int) bool {
+	switch status {
+	case http.StatusBadRequest, http.StatusConflict, http.StatusRequestEntityTooLarge, http.StatusUnprocessableEntity:
+		return true
+	default:
+		return false
+	}
+}
+
+// writeRequestSampleCount reports how many samples a write request carries. A
+// native histogram is one sample in Prometheus terms, so it is counted here;
+// exemplars are accounted for separately by the backend and are not.
+func writeRequestSampleCount(req *prompb.WriteRequest) int {
+	n := 0
+	// Indexed rather than ranged by value: a TimeSeries is large enough that
+	// copying one per iteration shows up in the linter.
+	for i := range req.Timeseries {
+		n += len(req.Timeseries[i].Samples) + len(req.Timeseries[i].Histograms)
+	}
+	return n
 }
 
 func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
@@ -639,7 +739,13 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 			return resp.StatusCode, rerr
 		}
 
-		return resp.StatusCode, backoff.Permanent(consumererror.NewPermanent(rerr))
+		// Only a rejection of this payload is tagged; any other status rejects every request, so the WAL keeps the batch.
+		if !isPayloadRejection(resp.StatusCode) {
+			return resp.StatusCode, backoff.Permanent(consumererror.NewPermanent(rerr))
+		}
+
+		rejected := &payloadRejectionError{StatusCode: resp.StatusCode, err: rerr}
+		return resp.StatusCode, backoff.Permanent(consumererror.NewPermanent(rejected))
 	}
 
 	var err error

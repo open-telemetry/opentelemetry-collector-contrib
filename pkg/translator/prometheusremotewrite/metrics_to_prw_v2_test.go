@@ -222,6 +222,7 @@ func TestScopeAttributesV2(t *testing.T) {
 
 	// Scope 1
 	sm1 := rm.ScopeMetrics().AppendEmpty()
+	sm1.SetSchemaUrl("https://opentelemetry.io/schemas/1.7.0")
 	scope1 := sm1.Scope()
 	scope1.SetName("scope1")
 	scope1.SetVersion("1.0.0")
@@ -252,10 +253,12 @@ func TestScopeAttributesV2(t *testing.T) {
 	dp2.SetTimestamp(pcommon.Timestamp(time.Now().UnixNano()))
 	dp2.SetIntValue(2)
 
-	tsMap, _, err := FromMetricsV2(md, settings)
+	tsMap, symbolsTable, err := FromMetricsV2(md, settings)
 	require.NoError(t, err)
 
 	require.Len(t, tsMap, 2)
+	require.Contains(t, symbolsTable.Symbols(), "otel_scope_schema_url")
+	require.Contains(t, symbolsTable.Symbols(), "https://opentelemetry.io/schemas/1.7.0")
 }
 
 func getMetricNameV2(t *testing.T, ts *writev2.TimeSeries, symbols []string) string {
@@ -366,7 +369,17 @@ func TestFromMetricsV2_TranslationStrategies(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			md := pmetric.NewMetrics()
 			metrics := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-			tt.metricFunc().CopyTo(metrics.AppendEmpty())
+			metric := tt.metricFunc()
+			var attrs pcommon.Map
+			if metric.Type() == pmetric.MetricTypeGauge {
+				attrs = metric.Gauge().DataPoints().At(0).Attributes()
+			} else {
+				attrs = metric.Sum().DataPoints().At(0).Attributes()
+			}
+			attrs.PutStr("_foo", "leading")
+			attrs.PutStr("a__b", "consecutive")
+			attrs.PutStr("__custom__", "reserved")
+			metric.CopyTo(metrics.AppendEmpty())
 
 			tsMap, symbolsTable, err := FromMetricsV2(md, Settings{TranslationStrategy: tt.strategy})
 			require.NoError(t, err)
@@ -380,6 +393,13 @@ func TestFromMetricsV2_TranslationStrategies(t *testing.T) {
 			require.NotNil(t, tsFound)
 
 			symbols := symbolsTable.Symbols()
+			labels := make(map[string]string)
+			for i := 0; i < len(tsFound.LabelsRefs); i += 2 {
+				labels[symbols[tsFound.LabelsRefs[i]]] = symbols[tsFound.LabelsRefs[i+1]]
+			}
+			require.Equal(t, "leading", labels["_foo"])
+			require.Equal(t, "consecutive", labels["a__b"])
+			require.Equal(t, "reserved", labels["__custom__"])
 			actualName := getMetricNameV2(t, tsFound, symbols)
 			require.Equal(t, tt.expectedName, actualName)
 

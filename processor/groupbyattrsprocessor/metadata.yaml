@@ -14,8 +14,8 @@ status:
   distributions: [contrib, k8s]
   warnings: []
   codeowners:
-    active: [rnishtala-sumo, amdprophet]
-    emeritus: [echlebek]
+    active: [rnishtala-sumo]
+    emeritus: [echlebek, amdprophet]
 tests:
   config:
 

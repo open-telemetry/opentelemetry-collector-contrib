@@ -5,6 +5,7 @@ package dockerobserver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/netip"
@@ -104,7 +105,11 @@ func (d *dockerObserver) Start(ctx context.Context, _ component.Host) error {
 func (d *dockerObserver) Shutdown(_ context.Context) error {
 	d.StopListAndWatch()
 	d.cancel()
-	return d.wg.Wait()
+	err := d.wg.Wait()
+	if d.dClient != nil {
+		return errors.Join(err, d.dClient.Close())
+	}
+	return err
 }
 
 func (d *dockerObserver) ListEndpoints() []observer.Endpoint {
@@ -232,7 +237,6 @@ func (d *dockerObserver) endpointForPort(portObj network.Port, c *ctypes.Inspect
 		// Use the IP Address of the first network we iterate over.
 		// This can be made configurable if so desired.
 		details.Host = containerNetworkAddress(c.NetworkSettings.Networks)
-
 		// If we still haven't gotten a host at this point and we are using
 		// host bindings, just make it localhost.
 		if details.Host == "" && d.config.UseHostBindings {
@@ -266,22 +270,6 @@ func (d *dockerObserver) endpointForPort(portObj network.Port, c *ctypes.Inspect
 	return &endpoint
 }
 
-func containerNetworkAddress(networks map[string]*network.EndpointSettings) string {
-	for _, networkSettings := range networks {
-		if networkSettings == nil {
-			return ""
-		}
-		if address := networkSettings.IPAddress; address.IsValid() {
-			return address.String()
-		}
-		if address := networkSettings.GlobalIPv6Address; address.IsValid() {
-			return address.String()
-		}
-		return ""
-	}
-	return ""
-}
-
 // FindHostMappedPort returns the port number of the docker port binding to the
 // underlying host, or 0 if none exists.  It also returns the mapped ip that the
 // port is bound to on the underlying host, or "" if none exists.
@@ -310,4 +298,42 @@ func portProtoToTransport(proto string) observer.Transport {
 		return observer.ProtocolUDP
 	}
 	return observer.ProtocolUnknown
+}
+
+// containerNetworkAddress returns the most appropriate IP address from a container's networks.
+// It deterministically selects the network with the highest GwPriority (tie-breaking alphabetically) to prevent IP flapping.
+func containerNetworkAddress(networks map[string]*network.EndpointSettings) string {
+	var bestName string
+	var bestSettings *network.EndpointSettings
+
+	for name, settings := range networks {
+		if settings == nil || (!settings.IPAddress.IsValid() && !settings.GlobalIPv6Address.IsValid()) {
+			continue
+		}
+		if bestSettings == nil {
+			bestName = name
+			bestSettings = settings
+			continue
+		}
+		// Highest GwPriority wins
+		if settings.GwPriority > bestSettings.GwPriority {
+			bestName = name
+			bestSettings = settings
+		} else if settings.GwPriority == bestSettings.GwPriority && name < bestName {
+			// Tie-breaker: alphabetical by network name
+			bestName = name
+			bestSettings = settings
+		}
+	}
+
+	if bestSettings == nil {
+		return ""
+	}
+	if bestSettings.IPAddress.IsValid() {
+		return bestSettings.IPAddress.String()
+	}
+	if bestSettings.GlobalIPv6Address.IsValid() {
+		return bestSettings.GlobalIPv6Address.String()
+	}
+	return ""
 }

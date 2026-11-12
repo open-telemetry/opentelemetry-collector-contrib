@@ -141,9 +141,9 @@ func TestPartitionProcessing(t *testing.T) {
 				tp := topicPartition{topic: "test", partition: 0}
 				partitionConsumer := &pc{
 					ctx:     t.Context(),
-					mailbox: newPartitionMailbox(t.Context(), 1),
+					mailbox: newPartitionMailbox(t.Context(), 1, 0),
 				}
-				partitionConsumer.addPauseReason(partitionPauseRewind)
+				partitionConsumer.addPauseReason(partitionPauseRewind | partitionPauseBackpressure)
 				partitionConsumer.mailbox.requestRewind(
 					&kgo.Record{Topic: "test", Partition: 0, Offset: 1},
 					true,
@@ -186,7 +186,7 @@ func TestPartitionProcessing(t *testing.T) {
 		// A cancelled partition does not apply a rewind.
 		client, _ := mustNewFakeCluster(t, kfake.SeedTopics(1, "test"))
 		ctx, cancel := context.WithCancel(t.Context())
-		partitionConsumer := &pc{ctx: ctx, mailbox: newPartitionMailbox(ctx, 1)}
+		partitionConsumer := &pc{ctx: ctx, mailbox: newPartitionMailbox(ctx, 1, 0)}
 		partitionConsumer.mailbox.requestRewind(&kgo.Record{Topic: "test", Partition: 0, Offset: 1}, true, func() {})
 		// Cancel before the poll loop sees the control. SetOffsets must not run.
 		cancel()
@@ -271,7 +271,7 @@ func TestPartitionProcessing(t *testing.T) {
 		// records are not processed.
 		h := newPartitionProcessingHarness(t, 1, func(cfg *Config) {
 			cfg.ConsumerConfig.MaxFetchSize = 1
-			cfg.PartitionProcessing.MaxBufferedBatches = 3
+			cfg.PartitionProcessing.MaxPrefetch.Batches = 3
 			cfg.MessageMarking = MessageMarking{After: true, OnPermanentError: false}
 		})
 		started := make(chan struct{}, 1)
@@ -518,9 +518,9 @@ func newPartitionProcessingHarness(t *testing.T, partitions int, configure func(
 	cfg.ConsumerConfig.GroupID = t.Name()
 	// These tests cover independent workers only.
 	cfg.PartitionProcessing = PartitionProcessing{
-		Independent:        true,
-		MaxBufferedBatches: 1,
-		MaxInFlight:        MaxInFlightConfig{Records: 1},
+		Independent: true,
+		MaxPrefetch: MaxPrefetchConfig{Batches: 1},
+		MaxInFlight: MaxInFlightConfig{Records: 1},
 	}
 	if configure != nil {
 		configure(cfg)
@@ -651,9 +651,9 @@ func waitSignal(t *testing.T, ch <-chan struct{}, msg string) {
 func newStaleWorkerConsumer(t *testing.T, kafkaClient *kgo.Client, cfg *Config, topic string) *franzConsumer {
 	t.Helper()
 	cfg.PartitionProcessing = PartitionProcessing{
-		Independent:        true,
-		MaxBufferedBatches: 2,
-		MaxInFlight:        MaxInFlightConfig{Records: 1},
+		Independent: true,
+		MaxPrefetch: MaxPrefetchConfig{Batches: 2},
+		MaxInFlight: MaxInFlightConfig{Records: 1},
 	}
 	cfg.ConsumerConfig.SessionTimeout = 20 * time.Millisecond
 	cfg.MessageMarking.After = true
@@ -1150,9 +1150,9 @@ func TestLostDiscardsQueuedBatches(t *testing.T) {
 	const topic = "test"
 	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
 	cfg.PartitionProcessing = PartitionProcessing{
-		Independent:        true,
-		MaxBufferedBatches: 2,
-		MaxInFlight:        MaxInFlightConfig{Records: 1},
+		Independent: true,
+		MaxPrefetch: MaxPrefetchConfig{Batches: 2},
+		MaxInFlight: MaxInFlightConfig{Records: 1},
 	}
 	cfg.ConsumerConfig.SessionTimeout = 20 * time.Millisecond
 
@@ -1439,8 +1439,8 @@ func TestOffsetLagMetricSuppressedDuringPartitionInactivity(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(2, topic))
 			cfg.PartitionProcessing = PartitionProcessing{
-				Independent:        tc.independent,
-				MaxBufferedBatches: 1,
+				Independent: tc.independent,
+				MaxPrefetch: MaxPrefetchConfig{Batches: 1},
 			}
 			cfg.MessageMarking = MessageMarking{
 				After:            true,
