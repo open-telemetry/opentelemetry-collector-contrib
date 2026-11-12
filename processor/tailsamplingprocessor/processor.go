@@ -706,6 +706,20 @@ func (tsp *tailSamplingSpanProcessor) runBatchPolicies(ctx context.Context, cand
 	}
 }
 
+// takeAll takes the spans of every trace ID from tail storage, in one call
+// when the storage implements BatchTailStorage and one Take per ID otherwise.
+func (tsp *tailSamplingSpanProcessor) takeAll(ids []pcommon.TraceID) ([]ptrace.Traces, []error) {
+	if bs, ok := tsp.tailStorage.(tailstorageextension.BatchTailStorage); ok {
+		return bs.TakeMany(ids)
+	}
+	out := make([]ptrace.Traces, len(ids))
+	errs := make([]error, len(ids))
+	for i, id := range ids {
+		out[i], errs[i] = tsp.tailStorage.Take(id)
+	}
+	return out, errs
+}
+
 // samplingPolicyOnTick takes the next batch and process all traces in that batch. Returns if there are more batches in the batcher.
 func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	tsp.logger.Debug("Sampling Policy Evaluation ticked")
@@ -728,6 +742,11 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	// instead: finalize any still-pending trace as implicit not sampled
 	// without policy evaluation, so no candidate is collected for it.
 	candidates := make([]tickCandidate, 0, batchLen)
+	type pendingTake struct {
+		id    pcommon.TraceID
+		trace *TraceData
+	}
+	pending := make([]pendingTake, 0, batchLen)
 	for id := range batch {
 		trace, ok := tsp.idToTrace[id]
 		if !ok {
@@ -758,27 +777,35 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 			continue
 		}
 
-		allSpans, err := tsp.tailStorage.Take(id)
-		if err != nil {
+		pending = append(pending, pendingTake{id: id, trace: trace})
+	}
+
+	ids := make([]pcommon.TraceID, len(pending))
+	for i, p := range pending {
+		ids[i] = p.id
+	}
+	allSpans, takeErrs := tsp.takeAll(ids)
+	for i, p := range pending {
+		if err := takeErrs[i]; err != nil {
 			tsp.logger.Error("Failed to retrieve trace from tail storage", zap.Error(err))
 			// Take failures are terminal for this trace: storage may already have
 			// deleted or otherwise invalidated the spilled batches. Keep going
 			// without eviction would leave idToTrace / deleteTraceQueue stranded.
-			tsp.dropTrace(id, time.Now())
+			tsp.dropTrace(p.id, time.Now())
 			continue
 		}
-		if allSpans.ResourceSpans().Len() == 0 {
+		if allSpans[i].ResourceSpans().Len() == 0 {
 			metrics.idNotFoundOnMapCount++
 			continue
 		}
 
 		candidates = append(candidates, tickCandidate{
-			id:    id,
-			trace: trace,
+			id:    p.id,
+			trace: p.trace,
 			data: &samplingpolicy.TraceData{
-				SpanCount:       trace.SpanCount,
-				SizeBytes:       trace.SizeBytes,
-				ReceivedBatches: allSpans,
+				SpanCount:       p.trace.SpanCount,
+				SizeBytes:       p.trace.SizeBytes,
+				ReceivedBatches: allSpans[i],
 			},
 		})
 	}

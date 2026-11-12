@@ -82,6 +82,7 @@ timeout: 90s
 
 The Elasticsearch exporter sets `timeout` (HTTP request timeout) to 90s by default.
 Note that this is per request and is independent between HTTP request retries.
+HTTP client timeouts are all retried.
 All other defaults are as defined by [confighttp].
 
 ### Queuing and batching
@@ -112,7 +113,7 @@ Documents are statically or dynamically routed to the target index / data stream
 2. "Dynamic - Index attribute mode": Route to index name specified in `elasticsearch.index` attribute (precedence: log record / data point / span attribute > scope attribute > resource attribute) if the attribute exists. [^3]
 3. "Dynamic - Data stream routing mode": Route to data stream constructed from `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`,
 where `data_stream.type` is `logs` for log records, `metrics` for data points, and `traces` for spans, and is static. [^3]
-  In a special case with `mapping::mode: bodymap`, `data_stream.type` field (valid values: `logs`, `metrics`, `traces`, `profiles`, `synthetics`) can be dynamically set from attributes.
+  In a special case with the `bodymap` mapping mode, `data_stream.type` field (valid values: `logs`, `metrics`, `traces`, `profiles`, `synthetics`) can be dynamically set from attributes.
   The resulting documents will contain the corresponding `data_stream.*` fields, see restrictions applied to [Data Stream Fields](https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html).
    1. `data_stream.dataset` or `data_stream.namespace` in attributes (precedence: log record / data point / span attribute > scope attribute > resource attribute)
    2. Otherwise, if a scope attribute with the name `encoding.format` exists and contains a string value, `data_stream.dataset` will be set to this value. 
@@ -148,7 +149,7 @@ This can be customised through the following settings:
 
 #### Document routing exceptions for OTel data mode
 
-In OTel mapping mode (`mapping::mode: otel`), there is special handling in addition to the above document routing rules in [Elasticsearch document routing](#elasticsearch-document-routing).
+In OTel mapping mode, there is special handling in addition to the above document routing rules in [Elasticsearch document routing](#elasticsearch-document-routing).
 The order to determine the routing mode is the same as [Elasticsearch document routing](#elasticsearch-document-routing).
 
 1. "Static mode": Span events are separate documents routed to `logs_index` if non-empty.
@@ -193,7 +194,7 @@ See below for a description of each mapping mode.
 
 #### Migration: Setting mapping mode via scope attribute
 
-Since the `mapping::mode` config option is deprecated, use the following method to set the mapping mode:
+Use the following method to set the mapping mode:
 
 **Use scope attribute via transform processor**
 
@@ -256,6 +257,32 @@ Span events are stored in separate documents. They will be routed with `data_str
 
 Attribute `elasticsearch.index` will be removed from the final document if exists.
 
+**Example indexed document:**
+
+```json
+{
+  "@timestamp": "1730039445123.456789",
+  "attributes": {
+    "attr.foo": "attr.foo.value"
+  },
+  "data_stream": {
+    "dataset": "attr.dataset.otel",
+    "namespace": "resource.attribute.namespace",
+    "type": "logs"
+  },
+  "observed_timestamp": "1730039445123.456789",
+  "resource": {
+    "attributes": {
+      "resource.attr.foo": "resource.attr.foo.value"
+    }
+  },
+  "scope": {},
+  "body": {
+    "text": "foo"
+  }
+}
+```
+
 | Signal    | Supported          |
 | --------- | ------------------ |
 | Logs      | :white_check_mark: |
@@ -271,6 +298,29 @@ Attribute `elasticsearch.index` will be removed from the final document if exist
 In `ecs` mapping mode, the Elasticsearch Exporter maps fields from
 [OpenTelemetry Semantic Conventions][SemConv] (version 1.22.0) to [Elastic Common Schema][ECS] where possible.
 This mode may be used for compatibility with existing dashboards that work with ECS.
+
+**Example indexed document:**
+
+```json
+{
+  "@timestamp": "2024-10-27T14:30:45.123456789Z",
+  "application": "myapp",
+  "attrKey1": "abc",
+  "attrKey2": "def",
+  "data_stream": {
+    "dataset": "generic",
+    "namespace": "default",
+    "type": "logs"
+  },
+  "error": {
+    "stacktrace": "no no no no"
+  },
+  "message": "hello world",
+  "service": {
+    "name": "myservice"
+  }
+}
+```
 
 | Signal    | `ecs`              |
 | --------- | ------------------ |
@@ -296,6 +346,16 @@ of a log record as the exact content of the Elasticsearch document without any t
 This mapping mode is intended for use cases where the client wishes to have complete control over
 the Elasticsearch document structure.
 
+**Example indexed document:**
+
+```json
+{
+  "@timestamp": "2024-03-12T20:00:41.123456789Z",
+  "id": 1,
+  "key": "value"
+}
+```
+
 | Signal    | `bodymap`          |
 | --------- | ------------------ |
 | Logs      | :white_check_mark: |
@@ -307,6 +367,22 @@ the Elasticsearch document structure.
 
 In the `none` mapping mode the Elasticsearch Exporter produces documents with the original
 field names of from the OTLP data structures.
+
+**Example indexed document:**
+
+```json
+{
+  "@timestamp": "2024-10-27T14:30:45.123456789Z",
+  "Scope.name": "",
+  "Scope.version": "",
+  "Scope.keyInt": 42,
+  "Scope.keyStr": "val str",
+  "SeverityNumber": 0,
+  "TraceFlags": 0,
+  "Attributes.o.sub_i": 19,
+  "Attributes.s": "baz"
+}
+```
 
 | Signal    | `none`             |
 | --------- | ------------------ |
@@ -323,6 +399,22 @@ The `raw` mapping mode is identical to `none`, except for two differences:
    while in `raw` mode they are not.
  - In `none` mode span events are mapped with an `Events.` prefix,
    while in `raw` mode they are not.
+
+**Example indexed document:**
+
+```json
+{
+  "@timestamp": "2024-10-27T14:30:45.123456789Z",
+  "Scope.name": "",
+  "Scope.version": "",
+  "Scope.keyInt": 42,
+  "Scope.keyStr": "val str",
+  "SeverityNumber": 0,
+  "TraceFlags": 0,
+  "o.sub_i": 19,
+  "s": "baz"
+}
+```
 
 | Signal    | `raw `             |
 | --------- | ------------------ |
@@ -354,14 +446,27 @@ The deprecated `num_workers` and `flush` settings have been removed. Existing co
 | `flush::bytes` | `sending_queue::batch::max_size` with `sending_queue::batch::sizer` set to `bytes` |
 | `retry::max_requests` | `retry::max_retries` |
 
-- `retry`: Elasticsearch bulk request retry settings
-  - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff. If the request is canceled, e.g. during a shutdown, it is not retried. Timeout errors are retried only before the connection is ready, including during DNS, the TCP handshake, and the TLS handshake. A timeout after the connection is ready, including while the request is being written or while waiting for the response, is not retried, to avoid duplicates. Other transport errors are retried.
-  - `max_requests` (DEPRECATED, use retry::max_retries instead): Number of HTTP request retries including the initial attempt. If used, `retry::max_retries` will be set to `max_requests - 1`.
+- `retry`: Elasticsearch bulk request retry settings.
+  The default is at-least-once delivery. HTTP client timeouts and other transport errors are retried. See the defaults below for the request and document status codes that are retried.
+  Retrying an HTTP client timeout or status 500, 502, 503, or 504 can index the same documents twice when the first `_bulk` request was applied and its response was lost.
+  HTTP client timeouts are all retried.
+
+  ```yaml
+  retry:
+    enabled: true
+    max_retries: 2
+    initial_interval: 100ms
+    max_interval: 1m
+    retry_on_status: [400, 401, 403, 404, 409, 429, 500, 502, 503, 504]
+    retry_on_document_status: [429, 500, 502, 503, 504]
+  ```
+
+  - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff. If the request is canceled, for example during shutdown, it is not retried. HTTP client timeouts are all retried. Other transport errors are retried.
   - `max_retries` (default=2): Number of HTTP request retries. To disable retries, set `retry::enabled` to `false` instead of setting `max_retries` to `0`.
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
-  - `retry_on_status` (default=[429]): Status codes that trigger request level retries. To avoid duplicates, it defaults to `[429]`.
-  - `retry_on_document_status` (default=same as `retry_on_status`): Status codes that trigger document level retries for failed documents in successful bulk HTTP responses. Set to `[]` to disable document level retries by status code while keeping request level retries configured through `retry_on_status`.
+  - `retry_on_status` (default=[400, 401, 403, 404, 409, 429, 500, 502, 503, 504]): Status codes that retry the whole bulk HTTP request. Version detection reuses this list and excludes `401` and `403`.
+  - `retry_on_document_status` (default=[429, 500, 502, 503, 504]): Status codes that retry failed documents in a successful bulk HTTP response. Set to `[]` to disable document level retries by status code.
 - `sending_queue`: Configures the queueing and batching behaviour. Below are the defaults (which may vary from standard defaults), for full configuration check the [`exporterhelper` docs][exporterhelper].
   - `enabled` (default=true): Enable queueing and batching behaviour.
   - `num_consumers` (default=10): Number of consumers that dequeue batches.
@@ -416,6 +521,10 @@ The query is best-effort: if it fails (for example, when Elasticsearch is
 temporarily unreachable), startup is not blocked. Version detection cannot be
 performed when the endpoint is resolved at request time (for example, when a
 routing middleware rewrites the destination per request).
+
+The version check uses the `retry` settings. It retries the same
+`retry_on_status` codes except `401` and `403`, because the credentials do not
+change between attempts.
 
 ### Telemetry settings
 
@@ -527,8 +636,6 @@ Example:
 exporters:
   elasticsearch:
     endpoint: https://elastic.example.com:9200
-    mapping:
-      mode: otel
 ```
 
 > [!IMPORTANT]
@@ -587,7 +694,7 @@ Each profiling signal type is written to a dedicated backing index:
 
 `elasticsearchexporter` follows ECS mapping defined here: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model-appendix.md#elastic-common-schema
 
-When `mode` is set to `ecs`, `elasticsearchexporter` performs conversions for resource-level and record-level (log or trace) attributes from their Semantic Conventions (SemConv) names to equivalent Elastic Common Schema (ECS) names.
+When the `ecs` mapping mode is used, `elasticsearchexporter` performs conversions for resource-level and record-level (log or trace) attributes from their Semantic Conventions (SemConv) names to equivalent Elastic Common Schema (ECS) names.
 
 If the target ECS field name is specified as an empty string (`""`), the converter will neither convert the SemConv key to the equivalent ECS name nor pass through the SemConv key as-is to become the ECS name.
 
@@ -701,8 +808,6 @@ For traces, you can use the `transform` processor to set the document ID based o
 ```yaml
 exporters:
   elasticsearch:
-    mapping:
-      mode: otel  # Required for span events to be separate documents
     traces_dynamic_id:
       enabled: true
 
@@ -788,7 +893,7 @@ error   elasticsearchexporter@v0.120.1/bulkindexer.go:343       bulk indexer flu
 ```
 
 In this scenario, Elasticsearch may reject the bulk request because the `require_data_stream` bulk action metadata is not supported.
-This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the default mapping mode from v0.122.0, or explicitly by configuring `mapping::mode: otel`) or [ECS mapping mode](#ecs-mapping-mode), and send data to Elasticsearch version < 8.12.
+This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the default mapping mode from v0.122.0) or [ECS mapping mode](#ecs-mapping-mode), and send data to Elasticsearch version < 8.12.
 
 To resolve this, upgrade Elasticsearch to 8.12+; for OTel mapping mode, 8.16+ is recommended.
 Alternatively, try other mapping modes, but the document structure will be different.

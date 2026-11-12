@@ -213,6 +213,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 		wantSupportsRedoLogStats    bool
 		wantRequiresBackupAdmin     bool
 		wantRedoLogStatsSource      innodbRedoLogStatsSource
+		wantSupportsDataLockWaits   bool
 	}{
 		{
 			name:                        "MySQL 8.0.27",
@@ -223,6 +224,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsRedoLogStats:    true,
 			wantRequiresBackupAdmin:     true,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceLogStatus,
+			wantSupportsDataLockWaits:   true,
 		},
 		{
 			name:                        "MySQL 8.0.30 (minimum for redo-log global status variables)",
@@ -233,6 +235,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsRedoLogStats:    true,
 			wantRequiresBackupAdmin:     false,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceGlobalStatus,
+			wantSupportsDataLockWaits:   true,
 		},
 		{
 			name:                        "MySQL 8.0.3 (minimum for query_sample_text)",
@@ -241,6 +244,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
+			wantSupportsDataLockWaits:   false,
 		},
 		{
 			name:                        "MySQL 8.0.11 (minimum for log_status)",
@@ -251,6 +255,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsRedoLogStats:    true,
 			wantRequiresBackupAdmin:     true,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceLogStatus,
+			wantSupportsDataLockWaits:   true,
 		},
 		{
 			name:                        "MySQL 8.0.10 (below log_status minimum)",
@@ -259,6 +264,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
+			wantSupportsDataLockWaits:   false,
 		},
 		{
 			name:                        "MySQL 8.0.2 (below query_sample_text minimum)",
@@ -267,6 +273,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
+			wantSupportsDataLockWaits:   false,
 		},
 		{
 			name:                        "MySQL 8.0.0 (below query_sample_text minimum)",
@@ -275,6 +282,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
+			wantSupportsDataLockWaits:   false,
 		},
 		{
 			name:                        "MySQL 8.0.22 (minimum for SHOW REPLICA STATUS and processlist)",
@@ -285,6 +293,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsRedoLogStats:    true,
 			wantRequiresBackupAdmin:     true,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceLogStatus,
+			wantSupportsDataLockWaits:   true,
 		},
 		{
 			name:                        "MySQL 8.0.21 (below SHOW REPLICA STATUS minimum)",
@@ -295,6 +304,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsRedoLogStats:    true,
 			wantRequiresBackupAdmin:     true,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceLogStatus,
+			wantSupportsDataLockWaits:   true,
 		},
 		{
 			name:                        "MySQL 5.7.44",
@@ -303,6 +313,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
+			wantSupportsDataLockWaits:   false,
 		},
 		{
 			name:                        "MariaDB 10.11.6",
@@ -311,6 +322,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
+			wantSupportsDataLockWaits:   false,
 		},
 		{
 			name:                        "MariaDB 11.4.2",
@@ -319,6 +331,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
+			wantSupportsDataLockWaits:   false,
 		},
 		{
 			name:                        "zero value (version unknown)",
@@ -327,6 +340,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
+			wantSupportsDataLockWaits:   false,
 		},
 	}
 
@@ -338,6 +352,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			assert.Equal(t, tt.wantSupportsRedoLogStats, tt.dv.supportsInnodbRedoLogStats(), "supportsInnodbRedoLogStats()")
 			assert.Equal(t, tt.wantRequiresBackupAdmin, tt.dv.requiresBackupAdminForInnodbRedoLogStats(), "requiresBackupAdminForInnodbRedoLogStats()")
 			assert.Equal(t, tt.wantRedoLogStatsSource, tt.dv.innodbRedoLogStatsSource(), "innodbRedoLogStatsSource()")
+			assert.Equal(t, tt.wantSupportsDataLockWaits, tt.dv.supportsDataLockWaits(), "supportsDataLockWaits()")
 		})
 	}
 }
@@ -480,6 +495,35 @@ func TestGetInnodbTransactionStats(t *testing.T) {
 	assert.Equal(t, int64(17), got.maxActiveTransactionDuration)
 }
 
+func TestGetAutoIncrementStats(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT c.TABLE_SCHEMA, c.TABLE_NAME, c.COLUMN_NAME").
+		WillReturnRows(sqlmock.NewRows([]string{
+			"TABLE_SCHEMA",
+			"TABLE_NAME",
+			"COLUMN_NAME",
+			"AUTO_INCREMENT",
+			"MAX_VALUE",
+			"UTILIZATION_RATIO",
+		}).AddRow("a_schema", "a_table", "id", 1073741823.0, 2147483647.0, 0.5))
+
+	c := &mySQLClient{client: db}
+	got, err := c.getAutoIncrementStats()
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+
+	require.Len(t, got, 1)
+	assert.Equal(t, "a_schema", got[0].schema)
+	assert.Equal(t, "a_table", got[0].table)
+	assert.Equal(t, "id", got[0].column)
+	assert.InDelta(t, 1073741823.0, got[0].currentValue, 0.0001)
+	assert.InDelta(t, 2147483647.0, got[0].maxValue, 0.0001)
+	assert.InDelta(t, 0.5, got[0].utilizationRatio, 0.0001)
+}
+
 func TestRowsIterationErrorIsReturned(t *testing.T) {
 	// sql.Rows.Next() returns false both at the end of the result set and when
 	// iteration fails, so each query method must check rows.Err() before
@@ -505,6 +549,14 @@ func TestRowsIterationErrorIsReturned(t *testing.T) {
 			values:  []driver.Value{"schema", "table", 1, 2, 3, 4},
 			call: func(c *mySQLClient) (any, error) {
 				return c.getTableStats()
+			},
+		},
+		{
+			name:    "getAutoIncrementStats",
+			columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME", "AUTO_INCREMENT", "MAX_VALUE", "UTILIZATION_RATIO"},
+			values:  []driver.Value{"schema", "table", "id", 1073741823.0, 2147483647.0, 0.5},
+			call: func(c *mySQLClient) (any, error) {
+				return c.getAutoIncrementStats()
 			},
 		},
 		{

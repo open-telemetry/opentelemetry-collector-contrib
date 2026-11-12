@@ -69,7 +69,7 @@ components:
         - awsproxy
         - azure_auth
         - azure_encoding
-        - basicauth
+        - basic_auth
         - bearertokenauth
         - cgroup_runtime
         - datadog
@@ -249,6 +249,7 @@ components:
         - cpu
         - disk
         - filesystem
+        - hardware
         - load
         - memory
         - network

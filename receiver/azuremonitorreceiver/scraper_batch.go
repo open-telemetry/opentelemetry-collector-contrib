@@ -753,7 +753,7 @@ func (s *azureBatchScraper) processQueryTimeseriesData(
 				resourceID,
 				*metric.Name.Value,
 				aggregation.name,
-				string(*metric.Unit),
+				convertUnitToUCUM(string(*metric.Unit)),
 				attributes,
 				ts,
 				*aggregation.value,

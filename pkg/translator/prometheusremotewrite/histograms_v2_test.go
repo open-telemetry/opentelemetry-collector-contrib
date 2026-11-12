@@ -756,6 +756,7 @@ func TestExponentialToNativeHistogramV2(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantNativeHist(), got)
 			validateNativeHistogramCountV2(t, got)
+			validateNoZeroBucketOverlap(t, got.ToIntHistogram())
 		})
 	}
 }
@@ -955,6 +956,7 @@ func TestPrometheusConverterV2_addExponentialHistogramDataPoints(t *testing.T) {
 				metric.ExponentialHistogram().DataPoints(),
 				pcommon.NewResource(),
 				pcommon.NewInstrumentationScope(),
+				"",
 				Settings{},
 				metricName,
 				m,
