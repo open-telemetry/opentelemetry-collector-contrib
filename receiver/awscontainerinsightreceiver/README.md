@@ -28,7 +28,7 @@ CloudWatch Container Insights has been supported by [ECS Agent](https://github.c
 
 The receiver's metrics can be sent to Amazon CloudWatch in two ways:
 
-* **OTLP (recommended for new deployments).** Use the `otlp_http` exporter with the `sigv4auth` extension to send the metrics to the CloudWatch OTLP endpoint (`https://monitoring.<region>.amazonaws.com/v1/metrics`), and query them with PromQL. Every resource attribute becomes a queryable label, and ingestion is billed by volume with no per-metric charge, so you don't need to choose dimension sets. See the [OTLP sample configuration for Amazon ECS](#sample-configuration-for-amazon-ecs-otlp).
+* **OTLP (recommended for new deployments).** Use the `otlp_http` exporter with the `sigv4auth` extension to send the metrics to the CloudWatch OTLP endpoint (`https://monitoring.<region>.amazonaws.com/v1/metrics`), and query them with PromQL. Every resource attribute becomes a queryable label, and ingestion is billed by volume with no per-metric charge, so you don't need to choose dimension sets. See the OTLP sample configurations for [Amazon EKS](#sample-configuration-for-amazon-eks-otlp) and [Amazon ECS](#sample-configuration-for-amazon-ecs-otlp).
 * **EMF.** Use the [`awsemf` exporter](../../exporter/awsemfexporter) to write [embedded metric format](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format.html) records to CloudWatch Logs. Use this path if you need the CloudWatch Container Insights console pages or existing CloudWatch metric alarms on these metrics; neither works with metrics sent over OTLP. Each metric and dimension set combination you declare is a separate custom metric.
 
 ## Design of AWS Container Insights Receiver
@@ -48,6 +48,9 @@ receivers:
     add_full_pod_name_metric_label: false 
 ```
 There is no need to provide any parameters since they are all optional. 
+
+> [!NOTE]
+> The component type name `awscontainerinsight` is accepted only when the `receiver.awscontainerinsightreceiver.useNewTypeName` feature gate is enabled. With the default feature gates, use `awscontainerinsightreceiver`; otherwise the Collector fails to start with `unknown type: "awscontainerinsight"`. The OTLP samples below use `awscontainerinsightreceiver`.
 
 **collection_interval (optional)**
 
@@ -70,6 +73,65 @@ The "PodName" attribute is set based on the name of the relevant controllers lik
 The "FullPodName" attribute is the pod name including suffix. If false FullPodName label is not added. The default value is false
 
 ## Sample configuration for Container Insights 
+
+### Sample configuration for Amazon EKS (OTLP)
+
+This collector configuration sends the receiver's cluster, node, pod, container, namespace, and service metrics to CloudWatch over OTLP. Use it as the `otel-agent-config` value in the ConfigMap of the [EKS (EMF) sample](#sample-configuration-for-amazon-eks-emf), and keep that sample's Namespace, ServiceAccount, ClusterRole, ClusterRoleBinding, and DaemonSet.
+
+```yaml
+extensions:
+  sigv4auth/cloudwatch:
+    region: ${env:AWS_REGION}
+    service: monitoring
+
+receivers:
+  awscontainerinsightreceiver:
+    container_orchestrator: eks
+    collection_interval: 60s
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 20
+  batch:
+    send_batch_size: 512
+    timeout: 10s
+
+exporters:
+  otlp_http/cloudwatch:
+    metrics_endpoint: https://monitoring.${env:AWS_REGION}.amazonaws.com/v1/metrics
+    auth:
+      authenticator: sigv4auth/cloudwatch
+
+service:
+  extensions: [sigv4auth/cloudwatch]
+  pipelines:
+    metrics:
+      receivers: [awscontainerinsightreceiver]
+      processors: [memory_limiter, batch]
+      exporters: [otlp_http/cloudwatch]
+```
+
+All metrics that the receiver emits in EKS mode are gauges, so no start-time processing is needed for CloudWatch to accept them.
+
+When you use the `otel/opentelemetry-collector-contrib` image in the DaemonSet, make these changes to the EKS (EMF) sample:
+
+* Replace `command` with `args: ["--config=/conf/otel-agent-config.yaml"]`. The image's entrypoint is the Collector binary.
+* Add `securityContext: {runAsUser: 0}` to the container. The image runs as a non-root user by default, and the receiver needs root. See [Root permissions](#root-permissions).
+* Set the `AWS_REGION` environment variable.
+* Give the node role (or the pod's IAM role) `cloudwatch:PutMetricData`, `ec2:DescribeTags`, `ec2:DescribeVolumes`, and `ec2:DescribeInstances`.
+
+In PromQL, the resource attributes appear with an `@resource.` prefix, for example:
+
+```promql
+max by ("@resource.ClusterName", "@resource.NodeName") ({"node_cpu_utilization"})
+```
+
+This configuration was tested with `otel/opentelemetry-collector-contrib:0.165.0` on an Amazon EKS 1.34 cluster with Amazon Linux 2023 nodes.
+
+### Sample configuration for Amazon EKS (EMF)
+
 This is a sample configuration for AWS Container Insights using the `awscontainerinsight` and `awsemfexporter` for an EKS cluster:
 ```
 # create namespace
@@ -96,6 +158,9 @@ metadata:
 rules:
   - apiGroups: [""]
     resources: ["pods", "nodes", "endpoints"]
+    verbs: ["list", "watch"]
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
     verbs: ["list", "watch"]
   - apiGroups: ["apps"]
     resources: ["replicasets"]
