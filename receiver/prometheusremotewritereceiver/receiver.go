@@ -368,10 +368,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 		modifiedResourceMetric = make(map[uint64]pmetric.ResourceMetrics)
 		targetInfoModified     = make(map[uint64]bool)
 
-		// exemplarMap holds exemplars under the series key collectExemplars builds.
-		exemplarMap          = collectExemplars(req, prw.settings)
 		droppedHistogramKeys = make(map[exemplarKey]struct{})
-
 		// bucketBudget bounds what every Native Histogram in this request may expand into
 		// together, since all of it stays in memory until the request has been translated.
 		bucketBudget = histogramBucketBudget{remaining: maxExponentialHistogramBucketsPerRequest}
@@ -383,6 +380,10 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 		droppedClassicHistogramSeries int64
 		droppedSummarySeries          int64
 	)
+
+	// exemplarMap holds exemplars under the series key collectExemplars builds.
+	exemplarMap, exemplarErr := collectExemplars(req, prw.settings)
+	badRequestErrors = errors.Join(badRequestErrors, exemplarErr)
 
 	for i := range req.Timeseries {
 		ts := &req.Timeseries[i]
