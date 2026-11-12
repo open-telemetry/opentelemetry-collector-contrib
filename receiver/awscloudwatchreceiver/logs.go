@@ -508,9 +508,11 @@ func (l *logsReceiver) ensureSession() error {
 	l.client = cloudwatchlogs.NewFromConfig(cfg)
 
 	stsClient := sts.NewFromConfig(cfg)
-	stsResult, _ := stsClient.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{})
-	if stsClient != nil && *stsResult.Account != "" {
-		l.accountID = *stsResult.Account
+	stsResult, stsErr := stsClient.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{})
+	if stsErr != nil {
+		l.settings.Logger.Warn("unable to get AWS account ID", zap.Error(stsErr))
+	} else if stsResult != nil {
+		l.accountID = aws.ToString(stsResult.Account)
 	}
 
 	return err

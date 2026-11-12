@@ -63,7 +63,7 @@ const (
 	// watches the line below and opens an update PR for each new release.
 	//
 	// renovate: datasource=github-releases depName=open-telemetry/semantic-conventions
-	defaultRegistryVersion = "v1.44.0"
+	defaultRegistryVersion = "v1.45.0"
 
 	// defaultRegistryTemplate is Weaver's default registry (the
 	// semantic-conventions Git repository, "model" sub-folder), pinned to a

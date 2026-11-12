@@ -6,6 +6,20 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_receiver_prometheusremotewrite_dropped_series
+
+Number of classic histogram and summary series dropped because the receiver does not support them. Their samples are still reported as written.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {series} | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| metric_type | The kind of series the receiver dropped. | Str: ``classic_histogram``, ``summary`` | - |
+
 ### otelcol_receiver_prometheusremotewrite_resource_cache_evictions
 
 Number of job/instance entries evicted from the resource metrics cache because it was full.
@@ -13,3 +27,13 @@ Number of job/instance entries evicted from the resource metrics cache because i
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | {entries} | Sum | Int | true | Development |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.prometheus_remote_write.disableJobSplit` | alpha | When enabled, the prometheusremotewritereceiver will disable the splitting of the job label by '/' to derive service.namespace and service.name, instead mapping the entire job string to service.name. | v0.165.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52626) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

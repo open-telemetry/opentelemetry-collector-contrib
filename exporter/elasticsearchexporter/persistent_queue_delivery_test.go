@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configstorage"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
@@ -111,7 +113,7 @@ func newPQDeliveryTest(t *testing.T) (*Config, component.Host, *bulkRecorder) {
 		cfg.Endpoints = []string{server.URL}
 		cfg.QueueBatchConfig.Get().NumConsumers = 1
 		cfg.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
-		cfg.QueueBatchConfig.Get().StorageID = &storageID
+		cfg.QueueBatchConfig.Get().StorageID = configoptional.Some(configstorage.ID(storageID))
 	})
 
 	host := &pqTestHost{

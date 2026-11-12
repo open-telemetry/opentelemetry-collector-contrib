@@ -2797,6 +2797,26 @@ func (ms *SqlserverTempdbFileSizeMetricConfig) Validate() error {
 	return nil
 }
 
+// SqlserverThreadPoolTaskCountMetricConfig provides config for the sqlserver.thread_pool.task.count metric.
+type SqlserverThreadPoolTaskCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverThreadPoolTaskCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // SqlserverTransactionDelayMetricConfig provides config for the sqlserver.transaction.delay metric.
 type SqlserverTransactionDelayMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -3225,6 +3245,7 @@ type MetricsConfig struct {
 	SqlserverTaskRate                                     SqlserverTaskRateMetricConfig                                     `mapstructure:"sqlserver.task.rate"`
 	SqlserverTempdbAllocationWaitersCount                 SqlserverTempdbAllocationWaitersCountMetricConfig                 `mapstructure:"sqlserver.tempdb.allocation.waiters.count"`
 	SqlserverTempdbFileSize                               SqlserverTempdbFileSizeMetricConfig                               `mapstructure:"sqlserver.tempdb.file.size"`
+	SqlserverThreadPoolTaskCount                          SqlserverThreadPoolTaskCountMetricConfig                          `mapstructure:"sqlserver.thread_pool.task.count"`
 	SqlserverTransactionDelay                             SqlserverTransactionDelayMetricConfig                             `mapstructure:"sqlserver.transaction.delay"`
 	SqlserverTransactionMirrorWriteRate                   SqlserverTransactionMirrorWriteRateMetricConfig                   `mapstructure:"sqlserver.transaction.mirror_write.rate"`
 	SqlserverTransactionRate                              SqlserverTransactionRateMetricConfig                              `mapstructure:"sqlserver.transaction.rate"`
@@ -3580,6 +3601,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []SqlserverTempdbFileSizeMetricAttributeKey{SqlserverTempdbFileSizeMetricAttributeKeyFileType, SqlserverTempdbFileSizeMetricAttributeKeySqlserverTempdbFileID},
+		},
+		SqlserverThreadPoolTaskCount: SqlserverThreadPoolTaskCountMetricConfig{
+			Enabled: false,
 		},
 		SqlserverTransactionDelay: SqlserverTransactionDelayMetricConfig{
 			Enabled: false,

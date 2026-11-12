@@ -14,6 +14,7 @@ import (
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
@@ -22,6 +23,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/internal/metadata"
 )
+
+// inClusterConfig is a seam so tests can stub the in-cluster Kubernetes config.
+var inClusterConfig = rest.InClusterConfig
 
 type prometheusReceiverWrapper struct {
 	params             receiver.Settings
@@ -59,20 +63,24 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 }
 
 func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.Config, error) {
-	var bearerToken string
+	var bearerTokenFile string
 	if cfg.UseServiceAccount {
-		restConfig, err := rest.InClusterConfig()
+		restConfig, err := inClusterConfig()
 		if err != nil {
 			return nil, err
 		}
-		bearerToken = restConfig.BearerToken
-		if bearerToken == "" {
+		if restConfig.BearerToken == "" {
 			return nil, errors.New("bearer token was empty")
 		}
+		// Pass the token file rather than the token so Prometheus re-reads it
+		// on each scrape and picks up rotated service account tokens.
+		bearerTokenFile = restConfig.BearerTokenFile
 	}
 
 	out := &prometheusreceiver.Config{}
-	httpConfig := configutil.HTTPClientConfig{}
+	// Start from the Prometheus defaults: the prometheus receiver round-trips this
+	// config through YAML, so zero values would replace them.
+	httpConfig := configutil.DefaultHTTPClientConfig
 
 	scheme := "http"
 
@@ -96,9 +104,18 @@ func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.C
 			MinVersion: configutil.TLSVersion(tlsConfig.MinVersion),
 			MaxVersion: configutil.TLSVersion(tlsConfig.MaxVersion),
 		}
+		if keys := unsupportedTLSSettings(cfg.ClientConfig.TLS); len(keys) > 0 {
+			logger.Warn("tls settings have no equivalent in the prometheus scrape config and are ignored",
+				zap.Strings("settings", keys))
+		}
 	}
 
-	httpConfig.BearerToken = configutil.Secret(bearerToken)
+	if bearerTokenFile != "" {
+		httpConfig.Authorization = &configutil.Authorization{
+			Type:            "Bearer",
+			CredentialsFile: bearerTokenFile,
+		}
+	}
 
 	if len(cfg.ClientConfig.Headers) > 0 {
 		headers := make(map[string]configutil.Header, len(cfg.ClientConfig.Headers))
@@ -139,20 +156,21 @@ func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.C
 		}
 	}
 
-	scrapeConfig := &config.ScrapeConfig{
-		ScrapeInterval:  model.Duration(cfg.CollectionInterval),
-		ScrapeTimeout:   model.Duration(scrapeTimeout),
-		JobName:         jobName,
-		HonorTimestamps: true,
-		Scheme:          scheme,
-		MetricsPath:     cfg.MetricsPath,
-		Params:          cfg.Params,
-		ServiceDiscoveryConfigs: discovery.Configs{
-			discovery.StaticConfig{
-				{
-					Targets: []model.LabelSet{{model.AddressLabel: model.LabelValue(cfg.ClientConfig.Endpoint)}},
-					Labels:  labels,
-				},
+	scrapeConfig := new(config.ScrapeConfig)
+	*scrapeConfig = config.DefaultScrapeConfig
+	scrapeConfig.ScrapeInterval = model.Duration(cfg.CollectionInterval)
+	scrapeConfig.ScrapeTimeout = model.Duration(scrapeTimeout)
+	scrapeConfig.JobName = jobName
+	scrapeConfig.Scheme = scheme
+	scrapeConfig.MetricsPath = cfg.MetricsPath
+	scrapeConfig.Params = cfg.Params
+	// Match the prometheus receiver, which sets this in PromConfig.Validate.
+	scrapeConfig.ScrapeFallbackProtocol = config.PrometheusText0_0_4
+	scrapeConfig.ServiceDiscoveryConfigs = discovery.Configs{
+		discovery.StaticConfig{
+			{
+				Targets: []model.LabelSet{{model.AddressLabel: model.LabelValue(cfg.ClientConfig.Endpoint)}},
+				Labels:  labels,
 			},
 		},
 	}
@@ -166,6 +184,32 @@ func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.C
 	}
 
 	return out, nil
+}
+
+// unsupportedTLSSettings returns the keys of the set tls settings that the
+// prometheus scrape config cannot express.
+func unsupportedTLSSettings(tls configtls.ClientConfig) []string {
+	var keys []string
+	if len(tls.CipherSuites) > 0 {
+		keys = append(keys, "cipher_suites")
+	}
+	// include_insecure_cipher_suites only widens the cipher_suites choices.
+	if tls.IncludeInsecureCipherSuites && len(tls.CipherSuites) > 0 {
+		keys = append(keys, "include_insecure_cipher_suites")
+	}
+	if len(tls.CurvePreferences) > 0 {
+		keys = append(keys, "curve_preferences")
+	}
+	// Without a CA the prometheus client already uses the system pool.
+	if tls.IncludeSystemCACertsPool && (tls.CAFile != "" || len(tls.CAPem) > 0) {
+		keys = append(keys, "include_system_ca_certs_pool")
+	}
+	// The prometheus client cannot use a TPM-backed key. reload_interval is not
+	// listed because the prometheus client re-reads changed files on its own.
+	if tls.TPMConfig.Enabled {
+		keys = append(keys, "tpm")
+	}
+	return keys
 }
 
 // Shutdown stops the underlying Prometheus receiver.

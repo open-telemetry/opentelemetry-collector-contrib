@@ -927,52 +927,6 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 	}
 }
 
-// TestConsumerWarnsMaxBufferedBatchesDeprecated proves Start logs the deprecation
-// warning only when the deprecated field is set.
-func TestConsumerWarnsMaxBufferedBatchesDeprecated(t *testing.T) {
-	cases := []struct {
-		name          string
-		prefetch      int
-		deprecated    int
-		deprecatedSet bool
-		wantWarning   int
-	}{
-		{
-			name:          "max_buffered_batches set",
-			deprecated:    2,
-			deprecatedSet: true,
-			prefetch:      2,
-			wantWarning:   1,
-		},
-		{
-			name:     "only max_prefetch set",
-			prefetch: 2,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			_, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, "test"))
-			cfg.PartitionProcessing.Independent = true
-			cfg.PartitionProcessing.MaxBufferedBatches = tc.deprecated
-			cfg.PartitionProcessing.maxBufferedBatchesSet = tc.deprecatedSet
-			cfg.PartitionProcessing.MaxPrefetch.Batches = tc.prefetch
-			settings, _, logs := mustNewSettings(t)
-			consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-				return func(_ context.Context, _ *kgo.Record, _ attribute.Set) error {
-					return nil
-				}, nil
-			}
-			c, err := newFranzKafkaConsumer(cfg, settings, []string{"test"}, nil, consumeFn)
-			require.NoError(t, err)
-			require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
-			defer func() { require.NoError(t, c.Shutdown(t.Context())) }()
-
-			require.Equal(t, tc.wantWarning, logs.FilterMessageSnippet("max_buffered_batches is deprecated").Len())
-		})
-	}
-}
-
 func TestConsumerShutdownNotStarted(t *testing.T) {
 	_, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, "test"))
 	settings, _, _ := mustNewSettings(t)
