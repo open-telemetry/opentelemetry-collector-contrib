@@ -8,29 +8,33 @@ package scaleway // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strings"
 
-	instance "github.com/scaleway/scaleway-sdk-go/api/instance/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
+	scalewaydetector "go.opentelemetry.io/contrib/detectors/scaleway"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/scaleway/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/sdkbridge"
 )
 
+// newResourceDetector is overridden in tests to substitute a fake SDK detector.
+var newResourceDetector = func() sdkresource.Detector {
+	return scalewaydetector.NewResourceDetector()
+}
+
+// Ensure Detector implements internal.Detector.
 var _ internal.Detector = (*Detector)(nil)
 
-// newScalewayClient is overridden in tests to point the client at a fake server.
-var newScalewayClient = instance.NewMetadataAPI
-
-// Detector is a Scaleway metadata detector.
+// Detector is a Scaleway metadata detector. Detection is delegated to the upstream
+// SDK detector so that the attributes reported here match the ones the
+// collector's own telemetry reports.
 type Detector struct {
-	client                *instance.MetadataAPI
+	detector              sdkresource.Detector
 	logger                *zap.Logger
-	rb                    *metadata.ResourceBuilder
+	resourceAttributes    metadata.ResourceAttributesConfig
 	failOnMissingMetadata bool
 }
 
@@ -38,53 +42,40 @@ type Detector struct {
 func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
-	cli := newScalewayClient()
-
 	return &Detector{
-		client:                cli,
+		detector:              newResourceDetector(),
 		logger:                p.Logger,
-		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		resourceAttributes:    cfg.ResourceAttributes,
 		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
-// Detect detects system metadata and returns a resource with the available ones.
+// Detect queries the Scaleway metadata service and returns a populated resource.
 func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
-	md, err := d.client.GetMetadataWithContext(ctx)
-	if err != nil || md == nil {
-		d.logger.Debug("Scaleway detector: not running on Scaleway or metadata unavailable", zap.Error(err))
+	// Detection runs unfiltered so that an empty result answers "is this process on a
+	// Scaleway instance?"; the configured attributes are applied afterwards. A partial
+	// result still came from a reachable metadata service, so the bridge keeps what it
+	// did return. fail_on_missing_metadata covers an unusable metadata service, not
+	// individual fields absent from its response.
+	res, schemaURL, err := sdkbridge.Detect(ctx, d.detector)
+	if err != nil {
+		d.logger.Debug("Scaleway metadata unavailable", zap.Error(err))
 		if d.failOnMissingMetadata {
-			if err == nil {
-				err = errors.New("scaleway metadata is nil")
-			}
-			return pcommon.NewResource(), "", fmt.Errorf("scaleway metadata unavailable: %w", err)
+			return pcommon.NewResource(), "", err
 		}
 		return pcommon.NewResource(), "", nil
 	}
 
-	d.rb.SetCloudAccountID(md.Organization)
-	d.rb.SetCloudAvailabilityZone(md.Location.ZoneID)
-	// Cloud provider and platform values will be "scaleway_cloud" and "scaleway_cloud_platform" from conventions when it's merged.
-	// d.rb.SetCloudProvider(conventions.CloudProviderScalewayCloud.Value.AsString())
-	// d.rb.SetCloudPlatform(conventions.CloudPlatformScalewayCloud.Value.AsString())
-	d.rb.SetCloudProvider("scaleway_cloud")
-	d.rb.SetCloudPlatform("scaleway_cloud_compute")
-	if region := zoneToRegion(md.Location.ZoneID); region != "" {
-		d.rb.SetCloudRegion(region)
+	// The SDK detector reports an empty resource and no error when nothing
+	// answers at the metadata service addresses, which is the case outside Scaleway.
+	if res.Attributes().Len() == 0 {
+		d.logger.Debug("Scaleway detector: metadata unavailable or not running on a Scaleway instance")
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errors.New("scaleway metadata unavailable")
+		}
+		return pcommon.NewResource(), "", nil
 	}
-	d.rb.SetHostID(md.ID)
-	d.rb.SetHostImageID(md.Image.ID)
-	d.rb.SetHostImageName(md.Image.Name)
-	d.rb.SetHostName(md.Name)
-	d.rb.SetHostType(md.CommercialType)
 
-	return d.rb.Emit(), conventions.SchemaURL, nil
-}
-
-// zoneToRegion extracts the region name from a Scaleway zone like "fr-par-1" -> "fr-par".
-func zoneToRegion(zone string) string {
-	if i := strings.LastIndex(zone, "-"); i > 0 {
-		return zone[:i]
-	}
-	return ""
+	sdkbridge.RemoveDisabledAttributes(res, d.resourceAttributes)
+	return res, schemaURL, nil
 }

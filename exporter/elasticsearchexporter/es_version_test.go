@@ -305,3 +305,34 @@ func TestSupportsExponentialHistograms(t *testing.T) {
 		})
 	}
 }
+
+func TestSupportsCumulativeHistograms(t *testing.T) {
+	for _, tc := range []struct {
+		name            string
+		v               string
+		expectedSupport bool
+	}{
+		{
+			name:            "cumulative temporality histograms are supported in ES >= 9.5.0",
+			v:               "9.5.0",
+			expectedSupport: true,
+		},
+		{
+			name:            "cumulative temporality histograms are supported in ES >= 9.5.0-SNAPSHOT",
+			v:               "9.5.0-SNAPSHOT",
+			expectedSupport: true,
+		},
+		{
+			name:            "cumulative temporality histograms are not supported in ES < 9.5.0",
+			v:               "9.4.9",
+			expectedSupport: false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			v, err := semver.NewVersion(tc.v)
+			require.NoError(t, err)
+			actualSupported := supportsCumulativeHistograms(v)
+			assert.Equal(t, tc.expectedSupport, actualSupported)
+		})
+	}
+}

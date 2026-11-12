@@ -790,6 +790,7 @@ The processor emits the following metrics to help monitor its operation:
 | `otelcol_processor_spanpruning_aggregations_created` | Total number of aggregation summary spans created |
 | `otelcol_processor_spanpruning_traces_processed` | Total number of traces processed |
 | `otelcol_processor_spanpruning_traces_skipped` | Total traces skipped due to conditions not matching |
+| `otelcol_processor_spanpruning_invalid_traces` | Total traces left unpruned because their span structure is invalid, such as parent links forming a cycle |
 | `otelcol_processor_spanpruning_outliers_detected` | Total spans identified as outliers by analysis (when `enable_outlier_analysis: true`) |
 | `otelcol_processor_spanpruning_outliers_preserved` | Total outlier spans kept (when `preserve_outliers: true`) |
 | `otelcol_processor_spanpruning_outliers_correlations_detected` | Total aggregation groups where outliers had correlated attributes |
@@ -835,6 +836,7 @@ These metrics can be used to:
 - Monitor the effectiveness of span pruning (compare `spans_received` vs `spans_pruned`)
 - Track the compression ratio achieved by aggregation
 - Track condition selectivity with `traces_skipped`
+- Detect malformed traces that went out unpruned with `invalid_traces`
 - Track byte changes (`bytes_received`/`bytes_emitted` for the full batch, `bytes_processed_input`/`bytes_processed_output` for the matched subset)
 - Identify processing bottlenecks via `processing_duration`
 - Understand aggregation patterns via `aggregation_group_size`
