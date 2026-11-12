@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/cenkalti/backoff/v7"
 	"github.com/gogo/protobuf/proto"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/tidwall/wal"
@@ -457,6 +458,13 @@ func walkRejections(err error) (rejected, samples, others int) {
 	for e := err; e != nil; e = errors.Unwrap(e) {
 		if r, ok := e.(*payloadRejectionError); ok { //nolint:errorlint // The chain is walked one link at a time.
 			return 1, r.sampleCount, 0
+		}
+		// backoff.Retry wraps a permanent failure in a *backoff.RetryError whose
+		// Unwrap() []error returns both the cause and the last error. The cause is
+		// the bare ErrPermanent sentinel, which only says why retrying stopped and
+		// is not a failure of its own, so it must not count as another error.
+		if e == backoff.ErrPermanent { //nolint:errorlint // The sentinel is matched by identity, one link at a time.
+			return 0, 0, 0
 		}
 		if joined, ok := e.(interface{ Unwrap() []error }); ok {
 			for _, j := range joined.Unwrap() {
