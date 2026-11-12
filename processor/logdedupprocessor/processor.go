@@ -134,6 +134,7 @@ func (m *multiShardAggregator) flush(_ context.Context, nextConsumer consumer.Lo
 	for _, s := range m.shards {
 		shards = append(shards, s)
 	}
+	clear(m.shards)
 	m.lock.Unlock()
 
 	for _, shard := range shards {

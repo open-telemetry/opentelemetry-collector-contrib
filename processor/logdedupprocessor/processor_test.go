@@ -524,6 +524,32 @@ func TestMetadataKeysCardinalityLimit(t *testing.T) {
 	require.NoError(t, p.Shutdown(t.Context()))
 }
 
+func TestMetadataKeysCardinalityLimitAfterFlush(t *testing.T) {
+	sink := &contextCapturingLogsSink{}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Interval = 20 * time.Millisecond
+	cfg.MetadataKeys = []string{"x-scope-orgid"}
+	cfg.MetadataCardinalityLimit = 1
+
+	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+
+	// First tenant is accepted.
+	require.NoError(t, p.ConsumeLogs(metadataContext(t, "tenant-a"), newSimpleLog()))
+
+	// Wait for tenant-a to be exported and reset.
+	assert.Eventually(t, func() bool {
+		return sink.logRecordCount() == 1
+	}, 1*time.Second, 10*time.Millisecond)
+
+	// Second tenant should now be accepted because tenant-a was flushed and has no pending logs.
+	err = p.ConsumeLogs(metadataContext(t, "tenant-b"), newSimpleLog())
+	require.NoError(t, err, "tenant-b should be accepted after tenant-a has been flushed")
+
+	require.NoError(t, p.Shutdown(t.Context()))
+}
+
 func TestMetadataKeysUnboundedCardinalityLogsWarning(t *testing.T) {
 	core, logs := observer.New(zapcore.WarnLevel)
 	settings := processortest.NewNopSettings(metadata.Type)
