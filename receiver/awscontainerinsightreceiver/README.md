@@ -24,6 +24,13 @@ CloudWatch Container Insights has been supported by [ECS Agent](https://github.c
   * Amazon EKS
   * Kubernetes platforms on Amazon EC2
 
+### Choosing an exporter: OTLP or EMF
+
+The receiver's metrics can be sent to Amazon CloudWatch in two ways:
+
+* **OTLP (recommended for new deployments).** Use the `otlp_http` exporter with the `sigv4auth` extension to send the metrics to the CloudWatch OTLP endpoint (`https://monitoring.<region>.amazonaws.com/v1/metrics`), and query them with PromQL. Every resource attribute becomes a queryable label, and ingestion is billed by volume with no per-metric charge, so you don't need to choose dimension sets. See the [OTLP sample configuration for Amazon ECS](#sample-configuration-for-amazon-ecs-otlp).
+* **EMF.** Use the [`awsemf` exporter](../../exporter/awsemfexporter) to write [embedded metric format](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format.html) records to CloudWatch Logs. Use this path if you need the CloudWatch Container Insights console pages or existing CloudWatch metric alarms on these metrics; neither works with metrics sent over OTLP. Each metric and dimension set combination you declare is a separate custom metric.
+
 ## Design of AWS Container Insights Receiver
 
 See the [design doc](./design.md)
@@ -671,6 +678,62 @@ kubectl apply -f config.yaml
 
 The attribute `container_status_reason` is present only when `container_status` is in "Waiting" or "Terminated" State. The attribute `container_last_termination_reason` is present only when `container_status` is in "Terminated" State.
 
+### Sample configuration for Amazon ECS (OTLP)
+
+This configuration collects the instance-level metrics on an ECS container instance and sends them to CloudWatch over OTLP. Run it as a [daemon service](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs_services.html#service_scheduler_daemon) on ECS container instances that run on Amazon EC2. It doesn't work on AWS Fargate, which doesn't give access to the host.
+
+```yaml
+extensions:
+  sigv4auth/cloudwatch:
+    region: ${env:AWS_REGION}
+    service: monitoring
+
+receivers:
+  awscontainerinsightreceiver:
+    container_orchestrator: ecs
+    collection_interval: 60s
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 20
+  batch:
+    send_batch_size: 512
+    timeout: 10s
+
+exporters:
+  otlp_http/cloudwatch:
+    metrics_endpoint: https://monitoring.${env:AWS_REGION}.amazonaws.com/v1/metrics
+    auth:
+      authenticator: sigv4auth/cloudwatch
+
+service:
+  extensions: [sigv4auth/cloudwatch]
+  pipelines:
+    metrics:
+      receivers: [awscontainerinsightreceiver]
+      processors: [memory_limiter, batch]
+      exporters: [otlp_http/cloudwatch]
+```
+
+All metrics that the receiver emits in ECS mode are gauges, so no start-time processing is needed for CloudWatch to accept them.
+
+The daemon task needs:
+
+* **Host access:** `networkMode: host`, `privileged: true`, and read-only bind mounts of `/` (as `/rootfs`), `/sys`, `/dev/disk`, `/var/run/docker.sock`, and `/var/lib/docker`. The collector must run as root; the `otel/opentelemetry-collector-contrib` image runs as a non-root user by default, so set `"user": "0"` in the container definition. See [Root permissions](#root-permissions).
+* **Task role permissions:** `ecs:ListContainerInstances`, `ecs:DescribeContainerInstances`, `ecs:ListTasks`, `ecs:DescribeTasks`, `ecs:DescribeServices`, `ec2:DescribeInstances`, `ec2:DescribeTags`, `ec2:DescribeVolumes`, and `cloudwatch:PutMetricData`.
+
+In PromQL, the resource attributes appear with an `@resource.` prefix, for example:
+
+```promql
+max by ("@resource.ClusterName", "@resource.InstanceId") ({"instance_cpu_utilization"})
+```
+
+This configuration was tested with `otel/opentelemetry-collector-contrib:0.165.0` on an ECS container instance running the Amazon ECS-optimized Amazon Linux 2023 AMI.
+
+### Sample configuration for Amazon ECS (EMF)
+
 This is a sample configuration for AWS Container Insights using the `awscontainerinsight` and `awsemfexporter` for an ECS cluster to collect the instance level metrics:
 ```
 receivers:
@@ -871,3 +934,7 @@ When using this component, the collector process needs root permission to be abl
    * `/dev/disk`
 
 This requirement comes from the fact that this component is based on [cAdvisor](https://github.com/google/cadvisor).
+
+## Amazon ECS on Amazon Linux 2023
+
+On ECS container instances that run Amazon Linux 2023, `instance_cpu_reserved_capacity` and `instance_memory_reserved_capacity` are reported as `0`, and the receiver logs `Failed to get cpu cgroup path for task` and `Failed to get memory cgroup path for task` warnings on each collection, because the instance doesn't have the cgroup paths that the receiver expects. The other instance metrics are reported normally. See [#33716](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33716).
