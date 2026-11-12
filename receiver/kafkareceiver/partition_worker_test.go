@@ -144,6 +144,7 @@ func TestProcessPartitionBatchStopsWhenCancelled(t *testing.T) {
 			consumer, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, nil)
 			require.NoError(t, err)
 			consumer.client = kafkaClient
+			consumePartition(t, kafkaClient, topic)
 			if tc.shutdown {
 				close(consumer.closing)
 			}
@@ -253,6 +254,7 @@ func TestProcessPartitionBatchMarkOwnership(t *testing.T) {
 			consumer, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, nil)
 			require.NoError(t, err)
 			consumer.client = kafkaClient
+			consumePartition(t, kafkaClient, topic)
 			consumer.consumeMessage = func(context.Context, *kgo.Record, attribute.Set) error {
 				return nil
 			}
@@ -1345,6 +1347,7 @@ func newIndependentConsumer(
 	consumer, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, nil)
 	require.NoError(tb, err)
 	consumer.client = kafkaClient
+	consumePartition(tb, kafkaClient, topic)
 
 	ctx, cancel := context.WithCancelCause(tb.Context())
 	tb.Cleanup(func() { cancel(nil) })
@@ -1366,6 +1369,30 @@ func newIndependentConsumer(
 // offsetBatch builds a fetched batch of n records on partition 0, offsets 0..n-1.
 func offsetBatch(n int) kgo.FetchTopicPartition {
 	return offsetBatchFrom(0, n)
+}
+
+// consumePartition makes kafkaClient consume topic and waits until the group
+// has fetched its offsets. Since franz-go v1.22.3 MarkCommitRecords drops marks
+// for partitions the group is not consuming, and the tests here mark hand-built
+// records on a client created with no topics. The sentinel record stays at
+// offset 0 and is never passed to processPartitionBatch.
+func consumePartition(tb testing.TB, kafkaClient *kgo.Client, topic string) {
+	tb.Helper()
+	ctx, cancel := context.WithTimeout(tb.Context(), 30*time.Second)
+	defer cancel()
+
+	kafkaClient.AddConsumeTopics(topic)
+	require.NoError(tb, kafkaClient.ProduceSync(ctx, &kgo.Record{
+		Topic: topic,
+		Value: []byte("joined"),
+	}).FirstErr())
+	for {
+		fetches := kafkaClient.PollFetches(ctx)
+		require.NoError(tb, fetches.Err())
+		if fetches.NumRecords() > 0 {
+			return
+		}
+	}
 }
 
 // offsetBatchFrom builds n records on partition 0 starting at offset start.
