@@ -505,6 +505,40 @@ func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 			},
 		},
 		{
+			name: "classic mode carries exemplars on matching bucket series",
+			metric: func() pmetric.Metric {
+				metric := newTestExplicitHistogram()
+				ex1 := metric.Histogram().DataPoints().At(0).Exemplars().AppendEmpty()
+				ex1.SetTimestamp(testHistTimestamp)
+				ex1.SetDoubleValue(1.5)
+				ex2 := metric.Histogram().DataPoints().At(0).Exemplars().AppendEmpty()
+				ex2.SetTimestamp(testHistTimestamp)
+				ex2.SetDoubleValue(7)
+				return metric
+			},
+			settings: Settings{},
+			check: func(t *testing.T, converter *prometheusConverterV2) {
+				symbols := converter.symbolTable.Symbols()
+				var b labels.ScratchBuilder
+				exemplarByBucket := map[string][]writev2.Exemplar{}
+				for _, series := range converter.unique {
+					lbls, err := series.ToLabels(&b, symbols)
+					require.NoError(t, err)
+					if lbls.Get(model.MetricNameLabel) == "test_hist_bucket" {
+						exemplarByBucket[lbls.Get(model.BucketLabel)] = series.Exemplars
+					} else {
+						assert.Empty(t, series.Exemplars)
+					}
+				}
+				assert.Empty(t, exemplarByBucket["1"])
+				require.Len(t, exemplarByBucket["2"], 1)
+				assert.Equal(t, 1.5, exemplarByBucket["2"][0].Value)
+				assert.Empty(t, exemplarByBucket["3"])
+				require.Len(t, exemplarByBucket["+Inf"], 1)
+				assert.Equal(t, 7.0, exemplarByBucket["+Inf"][0].Value)
+			},
+		},
+		{
 			name: "NHCB conversion error keeps classic",
 			metric: func() pmetric.Metric {
 				metric := newTestExplicitHistogram()
@@ -571,6 +605,103 @@ func v2SeriesByName(t *testing.T, c *prometheusConverterV2, name string) *writev
 		}
 	}
 	return nil
+}
+
+func TestPrometheusConverterV2_addExemplars(t *testing.T) {
+	newTSWithSample := func() *writev2.TimeSeries {
+		return &writev2.TimeSeries{
+			Samples: []writev2.Sample{{Value: float64(intVal1), Timestamp: msTime1}},
+		}
+	}
+	getBucketBoundsDataV2 := func(values []float64, timeSeries *writev2.TimeSeries) []bucketBoundsDataV2 {
+		b := make([]bucketBoundsDataV2, len(values))
+		for i, value := range values {
+			b[i] = bucketBoundsDataV2{ts: timeSeries, bound: value}
+		}
+		return b
+	}
+
+	ts1 := newTSWithSample()
+	ts2 := newTSWithSample()
+	tsNoSample := &writev2.TimeSeries{}
+
+	tests := []struct {
+		name         string
+		orig         map[uint64]*writev2.TimeSeries
+		dataPoint    pmetric.HistogramDataPoint
+		bucketBounds []bucketBoundsDataV2
+		want         map[uint64]*writev2.TimeSeries
+	}{
+		{
+			name:      "timeSeries_is_empty",
+			orig:      map[uint64]*writev2.TimeSeries{},
+			dataPoint: getHistogramDataPointWithExemplars(t, time.UnixMilli(msTime1), float64(intVal1), traceIDValue1, "", "", ""),
+			bucketBounds: getBucketBoundsDataV2(
+				[]float64{1, 2, 3},
+				newTSWithSample(),
+			),
+			want: map[uint64]*writev2.TimeSeries{},
+		},
+		{
+			name: "timeSeries_without_sample",
+			orig: map[uint64]*writev2.TimeSeries{
+				lb1Sig: tsNoSample,
+			},
+			dataPoint:    getHistogramDataPointWithExemplars(t, time.UnixMilli(msTime1), float64(intVal1), traceIDValue1, "", "", ""),
+			bucketBounds: getBucketBoundsDataV2([]float64{1, 2, 3}, tsNoSample),
+			want: map[uint64]*writev2.TimeSeries{
+				lb1Sig: {},
+			},
+		},
+		{
+			name: "exemplar_value_less_than_bucket_bound",
+			orig: map[uint64]*writev2.TimeSeries{
+				lb1Sig: ts1,
+			},
+			dataPoint:    getHistogramDataPointWithExemplars(t, time.UnixMilli(msTime1), floatVal2, traceIDValue1, "", "", ""),
+			bucketBounds: getBucketBoundsDataV2([]float64{1, 2, 3}, ts1),
+			want: map[uint64]*writev2.TimeSeries{
+				lb1Sig: {
+					Samples: []writev2.Sample{{Value: float64(intVal1), Timestamp: msTime1}},
+					Exemplars: []writev2.Exemplar{
+						{
+							Value:      floatVal2,
+							Timestamp:  msTime1,
+							LabelsRefs: []uint32{1, 2},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "infinite_bucket_bound",
+			orig: map[uint64]*writev2.TimeSeries{
+				lb1Sig: ts2,
+			},
+			dataPoint:    getHistogramDataPointWithExemplars(t, time.UnixMilli(msTime1), math.MaxFloat64, traceIDValue1, "", "", ""),
+			bucketBounds: getBucketBoundsDataV2([]float64{1, math.Inf(1)}, ts2),
+			want: map[uint64]*writev2.TimeSeries{
+				lb1Sig: {
+					Samples: []writev2.Sample{{Value: float64(intVal1), Timestamp: msTime1}},
+					Exemplars: []writev2.Exemplar{
+						{
+							Value:      math.MaxFloat64,
+							Timestamp:  msTime1,
+							LabelsRefs: []uint32{1, 2},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			converter := newPrometheusConverterV2(Settings{})
+			converter.unique = tt.orig
+			converter.addExemplars(tt.dataPoint, tt.bucketBounds)
+			assert.Exactly(t, tt.want, converter.unique)
+		})
+	}
 }
 
 func TestPrometheusConverterV2_AddSampleWithLabels(t *testing.T) {
