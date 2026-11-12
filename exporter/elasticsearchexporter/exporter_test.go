@@ -11,6 +11,7 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"runtime"
 	"slices"
 	"sort"
@@ -32,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -814,6 +816,45 @@ func TestExporterLogs(t *testing.T) {
 		mustSendLogRecords(t, exporter, plog.NewLogRecord())
 
 		time.Sleep(200 * time.Millisecond)
+		assert.Equal(t, int64(1), attempts.Load())
+	})
+
+	// testdata sets retry_on_document_status: []. An empty list disables
+	// document retries, so an HTTP 200 item 429 is not retried.
+	t.Run("empty retry_on_document_status does not retry item 429", func(t *testing.T) {
+		cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+		require.NoError(t, err)
+		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "retry_on_document_status_empty").String())
+		require.NoError(t, err)
+
+		parsed := createDefaultConfig().(*Config)
+		require.NoError(t, sub.Unmarshal(parsed))
+		assert.Equal(t, []int{}, parsed.Retry.RetryOnDocumentStatus)
+		assert.NotEqual(t, createDefaultConfig().(*Config).Retry.RetryOnDocumentStatus, parsed.Retry.RetryOnDocumentStatus)
+		assert.True(t, parsed.Retry.Enabled)
+
+		var attempts atomic.Int64
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			attempts.Add(1)
+			return itemsReportStatus(docs, http.StatusTooManyRequests)
+		})
+
+		parsed.ClientConfig.Endpoint = server.URL
+		parsed.Retry.InitialInterval = time.Millisecond
+		parsed.Retry.MaxInterval = 5 * time.Millisecond
+		parsed.QueueBatchConfig.Get().NumConsumers = 1
+		parsed.QueueBatchConfig.Get().Batch.Get().FlushTimeout = 10 * time.Millisecond
+		parsed.QueueBatchConfig.Get().WaitForResult = true
+		require.NoError(t, confmap.Validate(parsed))
+
+		exp, err := NewFactory().CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), parsed)
+		require.NoError(t, err)
+		require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+		t.Cleanup(func() {
+			require.NoError(t, exp.Shutdown(context.Background())) //nolint:usetesting
+		})
+
+		mustSendLogRecords(t, exp, plog.NewLogRecord())
 		assert.Equal(t, int64(1), attempts.Load())
 	})
 
