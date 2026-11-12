@@ -49,8 +49,9 @@ names must also comply with the escaping scheme of the selected `Accept` header 
 or no `Accept` header is provided, names are escaped using underscores. Escaping parameters on
 unsupported format entries do not apply to the selected format.
 
-To preserve UTF-8 names with a scraper that requests `escaping=allow-utf-8` for OpenMetrics,
-set `enable_open_metrics: true` and use `NoUTF8EscapingWithSuffixes` or `NoTranslation`.
+To preserve UTF-8 names, use `NoUTF8EscapingWithSuffixes` or `NoTranslation` with a scraper
+that requests `escaping=allow-utf-8` for Prometheus text format 1.0.0 or OpenMetrics.
+Prometheus text format 1.0.0 does not require `enable_open_metrics: true`.
 
 Example:
 
