@@ -5,6 +5,8 @@ package routingconnector // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -14,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -111,6 +114,132 @@ func TestLogsRetryAfterOneDestinationRejects(t *testing.T) {
 	assert.Equal(t, []int{2, 1}, batchSizesAtRouting)
 	assert.Equal(t, "healthy-1", healthyBackend.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
 	assert.Equal(t, "recovering-1", recoveringBackend.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
+}
+
+func TestLogsReturnsRejectedRecords(t *testing.T) {
+	newLogs := func(selector string, bodies ...string) plog.Logs {
+		logs := plog.NewLogs()
+		rl := logs.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("selector", selector)
+		records := rl.ScopeLogs().AppendEmpty().LogRecords()
+		for _, body := range bodies {
+			records.AppendEmpty().Body().SetStr(body)
+		}
+		return logs
+	}
+
+	anyError := errors.New("any error")
+	defaultFailure := errors.New("default destination unavailable")
+	tests := []struct {
+		name       string
+		reject     consumer.ConsumeLogsFunc
+		wantBodies []string
+		permanent  bool
+	}{
+		{
+			name: "whole group is rejected",
+			reject: func(context.Context, plog.Logs) error {
+				return anyError
+			},
+			wantBodies: []string{"routed-1", "routed-2", "default-1"},
+		},
+		{
+			name: "partial rejection",
+			reject: func(context.Context, plog.Logs) error {
+				return consumererror.NewLogs(anyError, newLogs("routed", "routed-2"))
+			},
+			wantBodies: []string{"routed-2", "default-1"},
+		},
+		{
+			name: "read-only group",
+			reject: func(_ context.Context, logs plog.Logs) error {
+				logs.MarkReadOnly()
+				return anyError
+			},
+			wantBodies: []string{"routed-1", "routed-2", "default-1"},
+		},
+		{
+			name: "read-only partial rejection",
+			reject: func(context.Context, plog.Logs) error {
+				failed := newLogs("routed", "routed-2")
+				failed.MarkReadOnly()
+				return consumererror.NewLogs(anyError, failed)
+			},
+			wantBodies: []string{"routed-2", "default-1"},
+		},
+		{
+			name: "wrapped partial rejection",
+			reject: func(context.Context, plog.Logs) error {
+				return fmt.Errorf("downstream: %w",
+					consumererror.NewLogs(anyError, newLogs("routed", "routed-2")))
+			},
+			wantBodies: []string{"routed-2", "default-1"},
+		},
+		{
+			name: "permanent rejection",
+			reject: func(context.Context, plog.Logs) error {
+				return consumererror.NewPermanent(anyError)
+			},
+			wantBodies: []string{"routed-1", "routed-2", "default-1"},
+			permanent:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			destination, err := consumer.NewLogs(tt.reject)
+			require.NoError(t, err)
+
+			// The default destination always fails
+			defaultDestination, err := consumer.NewLogs(func(context.Context, plog.Logs) error {
+				return defaultFailure
+			})
+			require.NoError(t, err)
+
+			// Create routing
+			routedID := pipeline.NewIDWithName(pipeline.SignalLogs, "routed")
+			defaultID := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
+			cfg := &Config{
+				DefaultPipelines: []pipeline.ID{defaultID},
+				Table: []RoutingTableItem{{
+					Condition: `resource.attributes["selector"] == "routed"`,
+					Pipelines: []pipeline.ID{routedID},
+				}},
+			}
+			require.NoError(t, cfg.Validate())
+			router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
+				routedID:  destination,
+				defaultID: defaultDestination,
+			})
+
+			conn, err := NewFactory().CreateLogsToLogs(t.Context(),
+				connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Logs))
+			require.NoError(t, err)
+
+			// Logs sent to destination "routed"
+			logs := newLogs("routed", "routed-1", "routed-2")
+
+			// Logs sent to default destination, appended to logs above
+			newLogs("other", "default-1").ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
+
+			err = conn.ConsumeLogs(t.Context(), logs)
+			require.ErrorIs(t, err, anyError)
+			require.ErrorIs(t, err, defaultFailure)
+			assert.Equal(t, tt.permanent, consumererror.IsPermanent(err))
+
+			var rejection consumererror.Logs
+			require.ErrorAs(t, err, &rejection)
+			var bodies []string
+			for _, rl := range rejection.Data().ResourceLogs().All() {
+				for _, sl := range rl.ScopeLogs().All() {
+					for _, record := range sl.LogRecords().All() {
+						bodies = append(bodies, record.Body().Str())
+					}
+				}
+			}
+			assert.ElementsMatch(t, tt.wantBodies, bodies)
+		})
+	}
 }
 
 func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
