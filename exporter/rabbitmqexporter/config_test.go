@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -40,6 +41,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:           component.NewIDWithName(metadata.Type, "missing_plainauth_username"),
 			errorMessage: "connection.auth.plain.username is required",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "unsupported_compression"),
+			errorMessage: `compression "snappy" is not supported`,
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "all_fields"),
@@ -72,6 +77,7 @@ func TestLoadConfig(t *testing.T) {
 				RetrySettings: configretry.BackOffConfig{
 					Enabled: true,
 				},
+				Compression: configcompression.TypeZstd,
 			},
 		},
 		{
