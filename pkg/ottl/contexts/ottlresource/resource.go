@@ -121,6 +121,13 @@ func WithStatementSequenceErrorMode(errorMode ottl.ErrorMode) StatementSequenceO
 	}
 }
 
+// WithStatementSequenceTelemetry sets the metrics recorded by a statement sequence.
+func WithStatementSequenceTelemetry(telemetry ottl.SequenceTelemetry) StatementSequenceOption {
+	return func(s *ottl.StatementSequence[*TransformContext]) {
+		ottl.WithStatementSequenceTelemetry[*TransformContext](telemetry)(s)
+	}
+}
+
 // NewStatementSequence creates a new statement sequence with the provided statements and options.
 func NewStatementSequence(statements []*ottl.Statement[*TransformContext], telemetrySettings component.TelemetrySettings, options ...StatementSequenceOption) ottl.StatementSequence[*TransformContext] {
 	s := ottl.NewStatementSequence(statements, telemetrySettings)
@@ -137,6 +144,13 @@ type ConditionSequenceOption func(*ottl.ConditionSequence[*TransformContext])
 func WithConditionSequenceErrorMode(errorMode ottl.ErrorMode) ConditionSequenceOption {
 	return func(c *ottl.ConditionSequence[*TransformContext]) {
 		ottl.WithConditionSequenceErrorMode[*TransformContext](errorMode)(c)
+	}
+}
+
+// WithConditionSequenceTelemetry sets the metrics recorded by a condition sequence.
+func WithConditionSequenceTelemetry(telemetry ottl.SequenceTelemetry) ConditionSequenceOption {
+	return func(c *ottl.ConditionSequence[*TransformContext]) {
+		ottl.WithConditionSequenceTelemetry[*TransformContext](telemetry)(c)
 	}
 }
 
