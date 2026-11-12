@@ -33,6 +33,7 @@ const (
 type tailStorage interface {
 	Append(traceID pcommon.TraceID, td ptrace.Traces) error
 	Take(traceID pcommon.TraceID) (ptrace.Traces, error)
+	TakeMany(traceIDs []pcommon.TraceID) ([]ptrace.Traces, []error)
 	Delete(traceID pcommon.TraceID) error
 	Close() error
 }
@@ -96,14 +97,39 @@ func (e *pebbleTailStorageExtension) Delete(traceID pcommon.TraceID) error {
 	return err
 }
 
-func (e *pebbleTailStorageExtension) recordOperation(operation string, err error) {
-	outcome := outcomeSuccess
-	if err != nil {
-		outcome = outcomeFailure
+func (e *pebbleTailStorageExtension) TakeMany(traceIDs []pcommon.TraceID) ([]ptrace.Traces, []error) {
+	out, errs := e.storage.TakeMany(traceIDs)
+	var failures int64
+	for _, err := range errs {
+		if err != nil {
+			failures++
+		}
 	}
+	e.recordOperations(operationTake, int64(len(errs))-failures, failures)
+	return out, errs
+}
+
+func (e *pebbleTailStorageExtension) recordOperation(operation string, err error) {
+	if err != nil {
+		e.recordOperations(operation, 0, 1)
+		return
+	}
+	e.recordOperations(operation, 1, 0)
+}
+
+func (e *pebbleTailStorageExtension) recordOperations(operation string, successes, failures int64) {
+	if successes > 0 {
+		e.addOperations(operation, outcomeSuccess, successes)
+	}
+	if failures > 0 {
+		e.addOperations(operation, outcomeFailure, failures)
+	}
+}
+
+func (e *pebbleTailStorageExtension) addOperations(operation, outcome string, count int64) {
 	e.telemetry.ExtensionPebbleTailStorageOperations.Add(
 		context.Background(),
-		1,
+		count,
 		metric.WithAttributes(
 			attribute.String(attrOperation, operation),
 			attribute.String(attrOutcome, outcome),
