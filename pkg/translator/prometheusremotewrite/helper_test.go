@@ -1282,6 +1282,19 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 			},
 		},
 		{
+			name: "NHCB drops data point without sum",
+			metric: func() pmetric.Metric {
+				metric := newTestExplicitHistogram()
+				metric.Histogram().DataPoints().At(0).RemoveSum()
+				return metric
+			},
+			settings: Settings{ConvertExplicitHistogramsToNHCB: true},
+			wantErr:  true,
+			check: func(t *testing.T, converter *prometheusConverter) {
+				assert.Empty(t, converter.unique, "no series emitted for a data point without sum")
+			},
+		},
+		{
 			name: "NHCB conversion error keeps classic",
 			metric: func() pmetric.Metric {
 				metric := newTestExplicitHistogram()
