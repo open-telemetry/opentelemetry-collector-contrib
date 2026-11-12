@@ -1,4 +1,5 @@
-type: azuredataexplorer
+type: azure_data_explorer
+deprecated_type: azuredataexplorer
 display_name: Azure Data Explorer Exporter
 
 status:

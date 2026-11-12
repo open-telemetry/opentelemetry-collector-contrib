@@ -357,6 +357,26 @@ resourceMetrics:
             stringValue: vsanDatastore
     scopeMetrics:
       - metrics:
+          - description: The number of triggered alarms on the datastore.
+            name: vcenter.datastore.alarm.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: vcenter.alarm.state
+                      value:
+                        stringValue: red
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: vcenter.alarm.state
+                      value:
+                        stringValue: yellow
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{alarms}'
           - description: The amount of space in the datastore.
             name: vcenter.datastore.disk.usage
             sum:
@@ -385,6 +405,40 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.datastore.disk.utilization
             unit: '%'
+          - description: The current maintenance status of the datastore.
+            name: vcenter.datastore.maintenance.status
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: vcenter.datastore.maintenance.state
+                      value:
+                        stringValue: entering_maintenance
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: vcenter.datastore.maintenance.state
+                      value:
+                        stringValue: in_maintenance
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: vcenter.datastore.maintenance.state
+                      value:
+                        stringValue: normal
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: vcenter.datastore.maintenance.state
+                      value:
+                        stringValue: unknown
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
@@ -398,6 +452,60 @@ resourceMetrics:
             stringValue: esxi-111.europe-southeast1.gve.goog
     scopeMetrics:
       - metrics:
+          - description: The number of triggered alarms on the host.
+            name: vcenter.host.alarm.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: vcenter.alarm.state
+                      value:
+                        stringValue: red
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: vcenter.alarm.state
+                      value:
+                        stringValue: yellow
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{alarms}'
+          - description: The current connection status of the host.
+            name: vcenter.host.connection.status
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: vcenter.host.connection.state
+                      value:
+                        stringValue: connected
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: vcenter.host.connection.state
+                      value:
+                        stringValue: disconnected
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: vcenter.host.connection.state
+                      value:
+                        stringValue: not_responding
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: vcenter.host.connection.state
+                      value:
+                        stringValue: unknown
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
           - description: Total CPU capacity of the host system.
             name: vcenter.host.cpu.capacity
             sum:
@@ -1032,6 +1140,40 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
+          - description: The current power state of the host.
+            name: vcenter.host.power.status
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "off"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "on"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: standby
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: unknown
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
           - description: The host's read IOs which could be satisfied by the local client cache.
             gauge:
               dataPoints:
@@ -1169,6 +1311,60 @@ resourceMetrics:
             stringValue: esxi-27971.cf5e88ac.australia-southeast1.gve.goog
     scopeMetrics:
       - metrics:
+          - description: The number of triggered alarms on the host.
+            name: vcenter.host.alarm.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: vcenter.alarm.state
+                      value:
+                        stringValue: red
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: vcenter.alarm.state
+                      value:
+                        stringValue: yellow
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{alarms}'
+          - description: The current connection status of the host.
+            name: vcenter.host.connection.status
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: vcenter.host.connection.state
+                      value:
+                        stringValue: connected
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: vcenter.host.connection.state
+                      value:
+                        stringValue: disconnected
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: vcenter.host.connection.state
+                      value:
+                        stringValue: not_responding
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: vcenter.host.connection.state
+                      value:
+                        stringValue: unknown
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
           - description: Total CPU capacity of the host system.
             name: vcenter.host.cpu.capacity
             sum:
@@ -1803,6 +1999,48 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
+          - description: The current power state of the host.
+            name: vcenter.host.power.status
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "off"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "on"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: standby
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: unknown
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
+          - description: Total time elapsed since last operating system boot-up.
+            gauge:
+              dataPoints:
+                - asDouble: 3.456e+06
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.uptime
+            unit: s
           - description: The host's read IOs which could be satisfied by the local client cache.
             gauge:
               dataPoints:
@@ -3016,6 +3254,40 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
+          - description: The current power state of the virtual machine.
+            name: vcenter.vm.power.status
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "off"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "on"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: suspended
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: unknown
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
@@ -3847,6 +4119,40 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
+          - description: The current power state of the virtual machine.
+            name: vcenter.vm.power.status
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "off"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "on"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: suspended
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: unknown
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
           - description: The virtual machine latency while accessing vSAN storage.
             gauge:
               dataPoints:
@@ -4777,6 +5083,40 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
+          - description: The current power state of the virtual machine.
+            name: vcenter.vm.power.status
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "off"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "on"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: suspended
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: unknown
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
           - description: The virtual machine latency while accessing vSAN storage.
             gauge:
               dataPoints:
