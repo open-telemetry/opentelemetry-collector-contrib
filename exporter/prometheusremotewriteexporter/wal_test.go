@@ -562,7 +562,7 @@ func decodeWriteRequest(tb testing.TB, body []byte) *prompb.WriteRequest {
 func TestWALUnblocksAfterPayloadRejection(t *testing.T) {
 	// With retries enabled, execute() goes through backoff.Retry, which wraps a
 	// permanent failure in a *backoff.RetryError. The rejection must still be
-	// recognised, otherwise the batch stays at the head of the WAL forever.
+	// recognized, otherwise the batch stays at the head of the WAL forever.
 	for _, tt := range []struct {
 		name  string
 		retry configretry.BackOffConfig
@@ -594,8 +594,8 @@ func testWALUnblocksAfterPayloadRejection(t *testing.T, retry configretry.BackOf
 		req := decodeWriteRequest(t, body)
 
 		var timestamps []int64
-		for _, ts := range req.Timeseries {
-			for _, s := range ts.Samples {
+		for i := range req.Timeseries {
+			for _, s := range req.Timeseries[i].Samples {
 				timestamps = append(timestamps, s.Timestamp)
 			}
 		}
