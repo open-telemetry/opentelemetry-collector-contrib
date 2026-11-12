@@ -76,7 +76,7 @@ The following settings can be optionally configured:
   - When the remote endpoint rejects the content of a batch read from the WAL (HTTP `400`, `409`, `413` or `422`), the batch is dropped so it does not block the batches behind it, and `otelcol_exporter_prometheusremotewrite_wal_send_failed_batches` is incremented. Any other failure keeps the batch in the WAL to be sent again.
 - `target_info`: customize `target_info` metric
   - `enabled` (default = true): If `enabled` is `true`, a `target_info` metric will be generated for each resource metric (see https://github.com/open-telemetry/opentelemetry-specification/pull/2381).
-- `disable_scope_info` (default = false): If `true`, the scope info labels (`otel_scope_name`, `otel_scope_version` and `otel_scope_...` attributes) will not be exported.
+- `disable_scope_info` (default = false): If `true`, the scope info labels (`otel_scope_name`, `otel_scope_version`, `otel_scope_schema_url`, and `otel_scope_...` attributes) will not be exported.
 - `max_batch_size_bytes` (default = `3000000` -> `~2.861 mb`): Maximum size of a batch of samples to be sent to the remote 
   write endpoint. If the batch size is larger than this value, it will be split into multiple batches. This option is ignored
   when using the wal and where the wal buffer_size / truncate_frequency will be used.
@@ -161,7 +161,14 @@ OpenTelemetry metric names and attributes are normalized to be compliant with Pr
 
 ## Setting resource attributes as metric labels
 
-By default, resource attributes are added to a special metric called `target_info`. To select and group by metrics by resource attributes, you [need to do join on `target_info`](https://prometheus.io/docs/prometheus/latest/querying/operators/#many-to-one-and-one-to-many-vector-matches). For example, to select metrics with `k8s_namespace_name` attribute equal to `my-namespace`:
+By default, resource attributes are added to a special metric called `target_info`. Enable the alpha feature gate
+`pkg.prometheus.KeepIdentifyingResourceAttributes` with
+`--feature-gates=pkg.prometheus.KeepIdentifyingResourceAttributes` to also preserve
+`service.name`, `service.namespace`, and `service.instance.id` on `target_info`.
+These attributes continue to populate `job` and `instance`.
+Label names follow the configured translation strategy.
+
+To select and group by metrics by resource attributes, you [need to do join on `target_info`](https://prometheus.io/docs/prometheus/latest/querying/operators/#many-to-one-and-one-to-many-vector-matches). For example, to select metrics with `k8s_namespace_name` attribute equal to `my-namespace`:
 
 ```promql
 app_ads_ad_requests_total * on (job, instance) group_left target_info{k8s_namespace_name="my-namespace"}
