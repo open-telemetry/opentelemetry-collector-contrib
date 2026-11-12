@@ -15,7 +15,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 func newMetricParserCollection(t *testing.T) *MetricParserCollection {
@@ -33,9 +32,9 @@ func newMetricParserCollection(t *testing.T) *MetricParserCollection {
 
 func TestMetricParserCollection_MetricContext(t *testing.T) {
 	pc := newMetricParserCollection(t)
-	consumer, err := pc.ParseContextStatements(transformconfig.ContextStatements{Context: transformconfig.Metric, Statements: []string{`set(description, "pass")`}})
+	consumer, err := pc.ParseContextStatements(ContextStatements{Context: Metric, Statements: []string{`set(description, "pass")`}})
 	require.NoError(t, err)
-	assert.Equal(t, transformconfig.Metric, consumer.Context())
+	assert.Equal(t, Metric, consumer.Context())
 
 	md := newTestMetrics()
 	require.NoError(t, consumer.ConsumeMetrics(t.Context(), md, nil))
@@ -48,9 +47,9 @@ func TestMetricParserCollection_MetricContext(t *testing.T) {
 
 func TestMetricParserCollection_DataPointContext(t *testing.T) {
 	pc := newMetricParserCollection(t)
-	consumer, err := pc.ParseContextStatements(transformconfig.ContextStatements{Context: transformconfig.DataPoint, Statements: []string{`set(attributes["test"], "pass")`}})
+	consumer, err := pc.ParseContextStatements(ContextStatements{Context: DataPoint, Statements: []string{`set(attributes["test"], "pass")`}})
 	require.NoError(t, err)
-	assert.Equal(t, transformconfig.DataPoint, consumer.Context())
+	assert.Equal(t, DataPoint, consumer.Context())
 
 	md := newTestMetrics()
 	require.NoError(t, consumer.ConsumeMetrics(t.Context(), md, nil))
@@ -63,9 +62,9 @@ func TestMetricParserCollection_DataPointContext(t *testing.T) {
 
 func TestMetricParserCollection_ExemplarContext(t *testing.T) {
 	pc := newMetricParserCollection(t)
-	consumer, err := pc.ParseContextStatements(transformconfig.ContextStatements{Context: transformconfig.Exemplar, Statements: []string{`set(filtered_attributes["test"], "pass")`}})
+	consumer, err := pc.ParseContextStatements(ContextStatements{Context: Exemplar, Statements: []string{`set(filtered_attributes["test"], "pass")`}})
 	require.NoError(t, err)
-	assert.Equal(t, transformconfig.Exemplar, consumer.Context())
+	assert.Equal(t, Exemplar, consumer.Context())
 
 	md := newTestMetrics()
 	require.NoError(t, consumer.ConsumeMetrics(t.Context(), md, nil))
@@ -79,11 +78,11 @@ func TestMetricParserCollection_ExemplarContext(t *testing.T) {
 func TestMetricParserCollection_ConsumeMetrics_PropagatesError(t *testing.T) {
 	tests := []struct {
 		name string
-		cs   transformconfig.ContextStatements
+		cs   ContextStatements
 	}{
-		{"metric", transformconfig.ContextStatements{Context: transformconfig.Metric, Statements: []string{`set(name, ParseJSON("1"))`}}},
-		{"datapoint", transformconfig.ContextStatements{Context: transformconfig.DataPoint, Statements: []string{`set(attributes["test"], ParseJSON("1"))`}}},
-		{"exemplar", transformconfig.ContextStatements{Context: transformconfig.Exemplar, Statements: []string{`set(filtered_attributes["test"], ParseJSON("1"))`}}},
+		{"metric", ContextStatements{Context: Metric, Statements: []string{`set(name, ParseJSON("1"))`}}},
+		{"datapoint", ContextStatements{Context: DataPoint, Statements: []string{`set(attributes["test"], ParseJSON("1"))`}}},
+		{"exemplar", ContextStatements{Context: Exemplar, Statements: []string{`set(filtered_attributes["test"], ParseJSON("1"))`}}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -97,6 +96,6 @@ func TestMetricParserCollection_ConsumeMetrics_PropagatesError(t *testing.T) {
 
 func TestMetricParserCollection_ParseContextStatements_Error(t *testing.T) {
 	pc := newMetricParserCollection(t)
-	_, err := pc.ParseContextStatements(transformconfig.ContextStatements{Context: transformconfig.Metric, Statements: []string{`not a valid statement`}})
+	_, err := pc.ParseContextStatements(ContextStatements{Context: Metric, Statements: []string{`not a valid statement`}})
 	require.Error(t, err)
 }

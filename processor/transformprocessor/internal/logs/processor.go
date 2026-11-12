@@ -16,7 +16,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 type parsedContextStatements struct {
@@ -28,10 +27,10 @@ type Processor struct {
 	contexts            []parsedContextStatements
 	logger              *zap.Logger
 	flatMode            bool
-	sharedCacheContexts []transformconfig.ContextID
+	sharedCacheContexts []common.ContextID
 }
 
-func NewProcessor(contextStatements []transformconfig.ContextStatements, errorMode ottl.ErrorMode, flatMode bool, settings component.TelemetrySettings, logFunctions map[string]ottl.Factory[*ottllog.TransformContext]) (*Processor, error) {
+func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, flatMode bool, settings component.TelemetrySettings, logFunctions map[string]ottl.Factory[*ottllog.TransformContext]) (*Processor, error) {
 	pc, err := common.NewLogParserCollection(settings, common.WithLogParser(logFunctions), common.WithLogErrorMode(errorMode))
 	if err != nil {
 		return nil, err
@@ -54,7 +53,7 @@ func NewProcessor(contextStatements []transformconfig.ContextStatements, errorMo
 		return nil, errors
 	}
 
-	var sharedCacheContexts []transformconfig.ContextID
+	var sharedCacheContexts []common.ContextID
 	for _, c := range contexts {
 		if !c.sharedCache || slices.Contains(sharedCacheContexts, c.Context()) {
 			continue

@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/transform
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Export `ContextStatements` and `ContextID` from the new `transformconfig` package so the statement fields of a factory-created `Config` can be set in Go.
+note: Export `ContextStatements` and `ContextID` from the `transformprocessor` package so the statement fields of a factory-created `Config` can be set in Go.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [52566]

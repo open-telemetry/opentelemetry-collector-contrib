@@ -14,11 +14,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 type ProfilesConsumer interface {
-	Context() transformconfig.ContextID
+	Context() ContextID
 	ConsumeProfiles(ctx context.Context, ld pprofile.Profiles, cache *pcommon.Map) error
 }
 
@@ -27,8 +26,8 @@ type profileStatements struct {
 	expr.BoolExpr[*ottlprofile.TransformContext]
 }
 
-func (profileStatements) Context() transformconfig.ContextID {
-	return transformconfig.Profile
+func (profileStatements) Context() ContextID {
+	return Profile
 }
 
 func (l profileStatements) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles, cache *pcommon.Map) error {
@@ -114,7 +113,7 @@ func convertProfileStatements(pc *ottl.ParserCollection[ProfilesConsumer], state
 	return profileStatements{lStatements, globalExpr}, nil
 }
 
-func (ppc *ProfileParserCollection) ParseContextStatements(contextStatements transformconfig.ContextStatements) (ProfilesConsumer, error) {
+func (ppc *ProfileParserCollection) ParseContextStatements(contextStatements ContextStatements) (ProfilesConsumer, error) {
 	pc := ottl.ParserCollection[ProfilesConsumer](*ppc)
 	if contextStatements.Context != "" {
 		return pc.ParseStatementsWithContext(string(contextStatements.Context), contextStatements, true)

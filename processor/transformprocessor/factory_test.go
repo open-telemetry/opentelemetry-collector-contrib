@@ -30,7 +30,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pprofiletest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 func assertConfigContainsDefaultFunctions(t *testing.T, config Config) {
@@ -68,10 +67,10 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.EqualExportedValues(t, &Config{
 		ErrorMode:         ottl.IgnoreError,
-		TraceStatements:   []transformconfig.ContextStatements{},
-		MetricStatements:  []transformconfig.ContextStatements{},
-		LogStatements:     []transformconfig.ContextStatements{},
-		ProfileStatements: []transformconfig.ContextStatements{},
+		TraceStatements:   []ContextStatements{},
+		MetricStatements:  []ContextStatements{},
+		LogStatements:     []ContextStatements{},
+		ProfileStatements: []ContextStatements{},
 	}, cfg)
 	assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))
@@ -88,7 +87,7 @@ func TestFactoryCreateTraces_InvalidActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.TraceStatements = []transformconfig.ContextStatements{
+	oCfg.TraceStatements = []ContextStatements{
 		{
 			Context:    "span",
 			Statements: []string{`set(123`},
@@ -104,7 +103,7 @@ func TestFactoryCreateTraces(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.ErrorMode = ottl.IgnoreError
-	oCfg.TraceStatements = []transformconfig.ContextStatements{
+	oCfg.TraceStatements = []ContextStatements{
 		{
 			Context: "span",
 			Statements: []string{
@@ -136,7 +135,7 @@ func TestFactoryCreateMetrics_InvalidActions(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.ErrorMode = ottl.IgnoreError
-	oCfg.MetricStatements = []transformconfig.ContextStatements{
+	oCfg.MetricStatements = []ContextStatements{
 		{
 			Context:    "datapoint",
 			Statements: []string{`set(123`},
@@ -152,7 +151,7 @@ func TestFactoryCreateMetrics(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.ErrorMode = ottl.IgnoreError
-	oCfg.MetricStatements = []transformconfig.ContextStatements{
+	oCfg.MetricStatements = []ContextStatements{
 		{
 			Context: "datapoint",
 			Statements: []string{
@@ -184,7 +183,7 @@ func TestFactoryCreateMetrics_Exemplar(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.ErrorMode = ottl.IgnoreError
-	oCfg.MetricStatements = []transformconfig.ContextStatements{
+	oCfg.MetricStatements = []ContextStatements{
 		{
 			Context: "exemplar",
 			Statements: []string{
@@ -216,7 +215,7 @@ func TestFactoryCreateLogs(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.ErrorMode = ottl.IgnoreError
-	oCfg.LogStatements = []transformconfig.ContextStatements{
+	oCfg.LogStatements = []ContextStatements{
 		{
 			Context: "log",
 			Statements: []string{
@@ -247,7 +246,7 @@ func TestFactoryCreateLogs_InvalidActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.LogStatements = []transformconfig.ContextStatements{
+	oCfg.LogStatements = []ContextStatements{
 		{
 			Context:    "log",
 			Statements: []string{`set(123`},
@@ -262,7 +261,7 @@ func TestFactoryCreateProfiles_InvalidActions(t *testing.T) {
 	factory := NewFactory().(xprocessor.Factory)
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
-	oCfg.ProfileStatements = []transformconfig.ContextStatements{
+	oCfg.ProfileStatements = []ContextStatements{
 		{
 			Context:    "profile",
 			Statements: []string{`set(123`},
@@ -331,7 +330,7 @@ func TestFactoryCreateLogProcessor(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			oCfg := cfg.(*Config)
 			oCfg.ErrorMode = ottl.IgnoreError
-			oCfg.LogStatements = []transformconfig.ContextStatements{
+			oCfg.LogStatements = []ContextStatements{
 				{
 					Context:    "log",
 					Conditions: tt.conditions,
@@ -424,7 +423,7 @@ func TestFactoryCreateProfileProcessor(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			oCfg := cfg.(*Config)
 			oCfg.ErrorMode = ottl.IgnoreError
-			oCfg.ProfileStatements = []transformconfig.ContextStatements{
+			oCfg.ProfileStatements = []ContextStatements{
 				{
 					Context:    "profile",
 					Conditions: tt.conditions,
@@ -498,7 +497,7 @@ func TestFactoryCreateResourceProcessor(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			oCfg := cfg.(*Config)
 			oCfg.ErrorMode = ottl.IgnoreError
-			oCfg.LogStatements = []transformconfig.ContextStatements{
+			oCfg.LogStatements = []ContextStatements{
 				{
 					Context:    "resource",
 					Conditions: tt.conditions,
@@ -575,7 +574,7 @@ func TestFactoryCreateScopeProcessor(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			oCfg := cfg.(*Config)
 			oCfg.ErrorMode = ottl.IgnoreError
-			oCfg.LogStatements = []transformconfig.ContextStatements{
+			oCfg.LogStatements = []ContextStatements{
 				{
 					Context:    "scope",
 					Conditions: tt.conditions,
@@ -657,7 +656,7 @@ func TestFactoryCreateMetricProcessor(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			oCfg := cfg.(*Config)
 			oCfg.ErrorMode = ottl.IgnoreError
-			oCfg.MetricStatements = []transformconfig.ContextStatements{
+			oCfg.MetricStatements = []ContextStatements{
 				{
 					Context:    "metric",
 					Conditions: tt.conditions,
@@ -742,7 +741,7 @@ func TestFactoryCreateDataPointProcessor(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			oCfg := cfg.(*Config)
 			oCfg.ErrorMode = ottl.IgnoreError
-			oCfg.MetricStatements = []transformconfig.ContextStatements{
+			oCfg.MetricStatements = []ContextStatements{
 				{
 					Context:    "datapoint",
 					Conditions: tt.conditions,
@@ -823,7 +822,7 @@ func TestFactoryCreateSpanProcessor(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			oCfg := cfg.(*Config)
 			oCfg.ErrorMode = ottl.IgnoreError
-			oCfg.TraceStatements = []transformconfig.ContextStatements{
+			oCfg.TraceStatements = []ContextStatements{
 				{
 					Context:    "span",
 					Conditions: tt.conditions,
@@ -903,7 +902,7 @@ func TestFactoryCreateSpanEventProcessor(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			oCfg := cfg.(*Config)
 			oCfg.ErrorMode = ottl.IgnoreError
-			oCfg.TraceStatements = []transformconfig.ContextStatements{
+			oCfg.TraceStatements = []ContextStatements{
 				{
 					Context:    "spanevent",
 					Conditions: tt.conditions,
@@ -940,7 +939,7 @@ func createTestFuncFactory[K any](name string) ottl.Factory[K] {
 func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 	type testCase struct {
 		name           string
-		statements     []transformconfig.ContextStatements
+		statements     []ContextStatements
 		factoryOptions []FactoryOption
 		wantErrorWith  string
 	}
@@ -948,9 +947,9 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 	tests := []testCase{
 		{
 			name: "with span functions : statement with added span func",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("span"),
+					Context:    ContextID("span"),
 					Statements: []string{`set(cache["attr"], TestSpanFunc())`},
 				},
 			},
@@ -962,9 +961,9 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 		},
 		{
 			name: "with span functions : statement with missing span func",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("span"),
+					Context:    ContextID("span"),
 					Statements: []string{`set(cache["attr"], TestSpanFunc())`},
 				},
 			},
@@ -976,9 +975,9 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 		},
 		{
 			name: "with span functions : only custom functions",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("span"),
+					Context:    ContextID("span"),
 					Statements: []string{`testSpanFunc()`},
 				},
 			},
@@ -988,9 +987,9 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 		},
 		{
 			name: "with span functions : missing default functions",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("span"),
+					Context:    ContextID("span"),
 					Statements: []string{`set(attributes["test"], "TestSpanFunc()")`},
 				},
 			},
@@ -1001,9 +1000,9 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 		},
 		{
 			name: "with span event functions : statement with added span event func",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("spanevent"),
+					Context:    ContextID("spanevent"),
 					Statements: []string{`set(cache["attr"], TestSpanEventFunc())`},
 				},
 			},
@@ -1015,9 +1014,9 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 		},
 		{
 			name: "with span event functions : statement with missing span event func",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("spanevent"),
+					Context:    ContextID("spanevent"),
 					Statements: []string{`set(cache["attr"], TestSpanEventFunc())`},
 				},
 			},
@@ -1029,9 +1028,9 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 		},
 		{
 			name: "with span event functions : only custom functions",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("spanevent"),
+					Context:    ContextID("spanevent"),
 					Statements: []string{`testSpanEventFunc()`},
 				},
 			},
@@ -1041,9 +1040,9 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 		},
 		{
 			name: "with span event functions : missing default functions",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("spanevent"),
+					Context:    ContextID("spanevent"),
 					Statements: []string{`set(attributes["test"], "TestSpanEventFunc()")`},
 				},
 			},
@@ -1077,7 +1076,7 @@ func Test_FactoryWithFunctions_CreateTraces(t *testing.T) {
 func Test_FactoryWithFunctions_CreateLogs(t *testing.T) {
 	type testCase struct {
 		name           string
-		statements     []transformconfig.ContextStatements
+		statements     []ContextStatements
 		factoryOptions []FactoryOption
 		wantErrorWith  string
 	}
@@ -1085,9 +1084,9 @@ func Test_FactoryWithFunctions_CreateLogs(t *testing.T) {
 	tests := []testCase{
 		{
 			name: "with log functions : statement with added log func",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("log"),
+					Context:    ContextID("log"),
 					Statements: []string{`set(cache["attr"], TestLogFunc())`},
 				},
 			},
@@ -1098,9 +1097,9 @@ func Test_FactoryWithFunctions_CreateLogs(t *testing.T) {
 		},
 		{
 			name: "with log functions : statement with missing log func",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("log"),
+					Context:    ContextID("log"),
 					Statements: []string{`set(cache["attr"], TestLogFunc())`},
 				},
 			},
@@ -1111,9 +1110,9 @@ func Test_FactoryWithFunctions_CreateLogs(t *testing.T) {
 		},
 		{
 			name: "with log functions : only custom functions",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("log"),
+					Context:    ContextID("log"),
 					Statements: []string{`testLogFunc()`},
 				},
 			},
@@ -1123,9 +1122,9 @@ func Test_FactoryWithFunctions_CreateLogs(t *testing.T) {
 		},
 		{
 			name: "with log functions : missing default functions",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("log"),
+					Context:    ContextID("log"),
 					Statements: []string{`set(cache["attr"], TestLogFunc())`},
 				},
 			},
@@ -1160,7 +1159,7 @@ func Test_FactoryWithFunctions_CreateLogs(t *testing.T) {
 func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 	type testCase struct {
 		name           string
-		statements     []transformconfig.ContextStatements
+		statements     []ContextStatements
 		factoryOptions []FactoryOption
 		wantErrorWith  string
 	}
@@ -1168,9 +1167,9 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 	tests := []testCase{
 		{
 			name: "with metric functions : statement with added metric func",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("metric"),
+					Context:    ContextID("metric"),
 					Statements: []string{`set(cache["attr"], TestMetricFunc())`},
 				},
 			},
@@ -1182,9 +1181,9 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 		},
 		{
 			name: "with metric functions : statement with missing metric func",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("metric"),
+					Context:    ContextID("metric"),
 					Statements: []string{`set(cache["attr"], TestMetricFunc())`},
 				},
 			},
@@ -1196,9 +1195,9 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 		},
 		{
 			name: "with metric functions : only custom functions",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("metric"),
+					Context:    ContextID("metric"),
 					Statements: []string{`testMetricFunc()`},
 				},
 			},
@@ -1208,9 +1207,9 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 		},
 		{
 			name: "with metric functions : missing default functions",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("metric"),
+					Context:    ContextID("metric"),
 					Statements: []string{`set(description, "TestMetricFunc()")`},
 				},
 			},
@@ -1221,9 +1220,9 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 		},
 		{
 			name: "with datapoint functions : statement with added datapoint func",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("datapoint"),
+					Context:    ContextID("datapoint"),
 					Statements: []string{`set(cache["attr"], TestDataPointFunc())`},
 				},
 			},
@@ -1235,9 +1234,9 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 		},
 		{
 			name: "with datapoint functions : statement with missing datapoint func",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("datapoint"),
+					Context:    ContextID("datapoint"),
 					Statements: []string{`set(cache["attr"], TestDataPointFunc())`},
 				},
 			},
@@ -1249,9 +1248,9 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 		},
 		{
 			name: "with datapoint functions : only custom functions",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("datapoint"),
+					Context:    ContextID("datapoint"),
 					Statements: []string{`testDataPointFunc()`},
 				},
 			},
@@ -1261,9 +1260,9 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 		},
 		{
 			name: "with datapoint functions : missing default functions",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("datapoint"),
+					Context:    ContextID("datapoint"),
 					Statements: []string{`set(attributes["test"], "TestDataPointFunc()")`},
 				},
 			},
@@ -1274,9 +1273,9 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 		},
 		{
 			name: "with exemplar functions : statement with added exemplar func",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("exemplar"),
+					Context:    ContextID("exemplar"),
 					Statements: []string{`set(cache["attr"], TestExemplarFunc())`},
 				},
 			},
@@ -1287,9 +1286,9 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 		},
 		{
 			name: "with exemplar functions : statement with missing exemplar func",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("exemplar"),
+					Context:    ContextID("exemplar"),
 					Statements: []string{`set(cache["attr"], TestExemplarFunc())`},
 				},
 			},
@@ -1300,9 +1299,9 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 		},
 		{
 			name: "with exemplar functions : only custom functions",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("exemplar"),
+					Context:    ContextID("exemplar"),
 					Statements: []string{`testExemplarFunc()`},
 				},
 			},
@@ -1312,9 +1311,9 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 		},
 		{
 			name: "with exemplar functions : missing default functions",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("exemplar"),
+					Context:    ContextID("exemplar"),
 					Statements: []string{`set(filtered_attributes["test"], "TestExemplarFunc()")`},
 				},
 			},
@@ -1348,7 +1347,7 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 	type testCase struct {
 		name           string
-		statements     []transformconfig.ContextStatements
+		statements     []ContextStatements
 		factoryOptions []FactoryOption
 		wantErrorWith  string
 	}
@@ -1356,9 +1355,9 @@ func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 	tests := []testCase{
 		{
 			name: "with profile functions : statement with added profile func",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("profile"),
+					Context:    ContextID("profile"),
 					Statements: []string{`set(cache["attr"], TestProfileFunc())`},
 				},
 			},
@@ -1369,9 +1368,9 @@ func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 		},
 		{
 			name: "with profile functions : statement with missing profile func",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("profile"),
+					Context:    ContextID("profile"),
 					Statements: []string{`set(cache["attr"], TestProfileFunc())`},
 				},
 			},
@@ -1382,9 +1381,9 @@ func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 		},
 		{
 			name: "with profile functions : only custom functions",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("profile"),
+					Context:    ContextID("profile"),
 					Statements: []string{`testProfileFunc()`},
 				},
 			},
@@ -1394,9 +1393,9 @@ func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 		},
 		{
 			name: "with profile functions : missing default functions",
-			statements: []transformconfig.ContextStatements{
+			statements: []ContextStatements{
 				{
-					Context:    transformconfig.ContextID("profile"),
+					Context:    ContextID("profile"),
 					Statements: []string{`set(attributes["test"], TestProfileFunc())`},
 				},
 			},

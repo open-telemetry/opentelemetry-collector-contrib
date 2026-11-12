@@ -15,11 +15,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/transformconfig"
 )
 
 type TracesConsumer interface {
-	Context() transformconfig.ContextID
+	Context() ContextID
 	ConsumeTraces(ctx context.Context, td ptrace.Traces, cache *pcommon.Map) error
 }
 
@@ -28,8 +27,8 @@ type traceStatements struct {
 	expr.BoolExpr[*ottlspan.TransformContext]
 }
 
-func (traceStatements) Context() transformconfig.ContextID {
-	return transformconfig.Span
+func (traceStatements) Context() ContextID {
+	return Span
 }
 
 func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces, cache *pcommon.Map) error {
@@ -64,8 +63,8 @@ type spanEventStatements struct {
 	expr.BoolExpr[*ottlspanevent.TransformContext]
 }
 
-func (spanEventStatements) Context() transformconfig.ContextID {
-	return transformconfig.SpanEvent
+func (spanEventStatements) Context() ContextID {
+	return SpanEvent
 }
 
 func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces, cache *pcommon.Map) error {
@@ -188,7 +187,7 @@ func convertSpanEventStatements(pc *ottl.ParserCollection[TracesConsumer], state
 	return spanEventStatements{seStatements, globalExpr}, nil
 }
 
-func (tpc *TraceParserCollection) ParseContextStatements(contextStatements transformconfig.ContextStatements) (TracesConsumer, error) {
+func (tpc *TraceParserCollection) ParseContextStatements(contextStatements ContextStatements) (TracesConsumer, error) {
 	pc := ottl.ParserCollection[TracesConsumer](*tpc)
 	if contextStatements.Context != "" {
 		return pc.ParseStatementsWithContext(string(contextStatements.Context), contextStatements, true)
