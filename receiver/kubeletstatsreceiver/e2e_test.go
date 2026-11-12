@@ -95,7 +95,9 @@ func TestE2EAllMetricGroups(t *testing.T) {
 		}
 	}()
 
-	wantEntries := 10 // Minimal number of metrics to wait for.
+	// The collection interval is 20s; a few batches are enough because the
+	// scrape-based CPU usage only needs one earlier scrape.
+	wantEntries := 3 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
 
 	actualMetrics := metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1]

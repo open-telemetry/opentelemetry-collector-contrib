@@ -17,7 +17,12 @@ data:
       kubelet_stats:
         auth_type: "serviceAccount"
         endpoint: "https://${env:K8S_NODE_IP}:10250"
-        collection_interval: 10s
+        # Longer than the kubelet's maximum stats housekeeping interval (15s),
+        # so every scrape sees a fresh CPU sample for the idle test container.
+        # With a shorter interval two scrapes can read the same sample, and the
+        # scrape-based CPU usage (and the CPU utilization metrics derived from
+        # it) is skipped for that scrape.
+        collection_interval: 20s
         node: ${env:K8S_NODE_NAME}
         k8s_api_config:
           auth_type: serviceAccount
