@@ -480,6 +480,35 @@ func TestGetInnodbTransactionStats(t *testing.T) {
 	assert.Equal(t, int64(17), got.maxActiveTransactionDuration)
 }
 
+func TestGetAutoIncrementStats(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT c.TABLE_SCHEMA, c.TABLE_NAME, c.COLUMN_NAME").
+		WillReturnRows(sqlmock.NewRows([]string{
+			"TABLE_SCHEMA",
+			"TABLE_NAME",
+			"COLUMN_NAME",
+			"AUTO_INCREMENT",
+			"MAX_VALUE",
+			"UTILIZATION_RATIO",
+		}).AddRow("a_schema", "a_table", "id", 1073741823.0, 2147483647.0, 0.5))
+
+	c := &mySQLClient{client: db}
+	got, err := c.getAutoIncrementStats()
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+
+	require.Len(t, got, 1)
+	assert.Equal(t, "a_schema", got[0].schema)
+	assert.Equal(t, "a_table", got[0].table)
+	assert.Equal(t, "id", got[0].column)
+	assert.InDelta(t, 1073741823.0, got[0].currentValue, 0.0001)
+	assert.InDelta(t, 2147483647.0, got[0].maxValue, 0.0001)
+	assert.InDelta(t, 0.5, got[0].utilizationRatio, 0.0001)
+}
+
 func TestRowsIterationErrorIsReturned(t *testing.T) {
 	// sql.Rows.Next() returns false both at the end of the result set and when
 	// iteration fails, so each query method must check rows.Err() before
@@ -505,6 +534,14 @@ func TestRowsIterationErrorIsReturned(t *testing.T) {
 			values:  []driver.Value{"schema", "table", 1, 2, 3, 4},
 			call: func(c *mySQLClient) (any, error) {
 				return c.getTableStats()
+			},
+		},
+		{
+			name:    "getAutoIncrementStats",
+			columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME", "AUTO_INCREMENT", "MAX_VALUE", "UTILIZATION_RATIO"},
+			values:  []driver.Value{"schema", "table", "id", 1073741823.0, 2147483647.0, 0.5},
+			call: func(c *mySQLClient) (any, error) {
+				return c.getAutoIncrementStats()
 			},
 		},
 		{
