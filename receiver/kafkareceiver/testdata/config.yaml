@@ -103,11 +103,6 @@ kafka/valid_logs_without_exclude:
     - logs
     encoding: otlp_proto
 
-kafka/partition_processing:
-  partition_processing:
-    independent: true
-    max_buffered_batches: 2
-
 kafka/partition_processing_max_prefetch:
   partition_processing:
     independent: true
@@ -120,10 +115,6 @@ kafka/partition_processing_max_prefetch_bytes:
     max_prefetch:
       batches: 2
       bytes: 33554432
-
-kafka/non_independent_zero_max_buffered_batches:
-  partition_processing:
-    max_buffered_batches: 0
 
 kafka/partition_processing_max_in_flight:
   partition_processing:
@@ -209,11 +200,6 @@ kafka/invalid_exclude_topics_profiles_empty:
     - ""
     encoding: otlp_proto
 
-kafka/invalid_partition_processing_zero_buffered_batches:
-  partition_processing:
-    independent: true
-    max_buffered_batches: 0
-
 kafka/invalid_partition_processing_zero_max_prefetch_batches:
   partition_processing:
     independent: true
@@ -225,13 +211,6 @@ kafka/invalid_partition_processing_negative_max_prefetch_bytes:
     independent: true
     max_prefetch:
       bytes: -1
-
-kafka/invalid_partition_processing_max_buffered_batches_and_max_prefetch:
-  partition_processing:
-    independent: true
-    max_buffered_batches: 2
-    max_prefetch:
-      batches: 2
 
 kafka/invalid_partition_processing_manual_commit:
   autocommit:

@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -111,30 +112,21 @@ func (b *buffer) MarshalAndEncode(req gogoProto) ([]byte, error) {
 	return snappy.Encode(b.snappy, b.protobuf), nil
 }
 
-// A reusable buffer pool for serializing protobufs and compressing them with Snappy.
-var bufferPool = sync.Pool{
-	New: func() any {
-		return &buffer{
-			protobuf: nil,
-			snappy:   nil,
-		}
-	},
-}
-
-// encodeRequest serializes req and compresses it with Snappy into a payload of its own.
+// newEncodeBuffers returns a channel that holds the buffers of an exporter for serializing
+// protobufs and compressing them with Snappy.
 //
-// The protobuf and Snappy buffers are sized for the uncompressed request, which is often an order of
-// magnitude larger than the payload, and they are returned to the pool before the payload is sent.
-// A request that waits for a slow endpoint or between retries then holds only the compressed
-// payload, instead of both buffers for the whole duration of the send.
-func encodeRequest(req gogoProto) ([]byte, error) {
-	buf := bufferPool.Get().(*buffer)
-	defer bufferPool.Put(buf)
-	compressed, err := buf.MarshalAndEncode(req)
-	if err != nil {
-		return nil, err
+// It holds min(encoders, GOMAXPROCS) buffers, encoders being the number of goroutines of the exporter
+// that can encode a request at the same time. The buffers are given back before the payload is sent,
+// so that encoding only uses the CPU, and more buffers would not encode more requests at the same
+// time. Every buffer grows to the size of the largest request it encoded, so the number of buffers
+// bounds the memory they keep.
+func newEncodeBuffers(encoders int) chan *buffer {
+	n := max(1, min(encoders, runtime.GOMAXPROCS(0)))
+	buffers := make(chan *buffer, n)
+	for range n {
+		buffers <- &buffer{}
 	}
-	return bytes.Clone(compressed), nil
+	return buffers
 }
 
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
@@ -158,6 +150,9 @@ type prwExporter struct {
 	// HTTP headers on every outbound remote write request.
 	includeMetadataKeys []string
 
+	// encodeBuffers holds the buffers for serializing and compressing requests. See encodeRequest.
+	encodeBuffers chan *buffer
+
 	// When concurrency is enabled, concurrent goroutines would potentially
 	// fight over the same batchState object. To avoid this, we use a pool
 	// to provide each goroutine with its own state.
@@ -175,6 +170,30 @@ type prwExporter struct {
 	// flight and the ones of the requests still queued give up.
 	shutdownCtx       context.Context
 	cancelShutdownCtx context.CancelFunc
+}
+
+// encodeRequest serializes req and compresses it with Snappy into a payload of its own.
+//
+// It waits for one of the buffers of the exporter, and returns the cause of ctx if ctx is done
+// first. An error serializing req is permanent, since a retry would not serialize it either.
+//
+// The protobuf and Snappy buffers are sized for the uncompressed request, which is often an order of
+// magnitude larger than the payload, and they are given back before the payload is sent.
+// A request that waits for a slow endpoint or between retries then holds only the compressed
+// payload, instead of both buffers for the whole duration of the send.
+func (prwe *prwExporter) encodeRequest(ctx context.Context, req gogoProto) ([]byte, error) {
+	var buf *buffer
+	select {
+	case buf = <-prwe.encodeBuffers:
+	case <-ctx.Done():
+		return nil, context.Cause(ctx)
+	}
+	defer func() { prwe.encodeBuffers <- buf }()
+	compressed, err := buf.MarshalAndEncode(req)
+	if err != nil {
+		return nil, consumererror.NewPermanent(err)
+	}
+	return bytes.Clone(compressed), nil
 }
 
 func newPRWTelemetry(set exporter.Settings, endpointURL *url.URL) (prwTelemetry, error) {
@@ -230,6 +249,15 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 	// Set the desired number of consumers as a metric for the exporter.
 	telemetry.setNumberConsumer(context.Background(), int64(concurrency))
 
+	// Every call to export encodes with up to concurrency workers. With the feature gate enabled, the
+	// queue calls PushMetrics from num_consumers goroutines at the same time, unless the WAL holds the
+	// requests: a single goroutine then exports them.
+	encoders := concurrency
+	if metadata.ExporterPrometheusremotewritexporterEnableMultipleWorkersFeatureGate.IsEnabled() &&
+		cfg.RemoteWriteQueue.Enabled && !cfg.WAL.HasValue() {
+		encoders *= max(1, cfg.RemoteWriteQueue.NumConsumers)
+	}
+
 	shutdownCtx, cancelShutdownCtx := context.WithCancel(context.Background())
 	prwe := &prwExporter{
 		endpointURL:         endpointURL,
@@ -240,6 +268,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		userAgentHeader:     userAgentHeader,
 		maxBatchSizeBytes:   cfg.MaxBatchSizeBytes,
 		concurrency:         concurrency,
+		encodeBuffers:       newEncodeBuffers(encoders),
 		clientSettings:      &cfg.HTTP,
 		settings:            set.TelemetrySettings,
 		retrySettings:       cfg.BackOffConfig,
@@ -550,9 +579,9 @@ func (prwe *prwExporter) handleRequests(ctx context.Context, input chan *prompb.
 		if !ok {
 			return errs
 		}
-		reqBuf, errMarshal := encodeRequest(request)
+		reqBuf, errMarshal := prwe.encodeRequest(ctx, request)
 		if errMarshal != nil {
-			return multierr.Append(errs, consumererror.NewPermanent(errMarshal))
+			return multierr.Append(errs, errMarshal)
 		}
 		// The request is not used after this point: the attempts send reqBuf.
 		sampleCount := writeRequestSampleCount(request)
