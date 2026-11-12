@@ -4,14 +4,18 @@
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
+	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 )
 
 type routingKey int
@@ -60,6 +64,23 @@ type Config struct {
 	RoutingAttributes []string `mapstructure:"routing_attributes"`
 }
 
+var errMultipleProtocolsProvided = errors.New("only one of protocol::otlp and protocol::otlp_http should be specified")
+
+// Unmarshal rejects a configuration that sets both protocols. protocol::otlp is always populated by the
+// default config, so only the raw configuration can tell whether the user wrote it.
+func (c *Config) Unmarshal(conf *confmap.Conf) error {
+	// A null value, as written when a default config is marshaled, means the key is not set.
+	for _, key := range []string{"protocol::otlp", "protocol::otlp_http"} {
+		if conf.IsSet(key) && conf.Get(key) == nil {
+			conf.Delete(key)
+		}
+	}
+	if conf.IsSet("protocol::otlp") && conf.IsSet("protocol::otlp_http") {
+		return errMultipleProtocolsProvided
+	}
+	return conf.Unmarshal(c)
+}
+
 // Validate checks if the exporter configuration is valid.
 func (c *Config) Validate() error {
 	// routing_attributes only has meaning when routing_key=attributes.
@@ -71,12 +92,89 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("routing_attributes can only be used when routing_key is %q; got %q. Remove routing_attributes or set routing_key to %q", attrRoutingStr, c.RoutingKey, attrRoutingStr)
 	}
 
+	if c.Protocol.OTLPHTTP.HasValue() {
+		return validateHTTPEndpoints(c.Protocol.OTLPHTTP.Get())
+	}
+
 	return nil
 }
 
-// Protocol holds the individual protocol-specific settings. Only OTLP is supported at the moment.
+type httpEndpoint struct {
+	name  string
+	value *string
+}
+
+// httpEndpoints lists every endpoint of the OTLP/HTTP exporter configuration.
+func httpEndpoints(cfg *otlphttpexporter.Config) []httpEndpoint {
+	return []httpEndpoint{
+		{"endpoint", &cfg.ClientConfig.Endpoint},
+		{"traces_endpoint", &cfg.TracesEndpoint},
+		{"metrics_endpoint", &cfg.MetricsEndpoint},
+		{"logs_endpoint", &cfg.LogsEndpoint},
+	}
+}
+
+// validateHTTPEndpoints checks that every endpoint set on the OTLP/HTTP sub-exporter has a scheme and a host.
+// The host and port are replaced by the resolved backend, the rest of the URL is kept. The otlphttp exporter
+// appends /v1/<signal> to endpoint, so it cannot carry a query or a fragment.
+func validateHTTPEndpoints(cfg *otlphttpexporter.Config) error {
+	// The exporter only handles traces, metrics and logs, so a profiles endpoint would never be used.
+	if cfg.ProfilesEndpoint != "" {
+		return errors.New("protocol::otlp_http::profiles_endpoint is not supported, the exporter handles traces, metrics and logs only")
+	}
+	hasEndpoint := false
+	for _, e := range httpEndpoints(cfg) {
+		if *e.value == "" {
+			continue
+		}
+		hasEndpoint = true
+		u, err := url.Parse(*e.value)
+		if err != nil {
+			return fmt.Errorf("protocol::otlp_http::%s is not a valid URL: %w", e.name, err)
+		}
+		if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			return fmt.Errorf("protocol::otlp_http::%s must be an http:// or https:// URL with a host, got %q", e.name, *e.value)
+		}
+		if e.name == "endpoint" && (u.RawQuery != "" || u.Fragment != "") {
+			return fmt.Errorf("protocol::otlp_http::endpoint must not have a query or a fragment, use a per signal endpoint instead, got %q", *e.value)
+		}
+	}
+	if !hasEndpoint {
+		return errors.New("protocol::otlp_http: at least one of endpoint, traces_endpoint, metrics_endpoint or logs_endpoint must be set")
+	}
+	return nil
+}
+
+// httpPort returns the port of the first configured OTLP/HTTP endpoint that has one, or the OTLP/HTTP default.
+// It is used for resolved backends that come without a port.
+func httpPort(cfg *otlphttpexporter.Config) string {
+	for _, e := range httpEndpoints(cfg) {
+		if u, err := url.Parse(*e.value); err == nil && u.Port() != "" {
+			return u.Port()
+		}
+	}
+	return defaultHTTPPort
+}
+
+// checkHTTPSignalEndpoint fails when the OTLP/HTTP exporter has no endpoint for the signal, as the otlphttp
+// exporter does. Without it the backends would fail to be created later and only be logged.
+func checkHTTPSignalEndpoint(cfg *Config, signal string) error {
+	if !cfg.Protocol.OTLPHTTP.HasValue() {
+		return nil
+	}
+	h := cfg.Protocol.OTLPHTTP.Get()
+	perSignal := map[string]string{"traces": h.TracesEndpoint, "metrics": h.MetricsEndpoint, "logs": h.LogsEndpoint}[signal]
+	if h.ClientConfig.Endpoint == "" && perSignal == "" {
+		return fmt.Errorf("protocol::otlp_http: either endpoint or %s_endpoint must be specified", signal)
+	}
+	return nil
+}
+
+// Protocol holds the individual protocol-specific settings. OTLP/gRPC is used unless OTLPHTTP is set.
 type Protocol struct {
 	OTLP otlpexporter.Config `mapstructure:"otlp"`
+	// OTLPHTTP switches the backend exporters to OTLP/HTTP. It cannot be combined with OTLP.
+	OTLPHTTP configoptional.Optional[otlphttpexporter.Config] `mapstructure:"otlp_http"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
