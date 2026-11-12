@@ -489,6 +489,14 @@ type SequenceTelemetry struct {
 	_ struct{}
 }
 
+// recordFailure increments the failure counter, if set, when failed is true.
+// It is meant to be deferred, so failed is read once the sequence is done.
+func (t SequenceTelemetry) recordFailure(ctx context.Context, failed *bool) {
+	if *failed && t.FailureCounter != nil {
+		t.FailureCounter.Add(ctx, 1)
+	}
+}
+
 // StatementSequence represents a list of statements that will be executed sequentially for a TransformContext
 // and will handle errors based on an ErrorMode.
 type StatementSequence[K any] struct {
@@ -540,13 +548,7 @@ func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 		s.telemetrySettings.Logger.Debug("initial TransformContext before executing StatementSequence", zap.Any("TransformContext", tCtx))
 	}
 	var failed bool
-	if s.telemetry.FailureCounter != nil {
-		defer func() {
-			if failed {
-				s.telemetry.FailureCounter.Add(ctx, 1)
-			}
-		}()
-	}
+	defer s.telemetry.recordFailure(ctx, &failed)
 	for _, statement := range s.statements {
 		_, _, err := statement.Execute(ctx, tCtx)
 		if err != nil {
@@ -628,13 +630,7 @@ func NewConditionSequence[K any](conditions []*Condition[K], telemetrySettings c
 func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	var atLeastOneMatch bool
 	var failed bool
-	if c.telemetry.FailureCounter != nil {
-		defer func() {
-			if failed {
-				c.telemetry.FailureCounter.Add(ctx, 1)
-			}
-		}()
-	}
+	defer c.telemetry.recordFailure(ctx, &failed)
 	for _, condition := range c.conditions {
 		match, err := condition.Eval(ctx, tCtx)
 		if c.telemetrySettings.Logger.Core().Enabled(zap.DebugLevel) {
