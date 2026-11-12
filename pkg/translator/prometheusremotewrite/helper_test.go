@@ -407,7 +407,7 @@ func Test_createLabelSet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			labelNamer := otlptranslator.LabelNamer{PreserveMultipleUnderscores: true}
-			got, err := createAttributes(tt.resource, tt.orig, pcommon.NewInstrumentationScope(), tt.externalLabels, nil, true, labelNamer, false, tt.extras...)
+			got, err := createAttributes(tt.resource, tt.orig, pcommon.NewInstrumentationScope(), "", tt.externalLabels, nil, true, labelNamer, false, tt.extras...)
 			if tt.expectErr {
 				require.Error(t, err)
 				return
@@ -432,7 +432,7 @@ func BenchmarkCreateAttributes(b *testing.B) {
 
 	for b.Loop() {
 		//nolint:errcheck
-		createAttributes(r, m, pcommon.NewInstrumentationScope(), ext, nil, true, otlptranslator.LabelNamer{}, false)
+		createAttributes(r, m, pcommon.NewInstrumentationScope(), "", ext, nil, true, otlptranslator.LabelNamer{}, false)
 	}
 }
 
@@ -1092,6 +1092,7 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 				metric.Summary().DataPoints(),
 				pcommon.NewResource(),
 				pcommon.NewInstrumentationScope(),
+				"",
 				Settings{},
 				metric.Name(),
 			)
@@ -1272,6 +1273,7 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 				metric.Histogram().DataPoints(),
 				pcommon.NewResource(),
 				pcommon.NewInstrumentationScope(),
+				"",
 				tt.settings,
 				metric.Name(),
 			)
@@ -1475,6 +1477,7 @@ func TestScopeAttributesExported(t *testing.T) {
 	rm.Resource().Attributes().PutStr("service.name", "test-service")
 
 	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.SetSchemaUrl("https://opentelemetry.io/schemas/1.7.0")
 	scope := sm.Scope()
 	scope.SetName("test-scope")
 	scope.SetVersion("1.0.0")
@@ -1508,6 +1511,7 @@ func TestScopeAttributesExported(t *testing.T) {
 	// Check for scope attributes
 	assert.Equal(t, "test-scope", labels["otel_scope_name"], "otel_scope_name should be present")
 	assert.Equal(t, "1.0.0", labels["otel_scope_version"], "otel_scope_version should be present")
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.7.0", labels["otel_scope_schema_url"], "otel_scope_schema_url should be present")
 	assert.Equal(t, "scope-value", labels["otel_scope_scope_attr"], "scope attribute should be present with prefix")
 }
 
@@ -1519,6 +1523,7 @@ func TestDisableScopeInfo(t *testing.T) {
 	rm.Resource().Attributes().PutStr("service.name", "test-service")
 
 	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.SetSchemaUrl("https://opentelemetry.io/schemas/1.7.0")
 	scope := sm.Scope()
 	scope.SetName("test-scope")
 	scope.SetVersion("1.0.0")
@@ -1552,6 +1557,7 @@ func TestDisableScopeInfo(t *testing.T) {
 	// Check that scope attributes are NOT present
 	assert.NotContains(t, labels, "otel_scope_name")
 	assert.NotContains(t, labels, "otel_scope_version")
+	assert.NotContains(t, labels, "otel_scope_schema_url")
 	assert.NotContains(t, labels, "otel_scope_scope_attr")
 }
 
@@ -1567,6 +1573,10 @@ func TestConflictingScopeAttributesDropped(t *testing.T) {
 	scope.Attributes().PutStr("name", "dropped-name")
 	scope.Attributes().PutStr("version", "dropped-version")
 	scope.Attributes().PutStr("schema_url", "dropped-schema-url")
+	scope.Attributes().PutStr("schema.url", "dropped-sanitized-schema-url")
+	scope.Attributes().PutStr("a_b", "val2")
+	scope.Attributes().PutStr("a.b", "val1")
+	scope.Attributes().PutStr("empty_attr", "")
 	scope.Attributes().PutStr("valid_attr", "valid-value")
 
 	m := sm.Metrics().AppendEmpty()
@@ -1591,6 +1601,8 @@ func TestConflictingScopeAttributesDropped(t *testing.T) {
 
 	assert.Equal(t, "test-scope", labels["otel_scope_name"], "otel_scope_name should come from scope.Name(), not attribute")
 	assert.Equal(t, "1.0.0", labels["otel_scope_version"], "otel_scope_version should come from scope.Version(), not attribute")
-	assert.NotContains(t, labels, "otel_scope_schema_url", "schema_url should not be exported as scope attribute")
+	assert.NotContains(t, labels, "otel_scope_schema_url", "schema_url and schema.url should not be exported as scope attribute when SchemaUrl() is empty")
+	assert.Equal(t, "val1;val2", labels["otel_scope_a_b"], "colliding scope attributes should be concatenated in lexicographical order of original keys")
+	assert.NotContains(t, labels, "otel_scope_empty_attr", "empty scope attribute value should be omitted")
 	assert.Equal(t, "valid-value", labels["otel_scope_valid_attr"], "valid scope attribute should be present")
 }
