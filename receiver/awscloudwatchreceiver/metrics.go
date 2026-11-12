@@ -62,6 +62,12 @@ func newCloudWatchMetricsScraper(cfg *Config, settings receiver.Settings) *cloud
 		if discoveryCfg.Limit <= 0 {
 			discoveryCfg.Limit = defaultMetricsDiscoverLimit
 		}
+		if discoveryCfg.legacyFiltersForm {
+			settings.Logger.Warn("metrics.discovery.filters as a single object is deprecated; use the list form with metric_names")
+		}
+		if len(discoveryCfg.Stats) > 0 {
+			settings.Logger.Warn("metrics.discovery.stats is deprecated; set stats per filter entry")
+		}
 		discovery = &discoveryCfg
 	}
 	return &cloudWatchMetricsScraper{
@@ -153,41 +159,100 @@ func alignTimeToPeriod(t time.Time, periodSec int64) time.Time {
 	return time.Unix(aligned, 0).UTC()
 }
 
-// listMetrics discovers metrics via ListMetrics API, respecting discovery config (namespace, metric name, limit).
-func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQuery, error) {
-	input := &cloudwatch.ListMetricsInput{}
-	if f := s.discovery.Filters.Get(); f != nil {
-		if f.Namespace != "" {
-			input.Namespace = aws.String(f.Namespace)
+// listSpec is one paginated ListMetrics call plus the statistics to assign to the metrics it discovers.
+type listSpec struct {
+	input *cloudwatch.ListMetricsInput
+	stats []string
+}
+
+// listSpecs expands the configured discovery filters into the ListMetrics calls to perform.
+func (s *cloudWatchMetricsScraper) listSpecs() []listSpec {
+	if len(s.discovery.Filters) == 0 {
+		return []listSpec{{input: &cloudwatch.ListMetricsInput{}, stats: s.discovery.Stats}}
+	}
+	var specs []listSpec
+	for _, f := range s.discovery.Filters {
+		stats := f.Stats
+		if len(stats) == 0 {
+			stats = s.discovery.Stats // deprecated top-level fallback; nil means Summary default
 		}
-		if f.MetricName != "" {
-			input.MetricName = aws.String(f.MetricName)
+		var namespace *string
+		if f.Namespace != "" {
+			namespace = aws.String(f.Namespace)
+		}
+		if len(f.MetricNames) == 0 {
+			specs = append(specs, listSpec{input: &cloudwatch.ListMetricsInput{Namespace: namespace}, stats: stats})
+			continue
+		}
+		for _, name := range f.MetricNames {
+			specs = append(specs, listSpec{
+				input: &cloudwatch.ListMetricsInput{Namespace: namespace, MetricName: aws.String(name)},
+				stats: stats,
+			})
 		}
 	}
+	return specs
+}
 
+// metricIdentity builds a stable dedup key from a metric's namespace, name and full dimension set.
+func metricIdentity(namespace, metricName string, dimensions map[string]string) string {
+	keys := make([]string, 0, len(dimensions))
+	for k := range dimensions {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	var sb strings.Builder
+	sb.WriteString(namespace)
+	sb.WriteByte('\x00')
+	sb.WriteString(metricName)
+	for _, k := range keys {
+		sb.WriteByte('\x00')
+		sb.WriteString(k)
+		sb.WriteByte('\x00')
+		sb.WriteString(dimensions[k])
+	}
+	return sb.String()
+}
+
+// listMetrics discovers metrics per filter entry in config order, first entry wins on overlap, capped by limit.
+func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQuery, error) {
 	var out []MetricQuery
-	var nextToken *string
-	for {
-		input.NextToken = nextToken
-		resp, err := s.client.ListMetrics(ctx, input)
-		if err != nil {
-			return nil, err
+	seen := make(map[string]struct{})
+	for _, spec := range s.listSpecs() {
+		if len(out) >= s.discovery.Limit {
+			return out, nil
 		}
-		for _, met := range resp.Metrics {
-			if len(out) >= s.discovery.Limit {
-				return out, nil
+		input := spec.input
+		var nextToken *string
+		for {
+			input.NextToken = nextToken
+			resp, err := s.client.ListMetrics(ctx, input)
+			if err != nil {
+				return nil, err
 			}
-			q := MetricQuery{
-				Namespace:  aws.ToString(met.Namespace),
-				MetricName: aws.ToString(met.MetricName),
-				Dimensions: dimensionsToMap(met.Dimensions),
-				Stats:      s.discovery.Stats,
+			for _, met := range resp.Metrics {
+				if len(out) >= s.discovery.Limit {
+					return out, nil
+				}
+				namespace := aws.ToString(met.Namespace)
+				metricName := aws.ToString(met.MetricName)
+				dimensions := dimensionsToMap(met.Dimensions)
+				key := metricIdentity(namespace, metricName, dimensions)
+				if _, ok := seen[key]; ok {
+					continue
+				}
+				seen[key] = struct{}{}
+				out = append(out, MetricQuery{
+					Namespace:  namespace,
+					MetricName: metricName,
+					Dimensions: dimensions,
+					Stats:      spec.stats,
+				})
 			}
-			out = append(out, q)
-		}
-		nextToken = resp.NextToken
-		if nextToken == nil {
-			break
+			nextToken = resp.NextToken
+			if nextToken == nil {
+				break
+			}
 		}
 	}
 	return out, nil
