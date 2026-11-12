@@ -1,0 +1,6 @@
+change_type: deprecation
+component: exporter/azure_data_explorer
+note: Rename `azuredataexplorer` to `azure_data_explorer`. The old name still works as a deprecated alias.
+issues: [45339]
+subtext:
+change_logs: [user]
