@@ -102,6 +102,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 			scopeMetrics := scopeMetricsSlice.At(j)
 			metricSlice := scopeMetrics.Metrics()
 			scope := scopeMetrics.Scope()
+			schemaURL := scopeMetrics.SchemaUrl()
 
 			// TODO: decide if instrumentation library information should be exported as labels
 			for k := 0; k < metricSlice.Len(); k++ {
@@ -128,7 +129,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 						break
 					}
-					errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, scope, settings, promName))
+					errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, scope, schemaURL, settings, promName))
 				case pmetric.MetricTypeSum:
 					dataPoints := metric.Sum().DataPoints()
 					if dataPoints.Len() == 0 {
@@ -136,9 +137,9 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 						break
 					}
 					if metric.Sum().IsMonotonic() {
-						errs = multierr.Append(errs, c.addSumNumberDataPoints(dataPoints, resource, scope, metric, settings, promName))
+						errs = multierr.Append(errs, c.addSumNumberDataPoints(dataPoints, resource, scope, schemaURL, metric, settings, promName))
 					} else {
-						errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, scope, settings, promName))
+						errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, scope, schemaURL, settings, promName))
 					}
 				case pmetric.MetricTypeHistogram:
 					dataPoints := metric.Histogram().DataPoints()
@@ -146,7 +147,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 						break
 					}
-					errs = multierr.Append(errs, c.addHistogramDataPoints(dataPoints, resource, scope, settings, promName))
+					errs = multierr.Append(errs, c.addHistogramDataPoints(dataPoints, resource, scope, schemaURL, settings, promName))
 				case pmetric.MetricTypeExponentialHistogram:
 					dataPoints := metric.ExponentialHistogram().DataPoints()
 					if dataPoints.Len() == 0 {
@@ -157,6 +158,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 						dataPoints,
 						resource,
 						scope,
+						schemaURL,
 						settings,
 						promName,
 					))
@@ -166,7 +168,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 						break
 					}
-					errs = multierr.Append(errs, c.addSummaryDataPoints(dataPoints, resource, scope, settings, promName))
+					errs = multierr.Append(errs, c.addSummaryDataPoints(dataPoints, resource, scope, schemaURL, settings, promName))
 				default:
 					errs = multierr.Append(errs, errors.New("unsupported metric type"))
 				}

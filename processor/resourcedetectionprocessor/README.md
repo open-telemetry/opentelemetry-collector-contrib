@@ -886,7 +886,7 @@ The `consul` detector accepts the following settings. Unset fields fall back to 
 | address | string | No | `127.0.0.1:8500` | Address of the Consul agent. |
 | datacenter | string | No | agent's datacenter | Datacenter to query. |
 | token | string | No | | Per-request ACL token that overrides the agent's default token. Only required when the [Consul ACL system](https://developer.hashicorp.com/consul/docs/security/acl) is enabled. |
-| token_file | string | No | | File containing the ACL token. Read once at startup. Only required when the Consul ACL system is enabled. |
+| token_file | string | No | | File containing the ACL token. Read on every detection. Only required when the Consul ACL system is enabled. |
 | namespace | string | No | | Namespace sent with each request. |
 | meta | map | No | | Allowlist of [node metadata](https://developer.hashicorp.com/consul/docs/agent/config/config-files#node_meta) keys to emit as resource attributes. Keys not listed here are dropped. |
 

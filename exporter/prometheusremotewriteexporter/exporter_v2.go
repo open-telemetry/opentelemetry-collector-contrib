@@ -77,7 +77,7 @@ func (prwe *prwExporter) handleRequestsV2(ctx context.Context, input chan *write
 			return errs
 		}
 
-		reqBuf, errMarshal := encodeRequest(request)
+		reqBuf, errMarshal := prwe.encodeRequest(ctx, request)
 		if errMarshal != nil {
 			return multierr.Append(errs, errMarshal)
 		}

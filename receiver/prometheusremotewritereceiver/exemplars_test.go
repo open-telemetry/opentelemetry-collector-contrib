@@ -10,7 +10,6 @@ import (
 
 	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
-	promremote "github.com/prometheus/prometheus/storage/remote"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -140,7 +139,7 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 			expectedWarnMsgs:  nil,
 		},
 		{
-			// A series that validateSeriesLabels would refuse loses the whole request, so its exemplars
+			// A series that validateSeriesLabels would refuse is not written, so its exemplars
 			// are not collected either.
 			name: "series with an empty label name is skipped",
 			req: &writev2.Request{
@@ -181,6 +180,77 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 						LabelsRefs: []uint32{1, 2, 1, 2},
 						Exemplars: []writev2.Exemplar{
 							{Value: 1, Timestamp: 1, LabelsRefs: []uint32{3, 4}},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    0,
+			expectedWarnMsgs:  nil,
+		},
+		{
+			name: "series with out-of-bounds UnitRef is skipped",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+							UnitRef: 99,
+						},
+						LabelsRefs: []uint32{1, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    0,
+			expectedWarnMsgs:  nil,
+		},
+		{
+			name: "series with out-of-bounds HelpRef is skipped",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+							HelpRef: 99,
+						},
+						LabelsRefs: []uint32{1, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    0,
+			expectedWarnMsgs:  nil,
+		},
+		{
+			name: "series with unsupported metric type is skipped",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_MetricType(99),
+						},
+						LabelsRefs: []uint32{1, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1},
 						},
 					},
 				},
@@ -234,16 +304,19 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			obs.TakeAll() // clear logs between subtests
 
-			stats := &promremote.WriteResponseStats{}
 			settings := receiver.Settings{
 				TelemetrySettings: component.TelemetrySettings{
 					Logger: logger,
 				},
 			}
 
-			result := collectExemplars(tt.req, settings, stats)
+			result := collectExemplars(tt.req, settings)
 
-			assert.Equal(t, tt.expectedExemplars, stats.Exemplars)
+			gotExemplars := 0
+			for _, slice := range result {
+				gotExemplars += slice.Len()
+			}
+			assert.Equal(t, tt.expectedExemplars, gotExemplars)
 			assert.Len(t, result, tt.expectedGroups)
 
 			warns := obs.FilterLevelExact(zapcore.WarnLevel).All()
@@ -278,15 +351,13 @@ func TestCollectExemplars_DropsEmptyLabelNames(t *testing.T) {
 			},
 		}
 
-		stats := &promremote.WriteResponseStats{}
 		settings := receiver.Settings{
 			TelemetrySettings: component.TelemetrySettings{
 				Logger: zap.NewNop(),
 			},
 		}
 
-		result := collectExemplars(req, settings, stats)
-		require.Equal(t, 1, stats.Exemplars)
+		result := collectExemplars(req, settings)
 
 		// The exemplar stays filed under the series it arrived with, and only the empty-named label
 		// is gone: the value, the timestamp and the labels around it are kept.
