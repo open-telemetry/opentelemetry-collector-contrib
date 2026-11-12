@@ -169,9 +169,11 @@ aws.ecs.launch_type | aws.ecs.launch_type
 &nbsp; | container.name
 &nbsp; | container.id
 &nbsp; | aws.ecs.docker.name 
-&nbsp; | container.image.tag
+&nbsp; | container.image.tags
 &nbsp; | aws.ecs.container.image.id
 &nbsp; | aws.ecs.container.exit_code
+
+The deprecated `container.image.tag` attribute is still available by disabling both the `receiver.awsecscontainermetrics.EmitV1ContainerConventions` and `receiver.awsecscontainermetrics.DontEmitV0ContainerConventions` feature gates.
 
 ## Full Configuration Examples
 This receiver emits 54 unique metrics. Customer may not want to send all of them to destinations. Following sections will show full configuration files for filtering and transforming existing metrics with different processors/exporters. 

@@ -7,11 +7,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/metadata"
 )
 
@@ -37,7 +37,7 @@ func TestContainerResource(t *testing.T) {
 		attributeECSDockerName:        "docker-container-1",
 		"container.image.name":        "nginx",
 		attributeContainerImageID:     "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
-		"container.image.tag":         "v1.0",
+		"container.image.tags":        []string{"v1.0"},
 		attributeContainerCreatedAt:   "2020-07-30T22:12:29.837074927Z",
 		attributeContainerStartedAt:   "2020-07-30T22:12:31.153459485Z",
 		attributeContainerKnownStatus: "RUNNING",
@@ -117,15 +117,8 @@ func TestContainerResourceFeatureGates(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := featuregate.GlobalRegistry().Set(metadata.ReceiverAwsecscontainermetricsEmitV1ContainerConventionsFeatureGate.ID(), tt.emitV1)
-			require.NoError(t, err)
-			err = featuregate.GlobalRegistry().Set(metadata.ReceiverAwsecscontainermetricsDontEmitV0ContainerConventionsFeatureGate.ID(), tt.dontEmitV0)
-			require.NoError(t, err)
-
-			defer func() {
-				_ = featuregate.GlobalRegistry().Set(metadata.ReceiverAwsecscontainermetricsEmitV1ContainerConventionsFeatureGate.ID(), false)
-				_ = featuregate.GlobalRegistry().Set(metadata.ReceiverAwsecscontainermetricsDontEmitV0ContainerConventionsFeatureGate.ID(), false)
-			}()
+			defer testutil.SetFeatureGateForTest(t, metadata.ReceiverAwsecscontainermetricsEmitV1ContainerConventionsFeatureGate, tt.emitV1)()
+			defer testutil.SetFeatureGateForTest(t, metadata.ReceiverAwsecscontainermetricsDontEmitV0ContainerConventionsFeatureGate, tt.dontEmitV0)()
 
 			r := containerResource(cm, zap.NewNop())
 			require.NotNil(t, r)
@@ -165,7 +158,7 @@ func TestContainerResourceForStoppedContainer(t *testing.T) {
 		attributeECSDockerName:        "docker-container-1",
 		"container.image.name":        "nginx",
 		attributeContainerImageID:     "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
-		"container.image.tag":         "v1.0",
+		"container.image.tags":        []string{"v1.0"},
 		attributeContainerCreatedAt:   "2020-07-30T22:12:29.837074927Z",
 		attributeContainerStartedAt:   "2020-07-30T22:12:31.153459485Z",
 		attributeContainerFinishedAt:  "2020-07-31T22:12:29.837074927Z",
