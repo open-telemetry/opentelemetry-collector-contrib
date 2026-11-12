@@ -65,11 +65,11 @@ func TestPartitionUploadsGroupsSequentially(t *testing.T) {
 	})
 }
 
-// TestPartitionGroupsUseOwnUploadTime verifies that each blob written by one
-// export request resolves time-based name segments when that blob is
-// uploaded, so a group uploaded after a time boundary is not written to the
-// previous time bucket.
-func TestPartitionGroupsUseOwnUploadTime(t *testing.T) {
+// TestPartitionGroupsShareRequestTime verifies that every blob written by one
+// export request resolves time-based name segments at the same instant, even
+// when an earlier upload crosses a time boundary. Blob names must be fully
+// resolved before grouping so that groups never share a final blob name.
+func TestPartitionGroupsShareRequestTime(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		cfg := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}/15`, true)
 		cfg.BlobNameFormat.TimeParserEnabled = true
@@ -88,14 +88,33 @@ func TestPartitionGroupsUseOwnUploadTime(t *testing.T) {
 			}).Return(nil)
 		exporter.client = client
 
-		start := time.Now()
+		hour := time.Now().Format("15")
 		require.NoError(t, exporter.ConsumeLogs(t.Context(), generateLogsWithActivities("a", "b")))
 
-		assert.Equal(t, []string{
-			"a/" + start.Format("15"),
-			"b/" + start.Add(time.Hour).Format("15"),
-		}, names)
+		assert.Equal(t, []string{"a/" + hour, "b/" + hour}, names)
 	})
+}
+
+// TestPartitionGroupsByResolvedBlobName verifies that resource entries whose
+// templates render differently but resolve to the same blob name are uploaded
+// together. Uploading them separately would let the second upload overwrite
+// the first.
+func TestPartitionGroupsByResolvedBlobName(t *testing.T) {
+	cfg := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
+	cfg.AppendBlob.Enabled = false
+	cfg.BlobNameFormat.TimeParserEnabled = true
+	cfg.BlobNameFormat.Timezone = "UTC"
+	exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
+	client := newRecordingAzBlobClient(nil)
+	exporter.client = client
+
+	// MST is the time zone layout token, so in UTC both render to UTC.json.
+	require.NoError(t, exporter.ConsumeLogs(t.Context(), generateLogsWithActivities("MST", "UTC")))
+
+	require.Len(t, client.uploads, 1)
+	require.Len(t, client.uploads["UTC.json"], 1)
+	assert.Equal(t, []string{"log for MST", "log for UTC"}, uploadedLogBodies(t, client.uploads["UTC.json"]))
 }
 
 func TestPartitionCancellationPreservesUnsentLogs(t *testing.T) {
@@ -242,12 +261,21 @@ func TestPartitionLaterResourceTemplateErrorFallsBack(t *testing.T) {
 
 func TestPartitionRenderedNamesAcrossSignals(t *testing.T) {
 	for _, signal := range []pipeline.Signal{pipeline.SignalLogs, pipeline.SignalMetrics, pipeline.SignalTraces} {
-		for _, counts := range [][]int{{1, 1, 2}, {1, 1}} {
-			t.Run(fmt.Sprintf("%s/%v", signal, counts), func(t *testing.T) {
+		for _, tc := range []struct {
+			scope  TemplateScope
+			counts []int
+		}{
+			{TemplateScopeResource, []int{1, 1, 2}},
+			{TemplateScopeResource, []int{1, 1}},
+			{TemplateScopeRequest, []int{1, 1, 2}},
+		} {
+			counts := tc.counts
+			t.Run(fmt.Sprintf("%s/%s/%v", signal, tc.scope, counts), func(t *testing.T) {
 				input := newPartitionSignalInput(signal, counts)
 				cfg := newPartitionTestConfig(input.countTemplate, true)
 				cfg.BlobNameFormat.MetricsFormat = input.countTemplate
 				cfg.BlobNameFormat.TracesFormat = input.countTemplate
+				cfg.BlobNameFormat.TemplateScope = tc.scope
 				cfg.AppendBlob.Enabled = false
 				exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), signal)
 				require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
@@ -262,6 +290,13 @@ func TestPartitionRenderedNamesAcrossSignals(t *testing.T) {
 				after, err := input.marshal()
 				require.NoError(t, err)
 				require.JSONEq(t, string(before), string(after), "export must not mutate the input")
+				if tc.scope == TemplateScopeRequest {
+					// The template is evaluated once against the whole request.
+					require.Len(t, client.uploads, 1)
+					require.Len(t, client.uploads["4.json"], 1)
+					assert.JSONEq(t, string(before), string(client.uploads["4.json"][0]))
+					return
+				}
 				require.Len(t, client.uploads["1.json"], 1)
 				assert.JSONEq(t, string(wantFirst), string(client.uploads["1.json"][0]))
 				if len(counts) == 3 {

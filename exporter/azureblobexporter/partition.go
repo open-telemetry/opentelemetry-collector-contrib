@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -24,6 +25,9 @@ type signalOps[T any] struct {
 	newPayload func() T
 	// resourceCount returns the number of resource entries in the payload.
 	resourceCount func(T) int
+	// view returns resource entry i of the payload as a blob name template's
+	// root object, without copying it.
+	view func(data T, i int) any
 	// copyResource appends a copy of resource entry i of src to dst.
 	copyResource func(src T, i int, dst T)
 	// moveResources moves every resource entry of src to the end of dst.
@@ -38,6 +42,7 @@ var logsOps = signalOps[plog.Logs]{
 	signal:        pipeline.SignalLogs,
 	newPayload:    plog.NewLogs,
 	resourceCount: func(ld plog.Logs) int { return ld.ResourceLogs().Len() },
+	view:          func(ld plog.Logs, i int) any { return logsView{ld.ResourceLogs().At(i)} },
 	copyResource: func(src plog.Logs, i int, dst plog.Logs) {
 		src.ResourceLogs().At(i).CopyTo(dst.ResourceLogs().AppendEmpty())
 	},
@@ -50,6 +55,7 @@ var metricsOps = signalOps[pmetric.Metrics]{
 	signal:        pipeline.SignalMetrics,
 	newPayload:    pmetric.NewMetrics,
 	resourceCount: func(md pmetric.Metrics) int { return md.ResourceMetrics().Len() },
+	view:          func(md pmetric.Metrics, i int) any { return metricsView{md.ResourceMetrics().At(i)} },
 	copyResource: func(src pmetric.Metrics, i int, dst pmetric.Metrics) {
 		src.ResourceMetrics().At(i).CopyTo(dst.ResourceMetrics().AppendEmpty())
 	},
@@ -62,6 +68,7 @@ var tracesOps = signalOps[ptrace.Traces]{
 	signal:        pipeline.SignalTraces,
 	newPayload:    ptrace.NewTraces,
 	resourceCount: func(td ptrace.Traces) int { return td.ResourceSpans().Len() },
+	view:          func(td ptrace.Traces, i int) any { return tracesView{td.ResourceSpans().At(i)} },
 	copyResource: func(src ptrace.Traces, i int, dst ptrace.Traces) {
 		src.ResourceSpans().At(i).CopyTo(dst.ResourceSpans().AppendEmpty())
 	},
@@ -72,67 +79,79 @@ var tracesOps = signalOps[ptrace.Traces]{
 
 type blobGroup[T any] struct {
 	data T
-	// A non-nil format is already rendered or explicitly selected for fallback.
-	// Never re-render it against the combined group.
-	nameFormat *string
+	name resolvedBlobName
 }
 
-// exportPartitioned partitions the payload by rendered blob name and uploads
-// each group.
-func exportPartitioned[T any](
+// export uploads the payload. With template_scope resource, it is partitioned
+// by blob name first; otherwise it is uploaded to a single blob.
+func export[T any](
 	ctx context.Context,
 	e *azureBlobExporter,
 	ops signalOps[T],
 	data T,
 	marshal func(T) ([]byte, error),
 ) error {
-	if err := ctx.Err(); err != nil {
-		return err
+	format := e.config.BlobNameFormat
+	if format.TemplateEnabled && format.TemplateScope == TemplateScopeResource && ops.resourceCount(data) > 0 {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		return uploadGroups(ctx, e, ops, partitionByBlobName(e, ops, data, e.now()), marshal)
 	}
-	return uploadGroups(ctx, e, ops, partitionByBlobName(e, ops, data), marshal)
+
+	payload, err := marshal(data)
+	if err != nil {
+		return fmt.Errorf("failed to marshal %s: %w", ops.signal.String(), err)
+	}
+	blobName, err := e.generateBlobNameWithCompression(ops.signal, data)
+	if err != nil {
+		return fmt.Errorf("failed to generate blobname: %w", err)
+	}
+	return e.consumeData(ctx, blobName, payload, ops.signal)
 }
 
 // partitionByBlobName splits the payload into groups of resource entries whose
-// blob name templates render to the same value, so that each group is uploaded
-// to the blob it is addressed to. Without this, the blob name would be rendered
-// once from the first resource entry and data belonging to other resource
-// entries would be written to that same blob.
+// blob name templates resolve to the same blob name at now, so that each group
+// is uploaded to the blob it is addressed to.
 //
-// The original payload is returned as a single group when the template is
-// disabled, when every resource entry renders to the same blob name, or when
-// rendering fails for any resource entry. In the failure case the upload path
-// falls back to the default blob name format, matching generateBlobName.
-func partitionByBlobName[T any](e *azureBlobExporter, ops signalOps[T], data T) []blobGroup[T] {
+// Templates are evaluated against a view of each resource entry, so resource
+// entries are only copied when they resolve to more than one blob name, and
+// then only once each. The original payload is returned as a single group when
+// every resource entry resolves to the same blob name, or when rendering fails
+// for any resource entry. In the failure case the default blob name format is
+// used, matching generateBlobNameWithCompression.
+func partitionByBlobName[T any](e *azureBlobExporter, ops signalOps[T], data T, now time.Time) []blobGroup[T] {
 	count := ops.resourceCount(data)
-	if !e.config.BlobNameFormat.TemplateEnabled || count <= 1 {
-		return []blobGroup[T]{{data: data}}
-	}
-
-	indices := make(map[string]int)
-	var groups []blobGroup[T]
+	groupOf := make([]int, count)
+	indices := make(map[resolvedBlobName]int)
+	var names []resolvedBlobName
 	for i := range count {
-		single := ops.newPayload()
-		ops.copyResource(data, i, single)
-
-		name, err := e.renderBlobNameTemplate(ops.signal, single)
+		rendered, err := e.renderBlobNameTemplate(ops.signal, ops.view(data, i))
 		if err != nil {
 			e.logger.Warn("Failed to execute blob name template, using default blob name format", zap.Error(err))
-			format := ops.defaultFormat(e.config.BlobNameFormat)
-			return []blobGroup[T]{{data: data, nameFormat: &format}}
+			name := e.resolveBlobName(now, ops.defaultFormat(e.config.BlobNameFormat))
+			return []blobGroup[T]{{data: data, name: name}}
 		}
 
+		name := e.resolveBlobName(now, rendered)
 		index, ok := indices[name]
 		if !ok {
-			indices[name] = len(groups)
-			groups = append(groups, blobGroup[T]{data: single, nameFormat: &name})
-			continue
+			index = len(names)
+			indices[name] = index
+			names = append(names, name)
 		}
-		ops.moveResources(single, groups[index].data)
+		groupOf[i] = index
 	}
 
-	if len(groups) == 1 {
-		// Every resource entry addresses the same blob: upload the original payload.
-		groups[0].data = data
+	if len(names) == 1 {
+		return []blobGroup[T]{{data: data, name: names[0]}}
+	}
+	groups := make([]blobGroup[T], len(names))
+	for index, name := range names {
+		groups[index] = blobGroup[T]{data: ops.newPayload(), name: name}
+	}
+	for i, index := range groupOf {
+		ops.copyResource(data, i, groups[index].data)
 	}
 	return groups
 }
@@ -157,16 +176,7 @@ func uploadGroups[T any](
 		if err != nil {
 			return fmt.Errorf("failed to marshal %s: %w", ops.signal.String(), err)
 		}
-		var blobName string
-		if group.nameFormat == nil {
-			blobName, err = e.generateBlobNameWithCompression(ops.signal, group.data)
-			if err != nil {
-				return fmt.Errorf("failed to generate blobname: %w", err)
-			}
-		} else {
-			blobName = e.appendCompressionExtension(e.formatBlobName(*group.nameFormat))
-		}
-		return e.consumeData(ctx, blobName, data, ops.signal)
+		return e.consumeData(ctx, e.finalizeBlobName(group.name), data, ops.signal)
 	}
 	if len(groups) == 1 {
 		return upload(groups[0])

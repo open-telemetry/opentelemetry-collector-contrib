@@ -59,93 +59,102 @@ func getAttrStandalone(attrs pcommon.Map, key string) any {
 	return nil
 }
 
+// tempFuncs take the template's root object, which is the whole payload with
+// template_scope request, or a view of one resource entry with template_scope
+// resource.
 var tempFuncs = template.FuncMap{
-	"getResourceSpanAttr": func(traces ptrace.Traces, rmIndex int, key string) any {
-		if traces.ResourceSpans().Len() > 0 {
-			rs := traces.ResourceSpans().At(rmIndex)
-			return getAttrStandalone(rs.Resource().Attributes(), key)
+	"getResourceSpanAttr": func(traces any, rmIndex int, key string) (any, error) {
+		rs, ok, err := resourceSpansAt(traces, rmIndex)
+		if !ok {
+			return nil, err
 		}
-		return nil
+		return getAttrStandalone(rs.Resource().Attributes(), key), nil
 	},
-	"getResourceMetricAttr": func(metrics pmetric.Metrics, rmIndex int, key string) any {
-		if metrics.ResourceMetrics().Len() > 0 {
-			rm := metrics.ResourceMetrics().At(rmIndex)
-			return getAttrStandalone(rm.Resource().Attributes(), key)
+	"getResourceMetricAttr": func(metrics any, rmIndex int, key string) (any, error) {
+		rm, ok, err := resourceMetricsAt(metrics, rmIndex)
+		if !ok {
+			return nil, err
 		}
-		return nil
+		return getAttrStandalone(rm.Resource().Attributes(), key), nil
 	},
-	"getResourceLogAttr": func(logs plog.Logs, rlIndex int, key string) any {
-		if logs.ResourceLogs().Len() > 0 {
-			rl := logs.ResourceLogs().At(rlIndex)
-			return getAttrStandalone(rl.Resource().Attributes(), key)
+	"getResourceLogAttr": func(logs any, rlIndex int, key string) (any, error) {
+		rl, ok, err := resourceLogsAt(logs, rlIndex)
+		if !ok {
+			return nil, err
 		}
-		return nil
+		return getAttrStandalone(rl.Resource().Attributes(), key), nil
 	},
-	"getScopeSpanAttr": func(traces ptrace.Traces, rmIndex, ilsIndex int, key string) any {
-		if traces.ResourceSpans().Len() > 0 {
-			rs := traces.ResourceSpans().At(rmIndex)
-			if rs.ScopeSpans().Len() > 0 {
-				ils := rs.ScopeSpans().At(ilsIndex)
-				return getAttrStandalone(ils.Scope().Attributes(), key)
+	"getScopeSpanAttr": func(traces any, rmIndex, ilsIndex int, key string) (any, error) {
+		rs, ok, err := resourceSpansAt(traces, rmIndex)
+		if !ok {
+			return nil, err
+		}
+		if rs.ScopeSpans().Len() > 0 {
+			ils := rs.ScopeSpans().At(ilsIndex)
+			return getAttrStandalone(ils.Scope().Attributes(), key), nil
+		}
+		return nil, nil
+	},
+	"getScopeMetricAttr": func(metrics any, rmIndex, ilsIndex int, key string) (any, error) {
+		rm, ok, err := resourceMetricsAt(metrics, rmIndex)
+		if !ok {
+			return nil, err
+		}
+		if rm.ScopeMetrics().Len() > 0 {
+			ils := rm.ScopeMetrics().At(ilsIndex)
+			return getAttrStandalone(ils.Scope().Attributes(), key), nil
+		}
+		return nil, nil
+	},
+	"getScopeLogAttr": func(logs any, rlIndex, ilsIndex int, key string) (any, error) {
+		rl, ok, err := resourceLogsAt(logs, rlIndex)
+		if !ok {
+			return nil, err
+		}
+		if rl.ScopeLogs().Len() > 0 {
+			ils := rl.ScopeLogs().At(ilsIndex)
+			return getAttrStandalone(ils.Scope().Attributes(), key), nil
+		}
+		return nil, nil
+	},
+	"getSpan": func(traces any, rmIndex, ilsIndex, spanIndex int) (any, error) {
+		rs, ok, err := resourceSpansAt(traces, rmIndex)
+		if err != nil {
+			return nil, err
+		}
+		if ok && rs.ScopeSpans().Len() > 0 {
+			ils := rs.ScopeSpans().At(ilsIndex)
+			if ils.Spans().Len() > 0 {
+				return ils.Spans().At(spanIndex), nil
 			}
 		}
-		return nil
+		return ptrace.Span{}, nil
 	},
-	"getScopeMetricAttr": func(metrics pmetric.Metrics, rmIndex, ilsIndex int, key string) any {
-		if metrics.ResourceMetrics().Len() > 0 {
-			rm := metrics.ResourceMetrics().At(rmIndex)
-			if rm.ScopeMetrics().Len() > 0 {
-				ils := rm.ScopeMetrics().At(ilsIndex)
-				return getAttrStandalone(ils.Scope().Attributes(), key)
+	"getMetric": func(metrics any, rmIndex, ilsIndex, metricIndex int) (any, error) {
+		rm, ok, err := resourceMetricsAt(metrics, rmIndex)
+		if err != nil {
+			return nil, err
+		}
+		if ok && rm.ScopeMetrics().Len() > 0 {
+			ils := rm.ScopeMetrics().At(ilsIndex)
+			if ils.Metrics().Len() > 0 {
+				return ils.Metrics().At(metricIndex), nil
 			}
 		}
-		return nil
+		return pmetric.Metric{}, nil
 	},
-	"getScopeLogAttr": func(logs plog.Logs, rlIndex, ilsIndex int, key string) any {
-		if logs.ResourceLogs().Len() > 0 {
-			rl := logs.ResourceLogs().At(rlIndex)
-			if rl.ScopeLogs().Len() > 0 {
-				ils := rl.ScopeLogs().At(ilsIndex)
-				return getAttrStandalone(ils.Scope().Attributes(), key)
+	"getLogRecord": func(logs any, rlIndex, ilsIndex, logIndex int) (any, error) {
+		rl, ok, err := resourceLogsAt(logs, rlIndex)
+		if err != nil {
+			return nil, err
+		}
+		if ok && rl.ScopeLogs().Len() > 0 {
+			ils := rl.ScopeLogs().At(ilsIndex)
+			if ils.LogRecords().Len() > 0 {
+				return ils.LogRecords().At(logIndex), nil
 			}
 		}
-		return nil
-	},
-	"getSpan": func(traces ptrace.Traces, rmIndex, ilsIndex, spanIndex int) any {
-		if traces.ResourceSpans().Len() > 0 {
-			rs := traces.ResourceSpans().At(rmIndex)
-			if rs.ScopeSpans().Len() > 0 {
-				ils := rs.ScopeSpans().At(ilsIndex)
-				if ils.Spans().Len() > 0 {
-					return ils.Spans().At(spanIndex)
-				}
-			}
-		}
-		return ptrace.Span{}
-	},
-	"getMetric": func(metrics pmetric.Metrics, rmIndex, ilsIndex, metricIndex int) any {
-		if metrics.ResourceMetrics().Len() > 0 {
-			rm := metrics.ResourceMetrics().At(rmIndex)
-			if rm.ScopeMetrics().Len() > 0 {
-				ils := rm.ScopeMetrics().At(ilsIndex)
-				if ils.Metrics().Len() > 0 {
-					return ils.Metrics().At(metricIndex)
-				}
-			}
-		}
-		return pmetric.Metric{}
-	},
-	"getLogRecord": func(logs plog.Logs, rlIndex, ilsIndex, logIndex int) any {
-		if logs.ResourceLogs().Len() > 0 {
-			rl := logs.ResourceLogs().At(rlIndex)
-			if rl.ScopeLogs().Len() > 0 {
-				ils := rl.ScopeLogs().At(ilsIndex)
-				if ils.LogRecords().Len() > 0 {
-					return ils.LogRecords().At(logIndex)
-				}
-			}
-		}
-		return plog.LogRecord{}
+		return plog.LogRecord{}, nil
 	},
 }
 
@@ -333,26 +342,6 @@ func (e *azureBlobExporter) start(_ context.Context, host component.Host) error 
 }
 
 func (e *azureBlobExporter) generateBlobNameWithCompression(signal pipeline.Signal, telemetryData any) (string, error) {
-	blobName, err := e.generateBlobName(signal, telemetryData)
-	if err != nil {
-		return "", err
-	}
-
-	return e.appendCompressionExtension(blobName), nil
-}
-
-func (e *azureBlobExporter) appendCompressionExtension(blobName string) string {
-	switch e.config.Compression {
-	case configcompression.TypeGzip:
-		blobName += ".gz"
-	case configcompression.TypeZstd:
-		blobName += ".zst"
-	}
-
-	return blobName
-}
-
-func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal, telemetryData any) (string, error) {
 	var format string
 	switch signal {
 	case pipeline.SignalMetrics:
@@ -376,33 +365,61 @@ func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal, telemetryDa
 		}
 	}
 
-	return e.formatBlobName(format), nil
+	return e.finalizeBlobName(e.resolveBlobName(e.now(), format)), nil
 }
 
-func (e *azureBlobExporter) formatBlobName(format string) string {
+func (e *azureBlobExporter) now() time.Time {
 	now := time.Now()
 	if e.timeLocation != nil {
 		now = now.In(e.timeLocation)
 	}
+	return now
+}
 
-	if !e.config.BlobNameFormat.SerialNumEnabled {
-		// No serial number enabled, return the formatted blob name
-		return e.parseTimeInBlobName(now, format)
-	}
+// resolvedBlobName is a blob name with every deterministic part applied. The
+// final name is prefix + suffix, with the random serial number inserted
+// between them when enabled.
+type resolvedBlobName struct {
+	prefix string
+	suffix string
+}
 
-	var blobName string
-	if e.config.BlobNameFormat.SerialNumBeforeExtension {
-		// Append a random number and do so before the file extension if there is one
+// resolveBlobName applies every deterministic part of the blob name: time
+// formatting at now, the position of the serial number, and the compression
+// extension. Only the random serial number is left for finalizeBlobName.
+// Partitioning groups by this result, so any new deterministic part of the
+// name must be applied here; applying it later could give two groups the same
+// final blob name, and the second upload would overwrite the first.
+func (e *azureBlobExporter) resolveBlobName(now time.Time, format string) resolvedBlobName {
+	var resolved resolvedBlobName
+	if e.config.BlobNameFormat.SerialNumEnabled && e.config.BlobNameFormat.SerialNumBeforeExtension {
+		// The serial number goes before the file extension if there is one
 		ext := filepath.Ext(format)
-		formatWithoutExt := strings.TrimSuffix(format, ext)
-		randInt := randomInRange(0, int(e.config.BlobNameFormat.SerialNumRange))
-		blobName = fmt.Sprintf("%s_%d%s", e.parseTimeInBlobName(now, formatWithoutExt), randInt, ext)
+		resolved = resolvedBlobName{
+			prefix: e.parseTimeInBlobName(now, strings.TrimSuffix(format, ext)),
+			suffix: ext,
+		}
 	} else {
-		// Appends the random number after any potential file extension to minimize performance impact when high throughput
-		blobName = fmt.Sprintf("%s_%d", e.parseTimeInBlobName(now, format), randomInRange(0, int(e.config.BlobNameFormat.SerialNumRange)))
+		// The serial number goes after any potential file extension to minimize performance impact when high throughput
+		resolved = resolvedBlobName{prefix: e.parseTimeInBlobName(now, format)}
 	}
 
-	return blobName
+	switch e.config.Compression {
+	case configcompression.TypeGzip:
+		resolved.suffix += ".gz"
+	case configcompression.TypeZstd:
+		resolved.suffix += ".zst"
+	}
+
+	return resolved
+}
+
+// finalizeBlobName adds the random serial number, if enabled, to a resolved blob name.
+func (e *azureBlobExporter) finalizeBlobName(resolved resolvedBlobName) string {
+	if !e.config.BlobNameFormat.SerialNumEnabled {
+		return resolved.prefix + resolved.suffix
+	}
+	return fmt.Sprintf("%s_%d%s", resolved.prefix, randomInRange(0, int(e.config.BlobNameFormat.SerialNumRange)), resolved.suffix)
 }
 
 func (e *azureBlobExporter) parseTimeInBlobName(now time.Time, format string) string {
@@ -465,15 +482,15 @@ func (*azureBlobExporter) Capabilities() consumer.Capabilities {
 }
 
 func (e *azureBlobExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	return exportPartitioned(ctx, e, metricsOps, md, e.marshaller.marshalMetrics)
+	return export(ctx, e, metricsOps, md, e.marshaller.marshalMetrics)
 }
 
 func (e *azureBlobExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	return exportPartitioned(ctx, e, logsOps, ld, e.marshaller.marshalLogs)
+	return export(ctx, e, logsOps, ld, e.marshaller.marshalLogs)
 }
 
 func (e *azureBlobExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	return exportPartitioned(ctx, e, tracesOps, td, e.marshaller.marshalTraces)
+	return export(ctx, e, tracesOps, td, e.marshaller.marshalTraces)
 }
 
 // renderBlobNameTemplate executes the blob name template for the given signal

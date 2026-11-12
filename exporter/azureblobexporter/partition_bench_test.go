@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
@@ -28,9 +29,9 @@ func benchLogs(resources, recordsPerResource, destinations int) plog.Logs {
 	return logs
 }
 
-func benchExporter(b *testing.B, templateEnabled bool) *azureBlobExporter {
+func benchExporter(b *testing.B) *azureBlobExporter {
 	b.Helper()
-	c := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, templateEnabled)
+	c := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
 	e := newAzureBlobExporter(c, zap.NewNop(), pipeline.SignalLogs)
 	if err := e.start(b.Context(), nil); err != nil {
 		b.Fatal(err)
@@ -40,32 +41,27 @@ func benchExporter(b *testing.B, templateEnabled bool) *azureBlobExporter {
 
 func BenchmarkPartitionLogsByBlobName(b *testing.B) {
 	for _, bc := range []struct {
-		name            string
-		templateEnabled bool
-		resources       int
-		destinations    int
+		name         string
+		resources    int
+		destinations int
 	}{
-		{"template_disabled", false, 10, 10},
-		{"all_same_name", true, 10, 1},
-		{"all_distinct_names", true, 10, 10},
+		{"all_same_name", 10, 1},
+		{"all_distinct_names", 10, 10},
 		// Same resource shape as the next case; only destination cardinality differs.
-		{"resources=1000/destinations=1", true, 1000, 1},
-		{"resources=1000/destinations=1000", true, 1000, 1000},
+		{"resources=1000/destinations=1", 1000, 1},
+		{"resources=1000/destinations=1000", 1000, 1000},
 	} {
 		b.Run(bc.name, func(b *testing.B) {
-			e := benchExporter(b, bc.templateEnabled)
+			e := benchExporter(b)
 			// Total record volume is fixed at 1000 across all cases.
 			logs := benchLogs(bc.resources, 1000/bc.resources, bc.destinations)
-			wantGroups := bc.destinations
-			if !bc.templateEnabled {
-				wantGroups = 1
-			}
-			if got := len(partitionByBlobName(e, logsOps, logs)); got != wantGroups {
-				b.Fatalf("expected %d groups, got %d", wantGroups, got)
+			now := time.Now()
+			if got := len(partitionByBlobName(e, logsOps, logs, now)); got != bc.destinations {
+				b.Fatalf("expected %d groups, got %d", bc.destinations, got)
 			}
 			b.ReportAllocs()
 			for b.Loop() {
-				partitionByBlobName(e, logsOps, logs)
+				partitionByBlobName(e, logsOps, logs, now)
 			}
 		})
 	}
@@ -74,7 +70,7 @@ func BenchmarkPartitionLogsByBlobName(b *testing.B) {
 func BenchmarkMarshalLogsBaseline(b *testing.B) {
 	for _, resources := range []int{10, 1000} {
 		b.Run(fmt.Sprintf("resources=%d", resources), func(b *testing.B) {
-			e := benchExporter(b, true)
+			e := benchExporter(b)
 			logs := benchLogs(resources, 1000/resources, 1)
 			b.ReportAllocs()
 			for b.Loop() {

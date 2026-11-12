@@ -740,6 +740,7 @@ func newPartitionTestConfig(logsFormat string, templateEnabled bool) *Config {
 			LogsFormat:        logsFormat,
 			TracesFormat:      `{{ getResourceSpanAttr . 0 "service.name" }}.json`,
 			TemplateEnabled:   templateEnabled,
+			TemplateScope:     TemplateScopeResource,
 			SerialNumEnabled:  false,
 			SerialNumRange:    10000,
 			TimeParserEnabled: false,

@@ -54,6 +54,7 @@ func TestLoadConfig(t *testing.T) {
 					TracesFormat:      "2006/01/02/traces_15_04_05.json",
 					SerialNumEnabled:  true,
 					SerialNumRange:    10000,
+					TemplateScope:     TemplateScopeRequest,
 					TimeParserEnabled: true,
 					Params:            map[string]string{},
 				},
@@ -87,6 +88,7 @@ func TestLoadConfig(t *testing.T) {
 					TracesFormat:      "2006/01/02/traces_15_04_05.json",
 					SerialNumEnabled:  true,
 					SerialNumRange:    10000,
+					TemplateScope:     TemplateScopeRequest,
 					TimeParserEnabled: true,
 					Params:            map[string]string{},
 				},
@@ -120,6 +122,7 @@ func TestLoadConfig(t *testing.T) {
 					TracesFormat:      "2006/01/02/traces_15_04_05.json",
 					SerialNumEnabled:  true,
 					SerialNumRange:    10000,
+					TemplateScope:     TemplateScopeRequest,
 					TimeParserEnabled: true,
 					Params:            map[string]string{},
 				},
@@ -156,6 +159,7 @@ func TestLoadConfig(t *testing.T) {
 					TracesFormat:      "2006/01/02/traces_15_04_05.json",
 					SerialNumEnabled:  true,
 					SerialNumRange:    10000,
+					TemplateScope:     TemplateScopeRequest,
 					TimeParserEnabled: true,
 					Params:            map[string]string{},
 				},
@@ -194,6 +198,7 @@ func TestLoadConfig(t *testing.T) {
 					TracesFormat:      "2006/01/02/traces_15_04_05.json",
 					SerialNumEnabled:  true,
 					SerialNumRange:    10000,
+					TemplateScope:     TemplateScopeRequest,
 					TimeParserEnabled: true,
 					Params:            map[string]string{},
 				},
@@ -226,6 +231,7 @@ func TestLoadConfig(t *testing.T) {
 					TracesFormat:      "2006/01/02/traces_15_04_05.json",
 					SerialNumEnabled:  true,
 					SerialNumRange:    10000,
+					TemplateScope:     TemplateScopeRequest,
 					TimeParserEnabled: true,
 					Params:            map[string]string{},
 				},
@@ -262,6 +268,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:           component.NewIDWithName(metadata.Type, "err6"),
 			errorMessage: "tenant_id, client_id and federated_token_file cannot be empty when auth type is workload_identity",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "err7"),
+			errorMessage: `unknown template_scope "log_record", valid values are "request" and "resource"`,
 		},
 	}
 
