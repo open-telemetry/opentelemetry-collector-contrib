@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -73,6 +74,8 @@ func TestReceiver(t *testing.T) {
 }
 
 func TestGetPrometheusConfig(t *testing.T) {
+	// Expected scrape configs carry the Prometheus scrape defaults (compression,
+	// fallback protocol, redirects, HTTP/2) that the wrapper now starts from.
 	clientConfigTLS := confighttp.NewDefaultClientConfig()
 	clientConfigTLS.Endpoint = "localhost:1234"
 	clientConfigTLS.TLS = configtls.ClientConfig{
@@ -123,8 +126,12 @@ func TestGetPrometheusConfig(t *testing.T) {
 								},
 							},
 						},
+						EnableCompression:      true,
+						ScrapeFallbackProtocol: config.PrometheusText0_0_4,
 						HTTPClientConfig: configutil.HTTPClientConfig{
-							TLSConfig: configutil.TLSConfig{MinVersion: configutil.TLSVersions["TLS12"]},
+							FollowRedirects: true,
+							EnableHTTP2:     true,
+							TLSConfig:       configutil.TLSConfig{MinVersion: configutil.TLSVersions["TLS12"]},
 						},
 					},
 				},
@@ -142,6 +149,9 @@ func TestGetPrometheusConfig(t *testing.T) {
 
 	wantWithHTTPClientConfig := func(httpConfig configutil.HTTPClientConfig) *prometheusreceiver.Config {
 		want := wantWithScrapeTimeout(10 * time.Second)
+		// The Prometheus HTTP client defaults are kept alongside the forwarded settings.
+		httpConfig.FollowRedirects = true
+		httpConfig.EnableHTTP2 = true
 		// The collector's TLS defaults are forwarded even without a tls block.
 		httpConfig.TLSConfig.MinVersion = configutil.TLSVersions["TLS12"]
 		want.PrometheusConfig.ScrapeConfigs[0].HTTPClientConfig = httpConfig
@@ -184,6 +194,12 @@ func TestGetPrometheusConfig(t *testing.T) {
 									},
 								},
 							},
+							EnableCompression:      true,
+							ScrapeFallbackProtocol: config.PrometheusText0_0_4,
+							HTTPClientConfig: configutil.HTTPClientConfig{
+								FollowRedirects: true,
+								EnableHTTP2:     true,
+							},
 						},
 					},
 				},
@@ -218,8 +234,12 @@ func TestGetPrometheusConfig(t *testing.T) {
 									},
 								},
 							},
+							EnableCompression:      true,
+							ScrapeFallbackProtocol: config.PrometheusText0_0_4,
 							HTTPClientConfig: configutil.HTTPClientConfig{
-								TLSConfig: configutil.TLSConfig{MinVersion: configutil.TLSVersions["TLS12"]},
+								FollowRedirects: true,
+								EnableHTTP2:     true,
+								TLSConfig:       configutil.TLSConfig{MinVersion: configutil.TLSVersions["TLS12"]},
 							},
 						},
 					},
@@ -254,7 +274,11 @@ func TestGetPrometheusConfig(t *testing.T) {
 									},
 								},
 							},
+							EnableCompression:      true,
+							ScrapeFallbackProtocol: config.PrometheusText0_0_4,
 							HTTPClientConfig: configutil.HTTPClientConfig{
+								FollowRedirects: true,
+								EnableHTTP2:     true,
 								TLSConfig: configutil.TLSConfig{
 									CAFile:             "./testdata/test_cert.pem",
 									InsecureSkipVerify: true,
@@ -301,8 +325,12 @@ func TestGetPrometheusConfig(t *testing.T) {
 									},
 								},
 							},
+							EnableCompression:      true,
+							ScrapeFallbackProtocol: config.PrometheusText0_0_4,
 							HTTPClientConfig: configutil.HTTPClientConfig{
-								TLSConfig: configutil.TLSConfig{MinVersion: configutil.TLSVersions["TLS12"]},
+								FollowRedirects: true,
+								EnableHTTP2:     true,
+								TLSConfig:       configutil.TLSConfig{MinVersion: configutil.TLSVersions["TLS12"]},
 							},
 						},
 					},
@@ -505,4 +533,72 @@ func TestGetPrometheusConfigScheme(t *testing.T) {
 			assert.Equal(t, sc.ScrapeInterval, sc.ScrapeTimeout)
 		})
 	}
+}
+
+// The prometheus receiver re-marshals its config through YAML on start, so
+// every scrape setting the wrapper leaves at its Go zero value is written out
+// and replaces the Prometheus default. The scrape defaults must therefore
+// survive that round trip and match the prometheus receiver's own.
+func TestGetPrometheusConfigScrapeDefaults(t *testing.T) {
+	tests := []struct {
+		name string
+		tls  configtls.ClientConfig
+	}{
+		{
+			name: "http",
+			tls:  configtls.ClientConfig{Insecure: true},
+		},
+		{
+			name: "https",
+			tls: configtls.ClientConfig{
+				Config: configtls.Config{CAFile: "./testdata/test_cert.pem"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.ClientConfig.TLS = tt.tls
+			got, err := getPrometheusConfig(cfg, zap.NewNop())
+			require.NoError(t, err)
+			require.NoError(t, got.PrometheusConfig.Reload())
+			require.Len(t, got.PrometheusConfig.ScrapeConfigs, 1)
+			sc := got.PrometheusConfig.ScrapeConfigs[0]
+
+			assert.True(t, sc.HTTPClientConfig.FollowRedirects, "follow_redirects")
+			assert.True(t, sc.HTTPClientConfig.EnableHTTP2, "enable_http2")
+			assert.True(t, sc.EnableCompression, "enable_compression")
+			assert.Equal(t, config.PrometheusText0_0_4, sc.ScrapeFallbackProtocol, "fallback_scrape_protocol")
+
+			want := prometheusReceiverScrapeConfig(t)
+			assert.Equal(t, want.HTTPClientConfig.FollowRedirects, sc.HTTPClientConfig.FollowRedirects)
+			assert.Equal(t, want.HTTPClientConfig.EnableHTTP2, sc.HTTPClientConfig.EnableHTTP2)
+			assert.Equal(t, want.EnableCompression, sc.EnableCompression)
+			assert.Equal(t, want.ScrapeFallbackProtocol, sc.ScrapeFallbackProtocol)
+		})
+	}
+}
+
+// prometheusReceiverScrapeConfig returns the scrape config the prometheus
+// receiver builds for a minimal user config of the same target.
+func prometheusReceiverScrapeConfig(t *testing.T) *config.ScrapeConfig {
+	t.Helper()
+	cm := confmap.NewFromStringMap(map[string]any{
+		"config": map[string]any{
+			"scrape_configs": []any{
+				map[string]any{
+					"job_name": "prometheus",
+					"static_configs": []any{
+						map[string]any{"targets": []any{defaultEndpoint}},
+					},
+				},
+			},
+		},
+	})
+	cfg := prometheusreceiver.NewFactory().CreateDefaultConfig()
+	require.NoError(t, cm.Unmarshal(cfg))
+	require.NoError(t, confmap.Validate(cfg))
+	scrapeConfigs := cfg.(*prometheusreceiver.Config).PrometheusConfig.ScrapeConfigs
+	require.Len(t, scrapeConfigs, 1)
+	return scrapeConfigs[0]
 }

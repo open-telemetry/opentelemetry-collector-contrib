@@ -73,7 +73,9 @@ func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.C
 	}
 
 	out := &prometheusreceiver.Config{}
-	httpConfig := configutil.HTTPClientConfig{}
+	// Start from the Prometheus defaults: the prometheus receiver round-trips this
+	// config through YAML, so zero values would replace them.
+	httpConfig := configutil.DefaultHTTPClientConfig
 
 	scheme := "http"
 
@@ -144,20 +146,21 @@ func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.C
 		}
 	}
 
-	scrapeConfig := &config.ScrapeConfig{
-		ScrapeInterval:  model.Duration(cfg.CollectionInterval),
-		ScrapeTimeout:   model.Duration(scrapeTimeout),
-		JobName:         jobName,
-		HonorTimestamps: true,
-		Scheme:          scheme,
-		MetricsPath:     cfg.MetricsPath,
-		Params:          cfg.Params,
-		ServiceDiscoveryConfigs: discovery.Configs{
-			discovery.StaticConfig{
-				{
-					Targets: []model.LabelSet{{model.AddressLabel: model.LabelValue(cfg.ClientConfig.Endpoint)}},
-					Labels:  labels,
-				},
+	scrapeConfig := new(config.ScrapeConfig)
+	*scrapeConfig = config.DefaultScrapeConfig
+	scrapeConfig.ScrapeInterval = model.Duration(cfg.CollectionInterval)
+	scrapeConfig.ScrapeTimeout = model.Duration(scrapeTimeout)
+	scrapeConfig.JobName = jobName
+	scrapeConfig.Scheme = scheme
+	scrapeConfig.MetricsPath = cfg.MetricsPath
+	scrapeConfig.Params = cfg.Params
+	// Match the prometheus receiver, which sets this in PromConfig.Validate.
+	scrapeConfig.ScrapeFallbackProtocol = config.PrometheusText0_0_4
+	scrapeConfig.ServiceDiscoveryConfigs = discovery.Configs{
+		discovery.StaticConfig{
+			{
+				Targets: []model.LabelSet{{model.AddressLabel: model.LabelValue(cfg.ClientConfig.Endpoint)}},
+				Labels:  labels,
 			},
 		},
 	}
