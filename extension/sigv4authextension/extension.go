@@ -103,6 +103,7 @@ func getCredsProviderFromWebIdentityConfig(cfg *Config) (*aws.CredentialsProvide
 			func(options *stscreds.WebIdentityRoleOptions) {
 				options.TokenRetriever = tokenRetriever
 				options.RoleARN = cfg.AssumeRole.ARN
+				webIdentityRoleOptions(cfg)(options)
 			},
 		),
 		awsconfig.WithRegion(cfg.AssumeRole.STSRegion),
@@ -112,7 +113,7 @@ func getCredsProviderFromWebIdentityConfig(cfg *Config) (*aws.CredentialsProvide
 	}
 	stsSvc := sts.NewFromConfig(awscfg)
 
-	provider := stscreds.NewWebIdentityRoleProvider(stsSvc, cfg.AssumeRole.ARN, tokenRetriever)
+	provider := stscreds.NewWebIdentityRoleProvider(stsSvc, cfg.AssumeRole.ARN, tokenRetriever, webIdentityRoleOptions(cfg))
 	awscfg.Credentials = aws.NewCredentialsCache(provider)
 
 	return &awscfg.Credentials, nil
@@ -125,6 +126,14 @@ func assumeRoleOptions(cfg *Config) func(*stscreds.AssumeRoleOptions) {
 		}
 		if cfg.AssumeRole.ExternalID != "" {
 			o.ExternalID = &cfg.AssumeRole.ExternalID
+		}
+	}
+}
+
+func webIdentityRoleOptions(cfg *Config) func(*stscreds.WebIdentityRoleOptions) {
+	return func(o *stscreds.WebIdentityRoleOptions) {
+		if cfg.AssumeRole.SessionName != "" {
+			o.RoleSessionName = cfg.AssumeRole.SessionName
 		}
 	}
 }
