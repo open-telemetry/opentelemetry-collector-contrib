@@ -947,7 +947,7 @@ func (c *client) start(ctx context.Context, host component.Host) (err error) {
 		return tbErr
 	}
 	c.telemetryBuilder = telemetryBuilder
-	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c), c.telemetryBuilder, c.meter)
+	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c), c.telemetryBuilder, c.meter, c.logger)
 	if c.config.Heartbeat.Startup {
 		if err := c.heartbeater.sendHeartbeat(c.config, c.buildInfo, getPushLogFn(c)); err != nil {
 			return fmt.Errorf("%s: heartbeat on startup failed: %w", c.exporterName, err)

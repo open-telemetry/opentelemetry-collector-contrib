@@ -43,15 +43,18 @@ type HecHeartbeat struct {
 	Startup bool `mapstructure:"startup"`
 }
 
-// HecTelemetry defines the telemetry configuration for the exporter
+// HecTelemetry defines the telemetry configuration for the exporter.
+//
+// Deprecated: [v0.166.0] the telemetry block will be removed in a future release; the heartbeat
+// metrics are emitted directly from metadata.yaml.
 type HecTelemetry struct {
-	// Enabled is the bool to enable telemetry inside splunk hec exporter
+	// Deprecated: [v0.166.0] no longer has any effect; the heartbeat metrics are always emitted.
 	Enabled bool `mapstructure:"enabled"`
 
-	// OverrideMetricsNames is the map to override metrics for internal metrics in splunk hec exporter
+	// Deprecated: [v0.166.0] the heartbeat metrics have fixed names and cannot be overridden.
 	OverrideMetricsNames map[string]string `mapstructure:"override_metrics_names"`
 
-	// ExtraAttributes is the extra attributes for metrics inside splunk hex exporter
+	// Deprecated: [v0.166.0] attach extra attributes via a processor instead.
 	ExtraAttributes map[string]string `mapstructure:"extra_attributes"`
 }
 
