@@ -263,6 +263,45 @@ func TestCustomCapability_Unregister(t *testing.T) {
 		default: // OK
 		}
 	})
+
+	t.Run("Repeated unregister is a no-op and does not panic", func(t *testing.T) {
+		capabilityString := "io.opentelemetry.teapot"
+
+		client := mockCustomCapabilityClient{}
+		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
+
+		sender, err := registry.Register(capabilityString)
+		require.NoError(t, err)
+		require.NotNil(t, sender)
+
+		// Calling Unregister multiple times should be safe and idempotent.
+		require.NotPanics(t, func() {
+			sender.Unregister()
+			sender.Unregister()
+		})
+	})
+
+	t.Run("Repeated unregister with multiple handlers does not panic", func(t *testing.T) {
+		capabilityString := "io.opentelemetry.teapot"
+
+		client := mockCustomCapabilityClient{}
+		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
+
+		sender1, err := registry.Register(capabilityString)
+		require.NoError(t, err)
+		require.NotNil(t, sender1)
+
+		sender2, err := registry.Register(capabilityString)
+		require.NoError(t, err)
+		require.NotNil(t, sender2)
+
+		require.NotPanics(t, func() {
+			sender1.Unregister()
+			sender1.Unregister()
+			sender2.Unregister()
+			sender2.Unregister()
+		})
+	})
 }
 
 type mockCustomCapabilityClient struct {

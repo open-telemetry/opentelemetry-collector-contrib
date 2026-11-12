@@ -1,0 +1,7 @@
+change_type: bug_fix
+component: extension/opamp
+note: Guard against nil pointer dereference when Unregister is called repeatedly on a custom capability handler.
+issues: [52719]
+subtext: Make customMessageHandler.Unregister idempotent and add a nil check in removeCapabilityFunc.
+change_logs: [user]
+
