@@ -41,7 +41,7 @@ The following settings are optional:
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `container_labels_to_resource_attributes` (no default): A list of filters selecting container
 labels to record as resource attributes. A label is recorded if its key matches any filter. Each
-filter sets either `strict` (exact match) or `regexp` (a [Go regular expression](https://golang.org/pkg/regexp/)).
+filter sets either `strict` (exact match) or `regexp` (a [Go regular expression](https://pkg.go.dev/regexp)).
 Matching labels are recorded as `container.label.<key>`, following the
 [container resource semantic conventions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/container.md).
 Each matching label adds a resource attribute, so broad patterns such as `.*` can significantly increase
