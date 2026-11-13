@@ -5,12 +5,12 @@ go 1.26.0
 require (
 	github.com/stretchr/testify v1.12.1
 	github.com/testcontainers/testcontainers-go v0.45.0
-	go.opentelemetry.io/collector/component v1.71.1-0.20261112090518-6cdf06bb71bc
+	go.opentelemetry.io/collector/component v1.71.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/component/componenttest v0.165.1-0.20261112090518-6cdf06bb71bc
-	go.opentelemetry.io/collector/consumer v1.71.1-0.20261112090518-6cdf06bb71bc
+	go.opentelemetry.io/collector/consumer v1.71.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/consumer/consumertest v0.165.1-0.20261112090518-6cdf06bb71bc
-	go.opentelemetry.io/collector/pdata v1.71.1-0.20261112090518-6cdf06bb71bc
-	go.opentelemetry.io/collector/receiver v1.71.1-0.20261112090518-6cdf06bb71bc
+	go.opentelemetry.io/collector/pdata v1.71.1-0.20261112225459-4888f0b280f9
+	go.opentelemetry.io/collector/receiver v1.71.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/receiver/receivertest v0.165.1-0.20261112090518-6cdf06bb71bc
 	golang.org/x/mod v0.42.0
 	google.golang.org/grpc v1.85.0
@@ -63,10 +63,10 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.165.1-0.20261112090518-6cdf06bb71bc // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.165.1-0.20261112090518-6cdf06bb71bc // indirect
-	go.opentelemetry.io/collector/featuregate v1.71.1-0.20261112090518-6cdf06bb71bc // indirect
+	go.opentelemetry.io/collector/featuregate v1.71.1-0.20261112225459-4888f0b280f9 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.165.1-0.20261112090518-6cdf06bb71bc // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.165.1-0.20261112090518-6cdf06bb71bc // indirect
-	go.opentelemetry.io/collector/pipeline v1.71.1-0.20261112090518-6cdf06bb71bc // indirect
+	go.opentelemetry.io/collector/pipeline v1.71.1-0.20261112225459-4888f0b280f9 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.165.1-0.20261112090518-6cdf06bb71bc // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
