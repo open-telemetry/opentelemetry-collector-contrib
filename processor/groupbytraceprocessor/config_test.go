@@ -39,6 +39,46 @@ func TestConfigValidate(t *testing.T) {
 			mutate:      func(cfg *Config) { cfg.EmitStrategy = EmitStrategy("invalid") },
 			expectedErr: `unknown emit_strategy "invalid"`,
 		},
+		{
+			name:        "discard orphans not supported",
+			mutate:      func(cfg *Config) { cfg.DiscardOrphans = true },
+			expectedErr: "option 'discard orphans' not supported in this release",
+		},
+		{
+			name:        "store on disk not supported",
+			mutate:      func(cfg *Config) { cfg.StoreOnDisk = true },
+			expectedErr: "option 'disk storage' not supported in this release",
+		},
+		{
+			name:        "zero wait duration",
+			mutate:      func(cfg *Config) { cfg.WaitDuration = 0 },
+			expectedErr: "wait_duration must be greater than 0",
+		},
+		{
+			name:        "negative wait duration",
+			mutate:      func(cfg *Config) { cfg.WaitDuration = -time.Second },
+			expectedErr: "wait_duration must be greater than 0",
+		},
+		{
+			name:        "zero num traces",
+			mutate:      func(cfg *Config) { cfg.NumTraces = 0 },
+			expectedErr: "num_traces must be greater than 0",
+		},
+		{
+			name:        "negative num traces",
+			mutate:      func(cfg *Config) { cfg.NumTraces = -1 },
+			expectedErr: "num_traces must be greater than 0",
+		},
+		{
+			name:        "zero num workers",
+			mutate:      func(cfg *Config) { cfg.NumWorkers = 0 },
+			expectedErr: "num_workers must be greater than 0",
+		},
+		{
+			name:        "negative num workers",
+			mutate:      func(cfg *Config) { cfg.NumWorkers = -1 },
+			expectedErr: "num_workers must be greater than 0",
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := valid()
