@@ -4,20 +4,78 @@
 package googlecloudmonitoringreceiver
 
 import (
+	"context"
+	"net"
 	"testing"
 	"time"
 
+	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
+	"google.golang.org/api/option"
 	"google.golang.org/genproto/googleapis/api/distribution"
 	"google.golang.org/genproto/googleapis/api/metric"
 	monitoredres "google.golang.org/genproto/googleapis/api/monitoredres"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+type fakeMetricServer struct {
+	monitoringpb.UnimplementedMetricServiceServer
+}
+
+func (fakeMetricServer) ListTimeSeries(_ context.Context, req *monitoringpb.ListTimeSeriesRequest) (*monitoringpb.ListTimeSeriesResponse, error) {
+	if req.Filter == `metric.type = "custom.googleapis.com/slow"` {
+		return nil, status.Error(codes.DeadlineExceeded, "This query timed out. Please shorten the time interval.")
+	}
+	return &monitoringpb.ListTimeSeriesResponse{TimeSeries: []*monitoringpb.TimeSeries{{
+		Metric:     &metric.Metric{Type: "custom.googleapis.com/ok"},
+		Resource:   &monitoredres.MonitoredResource{Type: "global"},
+		MetricKind: metric.MetricDescriptor_GAUGE,
+		ValueType:  metric.MetricDescriptor_DOUBLE,
+		Points: []*monitoringpb.Point{{
+			Interval: &monitoringpb.TimeInterval{EndTime: &timestamppb.Timestamp{Seconds: 160}},
+			Value:    &monitoringpb.TypedValue{Value: &monitoringpb.TypedValue_DoubleValue{DoubleValue: 1}},
+		}},
+	}}}, nil
+}
+
+func TestScrape_FailedMetricTypeKeepsOthers(t *testing.T) {
+	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	srv := grpc.NewServer()
+	monitoringpb.RegisterMetricServiceServer(srv, fakeMetricServer{})
+	go func() { _ = srv.Serve(lis) }()
+	t.Cleanup(srv.Stop)
+
+	client, err := monitoring.NewMetricClient(t.Context(),
+		option.WithEndpoint(lis.Addr().String()),
+		option.WithoutAuthentication(),
+		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = client.Close() })
+
+	mr := newGoogleCloudMonitoringReceiver(&Config{ProjectID: "p"}, zap.NewNop())
+	mr.client = client
+	for _, typ := range []string{"custom.googleapis.com/slow", "custom.googleapis.com/ok"} {
+		mr.metricDescriptors[typ] = &metric.MetricDescriptor{Type: typ, MetricKind: metric.MetricDescriptor_GAUGE, ValueType: metric.MetricDescriptor_DOUBLE}
+	}
+
+	metrics, err := mr.Scrape(t.Context())
+
+	require.Error(t, err)
+	assert.True(t, scrapererror.IsPartialScrapeError(err))
+	assert.ErrorContains(t, err, "custom.googleapis.com/slow")
+	assert.Equal(t, 1, metrics.DataPointCount())
+}
 
 func TestConvertGCPTimeSeriesToMetrics_DistributionSum(t *testing.T) {
 	for _, tt := range []struct {
