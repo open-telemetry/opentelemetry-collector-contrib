@@ -289,6 +289,26 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 			},
 		},
 		{
+			name: "ephemeral",
+			vs: v1.VolumeSource{
+				Ephemeral: &v1.EphemeralVolumeSource{},
+			},
+			args: []string{"uid-1234", "k8s.volume.type"},
+			want: map[string]any{
+				"k8s.volume.type": "ephemeral",
+			},
+		},
+		{
+			name: "projected",
+			vs: v1.VolumeSource{
+				Projected: &v1.ProjectedVolumeSource{},
+			},
+			args: []string{"uid-1234", "k8s.volume.type"},
+			want: map[string]any{
+				"k8s.volume.type": "projected",
+			},
+		},
+		{
 			name: "persistentVolumeClaim",
 			vs: v1.VolumeSource{
 				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
