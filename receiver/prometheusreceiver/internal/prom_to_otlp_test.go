@@ -74,6 +74,12 @@ func makeResourceWithJobInstanceScheme(def *jobInstanceDefinition, hasHost bool)
 }
 
 func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
+	prev := metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), prev))
+	})
+
 	tests := []struct {
 		name, job string
 		instance  string
@@ -279,10 +285,11 @@ func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
 }
 
 func TestCreateResourceWithTargetURL(t *testing.T) {
+	prev := metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.IsEnabled()
 	err := featuregate.GlobalRegistry().Set(metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), true)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), prev))
 	})
 
 	tests := []struct {

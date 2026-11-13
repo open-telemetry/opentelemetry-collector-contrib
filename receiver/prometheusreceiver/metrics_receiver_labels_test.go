@@ -635,8 +635,6 @@ func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []pmetric.ResourceMet
 	td.attributes.CopyTo(expectedResourceAttributes)
 	expectedResourceAttributes.PutStr("service.name", "honor_labels_test")
 	expectedResourceAttributes.PutStr("service.instance.id", "hostname:8080")
-	expectedResourceAttributes.PutStr("server.port", "8080")
-	expectedResourceAttributes.PutStr("server.address", "hostname")
 
 	expectedScrapeConfigAttributes := td.attributes
 
@@ -754,8 +752,6 @@ func verifyRelabelJobInstance(t *testing.T, td *testData, rms []pmetric.Resource
 	wantAttributes := td.attributes
 	wantAttributes.PutStr("service.name", "not-target1")
 	wantAttributes.PutStr("service.instance.id", "relabeled-instance")
-	wantAttributes.PutStr("server.port", "")
-	wantAttributes.PutStr("server.address", "relabeled-instance")
 
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
 	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
@@ -988,11 +984,6 @@ func verifyScopeInfoMetricIgnored(t *testing.T, td *testData, rms []pmetric.Reso
 }
 
 func TestUseTargetURLForServerAddressWithRelabeling(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), true))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), false))
-	})
-
 	tlsSrv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(targetRelabelJobInstance))
@@ -1022,39 +1013,70 @@ scrape_configs:
         replacement: https
 `, tlsURL.Host)
 
-	pCfg, err := promcfg.Load(yamlCfg, promslog.NewNopLogger())
-	require.NoError(t, err)
+	tests := []struct {
+		name           string
+		enabled        bool
+		wantAttributes map[string]any
+	}{
+		{
+			name:    "feature gate enabled (default)",
+			enabled: true,
+			wantAttributes: map[string]any{
+				"service.name":        "target1",
+				"service.instance.id": "logical-instance-1",
+				"server.port":         tlsURL.Port(),
+				"url.scheme":          "https",
+			},
+		},
+		{
+			name:    "feature gate disabled",
+			enabled: false,
+			wantAttributes: map[string]any{
+				"service.name":        "target1",
+				"service.instance.id": "logical-instance-1",
+				"server.address":      "logical-instance-1",
+				"server.port":         "",
+				"url.scheme":          "http",
+			},
+		},
+	}
 
-	cms := newSignalingSink(1)
-	set := receivertest.NewNopSettings(metadata.Type)
-	_ = newTestReceiverSettingsConsumer(t, &Config{
-		PrometheusConfig: (*PromConfig)(pCfg),
-		skipOffsetting:   true,
-	}, set, cms)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			prev := metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.IsEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), tt.enabled))
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), prev))
+			})
 
-	cms.Wait(t, 10*time.Second)
+			pCfg, err := promcfg.Load(yamlCfg, promslog.NewNopLogger())
+			require.NoError(t, err)
 
-	var validRM pmetric.ResourceMetrics
-	require.Eventually(t, func() bool {
-		for _, md := range cms.AllMetrics() {
-			rms := md.ResourceMetrics()
-			for i := 0; i < rms.Len(); i++ {
-				if isValidScrape(rms.At(i)) {
-					validRM = rms.At(i)
-					return true
+			cms := newSignalingSink(1)
+			set := receivertest.NewNopSettings(metadata.Type)
+			_ = newTestReceiverSettingsConsumer(t, &Config{
+				PrometheusConfig: (*PromConfig)(pCfg),
+				skipOffsetting:   true,
+			}, set, cms)
+
+			cms.Wait(t, 10*time.Second)
+
+			var validRM pmetric.ResourceMetrics
+			require.Eventually(t, func() bool {
+				for _, md := range cms.AllMetrics() {
+					rms := md.ResourceMetrics()
+					for i := 0; i < rms.Len(); i++ {
+						if isValidScrape(rms.At(i)) {
+							validRM = rms.At(i)
+							return true
+						}
+					}
 				}
-			}
-		}
-		return false
-	}, 10*time.Second, 20*time.Millisecond)
+				return false
+			}, 10*time.Second, 20*time.Millisecond)
 
-	attrs := validRM.Resource().Attributes()
-	require.Equal(t, map[string]any{
-		"service.name":        "target1",
-		"service.instance.id": "logical-instance-1",
-		"server.port":         tlsURL.Port(),
-		"url.scheme":          "https",
-	}, attrs.AsRaw())
-	_, hasServerAddress := attrs.Get("server.address")
-	require.False(t, hasServerAddress, "loopback scrape target address should omit server.address")
+			attrs := validRM.Resource().Attributes()
+			require.Equal(t, tt.wantAttributes, attrs.AsRaw())
+		})
+	}
 }
