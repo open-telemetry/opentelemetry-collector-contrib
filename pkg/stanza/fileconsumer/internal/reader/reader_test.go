@@ -14,6 +14,7 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -375,6 +376,12 @@ func BenchmarkFileReadUTF8(b *testing.B) {
 	benchmarkFileRead(b, unicode.UTF8, strings.Repeat("hello é✨🌍🚀!", 50))
 }
 
+func BenchmarkFileReadInvalidUTF8(b *testing.B) {
+	line := string(filetest.TokenWithLength(998)) + "\xff"
+	require.False(b, utf8.ValidString(line))
+	benchmarkFileRead(b, unicode.UTF8, line)
+}
+
 func BenchmarkFileReadUTF16(b *testing.B) {
 	utf16le := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
 	benchmarkFileRead(b, utf16le, strings.Repeat("hello é✨🌍🚀!", 50))
@@ -404,6 +411,12 @@ func BenchmarkReadContentsASCII(b *testing.B) {
 
 func BenchmarkReadContentsUTF8(b *testing.B) {
 	benchmarkReadContents(b, unicode.UTF8, strings.Repeat("hello é✨🌍🚀!", 50))
+}
+
+func BenchmarkReadContentsInvalidUTF8(b *testing.B) {
+	line := string(filetest.TokenWithLength(998)) + "\xff"
+	require.False(b, utf8.ValidString(line))
+	benchmarkReadContents(b, unicode.UTF8, line)
 }
 
 func BenchmarkReadContentsUTF16(b *testing.B) {
@@ -439,14 +452,19 @@ func setupBenchmark(b *testing.B, enc encoding.Encoding, line string) (string, *
 	tempDir := b.TempDir()
 	temp := filetest.OpenTemp(b, tempDir)
 
-	encoder := enc.NewEncoder()
-	firstLine, err := encoder.String(temp.Name() + "\n")
-	require.NoError(b, err)
-	_, err = temp.WriteString(firstLine)
+	firstLine := temp.Name() + "\n"
+	encodedLine := line + "\n"
+	if enc != unicode.UTF8 {
+		encoder := enc.NewEncoder()
+		var err error
+		firstLine, err = encoder.String(firstLine)
+		require.NoError(b, err)
+		encodedLine, err = encoder.String(encodedLine)
+		require.NoError(b, err)
+	}
+	_, err := temp.WriteString(firstLine)
 	require.NoError(b, err)
 
-	encodedLine, err := encoder.String(line + "\n")
-	require.NoError(b, err)
 	for range 100 {
 		_, err = temp.WriteString(encodedLine)
 		require.NoError(b, err)
