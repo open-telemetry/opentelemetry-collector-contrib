@@ -12,6 +12,7 @@ import (
 
 	ctypes "github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/network"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -463,4 +464,49 @@ func TestCollectEndpointsIgnoreNonHostBindings(t *testing.T) {
 	}
 
 	require.Equal(t, want, cEndpoints)
+}
+
+func TestContainerNetworkAddress_Sorting(t *testing.T) {
+	tests := []struct {
+		name     string
+		networks map[string]*network.EndpointSettings
+		want     string
+	}{
+		{
+			name: "Tie-breaker alphabetical",
+			networks: map[string]*network.EndpointSettings{
+				"observer-b": {IPAddress: netip.MustParseAddr("172.29.202.2")},
+				"observer-a": {IPAddress: netip.MustParseAddr("172.29.201.2")},
+			},
+			want: "172.29.201.2",
+		},
+		{
+			name: "GwPriority wins",
+			networks: map[string]*network.EndpointSettings{
+				"observer-b": {IPAddress: netip.MustParseAddr("172.29.202.2"), GwPriority: 10},
+				"observer-a": {IPAddress: netip.MustParseAddr("172.29.201.2"), GwPriority: 0},
+			},
+			want: "172.29.202.2",
+		},
+		{
+			name: "Ignore empty IP",
+			networks: map[string]*network.EndpointSettings{
+				"observer-a": {IPAddress: netip.Addr{}},
+				"observer-b": {IPAddress: netip.MustParseAddr("172.29.202.2")},
+			},
+			want: "172.29.202.2",
+		},
+		{
+			name:     "No valid networks",
+			networks: map[string]*network.EndpointSettings{},
+			want:     "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := containerNetworkAddress(tt.networks)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }

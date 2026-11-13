@@ -18,12 +18,13 @@ import (
 	"go.uber.org/multierr"
 )
 
-const defaultZeroThreshold = 1e-128
-
 // explicitToNHCB converts an OTLP explicit-bucket histogram data point to a
 // Prometheus histogram with custom buckets (schema -53) via Prometheus' own
 // convertnhcb helper. Exactly one of the returned histograms is non-nil.
 func explicitToNHCB(pt pmetric.HistogramDataPoint) (*histogram.Histogram, *histogram.FloatHistogram, error) {
+	if !pt.HasSum() {
+		return nil, nil, errors.New("cannot convert explicit histogram to native histogram with custom buckets: sum is not set")
+	}
 	th := convertnhcb.NewTempHistogram()
 	bounds := pt.ExplicitBounds()
 	counts := pt.BucketCounts()
@@ -52,10 +53,8 @@ func explicitToNHCB(pt pmetric.HistogramDataPoint) (*histogram.Histogram, *histo
 	if err := th.SetCount(float64(cumulative)); err != nil {
 		return nil, nil, err
 	}
-	if pt.HasSum() {
-		if err := th.SetSum(pt.Sum()); err != nil {
-			return nil, nil, err
-		}
+	if err := th.SetSum(pt.Sum()); err != nil {
+		return nil, nil, err
 	}
 	return th.Convert()
 }
@@ -89,23 +88,22 @@ func explicitToNHCBHistogram(pt pmetric.HistogramDataPoint) (prompb.Histogram, e
 }
 
 func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice,
-	resource pcommon.Resource, scope pcommon.InstrumentationScope, settings Settings, baseName string,
+	resource pcommon.Resource, scope pcommon.InstrumentationScope, schemaURL string, settings Settings, baseName string,
 ) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
-		lbls, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, true, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, baseName)
+		lbls, err := createAttributes(resource, pt.Attributes(), scope, schemaURL, settings.ExternalLabels, nil, true, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, baseName)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
 		}
-		ts, _ := c.getOrCreateTimeSeries(lbls)
-
 		histogram, err := exponentialToNativeHistogram(pt)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
 		}
+		ts, _ := c.getOrCreateTimeSeries(lbls)
 		ts.Histograms = append(ts.Histograms, histogram)
 
 		exemplars := getPromExemplars[pmetric.ExponentialHistogramDataPoint](pt)
@@ -124,11 +122,26 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 			fmt.Errorf("cannot convert exponential to native histogram."+
 				" Scale must be >= -4, was %d", scale)
 	}
+	if !p.Flags().NoRecordedValue() && !p.HasSum() {
+		return prompb.Histogram{}, errors.New("cannot convert exponential to native histogram: sum is not set")
+	}
 
 	var scaleDown int32
 	if scale > 8 {
 		scaleDown = scale - 8
 		scale = 8
+	}
+
+	timestamp := convertTimeStamp(p.Timestamp())
+	if p.Flags().NoRecordedValue() {
+		// Staleness is signaled by a stale-NaN Sum; Count is 0 and ZeroCount/buckets are left empty.
+		// https://prometheus.io/docs/specs/native_histograms/#staleness-markers
+		return prompb.Histogram{
+			Schema:        scale,
+			ZeroThreshold: p.ZeroThreshold(),
+			Sum:           math.Float64frombits(value.StaleNaN),
+			Timestamp:     timestamp,
+		}, nil
 	}
 
 	pSpans, pDeltas := convertBucketsLayout(p.Positive(), scaleDown)
@@ -147,30 +160,17 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		ResetHint: prompb.Histogram_UNKNOWN,
 		Schema:    scale,
 
-		ZeroCount: &prompb.Histogram_ZeroCountInt{ZeroCountInt: p.ZeroCount()},
+		ZeroThreshold: p.ZeroThreshold(),
+		ZeroCount:     &prompb.Histogram_ZeroCountInt{ZeroCountInt: p.ZeroCount()},
 
 		PositiveSpans:  pSpans,
 		PositiveDeltas: pDeltas,
 		NegativeSpans:  nSpans,
 		NegativeDeltas: nDeltas,
 
-		Timestamp: convertTimeStamp(p.Timestamp()),
-	}
-
-	if p.ZeroThreshold() != 0 {
-		h.ZeroThreshold = p.ZeroThreshold()
-	} else {
-		h.ZeroThreshold = defaultZeroThreshold
-	}
-
-	if p.Flags().NoRecordedValue() {
-		h.Sum = math.Float64frombits(value.StaleNaN)
-		h.Count = &prompb.Histogram_CountInt{CountInt: value.StaleNaN}
-	} else {
-		if p.HasSum() {
-			h.Sum = p.Sum()
-		}
-		h.Count = &prompb.Histogram_CountInt{CountInt: p.Count()}
+		Timestamp: timestamp,
+		Sum:       p.Sum(),
+		Count:     &prompb.Histogram_CountInt{CountInt: p.Count()},
 	}
 	return h, nil
 }

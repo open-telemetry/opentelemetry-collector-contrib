@@ -4,6 +4,7 @@
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 
 import (
+	"encoding/json"
 	"fmt"
 	"slices"
 	"sort"
@@ -79,7 +80,12 @@ type byteSliceLabelValue struct {
 	value    string
 }
 
-type lockRequestSliceLabelValue struct {
+type lockRequestJSONLabelValue struct {
+	metadata LabelValueMetadata
+	value    string
+}
+
+type operationsByTableJSONLabelValue struct {
 	metadata LabelValueMetadata
 	value    string
 }
@@ -105,9 +111,14 @@ func (v stringLabelValue) SetValueTo(attributes pcommon.Map) {
 }
 
 func newStringLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
+	nullStr := *valueHolder.(*spanner.NullString)
+	val := ""
+	if nullStr.Valid {
+		val = nullStr.StringVal
+	}
 	return stringLabelValue{
 		metadata: metadata,
-		value:    *valueHolder.(*string),
+		value:    val,
 	}
 }
 
@@ -245,31 +256,45 @@ func newByteSliceLabelValue(metadata LabelValueMetadata, valueHolder any) LabelV
 	}
 }
 
-func (v lockRequestSliceLabelValue) Metadata() LabelValueMetadata {
+func (v lockRequestJSONLabelValue) Metadata() LabelValueMetadata {
 	return v.metadata
 }
 
-func (v lockRequestSliceLabelValue) Value() any {
+func (v lockRequestJSONLabelValue) Value() any {
 	return v.value
 }
 
-func (v lockRequestSliceLabelValue) SetValueTo(attributes pcommon.Map) {
+func (v lockRequestJSONLabelValue) SetValueTo(attributes pcommon.Map) {
 	attributes.PutStr(v.metadata.Name(), v.value)
 }
 
-type lockRequest struct {
-	LockMode       string `spanner:"lock_mode"`
-	Column         string `spanner:"column"`
-	TransactionTag string `spanner:"transaction_tag"`
+type lockRequestJSON struct {
+	LockMode       string `json:"lock_mode"`
+	Column         string `json:"column"`
+	TransactionTag string `json:"transaction_tag"`
 }
 
-func newLockRequestSliceLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
-	value := *valueHolder.(*[]*lockRequest)
-	// During the specifics of this label we need to take into account only distinct values
+func newLockRequestJSONLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
+	nullStr := *valueHolder.(*spanner.NullString)
+	if !nullStr.Valid {
+		return lockRequestJSONLabelValue{metadata: metadata, value: ""}
+	}
+	rawJSON := nullStr.StringVal
+	var value []*lockRequestJSON
+	if err := json.Unmarshal([]byte(rawJSON), &value); err != nil {
+		return lockRequestJSONLabelValue{
+			metadata: metadata,
+			value:    "",
+		}
+	}
+
 	uniqueValueItems := make(map[string]struct{})
 	var convertedValue []string
 
 	for _, valueItem := range value {
+		if valueItem == nil || (valueItem.LockMode == "" && valueItem.Column == "") {
+			continue
+		}
 		var valueItemString string
 		if valueItem.TransactionTag == "" {
 			valueItemString = fmt.Sprintf("{%v,%v}", valueItem.LockMode, valueItem.Column)
@@ -287,7 +312,64 @@ func newLockRequestSliceLabelValue(metadata LabelValueMetadata, valueHolder any)
 
 	constructedValue := strings.Join(convertedValue, ",")
 
-	return lockRequestSliceLabelValue{
+	return lockRequestJSONLabelValue{
+		metadata: metadata,
+		value:    constructedValue,
+	}
+}
+
+func (v operationsByTableJSONLabelValue) Metadata() LabelValueMetadata {
+	return v.metadata
+}
+
+func (v operationsByTableJSONLabelValue) Value() any {
+	return v.value
+}
+
+func (v operationsByTableJSONLabelValue) SetValueTo(attributes pcommon.Map) {
+	attributes.PutStr(v.metadata.Name(), v.value)
+}
+
+type operationsByTableJSON struct {
+	TableName           string `json:"table_name"`
+	InsertOrUpdateCount int64  `json:"insert_or_update_count"`
+	InsertOrUpdateBytes int64  `json:"insert_or_update_bytes"`
+}
+
+func newOperationsByTableJSONLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
+	nullStr := *valueHolder.(*spanner.NullString)
+	if !nullStr.Valid {
+		return operationsByTableJSONLabelValue{metadata: metadata, value: ""}
+	}
+	rawJSON := nullStr.StringVal
+	var value []*operationsByTableJSON
+	if err := json.Unmarshal([]byte(rawJSON), &value); err != nil {
+		return operationsByTableJSONLabelValue{
+			metadata: metadata,
+			value:    "",
+		}
+	}
+
+	uniqueValueItems := make(map[string]struct{})
+	var convertedValue []string
+
+	for _, valueItem := range value {
+		if valueItem == nil || valueItem.TableName == "" {
+			continue
+		}
+		valueItemString := fmt.Sprintf("{%v,%v,%v}", valueItem.TableName, valueItem.InsertOrUpdateCount, valueItem.InsertOrUpdateBytes)
+
+		if _, contains := uniqueValueItems[valueItemString]; !contains {
+			uniqueValueItems[valueItemString] = struct{}{}
+			convertedValue = append(convertedValue, valueItemString)
+		}
+	}
+
+	sort.Strings(convertedValue)
+
+	constructedValue := strings.Join(convertedValue, ",")
+
+	return operationsByTableJSONLabelValue{
 		metadata: metadata,
 		value:    constructedValue,
 	}
@@ -301,7 +383,7 @@ func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelV
 	case StringValueType:
 		newLabelValueFunc = newStringLabelValue
 		valueHolderFunc = func() any {
-			var valueHolder string
+			var valueHolder spanner.NullString
 			return &valueHolder
 		}
 	case IntValueType:
@@ -334,16 +416,28 @@ func NewLabelValueMetadata(name, columnName string, valueType ValueType) (LabelV
 			var valueHolder []byte
 			return &valueHolder
 		}
-	case LockRequestSliceValueType:
-		newLabelValueFunc = newLockRequestSliceLabelValue
+	case LockRequestJSONValueType:
+		newLabelValueFunc = newLockRequestJSONLabelValue
 		valueHolderFunc = func() any {
-			var valueHolder []*lockRequest
+			var valueHolder spanner.NullString
+			return &valueHolder
+		}
+	case OperationsByTableJSONValueType:
+		newLabelValueFunc = newOperationsByTableJSONLabelValue
+		valueHolderFunc = func() any {
+			var valueHolder spanner.NullString
 			return &valueHolder
 		}
 	case TimestampValueType:
 		newLabelValueFunc = newTimestampLabelValue
 		valueHolderFunc = func() any {
 			var valueHolder spanner.NullTime
+			return &valueHolder
+		}
+	case DateValueType:
+		newLabelValueFunc = newDateLabelValue
+		valueHolderFunc = func() any {
+			var valueHolder spanner.NullDate
 			return &valueHolder
 		}
 	default:
@@ -387,6 +481,39 @@ func newTimestampLabelValue(metadata LabelValueMetadata, valueHolder any) LabelV
 		val = nullTime.Time.UTC().Format(time.RFC3339)
 	}
 	return timestampLabelValue{
+		metadata: metadata,
+		value:    val,
+	}
+}
+
+type dateLabelValue struct {
+	metadata LabelValueMetadata
+	value    string
+}
+
+func (v dateLabelValue) Metadata() LabelValueMetadata {
+	return v.metadata
+}
+
+func (v dateLabelValue) Value() any {
+	return v.value
+}
+
+func (v dateLabelValue) SetValueTo(attributes pcommon.Map) {
+	attributes.PutStr(v.metadata.Name(), v.value)
+}
+
+func (v *dateLabelValue) ModifyValue(s string) {
+	v.value = s
+}
+
+func newDateLabelValue(metadata LabelValueMetadata, valueHolder any) LabelValue {
+	nullDate := *valueHolder.(*spanner.NullDate)
+	var val string
+	if nullDate.Valid && nullDate.Date.IsValid() {
+		val = nullDate.Date.String()
+	}
+	return dateLabelValue{
 		metadata: metadata,
 		value:    val,
 	}

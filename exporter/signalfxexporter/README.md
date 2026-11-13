@@ -9,7 +9,8 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fsignalfx%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fsignalfx) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fsignalfx%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fsignalfx) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_signalfx)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_signalfx&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@crobert-1](https://www.github.com/crobert-1) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@crobert-1](https://www.github.com/crobert-1) |
+| Emeritus      | [@dmitryax](https://www.github.com/dmitryax) |
 
 [deprecated]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#deprecated
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -55,11 +56,9 @@ The following configuration options can also be configured:
 - `access_token_passthrough`: (default = `true`) Whether to use
   `"com.splunk.signalfx.access_token"` metric resource attribute, if any, as the
   SignalFx access token.  In either case this attribute will be dropped during
-  final translation, in this exporter only.  Intended to be used in tandem with
-  identical configuration option for [SignalFx
-  receiver](../../receiver/signalfxreceiver/README.md) to preserve datapoint
-  origin for only this exporter, as others will reveal the organization access token
-  by not filtering the attribute.
+  final translation, in this exporter only. This preserves datapoint origin while
+  preventing other exporters from exposing the organization access token by forwarding
+  the attribute.
 - `exclude_metrics`: List of metric filters that will determine metrics to be
   excluded from sending to Signalfx backend. The filtering is applied after the default 
   translations controlled by `disable_default_translation_rules` option.
@@ -139,8 +138,8 @@ The following configuration options can also be configured:
 that are allowed to be used as a dimension key in addition to alphanumeric 
 characters. Each nonalphanumeric dimension key character that isn't in this string 
 will be replaced with a `_`.
-- `ingest_tls`: (no default) exposes a list of TLS settings to establish a secure connection with signafx receiver configured on another collector instance.
-  - `ca_file` needs to be set if the exporter's `ingest_url` is pointing to a signalfx receiver
+- `ingest_tls`: (no default) exposes a list of TLS settings for the SignalFx ingest endpoint.
+  - `ca_file` needs to be set if the exporter's `ingest_url` points to an endpoint
   with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
   Full list of TLS options can be found in the configtls [README](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/configtls#client-configuration) 
   The following example instructs the signalfx exporter ingest client to use a custom `ca_file` to verify the server certificate.
@@ -223,16 +222,14 @@ The default rules will create the following aggregated metrics from the [`hostme
 * cpu.wait
 * disk.summary_utilization
 * disk.utilization
-* disk_ops.pending
-* disk_ops.total
-* memory.total
+* memory.total (deprecated, excluded by default)
 * memory.utilization
 * network.total
-* process.cpu_time_seconds
+* process.cpu_time_seconds (deprecated, excluded by default)
 * system.disk.io.total
-* system.disk.operations.total
-* system.network.io.total
-* system.network.packets.total
+* system.disk.operations.total (deprecated, excluded by default)
+* system.network.io.total (deprecated, excluded by default)
+* system.network.packets.total (deprecated, excluded by default)
 * vmpage_io.memory.in
 * vmpage_io.memory.out
 * vmpage_io.swap.in
@@ -256,17 +253,16 @@ exporters:
       batch:
 ```
 
-> :warning: When enabling the SignalFx receiver or exporter, configure both the `metrics` and `logs` pipelines.
 
 ```yaml
 service:
   pipelines:
     metrics:
-      receivers: [signalfx]
+      receivers: [otlp]
       processors: [memory_limiter]
       exporters: [signalfx]
     logs:
-      receivers: [signalfx]
+      receivers: [otlp]
       processors: [memory_limiter]
       exporters: [signalfx]
     traces:

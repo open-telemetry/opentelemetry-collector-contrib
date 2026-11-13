@@ -35,6 +35,7 @@ The following settings can be optionally configured:
   - `exclude_service_attributes` (default = false): If set to `true`, the `service.name`, `service.instance.id` and `service.namespace` resource attributes, which are already converted to `job` and `instance` labels respectively, will be excluded from the final metrics. **[Deprecated]**: When using `resource_constant_labels`, the equivalent configuration is adding `service.name`, `service.instance.id`, and `service.namespace` to `excluded`.
 - `enable_open_metrics`: (default = `false`): If true, metrics will be exported using the OpenMetrics format. Exemplars are only exported in the OpenMetrics format, and only for histogram and monotonic sum (i.e. counter) metrics.
 - `without_scope_info`: (default = `false`): If true, metrics will be exported without scope name, version, schemaURL, and attributes encoded as labels.
+- `sending_queue` **[Deprecated]**: The Prometheus exporter is pull-based and does not use a sending queue. Can be disabled and rejected via the `exporter.prometheus.DisableSendingQueue` feature gate.
 - `add_metric_suffixes`: (default = `true`): If false, addition of type and unit suffixes is disabled. **Deprecated**: Use `translation_strategy` instead. This setting is ignored when `translation_strategy` is explicitly set.
 - `translation_strategy`: Controls how OTLP metric and attribute names are translated into Prometheus metric and label names. When set, this takes precedence over `add_metric_suffixes`. Available options:
   - `UnderscoreEscapingWithSuffixes`: Fully escapes metric names for classic Prometheus metric name compatibility, and includes appending type and unit suffixes.
@@ -88,7 +89,14 @@ Optionally, users can set different `translation_strategy` options to control ho
 
 ## Setting resource attributes as metric labels
 
-By default, resource attributes are added to a special metric called `target_info`. To select and group by metrics by resource attributes, you [need to do join on `target_info`](https://prometheus.io/docs/prometheus/latest/querying/operators/#many-to-one-and-one-to-many-vector-matches). For example, to select metrics with `k8s_namespace_name` attribute equal to `my-namespace`:
+By default, resource attributes are added to a special metric called `target_info`. Enable the alpha feature gate
+`pkg.prometheus.KeepIdentifyingResourceAttributes` with
+`--feature-gates=pkg.prometheus.KeepIdentifyingResourceAttributes` to also preserve
+`service.name`, `service.namespace`, and `service.instance.id` on `target_info`.
+These attributes continue to populate `job` and `instance`.
+Label names follow the configured translation strategy.
+
+To select and group by metrics by resource attributes, you [need to do join on `target_info`](https://prometheus.io/docs/prometheus/latest/querying/operators/#many-to-one-and-one-to-many-vector-matches). For example, to select metrics with `k8s_namespace_name` attribute equal to `my-namespace`:
 
 ```promql
 app_ads_ad_requests_total * on (job, instance) group_left target_info{k8s_namespace_name="my-namespace"}

@@ -6,11 +6,13 @@
 package pebbletailstorageextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension"
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -173,6 +175,21 @@ func (s *storage) Take(traceID pcommon.TraceID) (ptrace.Traces, error) {
 	if !readFailed {
 		return out, nil
 	}
+	return s.resolveReadError(traceID, out)
+}
+
+func (s *storage) Delete(traceID pcommon.TraceID) error {
+	prefix := tracePrefix(traceID)
+	// Delete all entries for the trace in one range operation instead of
+	// iterating keys and deleting one-by-one.
+	end := tracePrefixUpperBound(prefix)
+	if err := s.db.DeleteRange(prefix[:], end[:], pebble.NoSync); err != nil {
+		return fmt.Errorf("pebble DeleteRange error: %w", err)
+	}
+	return nil
+}
+
+func (s *storage) resolveReadError(traceID pcommon.TraceID, out ptrace.Traces) (ptrace.Traces, error) {
 	switch s.onReadError {
 	case ReadErrorPolicyReturnPartial:
 		if s.telemetry != nil {
@@ -194,15 +211,88 @@ func (s *storage) Take(traceID pcommon.TraceID) (ptrace.Traces, error) {
 	}
 }
 
-func (s *storage) Delete(traceID pcommon.TraceID) error {
-	prefix := tracePrefix(traceID)
-	// Delete all entries for the trace in one range operation instead of
-	// iterating keys and deleting one-by-one.
-	end := tracePrefixUpperBound(prefix)
-	if err := s.db.DeleteRange(prefix[:], end[:], pebble.NoSync); err != nil {
-		return fmt.Errorf("pebble DeleteRange error: %w", err)
+// TakeMany reads and deletes several traces with one iterator and one
+// write batch. Trace IDs are visited in key order so the iterator moves
+// forward through the SSTables instead of seeking back and forth.
+func (s *storage) TakeMany(traceIDs []pcommon.TraceID) ([]ptrace.Traces, []error) {
+	n := len(traceIDs)
+	out := make([]ptrace.Traces, n)
+	errs := make([]error, n)
+	if n == 0 {
+		return out, errs
 	}
-	return nil
+
+	order := make([]int, n)
+	for i := range order {
+		order[i] = i
+	}
+	sort.Slice(order, func(a, b int) bool {
+		return bytes.Compare(traceIDs[order[a]][:], traceIDs[order[b]][:]) < 0
+	})
+
+	iter, err := s.newIter()
+	if err != nil {
+		if s.telemetry != nil {
+			s.telemetry.ExtensionPebbleTailStorageReadErrors.Add(context.Background(), 1)
+		}
+		s.logger.Warn("failed to create tail storage iterator", zap.Error(err))
+		iter = nil
+	}
+
+	batch := s.db.NewBatch()
+	defer batch.Close()
+
+	type deletion struct {
+		index      int
+		result     ptrace.Traces
+		readFailed bool
+	}
+	deletions := make([]deletion, 0, n)
+	for _, i := range order {
+		prefix := tracePrefix(traceIDs[i])
+		result := ptrace.NewTraces()
+		readFailed := true
+		if iter != nil {
+			result, readFailed = s.readTraceFromIter(iter, prefix[:])
+			if !readFailed && result.ResourceSpans().Len() == 0 {
+				out[i] = result
+				continue
+			}
+		}
+		end := tracePrefixUpperBound(prefix)
+		if err := batch.DeleteRange(prefix[:], end[:], nil); err != nil {
+			out[i] = ptrace.NewTraces()
+			errs[i] = fmt.Errorf("pebble DeleteRange error: %w", err)
+			continue
+		}
+		deletions = append(deletions, deletion{index: i, result: result, readFailed: readFailed})
+	}
+
+	if iter != nil {
+		if err := iter.Close(); err != nil {
+			s.logger.Warn("failed to close tail storage iterator", zap.Error(err))
+		}
+	}
+
+	if len(deletions) == 0 {
+		return out, errs
+	}
+	if err := batch.Commit(pebble.NoSync); err != nil {
+		for _, d := range deletions {
+			out[d.index] = ptrace.NewTraces()
+			errs[d.index] = fmt.Errorf("pebble batch commit error: %w", err)
+		}
+		return out, errs
+	}
+
+	for _, d := range deletions {
+		if !d.readFailed {
+			out[d.index] = d.result
+			continue
+		}
+		out[d.index], errs[d.index] = s.resolveReadError(traceIDs[d.index], d.result)
+	}
+	return out, errs
 }
 
 func (s *storage) readByTracePrefix(prefix []byte) (ptrace.Traces, bool) {
@@ -216,6 +306,10 @@ func (s *storage) readByTracePrefix(prefix []byte) (ptrace.Traces, bool) {
 	}
 	defer iter.Close()
 
+	return s.readTraceFromIter(iter, prefix)
+}
+
+func (s *storage) readTraceFromIter(iter storageIter, prefix []byte) (ptrace.Traces, bool) {
 	failed := false
 	result := ptrace.NewTraces()
 	// SeekPrefixGE enables prefix bloom filter usage when configured in Pebble options.

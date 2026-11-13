@@ -129,6 +129,25 @@ func TestAddResourceTargetInfoV2(t *testing.T) {
 			timestamp: 0,
 		},
 		{
+			desc: "preserve leading and consecutive underscores in target_info labels",
+			resource: func() pcommon.Resource {
+				r := pcommon.NewResource()
+				r.Attributes().PutStr("service.name", "my_service")
+				r.Attributes().PutStr("_foo", "leading")
+				r.Attributes().PutStr("app__component", "backend")
+				return r
+			}(),
+			timestamp: testdata.TestMetricStartTimestamp,
+			wantLabels: []prompb.Label{
+				{Name: model.MetricNameLabel, Value: "target_info"},
+				{Name: "_foo", Value: "leading"},
+				{Name: "app__component", Value: "backend"},
+				{Name: model.JobLabel, Value: "my_service"},
+			},
+			wantLabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+			wantHelpRef:    9,
+		},
+		{
 			desc: "with resource, NoTranslation strategy preserves dots in attribute names",
 			resource: func() pcommon.Resource {
 				r := pcommon.NewResource()
@@ -313,6 +332,7 @@ func TestPrometheusConverterV2_AddSummaryDataPoints(t *testing.T) {
 				metric.Summary().DataPoints(),
 				pcommon.NewResource(),
 				pcommon.NewInstrumentationScope(),
+				"",
 				Settings{},
 				metric.Name(),
 				m,
@@ -485,6 +505,19 @@ func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 			},
 		},
 		{
+			name: "NHCB drops data point without sum",
+			metric: func() pmetric.Metric {
+				metric := newTestExplicitHistogram()
+				metric.Histogram().DataPoints().At(0).RemoveSum()
+				return metric
+			},
+			settings: Settings{ConvertExplicitHistogramsToNHCB: true},
+			wantErr:  true,
+			check: func(t *testing.T, converter *prometheusConverterV2) {
+				assert.Empty(t, converter.unique, "no series emitted for a data point without sum")
+			},
+		},
+		{
 			name: "NHCB conversion error keeps classic",
 			metric: func() pmetric.Metric {
 				metric := newTestExplicitHistogram()
@@ -515,6 +548,7 @@ func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 				metric.Histogram().DataPoints(),
 				pcommon.NewResource(),
 				pcommon.NewInstrumentationScope(),
+				"",
 				tt.settings,
 				metric.Name(),
 				m,

@@ -412,7 +412,7 @@ Processing:
 - `timeout` (default = 5s): The timeout for every attempt to send data to the backend.
 - `sending_queue`
     - `enabled` (default = true)
-    - `num_consumers` (default = 10): Number of concurrent consumers that dequeue and insert data into ClickHouse. Enabling `batch` does not reduce this parallelism, only the (cheap) queue reader becomes single-threaded, while inserts still run on up to `num_consumers` workers. Ignored if `enabled` is `false`.
+    - `num_consumers` (default = 10): Number of concurrent consumers that dequeue and insert data into ClickHouse. Enabling `batch` does not reduce this parallelism, only the (cheap) queue reader becomes single-threaded, while inserts still run on up to `num_consumers` workers. Ignored if `enabled` is `false`. Also used to size the ClickHouse client's connection pool unless they are set in the `endpoint` or `connection_params`.
     - `queue_size` (default = 1000): Maximum size of the queue, measured in `sizer` units. Data is dropped when the queue is full unless `block_on_overflow` is enabled.
     - `sizer` (default = `requests`): How `queue_size` is measured. One of `requests`, `items`, or `bytes`.
     - `block_on_overflow` (default = false): If `true`, waits for space when the queue is full instead of dropping data (applies backpressure to the pipeline).
@@ -473,7 +473,7 @@ If you already have tables created by a previous version of the exporter, you wi
 Here is an example of a command you can use to update your existing table (adjust database and table names as needed):
 
 ```sql
-ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(1));
+ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(3));
 ```
 
 To find the newest columns available check the `internal/sqltemplates` folder.
@@ -489,13 +489,13 @@ Here are some columns you can add to your table to update the schema:
 
 ```sql
 -- EventName
-ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(1));
+ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(3));
 
 -- JSON tables only. These 3 columns are part of one feature, you must add all 3 at once.
 ALTER TABLE otel.otel_logs
-  ADD COLUMN IF NOT EXISTS ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
-  ADD COLUMN IF NOT EXISTS ScopeAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
-  ADD COLUMN IF NOT EXISTS LogAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
+  ADD COLUMN IF NOT EXISTS ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(3)),
+  ADD COLUMN IF NOT EXISTS ScopeAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(3)),
+  ADD COLUMN IF NOT EXISTS LogAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(3)),
   -- Optional indices
   ADD INDEX IF NOT EXISTS idx_res_attr_keys ResourceAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
   ADD INDEX IF NOT EXISTS idx_scope_attr_keys ScopeAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
@@ -503,8 +503,8 @@ ALTER TABLE otel.otel_logs
 
 -- JSON tables only. These 2 columns are part of one feature, you must add all 2 at once.
 ALTER TABLE otel.otel_traces
-  ADD COLUMN IF NOT EXISTS ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
-  ADD COLUMN IF NOT EXISTS SpanAttributesKeys  Array(LowCardinality(String)) CODEC(ZSTD(1)),
+  ADD COLUMN IF NOT EXISTS ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(3)),
+  ADD COLUMN IF NOT EXISTS SpanAttributesKeys  Array(LowCardinality(String)) CODEC(ZSTD(3)),
   -- Optional indices
   ADD INDEX IF NOT EXISTS idx_res_attr_keys ResourceAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
   ADD INDEX IF NOT EXISTS idx_span_attr_keys SpanAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1;
