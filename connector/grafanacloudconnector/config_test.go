@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"gotest.tools/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector/internal/metadata"
 )
@@ -36,15 +36,15 @@ func TestLoadConfig(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-			assert.NilError(t, err)
+			require.NoError(t, err)
 
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
 			sub, err := cm.Sub(component.NewIDWithName(metadata.Type, tc.name).String())
-			assert.NilError(t, err)
-			assert.NilError(t, sub.Unmarshal(cfg))
-			assert.DeepEqual(t, tc.expect, cfg)
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+			require.Equal(t, tc.expect, cfg)
 		})
 	}
 }
@@ -79,9 +79,9 @@ func TestValidate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			err := tc.cfg.Validate()
 			if tc.errMsg != "" {
-				assert.Equal(t, tc.errMsg, err.Error())
+				require.Equal(t, tc.errMsg, err.Error())
 			} else {
-				assert.NilError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
