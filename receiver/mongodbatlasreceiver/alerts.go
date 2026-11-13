@@ -6,6 +6,7 @@ package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"bytes"
 	"context"
+	"crypto/fips140"
 	"crypto/hmac"
 	"crypto/sha1" // #nosec G505 -- SHA1 is the algorithm mongodbatlas uses, it must be used to calculate the HMAC signature
 	"encoding/base64"
@@ -420,9 +421,17 @@ func verifyHMACSignature(secret string, payload []byte, signatureHeader string) 
 		return err
 	}
 
-	h := hmac.New(sha1.New, []byte(secret))
-	h.Write(payload)
-	calculatedSig := h.Sum(nil)
+	// MongoDB Atlas signs webhook payloads with HMAC-SHA1 and the secret the user
+	// configured in Atlas, so neither the hash nor the key length is ours to choose.
+	// Under GODEBUG=fips140=only crypto/hmac refuses SHA-1 and keys shorter than
+	// 112 bits, so the check runs outside strict enforcement instead of panicking.
+	// The verification itself is unchanged.
+	var calculatedSig []byte
+	fips140.WithoutEnforcement(func() {
+		h := hmac.New(sha1.New, []byte(secret))
+		h.Write(payload)
+		calculatedSig = h.Sum(nil)
+	})
 
 	if !hmac.Equal(calculatedSig, payloadSig) {
 		return errors.New("calculated signature does not equal header signature")
