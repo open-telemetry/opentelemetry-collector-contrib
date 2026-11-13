@@ -88,6 +88,8 @@ const (
 
 const maxBufferedCustomMessages = 10
 
+const configApplyInterruptedMessage = "Remote configuration application was interrupted by a Supervisor restart"
+
 type configState struct {
 	// Supervisor-assembled config to be given to the Collector.
 	mergedConfig string
@@ -386,6 +388,16 @@ func (s *Supervisor) Start(ctx context.Context) error {
 	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFilePath(), s.config.Agent.InstanceID, s.telemetrySettings.Logger)
 	if err != nil {
 		return err
+	}
+	// Complete the interrupted request before callbacks can replace it with a new config.
+	// The persisted failure is sent on connect and participates in normal startup rollback.
+	lastRemoteConfigStatus := s.persistentState.GetLastRemoteConfigStatus()
+	if s.config.Capabilities.AcceptsRemoteConfig && lastRemoteConfigStatus.GetStatus() == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING {
+		lastRemoteConfigStatus.Status = protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED
+		lastRemoteConfigStatus.ErrorMessage = configApplyInterruptedMessage
+		if saveErr := s.persistentState.SetLastRemoteConfigStatus(lastRemoteConfigStatus); saveErr != nil {
+			s.telemetrySettings.Logger.Error("Could not save last remote config status", zap.Error(saveErr))
+		}
 	}
 
 	if s.config.Capabilities.AcceptsPackages {
