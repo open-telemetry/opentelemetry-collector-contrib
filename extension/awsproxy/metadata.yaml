@@ -1,5 +1,5 @@
 display_name: AWS Proxy Extension
-type: awsproxy
+type: aws_proxy
 
 description: |
   The AWS proxy accepts requests without any authentication of AWS signatures applied and forwards them to the
