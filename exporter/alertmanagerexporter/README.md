@@ -19,7 +19,7 @@ Supported pipeline types: traces, logs
 
 The following settings are required:
 
-- `endpoint`: Alertmanager endpoint to send events
+- `endpoint`: Alertmanager base URL to send events. The exporter appends `/api/<api_version>/alerts` to its path, preserving any path prefix and query parameters.
 - `severity`: Default severity for Alerts
 
 
@@ -31,7 +31,7 @@ The following settings are optional:
 - `generator_url` is the source of the alerts to be used in Alertmanager's payload. The default value is "opentelemetry-collector", and can be set to the URL of the opentelemetry collector.
 - `severity_attribute` is the SpanEvent or LogRecord Attribute name which can be used instead of default severity string in Alert payload.
    e.g.: If `severity_attribute` is set to "foo" and the SpanEvent or LogRecord has an attribute called foo, foo's attribute value will be used as the severity value for that particular Alert generated from the SpanEvent or LogRecord.
-- `api_version` is the API version of [Alertmanager](https://prometheus.io/docs/alerting/latest/clients/). By default the value is set to "v2" and can be overridden to "v1" if using an older version of Alertmanager.
+- `api_version` is the API version of [Alertmanager](https://prometheus.io/docs/alerting/latest/alerts_api/). By default the value is set to "v2" and can be overridden to "v1" if using an older version of Alertmanager.
 - `event_labels` is the list of Event or LogRecord Attributes that will be captured as Labels in the Alert payload if value exists.
 
 Example config:
