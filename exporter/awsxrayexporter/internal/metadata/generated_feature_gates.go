@@ -24,7 +24,7 @@ var ExporterAwsxrayDontEmitV0HTTPNetworkConventionsFeatureGate = featuregate.Glo
 
 var ExporterAwsxrayEmitV1DBConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.awsxray.EmitV1DBConventions",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, the AWS X-Ray exporter reads database span attributes using semconv v1.38.0 keys (db.namespace, db.system.name, db.query.text, user.name) instead of the deprecated v1.12.0 keys (db.name, db.system, db.statement, db.user)."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46533"),
 	featuregate.WithRegisterFromVersion("v0.147.0"),
@@ -44,4 +44,12 @@ var ExporterAwsxraySkiptimestampvalidationFeatureGate = featuregate.GlobalRegist
 	featuregate.WithRegisterDescription("Remove XRay's timestamp validation on first 32 bits of trace ID"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48737"),
 	featuregate.WithRegisterFromVersion("v0.84.0"),
+)
+
+var ExporterXrayAllowDotFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.xray.allowDot",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("X-Ray Exporter will no longer convert . to _ in annotation keys when this feature gate is enabled. "),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/31732"),
+	featuregate.WithRegisterFromVersion("v0.97.0"),
 )

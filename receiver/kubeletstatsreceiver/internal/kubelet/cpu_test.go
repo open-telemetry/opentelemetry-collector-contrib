@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -89,4 +91,86 @@ func TestScrapeBasedCPUUsage_DisabledGateUsesUsageNanoCores(t *testing.T) {
 	usageMetrics, found := metrics["k8s.node.cpu.usage"]
 	require.True(t, found)
 	require.InDelta(t, 1.5, usageMetrics[0].Gauge().DataPoints().At(0).DoubleValue(), 1e-9)
+}
+
+func TestRoundedUtilization(t *testing.T) {
+	tests := []struct {
+		name       string
+		usageCores float64
+		limitCores float64
+		expected   float64
+	}{
+		{
+			// Plain float64 division yields 2.9999999999999996.
+			name:       "removes float64 artifact",
+			usageCores: float64(300_000_000) / nanoCoresPerCore,
+			limitCores: 0.1,
+			expected:   3,
+		},
+		{
+			name:       "rounds to significant digits of the inputs",
+			usageCores: 1,
+			limitCores: 3,
+			expected:   0.3333333333,
+		},
+		{
+			name:       "fractional millicore limit from node capacity",
+			usageCores: float64(123_456_789) / nanoCoresPerCore,
+			limitCores: float64(1500) / milliCoresPerCore,
+			expected:   0.082304526,
+		},
+		{
+			name:       "zero usage",
+			usageCores: 0,
+			limitCores: 2,
+			expected:   0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, roundedUtilization(tt.usageCores, tt.limitCores))
+		})
+	}
+}
+
+func TestCPUUtilizationRoundingFeatureGate(t *testing.T) {
+	newPodMetrics := func() pmetric.Metrics {
+		cfg := metadata.NewDefaultMetricsBuilderConfig()
+		cfg.Metrics.K8sPodCPUNodeUtilization.Enabled = true
+		cfg.Metrics.K8sPodCPULimitUtilization.Enabled = true
+		cfg.Metrics.K8sPodCPURequestUtilization.Enabled = true
+		mb := metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type))
+		// 0.3 cores used against a 100m limit/request and a 0.1 core node: the float64
+		// quotient is 2.9999999999999996, the rounded one is 3.
+		r := resources{cpuLimit: 0.1, cpuRequest: 0.1}
+		addCPUUtilizationMetrics(mb, metadata.PodCPUMetrics, float64(300_000_000)/nanoCoresPerCore, pcommon.Timestamp(0), r, 0.1)
+		return mb.Emit()
+	}
+	utilizationValues := func(m pmetric.Metrics) map[string]float64 {
+		out := map[string]float64{}
+		ms := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+		for i := 0; i < ms.Len(); i++ {
+			out[ms.At(i).Name()] = ms.At(i).Gauge().DataPoints().At(0).DoubleValue()
+		}
+		return out
+	}
+	names := []string{"k8s.pod.cpu.node.utilization", "k8s.pod.cpu_limit_utilization", "k8s.pod.cpu_request_utilization"}
+
+	t.Run("disabled", func(t *testing.T) {
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletStatsCPUUtilizationRoundingFeatureGate, false)()
+		values := utilizationValues(newPodMetrics())
+		for _, name := range names {
+			require.Contains(t, values, name)
+			require.Equal(t, 2.9999999999999996, values[name], name)
+		}
+	})
+
+	t.Run("enabled", func(t *testing.T) {
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletStatsCPUUtilizationRoundingFeatureGate, true)()
+		values := utilizationValues(newPodMetrics())
+		for _, name := range names {
+			require.Contains(t, values, name)
+			require.Equal(t, 3.0, values[name], name)
+		}
+	})
 }

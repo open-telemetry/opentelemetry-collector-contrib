@@ -7,9 +7,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -19,6 +21,9 @@ import (
 
 const (
 	defaultPort = "4317"
+
+	// backendStartTimeout bounds the creation and start of the exporter for each new backend.
+	backendStartTimeout = 5 * time.Second
 )
 
 var (
@@ -41,6 +46,11 @@ type loadBalancer struct {
 
 	stopped    bool
 	updateLock sync.RWMutex
+
+	// backendChangeMu serializes the resolver callbacks, so that topology updates are still
+	// applied one at a time without having to hold updateLock while exporters are being
+	// created and started.
+	backendChangeMu sync.Mutex
 }
 
 // Create new load balancer
@@ -151,41 +161,86 @@ func (lb *loadBalancer) Start(ctx context.Context, host component.Host) error {
 }
 
 func (lb *loadBalancer) onBackendChanges(resolved []string) {
+	lb.backendChangeMu.Lock()
+	defer lb.backendChangeMu.Unlock()
+
 	newRing := newHashRing(resolved)
 
-	if !newRing.equal(lb.ring) {
-		lb.updateLock.Lock()
-		defer lb.updateLock.Unlock()
-
-		lb.ring = newRing
-
-		// TODO: set a timeout?
-		ctx := context.Background()
-
-		// add the missing exporters first
-		lb.addMissingExporters(ctx, resolved)
-		lb.removeExtraExporters(ctx, resolved)
+	// prepare phase: take a snapshot of the current state, holding updateLock only for the
+	// duration of the copy
+	lb.updateLock.RLock()
+	if newRing.equal(lb.ring) {
+		lb.updateLock.RUnlock()
+		return
 	}
+
+	running := maps.Clone(lb.exporters)
+	lb.updateLock.RUnlock()
+
+	// create and start the missing exporters without holding updateLock, so that slow
+	// component factories or Start calls don't block the data path.
+	added := lb.startMissingExporters(resolved, running)
+	maps.Copy(running, added)
+
+	// only route to endpoints that have a running exporter. Endpoints that failed to start are
+	// left out of the ring until the resolver reports the next change in the backend set.
+	available := make([]string, 0, len(resolved))
+	for _, endpoint := range resolved {
+		if _, ok := running[endpointWithPort(endpoint)]; ok {
+			available = append(available, endpoint)
+		}
+	}
+
+	// commit phase: install the new exporters and publish the new ring atomically
+	lb.updateLock.Lock()
+	defer lb.updateLock.Unlock()
+
+	maps.Copy(lb.exporters, added)
+	lb.ring = newHashRing(available)
+	lb.removeExtraExporters(context.Background(), resolved)
 }
 
-func (lb *loadBalancer) addMissingExporters(ctx context.Context, endpoints []string) {
+// startMissingExporters creates and starts an exporter for every endpoint that isn't part of the
+// given existing exporters, returning the started ones keyed by endpoint, without installing them.
+func (lb *loadBalancer) startMissingExporters(endpoints []string, existing map[string]*wrappedExporter) map[string]*wrappedExporter {
+	added := make(map[string]*wrappedExporter)
 	for _, endpoint := range endpoints {
 		endpoint = endpointWithPort(endpoint)
 
-		if _, exists := lb.exporters[endpoint]; !exists {
-			exp, err := lb.componentFactory(ctx, endpoint)
-			if err != nil {
-				lb.logger.Error("failed to create new exporter for endpoint", zap.String("endpoint", endpoint), zap.Error(err))
-				continue
-			}
-			we := newWrappedExporter(exp, endpoint)
-			if err = we.Start(ctx, lb.host); err != nil {
-				lb.logger.Error("failed to start new exporter for endpoint", zap.String("endpoint", endpoint), zap.Error(err))
-				continue
-			}
-			lb.exporters[endpoint] = we
+		if _, ok := existing[endpoint]; ok {
+			continue
 		}
+		if _, ok := added[endpoint]; ok {
+			continue
+		}
+
+		we, err := lb.startExporter(endpoint)
+		if err != nil {
+			lb.logger.Error("failed to start new exporter for endpoint", zap.String("endpoint", endpoint), zap.Error(err))
+			continue
+		}
+		added[endpoint] = we
 	}
+
+	return added
+}
+
+// startExporter creates and starts the exporter for a single endpoint, bounded by
+// backendStartTimeout for implementations that honor the context.
+func (lb *loadBalancer) startExporter(endpoint string) (*wrappedExporter, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), backendStartTimeout)
+	defer cancel()
+
+	exp, err := lb.componentFactory(ctx, endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("creating exporter: %w", err)
+	}
+
+	we := newWrappedExporter(exp, endpoint)
+	if err := we.Start(ctx, lb.host); err != nil {
+		return nil, fmt.Errorf("starting exporter: %w", err)
+	}
+	return we, nil
 }
 
 func endpointWithPort(endpoint string) string {
