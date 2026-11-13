@@ -97,7 +97,7 @@ attributes:
     enum: [accepted, closed, rejected]
     requirement_level: recommended
   db.namespace:
-    description: The default database for the thread, or empty if none has been selected (originally processlist_db).
+    description: The name of the database the statement was executed against, or empty if not available.
     type: string
   db.query.text:
     description: The SQL statement text for the event.
@@ -172,6 +172,19 @@ attributes:
     type: string
     enum: [waits, write_requests, writes, fsyncs]
     requirement_level: recommended
+  mysql.blocking.blocker.count:
+    description: The number of concurrent InnoDB row-lock blockers currently holding a lock this session is waiting on. 0 indicates the session is not currently blocked, but also covers engines where blocking isn't measured (MariaDB, MySQL <8.0.11) -- an int can't carry that case separately. Check mysql.blocking.blocker.details to tell the two apart.
+    type: int
+  mysql.blocking.blocker.details:
+    description: A JSON array of {thread_id, session_id} tuples, one per concurrent InnoDB row-lock blocker for this session. Unordered. session_id is null when that blocker could not be resolved (e.g. it disconnected between reads). "[]" when measured and not blocked, empty string when blocking isn't measurable on this engine/version (MariaDB, MySQL <8.0.11).
+    type: string
+  mysql.client.name:
+    description: The client driver's self-reported identity at connection time, e.g. "MySQL Connector/J" or "libmysql". Empty if the client reported no connect attributes or the connect-attrs feature is disabled server-side.
+    type: string
+  mysql.column.name:
+    description: The name of the table column.
+    type: string
+    requirement_level: recommended
   mysql.event_id:
     description: The thread associated with the event and the thread current event number when the event starts.
     type: int
@@ -187,6 +200,12 @@ attributes:
   mysql.events_statements_summary_by_digest.digest:
     description: The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no.
     type: string
+  mysql.events_statements_summary_by_digest.examined_rows:
+    description: The number of rows examined by the statement, reported as a delta value.
+    type: int
+  mysql.events_statements_summary_by_digest.returned_rows:
+    description: The number of rows returned by the statement, reported as a delta value.
+    type: int
   mysql.events_statements_summary_by_digest.sum_timer_wait:
     description: The total time spent executing the statement, report in delta seconds.
     type: double
@@ -206,6 +225,10 @@ attributes:
   mysql.query_plan.hash:
     description: This attribute is set to the same value as mysql.events_statements_summary_by_digest.digest (query digest) by design.
     type: string
+  mysql.query_plan.source:
+    description: The event the plan was reported for, so plans can be routed or dropped per source event.
+    type: string
+    enum: [db.server.top_query, db.server.query_sample]
   mysql.replica.channel.name:
     description: The replication channel name.
     type: string
@@ -230,6 +253,12 @@ attributes:
   mysql.threads.thread_id:
     description: The unique identifier for the thread executing the statement.
     type: int
+  mysql.wait_event.name:
+    description: Detailed wait breakdown -- the wait event name with its category segment stripped (e.g. 'table/sql/handler', 'mutex/innodb/checkpoint_state'), or 'CPU'/'User sleep'/'other' when not actually waiting. Paired with mysql.wait_event.type. Distinct from mysql.wait_type, which reports the raw, unprocessed event name and is unchanged.
+    type: string
+  mysql.wait_event.type:
+    description: Top-level wait classification derived from the second path segment of the wait event name ('io', 'lock', 'synch'), or 'CPU'/'User sleep'/'other' when not actually waiting. Paired with mysql.wait_event.name.
+    type: string
   mysql.wait_type:
     description: The name of the instrument that produced the event.
     type: string
@@ -330,6 +359,16 @@ attributes:
     enum: [allow_write, concurrent_insert, low_priority, normal, external]
     requirement_level: recommended
 events:
+  db.server.query_plan:
+    enabled: false
+    description: The execution plan for a query.
+    attributes:
+      - db.system.name
+      - mysql.query_plan.hash
+      - db.namespace
+      - mysql.query_plan.source
+      - mysql.query_plan
+
   db.server.query_sample:
     enabled: false
     description: |
@@ -347,6 +386,8 @@ events:
       - mysql.query_plan
       - mysql.query_plan.hash
       - mysql.event_id
+      - mysql.wait_event.type
+      - mysql.wait_event.name
       - mysql.wait_type
       - mysql.session.status
       - mysql.session.id
@@ -356,6 +397,9 @@ events:
       - client.port
       - network.peer.address
       - network.peer.port
+      - mysql.client.name
+      - mysql.blocking.blocker.count
+      - mysql.blocking.blocker.details
 
   db.server.top_query:
     enabled: false
@@ -364,12 +408,15 @@ events:
       This provides insights into query performance and resource usage, helping users identify and optimize high-impact queries as part of their observability pipeline.
     attributes:
       - db.system.name
+      - db.namespace
       - db.query.text
       - mysql.query_plan
       - mysql.query_plan.hash
       - mysql.events_statements_summary_by_digest.digest
       - mysql.events_statements_summary_by_digest.count_star
       - mysql.events_statements_summary_by_digest.sum_timer_wait
+      - mysql.events_statements_summary_by_digest.examined_rows
+      - mysql.events_statements_summary_by_digest.returned_rows
 
 metrics:
   mysql.buffer_pool.data_pages:
@@ -923,6 +970,30 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [schema, digest, digest_text]
+  mysql.table.auto_increment.limit:
+    enabled: false
+    description: The maximum value the auto_increment column can hold for a given table, based on its declared integer type and signedness. Reported as a double; values above 2^53 (the largest BIGINT UNSIGNED values) may be off by a small amount due to floating-point precision.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [table_name, schema, mysql.column.name]
+  mysql.table.auto_increment.usage:
+    enabled: false
+    description: The current auto_increment value for a given table. Reported as a double; values above 2^53 (the largest BIGINT UNSIGNED values) may be off by a small amount due to floating-point precision.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [table_name, schema, mysql.column.name]
+  mysql.table.auto_increment.utilization:
+    enabled: false
+    description: The fraction of the auto_increment column's integer range currently in use for a given table, between 0 and 1.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [table_name, schema, mysql.column.name]
   mysql.table.average_row_length:
     enabled: false
     description: The average row length in bytes for a given table.

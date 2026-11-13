@@ -19,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hardwarescraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
@@ -204,6 +205,48 @@ func TestLoadInvalidConfig_NoScrapers(t *testing.T) {
 	require.ErrorContains(t, confmap.Validate(cfg), "must specify at least one scraper when using host_metrics receiver")
 }
 
+func TestConfigValidate_MetadataCollectionInterval(t *testing.T) {
+	tests := []struct {
+		name        string
+		interval    time.Duration
+		expectError bool
+	}{
+		{
+			name:        "invalid interval - negative",
+			interval:    -time.Second,
+			expectError: true,
+		},
+		{
+			name:        "valid interval - zero",
+			interval:    0,
+			expectError: false,
+		},
+		{
+			name:        "valid interval - positive",
+			interval:    time.Second,
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cpu := cpuscraper.NewFactory()
+			cfg := createDefaultConfig().(*Config)
+			cfg.MetadataCollectionInterval = tt.interval
+			cfg.Scrapers = map[component.Type]component.Config{
+				cpu.Type(): cpu.CreateDefaultConfig(),
+			}
+
+			err := confmap.Validate(cfg)
+			if tt.expectError {
+				require.ErrorContains(t, err, "metadata_collection_interval must not be negative")
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
@@ -212,4 +255,40 @@ func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
 	require.NoError(t, err)
 
 	require.ErrorContains(t, cm.Unmarshal(cfg), "invalid scraper key: invalidscraperkey")
+}
+
+func TestLoadInvalidConfig_InvalidScraperKeyName(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config-invalidscraperkeyname.yaml"))
+	require.NoError(t, err)
+
+	err = cm.Unmarshal(cfg)
+	require.ErrorContains(t, err, "invalid scraper key name: cpu-usage")
+	require.ErrorContains(t, err, `invalid character(s) in type "cpu-usage"`)
+}
+
+func TestLoadHardwareConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config-hardware.yaml"))
+	require.NoError(t, err)
+
+	t.Run("receiver root with nested temperature filters", func(t *testing.T) {
+		sub, subErr := cm.Sub("hostmetrics")
+		require.NoError(t, subErr)
+		cfg := createDefaultConfig().(*Config)
+		require.NoError(t, sub.Unmarshal(cfg))
+		require.Equal(t, "/hostfs", cfg.RootPath)
+		hardware, ok := cfg.Scrapers[component.MustNewType("hardware")].(*hardwarescraper.Config)
+		require.True(t, ok)
+		expected := hardwarescraper.NewFactory().CreateDefaultConfig().(*hardwarescraper.Config)
+		expected.Temperature.Include.Sensors = []string{"Core.*"}
+		require.Equal(t, expected, hardware)
+	})
+
+	t.Run("removed hwmon_path is rejected", func(t *testing.T) {
+		sub, subErr := cm.Sub("hostmetrics/removed-path")
+		require.NoError(t, subErr)
+		require.ErrorContains(t, sub.Unmarshal(createDefaultConfig()), "invalid keys: hwmon_path")
+	})
 }

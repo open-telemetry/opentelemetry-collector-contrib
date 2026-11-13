@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -78,9 +79,14 @@ func ensureExporter(params exporter.Settings, pCfg *Config) *pubsubExporter {
 
 // createDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() component.Config {
+	queueSettings := exporterhelper.NewDefaultQueueConfig()
+	batchCfg := *queueSettings.Batch.GetOrInsertDefault()
+	queueSettings.Batch = configoptional.Default(batchCfg)
+
 	return &Config{
 		UserAgent:       "opentelemetry-collector-contrib {{version}}",
 		TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: defaultTimeout},
+		QueueSettings:   configoptional.Default(queueSettings),
 		Watermark: WatermarkConfig{
 			Behavior:     "current",
 			AllowedDrift: 0,

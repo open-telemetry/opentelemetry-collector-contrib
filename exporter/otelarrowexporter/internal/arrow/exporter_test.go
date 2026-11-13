@@ -6,6 +6,7 @@ package arrow
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -302,13 +303,51 @@ func TestArrowExporterTimeout(t *testing.T) {
 	}
 }
 
-// TestConnectError tests that if the connections fail fast the
-// stream object for some reason is nil.  This causes downgrade.
+// TestArrowExporterStreamConnectError tests that a generic connect
+// error is treated as transient: the stream is restarted, retaining
+// its work state, and a subsequent healthy connection can export.
+// Only an Unimplemented status indicates a lack of Arrow support.
 func TestArrowExporterStreamConnectError(t *testing.T) {
 	for _, pname := range AllPrioritizers {
 		t.Run(string(pname), func(t *testing.T) {
 			tc := newSingleStreamTestCase(t, pname)
-			channel := newConnectErrorTestChannel()
+			connErr := newConnectErrorTestChannel()
+			healthy := newHealthyTestChannel()
+
+			tc.traceCall.AnyTimes().DoAndReturn(tc.returnNewStream(connErr, healthy))
+
+			var wg sync.WaitGroup
+			wg.Go(func() {
+				outputData := <-healthy.sendChannel()
+				healthy.recv <- statusOKFor(outputData.BatchId)
+			})
+
+			bg := t.Context()
+			require.NoError(t, tc.exporter.Start(bg))
+
+			// The exporter must recover rather than downgrade.
+			sent, err := tc.exporter.SendAndWait(bg, twoTraces)
+			require.True(t, sent, "a connect error should not cause downgrade")
+			require.NoError(t, err)
+
+			wg.Wait()
+
+			require.NoError(t, tc.exporter.Shutdown(bg))
+
+			require.NotEmpty(t, tc.observedLogs.All(), "should have at least one log: %v", tc.observedLogs.All())
+			require.Equal(t, "cannot start arrow stream", tc.observedLogs.All()[0].Message)
+		})
+	}
+}
+
+// TestArrowExporterStreamUnsupportedConnectError tests that an
+// Unimplemented status returned by the stream constructor causes
+// downgrade, since it means the endpoint does not serve Arrow.
+func TestArrowExporterStreamUnsupportedConnectError(t *testing.T) {
+	for _, pname := range AllPrioritizers {
+		t.Run(string(pname), func(t *testing.T) {
+			tc := newSingleStreamTestCase(t, pname)
+			channel := newUnsupportedConnectErrorTestChannel()
 
 			tc.traceCall.AnyTimes().DoAndReturn(tc.returnNewStream(channel))
 
@@ -321,8 +360,90 @@ func TestArrowExporterStreamConnectError(t *testing.T) {
 
 			require.NoError(t, tc.exporter.Shutdown(bg))
 
-			require.NotEmpty(t, tc.observedLogs.All(), "should have at least one log: %v", tc.observedLogs.All())
-			require.Equal(t, "cannot start arrow stream", tc.observedLogs.All()[0].Message)
+			require.Less(t, 1, len(tc.observedLogs.All()), "should have at least two logs: %v", tc.observedLogs.All())
+			require.Equal(t, "arrow is not supported", tc.observedLogs.All()[0].Message)
+			require.Contains(t, tc.observedLogs.All()[1].Message, "downgrading")
+		})
+	}
+}
+
+// TestArrowExporterPartialConnectFailure tests the case where some,
+// but not all, streams fail to connect.  The failing stream's work
+// state must continue to be served by a restarted stream.  Previously
+// it was retired while remaining eligible for new work, which stalled
+// the exporter permanently once every prioritizer goroutine had been
+// consumed dispatching to it.
+func TestArrowExporterPartialConnectFailure(t *testing.T) {
+	const numStreams = 2
+
+	for _, pname := range AllPrioritizers {
+		t.Run(string(pname), func(t *testing.T) {
+			tc := newExporterTestCaseCommon(t, pname, NotNoisy, time.Minute, numStreams, false, nil)
+
+			var connects atomic.Int64
+			var channelMu sync.Mutex
+			stop := make(chan struct{})
+			defer close(stop)
+
+			tc.traceCall.AnyTimes().DoAndReturn(func(ctx context.Context, _ ...grpc.CallOption) (
+				arrowpb.ArrowTracesService_ArrowTracesClient,
+				error,
+			) {
+				// Exactly one stream fails its first connect.  The
+				// other streams stay healthy, so the exporter keeps
+				// running and never downgrades.
+				if connects.Add(1) == 1 {
+					return nil, errors.New("test connect error")
+				}
+
+				channel := newHealthyTestChannel()
+				go func() {
+					for {
+						select {
+						case <-stop:
+							return
+						case data, ok := <-channel.sendChannel():
+							if !ok || data == nil {
+								return
+							}
+							select {
+							case channel.recv <- statusOKFor(data.BatchId):
+							case <-stop:
+								return
+							}
+						}
+					}
+				}()
+
+				channelMu.Lock()
+				defer channelMu.Unlock()
+				str := tc.newMockStream(ctx)
+				str.sendCall.AnyTimes().DoAndReturn(channel.onSend(ctx))
+				str.recvCall.AnyTimes().DoAndReturn(channel.onRecv(ctx))
+				str.closeSendCall.AnyTimes().DoAndReturn(channel.onCloseSend())
+				return str.anyStreamClient.(arrowpb.ArrowTracesService_ArrowTracesClient), nil
+			})
+
+			bg := t.Context()
+			require.NoError(t, tc.exporter.Start(bg))
+
+			// Wait until the failed connect has been observed and the
+			// replacement streams have connected.
+			require.Eventually(t, func() bool {
+				return connects.Load() > int64(numStreams)
+			}, 30*time.Second, 10*time.Millisecond, "streams did not finish connecting")
+
+			// Send enough requests that every prioritizer goroutine
+			// would have been consumed by the recovered work state.
+			for i := range numStreams * 4 {
+				ctx, cancel := context.WithTimeout(bg, 30*time.Second)
+				sent, err := tc.exporter.SendAndWait(ctx, twoTraces)
+				cancel()
+				require.True(t, sent, "request %d should use the arrow path", i)
+				require.NoError(t, err, "request %d should succeed", i)
+			}
+
+			require.NoError(t, tc.exporter.Shutdown(bg))
 		})
 	}
 }

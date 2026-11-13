@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net/http"
 	"net/url"
 	"reflect"
 	"slices"
@@ -15,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/vmware/govmomi/fault"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/performance"
@@ -50,11 +52,42 @@ func defaultNewVcenterClient(l *zap.Logger, c *Config) *vcenterClient {
 	}
 }
 
+// applyProxy points the transport at the configured proxy. When proxy_url is
+// unset the transport keeps govmomi's default of http.ProxyFromEnvironment.
+func applyProxy(transport *http.Transport, proxyURL string) error {
+	if proxyURL == "" {
+		return nil
+	}
+
+	parsed, err := url.Parse(proxyURL)
+	if err != nil {
+		return fmt.Errorf("unable to parse proxy_url %s: %w", proxyURL, err)
+	}
+	transport.Proxy = http.ProxyURL(parsed)
+
+	// net/http hands govmomi's DialTLSContext the proxy's address when the proxy
+	// speaks https, and that hook reuses TLSClientConfig as-is, so the vCenter
+	// tls settings would be verified against the proxy's certificate. It only
+	// adds a thumbprint fallback this receiver never configures.
+	transport.DialTLSContext = nil
+
+	return nil
+}
+
 // EnsureConnection will establish a connection to the vSphere SDK if not already established
 func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	if vc.sessionManager != nil {
-		sessionActive, _ := vc.sessionManager.SessionIsActive(ctx)
-		if sessionActive {
+		// SessionIsActive needs the Sessions.ValidateSession privilege, which a read-only user
+		// lacks, and ESXi does not implement it. Reading the current session needs neither.
+		// UserSession returns no error and no session when the session has expired, and
+		// ManagedObjectNotFound when the session no longer exists on the server, as govmomi's
+		// session cache treats it. Any other error may be transient, so it is returned instead of
+		// logging in again and leaking the session.
+		userSession, err := vc.sessionManager.UserSession(ctx)
+		if err != nil && !fault.Is(err, &vt.ManagedObjectNotFound{}) {
+			return fmt.Errorf("unable to check the vSphere SDK session: %w", err)
+		}
+		if userSession != nil {
 			return nil
 		}
 	}
@@ -65,6 +98,11 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	}
 
 	soapClient := soap.NewClient(sdkURL, vc.cfg.ClientConfig.Insecure)
+	// The vSAN client below reuses this transport, so both drivers are covered.
+	if proxyErr := applyProxy(soapClient.DefaultTransport(), vc.cfg.ProxyURL); proxyErr != nil {
+		return proxyErr
+	}
+
 	tlsCfg, err := vc.cfg.ClientConfig.LoadTLSConfig(ctx)
 	if err != nil {
 		return err
@@ -139,6 +177,8 @@ func (vc *vcenterClient) Datastores(ctx context.Context, containerMoRef vt.Manag
 		"name",
 		"summary.capacity",
 		"summary.freeSpace",
+		"summary.maintenanceMode",
+		"triggeredAlarmState",
 	}, &datastores)
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve Datastores: %w", err)
@@ -182,13 +222,16 @@ func (vc *vcenterClient) HostSystems(ctx context.Context, containerMoRef vt.Mana
 	err = v.Retrieve(ctx, []string{"HostSystem"}, []string{
 		"name",
 		"runtime.powerState",
+		"runtime.connectionState",
 		"summary.hardware.memorySize",
 		"summary.hardware.numCpuCores",
 		"summary.hardware.cpuMhz",
 		"config.vsanHostConfig.clusterInfo.nodeUuid",
 		"summary.quickStats.overallMemoryUsage",
 		"summary.quickStats.overallCpuUsage",
+		"summary.quickStats.uptime",
 		"summary.overallStatus",
+		"triggeredAlarmState",
 		"vm",
 		"parent",
 	}, &hosts)

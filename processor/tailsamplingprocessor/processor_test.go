@@ -138,9 +138,10 @@ func withPolicies(policies []*policy) Option {
 }
 
 type spanInfo struct {
-	span     ptrace.Span
-	resource pcommon.Resource
-	scope    pcommon.InstrumentationScope
+	span           ptrace.Span
+	resource       pcommon.Resource
+	scope          pcommon.InstrumentationScope
+	scopeSchemaURL string
 }
 
 func TestTraceIntegrity(t *testing.T) {
@@ -151,12 +152,14 @@ func TestTraceIntegrity(t *testing.T) {
 
 	// Fill resource
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
+	resourceSpans.SetSchemaUrl("https://example.com/resource")
 	resource := resourceSpans.Resource()
 	resourceSpans.Resource().Attributes().PutStr("key1", "value1")
 	resourceSpans.Resource().Attributes().PutInt("key2", 0)
 
 	// Fill scopeSpans 1
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	scopeSpans.SetSchemaUrl("https://example.com/scope1")
 	scope := scopeSpans.Scope()
 	scopeSpans.Scope().SetName("scope1")
 	scopeSpans.Scope().Attributes().PutStr("key1", "value1")
@@ -167,16 +170,17 @@ func TestTraceIntegrity(t *testing.T) {
 	spanID := [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
 	span.SetSpanID(pcommon.SpanID(spanID))
 	span.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
-	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
+	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope, scopeSchemaURL: scopeSpans.SchemaUrl()}
 
 	span = scopeSpans.Spans().AppendEmpty()
 	spanID = [8]byte{9, 10, 11, 12, 13, 14, 15, 16}
 	span.SetSpanID(pcommon.SpanID(spanID))
 	span.SetTraceID(pcommon.TraceID([16]byte{5, 6, 7, 8}))
-	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
+	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope, scopeSchemaURL: scopeSpans.SchemaUrl()}
 
 	// Fill scopeSpans 2
 	scopeSpans = resourceSpans.ScopeSpans().AppendEmpty()
+	scopeSpans.SetSchemaUrl("https://example.com/scope2")
 	scope = scopeSpans.Scope()
 	scopeSpans.Scope().SetName("scope2")
 	scopeSpans.Scope().Attributes().PutStr("key1", "value1")
@@ -187,13 +191,13 @@ func TestTraceIntegrity(t *testing.T) {
 	spanID = [8]byte{17, 18, 19, 20, 21, 22, 23, 24}
 	span.SetSpanID(pcommon.SpanID(spanID))
 	span.SetTraceID(pcommon.TraceID([16]byte{9, 10, 11, 12}))
-	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
+	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope, scopeSchemaURL: scopeSpans.SchemaUrl()}
 
 	span = scopeSpans.Spans().AppendEmpty()
 	spanID = [8]byte{25, 26, 27, 28, 29, 30, 31, 32}
 	span.SetSpanID(pcommon.SpanID(spanID))
 	span.SetTraceID(pcommon.TraceID([16]byte{13, 14, 15, 16}))
-	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
+	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope, scopeSchemaURL: scopeSpans.SchemaUrl()}
 
 	require.Len(t, spans, spanCount)
 
@@ -225,8 +229,11 @@ func TestTraceIntegrity(t *testing.T) {
 
 	mpe1.SetDecision(samplingpolicy.Sampled)
 
-	// Generate and deliver first span
-	require.NoError(t, p.ConsumeTraces(t.Context(), traces))
+	// Generate and deliver first span. The processor moves spans out of its
+	// input, so hand it a copy and keep spans for comparison.
+	input := ptrace.NewTraces()
+	traces.CopyTo(input)
+	require.NoError(t, p.ConsumeTraces(t.Context(), input))
 
 	// The first tick won't do anything
 	controller.waitForTick()
@@ -251,10 +258,90 @@ func TestTraceIntegrity(t *testing.T) {
 			require.Equal(t, spanInfo.span, span)
 			require.Equal(t, spanInfo.resource, trace.ResourceSpans().At(0).Resource())
 			require.Equal(t, spanInfo.scope, trace.ResourceSpans().At(0).ScopeSpans().At(0).Scope())
+			require.Equal(t, "https://example.com/resource", trace.ResourceSpans().At(0).SchemaUrl())
+			require.Equal(t, spanInfo.scopeSchemaURL, trace.ResourceSpans().At(0).ScopeSpans().At(0).SchemaUrl())
 		} else {
 			require.Fail(t, "Span not found")
 		}
 	}
+}
+
+func TestSplitResourceSpansByTrace(t *testing.T) {
+	rss := ptrace.NewResourceSpans()
+	rss.SetSchemaUrl("https://example.com/resource")
+	rss.Resource().Attributes().PutStr("service.name", "frontend")
+
+	scopeA := rss.ScopeSpans().AppendEmpty()
+	scopeA.SetSchemaUrl("https://example.com/scope-a")
+	scopeA.Scope().SetName("lib-a")
+	scopeB := rss.ScopeSpans().AppendEmpty()
+	scopeB.Scope().SetName("lib-b")
+
+	traceA := uInt64ToTraceID(1)
+	traceB := uInt64ToTraceID(2)
+
+	span := scopeA.Spans().AppendEmpty()
+	span.SetTraceID(traceA)
+	span.SetSpanID(uInt64ToSpanID(1))
+	// Empty parent: this is the root for trace A.
+
+	// Same scope as the root, so lastScope gets reused.
+	span = scopeA.Spans().AppendEmpty()
+	span.SetTraceID(traceA)
+	span.SetSpanID(uInt64ToSpanID(4))
+	span.SetParentSpanID(uInt64ToSpanID(1))
+
+	span = scopeA.Spans().AppendEmpty()
+	span.SetTraceID(traceB)
+	span.SetSpanID(uInt64ToSpanID(2))
+	span.SetParentSpanID(uInt64ToSpanID(99))
+
+	span = scopeB.Spans().AppendEmpty()
+	span.SetTraceID(traceA)
+	span.SetSpanID(uInt64ToSpanID(3))
+	span.SetParentSpanID(uInt64ToSpanID(1))
+
+	batches := splitResourceSpansByTrace(rss)
+	require.Len(t, batches, 2)
+	byID := make(map[pcommon.TraceID]traceBatch, len(batches))
+	for _, batch := range batches {
+		byID[batch.id] = batch
+	}
+	a, b := byID[traceA], byID[traceB]
+	require.EqualValues(t, 3, a.spanCount)
+	require.EqualValues(t, 1, b.spanCount)
+	require.True(t, a.hasRoot)
+	require.False(t, b.hasRoot)
+
+	require.Equal(t, "frontend", a.rss.Resource().Attributes().AsRaw()["service.name"])
+	require.Equal(t, "https://example.com/resource", a.rss.SchemaUrl())
+	require.Equal(t, "https://example.com/resource", b.rss.SchemaUrl())
+
+	// Trace A keeps both scopes in first-seen order, no empty scopes.
+	require.Equal(t, 2, a.rss.ScopeSpans().Len())
+	require.Equal(t, "lib-a", a.rss.ScopeSpans().At(0).Scope().Name())
+	require.Equal(t, "lib-b", a.rss.ScopeSpans().At(1).Scope().Name())
+	require.Equal(t, 2, a.rss.ScopeSpans().At(0).Spans().Len())
+	require.Equal(t, uInt64ToSpanID(1), a.rss.ScopeSpans().At(0).Spans().At(0).SpanID())
+	require.Equal(t, uInt64ToSpanID(4), a.rss.ScopeSpans().At(0).Spans().At(1).SpanID())
+	require.Equal(t, uInt64ToSpanID(3), a.rss.ScopeSpans().At(1).Spans().At(0).SpanID())
+	require.Equal(t, "https://example.com/scope-a", a.rss.ScopeSpans().At(0).SchemaUrl())
+	require.Empty(t, a.rss.ScopeSpans().At(1).SchemaUrl())
+
+	// Trace B only appeared in scope A.
+	require.Equal(t, 1, b.rss.ScopeSpans().Len())
+	require.Equal(t, "lib-a", b.rss.ScopeSpans().At(0).Scope().Name())
+	require.Equal(t, "https://example.com/scope-a", b.rss.ScopeSpans().At(0).SchemaUrl())
+	require.Equal(t, uInt64ToSpanID(2), b.rss.ScopeSpans().At(0).Spans().At(0).SpanID())
+
+	// Spans are moved out of the source; the resource and scopes are copied.
+	for _, ss := range rss.ScopeSpans().All() {
+		for _, span := range ss.Spans().All() {
+			require.True(t, span.SpanID().IsEmpty())
+		}
+	}
+	require.Equal(t, "frontend", rss.Resource().Attributes().AsRaw()["service.name"])
+	require.Equal(t, "lib-a", rss.ScopeSpans().At(0).Scope().Name())
 }
 
 func TestSequentialTraceArrival(t *testing.T) {
@@ -340,6 +427,9 @@ func TestConcurrentTraceArrival(t *testing.T) {
 		// Add the same traceId twice.
 		wg.Add(2)
 		concurrencyLimiter <- struct{}{}
+		// The processor moves spans out of its input, so each call needs its own copy.
+		dup := ptrace.NewTraces()
+		batch.CopyTo(dup)
 		go func(td ptrace.Traces) {
 			assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
 			wg.Done()
@@ -350,7 +440,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 			assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
 			wg.Done()
 			<-concurrencyLimiter
-		}(batch)
+		}(dup)
 	}
 
 	wg.Wait()
@@ -402,12 +492,18 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 	for _, batch := range batches {
 		wg.Add(1)
 		go func(td ptrace.Traces) {
+			// The processor moves spans out of its input, so each call needs its own copy.
+			consume := func() {
+				input := ptrace.NewTraces()
+				td.CopyTo(input)
+				assert.NoError(t, sp.ConsumeTraces(t.Context(), input))
+			}
 			for range 10 {
-				assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
+				consume()
 			}
 			controller.concurrentWithTick(func() {
 				for range 10 {
-					assert.NoError(t, sp.ConsumeTraces(t.Context(), td))
+					consume()
 				}
 			})
 			wg.Done()
@@ -519,9 +615,6 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, tsp.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, tsp.Shutdown(t.Context()))
-	}()
 
 	var expectedSpans atomic.Int64
 	wg := sync.WaitGroup{}
@@ -546,7 +639,10 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 			// until the time must have passed.
 			for time.Since(start) < 2*cfg.DecisionWait {
 				expectedSpans.Add(int64(batch.SpanCount()))
-				err := tsp.ConsumeTraces(t.Context(), batch)
+				// The processor moves spans out of its input, so each call needs its own copy.
+				input := ptrace.NewTraces()
+				batch.CopyTo(input)
+				err := tsp.ConsumeTraces(t.Context(), input)
 				if err != nil {
 					errCh <- err
 				}
@@ -558,14 +654,9 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 	<-errDone
 	require.NoError(t, combinedErr)
 
-	// verify
-	// despite all the concurrency above, we should eventually sample all the spans.
-	require.EventuallyWithT(t, func(collect *assert.CollectT) {
-		received := int64(msp.SpanCount())
-		expected := expectedSpans.Load()
-		missing := expected - received
-		require.Equal(collect, expected, received, "expected %d spans, received %d, missing %d", expected, received, missing)
-	}, 1*time.Second, 100*time.Millisecond)
+	// Shutting down drains all pending traces, so every span must be forwarded.
+	require.NoError(t, tsp.Shutdown(t.Context()))
+	require.Equal(t, expectedSpans.Load(), int64(msp.SpanCount()))
 }
 
 func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
@@ -1886,6 +1977,7 @@ func TestTailStorageExtensionFromHost(t *testing.T) {
 	assert.Len(t, msp.AllTraces(), 1)
 	assert.Positive(t, host.extension.appendCount)
 	assert.Positive(t, host.extension.takeCount)
+	assert.Positive(t, host.extension.takeManyCount)
 }
 
 // TestSpanIngestPendingStorageDeletedOnDecisionWait verifies that when a trace
@@ -2156,12 +2248,14 @@ type extension struct {
 	takeErr    error
 	appendCount,
 	takeCount,
+	takeManyCount,
 	deleteCount int
 }
 
 var (
-	_ samplingpolicy.Extension         = &extension{}
-	_ tailstorageextension.TailStorage = &extension{}
+	_ samplingpolicy.Extension              = &extension{}
+	_ tailstorageextension.TailStorage      = &extension{}
+	_ tailstorageextension.BatchTailStorage = &extension{}
 )
 
 // NewEvaluator implements samplingpolicy.Extension.
@@ -2190,6 +2284,17 @@ func (e *extension) Take(traceID pcommon.TraceID) (ptrace.Traces, error) {
 		return ptrace.NewTraces(), e.takeErr
 	}
 	return e.storage.Take(traceID)
+}
+
+func (e *extension) TakeMany(traceIDs []pcommon.TraceID) ([]ptrace.Traces, []error) {
+	e.ensureStorage()
+	e.takeManyCount++
+	out := make([]ptrace.Traces, len(traceIDs))
+	errs := make([]error, len(traceIDs))
+	for i, id := range traceIDs {
+		out[i], errs[i] = e.Take(id)
+	}
+	return out, errs
 }
 
 func (e *extension) Delete(traceID pcommon.TraceID) error {

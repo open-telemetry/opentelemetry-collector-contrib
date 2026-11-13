@@ -67,6 +67,7 @@ body:
       - exporter/loadbalancing
       - exporter/logicmonitor
       - exporter/logzio
+      - exporter/nats
       - exporter/opensearch
       - exporter/otelarrow
       - exporter/prometheus
@@ -106,6 +107,7 @@ body:
       - extension/encoding/textencoding
       - extension/encoding/zipkinencoding
       - extension/filetelemetrypolicy
+      - extension/fleettracker/redisfleettracker
       - extension/googleclientauth
       - extension/headerssetter
       - extension/healthcheck
@@ -152,6 +154,7 @@ body:
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
+      - internal/natsclient
       - internal/otelarrow
       - internal/pdatautil
       - internal/rabbitmq
@@ -170,6 +173,8 @@ body:
       - pkg/kafka/topic
       - pkg/ottl
       - pkg/ottl/contexts/xprofile
+      - pkg/ottl/contexts/xspanlink
+      - pkg/ottl/xottl
       - pkg/pdatatest
       - pkg/resourcetotelemetry
       - pkg/sampling
@@ -217,6 +222,7 @@ body:
       - processor/metricsgeneration
       - processor/metricstarttime
       - processor/metricstransform
+      - processor/partitioning
       - processor/probabilisticsampler
       - processor/redaction
       - processor/remotetap
@@ -247,6 +253,7 @@ body:
       - processor/transform
       - processor/transform/internal/logparsingfuncs
       - processor/unroll
+      - processor/verify
       - receiver/activedirectoryds
       - receiver/activedirectoryinv
       - receiver/aerospike
@@ -285,6 +292,7 @@ body:
       - receiver/fluentforward
       - receiver/github
       - receiver/gitlab
+      - receiver/gnmi
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
       - receiver/googlecloudpubsubpush
@@ -294,6 +302,7 @@ body:
       - receiver/hostmetrics/internal/scraper/cpuscraper
       - receiver/hostmetrics/internal/scraper/diskscraper
       - receiver/hostmetrics/internal/scraper/filesystemscraper
+      - receiver/hostmetrics/internal/scraper/hardwarescraper
       - receiver/hostmetrics/internal/scraper/loadscraper
       - receiver/hostmetrics/internal/scraper/memoryscraper
       - receiver/hostmetrics/internal/scraper/networkscraper
@@ -323,6 +332,7 @@ body:
       - receiver/mongodbatlas
       - receiver/mysql
       - receiver/namedpipe
+      - receiver/nats
       - receiver/netflow
       - receiver/nginx
       - receiver/nsxt
@@ -345,7 +355,6 @@ body:
       - receiver/redis
       - receiver/riak
       - receiver/saphana
-      - receiver/signalfx
       - receiver/simpleprometheus
       - receiver/skywalking
       - receiver/snmp
@@ -366,7 +375,6 @@ body:
       - receiver/udplog
       - receiver/vcenter
       - receiver/vcr
-      - receiver/wavefront
       - receiver/webhookevent
       - receiver/windowseventlog
       - receiver/windowsperfcounters
@@ -376,6 +384,7 @@ body:
       - receiver/zookeeper
       - scraper/zookeeperscraper
       - testbed
+      - testbed/integrationtests/elasticsearch
       - testbed/mockdatasenders/mockdatadogagentexporter
       # End components list
   - type: textarea

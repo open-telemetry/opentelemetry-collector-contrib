@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -27,6 +28,10 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	batchCfg := *queueCfg.Batch.GetOrInsertDefault()
+	queueCfg.Batch = configoptional.Default(batchCfg)
+
 	return &Config{
 		ServerConfig:      confighttp.NewDefaultServerConfig(),
 		ConstLabels:       map[string]string{},
@@ -34,6 +39,7 @@ func createDefaultConfig() component.Config {
 		MetricExpiration:  time.Minute * 5,
 		EnableOpenMetrics: false,
 		AddMetricSuffixes: true,
+		QueueBatchConfig:  configoptional.Default(queueCfg),
 	}
 }
 
@@ -43,6 +49,10 @@ func createMetricsExporter(
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	pcfg := cfg.(*Config)
+
+	if pcfg.QueueBatchConfig.HasValue() {
+		set.Logger.Warn("sending_queue is deprecated and will be removed in a future release; the Prometheus exporter is pull-based and does not support queuing")
+	}
 
 	prometheus, err := newPrometheusExporter(pcfg, set)
 	if err != nil {
@@ -78,4 +88,10 @@ func createMetricsExporter(
 type wrapMetricsExporter struct {
 	exporter.Metrics
 	exporter *prometheusExporter
+}
+
+// ExporterHelperBatchingEnabled reports whether the wrapped exporter batches requests.
+func (e *wrapMetricsExporter) ExporterHelperBatchingEnabled() bool {
+	b, ok := e.Metrics.(interface{ ExporterHelperBatchingEnabled() bool })
+	return ok && b.ExporterHelperBatchingEnabled()
 }

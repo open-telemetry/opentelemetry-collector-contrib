@@ -296,14 +296,6 @@ type newPolicyCmd struct {
 	policies []*policy
 }
 
-// spanAndScope holds a span handle and the index of its instrumentation
-// scope in the source ResourceSpans. Handles are stored by value so grouping
-// does not heap-allocate a pointer per span.
-type spanAndScope struct {
-	span     ptrace.Span
-	scopeIdx int
-}
-
 var (
 	attrDecisionSampled    = metric.WithAttributes(attribute.String("sampled", "true"), attribute.String("decision", "sampled"))
 	attrDecisionNotSampled = metric.WithAttributes(attribute.String("sampled", "false"), attribute.String("decision", "not_sampled"))
@@ -714,6 +706,20 @@ func (tsp *tailSamplingSpanProcessor) runBatchPolicies(ctx context.Context, cand
 	}
 }
 
+// takeAll takes the spans of every trace ID from tail storage, in one call
+// when the storage implements BatchTailStorage and one Take per ID otherwise.
+func (tsp *tailSamplingSpanProcessor) takeAll(ids []pcommon.TraceID) ([]ptrace.Traces, []error) {
+	if bs, ok := tsp.tailStorage.(tailstorageextension.BatchTailStorage); ok {
+		return bs.TakeMany(ids)
+	}
+	out := make([]ptrace.Traces, len(ids))
+	errs := make([]error, len(ids))
+	for i, id := range ids {
+		out[i], errs[i] = tsp.tailStorage.Take(id)
+	}
+	return out, errs
+}
+
 // samplingPolicyOnTick takes the next batch and process all traces in that batch. Returns if there are more batches in the batcher.
 func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	tsp.logger.Debug("Sampling Policy Evaluation ticked")
@@ -736,6 +742,11 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	// instead: finalize any still-pending trace as implicit not sampled
 	// without policy evaluation, so no candidate is collected for it.
 	candidates := make([]tickCandidate, 0, batchLen)
+	type pendingTake struct {
+		id    pcommon.TraceID
+		trace *TraceData
+	}
+	pending := make([]pendingTake, 0, batchLen)
 	for id := range batch {
 		trace, ok := tsp.idToTrace[id]
 		if !ok {
@@ -766,27 +777,35 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 			continue
 		}
 
-		allSpans, err := tsp.tailStorage.Take(id)
-		if err != nil {
+		pending = append(pending, pendingTake{id: id, trace: trace})
+	}
+
+	ids := make([]pcommon.TraceID, len(pending))
+	for i, p := range pending {
+		ids[i] = p.id
+	}
+	allSpans, takeErrs := tsp.takeAll(ids)
+	for i, p := range pending {
+		if err := takeErrs[i]; err != nil {
 			tsp.logger.Error("Failed to retrieve trace from tail storage", zap.Error(err))
 			// Take failures are terminal for this trace: storage may already have
 			// deleted or otherwise invalidated the spilled batches. Keep going
 			// without eviction would leave idToTrace / deleteTraceQueue stranded.
-			tsp.dropTrace(id, time.Now())
+			tsp.dropTrace(p.id, time.Now())
 			continue
 		}
-		if allSpans.ResourceSpans().Len() == 0 {
+		if allSpans[i].ResourceSpans().Len() == 0 {
 			metrics.idNotFoundOnMapCount++
 			continue
 		}
 
 		candidates = append(candidates, tickCandidate{
-			id:    id,
-			trace: trace,
+			id:    p.id,
+			trace: p.trace,
 			data: &samplingpolicy.TraceData{
-				SpanCount:       trace.SpanCount,
-				SizeBytes:       trace.SizeBytes,
-				ReceivedBatches: allSpans,
+				SpanCount:       p.trace.SpanCount,
+				SizeBytes:       p.trace.SizeBytes,
+				ReceivedBatches: allSpans[i],
 			},
 		})
 	}
@@ -1025,23 +1044,63 @@ func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceI
 	return samplingpolicy.Pending, "", pkgsampling.AlwaysSampleThreshold
 }
 
-func groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceID][]spanAndScope {
-	idToSpans := make(map[pcommon.TraceID][]spanAndScope)
-	ilss := resourceSpans.ScopeSpans()
-	for j := 0; j < ilss.Len(); j++ {
-		scope := ilss.At(j)
-		spans := scope.Spans()
-		spansLen := spans.Len()
-		for k := range spansLen {
+// splitResourceSpansByTrace moves spans from rss into one ResourceSpans per
+// trace ID in one pass, instead of grouping into a slice first. The resource,
+// scopes, and their schema URLs are copied, since several traces may share them.
+//
+// We walk scopes in order and never go back, so lastScope is enough to open
+// dest scopes in first-seen order.
+func splitResourceSpansByTrace(rss ptrace.ResourceSpans) []traceBatch {
+	srcScopes := rss.ScopeSpans()
+	type builder struct {
+		rs        ptrace.ResourceSpans
+		destScope ptrace.ScopeSpans
+		lastScope int // Last opened source scope for a dest (-1 until the first span)
+		count     int64
+		hasRoot   bool
+	}
+	builders := make(map[pcommon.TraceID]*builder)
+
+	for j := 0; j < srcScopes.Len(); j++ {
+		srcScope := srcScopes.At(j)
+		spans := srcScope.Spans()
+		for k := 0; k < spans.Len(); k++ {
 			span := spans.At(k)
-			key := span.TraceID()
-			idToSpans[key] = append(idToSpans[key], spanAndScope{
-				span:     span,
-				scopeIdx: j,
-			})
+			id := span.TraceID()
+			b, ok := builders[id]
+			if !ok {
+				rs := ptrace.NewResourceSpans()
+				rss.Resource().CopyTo(rs.Resource())
+				rs.SetSchemaUrl(rss.SchemaUrl())
+				b = &builder{rs: rs, lastScope: -1}
+				builders[id] = b
+			}
+			if b.lastScope != j {
+				dest := b.rs.ScopeSpans().AppendEmpty()
+				srcScope.Scope().CopyTo(dest.Scope())
+				dest.SetSchemaUrl(srcScope.SchemaUrl())
+				b.destScope = dest
+				b.lastScope = j
+			}
+			destSpan := b.destScope.Spans().AppendEmpty()
+			span.MoveTo(destSpan)
+			b.count++
+			if destSpan.ParentSpanID().IsEmpty() {
+				b.hasRoot = true
+			}
 		}
 	}
-	return idToSpans
+
+	batches := make([]traceBatch, 0, len(builders))
+	for id, b := range builders {
+		batches = append(batches, traceBatch{
+			id:        id,
+			hasRoot:   b.hasRoot,
+			rss:       b.rs,
+			spanCount: b.count,
+		})
+	}
+	return batches
 }
 
 func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrace.ResourceSpans, spanCount int64, containsRootSpan bool) {
@@ -1301,30 +1360,4 @@ func appendAllTraces(dest, src ptrace.Traces) {
 	for i := 0; i < rs.Len(); i++ {
 		appendToTraces(dest, rs.At(i))
 	}
-}
-
-func newResourceSpanFromSpanAndScopes(rss ptrace.ResourceSpans, spanAndScopes []spanAndScope) (ptrace.ResourceSpans, bool) {
-	rs := ptrace.NewResourceSpans()
-	rss.Resource().CopyTo(rs.Resource())
-	var hasRoot bool
-
-	scopeIdxToNewScope := make(map[int]ptrace.ScopeSpans)
-	srcScopes := rss.ScopeSpans()
-	for _, spanAndScope := range spanAndScopes {
-		var sp ptrace.Span
-		if dest, ok := scopeIdxToNewScope[spanAndScope.scopeIdx]; !ok {
-			is := rs.ScopeSpans().AppendEmpty()
-			srcScopes.At(spanAndScope.scopeIdx).Scope().CopyTo(is.Scope())
-			scopeIdxToNewScope[spanAndScope.scopeIdx] = is
-			sp = is.Spans().AppendEmpty()
-		} else {
-			sp = dest.Spans().AppendEmpty()
-		}
-
-		spanAndScope.span.CopyTo(sp)
-		if sp.ParentSpanID().IsEmpty() {
-			hasRoot = true
-		}
-	}
-	return rs, hasRoot
 }

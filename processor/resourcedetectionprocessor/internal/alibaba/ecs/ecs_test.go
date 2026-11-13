@@ -6,138 +6,187 @@ package ecs
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor/processortest"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/otel/attribute"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
-	ecsprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/alibaba/ecs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/alibaba/ecs/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
-type mockECSMetadata struct {
-	retMetadata *ecsprovider.Metadata
-	retErr      error
+const schemaURLForTest = "https://opentelemetry.io/schemas/1.43.0"
+
+// fakeDetector stands in for the upstream SDK detector. Its metadata endpoint is
+// not injectable, so the adapter is exercised against canned SDK results instead
+// of a fake metadata server.
+type fakeDetector struct {
+	res *sdkresource.Resource
+	err error
 }
 
-var _ ecsprovider.Provider = (*mockECSMetadata)(nil)
+func (f fakeDetector) Detect(context.Context) (*sdkresource.Resource, error) {
+	return f.res, f.err
+}
 
-func (m *mockECSMetadata) Metadata(_ context.Context) (*ecsprovider.Metadata, error) {
-	if m.retErr != nil {
-		return nil, m.retErr
+func withFakeDetector(t *testing.T, res *sdkresource.Resource, err error) {
+	t.Helper()
+
+	orig := newResourceDetector
+	newResourceDetector = func() sdkresource.Detector {
+		return fakeDetector{res: res, err: err}
 	}
-	return m.retMetadata, nil
+	t.Cleanup(func() { newResourceDetector = orig })
 }
 
-// --- Constructor smoke test ---
+func fullAttributes() map[string]any {
+	return map[string]any{
+		"cloud.provider":          "alibaba_cloud",
+		"cloud.platform":          "alibaba_cloud_ecs",
+		"cloud.account.id":        "1234567890123456",
+		"cloud.region":            "cn-hangzhou",
+		"cloud.availability_zone": "cn-hangzhou-a",
+		"host.id":                 "i-abcdef123456",
+		"host.name":               "ecs-instance-01",
+		"host.image.id":           "m-abcdef123456",
+		"host.type":               "ecs.g6.large",
+	}
+}
+
+func fullResource() *sdkresource.Resource {
+	attrs := make([]attribute.KeyValue, 0, len(fullAttributes()))
+	for k, v := range fullAttributes() {
+		attrs = append(attrs, attribute.String(k, v.(string)))
+	}
+	return sdkresource.NewWithAttributes(schemaURLForTest, attrs...)
+}
 
 func TestNewDetector(t *testing.T) {
-	tests := []struct {
-		name        string
-		cfg         Config
-		shouldError bool
-	}{
-		{
-			name:        "Success Case Empty Config",
-			cfg:         Config{},
-			shouldError: false,
-		},
-		{
-			name:        "Success Case Default Config",
-			cfg:         CreateDefaultConfig(),
-			shouldError: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), tt.cfg, false)
-			if tt.shouldError {
-				require.Error(t, err)
-				require.Nil(t, detector)
-			} else {
-				require.NotNil(t, detector)
-				require.NoError(t, err)
-			}
+	for name, cfg := range map[string]Config{
+		"empty config":   {},
+		"default config": CreateDefaultConfig(),
+	} {
+		t.Run(name, func(t *testing.T) {
+			d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+			require.NoError(t, err)
+			require.NotNil(t, d)
 		})
 	}
 }
 
-func TestDetector_Detect(t *testing.T) {
-	tests := []struct {
-		name                  string
-		provider              ecsprovider.Provider
-		failOnMissingMetadata bool
-		want                  pcommon.Resource
-		wantErr               bool
-	}{
-		{
-			name: "success with all metadata",
-			provider: &mockECSMetadata{
-				retMetadata: &ecsprovider.Metadata{
-					Hostname:       "ecs-instance-01",
-					ImageID:        "m-abcdef123456",
-					InstanceID:     "i-abcdef123456",
-					InstanceType:   "ecs.g6.large",
-					OwnerAccountID: "1234567890123456",
-					RegionID:       "cn-hangzhou",
-					ZoneID:         "cn-hangzhou-a",
-				},
-			},
-			failOnMissingMetadata: false,
-			want: func() pcommon.Resource {
-				res := pcommon.NewResource()
-				attr := res.Attributes()
-				attr.PutStr("cloud.provider", "alibaba_cloud")
-				attr.PutStr("cloud.platform", "alibaba_cloud_ecs")
-				attr.PutStr("cloud.account.id", "1234567890123456")
-				attr.PutStr("cloud.region", "cn-hangzhou")
-				attr.PutStr("cloud.availability_zone", "cn-hangzhou-a")
-				attr.PutStr("host.id", "i-abcdef123456")
-				attr.PutStr("host.name", "ecs-instance-01")
-				attr.PutStr("host.image.id", "m-abcdef123456")
-				attr.PutStr("host.type", "ecs.g6.large")
-				return res
-			}(),
-		},
-		{
-			name: "metadata unavailable - fail_on_missing_metadata false",
-			provider: &mockECSMetadata{
-				retErr: errors.New("metadata unavailable"),
-			},
-			failOnMissingMetadata: false,
-			want:                  pcommon.NewResource(),
-			wantErr:               false,
-		},
-		{
-			name: "metadata unavailable - fail_on_missing_metadata true",
-			provider: &mockECSMetadata{
-				retErr: errors.New("metadata unavailable"),
-			},
-			failOnMissingMetadata: true,
-			want:                  pcommon.NewResource(),
-			wantErr:               true,
-		},
-	}
+func TestDetect_Success(t *testing.T) {
+	withFakeDetector(t, fullResource(), nil)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			d := &Detector{
-				metadataProvider:      tt.provider,
-				logger:                zap.NewNop(),
-				rb:                    metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
-				failOnMissingMetadata: tt.failOnMissingMetadata,
-			}
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+	require.NoError(t, err)
 
-			got, _, err := d.Detect(t.Context())
-			if tt.wantErr {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-				require.NotNil(t, got)
-				require.Equal(t, tt.want.Attributes().AsRaw(), got.Attributes().AsRaw())
-			}
+	res, schemaURL, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, schemaURLForTest, schemaURL)
+	require.Equal(t, fullAttributes(), res.Attributes().AsRaw())
+}
+
+func TestDetect_DisabledAttributeRemoved(t *testing.T) {
+	withFakeDetector(t, fullResource(), nil)
+
+	cfg := CreateDefaultConfig()
+	cfg.ResourceAttributes.HostName.Enabled = false
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	require.NoError(t, err)
+
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+
+	want := fullAttributes()
+	delete(want, "host.name")
+	require.Equal(t, want, res.Attributes().AsRaw())
+}
+
+func TestDetect_EmptyResult(t *testing.T) {
+	withFakeDetector(t, sdkresource.Empty(), nil)
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+	require.NoError(t, err)
+
+	res, schemaURL, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	require.True(t, internal.IsEmptyResource(res))
+	require.Empty(t, schemaURL)
+}
+
+func TestDetect_EmptyResult_FailOnMissingMetadata(t *testing.T) {
+	withFakeDetector(t, sdkresource.Empty(), nil)
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), true)
+	require.NoError(t, err)
+
+	res, schemaURL, err := d.Detect(t.Context())
+	require.EqualError(t, err, "alibaba_ecs metadata unavailable")
+	require.True(t, internal.IsEmptyResource(res))
+	require.Empty(t, schemaURL)
+}
+
+// The deprecated per-detector flag alone must still trigger fail-on-missing.
+func TestDetect_DeprecatedFailOnMissingMetadata(t *testing.T) {
+	withFakeDetector(t, sdkresource.Empty(), nil)
+
+	cfg := CreateDefaultConfig()
+	cfg.FailOnMissingMetadata = true
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	require.NoError(t, err)
+
+	_, _, err = d.Detect(t.Context())
+	require.Error(t, err)
+}
+
+func TestDetect_Error(t *testing.T) {
+	withFakeDetector(t, nil, errors.New("no metadata"))
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+	require.NoError(t, err)
+
+	res, schemaURL, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	require.True(t, internal.IsEmptyResource(res))
+	require.Empty(t, schemaURL)
+}
+
+func TestDetect_Error_FailOnMissingMetadata(t *testing.T) {
+	errNoMetadata := errors.New("no metadata")
+	withFakeDetector(t, nil, errNoMetadata)
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), true)
+	require.NoError(t, err)
+
+	res, schemaURL, err := d.Detect(t.Context())
+	require.ErrorIs(t, err, errNoMetadata)
+	require.True(t, internal.IsEmptyResource(res))
+	require.Empty(t, schemaURL)
+}
+
+// fail_on_missing_metadata covers an unusable metadata service, not a field absent
+// from an otherwise good response, so a partial result succeeds either way.
+func TestDetect_PartialResultKept(t *testing.T) {
+	for _, failOnMissing := range []bool{false, true} {
+		t.Run(fmt.Sprintf("fail_on_missing_metadata=%t", failOnMissing), func(t *testing.T) {
+			partial := sdkresource.NewWithAttributes(schemaURLForTest,
+				attribute.String("cloud.provider", "alibaba_cloud"),
+				attribute.String("host.id", "i-abcdef123456"),
+			)
+			withFakeDetector(t, partial, fmt.Errorf("%w: hostname: not present in metadata", sdkresource.ErrPartialResource))
+
+			d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), failOnMissing)
+			require.NoError(t, err)
+
+			res, schemaURL, err := d.Detect(t.Context())
+			require.NoError(t, err)
+			require.Equal(t, schemaURLForTest, schemaURL)
+			require.Equal(t, map[string]any{
+				"cloud.provider": "alibaba_cloud",
+				"host.id":        "i-abcdef123456",
+			}, res.Attributes().AsRaw())
 		})
 	}
 }

@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -21,6 +22,15 @@ const (
 	AggregationStrategyMin = "min"
 	AggregationStrategyMax = "max"
 )
+
+// dataPointKey hashes dp's attributes and timestamps for O(1) dedup lookup.
+func dataPointKey(dp pmetric.NumberDataPoint) uint64 {
+	return xhash.Hash64(
+		xhash.WithMap(dp.Attributes()),
+		xhash.WithUint64(uint64(dp.StartTimestamp())),
+		xhash.WithUint64(uint64(dp.Timestamp())),
+	)
+}
 
 // AttributeBufferPoolData specifies the value buffer_pool_data attribute.
 type AttributeBufferPoolData int
@@ -706,6 +716,32 @@ var MapAttributeMysqlMyisamKeyCacheOperationType = map[string]AttributeMysqlMyis
 	"write": AttributeMysqlMyisamKeyCacheOperationTypeWrite,
 }
 
+// AttributeMysqlQueryPlanSource specifies the value mysql.query_plan.source attribute.
+type AttributeMysqlQueryPlanSource int
+
+const (
+	_ AttributeMysqlQueryPlanSource = iota
+	AttributeMysqlQueryPlanSourceDbServerTopQuery
+	AttributeMysqlQueryPlanSourceDbServerQuerySample
+)
+
+// String returns the string representation of the AttributeMysqlQueryPlanSource.
+func (av AttributeMysqlQueryPlanSource) String() string {
+	switch av {
+	case AttributeMysqlQueryPlanSourceDbServerTopQuery:
+		return "db.server.top_query"
+	case AttributeMysqlQueryPlanSourceDbServerQuerySample:
+		return "db.server.query_sample"
+	}
+	return ""
+}
+
+// MapAttributeMysqlQueryPlanSource is a helper map of string to AttributeMysqlQueryPlanSource attribute value.
+var MapAttributeMysqlQueryPlanSource = map[string]AttributeMysqlQueryPlanSource{
+	"db.server.top_query":    AttributeMysqlQueryPlanSourceDbServerTopQuery,
+	"db.server.query_sample": AttributeMysqlQueryPlanSourceDbServerQuerySample,
+}
+
 // AttributeMysqlReplicaThreadType specifies the value mysql.replica.thread.type attribute.
 type AttributeMysqlReplicaThreadType int
 
@@ -1349,6 +1385,18 @@ var MetricsInfo = metricsInfo{
 		Name:       "mysql.statement_event.wait.time",
 		Attributes: []string{"schema", "digest", "digest_text"},
 	},
+	MysqlTableAutoIncrementLimit: metricInfo{
+		Name:       "mysql.table.auto_increment.limit",
+		Attributes: []string{"table_name", "schema", "mysql.column.name"},
+	},
+	MysqlTableAutoIncrementUsage: metricInfo{
+		Name:       "mysql.table.auto_increment.usage",
+		Attributes: []string{"table_name", "schema", "mysql.column.name"},
+	},
+	MysqlTableAutoIncrementUtilization: metricInfo{
+		Name:       "mysql.table.auto_increment.utilization",
+		Attributes: []string{"table_name", "schema", "mysql.column.name"},
+	},
 	MysqlTableAverageRowLength: metricInfo{
 		Name:       "mysql.table.average_row_length",
 		Attributes: []string{"table_name", "schema"},
@@ -1465,6 +1513,9 @@ type metricsInfo struct {
 	MysqlSorts                              metricInfo
 	MysqlStatementEventCount                metricInfo
 	MysqlStatementEventWaitTime             metricInfo
+	MysqlTableAutoIncrementLimit            metricInfo
+	MysqlTableAutoIncrementUsage            metricInfo
+	MysqlTableAutoIncrementUtilization      metricInfo
 	MysqlTableAverageRowLength              metricInfo
 	MysqlTableIoWaitCount                   metricInfo
 	MysqlTableIoWaitTime                    metricInfo
@@ -1492,6 +1543,7 @@ type metricMysqlBufferPoolDataPages struct {
 	config        MysqlBufferPoolDataPagesMetricConfig // metric config provided by user.
 	capacity      int                                  // max observed number of data points added to the metric.
 	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                       // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.buffer_pool.data_pages metric with initial data.
@@ -1504,6 +1556,7 @@ func (m *metricMysqlBufferPoolDataPages) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlBufferPoolDataPages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, bufferPoolDataAttributeValue string) {
@@ -1519,31 +1572,31 @@ func (m *metricMysqlBufferPoolDataPages) recordDataPoint(start pcommon.Timestamp
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -1635,6 +1688,7 @@ type metricMysqlBufferPoolOperations struct {
 	config        MysqlBufferPoolOperationsMetricConfig // metric config provided by user.
 	capacity      int                                   // max observed number of data points added to the metric.
 	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                        // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.buffer_pool.operations metric with initial data.
@@ -1647,6 +1701,7 @@ func (m *metricMysqlBufferPoolOperations) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlBufferPoolOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, bufferPoolOperationsAttributeValue string) {
@@ -1662,31 +1717,31 @@ func (m *metricMysqlBufferPoolOperations) recordDataPoint(start pcommon.Timestam
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -1778,6 +1833,7 @@ type metricMysqlBufferPoolPages struct {
 	config        MysqlBufferPoolPagesMetricConfig // metric config provided by user.
 	capacity      int                              // max observed number of data points added to the metric.
 	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                   // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.buffer_pool.pages metric with initial data.
@@ -1790,6 +1846,7 @@ func (m *metricMysqlBufferPoolPages) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlBufferPoolPages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, bufferPoolPagesAttributeValue string) {
@@ -1805,31 +1862,31 @@ func (m *metricMysqlBufferPoolPages) recordDataPoint(start pcommon.Timestamp, ts
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -1869,6 +1926,7 @@ type metricMysqlBufferPoolUsage struct {
 	config        MysqlBufferPoolUsageMetricConfig // metric config provided by user.
 	capacity      int                              // max observed number of data points added to the metric.
 	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                   // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.buffer_pool.usage metric with initial data.
@@ -1881,6 +1939,7 @@ func (m *metricMysqlBufferPoolUsage) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlBufferPoolUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, bufferPoolDataAttributeValue string) {
@@ -1896,31 +1955,31 @@ func (m *metricMysqlBufferPoolUsage) recordDataPoint(start pcommon.Timestamp, ts
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -1960,6 +2019,7 @@ type metricMysqlClientNetworkIo struct {
 	config        MysqlClientNetworkIoMetricConfig // metric config provided by user.
 	capacity      int                              // max observed number of data points added to the metric.
 	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                   // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.client.network.io metric with initial data.
@@ -1972,6 +2032,7 @@ func (m *metricMysqlClientNetworkIo) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlClientNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
@@ -1987,31 +2048,31 @@ func (m *metricMysqlClientNetworkIo) recordDataPoint(start pcommon.Timestamp, ts
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -2051,6 +2112,7 @@ type metricMysqlCommands struct {
 	config        MysqlCommandsMetricConfig // metric config provided by user.
 	capacity      int                       // max observed number of data points added to the metric.
 	aggDataPoints []int64                   // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int            // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.commands metric with initial data.
@@ -2063,6 +2125,7 @@ func (m *metricMysqlCommands) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlCommands) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, commandAttributeValue string) {
@@ -2078,31 +2141,31 @@ func (m *metricMysqlCommands) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -2194,6 +2257,7 @@ type metricMysqlConnectionErrors struct {
 	config        MysqlConnectionErrorsMetricConfig // metric config provided by user.
 	capacity      int                               // max observed number of data points added to the metric.
 	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                    // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.connection.errors metric with initial data.
@@ -2206,6 +2270,7 @@ func (m *metricMysqlConnectionErrors) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlConnectionErrors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, connectionErrorAttributeValue string) {
@@ -2221,31 +2286,31 @@ func (m *metricMysqlConnectionErrors) recordDataPoint(start pcommon.Timestamp, t
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -2285,6 +2350,7 @@ type metricMysqlDoubleWrites struct {
 	config        MysqlDoubleWritesMetricConfig // metric config provided by user.
 	capacity      int                           // max observed number of data points added to the metric.
 	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.double_writes metric with initial data.
@@ -2297,6 +2363,7 @@ func (m *metricMysqlDoubleWrites) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlDoubleWrites) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, doubleWritesAttributeValue string) {
@@ -2312,31 +2379,31 @@ func (m *metricMysqlDoubleWrites) recordDataPoint(start pcommon.Timestamp, ts pc
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -2426,6 +2493,7 @@ type metricMysqlHandlers struct {
 	config        MysqlHandlersMetricConfig // metric config provided by user.
 	capacity      int                       // max observed number of data points added to the metric.
 	aggDataPoints []int64                   // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int            // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.handlers metric with initial data.
@@ -2438,6 +2506,7 @@ func (m *metricMysqlHandlers) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlHandlers) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, handlerAttributeValue string) {
@@ -2453,31 +2522,31 @@ func (m *metricMysqlHandlers) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -2517,6 +2586,7 @@ type metricMysqlIndexIoWaitCount struct {
 	config        MysqlIndexIoWaitCountMetricConfig // metric config provided by user.
 	capacity      int                               // max observed number of data points added to the metric.
 	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                    // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.index.io.wait.count metric with initial data.
@@ -2529,6 +2599,7 @@ func (m *metricMysqlIndexIoWaitCount) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlIndexIoWaitCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue string, tableNameAttributeValue string, schemaAttributeValue string, indexNameAttributeValue string) {
@@ -2553,31 +2624,31 @@ func (m *metricMysqlIndexIoWaitCount) recordDataPoint(start pcommon.Timestamp, t
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -2617,6 +2688,7 @@ type metricMysqlIndexIoWaitTime struct {
 	config        MysqlIndexIoWaitTimeMetricConfig // metric config provided by user.
 	capacity      int                              // max observed number of data points added to the metric.
 	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                   // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.index.io.wait.time metric with initial data.
@@ -2629,6 +2701,7 @@ func (m *metricMysqlIndexIoWaitTime) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlIndexIoWaitTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue string, tableNameAttributeValue string, schemaAttributeValue string, indexNameAttributeValue string) {
@@ -2653,31 +2726,31 @@ func (m *metricMysqlIndexIoWaitTime) recordDataPoint(start pcommon.Timestamp, ts
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -2717,6 +2790,7 @@ type metricMysqlInnodbDataFileIo struct {
 	config        MysqlInnodbDataFileIoMetricConfig // metric config provided by user.
 	capacity      int                               // max observed number of data points added to the metric.
 	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                    // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.innodb.data_file.io metric with initial data.
@@ -2729,6 +2803,7 @@ func (m *metricMysqlInnodbDataFileIo) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlInnodbDataFileIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskIoDirectionAttributeValue string) {
@@ -2744,31 +2819,31 @@ func (m *metricMysqlInnodbDataFileIo) recordDataPoint(start pcommon.Timestamp, t
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -2858,6 +2933,7 @@ type metricMysqlInnodbOperationPending struct {
 	config        MysqlInnodbOperationPendingMetricConfig // metric config provided by user.
 	capacity      int                                     // max observed number of data points added to the metric.
 	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                          // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.innodb.operation.pending metric with initial data.
@@ -2870,6 +2946,7 @@ func (m *metricMysqlInnodbOperationPending) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlInnodbOperationPending) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationsAttributeValue string) {
@@ -2885,31 +2962,31 @@ func (m *metricMysqlInnodbOperationPending) recordDataPoint(start pcommon.Timest
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -3349,6 +3426,7 @@ type metricMysqlJoins struct {
 	config        MysqlJoinsMetricConfig // metric config provided by user.
 	capacity      int                    // max observed number of data points added to the metric.
 	aggDataPoints []int64                // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int         // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.joins metric with initial data.
@@ -3361,6 +3439,7 @@ func (m *metricMysqlJoins) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlJoins) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, joinKindAttributeValue string) {
@@ -3376,31 +3455,31 @@ func (m *metricMysqlJoins) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -3440,6 +3519,7 @@ type metricMysqlLocks struct {
 	config        MysqlLocksMetricConfig // metric config provided by user.
 	capacity      int                    // max observed number of data points added to the metric.
 	aggDataPoints []int64                // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int         // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.locks metric with initial data.
@@ -3452,6 +3532,7 @@ func (m *metricMysqlLocks) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlLocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, locksAttributeValue string) {
@@ -3467,31 +3548,31 @@ func (m *metricMysqlLocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -3531,6 +3612,7 @@ type metricMysqlLogOperations struct {
 	config        MysqlLogOperationsMetricConfig // metric config provided by user.
 	capacity      int                            // max observed number of data points added to the metric.
 	aggDataPoints []int64                        // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                 // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.log_operations metric with initial data.
@@ -3543,6 +3625,7 @@ func (m *metricMysqlLogOperations) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlLogOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, logOperationsAttributeValue string) {
@@ -3558,31 +3641,31 @@ func (m *metricMysqlLogOperations) recordDataPoint(start pcommon.Timestamp, ts p
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -3774,6 +3857,7 @@ type metricMysqlMyisamKeyCacheDiskOperation struct {
 	config        MysqlMyisamKeyCacheDiskOperationMetricConfig // metric config provided by user.
 	capacity      int                                          // max observed number of data points added to the metric.
 	aggDataPoints []int64                                      // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                               // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.myisam.key_cache.disk.operation metric with initial data.
@@ -3786,6 +3870,7 @@ func (m *metricMysqlMyisamKeyCacheDiskOperation) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlMyisamKeyCacheDiskOperation) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, mysqlMyisamKeyCacheOperationTypeAttributeValue string) {
@@ -3801,31 +3886,31 @@ func (m *metricMysqlMyisamKeyCacheDiskOperation) recordDataPoint(start pcommon.T
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -3865,6 +3950,7 @@ type metricMysqlMyisamKeyCacheRequest struct {
 	config        MysqlMyisamKeyCacheRequestMetricConfig // metric config provided by user.
 	capacity      int                                    // max observed number of data points added to the metric.
 	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                         // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.myisam.key_cache.request metric with initial data.
@@ -3877,6 +3963,7 @@ func (m *metricMysqlMyisamKeyCacheRequest) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlMyisamKeyCacheRequest) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, mysqlMyisamKeyCacheOperationTypeAttributeValue string) {
@@ -3892,31 +3979,31 @@ func (m *metricMysqlMyisamKeyCacheRequest) recordDataPoint(start pcommon.Timesta
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -3956,6 +4043,7 @@ type metricMysqlMysqlxConnections struct {
 	config        MysqlMysqlxConnectionsMetricConfig // metric config provided by user.
 	capacity      int                                // max observed number of data points added to the metric.
 	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                     // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.mysqlx_connections metric with initial data.
@@ -3968,6 +4056,7 @@ func (m *metricMysqlMysqlxConnections) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlMysqlxConnections) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, connectionStatusAttributeValue string) {
@@ -3983,31 +4072,31 @@ func (m *metricMysqlMysqlxConnections) recordDataPoint(start pcommon.Timestamp, 
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -4047,6 +4136,7 @@ type metricMysqlMysqlxWorkerThreads struct {
 	config        MysqlMysqlxWorkerThreadsMetricConfig // metric config provided by user.
 	capacity      int                                  // max observed number of data points added to the metric.
 	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                       // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.mysqlx_worker_threads metric with initial data.
@@ -4059,6 +4149,7 @@ func (m *metricMysqlMysqlxWorkerThreads) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlMysqlxWorkerThreads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, mysqlxThreadsAttributeValue string) {
@@ -4074,31 +4165,31 @@ func (m *metricMysqlMysqlxWorkerThreads) recordDataPoint(start pcommon.Timestamp
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -4138,6 +4229,7 @@ type metricMysqlOpenedResources struct {
 	config        MysqlOpenedResourcesMetricConfig // metric config provided by user.
 	capacity      int                              // max observed number of data points added to the metric.
 	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                   // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.opened_resources metric with initial data.
@@ -4150,6 +4242,7 @@ func (m *metricMysqlOpenedResources) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlOpenedResources) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, openedResourcesAttributeValue string) {
@@ -4165,31 +4258,31 @@ func (m *metricMysqlOpenedResources) recordDataPoint(start pcommon.Timestamp, ts
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -4229,6 +4322,7 @@ type metricMysqlOperations struct {
 	config        MysqlOperationsMetricConfig // metric config provided by user.
 	capacity      int                         // max observed number of data points added to the metric.
 	aggDataPoints []int64                     // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int              // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.operations metric with initial data.
@@ -4241,6 +4335,7 @@ func (m *metricMysqlOperations) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationsAttributeValue string) {
@@ -4256,31 +4351,31 @@ func (m *metricMysqlOperations) recordDataPoint(start pcommon.Timestamp, ts pcom
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -4320,6 +4415,7 @@ type metricMysqlPageOperations struct {
 	config        MysqlPageOperationsMetricConfig // metric config provided by user.
 	capacity      int                             // max observed number of data points added to the metric.
 	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                  // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.page_operations metric with initial data.
@@ -4332,6 +4428,7 @@ func (m *metricMysqlPageOperations) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlPageOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, pageOperationsAttributeValue string) {
@@ -4347,31 +4444,31 @@ func (m *metricMysqlPageOperations) recordDataPoint(start pcommon.Timestamp, ts 
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -4463,6 +4560,7 @@ type metricMysqlPreparedStatements struct {
 	config        MysqlPreparedStatementsMetricConfig // metric config provided by user.
 	capacity      int                                 // max observed number of data points added to the metric.
 	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                      // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.prepared_statements metric with initial data.
@@ -4475,6 +4573,7 @@ func (m *metricMysqlPreparedStatements) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlPreparedStatements) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, preparedStatementsCommandAttributeValue string) {
@@ -4490,31 +4589,31 @@ func (m *metricMysqlPreparedStatements) recordDataPoint(start pcommon.Timestamp,
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -4864,6 +4963,7 @@ type metricMysqlReplicaThreadRunning struct {
 	config        MysqlReplicaThreadRunningMetricConfig // metric config provided by user.
 	capacity      int                                   // max observed number of data points added to the metric.
 	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                        // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.replica.thread.running metric with initial data.
@@ -4874,6 +4974,7 @@ func (m *metricMysqlReplicaThreadRunning) init() {
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlReplicaThreadRunning) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, mysqlReplicaThreadTypeAttributeValue string, mysqlReplicaChannelNameAttributeValue string) {
@@ -4892,31 +4993,31 @@ func (m *metricMysqlReplicaThreadRunning) recordDataPoint(start pcommon.Timestam
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -5008,6 +5109,7 @@ type metricMysqlRowLocks struct {
 	config        MysqlRowLocksMetricConfig // metric config provided by user.
 	capacity      int                       // max observed number of data points added to the metric.
 	aggDataPoints []int64                   // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int            // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.row_locks metric with initial data.
@@ -5020,6 +5122,7 @@ func (m *metricMysqlRowLocks) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlRowLocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, rowLocksAttributeValue string) {
@@ -5035,31 +5138,31 @@ func (m *metricMysqlRowLocks) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -5099,6 +5202,7 @@ type metricMysqlRowOperations struct {
 	config        MysqlRowOperationsMetricConfig // metric config provided by user.
 	capacity      int                            // max observed number of data points added to the metric.
 	aggDataPoints []int64                        // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                 // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.row_operations metric with initial data.
@@ -5111,6 +5215,7 @@ func (m *metricMysqlRowOperations) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlRowOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, rowOperationsAttributeValue string) {
@@ -5126,31 +5231,31 @@ func (m *metricMysqlRowOperations) recordDataPoint(start pcommon.Timestamp, ts p
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -5290,6 +5395,7 @@ type metricMysqlSorts struct {
 	config        MysqlSortsMetricConfig // metric config provided by user.
 	capacity      int                    // max observed number of data points added to the metric.
 	aggDataPoints []int64                // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int         // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.sorts metric with initial data.
@@ -5302,6 +5408,7 @@ func (m *metricMysqlSorts) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlSorts) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sortsAttributeValue string) {
@@ -5317,31 +5424,31 @@ func (m *metricMysqlSorts) recordDataPoint(start pcommon.Timestamp, ts pcommon.T
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -5381,6 +5488,7 @@ type metricMysqlStatementEventCount struct {
 	config        MysqlStatementEventCountMetricConfig // metric config provided by user.
 	capacity      int                                  // max observed number of data points added to the metric.
 	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                       // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.statement_event.count metric with initial data.
@@ -5393,6 +5501,7 @@ func (m *metricMysqlStatementEventCount) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlStatementEventCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string, digestAttributeValue string, digestTextAttributeValue string, eventStateAttributeValue string) {
@@ -5417,31 +5526,31 @@ func (m *metricMysqlStatementEventCount) recordDataPoint(start pcommon.Timestamp
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -5481,6 +5590,7 @@ type metricMysqlStatementEventWaitTime struct {
 	config        MysqlStatementEventWaitTimeMetricConfig // metric config provided by user.
 	capacity      int                                     // max observed number of data points added to the metric.
 	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                          // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.statement_event.wait.time metric with initial data.
@@ -5493,6 +5603,7 @@ func (m *metricMysqlStatementEventWaitTime) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlStatementEventWaitTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string, digestAttributeValue string, digestTextAttributeValue string) {
@@ -5514,31 +5625,31 @@ func (m *metricMysqlStatementEventWaitTime) recordDataPoint(start pcommon.Timest
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -5573,11 +5684,303 @@ func newMetricMysqlStatementEventWaitTime(cfg MysqlStatementEventWaitTimeMetricC
 	return m
 }
 
+type metricMysqlTableAutoIncrementLimit struct {
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        MysqlTableAutoIncrementLimitMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []float64                                // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                           // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills mysql.table.auto_increment.limit metric with initial data.
+func (m *metricMysqlTableAutoIncrementLimit) init() {
+	m.data.SetName("mysql.table.auto_increment.limit")
+	m.data.SetDescription("The maximum value the auto_increment column can hold for a given table, based on its declared integer type and signedness. Reported as a double; values above 2^53 (the largest BIGINT UNSIGNED values) may be off by a small amount due to floating-point precision.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricMysqlTableAutoIncrementLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, tableNameAttributeValue string, schemaAttributeValue string, mysqlColumnNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MysqlTableAutoIncrementLimitMetricAttributeKeyTableName) {
+		dp.Attributes().PutStr("table", tableNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, MysqlTableAutoIncrementLimitMetricAttributeKeySchema) {
+		dp.Attributes().PutStr("schema", schemaAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, MysqlTableAutoIncrementLimitMetricAttributeKeyMysqlColumnName) {
+		dp.Attributes().PutStr("mysql.column.name", mysqlColumnNameAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Gauge().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlTableAutoIncrementLimit) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlTableAutoIncrementLimit) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlTableAutoIncrementLimit(cfg MysqlTableAutoIncrementLimitMetricConfig) metricMysqlTableAutoIncrementLimit {
+	m := metricMysqlTableAutoIncrementLimit{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlTableAutoIncrementUsage struct {
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        MysqlTableAutoIncrementUsageMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []float64                                // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                           // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills mysql.table.auto_increment.usage metric with initial data.
+func (m *metricMysqlTableAutoIncrementUsage) init() {
+	m.data.SetName("mysql.table.auto_increment.usage")
+	m.data.SetDescription("The current auto_increment value for a given table. Reported as a double; values above 2^53 (the largest BIGINT UNSIGNED values) may be off by a small amount due to floating-point precision.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricMysqlTableAutoIncrementUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, tableNameAttributeValue string, schemaAttributeValue string, mysqlColumnNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MysqlTableAutoIncrementUsageMetricAttributeKeyTableName) {
+		dp.Attributes().PutStr("table", tableNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, MysqlTableAutoIncrementUsageMetricAttributeKeySchema) {
+		dp.Attributes().PutStr("schema", schemaAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, MysqlTableAutoIncrementUsageMetricAttributeKeyMysqlColumnName) {
+		dp.Attributes().PutStr("mysql.column.name", mysqlColumnNameAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Gauge().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlTableAutoIncrementUsage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlTableAutoIncrementUsage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlTableAutoIncrementUsage(cfg MysqlTableAutoIncrementUsageMetricConfig) metricMysqlTableAutoIncrementUsage {
+	m := metricMysqlTableAutoIncrementUsage{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlTableAutoIncrementUtilization struct {
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        MysqlTableAutoIncrementUtilizationMetricConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []float64                                      // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                                 // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills mysql.table.auto_increment.utilization metric with initial data.
+func (m *metricMysqlTableAutoIncrementUtilization) init() {
+	m.data.SetName("mysql.table.auto_increment.utilization")
+	m.data.SetDescription("The fraction of the auto_increment column's integer range currently in use for a given table, between 0 and 1.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricMysqlTableAutoIncrementUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, tableNameAttributeValue string, schemaAttributeValue string, mysqlColumnNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, MysqlTableAutoIncrementUtilizationMetricAttributeKeyTableName) {
+		dp.Attributes().PutStr("table", tableNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, MysqlTableAutoIncrementUtilizationMetricAttributeKeySchema) {
+		dp.Attributes().PutStr("schema", schemaAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, MysqlTableAutoIncrementUtilizationMetricAttributeKeyMysqlColumnName) {
+		dp.Attributes().PutStr("mysql.column.name", mysqlColumnNameAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Gauge().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlTableAutoIncrementUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlTableAutoIncrementUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlTableAutoIncrementUtilization(cfg MysqlTableAutoIncrementUtilizationMetricConfig) metricMysqlTableAutoIncrementUtilization {
+	m := metricMysqlTableAutoIncrementUtilization{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlTableAverageRowLength struct {
 	data          pmetric.Metric                         // data buffer for generated metric.
 	config        MysqlTableAverageRowLengthMetricConfig // metric config provided by user.
 	capacity      int                                    // max observed number of data points added to the metric.
 	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                         // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.table.average_row_length metric with initial data.
@@ -5590,6 +5993,7 @@ func (m *metricMysqlTableAverageRowLength) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlTableAverageRowLength) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tableNameAttributeValue string, schemaAttributeValue string) {
@@ -5608,31 +6012,31 @@ func (m *metricMysqlTableAverageRowLength) recordDataPoint(start pcommon.Timesta
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -5672,6 +6076,7 @@ type metricMysqlTableIoWaitCount struct {
 	config        MysqlTableIoWaitCountMetricConfig // metric config provided by user.
 	capacity      int                               // max observed number of data points added to the metric.
 	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                    // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.table.io.wait.count metric with initial data.
@@ -5684,6 +6089,7 @@ func (m *metricMysqlTableIoWaitCount) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlTableIoWaitCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue string, tableNameAttributeValue string, schemaAttributeValue string) {
@@ -5705,31 +6111,31 @@ func (m *metricMysqlTableIoWaitCount) recordDataPoint(start pcommon.Timestamp, t
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -5769,6 +6175,7 @@ type metricMysqlTableIoWaitTime struct {
 	config        MysqlTableIoWaitTimeMetricConfig // metric config provided by user.
 	capacity      int                              // max observed number of data points added to the metric.
 	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                   // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.table.io.wait.time metric with initial data.
@@ -5781,6 +6188,7 @@ func (m *metricMysqlTableIoWaitTime) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlTableIoWaitTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue string, tableNameAttributeValue string, schemaAttributeValue string) {
@@ -5802,31 +6210,31 @@ func (m *metricMysqlTableIoWaitTime) recordDataPoint(start pcommon.Timestamp, ts
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -5866,6 +6274,7 @@ type metricMysqlTableLockWaitReadCount struct {
 	config        MysqlTableLockWaitReadCountMetricConfig // metric config provided by user.
 	capacity      int                                     // max observed number of data points added to the metric.
 	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                          // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.table.lock_wait.read.count metric with initial data.
@@ -5878,6 +6287,7 @@ func (m *metricMysqlTableLockWaitReadCount) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlTableLockWaitReadCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string, tableNameAttributeValue string, readLockTypeAttributeValue string) {
@@ -5899,31 +6309,31 @@ func (m *metricMysqlTableLockWaitReadCount) recordDataPoint(start pcommon.Timest
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -5963,6 +6373,7 @@ type metricMysqlTableLockWaitReadTime struct {
 	config        MysqlTableLockWaitReadTimeMetricConfig // metric config provided by user.
 	capacity      int                                    // max observed number of data points added to the metric.
 	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                         // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.table.lock_wait.read.time metric with initial data.
@@ -5975,6 +6386,7 @@ func (m *metricMysqlTableLockWaitReadTime) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlTableLockWaitReadTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string, tableNameAttributeValue string, readLockTypeAttributeValue string) {
@@ -5996,31 +6408,31 @@ func (m *metricMysqlTableLockWaitReadTime) recordDataPoint(start pcommon.Timesta
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -6060,6 +6472,7 @@ type metricMysqlTableLockWaitWriteCount struct {
 	config        MysqlTableLockWaitWriteCountMetricConfig // metric config provided by user.
 	capacity      int                                      // max observed number of data points added to the metric.
 	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                           // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.table.lock_wait.write.count metric with initial data.
@@ -6072,6 +6485,7 @@ func (m *metricMysqlTableLockWaitWriteCount) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlTableLockWaitWriteCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string, tableNameAttributeValue string, writeLockTypeAttributeValue string) {
@@ -6093,31 +6507,31 @@ func (m *metricMysqlTableLockWaitWriteCount) recordDataPoint(start pcommon.Times
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -6157,6 +6571,7 @@ type metricMysqlTableLockWaitWriteTime struct {
 	config        MysqlTableLockWaitWriteTimeMetricConfig // metric config provided by user.
 	capacity      int                                     // max observed number of data points added to the metric.
 	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                          // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.table.lock_wait.write.time metric with initial data.
@@ -6169,6 +6584,7 @@ func (m *metricMysqlTableLockWaitWriteTime) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlTableLockWaitWriteTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string, tableNameAttributeValue string, writeLockTypeAttributeValue string) {
@@ -6190,31 +6606,31 @@ func (m *metricMysqlTableLockWaitWriteTime) recordDataPoint(start pcommon.Timest
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -6304,6 +6720,7 @@ type metricMysqlTableRows struct {
 	config        MysqlTableRowsMetricConfig // metric config provided by user.
 	capacity      int                        // max observed number of data points added to the metric.
 	aggDataPoints []int64                    // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int             // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.table.rows metric with initial data.
@@ -6316,6 +6733,7 @@ func (m *metricMysqlTableRows) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlTableRows) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tableNameAttributeValue string, schemaAttributeValue string) {
@@ -6334,31 +6752,31 @@ func (m *metricMysqlTableRows) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -6398,6 +6816,7 @@ type metricMysqlTableSize struct {
 	config        MysqlTableSizeMetricConfig // metric config provided by user.
 	capacity      int                        // max observed number of data points added to the metric.
 	aggDataPoints []int64                    // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int             // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.table.size metric with initial data.
@@ -6410,6 +6829,7 @@ func (m *metricMysqlTableSize) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlTableSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tableNameAttributeValue string, schemaAttributeValue string, tableSizeTypeAttributeValue string) {
@@ -6431,31 +6851,31 @@ func (m *metricMysqlTableSize) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -6495,6 +6915,7 @@ type metricMysqlTableOpenCache struct {
 	config        MysqlTableOpenCacheMetricConfig // metric config provided by user.
 	capacity      int                             // max observed number of data points added to the metric.
 	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                  // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.table_open_cache metric with initial data.
@@ -6507,6 +6928,7 @@ func (m *metricMysqlTableOpenCache) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlTableOpenCache) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cacheStatusAttributeValue string) {
@@ -6522,31 +6944,31 @@ func (m *metricMysqlTableOpenCache) recordDataPoint(start pcommon.Timestamp, ts 
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -6638,6 +7060,7 @@ type metricMysqlThreads struct {
 	config        MysqlThreadsMetricConfig // metric config provided by user.
 	capacity      int                      // max observed number of data points added to the metric.
 	aggDataPoints []int64                  // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int           // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.threads metric with initial data.
@@ -6650,6 +7073,7 @@ func (m *metricMysqlThreads) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlThreads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, threadsAttributeValue string) {
@@ -6665,31 +7089,31 @@ func (m *metricMysqlThreads) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -6729,6 +7153,7 @@ type metricMysqlTmpResources struct {
 	config        MysqlTmpResourcesMetricConfig // metric config provided by user.
 	capacity      int                           // max observed number of data points added to the metric.
 	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
 // init fills mysql.tmp_resources metric with initial data.
@@ -6741,6 +7166,7 @@ func (m *metricMysqlTmpResources) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
 func (m *metricMysqlTmpResources) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tmpResourceAttributeValue string) {
@@ -6756,31 +7182,31 @@ func (m *metricMysqlTmpResources) recordDataPoint(start pcommon.Timestamp, ts pc
 	}
 
 	var s string
+	key := dataPointKey(dp)
 	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	if i, ok := m.dpIndex[key]; ok {
 		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
 			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -6933,6 +7359,9 @@ type MetricsBuilder struct {
 	metricMysqlSorts                              metricMysqlSorts
 	metricMysqlStatementEventCount                metricMysqlStatementEventCount
 	metricMysqlStatementEventWaitTime             metricMysqlStatementEventWaitTime
+	metricMysqlTableAutoIncrementLimit            metricMysqlTableAutoIncrementLimit
+	metricMysqlTableAutoIncrementUsage            metricMysqlTableAutoIncrementUsage
+	metricMysqlTableAutoIncrementUtilization      metricMysqlTableAutoIncrementUtilization
 	metricMysqlTableAverageRowLength              metricMysqlTableAverageRowLength
 	metricMysqlTableIoWaitCount                   metricMysqlTableIoWaitCount
 	metricMysqlTableIoWaitTime                    metricMysqlTableIoWaitTime
@@ -7029,6 +7458,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlSorts:                              newMetricMysqlSorts(mbc.Metrics.MysqlSorts),
 		metricMysqlStatementEventCount:                newMetricMysqlStatementEventCount(mbc.Metrics.MysqlStatementEventCount),
 		metricMysqlStatementEventWaitTime:             newMetricMysqlStatementEventWaitTime(mbc.Metrics.MysqlStatementEventWaitTime),
+		metricMysqlTableAutoIncrementLimit:            newMetricMysqlTableAutoIncrementLimit(mbc.Metrics.MysqlTableAutoIncrementLimit),
+		metricMysqlTableAutoIncrementUsage:            newMetricMysqlTableAutoIncrementUsage(mbc.Metrics.MysqlTableAutoIncrementUsage),
+		metricMysqlTableAutoIncrementUtilization:      newMetricMysqlTableAutoIncrementUtilization(mbc.Metrics.MysqlTableAutoIncrementUtilization),
 		metricMysqlTableAverageRowLength:              newMetricMysqlTableAverageRowLength(mbc.Metrics.MysqlTableAverageRowLength),
 		metricMysqlTableIoWaitCount:                   newMetricMysqlTableIoWaitCount(mbc.Metrics.MysqlTableIoWaitCount),
 		metricMysqlTableIoWaitTime:                    newMetricMysqlTableIoWaitTime(mbc.Metrics.MysqlTableIoWaitTime),
@@ -7220,6 +7652,9 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlSorts.emit(ils.Metrics())
 	mb.metricMysqlStatementEventCount.emit(ils.Metrics())
 	mb.metricMysqlStatementEventWaitTime.emit(ils.Metrics())
+	mb.metricMysqlTableAutoIncrementLimit.emit(ils.Metrics())
+	mb.metricMysqlTableAutoIncrementUsage.emit(ils.Metrics())
+	mb.metricMysqlTableAutoIncrementUtilization.emit(ils.Metrics())
 	mb.metricMysqlTableAverageRowLength.emit(ils.Metrics())
 	mb.metricMysqlTableIoWaitCount.emit(ils.Metrics())
 	mb.metricMysqlTableIoWaitTime.emit(ils.Metrics())
@@ -7719,6 +8154,21 @@ func (mb *MetricsBuilder) RecordMysqlStatementEventCountDataPoint(ts pcommon.Tim
 // RecordMysqlStatementEventWaitTimeDataPoint adds a data point to mysql.statement_event.wait.time metric.
 func (mb *MetricsBuilder) RecordMysqlStatementEventWaitTimeDataPoint(ts pcommon.Timestamp, val int64, schemaAttributeValue string, digestAttributeValue string, digestTextAttributeValue string) {
 	mb.metricMysqlStatementEventWaitTime.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue, digestAttributeValue, digestTextAttributeValue)
+}
+
+// RecordMysqlTableAutoIncrementLimitDataPoint adds a data point to mysql.table.auto_increment.limit metric.
+func (mb *MetricsBuilder) RecordMysqlTableAutoIncrementLimitDataPoint(ts pcommon.Timestamp, val float64, tableNameAttributeValue string, schemaAttributeValue string, mysqlColumnNameAttributeValue string) {
+	mb.metricMysqlTableAutoIncrementLimit.recordDataPoint(mb.startTime, ts, val, tableNameAttributeValue, schemaAttributeValue, mysqlColumnNameAttributeValue)
+}
+
+// RecordMysqlTableAutoIncrementUsageDataPoint adds a data point to mysql.table.auto_increment.usage metric.
+func (mb *MetricsBuilder) RecordMysqlTableAutoIncrementUsageDataPoint(ts pcommon.Timestamp, val float64, tableNameAttributeValue string, schemaAttributeValue string, mysqlColumnNameAttributeValue string) {
+	mb.metricMysqlTableAutoIncrementUsage.recordDataPoint(mb.startTime, ts, val, tableNameAttributeValue, schemaAttributeValue, mysqlColumnNameAttributeValue)
+}
+
+// RecordMysqlTableAutoIncrementUtilizationDataPoint adds a data point to mysql.table.auto_increment.utilization metric.
+func (mb *MetricsBuilder) RecordMysqlTableAutoIncrementUtilizationDataPoint(ts pcommon.Timestamp, val float64, tableNameAttributeValue string, schemaAttributeValue string, mysqlColumnNameAttributeValue string) {
+	mb.metricMysqlTableAutoIncrementUtilization.recordDataPoint(mb.startTime, ts, val, tableNameAttributeValue, schemaAttributeValue, mysqlColumnNameAttributeValue)
 }
 
 // RecordMysqlTableAverageRowLengthDataPoint adds a data point to mysql.table.average_row_length metric.

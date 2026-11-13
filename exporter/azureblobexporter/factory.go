@@ -38,7 +38,7 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+		QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 		Auth: Authentication{
 			Type: ConnectionString,

@@ -56,15 +56,16 @@ func countRetriesInterceptor() elastictransport.InterceptorFunc {
 	}
 }
 
-// timeoutInterceptor injects a context that enforces a timeout per http request over the wire.
+// timeoutInterceptor enforces the per-attempt timeout on a child context.
+// Canceling that context must not cancel req, or elastictransport's retry backoff stops.
 func timeoutInterceptor(perRequestTimeout time.Duration) elastictransport.InterceptorFunc {
 	return func(next elastictransport.RoundTripFunc) elastictransport.RoundTripFunc {
 		return func(req *http.Request) (*http.Response, error) {
 			if perRequestTimeout <= 0 {
 				return next(req)
 			}
-			// ctx is not reused across retries
-			// Therefore, timeoutInterceptor would not result in nesting of WithTimeout
+			// ctx is not reused across retries.
+			// Therefore, timeoutInterceptor would not result in nesting of WithTimeout.
 			ctx, cancel := context.WithTimeout(req.Context(), perRequestTimeout)
 			res, err := next(req.WithContext(ctx))
 			if err != nil {
@@ -277,11 +278,9 @@ func newElasticsearchClient(
 
 		RetryOnStatus: config.Retry.RetryOnStatus,
 		DisableRetry:  !config.Retry.Enabled,
-		RetryOnError: func(_ *http.Request, err error) bool {
-			return !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded)
-		},
-		MaxRetries:   maxRetries,
-		RetryBackoff: createElasticsearchBackoffFunc(&config.Retry),
+		RetryOnError:  retryOnError,
+		MaxRetries:    maxRetries,
+		RetryBackoff:  createElasticsearchBackoffFunc(&config.Retry),
 
 		EnableMetrics:     false, // TODO
 		EnableDebugLogger: false, // TODO
@@ -328,6 +327,12 @@ func addrsToURLs(addrs []string) ([]*url.URL, error) {
 		urls = append(urls, u)
 	}
 	return urls, nil
+}
+
+// retryOnError retries transport errors, including context.DeadlineExceeded.
+// Cancellation is never retried.
+func retryOnError(_ *http.Request, err error) bool {
+	return !errors.Is(err, context.Canceled)
 }
 
 // createElasticsearchBackoffFunc creates an exponential backoff with equal jitter.

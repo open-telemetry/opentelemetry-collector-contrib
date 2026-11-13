@@ -1,11 +1,12 @@
 # exclude_metrics holds the list of hard-coded metrics that will be added to the
 # exclude list by default. It includes non-default metrics collected by receivers.
-# This list is determined by categorization of metrics in the Splunk Obserability.
+# This list is determined by categorization of metrics in the Splunk Observability.
 exclude_metrics:
 
 # Metrics in SignalFx Agent Format.
 - metric_names:
   # CPU metrics.
+  - container_cpu_utilization
   - cpu.interrupt
   - cpu.nice
   - cpu.softirq
@@ -14,12 +15,17 @@ exclude_metrics:
   - cpu.user
   - cpu.wait
 
-  # Disk-IO metrics.
-  - disk_ops.pending
-
   # Virtual memory metrics
   - vmpage_io.memory.in
   - vmpage_io.memory.out
+
+# Deprecated metrics computed by the default translation rules.
+- metric_names:
+  - memory.total
+  - process.cpu_time_seconds
+  - system.disk.operations.total
+  - system.network.io.total
+  - system.network.packets.total
 
 
 # Metrics in OpenTelemetry Convention.

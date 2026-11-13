@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/ecsserializer/serializeprofiles"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pprofiletest"
 )
@@ -143,7 +145,7 @@ func TestSerializeProfile(t *testing.T) {
 							"buildid":     "YA3K_koRAADyvzjEk_X7kg",
 							"ecs.version": "1.12.0",
 							"filename":    "samples",
-							"timestamp":   json.Number(fmt.Sprintf("%d", serializeprofiles.GetStartOfWeekFromTime(time.Now()))),
+							"timestamp":   json.Number(fmt.Sprintf("%d", serializer.GetStartOfWeekFromTime(time.Now()))),
 						},
 						"source": serializeprofiles.ExeMetadataUpsertScript,
 					},
@@ -180,7 +182,11 @@ func TestSerializeProfile(t *testing.T) {
 			buf := []*bytes.Buffer{}
 			ser, err := New()
 			require.NoError(t, err)
-			err = ser.SerializeProfile(dic, resource.Resource(), scope.Scope(), profile, func(b *bytes.Buffer, _, _ string) error {
+			err = ser.SerializeProfile(dic, resource.Resource(), scope.Scope(), profile, func(b *bytes.Buffer, _, index string) error {
+				// Downsampled events are random, skip them to keep the expected documents deterministic.
+				if strings.HasPrefix(index, "profiling-events-5pow") {
+					return nil
+				}
 				buf = append(buf, b)
 				return nil
 			})

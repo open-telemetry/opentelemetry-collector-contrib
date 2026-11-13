@@ -14,8 +14,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -473,7 +476,7 @@ func TestDetectOSNameAndBuildID(t *testing.T) {
 	require.NoError(t, err)
 	attrs := res.Attributes().AsRaw()
 	assert.Equal(t, "MyOS", attrs["os.name"])
-	assert.Equal(t, "Build123", attrs["os.build.id"])
+	assert.Equal(t, "Build123", attrs["os.build_id"])
 	md.AssertExpectations(t)
 }
 
@@ -532,5 +535,249 @@ func newTestDetector(mock *mockMetadata, hostnameSources []string, resCfg metada
 		logger:   zap.NewNop(),
 		cfg:      Config{HostnameSources: hostnameSources, ResourceAttributes: resCfg},
 		rb:       metadata.NewResourceBuilder(resCfg),
+	}
+}
+
+// newFullMock returns a mock where every provider call succeeds.
+func newFullMock() *mockMetadata {
+	md := &mockMetadata{}
+	md.On("Hostname").Return("hostname", nil).Maybe()
+	md.On("FQDN").Return("fqdn", nil).Maybe()
+	md.On("LookupCNAME").Return("cname", nil).Maybe()
+	md.On("ReverseLookupHost").Return("reverse", nil).Maybe()
+	md.On("OSDescription").Return("Ubuntu 22.04.2 LTS (Jammy Jellyfish)", nil).Maybe()
+	md.On("OSType").Return("linux", nil).Maybe()
+	md.On("OSVersion").Return("22.04.2", nil).Maybe()
+	md.On("OSName").Return("Ubuntu", nil).Maybe()
+	md.On("OSBuildID").Return("22H2", nil).Maybe()
+	md.On("HostID").Return("1", nil).Maybe()
+	md.On("HostArch").Return("amd64", nil).Maybe()
+	md.On("HostIPs").Return(testIPsAddresses, nil).Maybe()
+	md.On("HostMACs").Return(testMACsAddresses, nil).Maybe()
+	md.On("HostInterfaces").Return(testInterfaces, nil).Maybe()
+	md.On("CPUInfo").Return([]cpu.InfoStat{{VendorID: "GenuineIntel", Family: "6", ModelName: "Intel", Stepping: 1, CacheSize: 256}}, nil).Maybe()
+	return md
+}
+
+// newFailingMock returns a mock where errMethod fails with err and every other call succeeds.
+// testify matches expectations in order, so the failing one is registered first.
+func newFailingMock(errMethod string, err error) *mockMetadata {
+	md := &mockMetadata{}
+	switch errMethod {
+	case "HostIPs":
+		md.On(errMethod).Return([]net.IP(nil), err)
+	case "HostMACs":
+		md.On(errMethod).Return([]net.HardwareAddr(nil), err)
+	case "HostInterfaces":
+		md.On(errMethod).Return([]net.Interface(nil), err)
+	case "CPUInfo":
+		md.On(errMethod).Return([]cpu.InfoStat(nil), err)
+	default:
+		md.On(errMethod).Return("", err)
+	}
+	full := newFullMock()
+	md.ExpectedCalls = append(md.ExpectedCalls, full.ExpectedCalls...)
+	return md
+}
+
+func TestDetectProviderErrors(t *testing.T) {
+	someErr := errors.New("boom")
+	tests := []struct {
+		method  string
+		wantErr string
+	}{
+		{method: "OSType", wantErr: "failed getting OS type"},
+		{method: "OSVersion", wantErr: "failed getting OS version"},
+		{method: "HostArch", wantErr: "failed getting host architecture"},
+		{method: "HostIPs", wantErr: "failed getting host IP addresses"},
+		{method: "HostMACs", wantErr: "failed to get host MAC addresses"},
+		{method: "HostInterfaces", wantErr: "failed to get host network interfaces"},
+		{method: "OSDescription", wantErr: "failed getting OS description"},
+		{method: "CPUInfo", wantErr: "failed getting host cpuinfo"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.method, func(t *testing.T) {
+			cfg := allEnabledConfig()
+			cfg.HostCPUVendorID.Enabled = true
+
+			detector := newTestDetector(newFailingMock(tt.method, someErr), []string{"os"}, cfg)
+			res, schemaURL, err := detector.Detect(t.Context())
+			require.ErrorIs(t, err, someErr)
+			assert.ErrorContains(t, err, tt.wantErr)
+			assert.Empty(t, schemaURL)
+			assert.True(t, internal.IsEmptyResource(res))
+		})
+	}
+}
+
+func TestDetectHostnameSources(t *testing.T) {
+	someErr := errors.New("boom")
+	tests := []struct {
+		name     string
+		sources  []string
+		md       *mockMetadata
+		expected string
+	}{
+		{name: "cname", sources: []string{"cname"}, md: newFullMock(), expected: "cname"},
+		{name: "lookup", sources: []string{"lookup"}, md: newFullMock(), expected: "reverse"},
+		{name: "cname fails, falls back to lookup", sources: []string{"cname", "lookup"}, md: newFailingMock("LookupCNAME", someErr), expected: "reverse"},
+		{name: "lookup fails, falls back to os", sources: []string{"lookup", "os"}, md: newFailingMock("ReverseLookupHost", someErr), expected: "hostname"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resCfg := metadata.DefaultResourceAttributesConfig()
+			detector := newTestDetector(tt.md, tt.sources, resCfg)
+			res, _, err := detector.Detect(t.Context())
+			require.NoError(t, err)
+			hostName, ok := res.Attributes().Get("host.name")
+			require.True(t, ok)
+			assert.Equal(t, tt.expected, hostName.Str())
+		})
+	}
+}
+
+func TestDetectOptionalAttributeErrors(t *testing.T) {
+	someErr := errors.New("boom")
+	for _, method := range []string{"OSName", "OSBuildID"} {
+		t.Run(method, func(t *testing.T) {
+			resCfg := metadata.DefaultResourceAttributesConfig()
+			resCfg.OsName.Enabled = true
+			resCfg.OsBuildID.Enabled = true
+
+			detector := newTestDetector(newFailingMock(method, someErr), []string{"os"}, resCfg)
+			res, _, err := detector.Detect(t.Context())
+			require.NoError(t, err)
+			_, hasOSName := res.Attributes().Get("os.name")
+			_, hasOSBuildID := res.Attributes().Get("os.build_id")
+			assert.Equal(t, method != "OSName", hasOSName)
+			assert.Equal(t, method != "OSBuildID", hasOSBuildID)
+		})
+	}
+}
+
+func TestDetectCPUInfoModelID(t *testing.T) {
+	tests := []struct {
+		name     string
+		model    string
+		expected map[string]any
+	}{
+		{name: "model set", model: "85", expected: map[string]any{"host.cpu.model.id": "85", "host.cpu.vendor.id": "GenuineIntel"}},
+		// Windows leaves the model blank, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27675
+		{name: "model empty", model: "", expected: map[string]any{"host.cpu.vendor.id": "GenuineIntel"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resCfg := metadata.ResourceAttributesConfig{}
+			resCfg.HostCPUModelID.Enabled = true
+			resCfg.HostCPUVendorID.Enabled = true
+
+			md := &mockMetadata{}
+			md.On("CPUInfo").Return([]cpu.InfoStat{{VendorID: "GenuineIntel", Model: tt.model}}, nil)
+			md.ExpectedCalls = append(md.ExpectedCalls, newFullMock().ExpectedCalls...)
+
+			detector := newTestDetector(md, []string{"os"}, resCfg)
+			res, _, err := detector.Detect(t.Context())
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, res.Attributes().AsRaw())
+		})
+	}
+}
+
+func TestNewDetectorDefaultHostnameSources(t *testing.T) {
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"dns", "os"}, d.(*Detector).cfg.HostnameSources)
+}
+
+func TestValidate(t *testing.T) {
+	valid := Config{HostnameSources: []string{"os", "dns", "cname", "lookup"}}
+	require.NoError(t, valid.Validate())
+
+	invalid := Config{HostnameSources: []string{"os", "bogus"}}
+	require.EqualError(t, invalid.Validate(), `hostname_sources contains invalid value: "bogus"`)
+}
+
+func TestCreateDefaultConfig(t *testing.T) {
+	assert.Equal(t, Config{ResourceAttributes: metadata.DefaultResourceAttributesConfig()}, CreateDefaultConfig())
+}
+
+func TestOSBuildIDDeprecatedAttribute(t *testing.T) {
+	tests := []struct {
+		name          string
+		resAttrs      map[string]any
+		expectOld     bool
+		expectNew     bool
+		expectWarning bool
+	}{
+		{
+			name: "default",
+		},
+		{
+			name:          "deprecated key",
+			resAttrs:      map[string]any{"os.build.id": map[string]any{"enabled": true}},
+			expectOld:     true,
+			expectWarning: true,
+		},
+		{
+			name:      "new key",
+			resAttrs:  map[string]any{"os.build_id": map[string]any{"enabled": true}},
+			expectNew: true,
+		},
+		{
+			name: "both keys",
+			resAttrs: map[string]any{
+				"os.build.id": map[string]any{"enabled": true},
+				"os.build_id": map[string]any{"enabled": true},
+			},
+			expectOld:     true,
+			expectNew:     true,
+			expectWarning: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Unmarshal through a parent struct, like the processor config does.
+			var parent struct {
+				System Config `mapstructure:"system"`
+			}
+			parent.System = CreateDefaultConfig()
+			conf := confmap.NewFromStringMap(map[string]any{
+				"system": map[string]any{
+					"hostname_sources":    []any{"os"},
+					"resource_attributes": tt.resAttrs,
+				},
+			})
+			require.NoError(t, conf.Unmarshal(&parent))
+			cfg := parent.System
+			assert.Equal(t, tt.expectOld, cfg.deprecatedOSBuildID.Enabled)
+			assert.Equal(t, tt.expectNew, cfg.ResourceAttributes.OsBuildID.Enabled)
+
+			core, logs := observer.New(zapcore.WarnLevel)
+			set := processortest.NewNopSettings(processortest.NopType)
+			set.Logger = zap.New(core)
+			d, err := NewDetector(set, cfg, false)
+			require.NoError(t, err)
+			if tt.expectWarning {
+				require.Equal(t, 1, logs.FilterMessage("the os.build.id resource attribute is deprecated, use os.build_id instead").Len())
+			} else {
+				require.Zero(t, logs.Len())
+			}
+
+			detector := d.(*Detector)
+			detector.provider = newFullMock()
+			res, _, err := detector.Detect(t.Context())
+			require.NoError(t, err)
+
+			oldVal, hasOld := res.Attributes().Get("os.build.id")
+			newVal, hasNew := res.Attributes().Get("os.build_id")
+			assert.Equal(t, tt.expectOld, hasOld)
+			assert.Equal(t, tt.expectNew, hasNew)
+			if hasOld {
+				assert.Equal(t, "22H2", oldVal.Str())
+			}
+			if hasNew {
+				assert.Equal(t, "22H2", newVal.Str())
+			}
+		})
 	}
 }

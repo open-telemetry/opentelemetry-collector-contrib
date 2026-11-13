@@ -27,20 +27,20 @@ type Config struct {
 	// one epoch. Once this threshold is exceeded, additional unique values are
 	// handled according to the configured EnforcementMode.
 	//
-	// The processor measures cardinality growth using a HyperLogLog sketch and
-	// compares the current epoch's estimate against the previous epoch's
-	// estimate. Only the *delta* (new unique values seen this epoch) is checked,
-	// not the absolute cardinality. This prevents the processor from penalizing
-	// stable high-cardinality metrics that have already reached a steady state.
+	// The processor measures cardinality growth using HyperLogLog sketches and
+	// counts the values seen this epoch that were absent from the previous
+	// epoch. Only that *delta* (new unique values) is checked, not the absolute
+	// cardinality. This prevents the processor from penalizing stable
+	// high-cardinality metrics that have already reached a steady state.
 	//
 	// Must be greater than 0.
 	MaxCardinalityDeltaPerEpoch int `mapstructure:"max_cardinality_delta_per_epoch"`
 
 	// EpochDurationSeconds controls how often the sliding cardinality window
-	// advances. At the end of each epoch the processor promotes the current
-	// HyperLogLog sketch to "previous" and starts a fresh sketch for the new
-	// epoch. The delta check then measures growth relative to the boundary of
-	// the last epoch, not the lifetime of the processor.
+	// advances. At the end of each epoch the processor takes the completed
+	// epoch's values as the new baseline and starts a fresh sketch for the new
+	// epoch. The delta check then measures growth relative to the last epoch,
+	// not the lifetime of the processor.
 	//
 	// Shorter epochs are more sensitive to sudden cardinality explosions but
 	// may produce noisier decisions for metrics with naturally bursty label

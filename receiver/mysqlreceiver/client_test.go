@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -212,6 +213,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 		wantSupportsRedoLogStats    bool
 		wantRequiresBackupAdmin     bool
 		wantRedoLogStatsSource      innodbRedoLogStatsSource
+		wantSupportsDataLockWaits   bool
 	}{
 		{
 			name:                        "MySQL 8.0.27",
@@ -222,6 +224,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsRedoLogStats:    true,
 			wantRequiresBackupAdmin:     true,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceLogStatus,
+			wantSupportsDataLockWaits:   true,
 		},
 		{
 			name:                        "MySQL 8.0.30 (minimum for redo-log global status variables)",
@@ -232,6 +235,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsRedoLogStats:    true,
 			wantRequiresBackupAdmin:     false,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceGlobalStatus,
+			wantSupportsDataLockWaits:   true,
 		},
 		{
 			name:                        "MySQL 8.0.3 (minimum for query_sample_text)",
@@ -240,6 +244,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
+			wantSupportsDataLockWaits:   false,
 		},
 		{
 			name:                        "MySQL 8.0.11 (minimum for log_status)",
@@ -250,6 +255,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsRedoLogStats:    true,
 			wantRequiresBackupAdmin:     true,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceLogStatus,
+			wantSupportsDataLockWaits:   true,
 		},
 		{
 			name:                        "MySQL 8.0.10 (below log_status minimum)",
@@ -258,6 +264,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
+			wantSupportsDataLockWaits:   false,
 		},
 		{
 			name:                        "MySQL 8.0.2 (below query_sample_text minimum)",
@@ -266,6 +273,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
+			wantSupportsDataLockWaits:   false,
 		},
 		{
 			name:                        "MySQL 8.0.0 (below query_sample_text minimum)",
@@ -274,6 +282,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
+			wantSupportsDataLockWaits:   false,
 		},
 		{
 			name:                        "MySQL 8.0.22 (minimum for SHOW REPLICA STATUS and processlist)",
@@ -284,6 +293,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsRedoLogStats:    true,
 			wantRequiresBackupAdmin:     true,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceLogStatus,
+			wantSupportsDataLockWaits:   true,
 		},
 		{
 			name:                        "MySQL 8.0.21 (below SHOW REPLICA STATUS minimum)",
@@ -294,6 +304,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsRedoLogStats:    true,
 			wantRequiresBackupAdmin:     true,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceLogStatus,
+			wantSupportsDataLockWaits:   true,
 		},
 		{
 			name:                        "MySQL 5.7.44",
@@ -302,6 +313,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
+			wantSupportsDataLockWaits:   false,
 		},
 		{
 			name:                        "MariaDB 10.11.6",
@@ -310,6 +322,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
+			wantSupportsDataLockWaits:   false,
 		},
 		{
 			name:                        "MariaDB 11.4.2",
@@ -318,6 +331,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
+			wantSupportsDataLockWaits:   false,
 		},
 		{
 			name:                        "zero value (version unknown)",
@@ -326,6 +340,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			wantSupportsReplicaStatus:   false,
 			wantSupportsProcesslist:     false,
 			wantRedoLogStatsSource:      innodbRedoLogStatsSourceUnsupported,
+			wantSupportsDataLockWaits:   false,
 		},
 	}
 
@@ -337,6 +352,7 @@ func TestDBVersionCapabilities(t *testing.T) {
 			assert.Equal(t, tt.wantSupportsRedoLogStats, tt.dv.supportsInnodbRedoLogStats(), "supportsInnodbRedoLogStats()")
 			assert.Equal(t, tt.wantRequiresBackupAdmin, tt.dv.requiresBackupAdminForInnodbRedoLogStats(), "requiresBackupAdminForInnodbRedoLogStats()")
 			assert.Equal(t, tt.wantRedoLogStatsSource, tt.dv.innodbRedoLogStatsSource(), "innodbRedoLogStatsSource()")
+			assert.Equal(t, tt.wantSupportsDataLockWaits, tt.dv.supportsDataLockWaits(), "supportsDataLockWaits()")
 		})
 	}
 }
@@ -477,6 +493,111 @@ func TestGetInnodbTransactionStats(t *testing.T) {
 	assert.Equal(t, int64(251), got.historyListLength)
 	assert.Equal(t, int64(3), got.activeTransactions)
 	assert.Equal(t, int64(17), got.maxActiveTransactionDuration)
+}
+
+func TestGetAutoIncrementStats(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT c.TABLE_SCHEMA, c.TABLE_NAME, c.COLUMN_NAME").
+		WillReturnRows(sqlmock.NewRows([]string{
+			"TABLE_SCHEMA",
+			"TABLE_NAME",
+			"COLUMN_NAME",
+			"AUTO_INCREMENT",
+			"MAX_VALUE",
+			"UTILIZATION_RATIO",
+		}).AddRow("a_schema", "a_table", "id", 1073741823.0, 2147483647.0, 0.5))
+
+	c := &mySQLClient{client: db}
+	got, err := c.getAutoIncrementStats()
+	require.NoError(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+
+	require.Len(t, got, 1)
+	assert.Equal(t, "a_schema", got[0].schema)
+	assert.Equal(t, "a_table", got[0].table)
+	assert.Equal(t, "id", got[0].column)
+	assert.InDelta(t, 1073741823.0, got[0].currentValue, 0.0001)
+	assert.InDelta(t, 2147483647.0, got[0].maxValue, 0.0001)
+	assert.InDelta(t, 0.5, got[0].utilizationRatio, 0.0001)
+}
+
+func TestRowsIterationErrorIsReturned(t *testing.T) {
+	// sql.Rows.Next() returns false both at the end of the result set and when
+	// iteration fails, so each query method must check rows.Err() before
+	// returning. Without that check these methods return the rows collected so
+	// far together with a nil error, reporting a partial scrape as a success.
+	tests := []struct {
+		name    string
+		columns []string
+		values  []driver.Value
+		call    func(*mySQLClient) (any, error)
+	}{
+		{
+			name:    "getGlobalStats",
+			columns: []string{"Variable_name", "Value"},
+			values:  []driver.Value{"Threads_connected", "12"},
+			call: func(c *mySQLClient) (any, error) {
+				return c.getGlobalStats()
+			},
+		},
+		{
+			name:    "getTableStats",
+			columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "TABLE_ROWS", "AVG_ROW_LENGTH", "DATA_LENGTH", "INDEX_LENGTH"},
+			values:  []driver.Value{"schema", "table", 1, 2, 3, 4},
+			call: func(c *mySQLClient) (any, error) {
+				return c.getTableStats()
+			},
+		},
+		{
+			name:    "getAutoIncrementStats",
+			columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME", "AUTO_INCREMENT", "MAX_VALUE", "UTILIZATION_RATIO"},
+			values:  []driver.Value{"schema", "table", "id", 1073741823.0, 2147483647.0, 0.5},
+			call: func(c *mySQLClient) (any, error) {
+				return c.getAutoIncrementStats()
+			},
+		},
+		{
+			name:    "getTableIoWaitsStats",
+			columns: []string{"OBJECT_SCHEMA", "OBJECT_NAME", "COUNT_DELETE", "COUNT_FETCH", "COUNT_INSERT", "COUNT_UPDATE", "SUM_TIMER_DELETE", "SUM_TIMER_FETCH", "SUM_TIMER_INSERT", "SUM_TIMER_UPDATE"},
+			values:  []driver.Value{"schema", "table", 1, 2, 3, 4, 5, 6, 7, 8},
+			call: func(c *mySQLClient) (any, error) {
+				return c.getTableIoWaitsStats()
+			},
+		},
+		{
+			name:    "getIndexIoWaitsStats",
+			columns: []string{"OBJECT_SCHEMA", "OBJECT_NAME", "INDEX_NAME", "COUNT_FETCH", "COUNT_INSERT", "COUNT_UPDATE", "COUNT_DELETE", "SUM_TIMER_FETCH", "SUM_TIMER_INSERT", "SUM_TIMER_UPDATE", "SUM_TIMER_DELETE"},
+			values:  []driver.Value{"schema", "table", "index", 1, 2, 3, 4, 5, 6, 7, 8},
+			call: func(c *mySQLClient) (any, error) {
+				return c.getIndexIoWaitsStats()
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
+
+			// The first row scans fine; iteration then fails on the second.
+			rows := sqlmock.NewRows(tt.columns).
+				AddRow(tt.values...).
+				AddRow(tt.values...).
+				RowError(1, assert.AnError)
+			mock.ExpectQuery(".*").WillReturnRows(rows)
+
+			c := &mySQLClient{client: db}
+			got, err := tt.call(c)
+			require.Error(t, err, "iteration error must not be swallowed")
+			assert.ErrorIs(t, err, assert.AnError)
+			assert.Nil(t, got, "no partial results should be returned alongside the error")
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
 }
 
 func TestCheckDBAvailability(t *testing.T) {
@@ -732,4 +853,26 @@ func TestDBVersionHelperMethods(t *testing.T) {
 	t.Run("systemName zero value defaults to mysql", func(t *testing.T) {
 		assert.Equal(t, "mysql", dbVersion{}.systemName())
 	})
+}
+
+// TestIndexIoWaitsQueryColumnOrder guards against the mismatch fixed for index io_waits metrics:
+// getIndexIoWaitsStats scans columns positionally into countDelete, countFetch, countInsert,
+// countUpdate (and the matching time fields), so indexIoWaitsQuery must list the COUNT_ and
+// SUM_TIMER_ columns in DELETE, FETCH, INSERT, UPDATE order. Previously they were listed as
+// FETCH, INSERT, UPDATE, DELETE, so every mysql.index.io.wait.* datapoint was reported under the
+// wrong operation attribute.
+func TestIndexIoWaitsQueryColumnOrder(t *testing.T) {
+	for _, prefix := range []string{"COUNT_", "SUM_TIMER_"} {
+		del := strings.Index(indexIoWaitsQuery, prefix+"DELETE")
+		fetch := strings.Index(indexIoWaitsQuery, prefix+"FETCH")
+		insert := strings.Index(indexIoWaitsQuery, prefix+"INSERT")
+		update := strings.Index(indexIoWaitsQuery, prefix+"UPDATE")
+		require.NotEqual(t, -1, del, "%sDELETE column missing from indexIoWaitsQuery", prefix)
+		require.NotEqual(t, -1, fetch, "%sFETCH column missing from indexIoWaitsQuery", prefix)
+		require.NotEqual(t, -1, insert, "%sINSERT column missing from indexIoWaitsQuery", prefix)
+		require.NotEqual(t, -1, update, "%sUPDATE column missing from indexIoWaitsQuery", prefix)
+		assert.True(t, del < fetch && fetch < insert && insert < update,
+			"%s columns must appear in DELETE, FETCH, INSERT, UPDATE order to match the scan; got delete=%d fetch=%d insert=%d update=%d",
+			prefix, del, fetch, insert, update)
+	}
 }

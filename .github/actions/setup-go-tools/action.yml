@@ -33,6 +33,11 @@ runs:
         # instead of each paying for its own full copy.
         cache: false
 
+    - name: Retry transient Go proxy errors
+      shell: bash
+      # Distinct spellings of the same proxy joined by `|` make Go retry any fetch error. Keep in sync with Makefile.Common.
+      run: echo "GOPROXY=https://proxy.golang.org|https://proxy.golang.org/|https://proxy.golang.org:443,direct" >> "$GITHUB_ENV"
+
     - name: Resolve Go cache directories
       id: go-cache-paths
       shell: bash
