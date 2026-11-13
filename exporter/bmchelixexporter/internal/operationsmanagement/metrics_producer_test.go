@@ -5,6 +5,7 @@ package operationsmanagement
 
 import (
 	"maps"
+	"sync"
 	"testing"
 	"time"
 
@@ -568,4 +569,81 @@ func TestCreateEnrichedMetricWithEmptyName(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestComputeRateMetricFromCounterOutOfOrderKeepsNewestBaseline(t *testing.T) {
+	t.Parallel()
+	producer := NewMetricsProducer(zap.NewNop(), false)
+	labels := map[string]string{
+		"entityId":   "OTEL:host:network:eth0",
+		"metricName": "hw.network.io",
+		"unit":       "By",
+	}
+
+	newer := BMCHelixOMMetric{
+		Labels:  labels,
+		Samples: []BMCHelixOMSample{{Value: 2000, Timestamp: 2000}},
+	}
+	older := BMCHelixOMMetric{
+		Labels:  labels,
+		Samples: []BMCHelixOMSample{{Value: 1000, Timestamp: 1000}},
+	}
+	next := BMCHelixOMMetric{
+		Labels:  labels,
+		Samples: []BMCHelixOMSample{{Value: 3000, Timestamp: 3000}},
+	}
+
+	assert.Nil(t, producer.computeRateMetricFromCounter(newer))
+	assert.Nil(t, producer.computeRateMetricFromCounter(older), "out-of-order sample must not replace newer baseline")
+
+	rate := producer.computeRateMetricFromCounter(next)
+	assert.NotNil(t, rate)
+	// Baseline stayed at t=2000 / v=2000, so rate over 1s is (3000-2000)/1 = 1000
+	assert.InDelta(t, 1000.0, rate.Samples[0].Value, 0.001)
+}
+
+func TestComputeRateMetricFromCounterDuplicateTimestampNoRate(t *testing.T) {
+	t.Parallel()
+	producer := NewMetricsProducer(zap.NewNop(), false)
+	labels := map[string]string{
+		"entityId":   "OTEL:host:network:eth0",
+		"metricName": "hw.network.io",
+		"unit":       "By",
+	}
+
+	first := BMCHelixOMMetric{
+		Labels:  labels,
+		Samples: []BMCHelixOMSample{{Value: 1000, Timestamp: 1000}},
+	}
+	dup := BMCHelixOMMetric{
+		Labels:  labels,
+		Samples: []BMCHelixOMSample{{Value: 1000, Timestamp: 1000}},
+	}
+
+	assert.Nil(t, producer.computeRateMetricFromCounter(first))
+	assert.Nil(t, producer.computeRateMetricFromCounter(dup), "duplicate/retry timestamp must not produce a rate")
+}
+
+func TestComputeRateMetricFromCounterConcurrent(t *testing.T) {
+	t.Parallel()
+	producer := NewMetricsProducer(zap.NewNop(), false)
+	labels := map[string]string{
+		"entityId":   "OTEL:host:network:eth0",
+		"metricName": "hw.network.io",
+		"unit":       "By",
+	}
+
+	var wg sync.WaitGroup
+	for i := 0; i < 64; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			metric := BMCHelixOMMetric{
+				Labels:  labels,
+				Samples: []BMCHelixOMSample{{Value: float64(1000 + i), Timestamp: int64(1000 + i)}},
+			}
+			_ = producer.computeRateMetricFromCounter(metric)
+		}(i)
+	}
+	wg.Wait()
 }
