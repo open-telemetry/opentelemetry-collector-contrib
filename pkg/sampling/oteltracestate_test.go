@@ -397,7 +397,53 @@ func TestOpenTelemetryTraceStateZeroCountBlocksTValueUpdate(t *testing.T) {
 	var w strings.Builder
 	require.NoError(t, otts.Serialize(&w))
 	require.Equal(t, "zc:1;a:b", w.String())
+}
 
+func TestOpenTelemetryTraceStateSetZeroCount(t *testing.T) {
+	for _, tc := range []struct {
+		in  string
+		out string
+	}{
+		{in: "th:8", out: "zc:1"},
+		{in: "rv:10000000000000;th:8;a:b", out: "rv:10000000000000;zc:1;a:b"},
+		{in: "zc:1;a:b", out: "zc:1;a:b"},
+	} {
+		t.Run(testName(tc.in), func(t *testing.T) {
+			otts, err := NewOpenTelemetryTraceState(tc.in)
+			require.NoError(t, err)
+
+			otts.SetZeroCount()
+			require.True(t, otts.ZeroCount())
+			require.Empty(t, otts.TValue())
+			require.Zero(t, otts.AdjustedCount())
+			require.ErrorIs(t, otts.UpdateTValueWithSampling(AlwaysSampleThreshold), ErrZeroCount)
+
+			var w strings.Builder
+			require.NoError(t, otts.Serialize(&w))
+			require.Equal(t, tc.out, w.String())
+		})
+	}
+}
+
+func TestW3CTraceStateSetZeroCount(t *testing.T) {
+	for _, tc := range []struct {
+		in  string
+		out string
+	}{
+		{in: "", out: "ot=zc:1"},
+		{in: "vendor=abc,ot=th:8;rv:6e6d1a75832a2f", out: "ot=rv:6e6d1a75832a2f;zc:1,vendor=abc"},
+	} {
+		t.Run(testName(tc.in), func(t *testing.T) {
+			w3c, err := NewW3CTraceState(tc.in)
+			require.NoError(t, err)
+
+			w3c.OTelValue().SetZeroCount()
+
+			var w strings.Builder
+			require.NoError(t, w3c.Serialize(&w))
+			require.Equal(t, tc.out, w.String())
+		})
+	}
 }
 
 func TestW3CTraceStateZeroCount(t *testing.T) {

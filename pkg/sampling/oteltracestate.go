@@ -215,6 +215,15 @@ func (otts *OpenTelemetryTraceState) ZeroCount() bool {
 	return otts.zeroCount
 }
 
+// SetZeroCount sets the zero-count flag (key: "zc"), for use when an
+// item must not be counted, such as one restored from an archive.
+// The zero-count flag and the T-value are mutually exclusive, so this
+// also clears the T-value.
+func (otts *OpenTelemetryTraceState) SetZeroCount() {
+	otts.ClearTValue()
+	otts.zeroCount = true
+}
+
 // SetRValue establishes explicit randomness for this TraceState.
 func (otts *OpenTelemetryTraceState) SetRValue(randomness Randomness) {
 	otts.rnd = randomness
