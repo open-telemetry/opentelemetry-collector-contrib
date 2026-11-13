@@ -49,7 +49,7 @@ type OutlierAnalysisConfig struct {
 	Method OutlierMethod `mapstructure:"method"`
 
 	// DurationTransform selects a transform applied to durations before the
-	// method above measures their spread.
+	// outlier method measures their spread.
 	// Valid values: "none" (default), "log"
 	DurationTransform DurationTransform `mapstructure:"duration_transform"`
 
