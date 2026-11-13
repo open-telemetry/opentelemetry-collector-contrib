@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -314,7 +315,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	_ = bodyReader.Close()
 
 	if consumerErr != nil {
-		r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, consumerErr)
+		r.failRequest(resp, consumerErrorHTTPStatus(consumerErr), errInternalServerError, consumerErr)
 	} else {
 		var ackErr error
 		if channelID != "" && r.ackExt != nil {
@@ -554,7 +555,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		decodeErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), len(events), nil)
 		if decodeErr != nil {
-			r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, decodeErr)
+			r.failRequest(resp, consumerErrorHTTPStatus(decodeErr), errInternalServerError, decodeErr)
 			return
 		}
 	}
@@ -565,7 +566,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
 		r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), len(metricEvents), nil)
 		if decodeErr != nil {
-			r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, decodeErr)
+			r.failRequest(resp, consumerErrorHTTPStatus(decodeErr), errInternalServerError, decodeErr)
 			return
 		}
 	}
@@ -579,6 +580,13 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	if ackErr != nil {
 		r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, ackErr)
 	}
+}
+
+func consumerErrorHTTPStatus(err error) int {
+	if consumererror.IsPermanent(err) {
+		return http.StatusBadRequest
+	}
+	return http.StatusInternalServerError
 }
 
 func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resource pcommon.Resource) {
