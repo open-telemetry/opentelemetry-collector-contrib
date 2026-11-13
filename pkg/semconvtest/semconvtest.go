@@ -184,7 +184,7 @@ func runLiveCheck(tb testing.TB, opts []WeaverOption, send func(context.Context,
 	version, _ := normalizeWeaverVersion(defaultWeaverVersion)
 
 	options := &weaverOptions{
-		version: version,
+		version:  version,
 		registry: fmt.Sprintf(defaultRegistryTemplate, defaultRegistryVersion),
 	}
 	for _, opt := range opts {
