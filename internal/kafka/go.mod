@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.165.1
 	github.com/stretchr/testify v1.12.1
-	github.com/twmb/franz-go/pkg/kfake v0.0.0-20260421215025-4e7a1e1569ac
+	github.com/twmb/franz-go/pkg/kfake v0.0.0-20261109062748-d6ea02a174bc
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
 	go.opentelemetry.io/collector/component v1.71.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/component/componenttest v0.165.1-0.20261112225459-4888f0b280f9
@@ -67,7 +67,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.33 // indirect
-	github.com/twmb/franz-go v1.22.2
+	github.com/twmb/franz-go v1.22.3
 	github.com/twmb/franz-go/pkg/kadm v1.19.0
 	github.com/twmb/franz-go/pkg/kmsg v1.15.1
 	github.com/twmb/franz-go/plugin/kzap v1.1.2
