@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -1320,10 +1321,14 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("tempDBContentionQueryData.txt")
 	case getSQLServerTempDBFileQuery():
 		queryResults, err = readFile("tempDBFileQueryData.txt")
-	case getSQLServerQueryTextAndPlanQuery():
+	case getSQLServerQueryTextAndPlanQuery(false):
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
-	case getSQLServerQuerySamplesQuery():
+	case getSQLServerQueryTextAndPlanQuery(true):
+		queryResults, err = readFile("queryTextAndPlanQueryDataWithCommentTags.txt")
+	case getSQLServerQuerySamplesQuery(false):
 		queryResults, err = readFile("recordDatabaseSampleQueryData.txt")
+	case getSQLServerQuerySamplesQuery(true):
+		queryResults, err = readFile("recordDatabaseSampleQueryDataWithCommentTags.txt")
 	case getSQLServerTopProcedureQuery():
 		fixture := "topProcedureQueryData.txt"
 		if mc.procedureFixtureFile != "" {
@@ -1345,9 +1350,9 @@ func (mc mockInvalidClient) QueryRows(context.Context, ...any) ([]sqlquery.Strin
 	var err error
 
 	switch mc.SQL {
-	case getSQLServerQuerySamplesQuery():
+	case getSQLServerQuerySamplesQuery(false):
 		queryResults, err = readFile("recordInvalidDatabaseSampleQueryData.txt")
-	case getSQLServerQueryTextAndPlanQuery():
+	case getSQLServerQueryTextAndPlanQuery(false):
 		queryResults, err = readFile("queryTextAndPlanQueryInvalidData.txt")
 	default:
 		return nil, errors.New("No valid query found")
@@ -1361,7 +1366,7 @@ func (mc mockInvalidClient) QueryRows(context.Context, ...any) ([]sqlquery.Strin
 
 func (mc mockMultiStatementProcClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {
 	switch mc.SQL {
-	case getSQLServerQueryTextAndPlanQuery():
+	case getSQLServerQueryTextAndPlanQuery(false):
 		return readFile("queryTextAndPlanMultiStatementProcData.txt")
 	default:
 		return nil, errors.New("No valid query found")
@@ -1508,6 +1513,108 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
 	assert.Equal(t, "db.server.top_query", actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
 	assert.NoError(t, errs)
+}
+
+// TestQueryTextAndPlanQueryCommentTags covers db.server.top_query with and without
+// allowed_comment_keys set on top_query_collection.
+func TestQueryTextAndPlanQueryCommentTags(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		allowedKeys  []string
+		wantTags     string
+		expectedFile string
+	}{
+		{
+			name:         "keys allowed",
+			allowedKeys:  []string{"application_name", "application_id"},
+			wantTags:     "application_name='checkout',application_id='svc-42'",
+			expectedFile: "expectedQueryTextAndPlanQueryWithCommentTags.yaml",
+		},
+		{
+			// Unset is the default, and what opts the collection out.
+			name:     "no keys allowed",
+			wantTags: "",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Username = "sa"
+			cfg.Password = "password"
+			cfg.Port = 1433
+			cfg.Server = "0.0.0.0"
+			enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+			cfg.TopQueryCollection.AllowedCommentKeys = tc.allowedKeys
+			require.NoError(t, cfg.Validate())
+
+			configureAllScraperMetricsAndEvents(cfg, false)
+			cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+			cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
+
+			scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+			require.NotEmpty(t, scrapers)
+			scraper := scrapers[0]
+			seedTopQueryCache(t, scraper)
+
+			scraper.client = mockClient{
+				SQL:                 scraper.sqlQuery,
+				maxQuerySampleCount: 1000,
+				lookbackTime:        20,
+				topQueryCount:       200,
+			}
+
+			actualLogs, err := scraper.ScrapeLogs(t.Context())
+			require.NoError(t, err)
+			require.Positive(t, actualLogs.LogRecordCount())
+
+			logRecord := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+			assert.Equal(t, "db.server.top_query", logRecord.EventName())
+
+			commentTags, ok := logRecord.Attributes().Get("db.query.comment_tags")
+			assert.True(t, ok, "the generated event builder always emits the attribute")
+			assert.Equal(t, tc.wantTags, commentTags.Str())
+			// The fixture's comment also carries traceparent, which is never allow-listed.
+			assert.NotContains(t, commentTags.Str(), "traceparent")
+
+			// The batch the tags came from is never emitted, and db.query.text stays the
+			// obfuscated statement with its comments stripped.
+			_, ok = logRecord.Attributes().Get("db.query.full_text")
+			assert.False(t, ok, "db.query.full_text must not be emitted")
+			queryText, ok := logRecord.Attributes().Get("db.query.text")
+			assert.True(t, ok)
+			assert.NotContains(t, queryText.Str(), "traceparent")
+
+			if tc.expectedFile == "" {
+				return
+			}
+			expectedFile := filepath.Join("testdata", tc.expectedFile)
+			// Uncomment line below to re-generate expected logs.
+			// golden.WriteLogs(t, expectedFile, actualLogs)
+			expectedLogs, err := golden.ReadLogs(expectedFile)
+			require.NoError(t, err)
+			assert.NoError(t, plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp()))
+		})
+	}
+}
+
+// seedTopQueryCache primes the counter cache below the values in the top query
+// fixtures. Rows are only reported when their elapsed time grew since the previous
+// scrape, so an unseeded row is dropped as a first sighting.
+func seedTopQueryCache(t *testing.T, scraper *sqlServerScraperHelper) {
+	t.Helper()
+	for _, hashes := range [][2]string{
+		{"0x37849E874171E3F3", "0xD3112909429A1B50"},
+		{"0x5A1B2C3D4E5F6071", "0x7F6E5D4C3B2A1908"},
+	} {
+		queryHash := hex.EncodeToString([]byte(hashes[0]))
+		queryPlanHash := hex.EncodeToString([]byte(hashes[1]))
+		for column, value := range map[string]int64{
+			"total_elapsed_time": 846, "total_rows": 1, "total_logical_reads": 1,
+			"total_logical_writes": 1, "total_physical_reads": 1, "execution_count": 1,
+			"total_worker_time": 845, "total_grant_kb": 1, "procedure_execution_count": 0,
+		} {
+			scraper.cacheAndDiff(queryHash, queryPlanHash, "0", column, value)
+		}
+	}
 }
 
 func TestQueryTextAndPlanQueryDbServerQueryPlanEvent(t *testing.T) {
@@ -1829,8 +1936,8 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			// golden.WriteLogs(t, filepath.Join("testdata", tc.expectedFile), actualLogs)
 			expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", tc.expectedFile))
 			assert.NoError(t, err)
-			removeAttributeFromAllLogRecords(expectedLogs, "sqlserver.blocking.start_time")
-			removeAttributeFromAllLogRecords(actualLogs, "sqlserver.blocking.start_time")
+			removeBlockingStartTimeFromAllLogRecords(expectedLogs)
+			removeBlockingStartTimeFromAllLogRecords(actualLogs)
 			errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
 			assert.Equal(t, "db.server.query_sample", logRecord.EventName())
 			assert.NoError(t, errs)
@@ -1838,14 +1945,98 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 	}
 }
 
-func removeAttributeFromAllLogRecords(logs plog.Logs, key string) {
+// TestRecordDatabaseSampleQueryCommentTags covers db.server.query_sample with and
+// without allowed_comment_keys set on query_sample_collection.
+func TestRecordDatabaseSampleQueryCommentTags(t *testing.T) {
+	for _, tc := range []struct {
+		name            string
+		allowedKeys     []string
+		wantTags        string
+		wantBatchColumn bool
+		expectedFile    string
+	}{
+		{
+			name:            "keys allowed",
+			allowedKeys:     []string{"application_name", "application_id"},
+			wantTags:        "application_name='checkout',application_id='svc-42'",
+			wantBatchColumn: true,
+			expectedFile:    "expectedRecordDatabaseSampleQueryWithCommentTags.yaml",
+		},
+		{
+			// Unset is the default. The batch-text column is then not even selected,
+			// so the emitted SQL is what it was before this option existed.
+			name:            "no keys allowed",
+			wantTags:        "",
+			wantBatchColumn: false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Username = "sa"
+			cfg.Password = "password"
+			cfg.Port = 1433
+			cfg.Server = "0.0.0.0"
+			enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+			cfg.QuerySample.AllowedCommentKeys = tc.allowedKeys
+			require.NoError(t, cfg.Validate())
+
+			configureAllScraperMetricsAndEvents(cfg, false)
+			cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+
+			scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+			require.NotEmpty(t, scrapers)
+			scraper := scrapers[0]
+			scraper.client = mockClient{
+				SQL:             scraper.sqlQuery,
+				maxRowsPerQuery: 100,
+			}
+
+			actualLogs, err := scraper.ScrapeLogs(t.Context())
+			require.NoError(t, err)
+			require.Positive(t, actualLogs.LogRecordCount())
+
+			assert.Equal(t, tc.wantBatchColumn, strings.Contains(scraper.sqlQuery, "batch_text"))
+
+			logRecord := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+			assert.Equal(t, "db.server.query_sample", logRecord.EventName())
+
+			commentTags, ok := logRecord.Attributes().Get("db.query.comment_tags")
+			assert.True(t, ok, "the generated event builder always emits the attribute")
+			assert.Equal(t, tc.wantTags, commentTags.Str())
+			assert.NotContains(t, commentTags.Str(), "traceparent")
+
+			_, ok = logRecord.Attributes().Get("db.query.full_text")
+			assert.False(t, ok, "db.query.full_text must not be emitted")
+			queryText, ok := logRecord.Attributes().Get("db.query.text")
+			assert.True(t, ok)
+			assert.NotContains(t, queryText.Str(), "ABC-123", "literals must be obfuscated")
+
+			if tc.expectedFile == "" {
+				return
+			}
+			expectedFile := filepath.Join("testdata", tc.expectedFile)
+			// Uncomment line below to re-generate expected logs.
+			// golden.WriteLogs(t, expectedFile, actualLogs)
+			expectedLogs, err := golden.ReadLogs(expectedFile)
+			require.NoError(t, err)
+			removeBlockingStartTimeFromAllLogRecords(expectedLogs)
+			removeBlockingStartTimeFromAllLogRecords(actualLogs)
+			assert.NoError(t, plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp()))
+		})
+	}
+}
+
+// removeBlockingStartTimeFromAllLogRecords drops sqlserver.blocking.start_time,
+// whose value derives from the current time and so cannot be pinned in a golden
+// file. Its presence is asserted separately by the callers.
+func removeBlockingStartTimeFromAllLogRecords(logs plog.Logs) {
 	resourceLogs := logs.ResourceLogs()
 	for i := 0; i < resourceLogs.Len(); i++ {
 		scopeLogs := resourceLogs.At(i).ScopeLogs()
 		for j := 0; j < scopeLogs.Len(); j++ {
 			logRecords := scopeLogs.At(j).LogRecords()
 			for k := 0; k < logRecords.Len(); k++ {
-				logRecords.At(k).Attributes().Remove(key)
+				logRecords.At(k).Attributes().Remove("sqlserver.blocking.start_time")
 			}
 		}
 	}
@@ -3162,6 +3353,172 @@ func TestProcedureLookbackSeconds(t *testing.T) {
 		assert.GreaterOrEqual(t, got, 75, "expected roughly 65s elapsed plus a 10s buffer")
 		assert.LessOrEqual(t, got, 80, "expected roughly 65s elapsed plus a 10s buffer, with some slack for test timing")
 	})
+}
+
+// TestQueryTextAndPlanQueryCollectFullQueryText asserts collect_full_query_text
+// swaps db.query.text from the offset-bounded statement to the whole batch the
+// statement came from, with no second attribute involved.
+func TestQueryTextAndPlanQueryCollectFullQueryText(t *testing.T) {
+	newScraper := func(t *testing.T, collectFullQueryText bool) *sqlServerScraperHelper {
+		t.Helper()
+
+		cfg := createDefaultConfig().(*Config)
+		cfg.Username = "sa"
+		cfg.Password = "password"
+		cfg.Port = 1433
+		cfg.Server = "0.0.0.0"
+		enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+		cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+
+		cfg.TopQueryCollection.CollectFullQueryText = collectFullQueryText
+		// Keyed so the fixture's batch-text column is selected either way, which
+		// isolates the flag's effect on db.query.text.
+		cfg.TopQueryCollection.AllowedCommentKeys = []string{"application_name"}
+		require.NoError(t, cfg.Validate())
+
+		configureAllScraperMetricsAndEvents(cfg, false)
+		cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+		cfg.TopQueryCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
+
+		scrapers, _ := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+		require.NotEmpty(t, scrapers)
+		scraper := scrapers[0]
+
+		seedTopQueryCache(t, scraper)
+
+		scraper.client = mockClient{
+			SQL:                 scraper.sqlQuery,
+			maxQuerySampleCount: 1000,
+			lookbackTime:        20,
+			topQueryCount:       200,
+		}
+		return scraper
+	}
+
+	// queryTextsOf returns db.query.text for every record, in order. The fixture
+	// holds two statements of one batch, so a swap to the batch column shows up as
+	// the two values becoming equal.
+	queryTextsOf := func(t *testing.T, scraper *sqlServerScraperHelper) []string {
+		t.Helper()
+		logs, err := scraper.ScrapeLogs(t.Context())
+		require.NoError(t, err)
+		require.Positive(t, logs.LogRecordCount())
+
+		var texts []string
+		records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+		for i := 0; i < records.Len(); i++ {
+			value, ok := records.At(i).Attributes().Get("db.query.text")
+			require.True(t, ok)
+			texts = append(texts, value.Str())
+		}
+		return texts
+	}
+
+	// workerTimesOf returns sqlserver.total_worker_time per record, to show the
+	// metrics stay per statement no matter what the text holds.
+	workerTimesOf := func(t *testing.T, scraper *sqlServerScraperHelper) []float64 {
+		t.Helper()
+		logs, err := scraper.ScrapeLogs(t.Context())
+		require.NoError(t, err)
+
+		var times []float64
+		records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+		for i := 0; i < records.Len(); i++ {
+			value, ok := records.At(i).Attributes().Get("sqlserver.total_worker_time")
+			require.True(t, ok)
+			times = append(times, value.Double())
+		}
+		return times
+	}
+
+	statementTexts := queryTextsOf(t, newScraper(t, false))
+	batchTexts := queryTextsOf(t, newScraper(t, true))
+
+	require.Len(t, statementTexts, 2, "the fixture holds two statements of one batch")
+	require.Len(t, batchTexts, 2)
+
+	// Default: each record carries its own statement, so the two differ and each
+	// record can be told apart by its text.
+	// Record order follows the elapsed-time ranking, so assert on the set.
+	assert.NotEqual(t, statementTexts[0], statementTexts[1],
+		"by default db.query.text is the statement, which differs per record")
+	assert.ElementsMatch(t,
+		[]bool{true, true},
+		[]bool{
+			strings.Contains(statementTexts[0], "COUNT") || strings.Contains(statementTexts[0], "ORDER BY"),
+			strings.Contains(statementTexts[1], "COUNT") || strings.Contains(statementTexts[1], "ORDER BY"),
+		},
+		"each record's text is one of the batch's two statements")
+	assert.Equal(t, 1,
+		strings.Count(statementTexts[0]+"|"+statementTexts[1], "COUNT"),
+		"exactly one record carries the COUNT statement")
+	assert.Equal(t, 1,
+		strings.Count(statementTexts[0]+"|"+statementTexts[1], "ORDER BY"),
+		"and exactly one carries its sibling")
+
+	// With the flag: both records report the whole batch, so the two texts are
+	// identical even though the records describe different statements with
+	// different metrics. This is the collapse the README warns about.
+	assert.Equal(t, batchTexts[0], batchTexts[1],
+		"with collect_full_query_text both records of a batch report the same text")
+	for _, text := range batchTexts {
+		assert.Contains(t, text, "COUNT", "the batch spans the first statement")
+		assert.Contains(t, text, "ORDER BY", "and its sibling")
+	}
+
+	// The metrics stay per statement regardless, which is what makes the text
+	// broader than the record: grouping by db.query.text would merge these two.
+	assert.NotEqual(t, workerTimesOf(t, newScraper(t, true))[0], workerTimesOf(t, newScraper(t, true))[1],
+		"metrics remain per statement even when the text is per batch")
+
+	// Either way the text is obfuscated, so the comment it carried is stripped and
+	// its literals are masked. The comment survives only in db.query.comment_tags.
+	for _, text := range batchTexts {
+		assert.NotContains(t, text, "traceparent")
+		assert.NotContains(t, text, "application_name")
+		assert.NotContains(t, text, "dbo.inventory'", "literals in the batch must be obfuscated")
+	}
+
+	// No second attribute is introduced for the batch text.
+	logs, err := newScraper(t, true).ScrapeLogs(t.Context())
+	require.NoError(t, err)
+	_, ok := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("db.query.full_text")
+	assert.False(t, ok, "db.query.full_text must not be emitted")
+}
+
+// TestNeedsBatchTextSelectsColumn asserts the batch-text column is selected when
+// either option asks for it and omitted when neither does, so a deployment using
+// neither keeps the query it had before these options existed.
+func TestNeedsBatchTextSelectsColumn(t *testing.T) {
+	for _, tc := range []struct {
+		name                 string
+		collectFullQueryText bool
+		allowedCommentKeys   []string
+		wantColumn           bool
+	}{
+		{name: "neither", wantColumn: false},
+		{name: "comment keys only", allowedCommentKeys: []string{"application_name"}, wantColumn: true},
+		{name: "full query text only", collectFullQueryText: true, wantColumn: true},
+		{name: "both", collectFullQueryText: true, allowedCommentKeys: []string{"application_name"}, wantColumn: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			topQuery := TopQueryCollection{
+				CollectFullQueryText: tc.collectFullQueryText,
+				AllowedCommentKeys:   tc.allowedCommentKeys,
+			}
+			querySample := QuerySample{
+				CollectFullQueryText: tc.collectFullQueryText,
+				AllowedCommentKeys:   tc.allowedCommentKeys,
+			}
+			assert.Equal(t, tc.wantColumn, topQuery.needsBatchText())
+			assert.Equal(t, tc.wantColumn, querySample.needsBatchText())
+
+			assert.Equal(t, tc.wantColumn,
+				strings.Contains(getSQLServerQueryTextAndPlanQuery(topQuery.needsBatchText()), "AS batch_text"))
+			assert.Equal(t, tc.wantColumn,
+				strings.Contains(getSQLServerQuerySamplesQuery(querySample.needsBatchText()), "AS batch_text"))
+		})
+	}
 }
 
 func TestEngineEditionToString(t *testing.T) {

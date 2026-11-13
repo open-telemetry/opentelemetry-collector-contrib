@@ -459,15 +459,26 @@ func getSQLServerTopProcedureQuery() string {
 //go:embed templates/dbQueryAndTextQuery.tmpl
 var sqlServerQueryTextAndPlanQueryTemplate string
 
-func getSQLServerQueryTextAndPlanQuery() string {
-	return sqlServerQueryTextAndPlanQueryTemplate
+func getSQLServerQueryTextAndPlanQuery(selectBatchText bool) string {
+	return replaceBatchTextColumn(sqlServerQueryTextAndPlanQueryTemplate, "\t", "st.text", selectBatchText)
 }
 
 //go:embed templates/sqlServerQuerySample.tmpl
 var sqlServerQuerySamples string
 
-func getSQLServerQuerySamplesQuery() string {
-	return sqlServerQuerySamples
+func getSQLServerQuerySamplesQuery(selectBatchText bool) string {
+	return replaceBatchTextColumn(sqlServerQuerySamples, "  ", "COALESCE(o.TEXT, ib.event_info, '')", selectBatchText)
+}
+
+// replaceBatchTextColumn resolves the {batch_text} placeholder, where indent is the
+// whitespace it sits behind. The column is nvarchar(max), so it is only selected when
+// a collection asked for it; otherwise the line is removed entirely.
+func replaceBatchTextColumn(query, indent, expression string, selectBatchText bool) string {
+	line := ""
+	if selectBatchText {
+		line = indent + expression + " AS batch_text,\n"
+	}
+	return strings.NewReplacer(indent+"{batch_text}\n", line).Replace(query)
 }
 
 //go:embed templates/sqlServerIdleBlockerQuerySample.tmpl
