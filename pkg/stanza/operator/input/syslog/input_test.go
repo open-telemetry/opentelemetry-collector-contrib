@@ -103,6 +103,19 @@ var (
 			ValidForTCP: true,
 		}
 	}()
+	// RFC3164 with octet counting where MSG-LEN counts a trailing newline, as rsyslog's
+	// octet-counted forwarding sends it
+	OctetCaseRFC3164TrailingNewline = func() syslogtest.Case {
+		rfc3164Msg := fmt.Sprintf("<34>%s 1.2.3.4 app: test msg\n", ts.Format("Jan _2 15:04:05"))
+		octetCountedMsg := fmt.Sprintf("%d %s", len(rfc3164Msg), rfc3164Msg)
+		tc := OctetCaseRFC3164
+		tc.Name = "RFC6587 Octet Counting RFC3164 Trailing Newline"
+		tc.Input = &entry.Entry{Body: octetCountedMsg}
+		expect := *tc.Expect
+		expect.Body = octetCountedMsg
+		tc.Expect = &expect
+		return tc
+	}()
 	WithMetadata = syslogtest.Case{
 		Name: "RFC3164",
 		Config: func() *syslog.Config {
@@ -139,26 +152,18 @@ var (
 func TestInput(t *testing.T) {
 	cases, err := syslogtest.CreateCases(basicConfig)
 	require.NoError(t, err)
-	cases = append(cases, OctetCase, OctetCaseRFC3164)
+	cases = append(cases, OctetCase, OctetCaseRFC3164, OctetCaseRFC3164TrailingNewline)
 
 	for _, tc := range cases {
 		cfg := tc.Config.BaseConfig
 		if tc.ValidForTCP {
 			tcpCfg := NewConfigWithTCP(&cfg)
-			if tc.Name == syslogtest.RFC6587OctetCountingPreserveSpaceTest {
-				tcpCfg.TCP.TrimConfig.PreserveLeading = true
-				tcpCfg.TCP.TrimConfig.PreserveTrailing = true
-			}
 			t.Run(fmt.Sprintf("TCP-%s", tc.Name), func(t *testing.T) {
 				InputTest(t, tc, tcpCfg, nil, nil)
 			})
 		}
 		if tc.ValidForUDP {
 			udpCfg := NewConfigWithUDP(&cfg)
-			if tc.Name == syslogtest.RFC6587OctetCountingPreserveSpaceTest {
-				udpCfg.UDP.TrimConfig.PreserveLeading = true
-				udpCfg.UDP.TrimConfig.PreserveTrailing = true
-			}
 			t.Run(fmt.Sprintf("UDP-%s", tc.Name), func(t *testing.T) {
 				InputTest(t, tc, udpCfg, nil, nil)
 			})

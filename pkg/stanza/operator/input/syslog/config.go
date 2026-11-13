@@ -14,6 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 const operatorType = "syslog_input"
@@ -68,6 +69,9 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		tcpInputCfg.BaseConfig = *c.TCP
 		if syslogParserCfg.EnableOctetCounting {
 			tcpInputCfg.SplitFuncBuilder = OctetSplitFuncBuilder
+			// MSG-LEN is authoritative: trimming the framed token would drop counted bytes
+			// and make the octet counting parser fail.
+			tcpInputCfg.TrimConfig = trim.Config{PreserveLeading: true, PreserveTrailing: true}
 		}
 
 		tcpInput, err := tcpInputCfg.Build(set)
