@@ -10,7 +10,7 @@ resource usage of cpu, memory, network, and the
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
 | Semantic Conventions Version | 1.43.0 |
-| Unsupported Platforms | darwin, windows |
+| Unsupported Platforms | darwin |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fdockerstats%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fdockerstats) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fdockerstats%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fdockerstats) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_dockerstats)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_dockerstats&displayType=list) |
@@ -23,6 +23,15 @@ resource usage of cpu, memory, network, and the
 
 > :information_source: Requires Docker API version 1.25+
 
+## Platform support
+
+Linux and Windows Docker hosts are supported. On Windows the daemon exposes a smaller
+set of stats, so these metrics are never emitted there: all `container.blockio.*`
+metrics, `container.cpu.logical.count`, `container.cpu.throttling_data.*`, `container.cpu.usage.percpu`,
+`container.cpu.usage.system`, `container.memory.*` other than
+`container.memory.usage.total`, `container.network.io.usage.rx_errors`,
+`container.network.io.usage.tx_errors` and `container.pids.*`.
+
 ## Configuration
 
 The following settings are optional:
@@ -30,8 +39,17 @@ The following settings are optional:
 - `endpoint` (default = `unix:///var/run/docker.sock` (Linux) , default = `npipe:////./pipe/docker_engine` (Windows) ): Address to reach the desired Docker daemon.
 - `collection_interval` (default = `10s`): The interval at which to gather container stats.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
-- `container_labels_to_metric_labels` (no default): A map of Docker container label names whose label values to use
-as the specified metric label key.
+- `container_labels_to_resource_attributes` (no default): A list of filters selecting container
+labels to record as resource attributes. A label is recorded if its key matches any filter. Each
+filter sets either `strict` (exact match) or `regexp` (a [Go regular expression](https://pkg.go.dev/regexp)).
+Matching labels are recorded as `container.label.<key>`, following the
+[container resource semantic conventions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/container.md).
+Each matching label adds a resource attribute, so broad patterns such as `.*` can significantly increase
+cardinality; prefer `strict` filters for only the labels you need.
+- `container_labels_to_metric_labels` (no default, **deprecated**): A map of Docker container label names whose label values to use
+as the specified metric label key. Use `container_labels_to_resource_attributes` instead, which follows the
+semantic conventions. Note that it records labels under `container.label.<key>` rather than a custom name;
+use the `transform` processor if you need to rename them.
 - `env_vars_to_metric_labels` (no default): A map of Docker container environment variables whose values to use
 as the specified metric label key.
 - `excluded_images` (no default, all running containers monitored): A list of strings,
@@ -45,6 +63,7 @@ only unmatched container image names should be excluded.
 - `timeout` (default = `5s`): The request timeout for any docker daemon query.
 - `api_version` (default = auto-negotiate): The Docker client API version (must be 1.25+). When not specified, the client automatically negotiates the highest mutually supported API version with the Docker daemon. To pin a specific version, set it as a string, not a float (e.g. `"1.44"` instead of `1.44`). [Docker API versions](https://docs.docker.com/engine/api/).
 - `metrics` (defaults at [./documentation.md](./documentation.md)): Enables/disables individual metrics. See [./documentation.md](./documentation.md) for full detail.
+  - Note on `container.state.status`: Enabling this metric adds a full `ContainerList(All: true)` call per scrape to count containers across all states (including paused and non-running). On hosts with very high container counts, this may have a non-trivial performance cost.
 
 Example:
 
@@ -55,9 +74,9 @@ receivers:
     collection_interval: 2s
     timeout: 20s
     api_version: "1.25"
-    container_labels_to_metric_labels:
-      my.container.label: my-metric-label
-      my.other.container.label: my-other-metric-label
+    container_labels_to_resource_attributes:
+      - strict: my.container.label
+      - regexp: my.container.prefix.*
     env_vars_to_metric_labels:
       MY_ENVIRONMENT_VARIABLE: my-metric-label
       MY_OTHER_ENVIRONMENT_VARIABLE: my-other-metric-label
@@ -123,51 +142,3 @@ For enhanced security, consider:
 - Running this receiver in an isolated collector instance with elevated privileges that only exports data (does not expose receiver ports like OTLP or Zipkin), forwarding metrics to your main collector via OTLP. This reduces the attack surface and RCE risk on the privileged container.
 
 For more information, see [issue #11791](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11791).
-
-
-## Deprecations
-
-### Transition to cpu utilization metric name aligned with OpenTelemetry specification
-
-The Docker Stats receiver has been emitting the following cpu memory metric:
-
-- [container.cpu.percent] for the percentage of CPU used by the container,
-
-This is in conflict with the OpenTelemetry specification,
-which defines [container.cpu.utilization] as the name for this metric.
-
-To align the emitted metric names with the OpenTelemetry specification,
-the following process will be followed to phase out the old metrics:
-
-- Between `v0.79.0` and `v0.86.0`, the new metric is introduced and the old metric is marked as deprecated.
-  Only the old metric are emitted by default.
-- In `v0.88.0`, the old metric is disabled and the new one enabled by default.
-- In `v0.89.0` and up, the old metric is removed.
-
-To change the enabled state for the specific metrics, use the standard configuration options that are available for all metrics.
-
-Here's an example configuration to disable the old metrics and enable the new metrics:
-
-```yaml
-receivers:
-  docker_stats:
-    metrics:
-      container.cpu.percent:
-        enabled: false
-      container.cpu.utilization:
-        enabled: true
-
-```
-
-### Migrating from ScraperV1 to ScraperV2
-
-*Note: These changes are now in effect and ScraperV1 have been removed as of v0.71.*
-
-There are some breaking changes from ScraperV1 to ScraperV2. The work done for these changes is tracked in [#9794](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9794).
-
-| Breaking Change                     | Action                                                                  |
-|-------------------------------------|-------------------------------------------------------------------------|
-| Many metrics are no longer emitted by default. | See [documentation.md](./documentation.md) to see which metrics are enabled by default. Enable/disable as desired. |
-| BlockIO metrics names changed. The type of operation is no longer in the metric name suffix, and is now in an attribute. For example `container.blockio.io_merged_recursive.read` becomes `container.blockio.io_merged_recursive` with an `operation:read` attribute. | Be aware of the metric name changes and make any adjustments to what your downstream expects from BlockIO metrics. |
-| Memory metrics measured in Bytes are now [non-monotonic sums](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#opentelemetry-protocol-data-model-consumer-recommendations) instead of gauges. | Most likely there is no action. The aggregation type is different but the values are the same. Be aware of how your downstream handles gauges vs non-monotonic sums. |
-| Config option `provide_per_core_cpu_metrics` has been removed. | Enable the `container.cpu.usage.percpu` metric as per [documentation.md](./documentation.md). |

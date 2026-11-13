@@ -13,7 +13,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gorilla/mux"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v3"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -117,8 +116,8 @@ func (gtr *gitlabTracesReceiver) Start(ctx context.Context, host component.Host)
 		return err
 	}
 
-	// use gorilla mux to set up a router
-	router := mux.NewRouter()
+	// use the standard library mux to set up a router
+	router := http.NewServeMux()
 
 	// setup health route
 	router.HandleFunc(gtr.cfg.WebHook.HealthPath, gtr.handleHealthCheck)

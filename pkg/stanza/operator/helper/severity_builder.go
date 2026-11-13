@@ -112,10 +112,11 @@ func NewSeverityConfig() SeverityConfig {
 
 // SeverityConfig allows users to specify how to parse a severity from a field.
 type SeverityConfig struct {
-	ParseFrom     *entry.Field   `mapstructure:"parse_from,omitempty"`
-	Preset        string         `mapstructure:"preset,omitempty"`
-	Mapping       map[string]any `mapstructure:"mapping,omitempty"`
-	OverwriteText bool           `mapstructure:"overwrite_text,omitempty"`
+	DropFieldConfig `mapstructure:",squash"`
+	ParseFrom       *entry.Field   `mapstructure:"parse_from,omitempty"`
+	Preset          string         `mapstructure:"preset,omitempty"`
+	Mapping         map[string]any `mapstructure:"mapping,omitempty"`
+	OverwriteText   bool           `mapstructure:"overwrite_text,omitempty"`
 }
 
 // Build builds a SeverityParser from a SeverityConfig
@@ -150,10 +151,15 @@ func (c *SeverityConfig) Build(_ component.TelemetrySettings) (SeverityParser, e
 		return SeverityParser{}, errors.New("missing required field 'parse_from'")
 	}
 
+	if err := c.ValidateDropField(*c.ParseFrom); err != nil {
+		return SeverityParser{}, err
+	}
+
 	p := SeverityParser{
-		ParseFrom:     *c.ParseFrom,
-		Mapping:       operatorMapping,
-		overwriteText: c.OverwriteText,
+		DropFieldConfig: c.DropFieldConfig,
+		ParseFrom:       *c.ParseFrom,
+		Mapping:         operatorMapping,
+		overwriteText:   c.OverwriteText,
 	}
 
 	return p, nil

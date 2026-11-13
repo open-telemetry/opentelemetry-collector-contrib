@@ -76,7 +76,7 @@ The following settings can be optionally configured:
   - When the remote endpoint rejects the content of a batch read from the WAL (HTTP `400`, `409`, `413` or `422`), the batch is dropped so it does not block the batches behind it, and `otelcol_exporter_prometheusremotewrite_wal_send_failed_batches` is incremented. Any other failure keeps the batch in the WAL to be sent again.
 - `target_info`: customize `target_info` metric
   - `enabled` (default = true): If `enabled` is `true`, a `target_info` metric will be generated for each resource metric (see https://github.com/open-telemetry/opentelemetry-specification/pull/2381).
-- `disable_scope_info` (default = false): If `true`, the scope info labels (`otel_scope_name`, `otel_scope_version` and `otel_scope_...` attributes) will not be exported.
+- `disable_scope_info` (default = false): If `true`, the scope info labels (`otel_scope_name`, `otel_scope_version`, `otel_scope_schema_url`, and `otel_scope_...` attributes) will not be exported.
 - `max_batch_size_bytes` (default = `3000000` -> `~2.861 mb`): Maximum size of a batch of samples to be sent to the remote 
   write endpoint. If the batch size is larger than this value, it will be split into multiple batches. This option is ignored
   when using the wal and where the wal buffer_size / truncate_frequency will be used.
@@ -86,7 +86,7 @@ The following settings can be optionally configured:
   - Protobuf message to use when writing to the remote write endpoint. This option is ignored unless the `exporter.prometheusremotewritexporter.enableSendingRW2` feature gate is enabled.
   - `prometheus.WriteRequest` is the message used in [Remote Write 1.0](https://prometheus.io/docs/specs/remote_write_spec/).
   - `io.prometheus.write.v2.Request` is the message used in [Remote Write 2.0](https://prometheus.io/docs/specs/remote_write_spec_2_0/). It is more efficient, always includes metadata, and adds support for the created timestamp and native histograms. Your remote storage provider must support PRW 2.0 to be able to use this message. PRW 2.0 support is currently **In Development** and is only partially implemented, thus, not ready for usage.
-- `convert_explicit_histograms_to_nhcb` (default = `false`): If `true`, OTLP explicit-bucket (classic) histograms are converted to [Native Histograms with Custom Buckets](https://prometheus.io/docs/specs/native_histograms/) (NHCB) on export, instead of being written as classic `_bucket`/`_sum`/`_count` series. The explicit bounds are carried as the histogram's custom values. Works on both the RW1 and RW2 paths.
+- `convert_explicit_histograms_to_nhcb` (default = `false`): If `true`, OTLP explicit-bucket (classic) histograms are converted to [Native Histograms with Custom Buckets](https://prometheus.io/docs/specs/native_histograms/) (NHCB) on export, instead of being written as classic `_bucket`/`_sum`/`_count` series. The explicit bounds are carried as the histogram's custom values. Data points without a sum are not converted to NHCB. Works on both the RW1 and RW2 paths.
 - `keep_classic_histograms` (default = `false`): If `true` (and `convert_explicit_histograms_to_nhcb` is enabled), the original classic `_bucket`/`_sum`/`_count` series are emitted alongside the NHCB series. This is intended for a migration window, allowing both representations to be queried in parallel before cutting over. It has no effect unless `convert_explicit_histograms_to_nhcb` is also `true`.
 
 
