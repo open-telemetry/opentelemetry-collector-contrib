@@ -242,7 +242,7 @@ var queries = []monitoringQuery{
 		},
 	},
 	{
-		query:               "SELECT seconds_between(CURRENT_TIMESTAMP, UTC_START_TIME) age FROM SYS.M_BACKUP_CATALOG WHERE STATE_NAME = 'successful' ORDER BY UTC_START_TIME DESC LIMIT 1",
+		query:               "SELECT seconds_between(UTC_START_TIME, CURRENT_TIMESTAMP) age FROM SYS.M_BACKUP_CATALOG WHERE STATE_NAME = 'successful' ORDER BY UTC_START_TIME DESC LIMIT 1",
 		orderedMetricLabels: []string{},
 		orderedStats: []queryStat{
 			{
