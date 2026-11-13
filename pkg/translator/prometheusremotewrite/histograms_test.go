@@ -406,13 +406,14 @@ func BenchmarkConvertBucketLayout(b *testing.B) {
 
 func TestExplicitToNHCBHistogram(t *testing.T) {
 	tests := []struct {
-		name        string
-		hist        func() pmetric.HistogramDataPoint
-		wantValues  []float64
-		wantCount   uint64
-		wantSum     float64
-		wantBuckets []nhcbBucket
-		stale       bool
+		name           string
+		hist           func() pmetric.HistogramDataPoint
+		wantValues     []float64
+		wantCount      uint64
+		wantSum        float64
+		wantBuckets    []nhcbBucket
+		stale          bool
+		wantErrMessage string
 	}{
 		{
 			name:        "consistent count and buckets",
@@ -461,10 +462,7 @@ func TestExplicitToNHCBHistogram(t *testing.T) {
 				pt.SetCount(10)
 				return pt
 			},
-			wantValues:  []float64{1, 2, 3},
-			wantCount:   10,
-			wantSum:     0,
-			wantBuckets: []nhcbBucket{{1, 1}, {2, 3}, {3, 6}, {math.Inf(1), 10}},
+			wantErrMessage: "sum is not set",
 		},
 		{
 			name: "no explicit bounds (single +Inf bucket)",
@@ -493,10 +491,24 @@ func TestExplicitToNHCBHistogram(t *testing.T) {
 			},
 			stale: true,
 		},
+		{
+			name: "stale marker without sum",
+			hist: func() pmetric.HistogramDataPoint {
+				pt := newTestExplicitHistogram().Histogram().DataPoints().At(0)
+				pt.RemoveSum()
+				pt.SetFlags(pt.Flags().WithNoRecordedValue(true))
+				return pt
+			},
+			stale: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h, err := explicitToNHCBHistogram(tt.hist())
+			if tt.wantErrMessage != "" {
+				require.ErrorContains(t, err, tt.wantErrMessage)
+				return
+			}
 			require.NoError(t, err)
 			assert.Equal(t, histogram.CustomBucketsSchema, h.Schema, "must be NHCB schema -53")
 			assert.Equal(t, convertTimeStamp(testHistTimestamp), h.Timestamp)
@@ -719,6 +731,35 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "stale marker omits count, zero count, and buckets",
+			exponentialHist: func() pmetric.ExponentialHistogramDataPoint {
+				pt := pmetric.NewExponentialHistogramDataPoint()
+				pt.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
+				pt.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
+				pt.SetCount(4)
+				pt.SetSum(10.1)
+				pt.SetScale(1)
+				pt.SetZeroCount(1)
+				pt.SetZeroThreshold(0.02)
+				pt.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+
+				pt.Positive().BucketCounts().FromRaw([]uint64{1, 1})
+				pt.Positive().SetOffset(1)
+
+				pt.Negative().BucketCounts().FromRaw([]uint64{1, 1})
+				pt.Negative().SetOffset(1)
+				return pt
+			},
+			wantNativeHist: func() prompb.Histogram {
+				return prompb.Histogram{
+					Schema:        1,
+					ZeroThreshold: 0.02,
+					Sum:           math.Float64frombits(value.StaleNaN),
+					Timestamp:     500,
+				}
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -730,6 +771,15 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 			}
 
 			require.NoError(t, err)
+			if tt.exponentialHist().Flags().NoRecordedValue() {
+				want := tt.wantNativeHist()
+				assert.Equal(t, math.Float64bits(want.Sum), math.Float64bits(got.Sum))
+				require.NoError(t, got.ToIntHistogram().Validate())
+				got.Sum = 0
+				want.Sum = 0
+				assert.Equal(t, want, got)
+				return
+			}
 			assert.Equal(t, tt.wantNativeHist(), got)
 			validateNativeHistogramCount(t, got)
 			validateNoZeroBucketOverlap(t, got.ToIntHistogram())
@@ -1004,6 +1054,13 @@ func TestFromMetricsExponentialHistogramSum(t *testing.T) {
 				require.Len(t, ts.Histograms, 1)
 				if tt.stale {
 					require.True(t, value.IsStaleNaN(ts.Histograms[0].Sum))
+					require.Zero(t, ts.Histograms[0].GetCountInt())
+					require.Nil(t, ts.Histograms[0].Count)
+					require.Nil(t, ts.Histograms[0].ZeroCount)
+					require.Empty(t, ts.Histograms[0].PositiveSpans)
+					require.Empty(t, ts.Histograms[0].PositiveDeltas)
+					require.Empty(t, ts.Histograms[0].NegativeSpans)
+					require.Empty(t, ts.Histograms[0].NegativeDeltas)
 					require.Empty(t, ts.Exemplars)
 				} else {
 					expectedSum := tt.sum

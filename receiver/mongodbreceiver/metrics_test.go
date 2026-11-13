@@ -979,3 +979,66 @@ func TestCollectReplicaSetMetricsDisabled(t *testing.T) {
 	require.NoError(t, errs.Combine())
 	require.Empty(t, metricNames(s.mb.Emit()))
 }
+
+// TestRecordFlushesPerSecond checks that the checkpoint count is read from the
+// serverStatus layout of each supported MongoDB version.
+func TestRecordFlushesPerSecond(t *testing.T) {
+	tests := []struct {
+		name  string
+		first bson.M
+		next  bson.M
+	}{
+		{
+			name: "mongodb 8.0 and later",
+			first: bson.M{"wiredTiger": bson.M{"checkpoint": bson.M{
+				"total succeed number of checkpoints": int64(10),
+			}}},
+			next: bson.M{"wiredTiger": bson.M{"checkpoint": bson.M{
+				"total succeed number of checkpoints": int64(30),
+			}}},
+		},
+		{
+			name: "mongodb 7.0 and earlier",
+			first: bson.M{"wiredTiger": bson.M{"transaction": bson.M{
+				"transaction checkpoints": int64(10),
+			}}},
+			next: bson.M{"wiredTiger": bson.M{"transaction": bson.M{
+				"transaction checkpoints": int64(30),
+			}}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.MetricsBuilderConfig.Metrics.MongodbFlushesRate.Enabled = true
+			s := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+			errs := &scrapererror.ScrapeErrors{}
+			start := time.Now()
+
+			s.recordFlushesPerSecond(pcommon.NewTimestampFromTime(start), tt.first, errs)
+			s.recordFlushesPerSecond(pcommon.NewTimestampFromTime(start.Add(10*time.Second)), tt.next, errs)
+			require.NoError(t, errs.Combine())
+
+			m := findMetric(t, s.mb.Emit(), "mongodb.flushes.rate")
+			require.Equal(t, 1, m.Gauge().DataPoints().Len())
+			// 20 checkpoints over 10 seconds.
+			require.InDelta(t, 2.0, m.Gauge().DataPoints().At(0).DoubleValue(), 1e-9)
+		})
+	}
+}
+
+// TestRecordFlushesPerSecondMissingCheckpointCount covers a server that reports
+// no checkpoint count, such as one not using WiredTiger.
+func TestRecordFlushesPerSecondMissingCheckpointCount(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.MongodbFlushesRate.Enabled = true
+	s := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+	errs := &scrapererror.ScrapeErrors{}
+
+	s.recordFlushesPerSecond(pcommon.NewTimestampFromTime(time.Now()), bson.M{"wiredTiger": bson.M{}}, errs)
+
+	var partial scrapererror.PartialScrapeError
+	require.ErrorAs(t, errs.Combine(), &partial)
+	require.Equal(t, 1, partial.Failed)
+	require.Equal(t, 0, s.mb.Emit().MetricCount())
+}

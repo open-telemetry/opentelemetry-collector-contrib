@@ -42,7 +42,7 @@ The following settings are optional:
 * `header_attribute_regex` (optional): add headers matching supplied regex as log attributes. Header attributes will be prefixed with `header.`
 * `max_request_body_size` (default comes from [confighttp module](https://github.com/open-telemetry/opentelemetry-collector/blob/7258150320ae4c3b489aa58bd2939ba358b23ae1/config/confighttp/server.go#L31)): Maximum size in bytes for request body. Requests exceeding this limit will be rejected with an error.
 * `hmac_signature` (optional): HMAC-SHA256 hex digest signature verification for webhook payloads. Compatible with [GitHub webhook signatures](https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries) and [Fingerprint webhook signatures](https://docs.fingerprint.com/docs/webhooks).
-    * `secret` (required if `hmac_signature` is set): The shared secret used to compute the HMAC-SHA256 digest.
+    * `secret` (required if `hmac_signature` is set): The shared secret used to compute the HMAC-SHA256 digest. When the collector runs in FIPS 140-3 mode (`GODEBUG=fips140=on` or `GODEBUG=fips140=only`) the secret must be at least 14 bytes, the shortest HMAC key the standard allows. Shorter secrets are rejected at startup in that mode.
     * `header` (required if `hmac_signature` is set): The HTTP header name containing the signature (e.g. `X-Hub-Signature-256` for GitHub, `fpjs-event-signature` for Fingerprint).
     * `prefix` (required if `hmac_signature` is set): The prefix before the hex digest in the header value (e.g. `sha256=` for GitHub, `v1=` for Fingerprint).
 

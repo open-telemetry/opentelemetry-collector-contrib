@@ -1,0 +1,15 @@
+change_type: breaking
+
+component: exporter/elasticsearch
+
+note: Default to at-least-once retries on transport errors, client timeouts, bulk HTTP 400, 401, 403, 404, 409, 429, 500, 502, 503, and 504, and document status 429, 500, 502, 503, and 504
+
+issues: [52551]
+
+subtext: |
+  HTTP client timeouts are always retried. This is not configurable and cannot be reverted.
+  `retry::retry_on_document_status` no longer follows `retry::retry_on_status`.
+  To keep the previous default codes, set `retry::retry_on_status` and `retry::retry_on_document_status` to `[429]`.
+  If you set `retry::retry_on_status` and did not set `retry::retry_on_document_status`, set `retry::retry_on_document_status` to that same list. For example, `retry_on_status: [429, 500]` also needs `retry_on_document_status: [429, 500]`.
+
+change_logs: [user]
