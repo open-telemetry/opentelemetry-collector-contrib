@@ -5,13 +5,16 @@ package webhookeventreceiver
 
 import (
 	"bufio"
+	"crypto/fips140"
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/multierr"
@@ -142,7 +145,7 @@ func TestValidateConfig(t *testing.T) {
 					},
 				},
 				HMACSignature: HMACSignature{
-					Secret: "mysecret",
+					Secret: "my-webhook-secret",
 					Prefix: "sha256=",
 				},
 			},
@@ -158,7 +161,7 @@ func TestValidateConfig(t *testing.T) {
 					},
 				},
 				HMACSignature: HMACSignature{
-					Secret: "mysecret",
+					Secret: "my-webhook-secret",
 					Header: "X-Hub-Signature-256",
 				},
 			},
@@ -174,7 +177,7 @@ func TestValidateConfig(t *testing.T) {
 					},
 				},
 				HMACSignature: HMACSignature{
-					Secret: "mysecret",
+					Secret: "my-webhook-secret",
 					Header: "X-Hub-Signature-256",
 					Prefix: "sha256=",
 				},
@@ -367,4 +370,54 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, confmap.Validate(conf))
 
 	require.Equal(t, expect, conf)
+}
+
+func TestValidateHMACSecretLength(t *testing.T) {
+	tests := []struct {
+		desc        string
+		secret      string
+		fipsEnabled bool
+		expect      error
+	}{
+		{desc: "short secret outside FIPS mode", secret: "mysecret", fipsEnabled: false},
+		{desc: "short secret in FIPS mode", secret: "mysecret", fipsEnabled: true, expect: errHMACSecretTooShortFIPS},
+		{desc: "13 bytes in FIPS mode", secret: "abcdefghijklm", fipsEnabled: true, expect: errHMACSecretTooShortFIPS},
+		{desc: "14 bytes in FIPS mode", secret: "abcdefghijklmn", fipsEnabled: true},
+		{desc: "long secret in FIPS mode", secret: "my-webhook-secret", fipsEnabled: true},
+		{desc: "empty secret is reported by the required check, not here", secret: "", fipsEnabled: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			err := validateHMACSecretLength(configopaque.String(tt.secret), tt.fipsEnabled)
+			if tt.expect != nil {
+				assert.ErrorIs(t, err, tt.expect)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateHMACSecretLengthMatchesRuntime(t *testing.T) {
+	cfg := Config{
+		ServerConfig: confighttp.ServerConfig{
+			NetAddr: confignet.AddrConfig{
+				Transport: confignet.TransportTypeTCP,
+				Endpoint:  "localhost:0",
+			},
+		},
+		Path:       defaultPath,
+		HealthPath: defaultHealthPath,
+		HMACSignature: HMACSignature{
+			Secret: "mysecret",
+			Header: "X-Hub-Signature-256",
+			Prefix: "sha256=",
+		},
+	}
+	err := cfg.Validate()
+	if fips140.Enabled() {
+		assert.ErrorIs(t, err, errHMACSecretTooShortFIPS)
+	} else {
+		assert.NoError(t, err)
+	}
 }
