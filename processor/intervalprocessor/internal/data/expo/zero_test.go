@@ -16,6 +16,10 @@ import (
 type hist = expotest.Histogram
 
 func TestWidenZero(t *testing.T) {
+	// upper boundary of (8,16] as computed by Bounds. it rounds to
+	// 15.999999999999998, which Idx places in the next bucket
+	_, upper3 := expo.Scale(0).Bounds(3)
+
 	cases := []struct {
 		name string
 		hist hist
@@ -42,6 +46,14 @@ func TestWidenZero(t *testing.T) {
 		// zt=2 is higher, but no change expected as no buckets in this range are populated
 		hist: hist{PosNeg: bins{ø, ø, ø, ø, ø, ø, 1, 1}.Into(), Zt: 1.0, Zc: 2},
 		want: hist{PosNeg: bins{ø, ø, ø, ø, ø, ø, 1, 1}.Into(), Zt: 2.0, Zc: 2},
+	}, {
+		// zt=upper3 is upper boundary of bucket 3, but Idx says bucket 4. keep buckets [4:n]
+		hist: hist{PosNeg: bins{ø, ø, 1, 2, 3, 4, 5, 6}.Into(), Zt: 0, Zc: 2},
+		want: hist{PosNeg: bins{ø, ø, ø, ø, ø, ø, ø, 6}.Into(), Zt: upper3, Zc: 2 + 2*(1+2+3+4+5)},
+	}, {
+		// zt=16 is upper boundary of bucket 3. keep zt=16, although Bounds rounds it down
+		hist: hist{PosNeg: bins{ø, ø, 1, 2, 3, 4, 5, 6}.Into(), Zt: 0, Zc: 2},
+		want: hist{PosNeg: bins{ø, ø, ø, ø, ø, ø, ø, 6}.Into(), Zt: 16, Zc: 2 + 2*(1+2+3+4+5)},
 	}}
 
 	for _, cs := range cases {
