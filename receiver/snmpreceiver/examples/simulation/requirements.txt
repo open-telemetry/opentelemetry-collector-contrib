@@ -1,0 +1,4 @@
+# Dependencies for the local SNMP simulator, not the Collector.
+snmpsim==1.2.2
+pysnmp==7.1.26
+pyasn1==0.6.4

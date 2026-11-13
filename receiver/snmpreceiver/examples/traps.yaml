@@ -1,0 +1,23 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+receivers:
+  snmp:
+    traps:
+      listen_address: 127.0.0.1:1620
+      versions: [v1, v2c]
+      communities: [public]
+      include_community: false
+      queue_size: 1024
+      attributes:
+        monitoring.source: snmp-notifications
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    logs:
+      receivers: [snmp]
+      exporters: [debug]

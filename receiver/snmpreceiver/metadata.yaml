@@ -4,19 +4,49 @@ type: snmp
 description: |
   This receiver fetches stats from an SNMP enabled host using a [golang
   snmp client](https://github.com/gosnmp/gosnmp). Metrics are collected
-  based upon different configurations in the config file.
+  based upon different configurations in the config file. Optionally,
+  SNMP notifications are received over UDP and emitted as logs.
 
 status:
   class: receiver
   stability:
     alpha: [metrics]
+    development: [logs]
   distributions: [contrib]
   codeowners:
     active: [ajimenez1503, svencowart]
     emeritus: [StefanKurek, tamir-michaeli]
 
+telemetry:
+  metrics:
+    snmp_traps_engine_cache_entries:
+      enabled: true
+      stability: development
+      description: Number of authenticated SNMPv3 engines currently tracked in the notification engine cache.
+      unit: "{engine}"
+      gauge:
+        value_type: int
+    snmp_traps_engine_cache_expirations:
+      enabled: true
+      stability: development
+      description: Number of authenticated SNMPv3 engine cache entries removed after the configured idle timeout.
+      unit: "{engine}"
+      sum:
+        value_type: int
+        monotonic: true
+    snmp_traps_engine_limit_rejections:
+      enabled: true
+      stability: development
+      description: Number of SNMP notifications rejected because the engine cache reached capacity.
+      unit: "{notification}"
+      sum:
+        value_type: int
+        monotonic: true
+
 tests:
   config:
+    traps:
+      listen_address: 127.0.0.1:0
     metrics:
       m1:
         unit: "1"
