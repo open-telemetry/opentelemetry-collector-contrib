@@ -88,6 +88,8 @@ const (
 
 const maxBufferedCustomMessages = 10
 
+const configApplyInterruptedMessage = "Remote configuration application was interrupted by a Supervisor restart"
+
 type configState struct {
 	// Supervisor-assembled config to be given to the Collector.
 	mergedConfig string
@@ -386,6 +388,16 @@ func (s *Supervisor) Start(ctx context.Context) error {
 	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFilePath(), s.config.Agent.InstanceID, s.telemetrySettings.Logger)
 	if err != nil {
 		return err
+	}
+	// Complete the interrupted request before callbacks can replace it with a new config.
+	// The persisted failure is sent on connect and participates in normal startup rollback.
+	lastRemoteConfigStatus := s.persistentState.GetLastRemoteConfigStatus()
+	if s.config.Capabilities.AcceptsRemoteConfig && lastRemoteConfigStatus.GetStatus() == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING {
+		lastRemoteConfigStatus.Status = protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED
+		lastRemoteConfigStatus.ErrorMessage = configApplyInterruptedMessage
+		if saveErr := s.persistentState.SetLastRemoteConfigStatus(lastRemoteConfigStatus); saveErr != nil {
+			s.telemetrySettings.Logger.Error("Could not save last remote config status", zap.Error(saveErr))
+		}
 	}
 
 	if s.config.Capabilities.AcceptsPackages {
@@ -1306,6 +1318,11 @@ func (s *Supervisor) composeExtraTelemetryConfig() []byte {
 	for _, attr := range ad.NonIdentifyingAttributes {
 		resourceAttrs[attr.Key] = attr.Value.GetStringValue()
 	}
+	if s.config.Agent.Description.IncludeSupervisorInstanceID {
+		if instanceID, ok := s.supervisorServiceInstanceID(); ok {
+			resourceAttrs["supervisor.service.instance.id"] = instanceID
+		}
+	}
 	attrNames := make([]string, 0, len(resourceAttrs))
 	for name := range resourceAttrs {
 		attrNames = append(attrNames, name)
@@ -1335,17 +1352,34 @@ func (s *Supervisor) composeExtraTelemetryConfig() []byte {
 	return cfg.Bytes()
 }
 
+func (s *Supervisor) supervisorServiceInstanceID() (string, bool) {
+	instanceID, ok := s.telemetrySettings.Resource.Attributes().Get("service.instance.id")
+	if !ok {
+		return "", false
+	}
+	return instanceID.AsString(), true
+}
+
 func (s *Supervisor) composeRequiredResourceAttributesConfig() []byte {
+	attributes := []map[string]any{
+		{
+			"name":  "service.instance.id",
+			"value": s.persistentState.InstanceID.String(),
+		},
+	}
+	if s.config.Agent.Description.IncludeSupervisorInstanceID {
+		if instanceID, ok := s.supervisorServiceInstanceID(); ok {
+			attributes = append(attributes, map[string]any{
+				"name":  "supervisor.service.instance.id",
+				"value": instanceID,
+			})
+		}
+	}
 	cfg, err := gyaml.Marshal(map[string]any{
 		"service": map[string]any{
 			"telemetry": map[string]any{
 				"resource": map[string]any{
-					"attributes": []map[string]any{
-						{
-							"name":  "service.instance.id",
-							"value": s.persistentState.InstanceID.String(),
-						},
-					},
+					"attributes": attributes,
 				},
 			},
 		},

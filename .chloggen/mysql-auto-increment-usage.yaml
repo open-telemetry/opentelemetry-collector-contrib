@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/mysql
+
+note: Add `mysql.table.auto_increment.limit`, `mysql.table.auto_increment.usage`, and `mysql.table.auto_increment.utilization` metrics to track how close a table's auto-increment column is to its integer range limit.
+
+issues: [52287]
+
+subtext:
+
+change_logs: [user]

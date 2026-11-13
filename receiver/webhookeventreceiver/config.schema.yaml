@@ -10,7 +10,7 @@ $defs:
         description: Prefix is the prefix before the hex digest in the header value (e.g. "sha256=" or "v1=").
         type: string
       secret:
-        description: Secret is the shared secret used to compute the HMAC.
+        description: Secret is the shared secret used to compute the HMAC. It must be at least 14 bytes when the collector runs in FIPS 140-3 mode.
         $ref: go.opentelemetry.io/collector/config/configopaque.string
   required_header:
     type: object

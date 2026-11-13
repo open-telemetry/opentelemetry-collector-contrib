@@ -16,8 +16,9 @@
 
 AWS ECS Container Metrics Receiver (`awsecscontainermetrics`) reads task metadata and [docker stats](https://docs.docker.com/engine/api/v1.30/#operation/ContainerStats) from [Amazon ECS Task Metadata Endpoint](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint.html), and generates resource usage metrics (such as CPU, memory, network, and disk) from them. To get the full list of metrics, see the [Available Metrics](#available-metrics) section below.
 
-This receiver works only for [ECS Task Metadata Endpoint V4](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint-v4.html). Amazon ECS tasks on Fargate that use platform version 1.4.0 or later and Amazon ECS tasks on Amazon EC2 that are running at least version 1.39.0 of the Amazon ECS container agent can utilize this receiver. For more information, see [Amazon ECS Container Agent Versions](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-agent-versions.html).
+This receiver works only for [ECS Task Metadata Endpoint V4](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint-v4.html). Amazon ECS tasks on Fargate that use platform version 1.4.0 or later and Amazon ECS tasks on Amazon EC2 that are running at least version 1.39.0 of the Amazon ECS container agent can use this receiver. For more information, see [Amazon ECS Container Agent Versions](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-agent-versions.html).
 
+The receiver reports metrics only for the task that the Collector runs in. Run the Collector as a sidecar container in each task that you want to monitor. For setup instructions, see [Amazon ECS setup](https://aws-otel.github.io/docs/setup/ecs) in the AWS Distro for OpenTelemetry documentation.
 
 ## Configuration
 
@@ -31,74 +32,74 @@ receivers:
 
 #### collection_interval:
 
-This receiver collects task metadata and container stats at a fixed interval and emits metrics to the next consumer of OpenTelemetry pipeline. `collection_interval` will determine the frequency at which metrics are collected and emitted by this receiver.
+This receiver collects task metadata and container stats at a fixed interval and emits metrics to the next consumer of the OpenTelemetry pipeline. `collection_interval` determines how often metrics are collected and emitted by this receiver.
 
 default: `20s`
 
-
 ## Enabling the AWS ECS Container Metrics Receiver
 
-To enable the awsecscontainermetrics receiver, add the name under receiver section in the OpenTelemetry config file. By default, the receiver scrapes the ECS task metadata endpoint every 20s and collects all metrics (For the full list of metrics, see [Available Metrics](#available-metrics)).
+To enable the receiver, add `awsecscontainermetrics` to the `receivers` section of the Collector configuration and to a metrics pipeline. By default, the receiver scrapes the ECS task metadata endpoint every 20s and collects all metrics (for the full list, see [Available Metrics](#available-metrics)).
 
-The following configuration collects AWS ECS resource usage metrics by using `awsecscontainermetrics` receiver and sends them to CloudWatch using `awsemf` exporter. Check out [SETUP](https://aws-otel.github.io/docs/setup/ecs) section for configuring AWS Distro for OpenTelemetry Collector in Amazon Elastic Container Service.
+The following configuration collects ECS resource usage metrics and sends them to the [Amazon CloudWatch OTLP endpoint](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-OTLPEndpoint.html) by using the `otlp_http` exporter with SigV4 authentication. The `resource_detection` processor adds `aws.ecs.*`, `cloud.*`, and, on Amazon EC2, `host.*` resource attributes. The task IAM role needs permission to send metrics to CloudWatch, for example through the `CloudWatchAgentServerPolicy` managed policy.
 
 ```yaml
+extensions:
+  sigv4auth/metrics:
+    region: ${env:AWS_REGION}
+    service: monitoring
+
 receivers:
   awsecscontainermetrics:
+    collection_interval: 60s
+
+processors:
+  resource_detection:
+    detectors: [env, ecs, ec2]
+  batch/metrics:
+    timeout: 60s
+
 exporters:
-  awsemf:
-      namespace: 'ECS/ContainerMetrics/OpenTelemetry'
-      log_group_name: '/ecs/containermetrics/opentelemetry'
+  otlp_http/metrics:
+    compression: gzip
+    metrics_endpoint: https://monitoring.${env:AWS_REGION}.amazonaws.com/v1/metrics
+    auth:
+      authenticator: sigv4auth/metrics
 
 service:
+  extensions: [sigv4auth/metrics]
   pipelines:
-      metrics:
-          receivers: [awsecscontainermetrics]
-          exporters: [awsemf]
+    metrics:
+      receivers: [awsecscontainermetrics]
+      processors: [resource_detection, batch/metrics]
+      exporters: [otlp_http/metrics]
 ```
+
+On Fargate, and on Amazon EC2 with ECS container agent 1.104.0 or later, Amazon ECS sets `AWS_REGION` in the container. On older agents, set `AWS_REGION` in the task definition.
+
+You can send the metrics to any backend by replacing the exporter. To also receive metrics from your application, add the `otlp` receiver to the same pipeline.
 
 ## Set Metrics Collection Interval
 
-Customers can configure `collection_interval` under `awsecscontainermetrics` receiver to scrape and gather metrics at a specific interval. The following example configuration will collect metrics every 40 seconds.
+Set `collection_interval` to collect metrics at a specific interval. The following example collects metrics every 40 seconds.
 
 ```yaml
 receivers:
   awsecscontainermetrics:
-      collection_interval: 40s
-exporters:
-  awsemf:
-      namespace: 'ECS/ContainerMetrics/OpenTelemetry'
-      log_group_name: '/ecs/containermetrics/opentelemetry'
-
-service:
-  pipelines:
-      metrics:
-          receivers: [awsecscontainermetrics]
-          exporters: [awsemf]
+    collection_interval: 40s
 ```
 
 ## Collect specific metrics and update metric names
 
-The previous configurations collect all the metrics and sends them to Amazon CloudWatch using default names. Customers can use `filter` and `metricstransform` processors to send specific metrics and rename them respectively.
+By default, the receiver emits all metrics with their default names. Use the `filter` processor to drop the metrics that you don't need and the `metrics_transform` processor to rename metrics.
 
-The following configuration example collects only the `ecs.task.memory.utilized` metric and renames it to `MemoryUtilized` before sending to CloudWatch.
+The following example keeps only the `ecs.task.memory.utilized` metric and renames it to `MemoryUtilized`. The `filter` processor drops every metric that matches a condition, so the condition drops every metric except the one to keep. Add the processors to the metrics pipeline from the previous example.
 
 ```yaml
-receivers:
-  awsecscontainermetrics:
-exporters:
-  awsemf:
-      namespace: 'ECS/ContainerMetrics/OpenTelemetry'
-      log_group_name: '/ecs/containermetrics/opentelemetry'
 processors:
-  filter:
-    metrics:
-      include:
-        match_type: strict
-        metric_names:
-          - ecs.task.memory.utilized
-
-  metricstransform:
+  filter/ecs:
+    metric_conditions:
+      - metric.name != "ecs.task.memory.utilized"
+  metrics_transform/ecs:
     transforms:
       - include: ecs.task.memory.utilized
         action: update
@@ -106,14 +107,17 @@ processors:
 
 service:
   pipelines:
-      metrics:
-          receivers: [awsecscontainermetrics]
-          processors: [filter, metricstransform]
-          exporters: [awsemf]
+    metrics:
+      receivers: [awsecscontainermetrics]
+      processors: [resource_detection, filter/ecs, metrics_transform/ecs, batch/metrics]
+      exporters: [otlp_http/metrics]
 ```
 
 ## Available Metrics
-Following is the full list of metrics emitted by this receiver.
+The following table lists the metrics that this receiver emits.
+
+> [!NOTE]
+> This receiver reports values in CloudWatch-style units, such as `Bytes`, `MiB`, and `Count`, rather than [UCUM](https://ucum.org/ucum) units.
 
 Task Level Metrics | Container Level Metrics | Unit 
 ------------ | ------------- | --------------------
@@ -148,7 +152,7 @@ ecs.task.ephemeral_storage.reserved | | MiB
 
 
 ## Resource Attributes and Metrics Labels
-Metrics emitted by this receiver comes with a set of resource attributes. These resource attributes can be converted to metrics labels using appropriate processors/exporters (See `Full Configuration Examples` section below). Finally, these metrics labels can be set as metrics dimensions while exporting to desired destinations. Check the following table to see available resource attributes for Task and Container level metrics. Container level metrics have three additional attributes than task level metrics.
+Metrics emitted by this receiver include a set of resource attributes. Exporters that preserve resource attributes, such as the OTLP exporter, keep them with each metric. The following table lists the resource attributes for task-level and container-level metrics. Container-level metrics have additional attributes.
 
 Resource Attributes for Task Level Metrics | Resource Attributes for Container Level Metrics
 -------------------- | -----------------------------
@@ -172,205 +176,6 @@ aws.ecs.launch_type | aws.ecs.launch_type
 &nbsp; | container.image.tag
 &nbsp; | aws.ecs.container.image.id
 &nbsp; | aws.ecs.container.exit_code
-
-## Full Configuration Examples
-This receiver emits 54 unique metrics. Customer may not want to send all of them to destinations. Following sections will show full configuration files for filtering and transforming existing metrics with different processors/exporters. 
-
-### 1. Full configuration for task level metrics
-The following example shows a full configuration to get most useful task level metrics. It uses `awsecscontainermetrics` receiver to collect all the resource usage metrics from ECS task metadata endpoint. It applies `filter` processor to select only 8 task-level metrics and update metric names using `metricstransform` processor. It also renames the resource attributes using `resource` processor which will be used as metric dimensions in the Amazon CloudWatch `awsemf` exporter. Finally, it sends the metrics to CloudWatch using `awsemf` exporter under the `/aws/ecs/containerinsights/{ClusterName}/performance` namespace where the `{ClusterName}` placeholder will be replaced with actual cluster name. Check the [AWS EMF Exporter](https://aws-otel.github.io/docs/getting-started/cloudwatch-metrics) documentation to see and explore the metrics in Amazon CloudWatch.
-
-**Note:** AWS OpenTelemetry Collector has a [default configuration](https://github.com/aws-observability/aws-otel-collector/blob/main/config/ecs/container-insights/otel-task-metrics-config.yaml) backed into it for Container Insights experience which is similar to this one. Follow our [setup](https://aws-otel.github.io/docs/setup/ecs) doc to check how to use that default config.
-
-```yaml
-receivers:
-  awsecscontainermetrics: # collect 54 metrics
-
-processors:
-  filter: # filter metrics
-    metrics:
-      include:
-        match_type: strict
-        metric_names: # select only 8 task level metrics out of 52
-          - ecs.task.memory.reserved
-          - ecs.task.memory.utilized
-          - ecs.task.cpu.reserved
-          - ecs.task.cpu.utilized
-          - ecs.task.network.rate.rx
-          - ecs.task.network.rate.tx
-          - ecs.task.storage.read_bytes
-          - ecs.task.storage.write_bytes
-  metricstransform: # update metric names
-    transforms:
-      - include: ecs.task.memory.utilized
-        action: update
-        new_name: MemoryUtilized
-      - include: ecs.task.memory.reserved
-        action: update
-        new_name: MemoryReserved
-      - include: ecs.task.cpu.utilized
-        action: update
-        new_name: CpuUtilized
-      - include: ecs.task.cpu.reserved
-        action: update
-        new_name: CpuReserved
-      - include: ecs.task.network.rate.rx
-        action: update
-        new_name: NetworkRxBytes
-      - include: ecs.task.network.rate.tx
-        action: update
-        new_name: NetworkTxBytes
-      - include: ecs.task.storage.read_bytes
-        action: update
-        new_name: StorageReadBytes
-      - include: ecs.task.storage.write_bytes
-        action: update
-        new_name: StorageWriteBytes
-  resource:
-    attributes: # rename resource attributes which will be used as dimensions
-      - key: ClusterName
-        from_attribute: aws.ecs.cluster.name
-        action: insert
-      - key: aws.ecs.cluster.name
-        action: delete
-      - key: ServiceName
-        from_attribute: aws.ecs.service.name
-        action: insert
-      - key: aws.ecs.service.name
-        action: delete
-      - key: TaskId
-        from_attribute: aws.ecs.task.id
-        action: insert
-      - key: aws.ecs.task.id
-        action: delete
-      - key: TaskDefinitionFamily
-        from_attribute: aws.ecs.task.family
-        action: insert
-      - key: aws.ecs.task.family
-        action: delete
-exporters:
-  awsemf:
-    namespace: ECS/ContainerInsights
-    log_group_name: '/aws/ecs/containerinsights/{ClusterName}/performance'
-    log_stream_name: '{TaskId}'  # TaskId placeholder will be replaced with actual value
-    resource_to_telemetry_conversion:
-      enabled: true
-    dimension_rollup_option: NoDimensionRollup
-    metric_declarations:
-      dimensions: [ [ ClusterName ], [ ClusterName, TaskDefinitionFamily ] ]
-      metric_name_selectors: [ . ]
-service:
-  pipelines:
-    metrics:
-      receivers: [awsecscontainermetrics ]
-      processors: [filter, metricstransform, resource]
-      exporters: [ awsemf ]
-```
-
-
-### 2. Full configuration for task- and container-level metrics
-
-The following example shows a full configuration to get most useful task- and container-level metrics. It uses `awsecscontainermetrics` receiver to collect all the resource usage metrics from ECS task metadata endpoint. It applies `filter` processor to select only 8 task- and container-level metrics and update metric names using `metricstransform` processor. It also renames the resource attributes using `resource` processor which will be used as metric dimensions in the Amazon CloudWatch `awsemf` exporter. Finally, it sends the metrics to CloudWatch using `awsemf` exporter under the /`aws/ecs/containerinsights/{ClusterName}/performance` namespace where the `{ClusterName}` placeholder will be replaced with actual cluster name. Check the [AWS EMF Exporter](https://aws-otel.github.io/docs/getting-started/cloudwatch-metrics) documentation to see and explore the metrics in Amazon CloudWatch.
-
-```yaml
-receivers:
-    awsecscontainermetrics:
-
-processors:
-    filter:
-        metrics:
-            include:
-                match_type: regexp
-                metric_names:
-                    - .*memory.reserved
-                    - .*memory.utilized
-                    - .*cpu.reserved
-                    - .*cpu.utilized
-                    - .*network.rate.rx
-                    - .*network.rate.tx
-                    - .*storage.read_bytes
-                    - .*storage.write_bytes
-    metricstransform:
-        transforms:
-            - include: ecs.task.memory.utilized
-              action: update
-              new_name: MemoryUtilized
-            - include: ecs.task.memory.reserved
-              action: update
-              new_name: MemoryReserved
-            - include: ecs.task.cpu.utilized
-              action: update
-              new_name: CpuUtilized
-            - include: ecs.task.cpu.reserved
-              action: update
-              new_name: CpuReserved
-            - include: ecs.task.network.rate.rx
-              action: update
-              new_name: NetworkRxBytes
-            - include: ecs.task.network.rate.tx
-              action: update
-              new_name: NetworkTxBytes
-            - include: ecs.task.storage.read_bytes
-              action: update
-              new_name: StorageReadBytes
-            - include: ecs.task.storage.write_bytes
-              action: update
-              new_name: StorageWriteBytes
-    resource:
-        attributes:
-            - key: ClusterName
-              from_attribute: aws.ecs.cluster.name
-              action: insert
-            - key: aws.ecs.cluster.name
-              action: delete
-            - key: ServiceName
-              from_attribute: aws.ecs.service.name
-              action: insert
-            - key: aws.ecs.service.name
-              action: delete
-            - key: TaskId
-              from_attribute: aws.ecs.task.id
-              action: insert
-            - key: aws.ecs.task.id
-              action: delete
-            - key: TaskDefinitionFamily
-              from_attribute: aws.ecs.task.family
-              action: insert
-            - key: aws.ecs.task.family
-              action: delete
-            - key: ContainerName
-              from_attribute: container.name
-              action: insert
-            - key: container.name
-              action: delete                  
-exporters:
-    awsemf:
-        namespace: ECS/ContainerInsights
-        log_group_name:  '/aws/ecs/containerinsights/{ClusterName}/performance'
-        log_stream_name: '{TaskId}'
-        resource_to_telemetry_conversion:
-            enabled: true
-        dimension_rollup_option: NoDimensionRollup
-        metric_declarations:
-            - dimensions: [[ClusterName], [ClusterName, TaskDefinitionFamily]]
-              metric_name_selectors: 
-                - MemoryUtilized 
-                - MemoryReserved 
-                - CpuUtilized
-                - CpuReserved
-                - NetworkRxBytes
-                - NetworkTxBytes
-                - StorageReadBytes
-                - StorageWriteBytes
-            - dimensions: [[ClusterName], [ClusterName, TaskDefinitionFamily, ContainerName]]
-              metric_name_selectors: [container.*]
-     
-service:
-    pipelines:
-        metrics:
-            receivers: [awsecscontainermetrics]
-            processors: [filter, metricstransform, resource]
-            exporters: [awsemf]
-```
 
 ## Reference
 1. [Setup OpenTelemetry Collector on Amazon ECS](https://aws-otel.github.io/docs/setup/ecs)
