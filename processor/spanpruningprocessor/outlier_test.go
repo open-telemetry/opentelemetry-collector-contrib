@@ -835,7 +835,22 @@ func TestLogTransform_ZeroDurations(t *testing.T) {
 	t.Run("mostly instantaneous spans do not collapse MAD", func(t *testing.T) {
 		// With zeros in the sample, the median and MAD would both be zero and every
 		// span that took time would be flagged. Without them the median is 20ms,
-		// the MAD is ln(2), and the threshold inverts to about 436ms.
+		// the MAD is ln(2), and the threshold inverts to about 436ms. The four
+		// measured spans sit exactly at the minimum group size.
+		durations := []time.Duration{
+			0, 0, 0, 0, 0, 5 * ms, 20 * ms, 20 * ms, 5000 * ms,
+		}
+
+		outlierIndices, normalIndices, median := runDetector(t, durations, OutlierMethodMAD, 3.0, 0.1, DurationTransformLog)
+
+		assert.Equal(t, time.Duration(0), median)
+		assert.Equal(t, []int{8}, outlierIndices)
+		assert.Len(t, normalIndices, 8)
+	})
+
+	t.Run("too few measured spans flag nothing", func(t *testing.T) {
+		// Seven spans meet the minimum group size of four, but only three took
+		// time. MAD would flag the 5000ms span from those three alone.
 		durations := []time.Duration{
 			0, 0, 0, 0, 10 * ms, 20 * ms, 5000 * ms,
 		}
@@ -843,8 +858,8 @@ func TestLogTransform_ZeroDurations(t *testing.T) {
 		outlierIndices, normalIndices, median := runDetector(t, durations, OutlierMethodMAD, 3.0, 0.1, DurationTransformLog)
 
 		assert.Equal(t, time.Duration(0), median)
-		assert.Equal(t, []int{6}, outlierIndices)
-		assert.Len(t, normalIndices, 6)
+		assert.Empty(t, outlierIndices)
+		assert.Len(t, normalIndices, 7)
 	})
 
 	t.Run("minimum threshold follows the measured spans", func(t *testing.T) {

@@ -383,7 +383,7 @@ of magnitude. Measuring spread in absolute time lets the tail inflate the
 threshold meant to exclude it, so a large share of the upper tail gets flagged.
 
 Zero-duration spans have no logarithm, so `log` leaves them out of the spread
-and classifies them as normal.
+and classifies them as normal. They also do not count toward `min_group_size`.
 
 #### How It Works
 

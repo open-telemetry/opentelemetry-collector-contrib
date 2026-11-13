@@ -85,12 +85,17 @@ func analyzeOutliers(nodes []*spanNode, cfg OutlierAnalysisConfig) *outlierAnaly
 
 	var outlierIndices, normalIndices []int
 
-	if len(values) > 0 {
+	// Zero durations left out above do not count toward the minimum group size.
+	if len(values) >= cfg.MinGroupSize {
 		switch method {
 		case OutlierMethodMAD:
 			outlierIndices, normalIndices = detectOutliersMAD(values, cfg.MADMultiplier, minThreshold)
 		default: // IQR
 			outlierIndices, normalIndices = detectOutliersIQR(values, cfg.IQRMultiplier, minThreshold)
+		}
+	} else {
+		for _, v := range values {
+			normalIndices = append(normalIndices, v.index)
 		}
 	}
 	normalIndices = append(normalIndices, zeroIndices...)
