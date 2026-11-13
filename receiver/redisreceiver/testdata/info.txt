@@ -138,7 +138,7 @@ used_cpu_sys_main_thread:180.0
 used_cpu_user_main_thread:42.39
 
 # Cluster
-cluster_enabled:0
+cluster_enabled:1
 
 # Keyspace
 db0:keys=1,expires=2,avg_ttl=3
