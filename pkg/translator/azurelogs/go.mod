@@ -22,8 +22,8 @@ require (
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.165.1-0.20261112090518-6cdf06bb71bc // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.165.1-0.20261112090518-6cdf06bb71bc // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.165.1-0.20261112225459-4888f0b280f9 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.165.1-0.20261112225459-4888f0b280f9 // indirect
 	go.opentelemetry.io/otel/metric v1.47.0 // indirect
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
