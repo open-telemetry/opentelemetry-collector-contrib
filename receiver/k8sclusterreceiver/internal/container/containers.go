@@ -214,11 +214,23 @@ func GetMetadata(pod *corev1.Pod, cs corev1.ContainerStatus, logger *zap.Logger)
 }
 
 // specImageForContainer returns the image string from the pod spec for
-// the container with the given name.
+// the container with the given name. Regular, init (including sidecar) and
+// ephemeral containers are checked. Container names are unique across all
+// of them within a pod.
 func specImageForContainer(pod *corev1.Pod, containerName string) string {
 	for i := range pod.Spec.Containers {
 		if pod.Spec.Containers[i].Name == containerName {
 			return pod.Spec.Containers[i].Image
+		}
+	}
+	for i := range pod.Spec.InitContainers {
+		if pod.Spec.InitContainers[i].Name == containerName {
+			return pod.Spec.InitContainers[i].Image
+		}
+	}
+	for i := range pod.Spec.EphemeralContainers {
+		if pod.Spec.EphemeralContainers[i].Name == containerName {
+			return pod.Spec.EphemeralContainers[i].Image
 		}
 	}
 	return ""

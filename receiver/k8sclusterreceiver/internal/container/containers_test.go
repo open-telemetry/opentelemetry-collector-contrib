@@ -365,11 +365,15 @@ func TestSpecImageForContainer(t *testing.T) {
 			InitContainers: []corev1.Container{
 				{Name: "init", Image: "myregistry.com/init:latest"},
 			},
+			EphemeralContainers: []corev1.EphemeralContainer{
+				{EphemeralContainerCommon: corev1.EphemeralContainerCommon{Name: "debug", Image: "myregistry.com/debug:v3"}},
+			},
 		},
 	}
 
 	assert.Equal(t, "myregistry.com/app:v1", specImageForContainer(pod, "app"))
 	assert.Equal(t, "myregistry.com/sidecar:v2", specImageForContainer(pod, "sidecar"))
-	assert.Empty(t, specImageForContainer(pod, "init"))
+	assert.Equal(t, "myregistry.com/init:latest", specImageForContainer(pod, "init"))
+	assert.Equal(t, "myregistry.com/debug:v3", specImageForContainer(pod, "debug"))
 	assert.Empty(t, specImageForContainer(pod, "nonexistent"))
 }
