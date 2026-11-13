@@ -323,6 +323,13 @@ func (o *Observer) handleWatchEvent(eventType apiWatch.EventType, obj any, names
 	}
 	// Unwrap tombstone objects produced when a delete is missed and detected on re-list.
 	if tombstone, ok := obj.(cache.DeletedFinalStateUnknown); ok {
+		if tombstone.Obj == nil {
+			o.logger.Warn("dropping delete event: tombstone has no final object state",
+				zap.String("key", tombstone.Key),
+				zap.String("namespace", namespace),
+				zap.String("gvr", o.base.Gvr.String()))
+			return
+		}
 		obj = tombstone.Obj
 	}
 	u, ok := obj.(*unstructured.Unstructured)
