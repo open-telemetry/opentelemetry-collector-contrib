@@ -580,10 +580,19 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverTransactionDelayDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordSqlserverTransactionLongestRunningTimeDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordSqlserverTransactionMirrorWriteRateDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSqlserverTransactionRateDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverTransactionVersionCleanupRateDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverTransactionVersionGenerationRateDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSqlserverTransactionWriteRateDataPoint(ts, 1)
@@ -3017,6 +3026,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.transaction.longest_running_time":
+					assert.False(t, validatedMetrics["sqlserver.transaction.longest_running_time"], "Found a duplicate in the metrics slice: sqlserver.transaction.longest_running_time")
+					validatedMetrics["sqlserver.transaction.longest_running_time"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Age of the longest currently-open transaction on the server.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "sqlserver.transaction.mirror_write.rate":
 					assert.False(t, validatedMetrics["sqlserver.transaction.mirror_write.rate"], "Found a duplicate in the metrics slice: sqlserver.transaction.mirror_write.rate")
 					validatedMetrics["sqlserver.transaction.mirror_write.rate"] = true
@@ -3036,6 +3057,30 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of transactions started for the database (not including XTP-only transactions).", mi.Description())
 					assert.Equal(t, "{transactions}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.transaction.version_cleanup.rate":
+					assert.False(t, validatedMetrics["sqlserver.transaction.version_cleanup.rate"], "Found a duplicate in the metrics slice: sqlserver.transaction.version_cleanup.rate")
+					validatedMetrics["sqlserver.transaction.version_cleanup.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Rate at which row versions are removed from the snapshot isolation version store in tempdb.", mi.Description())
+					assert.Equal(t, "kBy/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.transaction.version_generation.rate":
+					assert.False(t, validatedMetrics["sqlserver.transaction.version_generation.rate"], "Found a duplicate in the metrics slice: sqlserver.transaction.version_generation.rate")
+					validatedMetrics["sqlserver.transaction.version_generation.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Rate at which new row versions are added to the snapshot isolation version store in tempdb.", mi.Description())
+					assert.Equal(t, "kBy/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

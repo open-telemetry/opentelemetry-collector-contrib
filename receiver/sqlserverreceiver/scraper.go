@@ -269,6 +269,8 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 		err = s.recordTempDBContentionMetrics(ctx)
 	case getSQLServerTempDBFileQuery():
 		err = s.recordTempDBFileMetrics(ctx)
+	case getSQLServerLongestRunningTransactionQuery():
+		err = s.recordLongestRunningTransactionMetrics(ctx)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
 	}
@@ -795,7 +797,9 @@ func isPerformanceCounterRate(counterType, counterName string) bool {
 		"Tasks Aborted/sec",
 		"Tasks Started/sec",
 		"Transactions/sec",
-		"Unsafe Auto-Params/sec":
+		"Unsafe Auto-Params/sec",
+		"Version Cleanup rate (KB/s)",
+		"Version Generation rate (KB/s)":
 		return true
 	default:
 		return false
@@ -980,6 +984,8 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const userConnCount = "User Connections"
 	const usedMemory = "Used memory (KB)"
 	const versionStoreSize = "Version Store Size (KB)"
+	const versionCleanupRate = "Version Cleanup rate (KB/s)"
+	const versionGenerationRate = "Version Generation rate (KB/s)"
 	const sqlCacheMemory = "SQL Cache Memory (KB)"
 	const optimizerMemory = "Optimizer Memory (KB)"
 	const connectionMemory = "Connection Memory (KB)"
@@ -1899,6 +1905,22 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverUserConnectionCountDataPoint(now, val.(int64))
+			}
+		case versionCleanupRate:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, versionCleanupRate)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverTransactionVersionCleanupRateDataPoint(now, val.(float64))
+			}
+		case versionGenerationRate:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, versionGenerationRate)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverTransactionVersionGenerationRateDataPoint(now, val.(float64))
 			}
 		case versionStoreSize:
 			val, err := retrieveFloat(row, valueKey)
@@ -2982,6 +3004,36 @@ func (s *sqlServerScraperHelper) recordTempDBFileMetrics(ctx context.Context) er
 			continue
 		}
 		errs = append(errs, s.mb.RecordSqlserverTempdbFileSizeDataPoint(now, row[sizeBytes], row[fileType], idVal.(int64)))
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	return errors.Join(errs...)
+}
+
+// recordLongestRunningTransactionMetrics records the age of the longest currently-open
+// transaction. The query returns exactly one row (a single MAX() aggregate with no GROUP BY).
+func (s *sqlServerScraperHelper) recordLongestRunningTransactionMetrics(ctx context.Context) error {
+	const longestRunningSeconds = "longest_running_seconds"
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for i, row := range rows {
+		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+
+		val, parseErr := retrieveFloat(row, longestRunningSeconds)
+		if parseErr != nil {
+			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", longestRunningSeconds, i, parseErr))
+			continue
+		}
+		s.mb.RecordSqlserverTransactionLongestRunningTimeDataPoint(now, val.(float64))
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 

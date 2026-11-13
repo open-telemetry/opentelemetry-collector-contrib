@@ -1240,11 +1240,20 @@ var MetricsInfo = metricsInfo{
 	SqlserverTransactionDelay: metricInfo{
 		Name: "sqlserver.transaction.delay",
 	},
+	SqlserverTransactionLongestRunningTime: metricInfo{
+		Name: "sqlserver.transaction.longest_running_time",
+	},
 	SqlserverTransactionMirrorWriteRate: metricInfo{
 		Name: "sqlserver.transaction.mirror_write.rate",
 	},
 	SqlserverTransactionRate: metricInfo{
 		Name: "sqlserver.transaction.rate",
+	},
+	SqlserverTransactionVersionCleanupRate: metricInfo{
+		Name: "sqlserver.transaction.version_cleanup.rate",
+	},
+	SqlserverTransactionVersionGenerationRate: metricInfo{
+		Name: "sqlserver.transaction.version_generation.rate",
 	},
 	SqlserverTransactionWriteRate: metricInfo{
 		Name: "sqlserver.transaction.write.rate",
@@ -1374,8 +1383,11 @@ type metricsInfo struct {
 	SqlserverTempdbFileSize                               metricInfo
 	SqlserverThreadPoolTaskCount                          metricInfo
 	SqlserverTransactionDelay                             metricInfo
+	SqlserverTransactionLongestRunningTime                metricInfo
 	SqlserverTransactionMirrorWriteRate                   metricInfo
 	SqlserverTransactionRate                              metricInfo
+	SqlserverTransactionVersionCleanupRate                metricInfo
+	SqlserverTransactionVersionGenerationRate             metricInfo
 	SqlserverTransactionWriteRate                         metricInfo
 	SqlserverTransactionLogFlushDataRate                  metricInfo
 	SqlserverTransactionLogFlushRate                      metricInfo
@@ -7395,6 +7407,56 @@ func newMetricSqlserverTransactionDelay(cfg SqlserverTransactionDelayMetricConfi
 	return m
 }
 
+type metricSqlserverTransactionLongestRunningTime struct {
+	data     pmetric.Metric                                     // data buffer for generated metric.
+	config   SqlserverTransactionLongestRunningTimeMetricConfig // metric config provided by user.
+	capacity int                                                // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.transaction.longest_running_time metric with initial data.
+func (m *metricSqlserverTransactionLongestRunningTime) init() {
+	m.data.SetName("sqlserver.transaction.longest_running_time")
+	m.data.SetDescription("Age of the longest currently-open transaction on the server.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSqlserverTransactionLongestRunningTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverTransactionLongestRunningTime) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverTransactionLongestRunningTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverTransactionLongestRunningTime(cfg SqlserverTransactionLongestRunningTimeMetricConfig) metricSqlserverTransactionLongestRunningTime {
+	m := metricSqlserverTransactionLongestRunningTime{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSqlserverTransactionMirrorWriteRate struct {
 	data     pmetric.Metric                                  // data buffer for generated metric.
 	config   SqlserverTransactionMirrorWriteRateMetricConfig // metric config provided by user.
@@ -7487,6 +7549,106 @@ func (m *metricSqlserverTransactionRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSqlserverTransactionRate(cfg SqlserverTransactionRateMetricConfig) metricSqlserverTransactionRate {
 	m := metricSqlserverTransactionRate{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverTransactionVersionCleanupRate struct {
+	data     pmetric.Metric                                     // data buffer for generated metric.
+	config   SqlserverTransactionVersionCleanupRateMetricConfig // metric config provided by user.
+	capacity int                                                // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.transaction.version_cleanup.rate metric with initial data.
+func (m *metricSqlserverTransactionVersionCleanupRate) init() {
+	m.data.SetName("sqlserver.transaction.version_cleanup.rate")
+	m.data.SetDescription("Rate at which row versions are removed from the snapshot isolation version store in tempdb.")
+	m.data.SetUnit("kBy/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSqlserverTransactionVersionCleanupRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverTransactionVersionCleanupRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverTransactionVersionCleanupRate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverTransactionVersionCleanupRate(cfg SqlserverTransactionVersionCleanupRateMetricConfig) metricSqlserverTransactionVersionCleanupRate {
+	m := metricSqlserverTransactionVersionCleanupRate{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverTransactionVersionGenerationRate struct {
+	data     pmetric.Metric                                        // data buffer for generated metric.
+	config   SqlserverTransactionVersionGenerationRateMetricConfig // metric config provided by user.
+	capacity int                                                   // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.transaction.version_generation.rate metric with initial data.
+func (m *metricSqlserverTransactionVersionGenerationRate) init() {
+	m.data.SetName("sqlserver.transaction.version_generation.rate")
+	m.data.SetDescription("Rate at which new row versions are added to the snapshot isolation version store in tempdb.")
+	m.data.SetUnit("kBy/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSqlserverTransactionVersionGenerationRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverTransactionVersionGenerationRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverTransactionVersionGenerationRate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverTransactionVersionGenerationRate(cfg SqlserverTransactionVersionGenerationRateMetricConfig) metricSqlserverTransactionVersionGenerationRate {
+	m := metricSqlserverTransactionVersionGenerationRate{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -8231,8 +8393,11 @@ type MetricsBuilder struct {
 	metricSqlserverTempdbFileSize                               metricSqlserverTempdbFileSize
 	metricSqlserverThreadPoolTaskCount                          metricSqlserverThreadPoolTaskCount
 	metricSqlserverTransactionDelay                             metricSqlserverTransactionDelay
+	metricSqlserverTransactionLongestRunningTime                metricSqlserverTransactionLongestRunningTime
 	metricSqlserverTransactionMirrorWriteRate                   metricSqlserverTransactionMirrorWriteRate
 	metricSqlserverTransactionRate                              metricSqlserverTransactionRate
+	metricSqlserverTransactionVersionCleanupRate                metricSqlserverTransactionVersionCleanupRate
+	metricSqlserverTransactionVersionGenerationRate             metricSqlserverTransactionVersionGenerationRate
 	metricSqlserverTransactionWriteRate                         metricSqlserverTransactionWriteRate
 	metricSqlserverTransactionLogFlushDataRate                  metricSqlserverTransactionLogFlushDataRate
 	metricSqlserverTransactionLogFlushRate                      metricSqlserverTransactionLogFlushRate
@@ -8359,8 +8524,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverTempdbFileSize:                               newMetricSqlserverTempdbFileSize(mbc.Metrics.SqlserverTempdbFileSize),
 		metricSqlserverThreadPoolTaskCount:                          newMetricSqlserverThreadPoolTaskCount(mbc.Metrics.SqlserverThreadPoolTaskCount),
 		metricSqlserverTransactionDelay:                             newMetricSqlserverTransactionDelay(mbc.Metrics.SqlserverTransactionDelay),
+		metricSqlserverTransactionLongestRunningTime:                newMetricSqlserverTransactionLongestRunningTime(mbc.Metrics.SqlserverTransactionLongestRunningTime),
 		metricSqlserverTransactionMirrorWriteRate:                   newMetricSqlserverTransactionMirrorWriteRate(mbc.Metrics.SqlserverTransactionMirrorWriteRate),
 		metricSqlserverTransactionRate:                              newMetricSqlserverTransactionRate(mbc.Metrics.SqlserverTransactionRate),
+		metricSqlserverTransactionVersionCleanupRate:                newMetricSqlserverTransactionVersionCleanupRate(mbc.Metrics.SqlserverTransactionVersionCleanupRate),
+		metricSqlserverTransactionVersionGenerationRate:             newMetricSqlserverTransactionVersionGenerationRate(mbc.Metrics.SqlserverTransactionVersionGenerationRate),
 		metricSqlserverTransactionWriteRate:                         newMetricSqlserverTransactionWriteRate(mbc.Metrics.SqlserverTransactionWriteRate),
 		metricSqlserverTransactionLogFlushDataRate:                  newMetricSqlserverTransactionLogFlushDataRate(mbc.Metrics.SqlserverTransactionLogFlushDataRate),
 		metricSqlserverTransactionLogFlushRate:                      newMetricSqlserverTransactionLogFlushRate(mbc.Metrics.SqlserverTransactionLogFlushRate),
@@ -8600,8 +8768,11 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverTempdbFileSize.emit(ils.Metrics())
 	mb.metricSqlserverThreadPoolTaskCount.emit(ils.Metrics())
 	mb.metricSqlserverTransactionDelay.emit(ils.Metrics())
+	mb.metricSqlserverTransactionLongestRunningTime.emit(ils.Metrics())
 	mb.metricSqlserverTransactionMirrorWriteRate.emit(ils.Metrics())
 	mb.metricSqlserverTransactionRate.emit(ils.Metrics())
+	mb.metricSqlserverTransactionVersionCleanupRate.emit(ils.Metrics())
+	mb.metricSqlserverTransactionVersionGenerationRate.emit(ils.Metrics())
 	mb.metricSqlserverTransactionWriteRate.emit(ils.Metrics())
 	mb.metricSqlserverTransactionLogFlushDataRate.emit(ils.Metrics())
 	mb.metricSqlserverTransactionLogFlushRate.emit(ils.Metrics())
@@ -9159,6 +9330,11 @@ func (mb *MetricsBuilder) RecordSqlserverTransactionDelayDataPoint(ts pcommon.Ti
 	mb.metricSqlserverTransactionDelay.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordSqlserverTransactionLongestRunningTimeDataPoint adds a data point to sqlserver.transaction.longest_running_time metric.
+func (mb *MetricsBuilder) RecordSqlserverTransactionLongestRunningTimeDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSqlserverTransactionLongestRunningTime.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordSqlserverTransactionMirrorWriteRateDataPoint adds a data point to sqlserver.transaction.mirror_write.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverTransactionMirrorWriteRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverTransactionMirrorWriteRate.recordDataPoint(mb.startTime, ts, val)
@@ -9167,6 +9343,16 @@ func (mb *MetricsBuilder) RecordSqlserverTransactionMirrorWriteRateDataPoint(ts 
 // RecordSqlserverTransactionRateDataPoint adds a data point to sqlserver.transaction.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverTransactionRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverTransactionRate.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverTransactionVersionCleanupRateDataPoint adds a data point to sqlserver.transaction.version_cleanup.rate metric.
+func (mb *MetricsBuilder) RecordSqlserverTransactionVersionCleanupRateDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSqlserverTransactionVersionCleanupRate.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverTransactionVersionGenerationRateDataPoint adds a data point to sqlserver.transaction.version_generation.rate metric.
+func (mb *MetricsBuilder) RecordSqlserverTransactionVersionGenerationRateDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSqlserverTransactionVersionGenerationRate.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSqlserverTransactionWriteRateDataPoint adds a data point to sqlserver.transaction.write.rate metric.

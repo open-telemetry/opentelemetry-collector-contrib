@@ -2614,6 +2614,78 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
+          - description: Rate at which row versions are removed from the snapshot isolation version store in tempdb.
+            gauge:
+              dataPoints:
+                - asDouble: 128
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            name: sqlserver.transaction.version_cleanup.rate
+            unit: kBy/s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
+          - description: Rate at which new row versions are added to the snapshot isolation version store in tempdb.
+            gauge:
+              dataPoints:
+                - asDouble: 256
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            name: sqlserver.transaction.version_generation.rate
+            unit: kBy/s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: d26d40521426
+    scopeMetrics:
+      - metrics:
           - description: Cumulative count of lock waits that occurred.
             name: sqlserver.lock.wait.count
             sum:
