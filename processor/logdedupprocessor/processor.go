@@ -134,6 +134,7 @@ func (m *multiShardAggregator) flush(_ context.Context, nextConsumer consumer.Lo
 	for _, s := range m.shards {
 		shards = append(shards, s)
 	}
+	clear(m.shards)
 	m.lock.Unlock()
 
 	for _, shard := range shards {
@@ -143,7 +144,6 @@ func (m *multiShardAggregator) flush(_ context.Context, nextConsumer consumer.Lo
 			if err := nextConsumer.ConsumeLogs(exportCtx, logs); err != nil {
 				logger.Error("failed to consume logs", zap.Error(err))
 			}
-			shard.aggregator.Reset()
 		}
 	}
 }
