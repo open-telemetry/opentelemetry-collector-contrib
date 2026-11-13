@@ -117,6 +117,10 @@ func orderBySampleTimestamp(tsArray []prompb.TimeSeries) []prompb.TimeSeries {
 		sort.Slice(sL, func(i, j int) bool {
 			return sL[i].Timestamp < sL[j].Timestamp
 		})
+		hL := tsArray[i].Histograms
+		sort.Slice(hL, func(i, j int) bool {
+			return hL[i].Timestamp < hL[j].Timestamp
+		})
 	}
 	return tsArray
 }

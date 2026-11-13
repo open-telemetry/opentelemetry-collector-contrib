@@ -1977,6 +1977,7 @@ func TestTailStorageExtensionFromHost(t *testing.T) {
 	assert.Len(t, msp.AllTraces(), 1)
 	assert.Positive(t, host.extension.appendCount)
 	assert.Positive(t, host.extension.takeCount)
+	assert.Positive(t, host.extension.takeManyCount)
 }
 
 // TestSpanIngestPendingStorageDeletedOnDecisionWait verifies that when a trace
@@ -2247,12 +2248,14 @@ type extension struct {
 	takeErr    error
 	appendCount,
 	takeCount,
+	takeManyCount,
 	deleteCount int
 }
 
 var (
-	_ samplingpolicy.Extension         = &extension{}
-	_ tailstorageextension.TailStorage = &extension{}
+	_ samplingpolicy.Extension              = &extension{}
+	_ tailstorageextension.TailStorage      = &extension{}
+	_ tailstorageextension.BatchTailStorage = &extension{}
 )
 
 // NewEvaluator implements samplingpolicy.Extension.
@@ -2281,6 +2284,17 @@ func (e *extension) Take(traceID pcommon.TraceID) (ptrace.Traces, error) {
 		return ptrace.NewTraces(), e.takeErr
 	}
 	return e.storage.Take(traceID)
+}
+
+func (e *extension) TakeMany(traceIDs []pcommon.TraceID) ([]ptrace.Traces, []error) {
+	e.ensureStorage()
+	e.takeManyCount++
+	out := make([]ptrace.Traces, len(traceIDs))
+	errs := make([]error, len(traceIDs))
+	for i, id := range traceIDs {
+		out[i], errs[i] = e.Take(id)
+	}
+	return out, errs
 }
 
 func (e *extension) Delete(traceID pcommon.TraceID) error {

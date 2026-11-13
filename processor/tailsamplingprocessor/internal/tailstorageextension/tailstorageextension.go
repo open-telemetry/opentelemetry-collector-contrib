@@ -35,3 +35,18 @@ type TailStorage interface {
 	// an empty ptrace.Traces until Append is called again for traceID.
 	Delete(traceID pcommon.TraceID) error
 }
+
+// BatchTailStorage is an optional interface a TailStorage can implement to
+// take several traces in one call. The tail sampling processor uses it at
+// the decision tick when the storage supports it and falls back to Take
+// otherwise.
+type BatchTailStorage interface {
+	TailStorage
+
+	// TakeMany returns and removes the stored spans for each trace ID. The
+	// two result slices have the same length and order as traceIDs. For each
+	// position exactly the semantics of Take apply: an empty ptrace.Traces
+	// and nil error when the trace is not stored, a non-nil error when the
+	// trace could not be read.
+	TakeMany(traceIDs []pcommon.TraceID) ([]ptrace.Traces, []error)
+}
