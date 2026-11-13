@@ -52,8 +52,8 @@ const (
 	// does not select one with WithVersion. Renovate watches the line below
 	// and opens an update PR when a new Weaver release appears.
 	//
-	// renovate: datasource=docker depName=otel/weaver
-	defaultWeaverVersion = "v0.28.0"
+	// renovate: datasource=github-releases depName=open-telemetry/weaver
+	defaultWeaverVersion = "0.28.0"
 
 	// defaultRegistryVersion is the semantic-conventions release that the
 	// live-check validates against when a test does not select a registry
@@ -183,7 +183,7 @@ func runLiveCheck(tb testing.TB, opts []WeaverOption, send func(context.Context,
 	tb.Helper()
 
 	options := &weaverOptions{
-		version:  defaultWeaverVersion,
+		version: "v" + defaultWeaverVersion,
 		registry: fmt.Sprintf(defaultRegistryTemplate, defaultRegistryVersion),
 	}
 	for _, opt := range opts {
