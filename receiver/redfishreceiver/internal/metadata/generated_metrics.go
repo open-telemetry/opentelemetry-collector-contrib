@@ -1071,7 +1071,7 @@ type metricTemperatureReading struct {
 	data          pmetric.Metric                 // data buffer for generated metric.
 	config        TemperatureReadingMetricConfig // metric config provided by user.
 	capacity      int                            // max observed number of data points added to the metric.
-	aggDataPoints []int64                        // slice containing number of aggregated datapoints at each index
+	aggDataPoints []float64                      // slice containing number of aggregated datapoints at each index
 	dpIndex       map[uint64]int                 // maps a data point's hash to its index, for O(1) dedup lookup.
 }
 
@@ -1086,7 +1086,7 @@ func (m *metricTemperatureReading) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricTemperatureReading) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, chassisIDAttributeValue string, temperatureNameAttributeValue string) {
+func (m *metricTemperatureReading) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, chassisIDAttributeValue string, temperatureNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1108,23 +1108,23 @@ func (m *metricTemperatureReading) recordDataPoint(start pcommon.Timestamp, ts p
 		dpi := dps.At(i)
 		switch s = m.config.AggregationStrategy; s {
 		case AggregationStrategySum, AggregationStrategyAvg:
-			dpi.SetIntValue(dpi.IntValue() + val)
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
 			m.aggDataPoints[i] += 1
 			return
 		case AggregationStrategyMin:
-			if dpi.IntValue() > val {
-				dpi.SetIntValue(val)
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
 			}
 			return
 		case AggregationStrategyMax:
-			if dpi.IntValue() < val {
-				dpi.SetIntValue(val)
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
 			}
 			return
 		}
 	}
 
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
 	m.dpIndex[key] = dps.Len()
 	dp.MoveTo(dps.AppendEmpty())
@@ -1142,7 +1142,7 @@ func (m *metricTemperatureReading) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
-				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
 			}
 		}
 		m.updateCapacity()
@@ -1581,7 +1581,7 @@ func (mb *MetricsBuilder) RecordSystemStatusStateDataPoint(ts pcommon.Timestamp,
 }
 
 // RecordTemperatureReadingDataPoint adds a data point to temperature.reading metric.
-func (mb *MetricsBuilder) RecordTemperatureReadingDataPoint(ts pcommon.Timestamp, val int64, chassisIDAttributeValue string, temperatureNameAttributeValue string) {
+func (mb *MetricsBuilder) RecordTemperatureReadingDataPoint(ts pcommon.Timestamp, val float64, chassisIDAttributeValue string, temperatureNameAttributeValue string) {
 	mb.metricTemperatureReading.recordDataPoint(mb.startTime, ts, val, chassisIDAttributeValue, temperatureNameAttributeValue)
 }
 
