@@ -19,12 +19,14 @@ status:
 
 feature_gates:
   - id: extension.azureencoding.DontEmitV0LogConventions
-    stage: beta
+    stage: stable
     description: When enabled, v0 semconv log attribute names are not emitted.
     from_version: v0.149.0
+    to_version: v0.170.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47543
   - id: extension.azureencoding.EmitV1LogConventions
-    stage: beta
+    stage: stable
     description: When enabled, v1 semconv log attribute names are emitted.
     from_version: v0.149.0
+    to_version: v0.170.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47543
