@@ -407,7 +407,7 @@ func BenchmarkReadContents(b *testing.B) {
 	_, err := temp.WriteString(temp.Name() + "\n")
 	require.NoError(b, err)
 	for range 100 {
-		_, err := temp.WriteString(string(filetest.TokenWithLength(999)) + "\n")
+		_, err = temp.WriteString(string(filetest.TokenWithLength(999)) + "\n")
 		require.NoError(b, err)
 	}
 
