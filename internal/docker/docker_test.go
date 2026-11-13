@@ -629,3 +629,58 @@ func TestContainerEnvToMap(t *testing.T) {
 		})
 	}
 }
+
+func TestContainerStateCounts(t *testing.T) {
+	containersJSON := `[
+		{"Id": "c1", "Image": "ubuntu:latest", "State": "running"},
+		{"Id": "c2", "Image": "redis:alpine", "State": "paused"},
+		{"Id": "c3", "Image": "postgres:14", "State": "created"},
+		{"Id": "c4", "Image": "nginx:latest", "State": "exited"},
+		{"Id": "c5", "Image": "busybox:latest", "State": "exited"},
+		{"Id": "c6", "Image": "dead_app:v1", "State": "dead"},
+		{"Id": "c7", "Image": "excluded_image:v1", "State": "exited"}
+	]`
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/containers/json") {
+			assert.Equal(t, "1", r.URL.Query().Get("all"))
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(containersJSON))
+	}))
+	defer srv.Close()
+
+	cli, err := NewDockerClient(&Config{
+		Endpoint:       srv.URL,
+		Timeout:        5 * time.Second,
+		ExcludedImages: []string{"excluded_image:*"},
+	}, zap.NewNop())
+	require.NoError(t, err)
+	defer cli.Close()
+
+	counts, err := cli.ContainerStateCounts(t.Context())
+	require.NoError(t, err)
+
+	assert.Equal(t, int64(1), counts["running"])
+	assert.Equal(t, int64(1), counts["paused"])
+	assert.Equal(t, int64(1), counts["created"])
+	assert.Equal(t, int64(2), counts["exited"])
+	assert.Equal(t, int64(1), counts["dead"])
+	assert.Equal(t, int64(0), counts["restarting"])
+}
+
+func TestContainerStateCountsError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	cli, err := NewDockerClient(&Config{Endpoint: srv.URL, Timeout: 5 * time.Second}, zap.NewNop())
+	require.NoError(t, err)
+	defer cli.Close()
+
+	counts, err := cli.ContainerStateCounts(t.Context())
+	require.Error(t, err)
+	assert.Nil(t, counts)
+}

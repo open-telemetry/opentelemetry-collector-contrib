@@ -9,8 +9,11 @@
 package dockerstatsreceiver
 
 import (
+	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,10 +21,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -245,6 +251,7 @@ func TestScrapeV2(t *testing.T) {
 				cfgBuilder: newTestConfigBuilder().
 					withDefaultLabels().
 					withMetrics(allMetricsEnabled).
+					withLabelMatchers(filter.Config{Regex: ".*"}).
 					withAPIVersion(dockerAPIVersion),
 			},
 			{
@@ -264,6 +271,7 @@ func TestScrapeV2(t *testing.T) {
 				cfgBuilder: newTestConfigBuilder().
 					withDefaultLabels().
 					withMetrics(allMetricsEnabled).
+					withLabelMatchers(filter.Config{Regex: ".*"}).
 					withAPIVersion(dockerAPIVersion),
 			},
 			{
@@ -339,6 +347,7 @@ func TestScrapeV2(t *testing.T) {
 					withDefaultLabels().
 					withMetrics(allMetricsEnabled).
 					withResourceAttributes(allResourceAttributesEnabled).
+					withLabelMatchers(filter.Config{Strict: "app"}).
 					withAPIVersion(dockerAPIVersion),
 			},
 		}
@@ -423,6 +432,123 @@ func TestScrapeV2Streaming(t *testing.T) {
 	))
 }
 
+func TestScrapeV2_ContainerStateStatus_MultipleStates(t *testing.T) {
+	dockerAPIVersion := defaultDockerAPIVersion
+	runningContainerID := "10b703fb312b25e8368ab5a3bce3a1610d1cee5d71a94920f1a7adbc5b0cb326"
+
+	// Mock server returning 4 containers with different states: running, paused, exited, created
+	containersJSON := `[
+		{
+			"Id": "10b703fb312b25e8368ab5a3bce3a1610d1cee5d71a94920f1a7adbc5b0cb326",
+			"Names": ["/web_running"],
+			"Image": "nginx",
+			"State": "running",
+			"Status": "Up 5 minutes"
+		},
+		{
+			"Id": "20b703fb312b25e8368ab5a3bce3a1610d1cee5d71a94920f1a7adbc5b0cb327",
+			"Names": ["/web_paused"],
+			"Image": "nginx",
+			"State": "paused",
+			"Status": "Up 3 minutes (Paused)"
+		},
+		{
+			"Id": "30b703fb312b25e8368ab5a3bce3a1610d1cee5d71a94920f1a7adbc5b0cb328",
+			"Names": ["/web_exited"],
+			"Image": "nginx",
+			"State": "exited",
+			"Status": "Exited (0) 2 minutes ago"
+		},
+		{
+			"Id": "40b703fb312b25e8368ab5a3bce3a1610d1cee5d71a94920f1a7adbc5b0cb329",
+			"Names": ["/web_created"],
+			"Image": "nginx",
+			"State": "created",
+			"Status": "Created"
+		}
+	]`
+
+	containerJSON, err := os.ReadFile(filepath.Clean(filepath.Join(mockFolder, "single_container", "container.json")))
+	require.NoError(t, err)
+
+	statsJSON, err := os.ReadFile(filepath.Clean(filepath.Join(mockFolder, "single_container", "stats.json")))
+	require.NoError(t, err)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		rw.Header().Set("Content-Type", "application/json")
+		switch {
+		case strings.HasSuffix(req.URL.Path, "/containers/json"):
+			rw.WriteHeader(http.StatusOK)
+			_, _ = rw.Write([]byte(containersJSON))
+		case strings.HasSuffix(req.URL.Path, "/containers/"+runningContainerID+"/json"):
+			rw.WriteHeader(http.StatusOK)
+			_, _ = rw.Write(containerJSON)
+		case strings.HasSuffix(req.URL.Path, "/containers/"+runningContainerID+"/stats"):
+			rw.WriteHeader(http.StatusOK)
+			_, _ = rw.Write(statsJSON)
+		default:
+			rw.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	metricsCfg := metadata.DefaultMetricsConfig()
+	metricsCfg.ContainerStateStatus.Enabled = true
+
+	receiver := newMetricsReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		newTestConfigBuilder().
+			withDefaultLabels().
+			withMetrics(metricsCfg).
+			withAPIVersion(dockerAPIVersion).
+			withEndpoint(srv.URL).build(),
+	)
+
+	err = receiver.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() { require.NoError(t, receiver.shutdown(t.Context())) }()
+
+	metrics, err := receiver.scrapeV2(t.Context())
+	require.NoError(t, err)
+
+	// Verify container.state.status metric
+	foundStatusMetric := false
+	statusCounts := make(map[string]int64)
+
+	rmSlice := metrics.ResourceMetrics()
+	for i := 0; i < rmSlice.Len(); i++ {
+		rm := rmSlice.At(i)
+		smSlice := rm.ScopeMetrics()
+		for j := 0; j < smSlice.Len(); j++ {
+			sm := smSlice.At(j)
+			mSlice := sm.Metrics()
+			for k := 0; k < mSlice.Len(); k++ {
+				m := mSlice.At(k)
+				if m.Name() == "container.state.status" {
+					foundStatusMetric = true
+					dps := m.Sum().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						dp := dps.At(l)
+						statusAttr, ok := dp.Attributes().Get("container.state.status")
+						require.True(t, ok)
+						statusCounts[statusAttr.Str()] = dp.IntValue()
+					}
+				}
+			}
+		}
+	}
+
+	assert.True(t, foundStatusMetric, "container.state.status metric should be found")
+	assert.Len(t, statusCounts, 7, "should emit all seven container states")
+	assert.Equal(t, int64(1), statusCounts["running"], "running containers count mismatch")
+	assert.Equal(t, int64(1), statusCounts["paused"], "paused containers count mismatch")
+	assert.Equal(t, int64(1), statusCounts["exited"], "exited containers count mismatch")
+	assert.Equal(t, int64(1), statusCounts["created"], "created containers count mismatch")
+	assert.Equal(t, int64(0), statusCounts["restarting"], "restarting containers count mismatch")
+	assert.Equal(t, int64(0), statusCounts["removing"], "removing containers count mismatch")
+	assert.Equal(t, int64(0), statusCounts["dead"], "dead containers count mismatch")
+}
+
 func TestRecordBaseMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	metricsConfig := metadata.DefaultMetricsConfig()
@@ -501,12 +627,40 @@ func (cb *testConfigBuilder) withDefaultLabels() *testConfigBuilder {
 		"ENV_VAR_2": "env-var-metric-label-2",
 	}
 	cb.config.ContainerLabelsToMetricLabels = map[string]string{
-		"container.label":   "container-metric-label",
+		"team":              "container-metric-label",
 		"container.label.2": "container-metric-label-2",
 	}
 	return cb
 }
 
+func (cb *testConfigBuilder) withLabelMatchers(filters ...filter.Config) *testConfigBuilder {
+	cb.config.ContainerLabelsToResourceAttributes = filters
+	return cb
+}
+
 func (cb *testConfigBuilder) build() *Config {
 	return cb.config
+}
+
+func TestContainerLabelsToMetricLabelsDeprecationWarning(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		labels   map[string]string
+		wantLogs int
+	}{
+		{name: "set", labels: map[string]string{"app": "app"}, wantLogs: 1},
+		{name: "unset", labels: nil, wantLogs: 0},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			core, logs := observer.New(zap.WarnLevel)
+			set := receivertest.NewNopSettings(metadata.Type)
+			set.Logger = zap.New(core)
+			cfg := createDefaultConfig().(*Config)
+			cfg.ContainerLabelsToMetricLabels = tt.labels
+
+			newMetricsReceiver(set, cfg)
+
+			assert.Equal(t, tt.wantLogs, logs.FilterMessageSnippet("container_labels_to_metric_labels").Len())
+		})
+	}
 }
