@@ -34,13 +34,12 @@ const (
 )
 
 type fluentReceiver struct {
-	collector      *collector
-	listener       net.Listener
-	conf           *Config
-	logger         *zap.Logger
-	server         *server
-	cancel         context.CancelFunc
-	maxConnections int
+	collector *collector
+	listener  net.Listener
+	conf      *Config
+	logger    *zap.Logger
+	server    *server
+	cancel    context.CancelFunc
 }
 
 func newFluentReceiver(set receiver.Settings, conf *Config, next consumer.Logs) (receiver.Logs, error) {
@@ -61,14 +60,19 @@ func newFluentReceiver(set receiver.Settings, conf *Config, next consumer.Logs) 
 	eventCh := make(chan eventWithACK, eventChannelLength)
 	collector := newCollector(eventCh, next, defaultACKWaitTimeout, set.Logger, obsrecv, telemetryBuilder)
 
-	server := newServer(eventCh, defaultACKWaitTimeout, set.Logger, telemetryBuilder)
+	// The server enforces the limit only when refusing; queueing is done by
+	// LimitListener in Start.
+	refuseAbove := 0
+	if conf.RefuseOverLimit {
+		refuseAbove = conf.MaxConnections
+	}
+	server := newServer(eventCh, defaultACKWaitTimeout, refuseAbove, set.Logger, telemetryBuilder)
 
 	return &fluentReceiver{
-		collector:      collector,
-		server:         server,
-		conf:           conf,
-		logger:         set.Logger,
-		maxConnections: defaultMaxConnections,
+		collector: collector,
+		server:    server,
+		conf:      conf,
+		logger:    set.Logger,
 	}, nil
 }
 
@@ -98,9 +102,10 @@ func (r *fluentReceiver) Start(ctx context.Context, _ component.Host) error {
 
 	// Bound the number of simultaneously accepted connections. Excess
 	// connections wait in the accept backlog until a slot frees, which keeps
-	// the number of in-flight chunk acknowledgments bounded under load.
-	if r.maxConnections > 0 {
-		listener = netutil.LimitListener(listener, r.maxConnections)
+	// the number of in-flight chunk acknowledgments bounded under load. With
+	// refuse_over_limit, the server refuses them instead (see addConn).
+	if r.conf.MaxConnections > 0 && !r.conf.RefuseOverLimit {
+		listener = netutil.LimitListener(listener, r.conf.MaxConnections)
 	}
 
 	r.listener = listener
