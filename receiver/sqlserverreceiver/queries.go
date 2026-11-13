@@ -74,6 +74,62 @@ func getSQLServerDatabaseIOQuery() string {
 	return sqlServerDatabaseIOQuery
 }
 
+// sqlServerDatabaseSizeQuery returns one row per (database, file type), summing database file
+// sizes. Azure SQL Database only exposes sys.database_files (single-database scope), so it is
+// queried per-connection rather than instance-wide like sys.master_files.
+const sqlServerDatabaseSizeQuery = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN /*NOT IN Standard,Enterprise,Express,Azure SQL Database, Azure SQL Managed Instance*/
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'+ @@ServerName + ',Database:' + DB_NAME() +' is not a SQL Server Standard, Enterprise, Express, Azure SQL Database or Azure SQL Managed Instance. This query is only supported on these editions.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+DECLARE
+	 @SqlStatement AS nvarchar(max)
+	,@EngineEdition AS INT = CAST(SERVERPROPERTY('EngineEdition') AS INT)
+	,@DatabaseNameColumn AS nvarchar(max) = ''
+	,@FromClause AS nvarchar(max) = ''
+	,@WhereClause AS nvarchar(max) = ''
+	,@GroupByClause AS nvarchar(max) = ''
+
+IF @EngineEdition = 5 -- Azure SQL Database (Database-as-a-Service)
+BEGIN
+	-- For Azure SQL Database, use sys.database_files (single-database scope)
+	SET @DatabaseNameColumn = N'DB_NAME()';
+	SET @FromClause = N'
+FROM sys.database_files mf';
+	SET @GroupByClause = N'
+GROUP BY mf.[type_desc]';
+END
+ELSE -- All other editions
+BEGIN
+	-- For instance-level editions, use sys.master_files (instance-wide view)
+	SET @DatabaseNameColumn = N'DB_NAME(mf.[database_id])';
+	SET @FromClause = N'
+FROM sys.master_files mf';
+	SET @WhereClause = N'
+WHERE mf.[database_id] > 4'; -- Exclude system databases (master, tempdb, model, msdb)
+	SET @GroupByClause = N'
+GROUP BY mf.[database_id], mf.[type_desc]';
+END
+
+SET @SqlStatement = N'
+SELECT
+	''sqlserver_database_file_size'' AS [measurement]
+	,REPLACE(@@SERVERNAME,''\'','':'') AS [sql_instance]
+	,' + @DatabaseNameColumn + N' AS [database_name]
+	,LOWER(mf.[type_desc]) AS [file_type]
+	,SUM(CAST(mf.[size] AS BIGINT) * 8 * 1024) AS [size_bytes]'
+	+ @FromClause + @WhereClause + @GroupByClause;
+
+EXEC sp_executesql @SqlStatement
+`
+
+func getSQLServerDatabaseSizeQuery() string {
+	return sqlServerDatabaseSizeQuery
+}
+
 const sqlServerPerformanceCountersQuery string = `
 SET DEADLOCK_PRIORITY -10;
 IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN /*NOT IN Standard,Enterprise,Express,Azure SQL Database, Azure SQL Managed Instance*/

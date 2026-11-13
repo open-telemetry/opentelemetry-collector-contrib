@@ -421,6 +421,23 @@ Number of execution errors.
 | ---- | ----------- | ---------- | --------- |
 | {errors} | Gauge | Int | Development |
 
+### sqlserver.database.file.size
+
+Size of database files.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| file_type | The type of file being monitored. | Any Str | Recommended | - |
+| db.namespace | The database name. | Any Str | Recommended | - |
+
 ### sqlserver.database.full_scan.rate
 
 The number of unrestricted full table or index scans.
@@ -509,6 +526,16 @@ TempDB version store size.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | kBy | Gauge | Double | Development |
+
+### sqlserver.database.transactions.active
+
+Number of active transactions in the database.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {transactions} | Gauge | Int | Development |
 
 ### sqlserver.deadlock.rate
 
