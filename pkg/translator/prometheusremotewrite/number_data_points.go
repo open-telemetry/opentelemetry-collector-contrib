@@ -15,12 +15,12 @@ import (
 )
 
 func (c *prometheusConverter) addGaugeNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
-	resource pcommon.Resource, scope pcommon.InstrumentationScope, settings Settings, name string,
+	resource pcommon.Resource, scope pcommon.InstrumentationScope, schemaURL string, settings Settings, name string,
 ) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
-		labels, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, true, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, name)
+		labels, err := createAttributes(resource, pt.Attributes(), scope, schemaURL, settings.ExternalLabels, nil, true, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, name)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -44,12 +44,12 @@ func (c *prometheusConverter) addGaugeNumberDataPoints(dataPoints pmetric.Number
 }
 
 func (c *prometheusConverter) addSumNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
-	resource pcommon.Resource, scope pcommon.InstrumentationScope, _ pmetric.Metric, settings Settings, name string,
+	resource pcommon.Resource, scope pcommon.InstrumentationScope, schemaURL string, _ pmetric.Metric, settings Settings, name string,
 ) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
-		lbls, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, true, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, name)
+		lbls, err := createAttributes(resource, pt.Attributes(), scope, schemaURL, settings.ExternalLabels, nil, true, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, name)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue

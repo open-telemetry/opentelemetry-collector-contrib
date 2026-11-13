@@ -31,6 +31,14 @@ all_set:
       enabled: true
     cloud.region:
       enabled: true
+    host.id:
+      enabled: true
+    host.image.id:
+      enabled: true
+    host.name:
+      enabled: true
+    host.type:
+      enabled: true
 none_set:
   resource_attributes:
     aws.ecs.cluster.arn:
@@ -62,4 +70,12 @@ none_set:
     cloud.provider:
       enabled: false
     cloud.region:
+      enabled: false
+    host.id:
+      enabled: false
+    host.image.id:
+      enabled: false
+    host.name:
+      enabled: false
+    host.type:
       enabled: false

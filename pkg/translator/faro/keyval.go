@@ -365,9 +365,6 @@ func networkToKeyVal(n faroTypes.Network) *keyVal {
 	keyValAdd(kv, faroNetworkConnectionType, n.ConnectionType)
 	keyValAdd(kv, faroNetworkConnectionSubtype, n.ConnectionSubtype)
 	keyValAdd(kv, faroNetworkCarrierName, n.CarrierName)
-	if n.Reachable != nil {
-		keyValAdd(kv, faroNetworkReachable, strconv.FormatBool(*n.Reachable))
-	}
 	return kv
 }
 

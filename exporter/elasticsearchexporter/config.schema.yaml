@@ -69,7 +69,7 @@ $defs:
         description: MaxRetries configures how many times an HTTP request is retried.
         type: integer
       retry_on_document_status:
-        description: RetryOnDocumentStatus configures the status codes that trigger document level retries. If unset, RetryOnDocumentStatus defaults to RetryOnStatus.
+        description: RetryOnDocumentStatus configures the status codes that trigger document level retries for failed documents in a successful bulk HTTP response.
         type: array
         items:
           type: integer

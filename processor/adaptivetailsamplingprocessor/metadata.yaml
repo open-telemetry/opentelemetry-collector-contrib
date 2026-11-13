@@ -11,7 +11,7 @@ status:
     alpha: [traces]
   distributions: [contrib]
   codeowners:
-    active: [MikeGoldsmith, VinozzZ, jmacd]
+    active: [MikeGoldsmith, VinozzZ, jmacd, robbkidd]
 
 tests:
   skip_context_propagation: true
