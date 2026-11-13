@@ -68,59 +68,131 @@ func TestLoadConfig(t *testing.T) {
 
 func TestConfig_Validate(t *testing.T) {
 	tests := []struct {
-		name        string
-		config      *Config
-		expectedErr string
+		name         string
+		modifyConfig func(*Config)
+		expectedErr  string
 	}{
 		{
 			name: "valid config",
-			config: &Config{
-				LeaseName:      "test-lease",
-				LeaseNamespace: "test-namespace",
-				LeaseDuration:  15 * time.Second,
-				RenewDuration:  10 * time.Second,
-				RetryPeriod:    2 * time.Second,
-			},
-			expectedErr: "",
 		},
 		{
 			name: "missing lease name",
-			config: &Config{
-				LeaseName:      "",
-				LeaseNamespace: "test-namespace",
-				LeaseDuration:  15 * time.Second,
-				RenewDuration:  10 * time.Second,
-				RetryPeriod:    2 * time.Second,
+			modifyConfig: func(cfg *Config) {
+				cfg.LeaseName = ""
 			},
 			expectedErr: "lease name and namespace must be set",
 		},
 		{
 			name: "missing lease namespace",
-			config: &Config{
-				LeaseName:      "test-lease",
-				LeaseNamespace: "",
-				LeaseDuration:  15 * time.Second,
-				RenewDuration:  10 * time.Second,
-				RetryPeriod:    2 * time.Second,
+			modifyConfig: func(cfg *Config) {
+				cfg.LeaseNamespace = ""
 			},
 			expectedErr: "lease name and namespace must be set",
 		},
 		{
 			name: "missing both lease name and namespace",
-			config: &Config{
-				LeaseName:      "",
-				LeaseNamespace: "",
-				LeaseDuration:  15 * time.Second,
-				RenewDuration:  10 * time.Second,
-				RetryPeriod:    2 * time.Second,
+			modifyConfig: func(cfg *Config) {
+				cfg.LeaseName = ""
+				cfg.LeaseNamespace = ""
 			},
 			expectedErr: "lease name and namespace must be set",
+		},
+		{
+			name: "zero lease duration",
+			modifyConfig: func(cfg *Config) {
+				cfg.LeaseDuration = 0
+			},
+			expectedErr: "lease_duration must be greater than zero",
+		},
+		{
+			name: "negative lease duration",
+			modifyConfig: func(cfg *Config) {
+				cfg.LeaseDuration = -time.Second
+			},
+			expectedErr: "lease_duration must be greater than zero",
+		},
+		{
+			name: "zero renew deadline",
+			modifyConfig: func(cfg *Config) {
+				cfg.RenewDuration = 0
+			},
+			expectedErr: "renew_deadline must be greater than zero",
+		},
+		{
+			name: "negative renew deadline",
+			modifyConfig: func(cfg *Config) {
+				cfg.RenewDuration = -time.Second
+			},
+			expectedErr: "renew_deadline must be greater than zero",
+		},
+		{
+			name: "zero retry period",
+			modifyConfig: func(cfg *Config) {
+				cfg.RetryPeriod = 0
+			},
+			expectedErr: "retry_period must be greater than zero",
+		},
+		{
+			name: "negative retry period",
+			modifyConfig: func(cfg *Config) {
+				cfg.RetryPeriod = -time.Second
+			},
+			expectedErr: "retry_period must be greater than zero",
+		},
+		{
+			name: "lease duration equals renew deadline",
+			modifyConfig: func(cfg *Config) {
+				cfg.LeaseDuration = cfg.RenewDuration
+			},
+			expectedErr: "lease_duration must be greater than renew_deadline",
+		},
+		{
+			name: "lease duration less than renew deadline",
+			modifyConfig: func(cfg *Config) {
+				cfg.LeaseDuration = cfg.RenewDuration - time.Second
+			},
+			expectedErr: "lease_duration must be greater than renew_deadline",
+		},
+		{
+			name: "renew deadline less than jittered retry period",
+			modifyConfig: func(cfg *Config) {
+				cfg.RenewDuration = 2200 * time.Millisecond
+			},
+			expectedErr: "renew_deadline must be greater than retry_period * JitterFactor",
+		},
+		{
+			name: "renew deadline equals jittered retry period",
+			modifyConfig: func(cfg *Config) {
+				cfg.RenewDuration = 2400 * time.Millisecond
+			},
+			expectedErr: "renew_deadline must be greater than retry_period * JitterFactor",
+		},
+		{
+			name: "renew deadline just above jittered retry period",
+			modifyConfig: func(cfg *Config) {
+				cfg.RenewDuration = 2400*time.Millisecond + time.Nanosecond
+			},
+		},
+		{
+			name: "valid nanosecond durations",
+			modifyConfig: func(cfg *Config) {
+				cfg.LeaseDuration = 3 * time.Nanosecond
+				cfg.RenewDuration = 2 * time.Nanosecond
+				cfg.RetryPeriod = time.Nanosecond
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.config.Validate()
+			cfg := createDefaultConfig().(*Config)
+			cfg.LeaseName = "test-lease"
+			cfg.LeaseNamespace = "test-namespace"
+			if tt.modifyConfig != nil {
+				tt.modifyConfig(cfg)
+			}
+
+			err := cfg.Validate()
 			if tt.expectedErr == "" {
 				require.NoError(t, err)
 			} else {

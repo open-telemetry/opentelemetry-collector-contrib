@@ -510,7 +510,7 @@ type idToken struct {
 // It should only be used to determine which verifier to use for the token.
 func getIssuerFromUnverifiedJWT(rawIDToken string) (string, error) {
 	// TODO: it would be nice if we didn't have to parse the JWT here and then again in the verifier...
-	jws, err := jose.ParseSigned(rawIDToken, allSupportedAlgorithms)
+	jws, err := jose.ParseSignedCompact(rawIDToken, allSupportedAlgorithms)
 	if err != nil {
 		return "", fmt.Errorf("oidc: malformed jws: %w", err)
 	}

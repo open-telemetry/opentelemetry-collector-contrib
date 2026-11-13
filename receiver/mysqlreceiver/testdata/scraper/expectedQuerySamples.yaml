@@ -85,7 +85,13 @@ resourceLogs:
               - key: mysql.client.name
                 value:
                   stringValue: ""
-              - key: mysql.events_statements_current.timer_start
+              - key: mysql.blocking.blocker.count
+                value:
+                  intValue: "0"
+              - key: mysql.blocking.blocker.details
+                value:
+                  stringValue: ""
+              - key: mysql.events_statements_current.event_id
                 value:
                   intValue: "0"
             body: {}

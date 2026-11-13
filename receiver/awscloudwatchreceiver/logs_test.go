@@ -6,9 +6,12 @@ package awscloudwatchreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -231,6 +234,86 @@ func TestWithAccountId(t *testing.T) {
 	expected, err := golden.ReadLogs(filepath.Join("testdata", "processed", "prefixed-with-accountid.yaml"))
 	require.NoError(t, err)
 	require.NoError(t, plogtest.CompareLogs(expected, logs, plogtest.IgnoreObservedTimestamp()))
+}
+
+func TestAccountIDLookupDuringSessionInitialization(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		status    int
+		body      string
+		accountID string
+	}{
+		{
+			name:   "STS failure",
+			status: http.StatusForbidden,
+			body:   `<ErrorResponse><Error><Code>AccessDenied</Code><Message>Access denied</Message></Error></ErrorResponse>`,
+		},
+		{
+			name:      "success",
+			status:    http.StatusOK,
+			body:      `<GetCallerIdentityResponse><GetCallerIdentityResult><Account>111111111111</Account></GetCallerIdentityResult></GetCallerIdentityResponse>`,
+			accountID: "111111111111",
+		},
+		{
+			name:   "missing account",
+			status: http.StatusOK,
+			body:   `<GetCallerIdentityResponse><GetCallerIdentityResult/></GetCallerIdentityResponse>`,
+		},
+		{
+			name:   "empty account",
+			status: http.StatusOK,
+			body:   `<GetCallerIdentityResponse><GetCallerIdentityResult><Account/></GetCallerIdentityResult></GetCallerIdentityResponse>`,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			var calls atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				calls.Add(1)
+				w.Header().Set("Content-Type", "text/xml")
+				w.WriteHeader(tt.status)
+				_, _ = fmt.Fprint(w, tt.body)
+			}))
+			t.Cleanup(server.Close)
+			t.Setenv("AWS_ENDPOINT_URL_STS", server.URL)
+			t.Setenv("AWS_ACCESS_KEY_ID", "test")
+			t.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+			t.Setenv("AWS_SESSION_TOKEN", "")
+			t.Setenv("AWS_PROFILE", "")
+			t.Setenv("AWS_CONFIG_FILE", filepath.Join(t.TempDir(), "config"))
+			t.Setenv("AWS_SHARED_CREDENTIALS_FILE", filepath.Join(t.TempDir(), "credentials"))
+			t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
+
+			cfg := createDefaultConfig().(*Config)
+			cfg.Region = "us-west-1"
+			cfg.Logs.Groups = GroupConfig{
+				NamedConfigs: map[string]StreamConfig{testLogGroupName: {}},
+			}
+			sink := &consumertest.LogsSink{}
+			logsRcvr := newLogsReceiver(cfg, receiver.Settings{
+				TelemetrySettings: component.TelemetrySettings{Logger: zap.NewNop()},
+			}, sink)
+
+			require.NoError(t, logsRcvr.ensureSession())
+			require.NotNil(t, logsRcvr.client)
+			require.Equal(t, int32(1), calls.Load())
+			require.Equal(t, tt.accountID, logsRcvr.accountID)
+			logsRcvr.client = defaultMockClient()
+
+			for range 2 {
+				sink.Reset()
+				require.NoError(t, logsRcvr.poll(t.Context()))
+				require.Equal(t, 4, sink.LogRecordCount())
+				require.Equal(t, int32(1), calls.Load())
+				for _, logs := range sink.AllLogs() {
+					for i := range logs.ResourceLogs().Len() {
+						id, ok := logs.ResourceLogs().At(i).Resource().Attributes().Get("cloud.account.id")
+						require.Equal(t, tt.accountID != "", ok)
+						require.Equal(t, tt.accountID, id.Str())
+					}
+				}
+			}
+		})
+	}
 }
 
 func TestPrefixedNamedStreamsConfig(t *testing.T) {

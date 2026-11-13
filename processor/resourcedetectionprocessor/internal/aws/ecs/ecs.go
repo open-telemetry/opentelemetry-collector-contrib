@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
@@ -25,6 +26,14 @@ import (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
+	// hostLookup is true when any host.* attribute is enabled, which makes the
+	// detector query the ECS and EC2 APIs for tasks running on EC2.
+	hostLookup bool
+	// lastHost is the last successful EC2 lookup. It is reused for the lifetime
+	// of the same task, in strict and soft mode, without further API calls.
+	lastHost              *ec2Host
+	logger                *zap.Logger
+	clients               func(context.Context, string) (ecsAPI, ec2API, error)
 	provider              ecsutil.MetadataProvider
 	rb                    *metadata.ResourceBuilder
 	failOnMissingMetadata bool
@@ -40,12 +49,14 @@ func NewDetector(params processor.Settings, dcfg internal.DetectorConfig, failOn
 		}
 		return nil, fmt.Errorf("unable to create task metadata provider: %w", err)
 	}
-	return &Detector{provider: provider, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes), failOnMissingMetadata: failOnMissingMetadata}, nil
+	ra := cfg.ResourceAttributes
+	hostLookup := ra.HostID.Enabled || ra.HostName.Enabled || ra.HostType.Enabled || ra.HostImageID.Enabled
+	return &Detector{hostLookup: hostLookup, logger: params.Logger, clients: newEC2MetadataClients, provider: provider, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes), failOnMissingMetadata: failOnMissingMetadata}, nil
 }
 
 // Detect records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes
 // TODO(willarmiros): Replace all attribute fields and enums with values defined in "conventions" once they exist
-func (d *Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	// don't attempt to fetch metadata if there's no provider (incompatible env)
 	if d.provider == nil {
 		if d.failOnMissingMetadata {
@@ -94,10 +105,22 @@ func (d *Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 		d.rb.SetAwsEcsLaunchtype("fargate")
 	}
 
+	if d.hostLookup && strings.EqualFold(tmdeResp.LaunchType, "EC2") {
+		if enrichmentErr := d.enrichEC2(ctx, tmdeResp); enrichmentErr != nil {
+			if d.failOnMissingMetadata {
+				// Discard partial attributes before a retry can observe a different task.
+				d.rb.Emit()
+				return pcommon.NewResource(), "", fmt.Errorf("unable to enrich ECS resource with EC2 metadata: %w", enrichmentErr)
+			}
+			d.logger.Warn("Unable to enrich ECS resource with EC2 metadata", zap.Error(enrichmentErr))
+		}
+	}
+
 	selfMetaData, err := d.provider.FetchContainerMetadata()
 
 	if err != nil || selfMetaData == nil {
 		if err != nil && d.failOnMissingMetadata {
+			d.rb.Emit()
 			return pcommon.NewResource(), "", fmt.Errorf("ecs container metadata unavailable: %w", err)
 		}
 		// Task metadata was retrieved successfully, so return it without the container
@@ -108,6 +131,27 @@ func (d *Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 	addValidLogData(tmdeResp.Containers, selfMetaData, account, d.rb)
 
 	return d.rb.Emit(), conventions.SchemaURL, nil
+}
+
+// enrichEC2 adds the EC2 host attributes. A task ARN identifies an immutable
+// placement, so a successful lookup is cached and reused for the same task
+// without further API calls. A different task never inherits another task's
+// host. Failed lookups are not cached and are retried on the next detection.
+func (d *Detector) enrichEC2(ctx context.Context, meta *ecsutil.TaskMetadata) error {
+	if d.lastHost != nil {
+		if d.lastHost.taskARN == meta.TaskARN {
+			d.applyEC2Host(d.lastHost)
+			return nil
+		}
+		d.lastHost = nil
+	}
+	host, err := d.lookupEC2Host(ctx, meta)
+	if err != nil {
+		return err
+	}
+	d.lastHost = host
+	d.applyEC2Host(host)
+	return nil
 }
 
 func constructClusterArn(cluster, region, account string) string {

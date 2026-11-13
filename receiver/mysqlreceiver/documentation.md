@@ -748,6 +748,54 @@ The total wait time of the summarized timed events.
 | digest | Digest. | Any Str | Recommended | - |
 | digest_text | Text before digestion. | Any Str | Recommended | - |
 
+### mysql.table.auto_increment.limit
+
+The maximum value the auto_increment column can hold for a given table, based on its declared integer type and signedness. Reported as a double; values above 2^53 (the largest BIGINT UNSIGNED values) may be off by a small amount due to floating-point precision.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| table | Table name for event or process. | Any Str | Recommended | - |
+| schema | The schema of the object. | Any Str | Recommended | - |
+| mysql.column.name | The name of the table column. | Any Str | Recommended | - |
+
+### mysql.table.auto_increment.usage
+
+The current auto_increment value for a given table. Reported as a double; values above 2^53 (the largest BIGINT UNSIGNED values) may be off by a small amount due to floating-point precision.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| table | Table name for event or process. | Any Str | Recommended | - |
+| schema | The schema of the object. | Any Str | Recommended | - |
+| mysql.column.name | The name of the table column. | Any Str | Recommended | - |
+
+### mysql.table.auto_increment.utilization
+
+The fraction of the auto_increment column's integer range currently in use for a given table, between 0 and 1.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| table | Table name for event or process. | Any Str | Recommended | - |
+| schema | The schema of the object. | Any Str | Recommended | - |
+| mysql.column.name | The name of the table column. | Any Str | Recommended | - |
+
 ### mysql.table.average_row_length
 
 The average row length in bytes for a given table.
@@ -954,7 +1002,9 @@ This provides real-time visibility into active queries, helping users monitor da
 | network.peer.address | IP address of the peer client. | Any Str | - |
 | network.peer.port | TCP port used by the peer client. | Any Int | - |
 | mysql.client.name | The client driver's self-reported identity at connection time, e.g. "MySQL Connector/J" or "libmysql". Empty if the client reported no connect attributes or the connect-attrs feature is disabled server-side. | Any Str | - |
-| mysql.events_statements_current.timer_start | Internal, monotonically increasing picosecond counter (not wall-clock time) marking when the current statement started executing. Changes only when a new statement begins on this thread, making it a stable per-execution key for deduplicating a statement's wait-event rows across scrape cycles. | Any Int | - |
+| mysql.blocking.blocker.count | The number of concurrent InnoDB row-lock blockers currently holding a lock this session is waiting on. 0 indicates the session is not currently blocked, but also covers engines where blocking isn't measured (MariaDB, MySQL <8.0.11) -- an int can't carry that case separately. Check mysql.blocking.blocker.details to tell the two apart. | Any Int | - |
+| mysql.blocking.blocker.details | A JSON array of {thread_id, session_id} tuples, one per concurrent InnoDB row-lock blocker for this session. Unordered. session_id is null when that blocker could not be resolved (e.g. it disconnected between reads). "[]" when measured and not blocked, empty string when blocking isn't measurable on this engine/version (MariaDB, MySQL <8.0.11). | Any Str | - |
+| mysql.events_statements_current.event_id | statement.EVENT_ID from events_statements_current, an internal counter scoped to this thread that increases monotonically and changes only when a new statement begins. Paired with mysql.threads.thread_id, forms a compact, stable per-execution key for deduplicating a statement's rows across scrape cycles. Distinct from mysql.event_id, which follows the current wait event rather than the statement. | Any Int | - |
 
 ### db.server.top_query
 

@@ -190,6 +190,9 @@ $defs:
       max_broker_write_bytes:
         description: MaxBrokerWriteBytes is the maximum bytes the producer will write to a broker in a single request. It must be >= MaxMessageBytes. Maps to franz-go's kgo.BrokerMaxWriteBytes, whose default (and minimum accepted value) is 100 MiB. (default 104857600)
         type: integer
+      max_inflight_requests_per_broker:
+        description: MaxInflightRequestsPerBroker is the maximum number of produce requests the producer keeps in flight to each broker. Maps to franz-go's kgo.MaxProduceRequestsInflightPerBroker. It only takes effect when idempotent produce is disabled (required_acks 0 or 1); with required_acks "all" (-1) idempotent produce manages the limit itself, so this must be left at 1. Values above 1 may reorder records and may produce duplicates on connection errors. (default 1)
+        type: integer
       max_message_bytes:
         description: MaxMessageBytes is the maximum message bytes the producer will accept to produce. It must be less than or equal to MaxBrokerWriteBytes, and must fit in an int32 as it maps to franz-go's kgo.ProducerBatchMaxBytes. (default 1000000)
         type: integer
