@@ -44,7 +44,7 @@ func (packer *logPacker) handleEventData(envelope *contracts.Envelope, data *con
 	envelope.Name = eventData.EnvelopeName("")
 	envelope.Data = data
 
-	packer.sanitizeAll(envelope, eventData)
+	packer.sanitizeAll(envelope, eventData, eventData.Properties)
 }
 
 func (packer *logPacker) handleMessageData(envelope *contracts.Envelope, data *contracts.Data, logRecord plog.LogRecord, resource pcommon.Resource, instrumentationScope pcommon.InstrumentationScope) {
@@ -71,7 +71,7 @@ func (packer *logPacker) handleMessageData(envelope *contracts.Envelope, data *c
 
 	setAttributesAsProperties(logRecord.Attributes(), messageData.Properties)
 
-	packer.sanitizeAll(envelope, messageData)
+	packer.sanitizeAll(envelope, messageData, messageData.Properties)
 }
 
 // tagMappings returns the configured envelope tag mappings if any, else nil
@@ -83,9 +83,9 @@ func (packer *logPacker) tagMappings() *TagMappingsConfig {
 	return &packer.config.TagMappings
 }
 
-func (packer *logPacker) sanitizeAll(envelope *contracts.Envelope, data any) {
+func (packer *logPacker) sanitizeAll(envelope *contracts.Envelope, data any, properties map[string]string) {
 	if sanitizer, ok := data.(interface{ Sanitize() []string }); ok {
-		packer.sanitize(sanitizer.Sanitize)
+		packer.sanitize(func() []string { return sanitizeKeepingGenAIContent(properties, sanitizer.Sanitize) })
 	}
 	packer.sanitize(envelope.Sanitize)
 	packer.sanitize(func() []string { return contracts.SanitizeTags(envelope.Tags) })
@@ -136,7 +136,7 @@ func (packer *logPacker) handleExceptionData(envelope *contracts.Envelope, data 
 
 	setAttributesAsProperties(logAttributeMap, exceptionData.Properties)
 
-	packer.sanitizeAll(envelope, exceptionData)
+	packer.sanitizeAll(envelope, exceptionData, exceptionData.Properties)
 }
 
 func (packer *logPacker) sanitize(sanitizeFunc func() []string) {
