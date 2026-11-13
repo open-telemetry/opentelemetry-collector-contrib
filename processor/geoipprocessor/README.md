@@ -46,9 +46,9 @@ The following settings can be configured:
 - `context` (default: `resource`): Allows specifying the underlying telemetry context the processor will work with. Available values:
   - `resource`: Resource attributes.
   - `record`: Attributes within a data point, log record or a span.
-- `attributes` (default: `[client.address, source.address]`): An array of attribute names, which are used for the IP address lookup.
+- `attributes` (default: `[client.address, source.address]`): An array of attribute names, which are used for the IP address lookup. If an attribute cannot be parsed as a valid IP address, the processor will fall back to checking the next configured attribute. If none of the attributes yield a valid IP address, the record is skipped with a warning log without halting execution.
 
-- `error_mode` (default: `propagate`): Determines how the processor reacts to errors that occur while looking up geolocation data for an IP address. Available values:
+- `error_mode` (default: `propagate`): Determines how the processor reacts to errors that occur while looking up geolocation data for an IP address. Missing or unparseable IP address attributes do not halt processing. Available values:
   - `propagate`: Log the error and return it, halting processing of the telemetry item.
   - `ignore`: Log the error and continue processing (the geolocation attributes are simply not added).
   - `silent`: Continue processing without logging the error.

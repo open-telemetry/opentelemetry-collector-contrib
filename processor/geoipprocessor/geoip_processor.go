@@ -55,15 +55,19 @@ func parseIP(strIP string) (netip.Addr, error) {
 // ipFromAttributes extracts an IP address from the given attributes based on the specified fields.
 // It returns the first IP address if found, or an error if no valid IP address is found.
 func ipFromAttributes(attributes []attribute.Key, resource pcommon.Map) (netip.Addr, error) {
+	var parseErr error
 	for _, attr := range attributes {
 		if ipField, found := resource.Get(string(attr)); found {
-			// The attribute might contain a domain name. Skip any net.ParseIP error until we have a fine-grained error propagation strategy.
-			// TODO: propagate an error once error_mode configuration option is available (e.g. transformprocessor)
 			ipAttribute, err := parseIP(ipField.AsString())
 			if err == nil {
 				return ipAttribute, nil
 			}
+			parseErr = multierr.Append(parseErr, err)
 		}
+	}
+
+	if parseErr != nil {
+		return netip.Addr{}, parseErr
 	}
 
 	return netip.Addr{}, errIPNotFound
@@ -93,11 +97,15 @@ func (g *geoIPProcessor) geoLocation(ctx context.Context, ip netip.Addr) (attrib
 func (g *geoIPProcessor) processAttributes(ctx context.Context, metadata pcommon.Map) error {
 	ipAddr, err := ipFromAttributes(g.cfg.Attributes, metadata)
 	if err != nil {
-		// TODO: log IP error not found
+		// A missing IP attribute is a normal "not applicable" case, not an error (see #35069).
 		if errors.Is(err, errIPNotFound) {
 			return nil
 		}
-		return err
+
+		if g.cfg.ErrorMode != ottl.SilentError {
+			g.logger.Warn("failed to parse IP address", zap.Error(err))
+		}
+		return nil
 	}
 
 	attributes, err := g.geoLocation(ctx, ipAddr)
