@@ -338,7 +338,7 @@ func TestEventAcknowledgmentEnqueueTimeoutClosesWithoutACK(t *testing.T) {
 func TestConnectionsBoundedByLimitListener(t *testing.T) {
 	next := new(consumertest.LogsSink)
 	connect, cancel, recv := setupServerWithConsumer(t, next, func(r *fluentReceiver) {
-		r.maxConnections = 1
+		r.conf.MaxConnections = 1
 	})
 	defer cancel()
 
