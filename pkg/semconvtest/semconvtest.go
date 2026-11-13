@@ -181,7 +181,7 @@ func TestTraces(tb testing.TB, traces ptrace.Traces, opts ...WeaverOption) []Pol
 // for every violation-level finding. The violation findings are returned.
 func runLiveCheck(tb testing.TB, opts []WeaverOption, send func(context.Context, *pdataClients) error) []PolicyFinding {
 	tb.Helper()
- version, _ := normalizeWeaverVersion(defaultWeaverVersion)
+	version, _ := normalizeWeaverVersion(defaultWeaverVersion)
 
 	options := &weaverOptions{
 		version: version,
