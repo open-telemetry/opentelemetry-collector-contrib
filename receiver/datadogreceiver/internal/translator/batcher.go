@@ -6,6 +6,7 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 )
@@ -66,6 +67,8 @@ func (b batcher) Lookup(dim dimensions) (pmetric.Metric, identity.Metric) {
 	if !ok {
 		resourceMetrics = b.Metrics.ResourceMetrics().AppendEmpty()
 		resource.MoveTo(resourceMetrics.Resource())
+		// The attribute names come from this semconv version, as on traces.
+		resourceMetrics.SetSchemaUrl(conventions.SchemaURL)
 		b.resourceMetrics[resourceID] = resourceMetrics
 	}
 

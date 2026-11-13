@@ -11,6 +11,7 @@ import (
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/sketches-go/ddsketch"
 	"github.com/stretchr/testify/assert"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -99,6 +100,7 @@ func TestTranslateStats(t *testing.T) {
 		st := NewStatsTranslator()
 		mx, err := st.TranslateStats(want, lang, tracerVersion)
 		assert.NoError(t, err)
+		assert.Equal(t, conventions.SchemaURL, mx.ResourceMetrics().At(0).SchemaUrl())
 
 		var results []*pb.StatsPayload
 		for i := 0; i < mx.ResourceMetrics().Len(); i++ {

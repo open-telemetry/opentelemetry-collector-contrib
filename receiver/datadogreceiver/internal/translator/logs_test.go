@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -113,6 +114,14 @@ func TestToPlog(t *testing.T) {
 			))
 		})
 	}
+}
+
+func TestToPlogSchemaURL(t *testing.T) {
+	// The resource attribute names come from the pinned semconv version, so the
+	// resource says so, as the traces translator already does.
+	logs := ToPlog(unmarshalLogs(t, `[{"message":"m","hostname":"h","service":"s"}]`), receivedAt, false)
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+	assert.Equal(t, conventions.SchemaURL, logs.ResourceLogs().At(0).SchemaUrl())
 }
 
 func TestToPlogEmpty(t *testing.T) {

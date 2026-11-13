@@ -9,6 +9,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
 	normalizeutil "github.com/DataDog/datadog-agent/pkg/trace/traceutil/normalize"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -47,6 +48,7 @@ func (st *StatsTranslator) TranslateStats(clientStats *pb.ClientStatsPayload, la
 
 	mmx := pmetric.NewMetrics()
 	rmx := mmx.ResourceMetrics().AppendEmpty()
+	rmx.SetSchemaUrl(conventions.SchemaURL)
 	smx := rmx.ScopeMetrics().AppendEmpty()
 	mslice := smx.Metrics()
 	mx := mslice.AppendEmpty()

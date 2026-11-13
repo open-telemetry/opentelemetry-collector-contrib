@@ -147,6 +147,7 @@ func ToPlog(incomingLogs []*DatadogLogPayload, receivedAt time.Time, decodeJSONM
 		sl, ok := scopeByResource[resourceKey(attrs.resource)]
 		if !ok {
 			rl := logs.ResourceLogs().AppendEmpty()
+			rl.SetSchemaUrl(conventions.SchemaURL)
 			attrs.resource.CopyTo(rl.Resource().Attributes())
 			sl = rl.ScopeLogs().AppendEmpty()
 			scopeByResource[resourceKey(attrs.resource)] = sl

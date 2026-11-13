@@ -23,6 +23,7 @@ resourceLogs:
             severityText: info
             timeUnixNano: "1000000000000000"
         scope: {}
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
   - resource:
       attributes:
         - key: host.name
@@ -50,6 +51,7 @@ resourceLogs:
             severityText: error
             timeUnixNano: "2000000000000000"
         scope: {}
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
   - resource:
       attributes:
         - key: host.name
@@ -74,3 +76,4 @@ resourceLogs:
             severityText: warning
             timeUnixNano: "3000000000000000"
         scope: {}
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
