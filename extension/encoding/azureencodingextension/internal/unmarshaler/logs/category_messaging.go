@@ -12,10 +12,8 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventionsv139 "go.opentelemetry.io/otel/semconv/v1.39.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler"
 )
 
@@ -165,12 +163,7 @@ func (r *azureMSDiagnosticErrorLog) PutCommonAttributes(attrs pcommon.Map, body 
 
 	// Then put custom top-level attributes
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureMSTaskName, r.TaskName)
-	if !metadata.ExtensionAzureencodingDontEmitV0LogConventionsFeatureGate.IsEnabled() {
-		unmarshaler.AttrPutStrIf(attrs, string(conventionsv139.ErrorMessageKey), r.ErrorMessage)
-	}
-	if metadata.ExtensionAzureencodingEmitV1LogConventionsFeatureGate.IsEnabled() {
-		unmarshaler.AttrPutStrIf(attrs, string(conventions.ExceptionMessageKey), r.ErrorMessage)
-	}
+	unmarshaler.AttrPutStrIf(attrs, string(conventions.ExceptionMessageKey), r.ErrorMessage)
 	unmarshaler.AttrPutIntNumberIf(attrs, attributeAzureMSErrorCount, r.ErrorCount)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.ErrorTypeKey), r.OperationResult)
 }
@@ -315,12 +308,7 @@ func (r *azureMSOperationalLog) PutProperties(attrs pcommon.Map, _ pcommon.Value
 	unmarshaler.AttrPutURLParsed(attrs, r.Properties.ViaURL)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.AzureServiceRequestIDKey), r.Properties.TrackingID)
 	unmarshaler.AttrPutStrIf(attrs, attributeErrorCode, r.Properties.ErrorCode)
-	if !metadata.ExtensionAzureencodingDontEmitV0LogConventionsFeatureGate.IsEnabled() {
-		unmarshaler.AttrPutStrIf(attrs, string(conventionsv139.ErrorMessageKey), r.Properties.ErrorMessage)
-	}
-	if metadata.ExtensionAzureencodingEmitV1LogConventionsFeatureGate.IsEnabled() {
-		unmarshaler.AttrPutStrIf(attrs, string(conventions.ExceptionMessageKey), r.Properties.ErrorMessage)
-	}
+	unmarshaler.AttrPutStrIf(attrs, string(conventions.ExceptionMessageKey), r.Properties.ErrorMessage)
 
 	return nil
 }

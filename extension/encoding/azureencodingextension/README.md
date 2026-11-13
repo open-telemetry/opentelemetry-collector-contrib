@@ -183,19 +183,12 @@ receivers:
 
 This extension follows Collector-native semconv migration gates for log attribute key migrations.
 
-The following feature gates control migration of legacy log keys (v0) to stable keys (v1):
+The migration of legacy log keys (v0) to stable keys (v1) is complete. The following feature gates are
+Stable and can no longer be disabled; the extension always emits `exception.message` and no longer emits
+the deprecated `error.message` attribute:
 
 - `extension.azureencoding.EmitV1LogConventions`
 - `extension.azureencoding.DontEmitV0LogConventions`
-
-Behavior matrix:
-
-| EmitV1 | DontEmitV0 | Behavior |
-| --- | --- | --- |
-| false | false | Emit v0 conventions only (default) |
-| true | false | Emit both v0 and v1 conventions |
-| true | true | Emit v1 conventions only |
-| false | true | Invalid configuration (startup error) |
 
 ### Log format identification
 
