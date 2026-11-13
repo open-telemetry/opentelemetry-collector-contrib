@@ -20,6 +20,9 @@ $defs:
     description: S3DownloaderConfig contains aws s3 downloader related config to controls things like bucket, prefix, batching, connections, retries, etc.
     type: object
     properties:
+      decompression:
+        description: 'Decompression sets the algorithm used to decompress objects whose key does not end with a recognized compression suffix (`.gz` or `.zst`). Valid values are: `gzip`, `zstd`, `none` or no value set.'
+        $ref: go.opentelemetry.io/collector/config/configcompression.type
       endpoint:
         type: string
       endpoint_partition_id:
