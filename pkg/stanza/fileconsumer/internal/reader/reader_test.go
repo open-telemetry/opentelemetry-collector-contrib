@@ -400,6 +400,44 @@ func BenchmarkFileRead(b *testing.B) {
 	}
 }
 
+func BenchmarkReadContents(b *testing.B) {
+	tempDir := b.TempDir()
+
+	temp := filetest.OpenTemp(b, tempDir)
+	_, err := temp.WriteString(temp.Name() + "\n")
+	require.NoError(b, err)
+	for range 100 {
+		_, err := temp.WriteString(string(filetest.TokenWithLength(999)) + "\n")
+		require.NoError(b, err)
+	}
+
+	counter := atomic.Int64{}
+	f := newTestFactory(b, func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64, _ []int64) error {
+		counter.Add(int64(len(tokens)))
+		return nil
+	})
+
+	file, err := os.OpenFile(temp.Name(), os.O_RDONLY, 0o600)
+	require.NoError(b, err)
+	defer file.Close()
+
+	fp, err := f.NewFingerprint(file)
+	require.NoError(b, err)
+	reader, err := f.NewReader(file, fp)
+	require.NoError(b, err)
+	defer reader.Close()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; b.Loop(); i++ {
+		reader.Offset = 0
+		reader.RecordNum = 0
+		reader.ReadToEnd(b.Context())
+		assert.EqualValues(b, (i+1)*101, counter.Load())
+	}
+}
+
 func newTestFactory(tb testing.TB, callback emit.Callback) *Factory {
 	splitFunc, err := split.Config{}.Func(unicode.UTF8, false, defaultMaxLogSize)
 	require.NoError(tb, err)
