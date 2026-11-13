@@ -507,9 +507,11 @@ func commonShouldSampleLogic[T any](
 		// preventing the threshold from being lowered, only allowing
 		// probability to fall and never to rise.
 		if err := carrier.updateThreshold(threshold); err != nil {
-			if errors.Is(err, sampling.ErrInconsistentSampling) {
+			if errors.Is(err, sampling.ErrInconsistentSampling) || errors.Is(err, sampling.ErrZeroCount) {
 				// This is working-as-intended.  You can't lower
-				// the threshold, it's illogical.
+				// the threshold, it's illogical, and the zero-count
+				// flag is mutually exclusive with the threshold, so
+				// the item is passed through unmodified.
 				logger.Debug(description, zap.Error(err))
 			} else {
 				logger.Info(description, zap.Error(err))
