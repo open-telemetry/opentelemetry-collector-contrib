@@ -1312,6 +1312,7 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			queryPlanHash = queryPlanCacheID
 		}
 
+		waitTime := m.sanitizeWaitTime(sample.waitTime)
 		blockerDetailsJSON, blockerCount := m.deriveBlockingCount(sample.blockerDetails)
 
 		m.lb.RecordDbServerQuerySampleEvent(
@@ -1334,7 +1335,7 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			sample.sessionStatus,
 			sample.sessionID,
 			sample.statementTimerWait,
-			sample.waitTime,
+			waitTime,
 			clientAddress,
 			clientPort,
 			networkPeerAddress,
@@ -1408,6 +1409,29 @@ func createCacheKey(dbName, digestTextHash string) string {
 func getDigestTextHash(digestText string) string {
 	sum := sha256.Sum256([]byte(digestText))
 	return hex.EncodeToString(sum[:])
+}
+
+// maxPlausibleWaitSeconds bounds mysql.events_waits_current.timer_wait.
+// Backstop for an observed overflow where the in-progress wait estimate
+// (current_time - wait.timer_start) grows unbounded when a wait event never
+// resolves the way it does on standalone InnoDB (observed on Aurora MySQL's
+// redo_log_flush wait). Set generously above any legitimate wait -- including
+// long lock waits during real blocking incidents, which mysql.blocking.*
+// surfaces and must not be zeroed -- so this only ever catches the overflow
+// case, not slow-but-real waits.
+const maxPlausibleWaitSeconds = 86400.0
+
+// sanitizeWaitTime clamps an implausible mysql.events_waits_current.timer_wait
+// reading to zero. Deliberately has no notion of wait category: it's a
+// mechanism-agnostic plausibility backstop, not a diagnosis of why a given
+// reading is wrong.
+func (m *mySQLScraper) sanitizeWaitTime(waitTime float64) float64 {
+	if waitTime > maxPlausibleWaitSeconds {
+		m.logger.Warn("Discarding implausible mysql.events_waits_current.timer_wait reading",
+			zap.Float64("timer_wait_seconds", waitTime))
+		return 0
+	}
+	return waitTime
 }
 
 // blockerJSONEntry is one element of the raw blockers JSON produced by
