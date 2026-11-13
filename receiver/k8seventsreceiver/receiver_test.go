@@ -162,7 +162,7 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 		return sink.LogRecordCount() == 1
 	}, 5*time.Second, 100*time.Millisecond, "logs not collected while leader")
 
-	// lose leadership - this will trigger Shutdown()
+	// lose leadership - this will trigger stopWatches()
 	le.InvokeOnStopping()
 
 	// Verify count remains at 1 after losing leadership
@@ -179,6 +179,83 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 
 	// Final cleanup
 	require.NoError(t, r.Shutdown(t.Context()))
+}
+
+func TestReceiverWithLeaderElectionAndStorage(t *testing.T) {
+	le := &k8sleaderelectortest.FakeLeaderElection{}
+	leaderID := component.MustNewID("k8s_leader_elector")
+	storageID := storagetest.NewStorageID("file_storage")
+	host := storagetest.NewStorageHost().
+		WithInMemoryStorageExtension("file_storage").
+		WithExtension(leaderID, le)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.K8sLeaderElector = &leaderID
+	cfg.Storage = &storageID
+	cfg.makeClient = func(_ k8sconfig.APIConfig) (k8s.Interface, error) {
+		return fake.NewClientset(), nil
+	}
+	scheme := runtime.NewScheme()
+	_ = corev1.AddToScheme(scheme)
+	cfg.makeDynamicClient = func(k8sconfig.APIConfig) (dynamic.Interface, error) {
+		return dynamicfake.NewSimpleDynamicClient(scheme), nil
+	}
+
+	sink := new(consumertest.LogsSink)
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		cfg,
+		sink,
+	)
+	require.NoError(t, err)
+	recv := r.(*k8seventsReceiver)
+
+	require.NoError(t, r.Start(t.Context(), host))
+	require.NotNil(t, recv.storageClient)
+
+	// Step 1: Become leader
+	le.InvokeOnLeading()
+	recv.handleEvent(getEvent("Normal"), apiWatch.Added)
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() == 1
+	}, 5*time.Second, 100*time.Millisecond, "logs not collected while leader")
+
+	// Ensure storage client is usable
+	err = recv.storageClient.Set(t.Context(), "key1", []byte("val1"))
+	require.NoError(t, err)
+
+	// Step 2: Lose leadership (calls stopWatches, NOT Shutdown)
+	le.InvokeOnStopping()
+
+	// Storage client must NOT be closed upon losing leadership
+	val, err := recv.storageClient.Get(t.Context(), "key1")
+	require.NoError(t, err)
+	require.Equal(t, []byte("val1"), val)
+
+	// Step 3: Regain leadership
+	le.InvokeOnLeading()
+	recv.handleEvent(getEvent("Normal"), apiWatch.Added)
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() == 2
+	}, 5*time.Second, 100*time.Millisecond, "logs not collected after regaining leadership")
+
+	// Storage client must still be fully usable
+	err = recv.storageClient.Set(t.Context(), "key2", []byte("val2"))
+	require.NoError(t, err)
+
+	// Step 4: Final Shutdown of receiver component
+	require.NoError(t, r.Shutdown(t.Context()))
+
+	// Storage client must now be closed
+	_, err = recv.storageClient.Get(t.Context(), "key1")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "closed")
+
+	// Subsequent leadership callback after shutdown must be a no-op
+	le.InvokeOnLeading()
+	recv.mu.Lock()
+	assert.Empty(t, recv.stopperChanList, "watchers should not restart after shutdown")
+	recv.mu.Unlock()
 }
 
 func getEvent(eventType string) *corev1.Event {

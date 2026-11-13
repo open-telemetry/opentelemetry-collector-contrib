@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: receiver/k8s_events
+note: Avoid closing storage client and telemetry on temporary leader election loss
+issues: [53088]
+subtext:
+change_logs: [user]
