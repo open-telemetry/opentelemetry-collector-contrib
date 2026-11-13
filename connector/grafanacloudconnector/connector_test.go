@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"gotest.tools/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector/internal/metadata"
 )
@@ -50,10 +50,10 @@ func TestNewConnector(t *testing.T) {
 			c, err := factory.CreateTracesToMetrics(t.Context(), connectortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			imp := c.(*connectorImp)
 
-			assert.NilError(t, err)
-			assert.Assert(t, imp != nil)
-			assert.DeepEqual(t, tc.expectedConfig.HostIdentifiers, imp.config.HostIdentifiers)
-			assert.DeepEqual(t, tc.expectedConfig.MetricsFlushInterval, imp.config.MetricsFlushInterval)
+			require.NoError(t, err)
+			require.NotNil(t, imp)
+			require.Equal(t, tc.expectedConfig.HostIdentifiers, imp.config.HostIdentifiers)
+			require.Equal(t, tc.expectedConfig.MetricsFlushInterval, imp.config.MetricsFlushInterval)
 		})
 	}
 }
@@ -139,24 +139,24 @@ func TestConsumeTraces(t *testing.T) {
 
 			sink := &consumertest.MetricsSink{}
 			c, err := factory.CreateTracesToMetrics(t.Context(), connectortest.NewNopSettings(metadata.Type), tc.cfg, sink)
-			assert.NilError(t, err)
+			require.NoError(t, err)
 
 			ctx := t.Context()
-			assert.NilError(t, c.Start(ctx, componenttest.NewNopHost()))
+			require.NoError(t, c.Start(ctx, componenttest.NewNopHost()))
 			err = c.ConsumeTraces(ctx, tc.input)
-			assert.NilError(t, err)
-			assert.NilError(t, c.Shutdown(ctx))
+			require.NoError(t, err)
+			require.NoError(t, c.Shutdown(ctx))
 
 			metrics := sink.AllMetrics()
-			assert.Equal(t, tc.expectedMetricsLen, len(metrics))
+			require.Len(t, metrics, tc.expectedMetricsLen)
 
 			if len(metrics) > 0 {
 				sm := metrics[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-				assert.Equal(t, hostInfoMetric, sm.Name())
+				require.Equal(t, hostInfoMetric, sm.Name())
 
 				val, ok := sm.Gauge().DataPoints().At(0).Attributes().Get(hostIdentifierAttr)
-				assert.Assert(t, ok)
-				assert.Equal(t, tc.expectedValue, val.AsString())
+				require.True(t, ok)
+				require.Equal(t, tc.expectedValue, val.AsString())
 			}
 		})
 	}
