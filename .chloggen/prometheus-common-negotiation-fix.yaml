@@ -1,0 +1,10 @@
+change_type: bug_fix
+component: exporter/prometheus
+note: >-
+  Honor the escaping scheme of the selected scrape format instead of inheriting it from unsupported formats,
+  aligning with the [specification for content negotiation and translation strategy](https://opentelemetry.io/docs/specs/otel/metrics/sdk_exporters/prometheus/#interaction-with-translation-strategy).
+issues: [52665]
+subtext: |
+  With `NoUTF8EscapingWithSuffixes` or `NoTranslation`, names are now underscore-escaped when the selected format has no escaping parameter.
+  Prometheus scrapes requesting text format 1.0.0 with `escaping=allow-utf-8` preserve UTF-8 names without enabling OpenMetrics.
+change_logs: [user]
