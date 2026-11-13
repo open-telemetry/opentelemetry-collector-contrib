@@ -181,7 +181,7 @@ metadata:
   labels:
     app: otelcontribcol
 rules:
-- apiGroups: [""]
+- apiGroups: ["events.k8s.io"]
   resources: ["events"]
   verbs: ["get", "list", "watch"]
 EOF
