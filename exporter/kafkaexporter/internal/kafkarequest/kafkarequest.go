@@ -13,6 +13,8 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
 )
 
 var (
@@ -76,10 +78,18 @@ func (r *Request) MergeSplit(
 	}
 }
 
-// OnError implements RequestErrorHandler. PoC stub: returns r unchanged.
-// Per-record retry requires surfacing kgo per-record errors from the producer;
-// tracked as follow-up.
-func (r *Request) OnError(_ error) xexporterhelper.Request { return r }
+// OnError implements RequestErrorHandler. It inspects err for per-record retryable
+// failures. If retryable records are present, a new Request containing only those
+// records is returned, avoiding unnecessary re-sends of acknowledged or permanently failed records.
+func (r *Request) OnError(err error) xexporterhelper.Request {
+	if recErr, ok := errors.AsType[*kafkaclient.RecordsError](err); ok {
+		retryable := recErr.RetryableRecords()
+		if len(retryable) > 0 {
+			return New(retryable)
+		}
+	}
+	return r
+}
 
 func sumRecordSize(records []*kgo.Record) int {
 	var total int
