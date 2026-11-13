@@ -4,10 +4,19 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 import (
+	"math"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/precision"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
+)
+
+const (
+	nanoCoresPerCore  = 1_000_000_000
+	milliCoresPerCore = 1_000
+	nanoCoresPerMilli = nanoCoresPerCore / milliCoresPerCore
 )
 
 func addCPUMetrics(
@@ -61,15 +70,39 @@ func addCPUUtilizationMetrics(
 	r resources,
 	nodeCPULimit float64,
 ) {
+	utilization := floatUtilization
+	if metadata.ReceiverKubeletStatsCPUUtilizationRoundingFeatureGate.IsEnabled() {
+		utilization = roundedUtilization
+	}
 	if nodeCPULimit > 0 {
-		cpuMetrics.NodeUtilization(mb, currentTime, usageCores/nodeCPULimit)
+		cpuMetrics.NodeUtilization(mb, currentTime, utilization(usageCores, nodeCPULimit))
 	}
 	if r.cpuLimit > 0 {
-		cpuMetrics.LimitUtilization(mb, currentTime, usageCores/r.cpuLimit)
+		cpuMetrics.LimitUtilization(mb, currentTime, utilization(usageCores, r.cpuLimit))
 	}
 	if r.cpuRequest > 0 {
-		cpuMetrics.RequestUtilization(mb, currentTime, usageCores/r.cpuRequest)
+		cpuMetrics.RequestUtilization(mb, currentTime, utilization(usageCores, r.cpuRequest))
 	}
+}
+
+func floatUtilization(usageCores, limitCores float64) float64 {
+	return usageCores / limitCores
+}
+
+// roundedUtilization computes usageCores/limitCores from integer nanocore values and
+// rounds the result to the number of significant digits justified by the inputs
+// (see precision.Ratio), avoiding float64 artifacts such as 0.30000000000000004.
+//
+// Converting back to integers recovers the original values for the inputs used
+// here, because the rounding only undoes float64 representation error: CPU limits,
+// requests and node capacity originate from Kubernetes resource.Quantity values,
+// which have millicore resolution, and usage originates from integer nanocore or
+// nanosecond values reported by the kubelet. The final result is still rounded by
+// precision.Ratio, so it may differ slightly from the exact float64 quotient.
+func roundedUtilization(usageCores, limitCores float64) float64 {
+	usageNanoCores := uint64(math.Round(usageCores * nanoCoresPerCore))
+	limitNanoCores := uint64(math.Round(limitCores*milliCoresPerCore)) * nanoCoresPerMilli
+	return precision.Ratio(usageNanoCores, limitNanoCores)
 }
 
 func addCPUTimeMetric(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordDoubleDataPointFunc, s *stats.CPUStats, currentTime pcommon.Timestamp) {

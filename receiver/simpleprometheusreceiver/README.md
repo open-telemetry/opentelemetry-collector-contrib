@@ -27,8 +27,8 @@ The following settings are available:
 - `endpoint` (default = `localhost:9090`): The `host:port` of the target to
 scrape. Do not include a scheme or a path: the scheme is selected from the `tls`
 settings (see below) and the path is set with `metrics_path`. An endpoint such
-as `http://host:9090` passes configuration validation but the target is
-dropped by the prometheus scrape manager as an invalid address.
+as `http://host:9090` is rejected at configuration validation with a clear
+error, instead of failing collector start with "is not a valid hostname".
 - `collection_interval` (default = `10s`): The interval at which the target is
 scraped.
 - `timeout` (default = `0`): The scrape timeout. It is capped at
@@ -47,7 +47,8 @@ credentials is rejected at configuration validation. See
 [#52081](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52081).
 - `params` (default = `{}`): The query parameters to pass to the metrics endpoint. If specified, params are appended to `metrics_path` to form the URL with which the target is scraped.
 - `use_service_account` (default = `false`): Whether or not to use the
-Kubernetes Pod service account for authentication.
+Kubernetes Pod service account for authentication. The service account token file is
+re-read on each scrape, so rotated tokens are picked up without a restart.
 - `tls`: TLS settings for the scrape. Only the following
 [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings)
 are used: `insecure`, `ca_file`, `ca_pem`, `cert_file`, `cert_pem`, `key_file`,

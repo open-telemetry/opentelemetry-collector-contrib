@@ -45,6 +45,11 @@ var minMySQLPerfSchemaLogStatusVersion = version.Must(version.NewVersion("8.0.11
 // structured InnoDB redo-log status variables were added to SHOW GLOBAL STATUS.
 var minMySQLGlobalStatusRedoLogVersion = version.Must(version.NewVersion("8.0.30"))
 
+// minMySQLDataLockWaitsVersion is the first GA MySQL version with
+// performance_schema.data_lock_waits (8.0.11). Absent on MySQL <8.0.11 and all
+// MariaDB versions.
+var minMySQLDataLockWaitsVersion = version.Must(version.NewVersion("8.0.11"))
+
 type innodbRedoLogStatsSource int
 
 const (
@@ -127,6 +132,27 @@ func (v dbVersion) supportsProcesslist() bool {
 	return v.product == dbProductMySQL && !v.version.LessThan(minMySQLReplicaStatusVersion)
 }
 
+// supportsDataLockWaits reports whether performance_schema.data_lock_waits is
+// available (MySQL 8.0.11+ only, never on MariaDB). This gates the
+// mysql.blocking.blocker.details/blocker.count attributes on
+// db.server.query_sample: on MySQL <8.0.11 and all MariaDB versions,
+// identifying a blocking session's thread/session ID requires
+// information_schema.INNODB_TRX/INNODB_LOCK_WAITS, both of which require the
+// global PROCESS privilege (confirmed via live testing against MySQL 5.7.44
+// and MariaDB 10.5.29) -- the same class of dependency this receiver already
+// avoids for data_lock_waits itself. Rather than reintroduce that failure
+// mode for unprivileged monitoring users, blocker.details reports an empty
+// string ("not measured") and blocker.count reports 0 on those versions.
+func (v dbVersion) supportsDataLockWaits() bool {
+	if !v.isValid() {
+		return false
+	}
+	if v.product == dbProductMariaDB {
+		return false
+	}
+	return !v.version.LessThan(minMySQLDataLockWaitsVersion)
+}
+
 func (v dbVersion) supportsInnodbRedoLogStats() bool {
 	return v.innodbRedoLogStatsSource() != innodbRedoLogStatsSourceUnsupported
 }
@@ -159,6 +185,7 @@ type client interface {
 	getActiveSessionCount() (int64, error)
 	getInnodbRedoLogStatsFromLogStatus() (innodbRedoLogStats, error)
 	getTableStats() ([]tableStats, error)
+	getAutoIncrementStats() ([]autoIncrementStats, error)
 	getTableIoWaitsStats() ([]tableIoWaitsStats, error)
 	getIndexIoWaitsStats() ([]indexIoWaitsStats, error)
 	getStatementEventsStats() ([]statementEventStats, error)
@@ -170,7 +197,10 @@ type client interface {
 	getTopQueries(topN, lookback uint64, supportsSampleText bool) ([]topQuery, error)
 	// supportsProcesslist controls whether the performance_schema.processlist JOIN
 	// is included to populate client.port and network.peer.port (MySQL 8.0.22+).
-	getQuerySamples(limit uint64, supportsProcesslist bool) ([]querySample, error)
+	// supportsDataLockWaits controls whether mysql.blocking.blocker.details/
+	// blocker.count are populated from performance_schema.data_lock_waits
+	// (MySQL 8.0.11+ only).
+	getQuerySamples(limit uint64, supportsProcesslist, supportsDataLockWaits bool) ([]querySample, error)
 	explainQuery(digestText, sampleStatement, schema, digest string, logger *zap.Logger) string
 	Close() error
 }
@@ -212,6 +242,15 @@ type tableStats struct {
 	averageRowLength int64
 	dataLength       int64
 	indexLength      int64
+}
+
+type autoIncrementStats struct {
+	schema           string
+	table            string
+	column           string
+	currentValue     float64
+	maxValue         float64
+	utilizationRatio float64
 }
 
 type innodbTransactionStats struct {
@@ -373,6 +412,12 @@ type querySample struct {
 	// Connector/J" or "libmysql". Empty if the client reported no connect
 	// attributes.
 	clientName string
+	// blockerDetails is the raw "[{\"thread_id\":..,\"session_id\":..}, ...]"
+	// JSON array produced by querySample.tmpl -- one entry per concurrent
+	// InnoDB row-lock blocker for this thread, unordered. "[]" when measured
+	// and not blocked, empty string when blocking isn't measurable on this
+	// engine/version (MariaDB, MySQL <8.0.11).
+	blockerDetails string
 }
 
 type topQuery struct {
@@ -599,6 +644,73 @@ func (c *mySQLClient) getTableStats() ([]tableStats, error) {
 			&s.rows, &s.averageRowLength,
 			&s.dataLength, &s.indexLength)
 		if err != nil {
+			return nil, err
+		}
+		stats = append(stats, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+// autoIncrementColumnMaxValueCase picks the max value an auto_increment
+// column can hold, based on its integer type and whether it's unsigned.
+// https://dev.mysql.com/doc/refman/8.4/en/integer-types.html
+//
+// The BIGINT UNSIGNED max is cast to DECIMAL(20,0): on MySQL 5.7 the CASE's
+// result type is decided across all branches as a signed BIGINT, so the
+// literal 18446744073709551615 overflows and comes back as -1 unless it's
+// forced wider first.
+const autoIncrementColumnMaxValueCase = `CASE
+	WHEN c.DATA_TYPE = 'tinyint' THEN IF(c.COLUMN_TYPE LIKE '%unsigned%', 255, 127)
+	WHEN c.DATA_TYPE = 'smallint' THEN IF(c.COLUMN_TYPE LIKE '%unsigned%', 65535, 32767)
+	WHEN c.DATA_TYPE = 'mediumint' THEN IF(c.COLUMN_TYPE LIKE '%unsigned%', 16777215, 8388607)
+	WHEN c.DATA_TYPE = 'int' THEN IF(c.COLUMN_TYPE LIKE '%unsigned%', 4294967295, 2147483647)
+	WHEN c.DATA_TYPE = 'bigint' THEN IF(c.COLUMN_TYPE LIKE '%unsigned%', CAST(18446744073709551615 AS DECIMAL(20,0)), 9223372036854775807)
+	ELSE NULL
+END`
+
+// getAutoIncrementStats queries the db for the current auto_increment value,
+// the max value its type allows, and the resulting fraction (0 to 1) of
+// range used, for every auto_increment column.
+//
+// This query is slower than most others in this file: MySQL/MariaDB have to
+// look up every table's metadata to fill in AUTO_INCREMENT, no matter how we
+// filter. Expect it to be noticeably slower on servers with many tables,
+// especially right after a restart.
+//
+// MySQL 8.0 through 9.x have a stats cache bug: for a BIGINT UNSIGNED column
+// whose auto_increment value is above 9223372036854775807 (signed BIGINT
+// max), the cached AUTO_INCREMENT it hands back is wrong - it reports
+// 9223372036854775807 instead of the real value. A fresh, uncached read gets
+// it right. Since most servers run with caching on
+// (information_schema_stats_expiry=86400), this metric can under-report for
+// that one case. Confirmed fine on MySQL 5.7 and all MariaDB versions.
+func (c *mySQLClient) getAutoIncrementStats() ([]autoIncrementStats, error) {
+	query := "SELECT c.TABLE_SCHEMA, c.TABLE_NAME, c.COLUMN_NAME, " +
+		"t.AUTO_INCREMENT, " +
+		"(" + autoIncrementColumnMaxValueCase + ") AS MAX_VALUE, " +
+		"LEAST(t.AUTO_INCREMENT / (" + autoIncrementColumnMaxValueCase + "), 1) AS UTILIZATION_RATIO " +
+		"FROM information_schema.COLUMNS c " +
+		"JOIN information_schema.TABLES t " +
+		"ON t.TABLE_SCHEMA = c.TABLE_SCHEMA AND t.TABLE_NAME = c.TABLE_NAME " +
+		"WHERE c.EXTRA LIKE '%auto_increment%' " +
+		"AND t.AUTO_INCREMENT IS NOT NULL " +
+		"AND c.DATA_TYPE IN ('tinyint', 'smallint', 'mediumint', 'int', 'bigint') " +
+		"AND c.TABLE_SCHEMA NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys');"
+	rows, err := c.client.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stats []autoIncrementStats
+	for rows.Next() {
+		var s autoIncrementStats
+		if err := rows.Scan(&s.schema, &s.table, &s.column, &s.currentValue, &s.maxValue, &s.utilizationRatio); err != nil {
 			return nil, err
 		}
 		stats = append(stats, s)
@@ -1092,13 +1204,14 @@ func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64, supportsSamp
 //go:embed templates/querySample.tmpl
 var querySampleTemplate string
 
-func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool) ([]querySample, error) {
+func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist, supportsDataLockWaits bool) ([]querySample, error) {
 	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
 	buf := bytes.Buffer{}
 
 	if err := tmpl.Execute(&buf, map[string]any{
-		"limit":               limit,
-		"supportsProcesslist": supportsProcesslist,
+		"limit":                 limit,
+		"supportsProcesslist":   supportsProcesslist,
+		"supportsDataLockWaits": supportsDataLockWaits,
 	}); err != nil {
 		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}
@@ -1161,6 +1274,8 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool) ([
 				dest = append(dest, &s.traceparent)
 			case "client_name":
 				dest = append(dest, &s.clientName)
+			case "blocker_details":
+				dest = append(dest, &s.blockerDetails)
 			default:
 				return nil, fmt.Errorf("unknown column name %q for query samples", col)
 			}

@@ -4,7 +4,7 @@
 package tencentcloudlogserviceexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 
 import (
-	"github.com/pierrec/lz4"
+	lz4 "github.com/pierrec/lz4/v4"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
 	tchttp "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/http"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"

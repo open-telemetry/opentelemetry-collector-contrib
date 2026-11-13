@@ -46,11 +46,14 @@ func createLogsProcessor(
 	return proc, nil
 }
 
-func newKeyMaterialProvider(_ context.Context, cfg *Config, logger *zap.Logger) (KeyMaterialProvider, error) {
+func newKeyMaterialProvider(ctx context.Context, cfg *Config, logger *zap.Logger) (KeyMaterialProvider, error) {
 	switch cfg.KeySource.Type {
 	case keySourceK8sSecret:
-		logger.Info("Kubernetes Secret key material provider is not yet implemented")
-		return nil, fmt.Errorf("key_source.type %q is not yet implemented", keySourceK8sSecret)
+		logger.Info("Initializing key material provider from Kubernetes Secret",
+			zap.String("name", cfg.KeySource.K8sSecret.Name),
+			zap.String("namespace", cfg.KeySource.K8sSecret.Namespace),
+		)
+		return newK8sKeyMaterialProvider(ctx, cfg.KeySource.K8sSecret, logger)
 	case keySourceEnv:
 		logger.Info("Initializing key material provider from inline env config (use ${env:VAR} in YAML)")
 		return newInlineKeyMaterialProvider(cfg.KeySource.Env)
@@ -66,8 +69,10 @@ func newKeyMaterialProvider(_ context.Context, cfg *Config, logger *zap.Logger) 
 		}
 		return newFileKeyMaterialProvider(cfg.KeySource.File)
 	case keySourceBao:
-		logger.Info("OpenBao key material provider is not yet implemented")
-		return nil, fmt.Errorf("key_source.type %q is not yet implemented", keySourceBao)
+		logger.Info("Initializing key material provider from OpenBao",
+			zap.String("secret_path", cfg.KeySource.Bao.SecretPath),
+		)
+		return newBaoKeyMaterialProvider(ctx, cfg.KeySource.Bao)
 	default:
 		return nil, fmt.Errorf("unknown key_source.type: %q", cfg.KeySource.Type)
 	}

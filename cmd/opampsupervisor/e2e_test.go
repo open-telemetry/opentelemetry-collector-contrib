@@ -3464,6 +3464,125 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	}
 }
 
+func TestSupervisorIncludesSupervisorInstanceIDInCollectorTelemetry(t *testing.T) {
+	sink := testutil.StartOTLPSink(t, "127.0.0.1:4318")
+
+	var agentID atomic.Value
+	var remoteStatus atomic.Value
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if id, err := uuid.FromBytes(message.InstanceUid); err == nil {
+					agentID.Store(id.String())
+				}
+				if message.RemoteConfigStatus != nil {
+					remoteStatus.Store(message.RemoteConfigStatus)
+				}
+				return &protobufs.ServerToAgent{}
+			},
+		},
+	)
+
+	cfgFile := getSupervisorConfig(t, "emit_telemetry", map[string]string{
+		"url":          server.addr,
+		"telemetryUrl": fmt.Sprintf("localhost:%d", 4318),
+	})
+	cfg, err := config.Load(cfgFile.Name())
+	require.NoError(t, err)
+	cfg.Agent.Description.IncludeSupervisorInstanceID = true
+	logger, err := zap.NewDevelopment()
+	require.NoError(t, err)
+	s, err := supervisor.NewSupervisor(t.Context(), logger, cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, s.Start(t.Context()))
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	// The Supervisor exports its own logs, so its service.instance.id can be
+	// read from the resource attributes of the logs it sends to the backend.
+	var supervisorID string
+	require.Eventually(t, func() bool {
+		for _, logs := range sink.Logs.AllLogs() {
+			for i := 0; i < logs.ResourceLogs().Len(); i++ {
+				attrs := logs.ResourceLogs().At(i).Resource().Attributes()
+				name, _ := attrs.Get("service.name")
+				if name.Str() != "opamp-supervisor" {
+					continue
+				}
+				id, _ := attrs.Get("service.instance.id")
+				supervisorID = id.Str()
+				return supervisorID != ""
+			}
+		}
+		return false
+	}, 10*time.Second, 250*time.Millisecond, "Supervisor did not export its own logs")
+
+	remoteConfig := `
+receivers:
+  nop:
+exporters:
+  nop:
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [nop]
+  telemetry:
+    resource:
+      attributes:
+        - name: service.name
+          value: linked-collector
+    logs:
+      processors:
+        - simple:
+            exporter:
+              otlp:
+                protocol: http/protobuf
+                endpoint: http://localhost:4318
+`
+	hash := sha256.Sum256([]byte(remoteConfig))
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigObject{
+					"": {Body: []byte(remoteConfig)},
+				},
+			},
+			ConfigHash: hash[:],
+		},
+	})
+	require.Eventually(t, func() bool {
+		status, ok := remoteStatus.Load().(*protobufs.RemoteConfigStatus)
+		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED && bytes.Equal(status.LastRemoteConfigHash, hash[:])
+	}, 15*time.Second, 250*time.Millisecond, "Collector did not apply the remote config")
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		found := false
+		for _, logs := range sink.Logs.AllLogs() {
+			for i := 0; i < logs.ResourceLogs().Len(); i++ {
+				attrs := logs.ResourceLogs().At(i).Resource().Attributes()
+				name, _ := attrs.Get("service.name")
+				if name.Str() != "linked-collector" {
+					continue
+				}
+				found = true
+				id, ok := attrs.Get("service.instance.id")
+				assert.True(c, ok)
+				assert.Equal(c, agentID.Load(), id.Str())
+				link, ok := attrs.Get("supervisor.service.instance.id")
+				assert.True(c, ok)
+				assert.Equal(c, supervisorID, link.Str())
+				assert.NotEqual(c, supervisorID, id.Str())
+			}
+		}
+		assert.True(c, found, "Collector did not export its own logs")
+	}, 15*time.Second, 250*time.Millisecond)
+}
+
 func TestSupervisorReportsHeartbeat(t *testing.T) {
 	var heartbeatReport atomic.Bool
 	server := newOpAMPServer(

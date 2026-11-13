@@ -19,7 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -713,9 +712,9 @@ func Test_writeDeadlineExtendedThroughRealServerChain(t *testing.T) {
 	rcv.logsConsumer = new(consumertest.LogsSink)
 
 	// Same handler chain Start builds, wrapped with the real confighttp/otelhttp middleware via ToServer.
-	mx := mux.NewRouter()
-	mx.NewRoute().Path(config.RawPath).HandlerFunc(rcv.handleRawReq)
-	mx.NewRoute().HandlerFunc(rcv.handleReq)
+	mx := http.NewServeMux()
+	mx.HandleFunc(config.RawPath, rcv.handleRawReq)
+	mx.HandleFunc("/", rcv.handleReq)
 	server, err := config.ServerConfig.ToServer(
 		t.Context(),
 		componenttest.NewNopHost().GetExtensions(),
