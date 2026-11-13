@@ -5,7 +5,10 @@ package routingconnector // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,15 +16,231 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/plogutiltest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 )
+
+func TestLogsRetryAfterOneDestinationRejects(t *testing.T) {
+	var healthyBackend, recoveringBackend consumertest.LogsSink
+	recoveringBackendCalls := 0
+	sendToRecoveringBackend := func(ctx context.Context, logs plog.Logs) error {
+		recoveringBackendCalls++
+		// Model a full exporter queue that can accept data on the next attempt.
+		if recoveringBackendCalls == 1 {
+			return exporterhelper.ErrQueueIsFull
+		}
+		return recoveringBackend.ConsumeLogs(ctx, logs)
+	}
+	recoveringExporter, err := consumer.NewLogs(sendToRecoveringBackend)
+	require.NoError(t, err)
+
+	healthyID := pipeline.NewIDWithName(pipeline.SignalLogs, "healthy")
+	recoveringID := pipeline.NewIDWithName(pipeline.SignalLogs, "recovering")
+	routingConfig := &Config{
+		Table: []RoutingTableItem{
+			{
+				Condition: `resource.attributes["k8s.pod.name"] == "healthy"`,
+				Pipelines: []pipeline.ID{healthyID},
+			},
+			{
+				Condition: `resource.attributes["k8s.pod.name"] == "recovering"`,
+				Pipelines: []pipeline.ID{recoveringID},
+			},
+		},
+	}
+	require.NoError(t, routingConfig.Validate())
+
+	destinations := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
+		healthyID:    &healthyBackend,
+		recoveringID: recoveringExporter,
+	})
+	routingConnector, err := NewFactory().CreateLogsToLogs(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), routingConfig, destinations.(consumer.Logs))
+	require.NoError(t, err)
+	require.NoError(t, routingConnector.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, routingConnector.Shutdown(context.WithoutCancel(t.Context())))
+	})
+
+	var batchSizesAtRouting []int
+	recordBatchSizeAndRoute := func(ctx context.Context, logs plog.Logs) error {
+		batchSizesAtRouting = append(batchSizesAtRouting, logs.LogRecordCount())
+		return routingConnector.ConsumeLogs(ctx, logs)
+	}
+	routingWithAttemptRecording, err := consumer.NewLogs(
+		recordBatchSizeAndRoute,
+		consumer.WithCapabilities(routingConnector.Capabilities()),
+	)
+	require.NoError(t, err)
+
+	retryConfig := consumerretry.Config{
+		Enabled:         true,
+		InitialInterval: time.Millisecond,
+		MaxInterval:     time.Millisecond,
+		MaxElapsedTime:  0,
+	}
+	// Use filelog's retry mechanism, with the recorder between retries and routing.
+	receiverWithRetry := consumerretry.NewLogs(retryConfig, zap.NewNop(), routingWithAttemptRecording)
+
+	inputBatch := plog.NewLogs()
+	for _, pod := range []string{"healthy", "recovering"} {
+		rl := inputBatch.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("k8s.pod.name", pod)
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(pod + "-1")
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+	err = receiverWithRetry.ConsumeLogs(ctx, inputBatch)
+
+	t.Logf("Batch sizes received by routing on each attempt: %v", batchSizesAtRouting)
+	t.Logf("Calls to the recovering destination: %d", recoveringBackendCalls)
+	t.Logf("Records delivered: healthy=%d, recovering=%d",
+		healthyBackend.LogRecordCount(), recoveringBackend.LogRecordCount())
+
+	require.NoError(t, err, "retry must succeed after the destination recovers")
+	require.Equal(t, 1, healthyBackend.LogRecordCount(), "the healthy destination must not receive duplicates")
+	require.Equal(t, 1, recoveringBackend.LogRecordCount(), "the rejected record must be delivered on retry")
+	assert.Equal(t, []int{2, 1}, batchSizesAtRouting)
+	assert.Equal(t, "healthy-1", healthyBackend.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
+	assert.Equal(t, "recovering-1", recoveringBackend.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
+}
+
+func TestLogsReturnsRejectedRecords(t *testing.T) {
+	newLogs := func(selector string, bodies ...string) plog.Logs {
+		logs := plog.NewLogs()
+		rl := logs.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("selector", selector)
+		records := rl.ScopeLogs().AppendEmpty().LogRecords()
+		for _, body := range bodies {
+			records.AppendEmpty().Body().SetStr(body)
+		}
+		return logs
+	}
+
+	anyError := errors.New("any error")
+	defaultFailure := errors.New("default destination unavailable")
+	tests := []struct {
+		name       string
+		reject     consumer.ConsumeLogsFunc
+		wantBodies []string
+		permanent  bool
+	}{
+		{
+			name: "whole group is rejected",
+			reject: func(context.Context, plog.Logs) error {
+				return anyError
+			},
+			wantBodies: []string{"routed-1", "routed-2", "default-1"},
+		},
+		{
+			name: "partial rejection",
+			reject: func(context.Context, plog.Logs) error {
+				return consumererror.NewLogs(anyError, newLogs("routed", "routed-2"))
+			},
+			wantBodies: []string{"routed-2", "default-1"},
+		},
+		{
+			name: "read-only group",
+			reject: func(_ context.Context, logs plog.Logs) error {
+				logs.MarkReadOnly()
+				return anyError
+			},
+			wantBodies: []string{"routed-1", "routed-2", "default-1"},
+		},
+		{
+			name: "read-only partial rejection",
+			reject: func(context.Context, plog.Logs) error {
+				failed := newLogs("routed", "routed-2")
+				failed.MarkReadOnly()
+				return consumererror.NewLogs(anyError, failed)
+			},
+			wantBodies: []string{"routed-2", "default-1"},
+		},
+		{
+			name: "wrapped partial rejection",
+			reject: func(context.Context, plog.Logs) error {
+				return fmt.Errorf("downstream: %w",
+					consumererror.NewLogs(anyError, newLogs("routed", "routed-2")))
+			},
+			wantBodies: []string{"routed-2", "default-1"},
+		},
+		{
+			name: "permanent rejection",
+			reject: func(context.Context, plog.Logs) error {
+				return consumererror.NewPermanent(anyError)
+			},
+			wantBodies: []string{"routed-1", "routed-2", "default-1"},
+			permanent:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			destination, err := consumer.NewLogs(tt.reject)
+			require.NoError(t, err)
+
+			// The default destination always fails
+			defaultDestination, err := consumer.NewLogs(func(context.Context, plog.Logs) error {
+				return defaultFailure
+			})
+			require.NoError(t, err)
+
+			// Create routing
+			routedID := pipeline.NewIDWithName(pipeline.SignalLogs, "routed")
+			defaultID := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
+			cfg := &Config{
+				DefaultPipelines: []pipeline.ID{defaultID},
+				Table: []RoutingTableItem{{
+					Condition: `resource.attributes["selector"] == "routed"`,
+					Pipelines: []pipeline.ID{routedID},
+				}},
+			}
+			require.NoError(t, cfg.Validate())
+			router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
+				routedID:  destination,
+				defaultID: defaultDestination,
+			})
+
+			conn, err := NewFactory().CreateLogsToLogs(t.Context(),
+				connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Logs))
+			require.NoError(t, err)
+
+			// Logs sent to destination "routed"
+			logs := newLogs("routed", "routed-1", "routed-2")
+
+			// Logs sent to default destination, appended to logs above
+			newLogs("other", "default-1").ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
+
+			err = conn.ConsumeLogs(t.Context(), logs)
+			require.ErrorIs(t, err, anyError)
+			require.ErrorIs(t, err, defaultFailure)
+			assert.Equal(t, tt.permanent, consumererror.IsPermanent(err))
+
+			var rejection consumererror.Logs
+			require.ErrorAs(t, err, &rejection)
+			var bodies []string
+			for _, rl := range rejection.Data().ResourceLogs().All() {
+				for _, sl := range rl.ScopeLogs().All() {
+					for _, record := range sl.LogRecords().All() {
+						bodies = append(bodies, record.Body().Str())
+					}
+				}
+			}
+			assert.ElementsMatch(t, tt.wantBodies, bodies)
+		})
+	}
+}
 
 func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 	logsDefault := pipeline.NewIDWithName(pipeline.SignalLogs, "default")

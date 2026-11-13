@@ -22,7 +22,21 @@ require (
 	google.golang.org/grpc v1.85.0
 )
 
-require go.opentelemetry.io/otel/log v1.47.0 // indirect
+require (
+	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
+	github.com/cenkalti/backoff/v7 v7.0.3 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
+	go.opentelemetry.io/collector/config/configoptional v1.71.0 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.71.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.165.1-0.20261112090518-6cdf06bb71bc // indirect
+	go.opentelemetry.io/collector/exporter v1.71.0 // indirect
+	go.opentelemetry.io/collector/extension v1.71.0 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.165.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.165.0 // indirect
+	go.opentelemetry.io/otel/log v1.47.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260817212433-ac3dfec99bb1 // indirect
+	google.golang.org/protobuf v1.36.12 // indirect
+)
 
 require (
 	github.com/alecthomas/participle/v2 v2.1.4 // indirect
@@ -51,7 +65,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.165.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl v0.165.1
 	github.com/twmb/murmur3 v1.2.2 // indirect
@@ -60,6 +74,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.165.1-0.20261112090518-6cdf06bb71bc // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.165.1-0.20261112090518-6cdf06bb71bc // indirect
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.165.0
 	go.opentelemetry.io/collector/internal/componentalias v0.165.1-0.20261112090518-6cdf06bb71bc // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.165.1-0.20261112090518-6cdf06bb71bc // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.165.1-0.20261112090518-6cdf06bb71bc // indirect
