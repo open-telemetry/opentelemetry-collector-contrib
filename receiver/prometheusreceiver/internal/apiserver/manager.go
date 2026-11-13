@@ -110,14 +110,12 @@ func (m *Manager) Start(ctx context.Context, host component.Host, scrapeManager 
 	factoryTr := func(_ context.Context) api_v1.TargetRetriever { return o.ScrapeManager }
 	factoryAr := func(_ context.Context) api_v1.AlertmanagerRetriever { return nil }
 	factoryRr := func(_ context.Context) api_v1.RulesRetriever { return nil }
-	var app storage.Appendable
 	var appV2 storage.AppendableV2
 	logger := promslog.NewNopLogger()
 
 	apiV1 := api_v1.NewAPI(
 		o.QueryEngine,
 		o.Storage,
-		app,
 		appV2,
 		o.ExemplarStorage,
 		factorySPr,
@@ -177,7 +175,6 @@ func (m *Manager) Start(ctx context.Context, host component.Host, scrapeManager 
 		o.EnableOTLPWriteReceiver,
 		o.ConvertOTLPDelta,
 		o.NativeOTLPDeltaIngestion,
-		o.STZeroIngestionEnabled,
 		defaultLookbackDelta,
 		o.EnableTypeAndUnitLabels,
 		false, // appendMetadata from remote write
@@ -185,6 +182,8 @@ func (m *Manager) Start(ctx context.Context, host component.Host, scrapeManager 
 		nil,   // FeatureRegistry
 		api_v1.OpenAPIOptions{},
 		parser.NewParser(parser.Options{}),
+		o.EnableQueryCost, // false
+		o.QueryTimeout,    // 0
 	)
 
 	// Create listener in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L564-L579
