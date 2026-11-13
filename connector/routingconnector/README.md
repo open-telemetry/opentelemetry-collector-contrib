@@ -424,7 +424,7 @@ The following example demonstrates strategies for migrating from `match_once: fa
 
 ```yaml
 routing:
-  match_once: true
+  match_once: false
   default_pipelines: [ logs/default ]
   table:
     - condition: resource.attributes["env"] == "prod"
