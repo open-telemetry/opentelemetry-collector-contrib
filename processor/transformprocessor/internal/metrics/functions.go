@@ -49,6 +49,7 @@ func MetricFunctions() map[string]ottl.Factory[*ottlmetric.TransformContext] {
 		newconvertExponentialHistToExplicitHistFactory(),
 		newAggregateOnAttributeValueFactory(),
 		newConvertSummaryQuantileValToGaugeFactory(),
+		newConvertSummaryToHistogramFactory(),
 	)
 
 	maps.Copy(functions, metricFunctions)

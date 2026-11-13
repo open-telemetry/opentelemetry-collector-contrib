@@ -211,6 +211,102 @@ func TestFactoryCreateMetrics_Exemplar(t *testing.T) {
 	assert.Equal(t, "pass", val.Str())
 }
 
+func TestFactoryCreateMetrics_ConvertSummaryToHistogram(t *testing.T) {
+	tests := []struct {
+		name          string
+		statements    []string
+		wantErrorWith string
+		want          []string
+	}{
+		{
+			name:       "a histogram is added and the summary is kept",
+			statements: []string{`convert_summary_to_histogram("cumulative") where metric.type == METRIC_DATA_TYPE_SUMMARY and metric.name == "rpc_duration_seconds"`},
+			want:       []string{"rpc_duration_seconds:Summary", "rpc_duration_seconds_histogram:Histogram"},
+		},
+		{
+			name:       "custom suffix",
+			statements: []string{`convert_summary_to_histogram("cumulative", "_hist")`},
+			want:       []string{"rpc_duration_seconds:Summary", "rpc_duration_seconds_hist:Histogram"},
+		},
+		{
+			name:       "without a where clause the added histogram is not converted again",
+			statements: []string{`convert_summary_to_histogram("cumulative")`},
+			want:       []string{"rpc_duration_seconds:Summary", "rpc_duration_seconds_histogram:Histogram"},
+		},
+		{
+			name: "quantiles are kept when extracted first",
+			statements: []string{
+				`convert_summary_quantile_val_to_gauge()`,
+				`convert_summary_to_histogram("cumulative")`,
+			},
+			want: []string{"rpc_duration_seconds:Summary", "rpc_duration_seconds.quantiles:Gauge", "rpc_duration_seconds_histogram:Histogram"},
+		},
+		{
+			name: "quantiles are kept when extracted after",
+			statements: []string{
+				`convert_summary_to_histogram("cumulative")`,
+				`convert_summary_quantile_val_to_gauge()`,
+			},
+			want: []string{"rpc_duration_seconds:Summary", "rpc_duration_seconds_histogram:Histogram", "rpc_duration_seconds.quantiles:Gauge"},
+		},
+		{
+			name:          "invalid temporality is rejected when the processor is created",
+			statements:    []string{`convert_summary_to_histogram("not a temporality")`},
+			wantErrorWith: "unknown aggregation temporality: not a temporality",
+		},
+		{
+			name:          "temporality is required",
+			statements:    []string{`convert_summary_to_histogram()`},
+			wantErrorWith: `error while parsing arguments for call to "convert_summary_to_histogram": incorrect number of arguments`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+			oCfg := cfg.(*Config)
+			oCfg.MetricStatements = []common.ContextStatements{{Context: "metric", Statements: tt.statements}}
+			sink := new(consumertest.MetricsSink)
+			p, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+			if tt.wantErrorWith != "" {
+				require.ErrorContains(t, err, tt.wantErrorWith)
+				return
+			}
+			require.NoError(t, err)
+
+			input := pmetric.NewMetrics()
+			metric := input.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+			metric.SetName("rpc_duration_seconds")
+			dp := metric.SetEmptySummary().DataPoints().AppendEmpty()
+			dp.SetCount(5)
+			dp.SetSum(1.5)
+			quantile := dp.QuantileValues().AppendEmpty()
+			quantile.SetQuantile(0.99)
+			quantile.SetValue(2)
+			require.NoError(t, p.ConsumeMetrics(t.Context(), input))
+
+			require.Len(t, sink.AllMetrics(), 1)
+			metrics := sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+			got := make([]string, 0, metrics.Len())
+			for i := 0; i < metrics.Len(); i++ {
+				m := metrics.At(i)
+				got = append(got, m.Name()+":"+m.Type().String())
+				if m.Type() != pmetric.MetricTypeHistogram {
+					continue
+				}
+				assert.Equal(t, pmetric.AggregationTemporalityCumulative, m.Histogram().AggregationTemporality())
+				require.Equal(t, 1, m.Histogram().DataPoints().Len())
+				hdp := m.Histogram().DataPoints().At(0)
+				assert.Equal(t, uint64(5), hdp.Count())
+				assert.InDelta(t, 1.5, hdp.Sum(), 0)
+				assert.Equal(t, []uint64{5}, hdp.BucketCounts().AsRaw())
+				assert.Zero(t, hdp.ExplicitBounds().Len())
+			}
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestFactoryCreateLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
