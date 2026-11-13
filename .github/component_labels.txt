@@ -238,6 +238,7 @@ processor/tailsamplingprocessor processor/tailsampling
 processor/telemetrypolicyprocessor processor/telemetrypolicy
 processor/transformprocessor processor/transform
 processor/transformprocessor/internal/logparsingfuncs processor/transform/internal/logparsingfuncs
+processor/transformprocessor/xtransformprocessor processor/transformprocessor/xtransform
 processor/unrollprocessor processor/unroll
 processor/verifyprocessor processor/verify
 receiver/activedirectorydsreceiver receiver/activedirectoryds

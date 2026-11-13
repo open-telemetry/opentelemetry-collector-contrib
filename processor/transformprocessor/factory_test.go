@@ -1345,7 +1345,7 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 }
 
 func TestFactoryCreateProfiles_GateDisabled(t *testing.T) {
-	setProfileStatementsFeatureGate(t, false)
+	setProfilesFeatureGate(t, false)
 
 	factory := NewFactory().(xprocessor.Factory)
 	ap, err := factory.CreateProfiles(t.Context(), processortest.NewNopSettings(metadata.Type), factory.CreateDefaultConfig(), consumertest.NewNop())

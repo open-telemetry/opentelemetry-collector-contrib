@@ -1,9 +1,10 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package transformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
+package factoryoptions
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,7 +12,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Test_mergeFunctionsToMap_MergeToEmptyMap(t *testing.T) {
+func createTestFuncFactory[K any](name string) ottl.Factory[K] {
+	type TestFuncArguments[K any] struct{}
+	createFunc := func(_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
+		return func(_ context.Context, _ K) (any, error) {
+			return nil, nil
+		}, nil
+	}
+	return ottl.NewFactory(name, &TestFuncArguments[K]{}, createFunc)
+}
+
+func Test_MergeFunctionsToMap_MergeToEmptyMap(t *testing.T) {
 	emptyMap := map[string]ottl.Factory[bool]{}
 	functions := []ottl.Factory[bool]{
 		createTestFuncFactory[bool]("TestFunc1"),
@@ -20,7 +31,7 @@ func Test_mergeFunctionsToMap_MergeToEmptyMap(t *testing.T) {
 		"TestFunc1": createTestFuncFactory[bool]("TestFunc1"),
 	}
 
-	actual := mergeFunctionsToMap(emptyMap, functions)
+	actual := MergeFunctionsToMap(emptyMap, functions)
 
 	for k, v := range expected {
 		assert.Contains(t, actual, k)
@@ -28,7 +39,7 @@ func Test_mergeFunctionsToMap_MergeToEmptyMap(t *testing.T) {
 	}
 }
 
-func Test_mergeFunctionsToMap_MergeNoFunctionsToDefaultFunctions(t *testing.T) {
+func Test_MergeFunctionsToMap_MergeNoFunctionsToDefaultFunctions(t *testing.T) {
 	functionsMap := map[string]ottl.Factory[bool]{
 		"DefaultFunc1": createTestFuncFactory[bool]("DefaultFunc1"),
 		"DefaultFunc2": createTestFuncFactory[bool]("DefaultFunc2"),
@@ -41,7 +52,7 @@ func Test_mergeFunctionsToMap_MergeNoFunctionsToDefaultFunctions(t *testing.T) {
 		"DefaultFunc3": createTestFuncFactory[bool]("DefaultFunc3"),
 	}
 
-	actual := mergeFunctionsToMap(functionsMap, functions)
+	actual := MergeFunctionsToMap(functionsMap, functions)
 
 	for k, v := range expected {
 		assert.Contains(t, actual, k)
@@ -49,7 +60,7 @@ func Test_mergeFunctionsToMap_MergeNoFunctionsToDefaultFunctions(t *testing.T) {
 	}
 }
 
-func Test_mergeFunctionsToMap_MergeOneFunctionToDefaultFunctions(t *testing.T) {
+func Test_MergeFunctionsToMap_MergeOneFunctionToDefaultFunctions(t *testing.T) {
 	functionsMap := map[string]ottl.Factory[bool]{
 		"DefaultFunc1": createTestFuncFactory[bool]("DefaultFunc1"),
 		"DefaultFunc2": createTestFuncFactory[bool]("DefaultFunc2"),
@@ -65,7 +76,7 @@ func Test_mergeFunctionsToMap_MergeOneFunctionToDefaultFunctions(t *testing.T) {
 		"TestFunc1":    createTestFuncFactory[bool]("TestFunc1"),
 	}
 
-	actual := mergeFunctionsToMap(functionsMap, functions)
+	actual := MergeFunctionsToMap(functionsMap, functions)
 
 	for k, v := range expected {
 		assert.Contains(t, actual, k)
@@ -73,7 +84,7 @@ func Test_mergeFunctionsToMap_MergeOneFunctionToDefaultFunctions(t *testing.T) {
 	}
 }
 
-func Test_mergeFunctionsToMap_MergeMultipleFunctionToDefaultFunctions(t *testing.T) {
+func Test_MergeFunctionsToMap_MergeMultipleFunctionToDefaultFunctions(t *testing.T) {
 	functionsMap := map[string]ottl.Factory[bool]{
 		"DefaultFunc1": createTestFuncFactory[bool]("DefaultFunc1"),
 		"DefaultFunc2": createTestFuncFactory[bool]("DefaultFunc2"),
@@ -93,7 +104,7 @@ func Test_mergeFunctionsToMap_MergeMultipleFunctionToDefaultFunctions(t *testing
 		"TestFunc3":    createTestFuncFactory[bool]("TestFunc3"),
 	}
 
-	actual := mergeFunctionsToMap(functionsMap, functions)
+	actual := MergeFunctionsToMap(functionsMap, functions)
 
 	for k, v := range expected {
 		assert.Contains(t, actual, k)
@@ -101,7 +112,7 @@ func Test_mergeFunctionsToMap_MergeMultipleFunctionToDefaultFunctions(t *testing
 	}
 }
 
-func Test_mergeFunctionsToMap_OverridingExistingFunction(t *testing.T) {
+func Test_MergeFunctionsToMap_OverridingExistingFunction(t *testing.T) {
 	functionsMap := map[string]ottl.Factory[bool]{
 		"DefaultFunc1": createTestFuncFactory[bool]("DefaultFunc1"),
 		"DefaultFunc2": createTestFuncFactory[bool]("DefaultFunc2"),
@@ -120,7 +131,7 @@ func Test_mergeFunctionsToMap_OverridingExistingFunction(t *testing.T) {
 		"TestFunc3":    createTestFuncFactory[bool]("TestFunc3"),
 	}
 
-	actual := mergeFunctionsToMap(functionsMap, functions)
+	actual := MergeFunctionsToMap(functionsMap, functions)
 
 	for k, v := range expected {
 		assert.Contains(t, actual, k)

@@ -54,7 +54,7 @@ and allows you to configure a list of statements for the processor to execute. T
 - Objects, which allows users to apply configuration options to a specific list of statements. See [Advanced Config](#advanced-config) for more details.
 
 > [!NOTE]
-> Support for the `profile` signal (the `profile_statements` configuration and the `profile` context) is in development and is controlled by the [`processor.transform.enableProfileStatements`](#processortransformenableprofilestatements) feature gate, which is enabled by default.
+> Support for the `profile` signal (the `profile_statements` configuration and the `profile` context) is in development and is controlled by the [`processor.transform.enableProfiles`](#processortransformenableprofiles) feature gate, which is enabled by default.
 
 Within each `<signal_statements>` list, only certain OTTL Path prefixes can be used:
 
@@ -1123,11 +1123,11 @@ The Transform Processor uses the [OpenTelemetry Transformation Language](https:/
 
 ## Feature Gate
 
-### `processor.transform.enableProfileStatements`
+### `processor.transform.enableProfiles`
 
-The `processor.transform.enableProfileStatements` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables support for the `profile` signal and is enabled by default. While it is disabled, configuring `profile_statements` fails validation and the processor can't be used in a profiles pipeline.
+The `processor.transform.enableProfiles` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables support for the `profile` signal and is enabled by default. While it is disabled, configuring `profile_statements` fails validation and the processor can't be used in a profiles pipeline.
 
-To disable it, run the collector with `--feature-gates=-processor.transform.enableProfileStatements`.
+To disable it, run the collector with `--feature-gates=-processor.transform.enableProfiles`.
 
 ### `transform.flatten.logs`
 

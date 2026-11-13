@@ -19,7 +19,7 @@ feature_gates:
     stage: alpha
     from_version: v0.165.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47306
-  - id: "processor.transform.enableProfileStatements"
+  - id: "processor.transform.enableProfiles"
     description: Enables support for the profiles signal, including the `profile_statements` configuration option.
     stage: beta
     from_version: v0.165.0

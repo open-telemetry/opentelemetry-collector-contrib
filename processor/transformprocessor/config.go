@@ -27,8 +27,8 @@ import (
 
 var (
 	errFlatLogsGateDisabled          = errors.New("'flatten.log' requires the 'transform.flatten.logs' feature gate to be enabled")
-	errProfileStatementsGateDisabled = errors.New("'profile_statements' requires the 'processor.transform.enableProfileStatements' feature gate to be enabled")
-	errProfilesGateDisabled          = errors.New("the profiles signal requires the 'processor.transform.enableProfileStatements' feature gate to be enabled")
+	errProfileStatementsGateDisabled = errors.New("'profile_statements' requires the 'processor.transform.enableProfiles' feature gate to be enabled")
+	errProfilesGateDisabled          = errors.New("the profiles signal requires the 'processor.transform.enableProfiles' feature gate to be enabled")
 )
 
 // Config defines the configuration for the processor.
@@ -194,7 +194,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.ProfileStatements) > 0 {
-		if !metadata.ProcessorTransformEnableProfileStatementsFeatureGate.IsEnabled() {
+		if !metadata.ProcessorTransformEnableProfilesFeatureGate.IsEnabled() {
 			errors = multierr.Append(errors, errProfileStatementsGateDisabled)
 		} else {
 			pc, err := common.NewProfileParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithProfileParser(c.profileFunctions))

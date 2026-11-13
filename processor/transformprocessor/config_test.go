@@ -481,16 +481,16 @@ func Test_LoadConfig_FlattenLog(t *testing.T) {
 	assert.True(t, cfg.(*Config).Flatten.Log)
 }
 
-func setProfileStatementsFeatureGate(t *testing.T, enabled bool) {
-	original := metadata.ProcessorTransformEnableProfileStatementsFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorTransformEnableProfileStatementsFeatureGate.ID(), enabled))
+func setProfilesFeatureGate(t *testing.T, enabled bool) {
+	original := metadata.ProcessorTransformEnableProfilesFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorTransformEnableProfilesFeatureGate.ID(), enabled))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorTransformEnableProfileStatementsFeatureGate.ID(), original))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorTransformEnableProfilesFeatureGate.ID(), original))
 	})
 }
 
 func Test_LoadConfig_ProfileStatementsGateDisabled(t *testing.T) {
-	setProfileStatementsFeatureGate(t, false)
+	setProfilesFeatureGate(t, false)
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -503,7 +503,7 @@ func Test_LoadConfig_ProfileStatementsGateDisabled(t *testing.T) {
 }
 
 func Test_Validate_ProfileStatementsGateDisabledSkipsParsing(t *testing.T) {
-	setProfileStatementsFeatureGate(t, false)
+	setProfilesFeatureGate(t, false)
 
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.ProfileStatements = []common.ContextStatements{

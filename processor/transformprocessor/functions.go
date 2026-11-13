@@ -72,10 +72,3 @@ func defaultSpanEventFunctionsMap() map[string]ottl.Factory[*ottlspanevent.Trans
 func defaultProfileFunctionsMap() map[string]ottl.Factory[*ottlprofile.TransformContext] {
 	return profiles.ProfileFunctions()
 }
-
-func mergeFunctionsToMap[K any](functionMap map[string]ottl.Factory[K], functions []ottl.Factory[K]) map[string]ottl.Factory[K] {
-	for _, f := range functions {
-		functionMap[f.Name()] = f
-	}
-	return functionMap
-}

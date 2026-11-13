@@ -14,8 +14,8 @@ var ProcessorTransformEnableExperimentalFunctionsFeatureGate = featuregate.Globa
 	featuregate.WithRegisterFromVersion("v0.165.0"),
 )
 
-var ProcessorTransformEnableProfileStatementsFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"processor.transform.enableProfileStatements",
+var ProcessorTransformEnableProfilesFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.transform.enableProfiles",
 	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("Enables support for the profiles signal, including the `profile_statements` configuration option."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40489"),

@@ -257,6 +257,7 @@ processor/tailsamplingprocessor/                                 @open-telemetry
 processor/telemetrypolicyprocessor/                              @open-telemetry/collector-contrib-approvers @dashpole @jaronoff97 @mx-psi
 processor/transformprocessor/                                    @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta @bogdandrutu
 processor/transformprocessor/internal/logparsingfuncs/           @open-telemetry/collector-contrib-approvers @Caleb-Hurshman @Dylan-M
+processor/transformprocessor/xtransformprocessor/                @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta @bogdandrutu
 processor/unrollprocessor/                                       @open-telemetry/collector-contrib-approvers @schmikei @rnishtala-sumo
 processor/verifyprocessor/                                       @open-telemetry/collector-contrib-approvers @hilmarf @jmacd
 receiver/activedirectorydsreceiver/                              @open-telemetry/collector-contrib-approvers @pjanotti

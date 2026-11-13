@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/transform
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add the `processor.transform.enableProfileStatements` feature gate, enabled by default, to control profiles support.
+note: Add the `processor.transform.enableProfiles` feature gate, enabled by default, to control profiles support.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [52564]
