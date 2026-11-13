@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
@@ -366,29 +367,26 @@ func TestFileCacheAdvise(t *testing.T) {
 	sink.ExpectNoCalls(t)
 }
 
-func BenchmarkFileRead(b *testing.B) {
-	tempDir := b.TempDir()
+func BenchmarkFileReadASCII(b *testing.B) {
+	benchmarkFileRead(b, unicode.UTF8, string(filetest.TokenWithLength(999)))
+}
 
-	temp := filetest.OpenTemp(b, tempDir)
-	// Initialize the file to ensure a unique fingerprint
-	_, err := temp.WriteString(temp.Name() + "\n")
-	require.NoError(b, err)
-	// Write half the content before starting the benchmark
-	for range 100 {
-		_, err := temp.WriteString(string(filetest.TokenWithLength(999)) + "\n")
-		require.NoError(b, err)
-	}
+func BenchmarkFileReadUTF8(b *testing.B) {
+	benchmarkFileRead(b, unicode.UTF8, strings.Repeat("hello é✨🌍🚀!", 50))
+}
 
-	// Use a long flush period to ensure it does not expire DURING a ReadToEnd
-	counter := atomic.Int64{}
-	f := newTestFactory(b, func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64, _ []int64) error {
-		counter.Add(int64(len(tokens)))
-		return nil
-	})
+func BenchmarkFileReadUTF16(b *testing.B) {
+	utf16le := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
+	benchmarkFileRead(b, utf16le, strings.Repeat("hello é✨🌍🚀!", 50))
+}
+
+func benchmarkFileRead(b *testing.B, enc encoding.Encoding, line string) {
+	fileName, f, counter := setupBenchmark(b, enc, line)
 	b.ReportAllocs()
+	b.ResetTimer()
 
 	for i := 0; b.Loop(); i++ {
-		file, err := os.OpenFile(temp.Name(), os.O_CREATE|os.O_RDWR, 0o600)
+		file, err := os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, 0o600)
 		require.NoError(b, err)
 		fp, err := f.NewFingerprint(file)
 		require.NoError(b, err)
@@ -400,24 +398,23 @@ func BenchmarkFileRead(b *testing.B) {
 	}
 }
 
-func BenchmarkReadContents(b *testing.B) {
-	tempDir := b.TempDir()
+func BenchmarkReadContentsASCII(b *testing.B) {
+	benchmarkReadContents(b, unicode.UTF8, string(filetest.TokenWithLength(999)))
+}
 
-	temp := filetest.OpenTemp(b, tempDir)
-	_, err := temp.WriteString(temp.Name() + "\n")
-	require.NoError(b, err)
-	for range 100 {
-		_, err = temp.WriteString(string(filetest.TokenWithLength(999)) + "\n")
-		require.NoError(b, err)
-	}
+func BenchmarkReadContentsUTF8(b *testing.B) {
+	benchmarkReadContents(b, unicode.UTF8, strings.Repeat("hello é✨🌍🚀!", 50))
+}
 
-	counter := atomic.Int64{}
-	f := newTestFactory(b, func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64, _ []int64) error {
-		counter.Add(int64(len(tokens)))
-		return nil
-	})
+func BenchmarkReadContentsUTF16(b *testing.B) {
+	utf16le := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
+	benchmarkReadContents(b, utf16le, strings.Repeat("hello é✨🌍🚀!", 50))
+}
 
-	file, err := os.OpenFile(temp.Name(), os.O_RDONLY, 0o600)
+func benchmarkReadContents(b *testing.B, enc encoding.Encoding, line string) {
+	fileName, f, counter := setupBenchmark(b, enc, line)
+
+	file, err := os.OpenFile(fileName, os.O_RDONLY, 0o600)
 	require.NoError(b, err)
 	defer file.Close()
 
@@ -438,8 +435,37 @@ func BenchmarkReadContents(b *testing.B) {
 	}
 }
 
+func setupBenchmark(b *testing.B, enc encoding.Encoding, line string) (string, *Factory, *atomic.Int64) {
+	tempDir := b.TempDir()
+	temp := filetest.OpenTemp(b, tempDir)
+
+	encoder := enc.NewEncoder()
+	firstLine, err := encoder.String(temp.Name() + "\n")
+	require.NoError(b, err)
+	_, err = temp.WriteString(firstLine)
+	require.NoError(b, err)
+
+	encodedLine, err := encoder.String(line + "\n")
+	require.NoError(b, err)
+	for range 100 {
+		_, err = temp.WriteString(encodedLine)
+		require.NoError(b, err)
+	}
+
+	counter := &atomic.Int64{}
+	f := newTestFactoryWithEncoding(b, enc, func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64, _ []int64) error {
+		counter.Add(int64(len(tokens)))
+		return nil
+	})
+	return temp.Name(), f, counter
+}
+
 func newTestFactory(tb testing.TB, callback emit.Callback) *Factory {
-	splitFunc, err := split.Config{}.Func(unicode.UTF8, false, defaultMaxLogSize)
+	return newTestFactoryWithEncoding(tb, unicode.UTF8, callback)
+}
+
+func newTestFactoryWithEncoding(tb testing.TB, enc encoding.Encoding, callback emit.Callback) *Factory {
+	splitFunc, err := split.Config{}.Func(enc, false, defaultMaxLogSize)
 	require.NoError(tb, err)
 
 	return &Factory{
@@ -448,7 +474,7 @@ func newTestFactory(tb testing.TB, callback emit.Callback) *Factory {
 		FingerprintSize:   fingerprint.DefaultSize,
 		InitialBufferSize: scanner.DefaultBufferSize,
 		MaxLogSize:        defaultMaxLogSize,
-		Encoding:          unicode.UTF8,
+		Encoding:          enc,
 		SplitFunc:         splitFunc,
 		TrimFunc:          trim.Whitespace,
 		FlushTimeout:      defaultFlushPeriod,
