@@ -331,6 +331,99 @@ The `raw` mapping mode is identical to `none`, except for two differences:
 | Metrics   | :no_entry_sign:    |
 | Profiles  | :no_entry_sign:    |
 
+#### Indexed document fields by mapping mode
+
+The tables below summarize the fields the exporter emits for each mapping mode. They are
+derived from the encoder implementations; the serializers under `internal/serializer/` are
+the source of truth for the `otel` and `ecs` modes.
+
+**Logs, `none` and `raw` mapping modes:**
+
+| Field | Description |
+| ----- | ----------- |
+| `@timestamp` | Log record timestamp, falling back to the observed timestamp when unset |
+| `TraceId`, `SpanId`, `TraceFlags` | Trace correlation fields |
+| `SeverityText`, `SeverityNumber` | Record severity |
+| `Body` | The log record body |
+| `Resource` | Resource attributes, as a nested object |
+| `Scope` | Instrumentation scope attributes plus the scope `name` and `version`, as a nested object |
+| `Attributes.<name>` | Record attributes. In `raw` mode, attributes are stored at the top level without the `Attributes.` prefix |
+
+Span events remain embedded in the span document under `Events.` (`none`) or at the top
+level (`raw`). Metrics and profiles are not supported in these modes.
+
+**Spans, `none` and `raw` mapping modes:**
+
+| Field | Description |
+| ----- | ----------- |
+| `@timestamp` | Span start timestamp |
+| `EndTimestamp` | Span end timestamp |
+| `TraceId`, `SpanId`, `ParentSpanId` | Trace correlation fields |
+| `Name`, `Kind` | Span name and kind |
+| `TraceStatus`, `TraceStatusDescription` | Status code and message |
+| `Duration` | Span duration in microseconds |
+| `Link` | Span links, serialized as a JSON string |
+| `Resource`, `Scope` | Resource and scope attributes, as nested objects |
+| `Attributes.<name>` | Span attributes. In `raw` mode, attributes are stored at the top level without the `Attributes.` prefix |
+
+Metrics and profiles are not supported in these modes.
+
+**Logs, `ecs` mapping mode:**
+
+| Field | Description |
+| ----- | ----------- |
+| `@timestamp` | Log record timestamp, falling back to the observed timestamp when unset |
+| `message` | The log record body, when the body is a string |
+| `log.level` | Severity text |
+| `event.severity` | Severity number, only when set |
+| `trace.id`, `span.id` | Trace correlation fields |
+| `data_stream.type`, `data_stream.dataset`, `data_stream.namespace` | Data stream fields, when routing to a data stream |
+| ECS-mapped attributes | Resource, scope and record attributes translated to ECS fields where a mapping exists; unmapped attributes are kept under their original names |
+
+**Spans, `ecs` mapping mode:**
+
+| Field | Description |
+| ----- | ----------- |
+| `@timestamp` | Span start timestamp |
+| `span.name`, `span.kind` | Span name and ECS kind (`SERVER`, `CLIENT`, `PRODUCER`, `CONSUMER`, `INTERNAL`) |
+| `trace.id`, `span.id`, `parent.id` | Trace correlation fields |
+| `event.outcome` | `success` or `failure`, derived from the span status code |
+| `span.links` | Span links |
+| `data_stream.type`, `data_stream.dataset`, `data_stream.namespace` | Data stream fields, when routing to a data stream |
+| ECS-mapped attributes | Resource, scope and span attributes translated to ECS fields where a mapping exists |
+
+Span events become separate ECS log documents routed to `logs-apm.error-<namespace>` or
+`logs-apm.app.<service_name>-<namespace>`; see [ECS mapping mode](#ecs-mapping-mode) for
+the routing rules.
+
+**Metrics, `ecs` mapping mode:**
+
+| Field | Description |
+| ----- | ----------- |
+| `@timestamp` | Data point timestamp |
+| `metric.<name>` | Metric value; see [metrics dynamic templates](#metrics-dynamic-templates) |
+| `_doc_count` | Document count, when mapping hints indicate it |
+| `data_stream.type`, `data_stream.dataset`, `data_stream.namespace` | Data stream fields, when routing to a data stream |
+| ECS-mapped attributes | Resource and data point attributes translated to ECS fields where a mapping exists |
+
+**`bodymap` mapping mode (logs only):**
+
+The indexed document is exactly the log record body, which must be a map or a JSON string
+containing a JSON object. The exporter adds no fields of its own; `data_stream.type` may
+be supplied inside the body, see [document routing](#elasticsearch-document-routing).
+
+**`otel` mapping mode:**
+
+Log documents are produced by the bundled serializer under
+`internal/serializer/otelserializer` and follow the schema of the Elasticsearch OTLP
+intake. The document includes `@timestamp` and `observed_timestamp`, the
+`data_stream.type`, `data_stream.dataset` and `data_stream.namespace` fields,
+`severity_text`, `severity_number`, `trace_id` and `span_id`, record attributes under
+`attributes` (with `event_name` promoted to a field when set), resource and scope
+information under `resource` and `scope`, and the body under `body.structured` or
+`body.text` depending on its type. Metrics follow the `metrics.<name>` field path
+described in [metrics dynamic templates](#metrics-dynamic-templates), and histograms use
+the storage described in [histogram storage](#histogram-storage).
 ### Elasticsearch ingest pipeline
 
 Documents may be optionally passed through an [Elasticsearch Ingest pipeline] prior to indexing.
