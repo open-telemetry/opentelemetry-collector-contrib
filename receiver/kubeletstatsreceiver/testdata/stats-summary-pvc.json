@@ -1,0 +1,90 @@
+{
+  "node": {
+    "nodeName": "worker-1",
+    "startTime": "2020-04-20T22:00:00Z"
+  },
+  "pods": [
+    {
+      "podRef": {
+        "name": "web-0",
+        "namespace": "default",
+        "uid": "pod-uid-web-0"
+      },
+      "startTime": "2020-04-20T22:30:00Z",
+      "volume": [
+        {
+          "time": "2020-04-20T22:52:18Z",
+          "availableBytes": 7000,
+          "capacityBytes": 10000,
+          "usedBytes": 3000,
+          "inodesFree": 900,
+          "inodes": 1000,
+          "inodesUsed": 100,
+          "name": "data",
+          "pvcRef": {
+            "name": "shared-data",
+            "namespace": "default"
+          }
+        },
+        {
+          "time": "2020-04-20T22:52:18Z",
+          "availableBytes": 500,
+          "capacityBytes": 1000,
+          "usedBytes": 500,
+          "inodesFree": 90,
+          "inodes": 100,
+          "inodesUsed": 10,
+          "name": "cache"
+        }
+      ]
+    },
+    {
+      "podRef": {
+        "name": "web-1",
+        "namespace": "default",
+        "uid": "pod-uid-web-1"
+      },
+      "startTime": "2020-04-20T22:30:00Z",
+      "volume": [
+        {
+          "time": "2020-04-20T22:52:18Z",
+          "availableBytes": 7000,
+          "capacityBytes": 10000,
+          "usedBytes": 3000,
+          "inodesFree": 900,
+          "inodes": 1000,
+          "inodesUsed": 100,
+          "name": "data",
+          "pvcRef": {
+            "name": "shared-data",
+            "namespace": "default"
+          }
+        }
+      ]
+    },
+    {
+      "podRef": {
+        "name": "batch",
+        "namespace": "jobs",
+        "uid": "pod-uid-batch"
+      },
+      "startTime": "2020-04-20T22:30:00Z",
+      "volume": [
+        {
+          "time": "2020-04-20T22:52:18Z",
+          "availableBytes": 4000,
+          "capacityBytes": 5000,
+          "usedBytes": 1000,
+          "inodesFree": 450,
+          "inodes": 500,
+          "inodesUsed": 50,
+          "name": "scratch",
+          "pvcRef": {
+            "name": "batch-scratch",
+            "namespace": "jobs"
+          }
+        }
+      ]
+    }
+  ]
+}

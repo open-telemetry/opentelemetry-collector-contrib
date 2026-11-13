@@ -42,6 +42,7 @@ type kubeletScraper struct {
 	allNetworkInterfaces  map[kubelet.MetricGroup]bool
 	k8sAPIClient          kubernetes.Interface
 	cachedVolumeSource    map[string]v1.PersistentVolumeSource
+	needsPVCUID           bool
 	mbs                   *metadata.MetricsBuilders
 	needsResources        bool
 	nodeInformer          cache.SharedInformer
@@ -69,6 +70,14 @@ func newKubeletScraper(
 		allNetworkInterfaces:  rOptions.allNetworkInterfaces,
 		k8sAPIClient:          rOptions.k8sAPIClient,
 		cachedVolumeSource:    make(map[string]v1.PersistentVolumeSource),
+		needsPVCUID: rOptions.k8sAPIClient != nil &&
+			metricsConfig.ResourceAttributes.K8sPersistentvolumeclaimUID.Enabled &&
+			(metricsConfig.Metrics.K8sPersistentvolumeclaimVolumeAvailable.Enabled ||
+				metricsConfig.Metrics.K8sPersistentvolumeclaimVolumeCapacity.Enabled ||
+				metricsConfig.Metrics.K8sPersistentvolumeclaimVolumeUsage.Enabled ||
+				metricsConfig.Metrics.K8sPersistentvolumeclaimVolumeInodeCount.Enabled ||
+				metricsConfig.Metrics.K8sPersistentvolumeclaimVolumeInodeFree.Enabled ||
+				metricsConfig.Metrics.K8sPersistentvolumeclaimVolumeInodeUsed.Enabled),
 		mbs: &metadata.MetricsBuilders{
 			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metricsConfig, set),
 			PodMetricsBuilder:       metadata.NewMetricsBuilder(metricsConfig, set),
@@ -102,7 +111,7 @@ func newKubeletScraper(
 	)
 }
 
-func (r *kubeletScraper) scrape(context.Context) (pmetric.Metrics, error) {
+func (r *kubeletScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	summary, err := r.statsProvider.StatsSummary()
 	if err != nil {
 		r.logger.Error("call to /stats/summary endpoint failed", zap.Error(err))
@@ -125,6 +134,11 @@ func (r *kubeletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	}
 
 	metaD := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, nodeInfo, r.detailedPVCLabelsSetter())
+	if r.needsPVCUID {
+		metaD.PVCUIDGetter = func(namespace, name string) (string, error) {
+			return r.pvcUIDGetter(ctx, namespace, name)
+		}
+	}
 
 	mds := kubelet.MetricsData(r.logger, summary, metaD, r.metricGroupsToCollect, r.allNetworkInterfaces, r.mbs, r.cpuUsageCalculator)
 	md := pmetric.NewMetrics()
@@ -163,6 +177,16 @@ func (r *kubeletScraper) detailedPVCLabelsSetter() func(rb *metadata.ResourceBui
 		kubelet.SetPersistentVolumeLabels(rb, r.cachedVolumeSource[volCacheID])
 		return nil
 	}
+}
+
+// pvcUIDGetter looks up the PVC UID without caching across scrapes, so a PVC
+// recreated under the same name reports its new UID on the next scrape.
+func (r *kubeletScraper) pvcUIDGetter(ctx context.Context, namespace, name string) (string, error) {
+	pvc, err := r.k8sAPIClient.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	return string(pvc.UID), nil
 }
 
 func (r *kubeletScraper) node() kubelet.NodeInfo {

@@ -86,6 +86,18 @@ all_set:
       enabled: true
     k8s.node.uptime:
       enabled: true
+    k8s.persistentvolumeclaim.volume.available:
+      enabled: true
+    k8s.persistentvolumeclaim.volume.capacity:
+      enabled: true
+    k8s.persistentvolumeclaim.volume.inode.count:
+      enabled: true
+    k8s.persistentvolumeclaim.volume.inode.free:
+      enabled: true
+    k8s.persistentvolumeclaim.volume.inode.used:
+      enabled: true
+    k8s.persistentvolumeclaim.volume.usage:
+      enabled: true
     k8s.pod.cpu.node.utilization:
       enabled: true
     k8s.pod.cpu.time:
@@ -152,6 +164,8 @@ all_set:
     k8s.node.system_container.name:
       enabled: true
     k8s.persistentvolumeclaim.name:
+      enabled: true
+    k8s.persistentvolumeclaim.uid:
       enabled: true
     k8s.pod.name:
       enabled: true
@@ -248,6 +262,18 @@ reaggregate_set:
       enabled: true
     k8s.node.uptime:
       enabled: true
+    k8s.persistentvolumeclaim.volume.available:
+      enabled: true
+    k8s.persistentvolumeclaim.volume.capacity:
+      enabled: true
+    k8s.persistentvolumeclaim.volume.inode.count:
+      enabled: true
+    k8s.persistentvolumeclaim.volume.inode.free:
+      enabled: true
+    k8s.persistentvolumeclaim.volume.inode.used:
+      enabled: true
+    k8s.persistentvolumeclaim.volume.usage:
+      enabled: true
     k8s.pod.cpu.node.utilization:
       enabled: true
     k8s.pod.cpu.time:
@@ -314,6 +340,8 @@ reaggregate_set:
     k8s.node.system_container.name:
       enabled: true
     k8s.persistentvolumeclaim.name:
+      enabled: true
+    k8s.persistentvolumeclaim.uid:
       enabled: true
     k8s.pod.name:
       enabled: true
@@ -410,6 +438,18 @@ none_set:
       enabled: false
     k8s.node.uptime:
       enabled: false
+    k8s.persistentvolumeclaim.volume.available:
+      enabled: false
+    k8s.persistentvolumeclaim.volume.capacity:
+      enabled: false
+    k8s.persistentvolumeclaim.volume.inode.count:
+      enabled: false
+    k8s.persistentvolumeclaim.volume.inode.free:
+      enabled: false
+    k8s.persistentvolumeclaim.volume.inode.used:
+      enabled: false
+    k8s.persistentvolumeclaim.volume.usage:
+      enabled: false
     k8s.pod.cpu.node.utilization:
       enabled: false
     k8s.pod.cpu.time:
@@ -477,6 +517,8 @@ none_set:
       enabled: false
     k8s.persistentvolumeclaim.name:
       enabled: false
+    k8s.persistentvolumeclaim.uid:
+      enabled: false
     k8s.pod.name:
       enabled: false
     k8s.pod.uid:
@@ -508,6 +550,10 @@ filter_set_include:
       metrics_include:
         - regexp: ".*"
     k8s.persistentvolumeclaim.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolumeclaim.uid:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -553,6 +599,10 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.persistentvolumeclaim.name-val"
+    k8s.persistentvolumeclaim.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolumeclaim.uid-val"
     k8s.pod.name:
       enabled: true
       metrics_exclude:

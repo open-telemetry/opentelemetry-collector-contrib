@@ -246,4 +246,64 @@ func TestNilHandling(t *testing.T) {
 	assert.NotPanics(t, func() {
 		acc.volumeStats(&stats.PodStats{}, &stats.VolumeStats{})
 	})
+	assert.NotPanics(t, func() {
+		acc.pvcStats(&stats.VolumeStats{PVCRef: &stats.PVCReference{}})
+	})
+}
+
+func TestPVCStatsUIDLookupFails(t *testing.T) {
+	core, logs := observer.New(zapcore.DebugLevel)
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
+	mbc.Metrics.K8sPersistentvolumeclaimVolumeUsage.Enabled = true
+	mbc.ResourceAttributes.K8sPersistentvolumeclaimUID.Enabled = true
+	mbs := &metadata.MetricsBuilders{
+		OtherMetricsBuilder: metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type)),
+	}
+
+	lookups := 0
+	md := Metadata{
+		PVCUIDGetter: func(string, string) (string, error) {
+			lookups++
+			return "", errors.New(`persistentvolumeclaims "data" is forbidden`)
+		},
+	}
+
+	usedBytes := uint64(42)
+	vs := &stats.VolumeStats{
+		Name:    "data",
+		PVCRef:  &stats.PVCReference{Name: "data", Namespace: "default"},
+		FsStats: stats.FsStats{UsedBytes: &usedBytes},
+	}
+
+	// Each scrape uses a fresh accumulator, as MetricsData does.
+	for scrape := 1; scrape <= 2; scrape++ {
+		acc := metricDataAccumulator{
+			metadata:              md,
+			logger:                zap.New(core),
+			metricGroupsToCollect: map[MetricGroup]bool{VolumeMetricGroup: true},
+			nodeName:              "worker-1",
+			mbs:                   mbs,
+		}
+
+		// Same PVC seen from two pods, plus a volume without a PVC.
+		acc.pvcStats(vs)
+		acc.pvcStats(vs)
+		acc.pvcStats(&stats.VolumeStats{Name: "cache", FsStats: stats.FsStats{UsedBytes: &usedBytes}})
+
+		require.Len(t, acc.m, 1)
+		// One lookup per PVC per scrape: deduplicated within a scrape, not cached across scrapes.
+		assert.Equal(t, scrape, lookups)
+		attrs := acc.m[0].ResourceMetrics().At(0).Resource().Attributes()
+		_, hasUID := attrs.Get("k8s.persistentvolumeclaim.uid")
+		assert.False(t, hasUID)
+		pvcName, _ := attrs.Get("k8s.persistentvolumeclaim.name")
+		assert.Equal(t, "data", pvcName.Str())
+		assert.Equal(t, 1, acc.m[0].DataPointCount())
+	}
+
+	require.Equal(t, 2, logs.Len())
+	for _, l := range logs.All() {
+		assert.Equal(t, zapcore.DebugLevel, l.Level)
+		assert.Equal(t, "Failed to look up PersistentVolumeClaim UID.", l.Message)
+	}
 }
