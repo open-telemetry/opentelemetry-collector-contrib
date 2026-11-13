@@ -647,6 +647,76 @@ func (c *prometheusConverter) addResourceTargetInfo(resource pcommon.Resource, s
 	return nil
 }
 
+type targetInfoCandidate struct {
+	resource  pcommon.Resource
+	timestamp pcommon.Timestamp
+}
+
+type jobInstanceKey struct {
+	job      string
+	instance string
+}
+
+func targetInfoJobInstance(resource pcommon.Resource, settings Settings) (job, instance string) {
+	resourceAttrs := resource.Attributes()
+	if serviceName, ok := resourceAttrs.Get(string(conventions.ServiceNameKey)); ok {
+		if val := serviceName.AsString(); val != "" {
+			if serviceNamespace, ok := resourceAttrs.Get(string(conventions.ServiceNamespaceKey)); ok {
+				val = serviceNamespace.AsString() + "/" + val
+			}
+			job = val
+		}
+	}
+	if job == "" {
+		if j, ok := resourceAttrs.Get(model.JobLabel); ok && j.AsString() != "" {
+			job = j.AsString()
+		} else if j, ok := settings.ExternalLabels[model.JobLabel]; ok && j != "" {
+			job = j
+		}
+	}
+
+	if inst, ok := resourceAttrs.Get(string(conventions.ServiceInstanceIDKey)); ok {
+		if val := inst.AsString(); val != "" {
+			instance = val
+		}
+	}
+	if instance == "" {
+		if inst, ok := resourceAttrs.Get(model.InstanceLabel); ok && inst.AsString() != "" {
+			instance = inst.AsString()
+		} else if inst, ok := settings.ExternalLabels[model.InstanceLabel]; ok && inst != "" {
+			instance = inst
+		}
+	}
+	return job, instance
+}
+
+func selectTargetInfoResources(candidates []targetInfoCandidate, settings Settings) []targetInfoCandidate {
+	deduped := candidates[:0]
+	var seen map[jobInstanceKey]int
+	for _, cand := range candidates {
+		if cand.timestamp == 0 {
+			continue
+		}
+		job, instance := targetInfoJobInstance(cand.resource, settings)
+		if job == "" && instance == "" {
+			continue
+		}
+		if seen == nil {
+			seen = make(map[jobInstanceKey]int, len(candidates))
+		}
+		key := jobInstanceKey{job: job, instance: instance}
+		if idx, ok := seen[key]; ok {
+			if cand.timestamp >= deduped[idx].timestamp {
+				deduped[idx] = cand
+			}
+		} else {
+			seen[key] = len(deduped)
+			deduped = append(deduped, cand)
+		}
+	}
+	return deduped
+}
+
 // convertTimeStamp converts OTLP timestamp in ns to timestamp in ms
 func convertTimeStamp(timestamp pcommon.Timestamp) int64 {
 	return timestamp.AsTime().UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
