@@ -22,11 +22,14 @@ const (
 	SourceOpenInference SourceName = "openinference"
 	// SourceOpenLLMetry enables normalization of OpenLLMetry (Traceloop) attributes.
 	SourceOpenLLMetry SourceName = "openllmetry"
+	// SourceSpringAI enables normalization of Spring AI attributes.
+	SourceSpringAI SourceName = "spring_ai"
 )
 
 var builtInSources = map[SourceName]struct{}{
 	SourceOpenInference: {},
 	SourceOpenLLMetry:   {},
+	SourceSpringAI:      {},
 }
 
 // Source configures normalization behavior for a single source convention.
@@ -34,7 +37,7 @@ type Source struct {
 	_ struct{}
 
 	// Name identifies the source. Built-in names (e.g. "openinference",
-	// "openllmetry") use pre-defined mapping tables; any other name is a
+	// "openllmetry", "spring_ai") use pre-defined mapping tables; any other name is a
 	// user-defined source whose mappings come from this entry's Mappings
 	// and ValueMappings fields.
 	Name SourceName `mapstructure:"name"`
