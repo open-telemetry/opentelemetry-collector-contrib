@@ -544,6 +544,28 @@ func Test_getPromExemplars(t *testing.T) {
 			},
 		},
 		{
+			"duplicate_trace_id_dropped",
+			getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, otlptranslator.ExemplarTraceIDKey, "duplicate_val"),
+			[]prompb.Exemplar{
+				{
+					Value:     floatVal1,
+					Timestamp: timestamp.FromTime(tnow),
+					Labels:    []prompb.Label{getLabel(otlptranslator.ExemplarTraceIDKey, traceIDValue1), getLabel(otlptranslator.ExemplarSpanIDKey, spanIDValue1)},
+				},
+			},
+		},
+		{
+			"duplicate_span_id_dropped",
+			getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, otlptranslator.ExemplarSpanIDKey, "duplicate_val"),
+			[]prompb.Exemplar{
+				{
+					Value:     floatVal1,
+					Timestamp: timestamp.FromTime(tnow),
+					Labels:    []prompb.Label{getLabel(otlptranslator.ExemplarTraceIDKey, traceIDValue1), getLabel(otlptranslator.ExemplarSpanIDKey, spanIDValue1)},
+				},
+			},
+		},
+		{
 			"too_many_runes_drops_labels",
 			getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", keyWith129Runes, ""),
 			[]prompb.Exemplar{
@@ -637,6 +659,18 @@ func Test_getPromExemplarsV2(t *testing.T) {
 		{
 			name:      "duplicate_trace_id_dropped",
 			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, otlptranslator.ExemplarTraceIDKey, "duplicate_val"),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2, 3, 4},
+				},
+			},
+			expectedStrings: []string{otlptranslator.ExemplarSpanIDKey, spanIDValue1, otlptranslator.ExemplarTraceIDKey, traceIDValue1},
+		},
+		{
+			name:      "duplicate_span_id_dropped",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, otlptranslator.ExemplarSpanIDKey, "duplicate_val"),
 			expected: []writev2.Exemplar{
 				{
 					Value:      floatVal1,
@@ -1245,6 +1279,19 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 				}
 				assert.Nil(t, findSeriesTS(converter, "test_hist"),
 					"classic mode emits only _bucket/_sum/_count, never the bare name")
+			},
+		},
+		{
+			name: "NHCB drops data point without sum",
+			metric: func() pmetric.Metric {
+				metric := newTestExplicitHistogram()
+				metric.Histogram().DataPoints().At(0).RemoveSum()
+				return metric
+			},
+			settings: Settings{ConvertExplicitHistogramsToNHCB: true},
+			wantErr:  true,
+			check: func(t *testing.T, converter *prometheusConverter) {
+				assert.Empty(t, converter.unique, "no series emitted for a data point without sum")
 			},
 		},
 		{

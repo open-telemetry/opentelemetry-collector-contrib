@@ -99,6 +99,22 @@ func exponentialToNativeHistogramV2(p pmetric.ExponentialHistogramDataPoint) (wr
 		scale = 8
 	}
 
+	timestamp := convertTimeStamp(p.Timestamp())
+	// Cumulative histograms count from their start timestamp, which is the
+	// created timestamp Prometheus expects.
+	startTimestamp := convertTimeStamp(p.StartTimestamp())
+	if p.Flags().NoRecordedValue() {
+		// Staleness is signaled by a stale-NaN Sum; Count is 0 and ZeroCount/buckets are left empty.
+		// https://prometheus.io/docs/specs/native_histograms/#staleness-markers
+		return writev2.Histogram{
+			Schema:         scale,
+			ZeroThreshold:  p.ZeroThreshold(),
+			Sum:            math.Float64frombits(value.StaleNaN),
+			Timestamp:      timestamp,
+			StartTimestamp: startTimestamp,
+		}, nil
+	}
+
 	pSpans, pDeltas := convertBucketsLayoutV2(p.Positive(), scaleDown)
 	nSpans, nDeltas := convertBucketsLayoutV2(p.Negative(), scaleDown)
 
@@ -123,18 +139,10 @@ func exponentialToNativeHistogramV2(p pmetric.ExponentialHistogramDataPoint) (wr
 		NegativeSpans:  nSpans,
 		NegativeDeltas: nDeltas,
 
-		Timestamp: convertTimeStamp(p.Timestamp()),
-		// Cumulative histograms count from their start timestamp, which is the
-		// created timestamp Prometheus expects.
-		StartTimestamp: convertTimeStamp(p.StartTimestamp()),
-	}
-
-	if p.Flags().NoRecordedValue() {
-		h.Sum = math.Float64frombits(value.StaleNaN)
-		h.Count = &writev2.Histogram_CountInt{CountInt: value.StaleNaN}
-	} else {
-		h.Sum = p.Sum()
-		h.Count = &writev2.Histogram_CountInt{CountInt: p.Count()}
+		Timestamp:      timestamp,
+		StartTimestamp: startTimestamp,
+		Sum:            p.Sum(),
+		Count:          &writev2.Histogram_CountInt{CountInt: p.Count()},
 	}
 	return h, nil
 }

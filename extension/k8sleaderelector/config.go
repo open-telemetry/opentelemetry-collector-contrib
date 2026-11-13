@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/leaderelection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -34,6 +35,21 @@ func (cfg *Config) getK8sClient() (kubernetes.Interface, error) {
 func (cfg *Config) Validate() error {
 	if cfg.LeaseName == "" || cfg.LeaseNamespace == "" {
 		return errors.New("lease name and namespace must be set")
+	}
+	if cfg.LeaseDuration <= 0 {
+		return errors.New("lease_duration must be greater than zero")
+	}
+	if cfg.RenewDuration <= 0 {
+		return errors.New("renew_deadline must be greater than zero")
+	}
+	if cfg.RetryPeriod <= 0 {
+		return errors.New("retry_period must be greater than zero")
+	}
+	if cfg.LeaseDuration <= cfg.RenewDuration {
+		return errors.New("lease_duration must be greater than renew_deadline")
+	}
+	if cfg.RenewDuration <= time.Duration(leaderelection.JitterFactor*float64(cfg.RetryPeriod)) {
+		return errors.New("renew_deadline must be greater than retry_period * JitterFactor")
 	}
 	return nil
 }
