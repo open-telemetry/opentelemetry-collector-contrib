@@ -27,7 +27,7 @@ properties:
     description: SendTimestamps will send the underlying scrape timestamp with the export
     type: boolean
   sending_queue:
-    description: QueueBatchConfig defines the queue configuration.
+    description: 'QueueBatchConfig defines the queue configuration. Deprecated: [v0.166.0] Use of sending_queue is deprecated and will be removed in a future release. The Prometheus exporter is pull-based and does not support queuing.'
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
   translation_strategy:

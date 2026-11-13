@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: processor/span_pruning
+note: Clamp negative durations of unfinished spans to zero so they no longer hide genuinely slow spans from outlier detection.
+issues: [50981]
+subtext:
+change_logs: [user]

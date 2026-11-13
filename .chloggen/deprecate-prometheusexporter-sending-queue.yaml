@@ -1,0 +1,7 @@
+change_type: deprecation
+component: exporter/prometheus
+note: Deprecate the sending_queue configuration option behind the exporter.prometheus.DisableSendingQueue feature gate.
+issues: [52830]
+subtext: |
+  The Prometheus exporter is pull-based and does not use a sending queue. Explicit configuration of sending_queue now logs a deprecation warning, and enabling the exporter.prometheus.DisableSendingQueue feature gate rejects sending_queue configuration.
+change_logs: [user]

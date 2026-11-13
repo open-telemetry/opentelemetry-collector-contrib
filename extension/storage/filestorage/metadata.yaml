@@ -8,6 +8,7 @@ status:
   stability:
     beta: [extension]
   distributions: [contrib, k8s]
+  warnings: [Other]
   codeowners:
     active: [swiatekm, VihasMakwana]
     emeritus: [djaglowski]

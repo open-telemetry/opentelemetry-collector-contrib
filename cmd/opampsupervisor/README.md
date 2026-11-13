@@ -140,6 +140,16 @@ agent:
   collector_crash_log_snippet_kib: 4
 ```
 
+## Supervisor instance ID in Collector telemetry
+
+The Supervisor and the Collector have different `service.instance.id` values. To link the Collector's own telemetry to the Supervisor that manages it, set `agent::description::include_supervisor_instance_id` to `true`. The Supervisor then adds its own `service.instance.id` to the Collector's telemetry resource as `supervisor.service.instance.id`. This is disabled by default.
+
+```yaml
+agent:
+  description:
+    include_supervisor_instance_id: true
+```
+
 ## Persistent data storage
 
 The supervisor persists some data to disk in order to mantain state between restarts. The directory where this data is stored may be specified via the supervisor configuration:
