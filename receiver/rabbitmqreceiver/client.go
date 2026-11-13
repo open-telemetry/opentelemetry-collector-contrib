@@ -28,6 +28,17 @@ const (
 
 	// clusterNamePath is the endpoint for the RabbitMQ cluster name.
 	clusterNamePath = "/api/cluster-name"
+
+	// connectionsPath is the endpoint for RabbitMQ connections.
+	connectionsPath = "/api/connections"
+
+	// channelsPath is the endpoint for RabbitMQ channels.
+	channelsPath = "/api/channels"
+
+	// connectionsColumns and channelsColumns restrict responses to the fields the scraper
+	// uses; the full objects are large and these endpoints can return many thousands of them.
+	connectionsColumns = "user,vhost"
+	channelsColumns    = "user,vhost,prefetch_count,consumer_count"
 )
 
 type client interface {
@@ -39,6 +50,10 @@ type client interface {
 	GetExchanges(ctx context.Context) ([]*models.Exchange, error)
 	// GetClusterName calls "/api/cluster-name" endpoint to get the cluster name.
 	GetClusterName(ctx context.Context) (string, error)
+	// GetConnections calls "/api/connections" endpoint to get list of connections for the target node
+	GetConnections(ctx context.Context) ([]*models.Connection, error)
+	// GetChannels calls "/api/channels" endpoint to get list of channels for the target node
+	GetChannels(ctx context.Context) ([]*models.Channel, error)
 }
 
 var _ client = (*rabbitmqClient)(nil)
@@ -114,6 +129,28 @@ func (c *rabbitmqClient) GetClusterName(ctx context.Context) (string, error) {
 	}
 
 	return clusterName.Name, nil
+}
+
+func (c *rabbitmqClient) GetConnections(ctx context.Context) ([]*models.Connection, error) {
+	var connections []*models.Connection
+
+	if err := c.get(ctx, connectionsPath+"?columns="+connectionsColumns, &connections); err != nil {
+		c.logger.Debug("Failed to retrieve connections", zap.Error(err))
+		return nil, err
+	}
+
+	return connections, nil
+}
+
+func (c *rabbitmqClient) GetChannels(ctx context.Context) ([]*models.Channel, error) {
+	var channels []*models.Channel
+
+	if err := c.get(ctx, channelsPath+"?columns="+channelsColumns, &channels); err != nil {
+		c.logger.Debug("Failed to retrieve channels", zap.Error(err))
+		return nil, err
+	}
+
+	return channels, nil
 }
 
 func (c *rabbitmqClient) get(ctx context.Context, path string, respObj any) error {
