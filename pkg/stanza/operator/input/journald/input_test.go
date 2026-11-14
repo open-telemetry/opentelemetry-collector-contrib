@@ -11,6 +11,7 @@ import (
 	"errors"
 	"io"
 	"os/exec"
+	"sync"
 	"testing"
 	"time"
 
@@ -712,4 +713,97 @@ func TestInputJournaldError(t *testing.T) {
 	err = op.Start(testutil.NewUnscopedMockPersister())
 	assert.EqualError(t, err, "journalctl command failed: start journalctl: fail to start")
 	require.NoError(t, op.Stop())
+}
+
+const cursorTestLine = `{"MESSAGE":"hello","__REALTIME_TIMESTAMP":"1587047866229555","__CURSOR":"s=1"}` + "\n"
+
+func TestInputJournaldSavesCursorAfterWrite(t *testing.T) {
+	cfg := NewConfigWithID("my_journald_input")
+	cfg.OutputIDs = []string{"output"}
+	op, err := cfg.Build(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	persister := testutil.NewUnscopedMockPersister()
+	var cursorDuringWrite []byte
+	var once sync.Once
+	written := make(chan struct{})
+	mockOutput := testutil.NewMockOperator("output")
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		once.Do(func() {
+			cursorDuringWrite, _ = persister.Get(args.Get(0).(context.Context), lastReadCursorKey)
+			close(written)
+		})
+	}).Return(nil)
+	require.NoError(t, op.SetOutputs([]operator.Operator{mockOutput}))
+
+	op.(*Input).newCmd = func(context.Context, []byte) cmd {
+		return &fakeJournaldCmdCustom{response: cursorTestLine}
+	}
+	require.NoError(t, op.Start(persister))
+	defer func() {
+		require.NoError(t, op.Stop())
+	}()
+
+	select {
+	case <-written:
+	case <-time.After(5 * time.Second):
+		t.Fatal("entry was never written")
+	}
+	assert.Empty(t, cursorDuringWrite, "cursor was saved before the entry was written")
+
+	require.Eventually(t, func() bool {
+		saved, getErr := persister.Get(t.Context(), lastReadCursorKey)
+		return getErr == nil && string(saved) == "s=1"
+	}, 5*time.Second, 10*time.Millisecond)
+}
+
+func TestInputJournaldStopDuringWrite(t *testing.T) {
+	cfg := NewConfigWithID("my_journald_input")
+	cfg.OutputIDs = []string{"output"}
+	op, err := cfg.Build(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	mockOutput := testutil.NewMockOperator("output")
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(mock.Arguments) {
+		close(entered)
+		<-release
+	}).Return(nil)
+	require.NoError(t, op.SetOutputs([]operator.Operator{mockOutput}))
+
+	op.(*Input).newCmd = func(context.Context, []byte) cmd {
+		return &fakeJournaldCmdCustom{response: cursorTestLine}
+	}
+	persister := testutil.NewUnscopedMockPersister()
+	require.NoError(t, op.Start(persister))
+
+	select {
+	case <-entered:
+	case <-time.After(5 * time.Second):
+		t.Fatal("entry was never written")
+	}
+
+	stopped := make(chan error)
+	go func() {
+		stopped <- op.Stop()
+	}()
+
+	select {
+	case <-stopped:
+		t.Fatal("Stop returned while an entry was still being written")
+	case <-time.After(100 * time.Millisecond):
+	}
+
+	close(release)
+	select {
+	case err = <-stopped:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("Stop did not return after the write finished")
+	}
+
+	saved, err := persister.Get(t.Context(), lastReadCursorKey)
+	require.NoError(t, err)
+	assert.Empty(t, saved, "cursor was saved for an entry interrupted by Stop")
 }
