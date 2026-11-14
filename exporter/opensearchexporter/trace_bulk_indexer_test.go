@@ -5,10 +5,12 @@ package opensearchexporter
 
 import (
 	"errors"
+	"net"
 	"testing"
 	"time"
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -57,6 +59,18 @@ func TestTraceProcessItemFailure(t *testing.T) {
 				t.Errorf("expected %d errors, got %d", tt.expectedErrs, len(tbi.errs))
 			}
 		})
+	}
+}
+
+func TestTraceOnIndexerErrorIsRetryable(t *testing.T) {
+	tbi := &traceBulkIndexer{}
+	tbi.onIndexerError(t.Context(), &net.OpError{Op: "dial", Err: errors.New("connection refused")})
+	err := tbi.joinedError()
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+	if consumererror.IsPermanent(err) {
+		t.Error("indexer-level transport error must be retryable, not permanent")
 	}
 }
 
