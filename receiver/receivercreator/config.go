@@ -120,6 +120,8 @@ type DefaultsConfig struct {
 type DefaultComponentConfig struct {
 	// Config is merged over the default config of the component's discovery rule.
 	Config userConfigMap `mapstructure:"config"`
+
+	_ struct{}
 }
 
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {

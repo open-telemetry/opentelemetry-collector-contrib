@@ -351,3 +351,7 @@ retract (
 	v0.76.1
 	v0.65.0
 )
+
+replace go.opentelemetry.io/collector/cmd/mdatagen => github.com/dmitryax/opentelemetry-collector/cmd/mdatagen v0.0.0-20261114014407-0242376c78b1
+
+replace go.opentelemetry.io/collector/component/xcomponentdiscovery => github.com/dmitryax/opentelemetry-collector/component/xcomponentdiscovery v0.0.0-20261114014407-0242376c78b1
