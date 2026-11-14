@@ -1296,7 +1296,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	require.FileExists(t, longFile.Name())
 }
 
-func TestHeaderPersistance(t *testing.T) {
+func TestHeaderPersistence(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
@@ -1309,8 +1309,8 @@ func TestHeaderPersistance(t *testing.T) {
 	filetest.WriteString(t, temp, "#headerField: headerValue\nlog line\n")
 
 	persister := testutil.NewUnscopedMockPersister()
-
-	require.NoError(t, op1.Start(persister))
+	op1.persister = persister
+	op1.poll(t.Context())
 	sink1.ExpectCall(t, []byte("log line"), map[string]any{
 		"header_key":      "headerField",
 		"header_value":    "headerValue",
@@ -1331,7 +1331,7 @@ func TestHeaderPersistance(t *testing.T) {
 	require.NoError(t, op2.Stop())
 }
 
-func TestHeaderPersistanceInHeader(t *testing.T) {
+func TestHeaderPersistenceInHeader(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg1 := NewConfig().includeDir(tempDir)
 	cfg1.StartAt = "beginning"
