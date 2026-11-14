@@ -128,12 +128,14 @@ This will automatically close the issue once your PR has been merged.
 
 ### AI-assisted contributions
 
-If you use an AI tool to help author a pull request, you (the human) are still responsible for
-writing the PR description and any comments posted on the issue or PR. AI agents must prompt you
-for the content of each section in the PR template and use your answers verbatim rather than
-generating description content on their own. The PR template includes an authorship checkbox that
-you must check yourself before the PR is ready for review. See [AGENTS.md](./AGENTS.md) for the
-full set of rules that apply to AI-assisted contributions.
+If you use an AI tool to help author a pull request, issue, or comment, you (the human) are
+personally responsible for reviewing, understanding, and being able to answer questions about
+your code, PR description, issues, and comments before submitting. Maintainers and approvers have
+blanket discretion to close pull requests or issues whose descriptions or comments are unhelpful,
+inaccurate, overly verbose, or show that the author does not understand the submission. The PR
+template includes an authorship attestation checkbox that you must check yourself before marking a
+PR ready for review. See [AGENTS.md](./AGENTS.md) for the full set of rules and writing guidelines
+that apply to AI-assisted contributions.
 
 ## Issue Triaging
 
