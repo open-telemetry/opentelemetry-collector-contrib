@@ -51,6 +51,11 @@ func (rc *receiverCreator) Start(_ context.Context, h component.Host) error {
 		return errors.New("the receivercreator is not compatible with the provided component.host")
 	}
 
+	defaultTemplates, err := resolveDefaultScrapers(rc.cfg, h, rc.params.Logger)
+	if err != nil {
+		return err
+	}
+
 	rc.observerHandler = &observerHandler{
 		config:                rc.cfg,
 		params:                rc.params,
@@ -60,6 +65,7 @@ func (rc *receiverCreator) Start(_ context.Context, h component.Host) error {
 		nextTracesConsumer:    rc.nextTracesConsumer,
 		nextProfilesConsumer:  rc.nextProfilesConsumer,
 		runner:                newReceiverRunner(rc.params, rcHost),
+		defaultTemplates:      defaultTemplates,
 	}
 
 	observers := map[component.ID]observer.Observable{}

@@ -30,6 +30,12 @@ github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/distribution/reference v0.6.0 h1:0IXCQ5g4/QMHHkarYzh5l+u8T3t73zM5QvfrDyIgxBk=
 github.com/distribution/reference v0.6.0/go.mod h1:BbU0aIcezP1/5jX/8MP0YiH4SdvB5Y4f/wlDRiLyi3E=
+github.com/dmitryax/opentelemetry-collector/component/xcomponentdiscovery v0.0.0-20261114001653-146bdd6e75e5 h1:tAD15gvYokVYh2CK+dTetjANiPZs2Nkcl5rjT6bBVWE=
+github.com/dmitryax/opentelemetry-collector/component/xcomponentdiscovery v0.0.0-20261114001653-146bdd6e75e5/go.mod h1:O5aAKTAEG8jkFkb02VQ2NmH7eoOlZMEt9FI+w7xh3oU=
+github.com/dmitryax/opentelemetry-collector/receiver/xreceiver v0.0.0-20261114001653-146bdd6e75e5 h1:tiTCn37ucGtkDutpFe6l1OKBfyyUCbzOPQ3CiV0w5QA=
+github.com/dmitryax/opentelemetry-collector/receiver/xreceiver v0.0.0-20261114001653-146bdd6e75e5/go.mod h1:d6p1VVC6UH6TgRwmbDLVshZpCLD/a5z39dXNXiyhQxU=
+github.com/dmitryax/opentelemetry-collector/scraper/xscraper v0.0.0-20261114001653-146bdd6e75e5 h1:YGJ3Ogg+EWTGPxOKOC3JA1bCXCq4Nzk1ap0BpqbpTMA=
+github.com/dmitryax/opentelemetry-collector/scraper/xscraper v0.0.0-20261114001653-146bdd6e75e5/go.mod h1:dYPE2iMvmFUf0o9Bu75SDXIGjdncKyXBqt5kO2vUOJg=
 github.com/docker/go-connections v0.8.2 h1:9d9DEokx5W7qlr0shkFXIxEA7+TTD+llwzcykSlxMNc=
 github.com/docker/go-connections v0.8.2/go.mod h1:no1qkHdjq7kLMGUXYAduOhYPSJxxvgWBh7ogVvptn3Q=
 github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4=
@@ -190,8 +196,6 @@ go.opentelemetry.io/collector/receiver/receiverhelper v0.165.1-0.20261112225459-
 go.opentelemetry.io/collector/receiver/receiverhelper v0.165.1-0.20261112225459-4888f0b280f9/go.mod h1:LRjij1/yB8oYaMwIVnBz3oQTD/A9LL3VMg/KEvYxTWU=
 go.opentelemetry.io/collector/receiver/receivertest v0.165.1-0.20261112225459-4888f0b280f9 h1:HoBamDHzjymcOP61XTgrLfxdcedOQI5AuTGUvjmxRZo=
 go.opentelemetry.io/collector/receiver/receivertest v0.165.1-0.20261112225459-4888f0b280f9/go.mod h1:W8ipOTIQoHQRwA3H/yXq/GxWNPoxruWnrepoJIkbkPU=
-go.opentelemetry.io/collector/receiver/xreceiver v0.165.1-0.20261112225459-4888f0b280f9 h1:W9mx9qX89nNhIP603C+DUOuqBx6Wy2QgoVduttpxNXQ=
-go.opentelemetry.io/collector/receiver/xreceiver v0.165.1-0.20261112225459-4888f0b280f9/go.mod h1:V3WOnz2O0D7viKGoGG9rb1gtYKwK3vqP3BBXNCJXCaU=
 go.opentelemetry.io/collector/scraper v0.165.1-0.20261112225459-4888f0b280f9 h1:Y+09tnglk1JE0XZt9qg6EU/KOrVcgL4N1MWdcZC+QNk=
 go.opentelemetry.io/collector/scraper v0.165.1-0.20261112225459-4888f0b280f9/go.mod h1:y9TFjeDQepWcJ7o0mwQCSG11ZJvKeo1V9RmMTF56z/Q=
 go.opentelemetry.io/collector/scraper/scraperhelper v0.165.1-0.20261112225459-4888f0b280f9 h1:i5zMhfT0Cchos2iWfms+Wk9/ZsLA9IA/+16CyWmZ1mU=

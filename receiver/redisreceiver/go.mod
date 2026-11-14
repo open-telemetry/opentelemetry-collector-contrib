@@ -83,6 +83,7 @@ require (
 	github.com/tklauser/numcpus v0.12.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
+	go.opentelemetry.io/collector/component/xcomponentdiscovery v0.165.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.165.1-0.20261112225459-4888f0b280f9 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.165.1-0.20261112225459-4888f0b280f9 // indirect
 	go.opentelemetry.io/collector/featuregate v1.71.1-0.20261112225459-4888f0b280f9 // indirect
@@ -92,6 +93,7 @@ require (
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.165.1-0.20261112225459-4888f0b280f9 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.165.1-0.20261112225459-4888f0b280f9 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.165.1-0.20261112225459-4888f0b280f9 // indirect
+	go.opentelemetry.io/collector/scraper/xscraper v0.165.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
@@ -123,3 +125,9 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/corei
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace go.opentelemetry.io/collector/component/xcomponentdiscovery => github.com/dmitryax/opentelemetry-collector/component/xcomponentdiscovery v0.0.0-20261114001653-146bdd6e75e5
+
+replace go.opentelemetry.io/collector/scraper/xscraper => github.com/dmitryax/opentelemetry-collector/scraper/xscraper v0.0.0-20261114001653-146bdd6e75e5
+
+replace go.opentelemetry.io/collector/receiver/xreceiver => github.com/dmitryax/opentelemetry-collector/receiver/xreceiver v0.0.0-20261114001653-146bdd6e75e5
