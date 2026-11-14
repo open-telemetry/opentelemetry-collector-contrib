@@ -382,7 +382,7 @@ func TestConsumeMetrics_SuccessfulUploads(t *testing.T) {
 		}
 
 		uploads := emu.getUploads()
-		require.Equal(t, initialCount+3, len(uploads))
+		require.Len(t, uploads, initialCount+3)
 
 		// Check each uploaded object has a unique name
 		names := make(map[string]bool)

@@ -483,7 +483,7 @@ func TestAttributePartition(t *testing.T) {
 		{
 			name:     "attribute absent",
 			attrKey:  "service.name",
-			setAttr:  func(r pcommon.Resource) {},
+			setAttr:  func(_ pcommon.Resource) {},
 			expected: "",
 		},
 		{
