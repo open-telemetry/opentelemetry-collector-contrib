@@ -503,6 +503,19 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  k8s.pod.filesystem.inode.used:
+    enabled: false
+    description: >-
+      Number of inodes used by the pod's ephemeral storage.
+      Derived from the Kubelet Summary API (PodStats.EphemeralStorage.InodesUsed), which sums the inodes
+      used by the pod's container root filesystems, logs and local volumes.
+    unit: "{inode}"
+    stability: development
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
   k8s.pod.filesystem.usage:
     enabled: true
     description: "Pod filesystem usage"

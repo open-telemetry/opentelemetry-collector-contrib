@@ -231,6 +231,9 @@ var MetricsInfo = metricsInfo{
 	K8sPodFilesystemCapacity: metricInfo{
 		Name: "k8s.pod.filesystem.capacity",
 	},
+	K8sPodFilesystemInodeUsed: metricInfo{
+		Name: "k8s.pod.filesystem.inode.used",
+	},
 	K8sPodFilesystemUsage: metricInfo{
 		Name: "k8s.pod.filesystem.usage",
 	},
@@ -341,6 +344,7 @@ type metricsInfo struct {
 	K8sPodCPURequestUtilization            metricInfo
 	K8sPodFilesystemAvailable              metricInfo
 	K8sPodFilesystemCapacity               metricInfo
+	K8sPodFilesystemInodeUsed              metricInfo
 	K8sPodFilesystemUsage                  metricInfo
 	K8sPodMemoryAvailable                  metricInfo
 	K8sPodMemoryMajorPageFaults            metricInfo
@@ -2922,6 +2926,58 @@ func newMetricK8sPodFilesystemCapacity(cfg K8sPodFilesystemCapacityMetricConfig)
 	return m
 }
 
+type metricK8sPodFilesystemInodeUsed struct {
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   K8sPodFilesystemInodeUsedMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
+}
+
+// init fills k8s.pod.filesystem.inode.used metric with initial data.
+func (m *metricK8sPodFilesystemInodeUsed) init() {
+	m.data.SetName("k8s.pod.filesystem.inode.used")
+	m.data.SetDescription("Number of inodes used by the pod's ephemeral storage. Derived from the Kubelet Summary API (PodStats.EphemeralStorage.InodesUsed), which sums the inodes used by the pod's container root filesystems, logs and local volumes.")
+	m.data.SetUnit("{inode}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sPodFilesystemInodeUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPodFilesystemInodeUsed) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPodFilesystemInodeUsed) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPodFilesystemInodeUsed(cfg K8sPodFilesystemInodeUsedMetricConfig) metricK8sPodFilesystemInodeUsed {
+	m := metricK8sPodFilesystemInodeUsed{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sPodFilesystemUsage struct {
 	data     pmetric.Metric                    // data buffer for generated metric.
 	config   K8sPodFilesystemUsageMetricConfig // metric config provided by user.
@@ -4026,6 +4082,7 @@ type MetricsBuilder struct {
 	metricK8sPodCPURequestUtilization            metricK8sPodCPURequestUtilization
 	metricK8sPodFilesystemAvailable              metricK8sPodFilesystemAvailable
 	metricK8sPodFilesystemCapacity               metricK8sPodFilesystemCapacity
+	metricK8sPodFilesystemInodeUsed              metricK8sPodFilesystemInodeUsed
 	metricK8sPodFilesystemUsage                  metricK8sPodFilesystemUsage
 	metricK8sPodMemoryAvailable                  metricK8sPodMemoryAvailable
 	metricK8sPodMemoryMajorPageFaults            metricK8sPodMemoryMajorPageFaults
@@ -4130,6 +4187,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sPodCPURequestUtilization:            newMetricK8sPodCPURequestUtilization(mbc.Metrics.K8sPodCPURequestUtilization),
 		metricK8sPodFilesystemAvailable:              newMetricK8sPodFilesystemAvailable(mbc.Metrics.K8sPodFilesystemAvailable),
 		metricK8sPodFilesystemCapacity:               newMetricK8sPodFilesystemCapacity(mbc.Metrics.K8sPodFilesystemCapacity),
+		metricK8sPodFilesystemInodeUsed:              newMetricK8sPodFilesystemInodeUsed(mbc.Metrics.K8sPodFilesystemInodeUsed),
 		metricK8sPodFilesystemUsage:                  newMetricK8sPodFilesystemUsage(mbc.Metrics.K8sPodFilesystemUsage),
 		metricK8sPodMemoryAvailable:                  newMetricK8sPodMemoryAvailable(mbc.Metrics.K8sPodMemoryAvailable),
 		metricK8sPodMemoryMajorPageFaults:            newMetricK8sPodMemoryMajorPageFaults(mbc.Metrics.K8sPodMemoryMajorPageFaults),
@@ -4330,6 +4388,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sPodCPURequestUtilization.emit(ils.Metrics())
 	mb.metricK8sPodFilesystemAvailable.emit(ils.Metrics())
 	mb.metricK8sPodFilesystemCapacity.emit(ils.Metrics())
+	mb.metricK8sPodFilesystemInodeUsed.emit(ils.Metrics())
 	mb.metricK8sPodFilesystemUsage.emit(ils.Metrics())
 	mb.metricK8sPodMemoryAvailable.emit(ils.Metrics())
 	mb.metricK8sPodMemoryMajorPageFaults.emit(ils.Metrics())
@@ -4618,6 +4677,11 @@ func (mb *MetricsBuilder) RecordK8sPodFilesystemAvailableDataPoint(ts pcommon.Ti
 // RecordK8sPodFilesystemCapacityDataPoint adds a data point to k8s.pod.filesystem.capacity metric.
 func (mb *MetricsBuilder) RecordK8sPodFilesystemCapacityDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sPodFilesystemCapacity.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sPodFilesystemInodeUsedDataPoint adds a data point to k8s.pod.filesystem.inode.used metric.
+func (mb *MetricsBuilder) RecordK8sPodFilesystemInodeUsedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sPodFilesystemInodeUsed.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sPodFilesystemUsageDataPoint adds a data point to k8s.pod.filesystem.usage metric.

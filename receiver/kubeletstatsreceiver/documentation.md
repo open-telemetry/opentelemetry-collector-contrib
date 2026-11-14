@@ -552,6 +552,14 @@ Pod cpu utilization as a ratio of the pod's total container requests. If any con
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
 
+### k8s.pod.filesystem.inode.used
+
+Number of inodes used by the pod's ephemeral storage. Derived from the Kubelet Summary API (PodStats.EphemeralStorage.InodesUsed), which sums the inodes used by the pod's container root filesystems, logs and local volumes.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {inode} | Sum | Int | Cumulative | false | Development |
+
 ### k8s.pod.memory.node.utilization
 
 Pod memory utilization as a ratio of the node's capacity

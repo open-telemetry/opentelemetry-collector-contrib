@@ -297,6 +297,42 @@ func TestScraperWithNodeFilesystemInodeMetrics(t *testing.T) {
 		pmetrictest.IgnoreMetricsOrder()))
 }
 
+func TestScraperWithPodFilesystemInodeMetrics(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
+	options := &scraperOptions{
+		metricGroupsToCollect: allMetricGroups,
+	}
+	metricsConfig := metadata.NewDefaultMetricsBuilderConfig()
+	metricsConfig.Metrics.K8sPodFilesystemInodeUsed.Enabled = true
+
+	r, err := newKubeletScraper(
+		&fakeRestClient{},
+		receivertest.NewNopSettings(metadata.Type),
+		options,
+		metricsConfig,
+		"worker-42",
+	)
+	require.NoError(t, err)
+
+	md, err := r.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+
+	require.Equal(t, dataLen+numPods, md.DataPointCount())
+	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_with_pod_filesystem_inode_expected.yaml")
+
+	// Uncomment to regenerate '*_expected.yaml' files
+	// golden.WriteMetrics(t, expectedFile, md)
+
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricsOrder()))
+}
+
 func TestScraperWithRlimitMetrics(t *testing.T) {
 	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	options := &scraperOptions{

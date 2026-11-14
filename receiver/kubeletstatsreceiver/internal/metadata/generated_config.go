@@ -1055,6 +1055,26 @@ func (ms *K8sPodFilesystemCapacityMetricConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
+// K8sPodFilesystemInodeUsedMetricConfig provides config for the k8s.pod.filesystem.inode.used metric.
+type K8sPodFilesystemInodeUsedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sPodFilesystemInodeUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // K8sPodFilesystemUsageMetricConfig provides config for the k8s.pod.filesystem.usage metric.
 type K8sPodFilesystemUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1543,6 +1563,7 @@ type MetricsConfig struct {
 	K8sPodCPURequestUtilization            K8sPodCPURequestUtilizationMetricConfig            `mapstructure:"k8s.pod.cpu_request_utilization"`
 	K8sPodFilesystemAvailable              K8sPodFilesystemAvailableMetricConfig              `mapstructure:"k8s.pod.filesystem.available"`
 	K8sPodFilesystemCapacity               K8sPodFilesystemCapacityMetricConfig               `mapstructure:"k8s.pod.filesystem.capacity"`
+	K8sPodFilesystemInodeUsed              K8sPodFilesystemInodeUsedMetricConfig              `mapstructure:"k8s.pod.filesystem.inode.used"`
 	K8sPodFilesystemUsage                  K8sPodFilesystemUsageMetricConfig                  `mapstructure:"k8s.pod.filesystem.usage"`
 	K8sPodMemoryAvailable                  K8sPodMemoryAvailableMetricConfig                  `mapstructure:"k8s.pod.memory.available"`
 	K8sPodMemoryMajorPageFaults            K8sPodMemoryMajorPageFaultsMetricConfig            `mapstructure:"k8s.pod.memory.major_page_faults"`
@@ -1715,6 +1736,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		K8sPodFilesystemCapacity: K8sPodFilesystemCapacityMetricConfig{
 			Enabled: true,
+		},
+		K8sPodFilesystemInodeUsed: K8sPodFilesystemInodeUsedMetricConfig{
+			Enabled: false,
 		},
 		K8sPodFilesystemUsage: K8sPodFilesystemUsageMetricConfig{
 			Enabled: true,
