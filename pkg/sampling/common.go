@@ -59,7 +59,7 @@ func (s keyValueScanner) scanKeyValues(input string, f func(key, value string) e
 	items := 0
 	for input != "" {
 		items++
-		if s.maxItems > 0 && items >= s.maxItems {
+		if s.maxItems > 0 && items > s.maxItems {
 			// W3C specifies max 32 entries, tested here
 			// instead of via the regexp.
 			return ErrTraceStateSize
