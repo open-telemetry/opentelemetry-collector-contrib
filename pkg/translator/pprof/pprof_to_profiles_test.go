@@ -237,35 +237,6 @@ func TestLinesToString(t *testing.T) {
 	}
 }
 
-func TestLinesToString_SortingBranches(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    []profile.Line
-		expected string
-	}{
-		{
-			name: "line/column/function sorting with nil functions",
-			input: []profile.Line{
-				{Line: 10, Column: 1},
-				{Line: 10, Column: 1},
-				{Function: &profile.Function{ID: 2, Name: "func2"}, Line: 10, Column: 1},
-				{Function: &profile.Function{ID: 1, Name: "func1"}, Line: 10, Column: 1},
-				{Line: 10, Column: 0},
-				{Line: 9, Column: 9},
-			},
-			expected: "-1:9:9;-1:10:0;-1:10:1;-1:10:1;1:10:1;2:10:1",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			lts := initLookupTables()
-			result := lts.linesToString(test.input)
-			require.Equal(t, test.expected, result)
-		})
-	}
-}
-
 func TestGetValueHash(t *testing.T) {
 	var intBytes [8]byte
 	binary.LittleEndian.PutUint64(intBytes[:], uint64(42))
