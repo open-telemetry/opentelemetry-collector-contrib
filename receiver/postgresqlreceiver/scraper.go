@@ -288,6 +288,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.collectBGWriterStats(ctx, now, listClient, &errs)
 	p.collectWalAge(ctx, now, listClient, &errs)
 	p.collectReplicationStats(ctx, now, listClient, &errs)
+	p.collectReplicationSlotStats(ctx, now, listClient, &errs)
 	p.collectMaxConnections(ctx, now, listClient, &errs)
 	p.collectServerScopedLocks(ctx, now, listClient, &errs)
 
@@ -1270,6 +1271,49 @@ func (p *postgreSQLScraper) collectReplicationStats(
 
 func (p *postgreSQLScraper) walAgeMetricsEnabled() bool {
 	return p.config.MetricsBuilderConfig.Metrics.PostgresqlWalAge.Enabled
+}
+
+// replicationSlotMetricsEnabled reports whether any replication-slot metric is turned on.
+func (p *postgreSQLScraper) replicationSlotMetricsEnabled() bool {
+	m := p.config.MetricsBuilderConfig.Metrics
+	return m.PostgresqlReplicationSlotActive.Enabled ||
+		m.PostgresqlReplicationSlotWalSafeSize.Enabled
+}
+
+func (p *postgreSQLScraper) collectReplicationSlotStats(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	errs *errsMux,
+) {
+	if !p.replicationSlotMetricsEnabled() {
+		return
+	}
+
+	slots, err := client.getReplicationSlotStats(ctx)
+	if err != nil {
+		errs.addPartial(fmt.Errorf("unable to retrieve replication slot stats: %w", err))
+		return
+	}
+	for _, s := range slots {
+		if p.config.MetricsBuilderConfig.Metrics.PostgresqlReplicationSlotActive.Enabled {
+			p.mb.RecordPostgresqlReplicationSlotActiveDataPoint(
+				now,
+				s.isActive,
+				s.slotName,
+				metadata.MapAttributePostgresqlReplicationSlotType[s.slotType],
+				metadata.MapAttributePostgresqlReplicationSlotWalStatus[s.walStatus],
+			)
+		}
+		if p.config.MetricsBuilderConfig.Metrics.PostgresqlReplicationSlotWalSafeSize.Enabled {
+			p.mb.RecordPostgresqlReplicationSlotWalSafeSizeDataPoint(
+				now,
+				s.safeWALSize,
+				s.slotName,
+				metadata.MapAttributePostgresqlReplicationSlotType[s.slotType],
+			)
+		}
+	}
 }
 
 func (p *postgreSQLScraper) collectWalAge(

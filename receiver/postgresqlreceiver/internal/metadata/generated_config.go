@@ -967,6 +967,105 @@ func (ms *PostgresqlReplicationDataDelayMetricConfig) Validate() error {
 	return nil
 }
 
+// PostgresqlReplicationSlotActiveMetricAttributeKey specifies the key of an attribute for the postgresql.replication_slot.active metric.
+type PostgresqlReplicationSlotActiveMetricAttributeKey string
+
+const (
+	PostgresqlReplicationSlotActiveMetricAttributeKeyPostgresqlReplicationSlotName      PostgresqlReplicationSlotActiveMetricAttributeKey = "postgresql.replication.slot.name"
+	PostgresqlReplicationSlotActiveMetricAttributeKeyPostgresqlReplicationSlotType      PostgresqlReplicationSlotActiveMetricAttributeKey = "postgresql.replication.slot.type"
+	PostgresqlReplicationSlotActiveMetricAttributeKeyPostgresqlReplicationSlotWalStatus PostgresqlReplicationSlotActiveMetricAttributeKey = "postgresql.replication.slot.wal_status"
+)
+
+// PostgresqlReplicationSlotActiveMetricConfig provides config for the postgresql.replication_slot.active metric.
+type PostgresqlReplicationSlotActiveMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlReplicationSlotActiveMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlReplicationSlotActiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlReplicationSlotActiveMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlReplicationSlotActiveMetricAttributeKeyPostgresqlReplicationSlotName, PostgresqlReplicationSlotActiveMetricAttributeKeyPostgresqlReplicationSlotType, PostgresqlReplicationSlotActiveMetricAttributeKeyPostgresqlReplicationSlotWalStatus:
+		default:
+			return fmt.Errorf("metric postgresql.replication_slot.active doesn't have an attribute %v, valid attributes: [postgresql.replication.slot.name, postgresql.replication.slot.type, postgresql.replication.slot.wal_status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// PostgresqlReplicationSlotWalSafeSizeMetricAttributeKey specifies the key of an attribute for the postgresql.replication_slot.wal.safe_size metric.
+type PostgresqlReplicationSlotWalSafeSizeMetricAttributeKey string
+
+const (
+	PostgresqlReplicationSlotWalSafeSizeMetricAttributeKeyPostgresqlReplicationSlotName PostgresqlReplicationSlotWalSafeSizeMetricAttributeKey = "postgresql.replication.slot.name"
+	PostgresqlReplicationSlotWalSafeSizeMetricAttributeKeyPostgresqlReplicationSlotType PostgresqlReplicationSlotWalSafeSizeMetricAttributeKey = "postgresql.replication.slot.type"
+)
+
+// PostgresqlReplicationSlotWalSafeSizeMetricConfig provides config for the postgresql.replication_slot.wal.safe_size metric.
+type PostgresqlReplicationSlotWalSafeSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlReplicationSlotWalSafeSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlReplicationSlotWalSafeSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlReplicationSlotWalSafeSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlReplicationSlotWalSafeSizeMetricAttributeKeyPostgresqlReplicationSlotName, PostgresqlReplicationSlotWalSafeSizeMetricAttributeKeyPostgresqlReplicationSlotType:
+		default:
+			return fmt.Errorf("metric postgresql.replication_slot.wal.safe_size doesn't have an attribute %v, valid attributes: [postgresql.replication.slot.name, postgresql.replication.slot.type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // PostgresqlRollbacksMetricAttributeKey specifies the key of an attribute for the postgresql.rollbacks metric.
 type PostgresqlRollbacksMetricAttributeKey string
 
@@ -1959,49 +2058,51 @@ func (ms *PostgresqlWalLagMetricConfig) Validate() error {
 
 // MetricsConfig provides config for postgresql metrics.
 type MetricsConfig struct {
-	PostgresqlBackends                 PostgresqlBackendsMetricConfig                 `mapstructure:"postgresql.backends"`
-	PostgresqlBgwriterBuffersAllocated PostgresqlBgwriterBuffersAllocatedMetricConfig `mapstructure:"postgresql.bgwriter.buffers.allocated"`
-	PostgresqlBgwriterBuffersWrites    PostgresqlBgwriterBuffersWritesMetricConfig    `mapstructure:"postgresql.bgwriter.buffers.writes"`
-	PostgresqlBgwriterCheckpointCount  PostgresqlBgwriterCheckpointCountMetricConfig  `mapstructure:"postgresql.bgwriter.checkpoint.count"`
-	PostgresqlBgwriterDuration         PostgresqlBgwriterDurationMetricConfig         `mapstructure:"postgresql.bgwriter.duration"`
-	PostgresqlBgwriterMaxwritten       PostgresqlBgwriterMaxwrittenMetricConfig       `mapstructure:"postgresql.bgwriter.maxwritten"`
-	PostgresqlBlksHit                  PostgresqlBlksHitMetricConfig                  `mapstructure:"postgresql.blks_hit"`
-	PostgresqlBlksRead                 PostgresqlBlksReadMetricConfig                 `mapstructure:"postgresql.blks_read"`
-	PostgresqlBlocksRead               PostgresqlBlocksReadMetricConfig               `mapstructure:"postgresql.blocks_read"`
-	PostgresqlCommits                  PostgresqlCommitsMetricConfig                  `mapstructure:"postgresql.commits"`
-	PostgresqlConnectionMax            PostgresqlConnectionMaxMetricConfig            `mapstructure:"postgresql.connection.max"`
-	PostgresqlDatabaseCount            PostgresqlDatabaseCountMetricConfig            `mapstructure:"postgresql.database.count"`
-	PostgresqlDatabaseLocks            PostgresqlDatabaseLocksMetricConfig            `mapstructure:"postgresql.database.locks"`
-	PostgresqlDbSize                   PostgresqlDbSizeMetricConfig                   `mapstructure:"postgresql.db_size"`
-	PostgresqlDeadlocks                PostgresqlDeadlocksMetricConfig                `mapstructure:"postgresql.deadlocks"`
-	PostgresqlFunctionCalls            PostgresqlFunctionCallsMetricConfig            `mapstructure:"postgresql.function.calls"`
-	PostgresqlIndexScans               PostgresqlIndexScansMetricConfig               `mapstructure:"postgresql.index.scans"`
-	PostgresqlIndexSize                PostgresqlIndexSizeMetricConfig                `mapstructure:"postgresql.index.size"`
-	PostgresqlOperations               PostgresqlOperationsMetricConfig               `mapstructure:"postgresql.operations"`
-	PostgresqlQueryConflicts           PostgresqlQueryConflictsMetricConfig           `mapstructure:"postgresql.query.conflicts"`
-	PostgresqlQueryExecutionTime       PostgresqlQueryExecutionTimeMetricConfig       `mapstructure:"postgresql.query.execution.time"`
-	PostgresqlReplicationDataDelay     PostgresqlReplicationDataDelayMetricConfig     `mapstructure:"postgresql.replication.data_delay"`
-	PostgresqlRollbacks                PostgresqlRollbacksMetricConfig                `mapstructure:"postgresql.rollbacks"`
-	PostgresqlRows                     PostgresqlRowsMetricConfig                     `mapstructure:"postgresql.rows"`
-	PostgresqlSequentialScans          PostgresqlSequentialScansMetricConfig          `mapstructure:"postgresql.sequential_scans"`
-	PostgresqlTableCount               PostgresqlTableCountMetricConfig               `mapstructure:"postgresql.table.count"`
-	PostgresqlTableSize                PostgresqlTableSizeMetricConfig                `mapstructure:"postgresql.table.size"`
-	PostgresqlTableVacuumCount         PostgresqlTableVacuumCountMetricConfig         `mapstructure:"postgresql.table.vacuum.count"`
-	PostgresqlTempIo                   PostgresqlTempIoMetricConfig                   `mapstructure:"postgresql.temp.io"`
-	PostgresqlTempFiles                PostgresqlTempFilesMetricConfig                `mapstructure:"postgresql.temp_files"`
-	PostgresqlTupDeleted               PostgresqlTupDeletedMetricConfig               `mapstructure:"postgresql.tup_deleted"`
-	PostgresqlTupFetched               PostgresqlTupFetchedMetricConfig               `mapstructure:"postgresql.tup_fetched"`
-	PostgresqlTupInserted              PostgresqlTupInsertedMetricConfig              `mapstructure:"postgresql.tup_inserted"`
-	PostgresqlTupReturned              PostgresqlTupReturnedMetricConfig              `mapstructure:"postgresql.tup_returned"`
-	PostgresqlTupUpdated               PostgresqlTupUpdatedMetricConfig               `mapstructure:"postgresql.tup_updated"`
-	PostgresqlVectorInsertDuration     PostgresqlVectorInsertDurationMetricConfig     `mapstructure:"postgresql.vector.insert.duration"`
-	PostgresqlVectorInsertRows         PostgresqlVectorInsertRowsMetricConfig         `mapstructure:"postgresql.vector.insert.rows"`
-	PostgresqlVectorSearchCalls        PostgresqlVectorSearchCallsMetricConfig        `mapstructure:"postgresql.vector.search.calls"`
-	PostgresqlVectorSearchDuration     PostgresqlVectorSearchDurationMetricConfig     `mapstructure:"postgresql.vector.search.duration"`
-	PostgresqlVectorSearchRowsReturned PostgresqlVectorSearchRowsReturnedMetricConfig `mapstructure:"postgresql.vector.search.rows_returned"`
-	PostgresqlWalAge                   PostgresqlWalAgeMetricConfig                   `mapstructure:"postgresql.wal.age"`
-	PostgresqlWalDelay                 PostgresqlWalDelayMetricConfig                 `mapstructure:"postgresql.wal.delay"`
-	PostgresqlWalLag                   PostgresqlWalLagMetricConfig                   `mapstructure:"postgresql.wal.lag"`
+	PostgresqlBackends                   PostgresqlBackendsMetricConfig                   `mapstructure:"postgresql.backends"`
+	PostgresqlBgwriterBuffersAllocated   PostgresqlBgwriterBuffersAllocatedMetricConfig   `mapstructure:"postgresql.bgwriter.buffers.allocated"`
+	PostgresqlBgwriterBuffersWrites      PostgresqlBgwriterBuffersWritesMetricConfig      `mapstructure:"postgresql.bgwriter.buffers.writes"`
+	PostgresqlBgwriterCheckpointCount    PostgresqlBgwriterCheckpointCountMetricConfig    `mapstructure:"postgresql.bgwriter.checkpoint.count"`
+	PostgresqlBgwriterDuration           PostgresqlBgwriterDurationMetricConfig           `mapstructure:"postgresql.bgwriter.duration"`
+	PostgresqlBgwriterMaxwritten         PostgresqlBgwriterMaxwrittenMetricConfig         `mapstructure:"postgresql.bgwriter.maxwritten"`
+	PostgresqlBlksHit                    PostgresqlBlksHitMetricConfig                    `mapstructure:"postgresql.blks_hit"`
+	PostgresqlBlksRead                   PostgresqlBlksReadMetricConfig                   `mapstructure:"postgresql.blks_read"`
+	PostgresqlBlocksRead                 PostgresqlBlocksReadMetricConfig                 `mapstructure:"postgresql.blocks_read"`
+	PostgresqlCommits                    PostgresqlCommitsMetricConfig                    `mapstructure:"postgresql.commits"`
+	PostgresqlConnectionMax              PostgresqlConnectionMaxMetricConfig              `mapstructure:"postgresql.connection.max"`
+	PostgresqlDatabaseCount              PostgresqlDatabaseCountMetricConfig              `mapstructure:"postgresql.database.count"`
+	PostgresqlDatabaseLocks              PostgresqlDatabaseLocksMetricConfig              `mapstructure:"postgresql.database.locks"`
+	PostgresqlDbSize                     PostgresqlDbSizeMetricConfig                     `mapstructure:"postgresql.db_size"`
+	PostgresqlDeadlocks                  PostgresqlDeadlocksMetricConfig                  `mapstructure:"postgresql.deadlocks"`
+	PostgresqlFunctionCalls              PostgresqlFunctionCallsMetricConfig              `mapstructure:"postgresql.function.calls"`
+	PostgresqlIndexScans                 PostgresqlIndexScansMetricConfig                 `mapstructure:"postgresql.index.scans"`
+	PostgresqlIndexSize                  PostgresqlIndexSizeMetricConfig                  `mapstructure:"postgresql.index.size"`
+	PostgresqlOperations                 PostgresqlOperationsMetricConfig                 `mapstructure:"postgresql.operations"`
+	PostgresqlQueryConflicts             PostgresqlQueryConflictsMetricConfig             `mapstructure:"postgresql.query.conflicts"`
+	PostgresqlQueryExecutionTime         PostgresqlQueryExecutionTimeMetricConfig         `mapstructure:"postgresql.query.execution.time"`
+	PostgresqlReplicationDataDelay       PostgresqlReplicationDataDelayMetricConfig       `mapstructure:"postgresql.replication.data_delay"`
+	PostgresqlReplicationSlotActive      PostgresqlReplicationSlotActiveMetricConfig      `mapstructure:"postgresql.replication_slot.active"`
+	PostgresqlReplicationSlotWalSafeSize PostgresqlReplicationSlotWalSafeSizeMetricConfig `mapstructure:"postgresql.replication_slot.wal.safe_size"`
+	PostgresqlRollbacks                  PostgresqlRollbacksMetricConfig                  `mapstructure:"postgresql.rollbacks"`
+	PostgresqlRows                       PostgresqlRowsMetricConfig                       `mapstructure:"postgresql.rows"`
+	PostgresqlSequentialScans            PostgresqlSequentialScansMetricConfig            `mapstructure:"postgresql.sequential_scans"`
+	PostgresqlTableCount                 PostgresqlTableCountMetricConfig                 `mapstructure:"postgresql.table.count"`
+	PostgresqlTableSize                  PostgresqlTableSizeMetricConfig                  `mapstructure:"postgresql.table.size"`
+	PostgresqlTableVacuumCount           PostgresqlTableVacuumCountMetricConfig           `mapstructure:"postgresql.table.vacuum.count"`
+	PostgresqlTempIo                     PostgresqlTempIoMetricConfig                     `mapstructure:"postgresql.temp.io"`
+	PostgresqlTempFiles                  PostgresqlTempFilesMetricConfig                  `mapstructure:"postgresql.temp_files"`
+	PostgresqlTupDeleted                 PostgresqlTupDeletedMetricConfig                 `mapstructure:"postgresql.tup_deleted"`
+	PostgresqlTupFetched                 PostgresqlTupFetchedMetricConfig                 `mapstructure:"postgresql.tup_fetched"`
+	PostgresqlTupInserted                PostgresqlTupInsertedMetricConfig                `mapstructure:"postgresql.tup_inserted"`
+	PostgresqlTupReturned                PostgresqlTupReturnedMetricConfig                `mapstructure:"postgresql.tup_returned"`
+	PostgresqlTupUpdated                 PostgresqlTupUpdatedMetricConfig                 `mapstructure:"postgresql.tup_updated"`
+	PostgresqlVectorInsertDuration       PostgresqlVectorInsertDurationMetricConfig       `mapstructure:"postgresql.vector.insert.duration"`
+	PostgresqlVectorInsertRows           PostgresqlVectorInsertRowsMetricConfig           `mapstructure:"postgresql.vector.insert.rows"`
+	PostgresqlVectorSearchCalls          PostgresqlVectorSearchCallsMetricConfig          `mapstructure:"postgresql.vector.search.calls"`
+	PostgresqlVectorSearchDuration       PostgresqlVectorSearchDurationMetricConfig       `mapstructure:"postgresql.vector.search.duration"`
+	PostgresqlVectorSearchRowsReturned   PostgresqlVectorSearchRowsReturnedMetricConfig   `mapstructure:"postgresql.vector.search.rows_returned"`
+	PostgresqlWalAge                     PostgresqlWalAgeMetricConfig                     `mapstructure:"postgresql.wal.age"`
+	PostgresqlWalDelay                   PostgresqlWalDelayMetricConfig                   `mapstructure:"postgresql.wal.delay"`
+	PostgresqlWalLag                     PostgresqlWalLagMetricConfig                     `mapstructure:"postgresql.wal.lag"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -2107,6 +2208,16 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []PostgresqlReplicationDataDelayMetricAttributeKey{PostgresqlReplicationDataDelayMetricAttributeKeyReplicationClient},
+		},
+		PostgresqlReplicationSlotActive: PostgresqlReplicationSlotActiveMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []PostgresqlReplicationSlotActiveMetricAttributeKey{PostgresqlReplicationSlotActiveMetricAttributeKeyPostgresqlReplicationSlotName, PostgresqlReplicationSlotActiveMetricAttributeKeyPostgresqlReplicationSlotType, PostgresqlReplicationSlotActiveMetricAttributeKeyPostgresqlReplicationSlotWalStatus},
+		},
+		PostgresqlReplicationSlotWalSafeSize: PostgresqlReplicationSlotWalSafeSizeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []PostgresqlReplicationSlotWalSafeSizeMetricAttributeKey{PostgresqlReplicationSlotWalSafeSizeMetricAttributeKeyPostgresqlReplicationSlotName, PostgresqlReplicationSlotWalSafeSizeMetricAttributeKeyPostgresqlReplicationSlotType},
 		},
 		PostgresqlRollbacks: PostgresqlRollbacksMetricConfig{
 			Enabled:             true,

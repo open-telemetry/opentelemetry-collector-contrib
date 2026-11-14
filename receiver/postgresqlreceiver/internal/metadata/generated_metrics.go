@@ -3,15 +3,14 @@
 package metadata
 
 import (
-	"slices"
-	"time"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"slices"
+	"time"
 )
 
 const (
@@ -252,6 +251,66 @@ var MapAttributePostgresqlDistanceFunctionName = map[string]AttributePostgresqlD
 	"jaccard":       AttributePostgresqlDistanceFunctionNameJaccard,
 }
 
+// AttributePostgresqlReplicationSlotType specifies the value postgresql.replication.slot.type attribute.
+type AttributePostgresqlReplicationSlotType int
+
+const (
+	_ AttributePostgresqlReplicationSlotType = iota
+	AttributePostgresqlReplicationSlotTypePhysical
+	AttributePostgresqlReplicationSlotTypeLogical
+)
+
+// String returns the string representation of the AttributePostgresqlReplicationSlotType.
+func (av AttributePostgresqlReplicationSlotType) String() string {
+	switch av {
+	case AttributePostgresqlReplicationSlotTypePhysical:
+		return "physical"
+	case AttributePostgresqlReplicationSlotTypeLogical:
+		return "logical"
+	}
+	return ""
+}
+
+// MapAttributePostgresqlReplicationSlotType is a helper map of string to AttributePostgresqlReplicationSlotType attribute value.
+var MapAttributePostgresqlReplicationSlotType = map[string]AttributePostgresqlReplicationSlotType{
+	"physical": AttributePostgresqlReplicationSlotTypePhysical,
+	"logical":  AttributePostgresqlReplicationSlotTypeLogical,
+}
+
+// AttributePostgresqlReplicationSlotWalStatus specifies the value postgresql.replication.slot.wal_status attribute.
+type AttributePostgresqlReplicationSlotWalStatus int
+
+const (
+	_ AttributePostgresqlReplicationSlotWalStatus = iota
+	AttributePostgresqlReplicationSlotWalStatusReserved
+	AttributePostgresqlReplicationSlotWalStatusExtended
+	AttributePostgresqlReplicationSlotWalStatusUnreserved
+	AttributePostgresqlReplicationSlotWalStatusLost
+)
+
+// String returns the string representation of the AttributePostgresqlReplicationSlotWalStatus.
+func (av AttributePostgresqlReplicationSlotWalStatus) String() string {
+	switch av {
+	case AttributePostgresqlReplicationSlotWalStatusReserved:
+		return "reserved"
+	case AttributePostgresqlReplicationSlotWalStatusExtended:
+		return "extended"
+	case AttributePostgresqlReplicationSlotWalStatusUnreserved:
+		return "unreserved"
+	case AttributePostgresqlReplicationSlotWalStatusLost:
+		return "lost"
+	}
+	return ""
+}
+
+// MapAttributePostgresqlReplicationSlotWalStatus is a helper map of string to AttributePostgresqlReplicationSlotWalStatus attribute value.
+var MapAttributePostgresqlReplicationSlotWalStatus = map[string]AttributePostgresqlReplicationSlotWalStatus{
+	"reserved":   AttributePostgresqlReplicationSlotWalStatusReserved,
+	"extended":   AttributePostgresqlReplicationSlotWalStatusExtended,
+	"unreserved": AttributePostgresqlReplicationSlotWalStatusUnreserved,
+	"lost":       AttributePostgresqlReplicationSlotWalStatusLost,
+}
+
 // AttributeSource specifies the value source attribute.
 type AttributeSource int
 
@@ -443,6 +502,14 @@ var MetricsInfo = metricsInfo{
 		Name:       "postgresql.replication.data_delay",
 		Attributes: []string{"replication_client"},
 	},
+	PostgresqlReplicationSlotActive: metricInfo{
+		Name:       "postgresql.replication_slot.active",
+		Attributes: []string{"postgresql.replication.slot.name", "postgresql.replication.slot.type", "postgresql.replication.slot.wal_status"},
+	},
+	PostgresqlReplicationSlotWalSafeSize: metricInfo{
+		Name:       "postgresql.replication_slot.wal.safe_size",
+		Attributes: []string{"postgresql.replication.slot.name", "postgresql.replication.slot.type"},
+	},
 	PostgresqlRollbacks: metricInfo{
 		Name:       "postgresql.rollbacks",
 		Attributes: []string{"db.namespace"},
@@ -529,49 +596,51 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
-	PostgresqlBackends                 metricInfo
-	PostgresqlBgwriterBuffersAllocated metricInfo
-	PostgresqlBgwriterBuffersWrites    metricInfo
-	PostgresqlBgwriterCheckpointCount  metricInfo
-	PostgresqlBgwriterDuration         metricInfo
-	PostgresqlBgwriterMaxwritten       metricInfo
-	PostgresqlBlksHit                  metricInfo
-	PostgresqlBlksRead                 metricInfo
-	PostgresqlBlocksRead               metricInfo
-	PostgresqlCommits                  metricInfo
-	PostgresqlConnectionMax            metricInfo
-	PostgresqlDatabaseCount            metricInfo
-	PostgresqlDatabaseLocks            metricInfo
-	PostgresqlDbSize                   metricInfo
-	PostgresqlDeadlocks                metricInfo
-	PostgresqlFunctionCalls            metricInfo
-	PostgresqlIndexScans               metricInfo
-	PostgresqlIndexSize                metricInfo
-	PostgresqlOperations               metricInfo
-	PostgresqlQueryConflicts           metricInfo
-	PostgresqlQueryExecutionTime       metricInfo
-	PostgresqlReplicationDataDelay     metricInfo
-	PostgresqlRollbacks                metricInfo
-	PostgresqlRows                     metricInfo
-	PostgresqlSequentialScans          metricInfo
-	PostgresqlTableCount               metricInfo
-	PostgresqlTableSize                metricInfo
-	PostgresqlTableVacuumCount         metricInfo
-	PostgresqlTempIo                   metricInfo
-	PostgresqlTempFiles                metricInfo
-	PostgresqlTupDeleted               metricInfo
-	PostgresqlTupFetched               metricInfo
-	PostgresqlTupInserted              metricInfo
-	PostgresqlTupReturned              metricInfo
-	PostgresqlTupUpdated               metricInfo
-	PostgresqlVectorInsertDuration     metricInfo
-	PostgresqlVectorInsertRows         metricInfo
-	PostgresqlVectorSearchCalls        metricInfo
-	PostgresqlVectorSearchDuration     metricInfo
-	PostgresqlVectorSearchRowsReturned metricInfo
-	PostgresqlWalAge                   metricInfo
-	PostgresqlWalDelay                 metricInfo
-	PostgresqlWalLag                   metricInfo
+	PostgresqlBackends                   metricInfo
+	PostgresqlBgwriterBuffersAllocated   metricInfo
+	PostgresqlBgwriterBuffersWrites      metricInfo
+	PostgresqlBgwriterCheckpointCount    metricInfo
+	PostgresqlBgwriterDuration           metricInfo
+	PostgresqlBgwriterMaxwritten         metricInfo
+	PostgresqlBlksHit                    metricInfo
+	PostgresqlBlksRead                   metricInfo
+	PostgresqlBlocksRead                 metricInfo
+	PostgresqlCommits                    metricInfo
+	PostgresqlConnectionMax              metricInfo
+	PostgresqlDatabaseCount              metricInfo
+	PostgresqlDatabaseLocks              metricInfo
+	PostgresqlDbSize                     metricInfo
+	PostgresqlDeadlocks                  metricInfo
+	PostgresqlFunctionCalls              metricInfo
+	PostgresqlIndexScans                 metricInfo
+	PostgresqlIndexSize                  metricInfo
+	PostgresqlOperations                 metricInfo
+	PostgresqlQueryConflicts             metricInfo
+	PostgresqlQueryExecutionTime         metricInfo
+	PostgresqlReplicationDataDelay       metricInfo
+	PostgresqlReplicationSlotActive      metricInfo
+	PostgresqlReplicationSlotWalSafeSize metricInfo
+	PostgresqlRollbacks                  metricInfo
+	PostgresqlRows                       metricInfo
+	PostgresqlSequentialScans            metricInfo
+	PostgresqlTableCount                 metricInfo
+	PostgresqlTableSize                  metricInfo
+	PostgresqlTableVacuumCount           metricInfo
+	PostgresqlTempIo                     metricInfo
+	PostgresqlTempFiles                  metricInfo
+	PostgresqlTupDeleted                 metricInfo
+	PostgresqlTupFetched                 metricInfo
+	PostgresqlTupInserted                metricInfo
+	PostgresqlTupReturned                metricInfo
+	PostgresqlTupUpdated                 metricInfo
+	PostgresqlVectorInsertDuration       metricInfo
+	PostgresqlVectorInsertRows           metricInfo
+	PostgresqlVectorSearchCalls          metricInfo
+	PostgresqlVectorSearchDuration       metricInfo
+	PostgresqlVectorSearchRowsReturned   metricInfo
+	PostgresqlWalAge                     metricInfo
+	PostgresqlWalDelay                   metricInfo
+	PostgresqlWalLag                     metricInfo
 }
 
 type metricInfo struct {
@@ -2484,6 +2553,197 @@ func (m *metricPostgresqlReplicationDataDelay) emit(metrics pmetric.MetricSlice)
 
 func newMetricPostgresqlReplicationDataDelay(cfg PostgresqlReplicationDataDelayMetricConfig) metricPostgresqlReplicationDataDelay {
 	m := metricPostgresqlReplicationDataDelay{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlReplicationSlotActive struct {
+	data          pmetric.Metric                              // data buffer for generated metric.
+	config        PostgresqlReplicationSlotActiveMetricConfig // metric config provided by user.
+	capacity      int                                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                                     // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                              // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills postgresql.replication_slot.active metric with initial data.
+func (m *metricPostgresqlReplicationSlotActive) init() {
+	m.data.SetName("postgresql.replication_slot.active")
+	m.data.SetDescription("Whether the replication slot is active (1) or inactive (0). An inactive slot continues to retain WAL segments and can silently exhaust disk space if left unmonitored.")
+	m.data.SetUnit("{slot}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricPostgresqlReplicationSlotActive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, postgresqlReplicationSlotNameAttributeValue string, postgresqlReplicationSlotTypeAttributeValue string, postgresqlReplicationSlotWalStatusAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlReplicationSlotActiveMetricAttributeKeyPostgresqlReplicationSlotName) {
+		dp.Attributes().PutStr("postgresql.replication.slot.name", postgresqlReplicationSlotNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlReplicationSlotActiveMetricAttributeKeyPostgresqlReplicationSlotType) {
+		dp.Attributes().PutStr("postgresql.replication.slot.type", postgresqlReplicationSlotTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlReplicationSlotActiveMetricAttributeKeyPostgresqlReplicationSlotWalStatus) {
+		dp.Attributes().PutStr("postgresql.replication.slot.wal_status", postgresqlReplicationSlotWalStatusAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Gauge().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlReplicationSlotActive) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlReplicationSlotActive) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlReplicationSlotActive(cfg PostgresqlReplicationSlotActiveMetricConfig) metricPostgresqlReplicationSlotActive {
+	m := metricPostgresqlReplicationSlotActive{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlReplicationSlotWalSafeSize struct {
+	data          pmetric.Metric                                   // data buffer for generated metric.
+	config        PostgresqlReplicationSlotWalSafeSizeMetricConfig // metric config provided by user.
+	capacity      int                                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                                          // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                                   // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills postgresql.replication_slot.wal.safe_size metric with initial data.
+func (m *metricPostgresqlReplicationSlotWalSafeSize) init() {
+	m.data.SetName("postgresql.replication_slot.wal.safe_size")
+	m.data.SetDescription("Bytes of WAL remaining before the slot's retained WAL exceeds max_slot_wal_keep_size. -1 when no limit is configured. A value near 0 (or wal_status=lost) signals imminent slot invalidation.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricPostgresqlReplicationSlotWalSafeSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, postgresqlReplicationSlotNameAttributeValue string, postgresqlReplicationSlotTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlReplicationSlotWalSafeSizeMetricAttributeKeyPostgresqlReplicationSlotName) {
+		dp.Attributes().PutStr("postgresql.replication.slot.name", postgresqlReplicationSlotNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlReplicationSlotWalSafeSizeMetricAttributeKeyPostgresqlReplicationSlotType) {
+		dp.Attributes().PutStr("postgresql.replication.slot.type", postgresqlReplicationSlotTypeAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Gauge().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlReplicationSlotWalSafeSize) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlReplicationSlotWalSafeSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlReplicationSlotWalSafeSize(cfg PostgresqlReplicationSlotWalSafeSizeMetricConfig) metricPostgresqlReplicationSlotWalSafeSize {
+	m := metricPostgresqlReplicationSlotWalSafeSize{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -4431,56 +4691,58 @@ func newMetricPostgresqlWalLag(cfg PostgresqlWalLagMetricConfig) metricPostgresq
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                   MetricsBuilderConfig // config of the metrics builder.
-	startTime                                pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                          int                  // maximum observed number of metrics per resource.
-	metricsBuffer                            pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter           map[string]filter.Filter
-	resourceAttributeExcludeFilter           map[string]filter.Filter
-	metricPostgresqlBackends                 metricPostgresqlBackends
-	metricPostgresqlBgwriterBuffersAllocated metricPostgresqlBgwriterBuffersAllocated
-	metricPostgresqlBgwriterBuffersWrites    metricPostgresqlBgwriterBuffersWrites
-	metricPostgresqlBgwriterCheckpointCount  metricPostgresqlBgwriterCheckpointCount
-	metricPostgresqlBgwriterDuration         metricPostgresqlBgwriterDuration
-	metricPostgresqlBgwriterMaxwritten       metricPostgresqlBgwriterMaxwritten
-	metricPostgresqlBlksHit                  metricPostgresqlBlksHit
-	metricPostgresqlBlksRead                 metricPostgresqlBlksRead
-	metricPostgresqlBlocksRead               metricPostgresqlBlocksRead
-	metricPostgresqlCommits                  metricPostgresqlCommits
-	metricPostgresqlConnectionMax            metricPostgresqlConnectionMax
-	metricPostgresqlDatabaseCount            metricPostgresqlDatabaseCount
-	metricPostgresqlDatabaseLocks            metricPostgresqlDatabaseLocks
-	metricPostgresqlDbSize                   metricPostgresqlDbSize
-	metricPostgresqlDeadlocks                metricPostgresqlDeadlocks
-	metricPostgresqlFunctionCalls            metricPostgresqlFunctionCalls
-	metricPostgresqlIndexScans               metricPostgresqlIndexScans
-	metricPostgresqlIndexSize                metricPostgresqlIndexSize
-	metricPostgresqlOperations               metricPostgresqlOperations
-	metricPostgresqlQueryConflicts           metricPostgresqlQueryConflicts
-	metricPostgresqlQueryExecutionTime       metricPostgresqlQueryExecutionTime
-	metricPostgresqlReplicationDataDelay     metricPostgresqlReplicationDataDelay
-	metricPostgresqlRollbacks                metricPostgresqlRollbacks
-	metricPostgresqlRows                     metricPostgresqlRows
-	metricPostgresqlSequentialScans          metricPostgresqlSequentialScans
-	metricPostgresqlTableCount               metricPostgresqlTableCount
-	metricPostgresqlTableSize                metricPostgresqlTableSize
-	metricPostgresqlTableVacuumCount         metricPostgresqlTableVacuumCount
-	metricPostgresqlTempIo                   metricPostgresqlTempIo
-	metricPostgresqlTempFiles                metricPostgresqlTempFiles
-	metricPostgresqlTupDeleted               metricPostgresqlTupDeleted
-	metricPostgresqlTupFetched               metricPostgresqlTupFetched
-	metricPostgresqlTupInserted              metricPostgresqlTupInserted
-	metricPostgresqlTupReturned              metricPostgresqlTupReturned
-	metricPostgresqlTupUpdated               metricPostgresqlTupUpdated
-	metricPostgresqlVectorInsertDuration     metricPostgresqlVectorInsertDuration
-	metricPostgresqlVectorInsertRows         metricPostgresqlVectorInsertRows
-	metricPostgresqlVectorSearchCalls        metricPostgresqlVectorSearchCalls
-	metricPostgresqlVectorSearchDuration     metricPostgresqlVectorSearchDuration
-	metricPostgresqlVectorSearchRowsReturned metricPostgresqlVectorSearchRowsReturned
-	metricPostgresqlWalAge                   metricPostgresqlWalAge
-	metricPostgresqlWalDelay                 metricPostgresqlWalDelay
-	metricPostgresqlWalLag                   metricPostgresqlWalLag
+	config                                     MetricsBuilderConfig // config of the metrics builder.
+	startTime                                  pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                            int                  // maximum observed number of metrics per resource.
+	metricsBuffer                              pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                  component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter             map[string]filter.Filter
+	resourceAttributeExcludeFilter             map[string]filter.Filter
+	metricPostgresqlBackends                   metricPostgresqlBackends
+	metricPostgresqlBgwriterBuffersAllocated   metricPostgresqlBgwriterBuffersAllocated
+	metricPostgresqlBgwriterBuffersWrites      metricPostgresqlBgwriterBuffersWrites
+	metricPostgresqlBgwriterCheckpointCount    metricPostgresqlBgwriterCheckpointCount
+	metricPostgresqlBgwriterDuration           metricPostgresqlBgwriterDuration
+	metricPostgresqlBgwriterMaxwritten         metricPostgresqlBgwriterMaxwritten
+	metricPostgresqlBlksHit                    metricPostgresqlBlksHit
+	metricPostgresqlBlksRead                   metricPostgresqlBlksRead
+	metricPostgresqlBlocksRead                 metricPostgresqlBlocksRead
+	metricPostgresqlCommits                    metricPostgresqlCommits
+	metricPostgresqlConnectionMax              metricPostgresqlConnectionMax
+	metricPostgresqlDatabaseCount              metricPostgresqlDatabaseCount
+	metricPostgresqlDatabaseLocks              metricPostgresqlDatabaseLocks
+	metricPostgresqlDbSize                     metricPostgresqlDbSize
+	metricPostgresqlDeadlocks                  metricPostgresqlDeadlocks
+	metricPostgresqlFunctionCalls              metricPostgresqlFunctionCalls
+	metricPostgresqlIndexScans                 metricPostgresqlIndexScans
+	metricPostgresqlIndexSize                  metricPostgresqlIndexSize
+	metricPostgresqlOperations                 metricPostgresqlOperations
+	metricPostgresqlQueryConflicts             metricPostgresqlQueryConflicts
+	metricPostgresqlQueryExecutionTime         metricPostgresqlQueryExecutionTime
+	metricPostgresqlReplicationDataDelay       metricPostgresqlReplicationDataDelay
+	metricPostgresqlReplicationSlotActive      metricPostgresqlReplicationSlotActive
+	metricPostgresqlReplicationSlotWalSafeSize metricPostgresqlReplicationSlotWalSafeSize
+	metricPostgresqlRollbacks                  metricPostgresqlRollbacks
+	metricPostgresqlRows                       metricPostgresqlRows
+	metricPostgresqlSequentialScans            metricPostgresqlSequentialScans
+	metricPostgresqlTableCount                 metricPostgresqlTableCount
+	metricPostgresqlTableSize                  metricPostgresqlTableSize
+	metricPostgresqlTableVacuumCount           metricPostgresqlTableVacuumCount
+	metricPostgresqlTempIo                     metricPostgresqlTempIo
+	metricPostgresqlTempFiles                  metricPostgresqlTempFiles
+	metricPostgresqlTupDeleted                 metricPostgresqlTupDeleted
+	metricPostgresqlTupFetched                 metricPostgresqlTupFetched
+	metricPostgresqlTupInserted                metricPostgresqlTupInserted
+	metricPostgresqlTupReturned                metricPostgresqlTupReturned
+	metricPostgresqlTupUpdated                 metricPostgresqlTupUpdated
+	metricPostgresqlVectorInsertDuration       metricPostgresqlVectorInsertDuration
+	metricPostgresqlVectorInsertRows           metricPostgresqlVectorInsertRows
+	metricPostgresqlVectorSearchCalls          metricPostgresqlVectorSearchCalls
+	metricPostgresqlVectorSearchDuration       metricPostgresqlVectorSearchDuration
+	metricPostgresqlVectorSearchRowsReturned   metricPostgresqlVectorSearchRowsReturned
+	metricPostgresqlWalAge                     metricPostgresqlWalAge
+	metricPostgresqlWalDelay                   metricPostgresqlWalDelay
+	metricPostgresqlWalLag                     metricPostgresqlWalLag
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -4502,55 +4764,57 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                   mbc,
-		startTime:                                pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                            pmetric.NewMetrics(),
-		buildInfo:                                settings.BuildInfo,
-		metricPostgresqlBackends:                 newMetricPostgresqlBackends(mbc.Metrics.PostgresqlBackends),
-		metricPostgresqlBgwriterBuffersAllocated: newMetricPostgresqlBgwriterBuffersAllocated(mbc.Metrics.PostgresqlBgwriterBuffersAllocated),
-		metricPostgresqlBgwriterBuffersWrites:    newMetricPostgresqlBgwriterBuffersWrites(mbc.Metrics.PostgresqlBgwriterBuffersWrites),
-		metricPostgresqlBgwriterCheckpointCount:  newMetricPostgresqlBgwriterCheckpointCount(mbc.Metrics.PostgresqlBgwriterCheckpointCount),
-		metricPostgresqlBgwriterDuration:         newMetricPostgresqlBgwriterDuration(mbc.Metrics.PostgresqlBgwriterDuration),
-		metricPostgresqlBgwriterMaxwritten:       newMetricPostgresqlBgwriterMaxwritten(mbc.Metrics.PostgresqlBgwriterMaxwritten),
-		metricPostgresqlBlksHit:                  newMetricPostgresqlBlksHit(mbc.Metrics.PostgresqlBlksHit),
-		metricPostgresqlBlksRead:                 newMetricPostgresqlBlksRead(mbc.Metrics.PostgresqlBlksRead),
-		metricPostgresqlBlocksRead:               newMetricPostgresqlBlocksRead(mbc.Metrics.PostgresqlBlocksRead),
-		metricPostgresqlCommits:                  newMetricPostgresqlCommits(mbc.Metrics.PostgresqlCommits),
-		metricPostgresqlConnectionMax:            newMetricPostgresqlConnectionMax(mbc.Metrics.PostgresqlConnectionMax),
-		metricPostgresqlDatabaseCount:            newMetricPostgresqlDatabaseCount(mbc.Metrics.PostgresqlDatabaseCount),
-		metricPostgresqlDatabaseLocks:            newMetricPostgresqlDatabaseLocks(mbc.Metrics.PostgresqlDatabaseLocks),
-		metricPostgresqlDbSize:                   newMetricPostgresqlDbSize(mbc.Metrics.PostgresqlDbSize),
-		metricPostgresqlDeadlocks:                newMetricPostgresqlDeadlocks(mbc.Metrics.PostgresqlDeadlocks),
-		metricPostgresqlFunctionCalls:            newMetricPostgresqlFunctionCalls(mbc.Metrics.PostgresqlFunctionCalls),
-		metricPostgresqlIndexScans:               newMetricPostgresqlIndexScans(mbc.Metrics.PostgresqlIndexScans),
-		metricPostgresqlIndexSize:                newMetricPostgresqlIndexSize(mbc.Metrics.PostgresqlIndexSize),
-		metricPostgresqlOperations:               newMetricPostgresqlOperations(mbc.Metrics.PostgresqlOperations),
-		metricPostgresqlQueryConflicts:           newMetricPostgresqlQueryConflicts(mbc.Metrics.PostgresqlQueryConflicts),
-		metricPostgresqlQueryExecutionTime:       newMetricPostgresqlQueryExecutionTime(mbc.Metrics.PostgresqlQueryExecutionTime),
-		metricPostgresqlReplicationDataDelay:     newMetricPostgresqlReplicationDataDelay(mbc.Metrics.PostgresqlReplicationDataDelay),
-		metricPostgresqlRollbacks:                newMetricPostgresqlRollbacks(mbc.Metrics.PostgresqlRollbacks),
-		metricPostgresqlRows:                     newMetricPostgresqlRows(mbc.Metrics.PostgresqlRows),
-		metricPostgresqlSequentialScans:          newMetricPostgresqlSequentialScans(mbc.Metrics.PostgresqlSequentialScans),
-		metricPostgresqlTableCount:               newMetricPostgresqlTableCount(mbc.Metrics.PostgresqlTableCount),
-		metricPostgresqlTableSize:                newMetricPostgresqlTableSize(mbc.Metrics.PostgresqlTableSize),
-		metricPostgresqlTableVacuumCount:         newMetricPostgresqlTableVacuumCount(mbc.Metrics.PostgresqlTableVacuumCount),
-		metricPostgresqlTempIo:                   newMetricPostgresqlTempIo(mbc.Metrics.PostgresqlTempIo),
-		metricPostgresqlTempFiles:                newMetricPostgresqlTempFiles(mbc.Metrics.PostgresqlTempFiles),
-		metricPostgresqlTupDeleted:               newMetricPostgresqlTupDeleted(mbc.Metrics.PostgresqlTupDeleted),
-		metricPostgresqlTupFetched:               newMetricPostgresqlTupFetched(mbc.Metrics.PostgresqlTupFetched),
-		metricPostgresqlTupInserted:              newMetricPostgresqlTupInserted(mbc.Metrics.PostgresqlTupInserted),
-		metricPostgresqlTupReturned:              newMetricPostgresqlTupReturned(mbc.Metrics.PostgresqlTupReturned),
-		metricPostgresqlTupUpdated:               newMetricPostgresqlTupUpdated(mbc.Metrics.PostgresqlTupUpdated),
-		metricPostgresqlVectorInsertDuration:     newMetricPostgresqlVectorInsertDuration(mbc.Metrics.PostgresqlVectorInsertDuration),
-		metricPostgresqlVectorInsertRows:         newMetricPostgresqlVectorInsertRows(mbc.Metrics.PostgresqlVectorInsertRows),
-		metricPostgresqlVectorSearchCalls:        newMetricPostgresqlVectorSearchCalls(mbc.Metrics.PostgresqlVectorSearchCalls),
-		metricPostgresqlVectorSearchDuration:     newMetricPostgresqlVectorSearchDuration(mbc.Metrics.PostgresqlVectorSearchDuration),
-		metricPostgresqlVectorSearchRowsReturned: newMetricPostgresqlVectorSearchRowsReturned(mbc.Metrics.PostgresqlVectorSearchRowsReturned),
-		metricPostgresqlWalAge:                   newMetricPostgresqlWalAge(mbc.Metrics.PostgresqlWalAge),
-		metricPostgresqlWalDelay:                 newMetricPostgresqlWalDelay(mbc.Metrics.PostgresqlWalDelay),
-		metricPostgresqlWalLag:                   newMetricPostgresqlWalLag(mbc.Metrics.PostgresqlWalLag),
-		resourceAttributeIncludeFilter:           make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:           make(map[string]filter.Filter),
+		config:                                     mbc,
+		startTime:                                  pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                              pmetric.NewMetrics(),
+		buildInfo:                                  settings.BuildInfo,
+		metricPostgresqlBackends:                   newMetricPostgresqlBackends(mbc.Metrics.PostgresqlBackends),
+		metricPostgresqlBgwriterBuffersAllocated:   newMetricPostgresqlBgwriterBuffersAllocated(mbc.Metrics.PostgresqlBgwriterBuffersAllocated),
+		metricPostgresqlBgwriterBuffersWrites:      newMetricPostgresqlBgwriterBuffersWrites(mbc.Metrics.PostgresqlBgwriterBuffersWrites),
+		metricPostgresqlBgwriterCheckpointCount:    newMetricPostgresqlBgwriterCheckpointCount(mbc.Metrics.PostgresqlBgwriterCheckpointCount),
+		metricPostgresqlBgwriterDuration:           newMetricPostgresqlBgwriterDuration(mbc.Metrics.PostgresqlBgwriterDuration),
+		metricPostgresqlBgwriterMaxwritten:         newMetricPostgresqlBgwriterMaxwritten(mbc.Metrics.PostgresqlBgwriterMaxwritten),
+		metricPostgresqlBlksHit:                    newMetricPostgresqlBlksHit(mbc.Metrics.PostgresqlBlksHit),
+		metricPostgresqlBlksRead:                   newMetricPostgresqlBlksRead(mbc.Metrics.PostgresqlBlksRead),
+		metricPostgresqlBlocksRead:                 newMetricPostgresqlBlocksRead(mbc.Metrics.PostgresqlBlocksRead),
+		metricPostgresqlCommits:                    newMetricPostgresqlCommits(mbc.Metrics.PostgresqlCommits),
+		metricPostgresqlConnectionMax:              newMetricPostgresqlConnectionMax(mbc.Metrics.PostgresqlConnectionMax),
+		metricPostgresqlDatabaseCount:              newMetricPostgresqlDatabaseCount(mbc.Metrics.PostgresqlDatabaseCount),
+		metricPostgresqlDatabaseLocks:              newMetricPostgresqlDatabaseLocks(mbc.Metrics.PostgresqlDatabaseLocks),
+		metricPostgresqlDbSize:                     newMetricPostgresqlDbSize(mbc.Metrics.PostgresqlDbSize),
+		metricPostgresqlDeadlocks:                  newMetricPostgresqlDeadlocks(mbc.Metrics.PostgresqlDeadlocks),
+		metricPostgresqlFunctionCalls:              newMetricPostgresqlFunctionCalls(mbc.Metrics.PostgresqlFunctionCalls),
+		metricPostgresqlIndexScans:                 newMetricPostgresqlIndexScans(mbc.Metrics.PostgresqlIndexScans),
+		metricPostgresqlIndexSize:                  newMetricPostgresqlIndexSize(mbc.Metrics.PostgresqlIndexSize),
+		metricPostgresqlOperations:                 newMetricPostgresqlOperations(mbc.Metrics.PostgresqlOperations),
+		metricPostgresqlQueryConflicts:             newMetricPostgresqlQueryConflicts(mbc.Metrics.PostgresqlQueryConflicts),
+		metricPostgresqlQueryExecutionTime:         newMetricPostgresqlQueryExecutionTime(mbc.Metrics.PostgresqlQueryExecutionTime),
+		metricPostgresqlReplicationDataDelay:       newMetricPostgresqlReplicationDataDelay(mbc.Metrics.PostgresqlReplicationDataDelay),
+		metricPostgresqlReplicationSlotActive:      newMetricPostgresqlReplicationSlotActive(mbc.Metrics.PostgresqlReplicationSlotActive),
+		metricPostgresqlReplicationSlotWalSafeSize: newMetricPostgresqlReplicationSlotWalSafeSize(mbc.Metrics.PostgresqlReplicationSlotWalSafeSize),
+		metricPostgresqlRollbacks:                  newMetricPostgresqlRollbacks(mbc.Metrics.PostgresqlRollbacks),
+		metricPostgresqlRows:                       newMetricPostgresqlRows(mbc.Metrics.PostgresqlRows),
+		metricPostgresqlSequentialScans:            newMetricPostgresqlSequentialScans(mbc.Metrics.PostgresqlSequentialScans),
+		metricPostgresqlTableCount:                 newMetricPostgresqlTableCount(mbc.Metrics.PostgresqlTableCount),
+		metricPostgresqlTableSize:                  newMetricPostgresqlTableSize(mbc.Metrics.PostgresqlTableSize),
+		metricPostgresqlTableVacuumCount:           newMetricPostgresqlTableVacuumCount(mbc.Metrics.PostgresqlTableVacuumCount),
+		metricPostgresqlTempIo:                     newMetricPostgresqlTempIo(mbc.Metrics.PostgresqlTempIo),
+		metricPostgresqlTempFiles:                  newMetricPostgresqlTempFiles(mbc.Metrics.PostgresqlTempFiles),
+		metricPostgresqlTupDeleted:                 newMetricPostgresqlTupDeleted(mbc.Metrics.PostgresqlTupDeleted),
+		metricPostgresqlTupFetched:                 newMetricPostgresqlTupFetched(mbc.Metrics.PostgresqlTupFetched),
+		metricPostgresqlTupInserted:                newMetricPostgresqlTupInserted(mbc.Metrics.PostgresqlTupInserted),
+		metricPostgresqlTupReturned:                newMetricPostgresqlTupReturned(mbc.Metrics.PostgresqlTupReturned),
+		metricPostgresqlTupUpdated:                 newMetricPostgresqlTupUpdated(mbc.Metrics.PostgresqlTupUpdated),
+		metricPostgresqlVectorInsertDuration:       newMetricPostgresqlVectorInsertDuration(mbc.Metrics.PostgresqlVectorInsertDuration),
+		metricPostgresqlVectorInsertRows:           newMetricPostgresqlVectorInsertRows(mbc.Metrics.PostgresqlVectorInsertRows),
+		metricPostgresqlVectorSearchCalls:          newMetricPostgresqlVectorSearchCalls(mbc.Metrics.PostgresqlVectorSearchCalls),
+		metricPostgresqlVectorSearchDuration:       newMetricPostgresqlVectorSearchDuration(mbc.Metrics.PostgresqlVectorSearchDuration),
+		metricPostgresqlVectorSearchRowsReturned:   newMetricPostgresqlVectorSearchRowsReturned(mbc.Metrics.PostgresqlVectorSearchRowsReturned),
+		metricPostgresqlWalAge:                     newMetricPostgresqlWalAge(mbc.Metrics.PostgresqlWalAge),
+		metricPostgresqlWalDelay:                   newMetricPostgresqlWalDelay(mbc.Metrics.PostgresqlWalDelay),
+		metricPostgresqlWalLag:                     newMetricPostgresqlWalLag(mbc.Metrics.PostgresqlWalLag),
+		resourceAttributeIncludeFilter:             make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:             make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.DbSystemVersion.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["db.system.version"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystemVersion.MetricsInclude)
@@ -4703,6 +4967,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricPostgresqlQueryConflicts.emit(ils.Metrics())
 	mb.metricPostgresqlQueryExecutionTime.emit(ils.Metrics())
 	mb.metricPostgresqlReplicationDataDelay.emit(ils.Metrics())
+	mb.metricPostgresqlReplicationSlotActive.emit(ils.Metrics())
+	mb.metricPostgresqlReplicationSlotWalSafeSize.emit(ils.Metrics())
 	mb.metricPostgresqlRollbacks.emit(ils.Metrics())
 	mb.metricPostgresqlRows.emit(ils.Metrics())
 	mb.metricPostgresqlSequentialScans.emit(ils.Metrics())
@@ -4863,6 +5129,16 @@ func (mb *MetricsBuilder) RecordPostgresqlQueryExecutionTimeDataPoint(ts pcommon
 // RecordPostgresqlReplicationDataDelayDataPoint adds a data point to postgresql.replication.data_delay metric.
 func (mb *MetricsBuilder) RecordPostgresqlReplicationDataDelayDataPoint(ts pcommon.Timestamp, val int64, replicationClientAttributeValue string) {
 	mb.metricPostgresqlReplicationDataDelay.recordDataPoint(mb.startTime, ts, val, replicationClientAttributeValue)
+}
+
+// RecordPostgresqlReplicationSlotActiveDataPoint adds a data point to postgresql.replication_slot.active metric.
+func (mb *MetricsBuilder) RecordPostgresqlReplicationSlotActiveDataPoint(ts pcommon.Timestamp, val int64, postgresqlReplicationSlotNameAttributeValue string, postgresqlReplicationSlotTypeAttributeValue AttributePostgresqlReplicationSlotType, postgresqlReplicationSlotWalStatusAttributeValue AttributePostgresqlReplicationSlotWalStatus) {
+	mb.metricPostgresqlReplicationSlotActive.recordDataPoint(mb.startTime, ts, val, postgresqlReplicationSlotNameAttributeValue, postgresqlReplicationSlotTypeAttributeValue.String(), postgresqlReplicationSlotWalStatusAttributeValue.String())
+}
+
+// RecordPostgresqlReplicationSlotWalSafeSizeDataPoint adds a data point to postgresql.replication_slot.wal.safe_size metric.
+func (mb *MetricsBuilder) RecordPostgresqlReplicationSlotWalSafeSizeDataPoint(ts pcommon.Timestamp, val int64, postgresqlReplicationSlotNameAttributeValue string, postgresqlReplicationSlotTypeAttributeValue AttributePostgresqlReplicationSlotType) {
+	mb.metricPostgresqlReplicationSlotWalSafeSize.recordDataPoint(mb.startTime, ts, val, postgresqlReplicationSlotNameAttributeValue, postgresqlReplicationSlotTypeAttributeValue.String())
 }
 
 // RecordPostgresqlRollbacksDataPoint adds a data point to postgresql.rollbacks metric.

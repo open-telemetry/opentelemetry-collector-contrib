@@ -63,6 +63,12 @@ all_set:
     postgresql.replication.data_delay:
       enabled: true
       attributes: ["replication_client"]
+    postgresql.replication_slot.active:
+      enabled: true
+      attributes: ["postgresql.replication.slot.name","postgresql.replication.slot.type","postgresql.replication.slot.wal_status"]
+    postgresql.replication_slot.wal.safe_size:
+      enabled: true
+      attributes: ["postgresql.replication.slot.name","postgresql.replication.slot.type"]
     postgresql.rollbacks:
       enabled: true
       attributes: ["db.namespace"]
@@ -215,6 +221,12 @@ reaggregate_set:
       enabled: true
       attributes: []
     postgresql.replication.data_delay:
+      enabled: true
+      attributes: []
+    postgresql.replication_slot.active:
+      enabled: true
+      attributes: []
+    postgresql.replication_slot.wal.safe_size:
       enabled: true
       attributes: []
     postgresql.rollbacks:
@@ -371,6 +383,12 @@ none_set:
     postgresql.replication.data_delay:
       enabled: false
       attributes: ["replication_client"]
+    postgresql.replication_slot.active:
+      enabled: false
+      attributes: ["postgresql.replication.slot.name","postgresql.replication.slot.type","postgresql.replication.slot.wal_status"]
+    postgresql.replication_slot.wal.safe_size:
+      enabled: false
+      attributes: ["postgresql.replication.slot.name","postgresql.replication.slot.type"]
     postgresql.rollbacks:
       enabled: false
       attributes: ["db.namespace"]

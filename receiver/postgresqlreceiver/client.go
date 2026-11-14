@@ -68,6 +68,7 @@ type client interface {
 	getBlocksReadByTable(ctx context.Context, db string) (map[tableIdentifier]tableIOStats, error)
 	getTableCount(ctx context.Context) (int64, error)
 	getReplicationStats(ctx context.Context) ([]replicationStats, error)
+	getReplicationSlotStats(ctx context.Context) ([]replicationSlotStat, error)
 	getLatestWalAgeSeconds(ctx context.Context) (int64, error)
 	getMaxConnections(ctx context.Context) (int64, error)
 	getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error)
@@ -1393,6 +1394,60 @@ func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicati
 	}
 
 	return rs, errors
+}
+
+// replicationSlotStat holds the per-slot data scraped from pg_replication_slots.
+type replicationSlotStat struct {
+	slotName  string
+	slotType  string
+	isActive  int64  // 1 = active, 0 = inactive
+	walStatus string // reserved | extended | unreserved | lost | unknown
+	// safeWALSize is the remaining bytes of WAL before max_slot_wal_keep_size is hit.
+	// -1 means no limit is configured (safe_wal_size is NULL in Postgres).
+	safeWALSize int64
+}
+
+// getReplicationSlotStats queries pg_replication_slots and returns one entry per slot.
+// wal_status and safe_wal_size were added in PostgreSQL 13; on older versions
+// this returns nil with no error.
+func (c *postgreSQLClient) getReplicationSlotStats(ctx context.Context) ([]replicationSlotStat, error) {
+	version, err := c.getVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+	major, err := parseMajorVersion(version)
+	if err != nil {
+		return nil, err
+	}
+	if major < 13 {
+		return nil, nil
+	}
+
+	query := `SELECT
+	slot_name,
+	slot_type,
+	CASE WHEN active THEN 1 ELSE 0 END AS is_active,
+	coalesce(wal_status, 'unknown')   AS wal_status,
+	coalesce(safe_wal_size, -1)       AS safe_wal_size
+	FROM pg_replication_slots;`
+
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query pg_replication_slots: %w", err)
+	}
+	defer rows.Close()
+
+	var stats []replicationSlotStat
+	var errs error
+	for rows.Next() {
+		var s replicationSlotStat
+		if scanErr := rows.Scan(&s.slotName, &s.slotType, &s.isActive, &s.walStatus, &s.safeWALSize); scanErr != nil {
+			errs = multierr.Append(errs, scanErr)
+			continue
+		}
+		stats = append(stats, s)
+	}
+	return stats, multierr.Append(errs, rows.Err())
 }
 
 func (c *postgreSQLClient) getLatestWalAgeSeconds(ctx context.Context) (int64, error) {

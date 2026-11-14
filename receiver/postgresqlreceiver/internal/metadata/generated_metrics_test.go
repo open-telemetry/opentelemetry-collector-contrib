@@ -85,6 +85,8 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["postgresql.query.conflicts"] = mb.metricPostgresqlQueryConflicts.config.AggregationStrategy
 			aggMap["postgresql.query.execution.time"] = mb.metricPostgresqlQueryExecutionTime.config.AggregationStrategy
 			aggMap["postgresql.replication.data_delay"] = mb.metricPostgresqlReplicationDataDelay.config.AggregationStrategy
+			aggMap["postgresql.replication_slot.active"] = mb.metricPostgresqlReplicationSlotActive.config.AggregationStrategy
+			aggMap["postgresql.replication_slot.wal.safe_size"] = mb.metricPostgresqlReplicationSlotWalSafeSize.config.AggregationStrategy
 			aggMap["postgresql.rollbacks"] = mb.metricPostgresqlRollbacks.config.AggregationStrategy
 			aggMap["postgresql.rows"] = mb.metricPostgresqlRows.config.AggregationStrategy
 			aggMap["postgresql.sequential_scans"] = mb.metricPostgresqlSequentialScans.config.AggregationStrategy
@@ -286,6 +288,24 @@ func TestMetricsBuilder(t *testing.T) {
 				// a different timestamp is a different key: must not merge with the above.
 				mb.RecordPostgresqlReplicationDataDelayDataPoint(ts+1, 3, "replication_client-val-2")
 				assert.Equal(t, 2, mb.metricPostgresqlReplicationDataDelay.data.Gauge().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlReplicationSlotActiveDataPoint(ts, 1, "postgresql.replication.slot.name-val", AttributePostgresqlReplicationSlotTypePhysical, AttributePostgresqlReplicationSlotWalStatusReserved)
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlReplicationSlotActiveDataPoint(ts, 3, "postgresql.replication.slot.name-val-2", AttributePostgresqlReplicationSlotTypeLogical, AttributePostgresqlReplicationSlotWalStatusExtended)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlReplicationSlotActiveDataPoint(ts+1, 3, "postgresql.replication.slot.name-val-2", AttributePostgresqlReplicationSlotTypeLogical, AttributePostgresqlReplicationSlotWalStatusExtended)
+				assert.Equal(t, 2, mb.metricPostgresqlReplicationSlotActive.data.Gauge().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlReplicationSlotWalSafeSizeDataPoint(ts, 1, "postgresql.replication.slot.name-val", AttributePostgresqlReplicationSlotTypePhysical)
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlReplicationSlotWalSafeSizeDataPoint(ts, 3, "postgresql.replication.slot.name-val-2", AttributePostgresqlReplicationSlotTypeLogical)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlReplicationSlotWalSafeSizeDataPoint(ts+1, 3, "postgresql.replication.slot.name-val-2", AttributePostgresqlReplicationSlotTypeLogical)
+				assert.Equal(t, 2, mb.metricPostgresqlReplicationSlotWalSafeSize.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -503,6 +523,8 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricPostgresqlQueryConflicts.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlQueryExecutionTime.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlReplicationDataDelay.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlReplicationSlotActive.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlReplicationSlotWalSafeSize.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlRollbacks.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlRows.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlSequentialScans.aggDataPoints)
@@ -1483,6 +1505,105 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
 						_, ok := dp.Attributes().Get("replication_client")
+						assert.False(t, ok)
+					}
+				case "postgresql.replication_slot.active":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.replication_slot.active"], "Found a duplicate in the metrics slice: postgresql.replication_slot.active")
+						validatedMetrics["postgresql.replication_slot.active"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Whether the replication slot is active (1) or inactive (0). An inactive slot continues to retain WAL segments and can silently exhaust disk space if left unmonitored.", mi.Description())
+						assert.Equal(t, "{slot}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						postgresqlReplicationSlotNameAttrVal, ok := dp.Attributes().Get("postgresql.replication.slot.name")
+						assert.True(t, ok)
+						assert.Equal(t, "postgresql.replication.slot.name-val", postgresqlReplicationSlotNameAttrVal.Str())
+						postgresqlReplicationSlotTypeAttrVal, ok := dp.Attributes().Get("postgresql.replication.slot.type")
+						assert.True(t, ok)
+						assert.Equal(t, "physical", postgresqlReplicationSlotTypeAttrVal.Str())
+						postgresqlReplicationSlotWalStatusAttrVal, ok := dp.Attributes().Get("postgresql.replication.slot.wal_status")
+						assert.True(t, ok)
+						assert.Equal(t, "reserved", postgresqlReplicationSlotWalStatusAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.replication_slot.active"], "Found a duplicate in the metrics slice: postgresql.replication_slot.active")
+						validatedMetrics["postgresql.replication_slot.active"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Whether the replication slot is active (1) or inactive (0). An inactive slot continues to retain WAL segments and can silently exhaust disk space if left unmonitored.", mi.Description())
+						assert.Equal(t, "{slot}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.replication_slot.active"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("postgresql.replication.slot.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("postgresql.replication.slot.type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("postgresql.replication.slot.wal_status")
+						assert.False(t, ok)
+					}
+				case "postgresql.replication_slot.wal.safe_size":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.replication_slot.wal.safe_size"], "Found a duplicate in the metrics slice: postgresql.replication_slot.wal.safe_size")
+						validatedMetrics["postgresql.replication_slot.wal.safe_size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Bytes of WAL remaining before the slot's retained WAL exceeds max_slot_wal_keep_size. -1 when no limit is configured. A value near 0 (or wal_status=lost) signals imminent slot invalidation.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						postgresqlReplicationSlotNameAttrVal, ok := dp.Attributes().Get("postgresql.replication.slot.name")
+						assert.True(t, ok)
+						assert.Equal(t, "postgresql.replication.slot.name-val", postgresqlReplicationSlotNameAttrVal.Str())
+						postgresqlReplicationSlotTypeAttrVal, ok := dp.Attributes().Get("postgresql.replication.slot.type")
+						assert.True(t, ok)
+						assert.Equal(t, "physical", postgresqlReplicationSlotTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.replication_slot.wal.safe_size"], "Found a duplicate in the metrics slice: postgresql.replication_slot.wal.safe_size")
+						validatedMetrics["postgresql.replication_slot.wal.safe_size"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Bytes of WAL remaining before the slot's retained WAL exceeds max_slot_wal_keep_size. -1 when no limit is configured. A value near 0 (or wal_status=lost) signals imminent slot invalidation.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.replication_slot.wal.safe_size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("postgresql.replication.slot.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("postgresql.replication.slot.type")
 						assert.False(t, ok)
 					}
 				case "postgresql.rollbacks":
