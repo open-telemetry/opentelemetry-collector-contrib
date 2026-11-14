@@ -126,8 +126,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
-replace go.opentelemetry.io/collector/component/xcomponentdiscovery => github.com/dmitryax/opentelemetry-collector/component/xcomponentdiscovery v0.0.0-20261114001653-146bdd6e75e5
+replace go.opentelemetry.io/collector/component/xcomponentdiscovery => github.com/dmitryax/opentelemetry-collector/component/xcomponentdiscovery v0.0.0-20261114005836-499656aca220
 
-replace go.opentelemetry.io/collector/scraper/xscraper => github.com/dmitryax/opentelemetry-collector/scraper/xscraper v0.0.0-20261114001653-146bdd6e75e5
+replace go.opentelemetry.io/collector/scraper/xscraper => github.com/dmitryax/opentelemetry-collector/scraper/xscraper v0.0.0-20261114005836-499656aca220
 
-replace go.opentelemetry.io/collector/receiver/xreceiver => github.com/dmitryax/opentelemetry-collector/receiver/xreceiver v0.0.0-20261114001653-146bdd6e75e5
+replace go.opentelemetry.io/collector/receiver/xreceiver => github.com/dmitryax/opentelemetry-collector/receiver/xreceiver v0.0.0-20261114005836-499656aca220
