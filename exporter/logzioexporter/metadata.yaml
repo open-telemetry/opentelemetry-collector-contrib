@@ -4,10 +4,10 @@ display_name: Logz.io Exporter
 status:
   class: exporter
   stability:
-    beta: [traces, logs]
+    unmaintained: [traces, logs]
   distributions: [contrib]
   codeowners:
-    active: [yotamloe]
+    emeritus: [yotamloe]
 
 sending_queue:
   support: default

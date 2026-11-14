@@ -52,7 +52,6 @@ exporter/honeycombmarkerexporter exporter/honeycombmarker
 exporter/influxdbexporter exporter/influxdb
 exporter/kafkaexporter exporter/kafka
 exporter/loadbalancingexporter exporter/loadbalancing
-exporter/logzioexporter exporter/logzio
 exporter/natsexporter exporter/nats
 exporter/opensearchexporter exporter/opensearch
 exporter/otelarrowexporter exporter/otelarrow
@@ -375,5 +374,6 @@ reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
 exporter/logicmonitorexporter exporter/logicmonitor
+exporter/logzioexporter exporter/logzio
 extension/encoding/avrologencodingextension extension/encoding/avrologencoding
 receiver/riakreceiver receiver/riak
