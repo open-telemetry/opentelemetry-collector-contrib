@@ -2078,8 +2078,12 @@ func TestExporterMetrics(t *testing.T) {
 				Document: []byte(`{"@timestamp":3600000,"temporality":"delta","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[4,5,6,7],"values":[2.0,4.5,5.5,6.0]}},"resource":{},"scope":{},"_metric_names_hash":"b23939f78dc5f649"}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.sum.monotonic.delta":"gauge_double","metrics.metric.sum.nonmonotonic.cumulative":"gauge_double","metrics.metric.sum.nonmonotonic.delta":"gauge_double","metrics.metric.sum.monotonic.cumulative":"counter_double"},"require_data_stream":true}}`),
-				Document: []byte(`{"@timestamp":3600000,"start_timestamp":7200000,"data_stream":{"type":"metrics","dataset":"generic.otel","namespace":"default"},"resource":{},"scope":{},"metrics":{"metric.sum.monotonic.cumulative":1.5,"metric.sum.monotonic.delta":2.5,"metric.sum.nonmonotonic.cumulative":3.5,"metric.sum.nonmonotonic.delta":4.5},"_metric_names_hash":"4c23ec9ba381ab20"}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.sum.nonmonotonic.cumulative":"gauge_double","metrics.metric.sum.monotonic.cumulative":"counter_double"},"require_data_stream":true}}`),
+				Document: []byte(`{"@timestamp":3600000,"start_timestamp":7200000,"temporality":"cumulative","data_stream":{"type":"metrics","dataset":"generic.otel","namespace":"default"},"resource":{},"scope":{},"metrics":{"metric.sum.monotonic.cumulative":1.5,"metric.sum.nonmonotonic.cumulative":3.5},"_metric_names_hash":"a757cad313d6acd8"}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.sum.monotonic.delta":"gauge_double","metrics.metric.sum.nonmonotonic.delta":"gauge_double"},"require_data_stream":true}}`),
+				Document: []byte(`{"@timestamp":3600000,"start_timestamp":7200000,"temporality":"delta","data_stream":{"type":"metrics","dataset":"generic.otel","namespace":"default"},"resource":{},"scope":{},"metrics":{"metric.sum.monotonic.delta":2.5,"metric.sum.nonmonotonic.delta":4.5},"_metric_names_hash":"3204edb887eb7588"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.summary":"summary"},"require_data_stream":true}}`),

@@ -31,11 +31,27 @@ type itemRequest struct {
 }
 
 func itemRequestsSortFunc(a, b itemRequest) int {
-	comp := bytes.Compare(a.Action, b.Action)
+	comp := strings.Compare(canonicalJSON(a.Action), canonicalJSON(b.Action))
 	if comp == 0 {
-		return bytes.Compare(a.Document, b.Document)
+		return strings.Compare(canonicalJSON(a.Document), canonicalJSON(b.Document))
 	}
 	return comp
+}
+
+// canonicalJSON re-encodes raw with object keys sorted, so that sorting is not affected by the
+// non-deterministic key order of fields serialized from Go maps, such as dynamic_templates.
+func canonicalJSON(raw json.RawMessage) string {
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
+	var v any
+	if err := dec.Decode(&v); err != nil {
+		return string(raw)
+	}
+	canonical, err := json.Marshal(v)
+	if err != nil {
+		return string(raw)
+	}
+	return string(canonical)
 }
 
 func assertRecordedItems(t *testing.T, expected []itemRequest, recorder *bulkRecorder, assertOrder bool) { //nolint:unparam
