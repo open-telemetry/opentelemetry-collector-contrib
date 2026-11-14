@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v7"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
@@ -559,6 +560,29 @@ func decodeWriteRequest(tb testing.TB, body []byte) *prompb.WriteRequest {
 // that record forever, so every later record was resent alongside it and nothing
 // was ever accepted again.
 func TestWALUnblocksAfterPayloadRejection(t *testing.T) {
+	// With retries enabled, execute() goes through backoff.Retry, which wraps a
+	// permanent failure in a *backoff.RetryError. The rejection must still be
+	// recognized, otherwise the batch stays at the head of the WAL forever.
+	for _, tt := range []struct {
+		name  string
+		retry configretry.BackOffConfig
+	}{
+		{name: "retry_disabled"},
+		{name: "retry_enabled", retry: configretry.BackOffConfig{
+			Enabled:         true,
+			InitialInterval: 10 * time.Millisecond,
+			MaxInterval:     10 * time.Millisecond,
+			MaxElapsedTime:  time.Second,
+			Multiplier:      1.5,
+		}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			testWALUnblocksAfterPayloadRejection(t, tt.retry)
+		})
+	}
+}
+
+func testWALUnblocksAfterPayloadRejection(t *testing.T, retry configretry.BackOffConfig) {
 	const staleTimestamp, freshTimestamp = int64(100), int64(200)
 
 	accepted := &sync.Map{}
@@ -570,8 +594,8 @@ func TestWALUnblocksAfterPayloadRejection(t *testing.T) {
 		req := decodeWriteRequest(t, body)
 
 		var timestamps []int64
-		for _, ts := range req.Timeseries {
-			for _, s := range ts.Samples {
+		for i := range req.Timeseries {
+			for _, s := range req.Timeseries[i].Samples {
 				timestamps = append(timestamps, s.Timestamp)
 			}
 		}
@@ -592,6 +616,7 @@ func TestWALUnblocksAfterPayloadRejection(t *testing.T) {
 			TruncateFrequency: 100 * time.Millisecond,
 		}),
 		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
+		BackOffConfig:       retry,
 	}
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = server.URL
@@ -907,6 +932,38 @@ func TestAllPayloadRejections(t *testing.T) {
 				rejection(),
 			),
 			want: false,
+		},
+		{
+			name: "retry error from a permanent rejection",
+			err: &backoff.RetryError{
+				LastErr: consumererror.NewPermanent(rejection()),
+				Cause:   backoff.ErrPermanent,
+			},
+			want: true,
+		},
+		{
+			name: "retry error from a permanent transient error",
+			err: &backoff.RetryError{
+				LastErr: consumererror.NewPermanent(transient),
+				Cause:   backoff.ErrPermanent,
+			},
+			want: false,
+		},
+		{
+			name: "retry error that ran out of retries on a rejection",
+			err: &backoff.RetryError{
+				LastErr: consumererror.NewPermanent(rejection()),
+				Cause:   backoff.ErrExhausted,
+			},
+			want: false,
+		},
+		{
+			name: "multierr of permanent retry errors",
+			err: multierr.Append(
+				&backoff.RetryError{LastErr: consumererror.NewPermanent(rejection()), Cause: backoff.ErrPermanent},
+				&backoff.RetryError{LastErr: consumererror.NewPermanent(rejection()), Cause: backoff.ErrPermanent},
+			),
+			want: true,
 		},
 	}
 
