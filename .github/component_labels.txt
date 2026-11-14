@@ -316,7 +316,6 @@ receiver/memcachedreceiver receiver/memcached
 receiver/mongodbatlasreceiver receiver/mongodbatlas
 receiver/mongodbreceiver receiver/mongodb
 receiver/mysqlreceiver receiver/mysql
-receiver/namedpipereceiver receiver/namedpipe
 receiver/natsreceiver receiver/nats
 receiver/netflowreceiver receiver/netflow
 receiver/nginxreceiver receiver/nginx
@@ -376,4 +375,5 @@ reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
 exporter/logicmonitorexporter exporter/logicmonitor
 extension/encoding/avrologencodingextension extension/encoding/avrologencoding
+receiver/namedpipereceiver receiver/namedpipe
 receiver/riakreceiver receiver/riak
