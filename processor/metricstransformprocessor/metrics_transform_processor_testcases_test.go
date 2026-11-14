@@ -2145,4 +2145,119 @@ var standardTests = []metricsTransformTest{
 				addSummaryDatapoint(3, 4, 20, 200.0, "label1-value1", "label2-value2").build(),
 		},
 	},
+	{
+		name: "metric_label_aggregation_sum_nil_labelset",
+		transforms: []internalTransform{
+			{
+				MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+				Action:              Update,
+				Operations: []internalOperation{
+					{
+						configOperation: &operation{
+							Action:          aggregateLabels,
+							AggregationType: aggregateutil.Sum,
+							LabelSet:        nil,
+						},
+					},
+				},
+			},
+		},
+		in: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+				addIntDatapoint(1, 2, 3, "label1-value1", "label2-value1").
+				addIntDatapoint(1, 2, 3, "label1-value1", "label2-value1").
+				addIntDatapoint(1, 2, 1, "label1-value1", "label2-value2").addDescription("foobar").build(),
+		},
+		out: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+				addIntDatapoint(1, 2, 6, "label1-value1", "label2-value1").
+				addIntDatapoint(1, 2, 1, "label1-value1", "label2-value2").addDescription("foobar").build(),
+		},
+	},
+	{
+		name: "metric_label_aggregation_mean_nil_labelset",
+		transforms: []internalTransform{
+			{
+				MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+				Action:              Update,
+				Operations: []internalOperation{
+					{
+						configOperation: &operation{
+							Action:          aggregateLabels,
+							AggregationType: aggregateutil.Mean,
+							LabelSet:        nil,
+						},
+					},
+				},
+			},
+		},
+		in: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+				addDoubleDatapoint(1, 2, 10.0, "label1-value1", "label2-value1").
+				addDoubleDatapoint(1, 2, 20.0, "label1-value1", "label2-value1").
+				addDoubleDatapoint(1, 2, 5.0, "label1-value1", "label2-value2").build(),
+		},
+		out: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
+				addDoubleDatapoint(1, 2, 15.0, "label1-value1", "label2-value1").
+				addDoubleDatapoint(1, 2, 5.0, "label1-value1", "label2-value2").build(),
+		},
+	},
+	{
+		name: "metric_label_aggregation_sum_nil_labelset_sum_metric",
+		transforms: []internalTransform{
+			{
+				MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+				Action:              Update,
+				Operations: []internalOperation{
+					{
+						configOperation: &operation{
+							Action:          aggregateLabels,
+							AggregationType: aggregateutil.Sum,
+							LabelSet:        nil,
+						},
+					},
+				},
+			},
+		},
+		in: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeSum, "metric1", "label1").
+				addIntDatapoint(1, 2, 3, "label1-value1").
+				addIntDatapoint(1, 2, 7, "label1-value1").
+				addIntDatapoint(1, 2, 5, "label1-value2").build(),
+		},
+		out: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeSum, "metric1", "label1").
+				addIntDatapoint(1, 2, 10, "label1-value1").
+				addIntDatapoint(1, 2, 5, "label1-value2").build(),
+		},
+	},
+	{
+		name: "metric_label_aggregation_sum_nil_labelset_no_duplicates",
+		transforms: []internalTransform{
+			{
+				MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+				Action:              Update,
+				Operations: []internalOperation{
+					{
+						configOperation: &operation{
+							Action:          aggregateLabels,
+							AggregationType: aggregateutil.Sum,
+							LabelSet:        nil,
+						},
+					},
+				},
+			},
+		},
+		in: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
+				addIntDatapoint(1, 2, 3, "label1-value1").
+				addIntDatapoint(1, 2, 5, "label1-value2").build(),
+		},
+		out: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
+				addIntDatapoint(1, 2, 3, "label1-value1").
+				addIntDatapoint(1, 2, 5, "label1-value2").build(),
+		},
+	},
 }

@@ -263,6 +263,11 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 					NewValue:         "new-value",
 					AggregationType:  aggregateutil.Sum,
 				},
+				{
+					Action:          aggregateLabels,
+					LabelSet:        nil,
+					AggregationType: aggregateutil.Sum,
+				},
 			},
 		},
 	}
@@ -317,6 +322,14 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 						"value1": true,
 						"value2": true,
 					},
+				},
+				{
+					configOperation: &operation{
+						Action:          aggregateLabels,
+						LabelSet:        nil,
+						AggregationType: aggregateutil.Sum,
+					},
+					labelSetMap: nil,
 				},
 			},
 		},

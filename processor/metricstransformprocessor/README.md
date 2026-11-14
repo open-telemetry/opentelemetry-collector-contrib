@@ -105,7 +105,8 @@ processors:
             new_value: <new_value>
             # label_value specifies the label value for which points should be deleted; if action is delete_label_value, label_value is required
             label_value: <label_value>
-            # label_set contains a list of labels that will remain after aggregation; if action is aggregate_labels, label_set is required
+            # label_set contains a list of labels that will remain after aggregation; if label_set is absent or null, all the labels will remain.
+            # If it's an empty list, no label will remain
             label_set: [labels...]
             # aggregation_type defines how data points will be aggregated; if action is aggregate_labels or aggregate_label_values, aggregation_type is required
             aggregation_type: {sum, mean, min, max, count, median}
