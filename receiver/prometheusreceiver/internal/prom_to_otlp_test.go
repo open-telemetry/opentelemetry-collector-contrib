@@ -8,7 +8,10 @@ import (
 
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 type jobInstanceDefinition struct {
@@ -269,8 +272,204 @@ func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := CreateResource(tt.job, tt.instance, tt.sdLabels)
+			got := CreateResource(tt.job, tt.instance, "", "", tt.sdLabels)
 			require.Equal(t, tt.want.Attributes().AsRaw(), got.Attributes().AsRaw())
+		})
+	}
+}
+
+func TestCreateResourceWithTargetURL(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set(metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), true)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), false))
+	})
+
+	tests := []struct {
+		name          string
+		job           string
+		instance      string
+		targetAddress string
+		targetScheme  string
+		sdLabels      labels.Labels
+		want          map[string]any
+	}{
+		{
+			name:          "Host with port",
+			job:           "job",
+			instance:      "example.com:8080",
+			targetAddress: "example.com:8080",
+			targetScheme:  "http",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "example.com:8080",
+				"server.address":      "example.com",
+				"server.port":         "8080",
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:          "Relabeled non-host:port instance",
+			job:           "job",
+			instance:      "logical-instance-1",
+			targetAddress: "example.com:8080",
+			targetScheme:  "http",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "logical-instance-1",
+				"server.address":      "example.com",
+				"server.port":         "8080",
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:          "Relabeled targetScheme overrides sdLabels __scheme__",
+			job:           "job",
+			instance:      "example.com:8443",
+			targetAddress: "example.com:8443",
+			targetScheme:  "https",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "example.com:8443",
+				"server.address":      "example.com",
+				"server.port":         "8443",
+				"url.scheme":          "https",
+			},
+		},
+		{
+			name:          "Dropped targetScheme does not fall back to sdLabels",
+			job:           "job",
+			instance:      "example.com:8080",
+			targetAddress: "example.com:8080",
+			targetScheme:  "",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "example.com:8080",
+				"server.address":      "example.com",
+				"server.port":         "8080",
+			},
+		},
+		{
+			name:          "IPv6 with port",
+			job:           "job",
+			instance:      "[2001:db8::1]:9090",
+			targetAddress: "[2001:db8::1]:9090",
+			targetScheme:  "http",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "[2001:db8::1]:9090",
+				"server.address":      "2001:db8::1",
+				"server.port":         "9090",
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:          "Portless hostname",
+			job:           "job",
+			instance:      "example.com",
+			targetAddress: "example.com",
+			targetScheme:  "http",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "example.com",
+				"server.address":      "example.com",
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:          "Portless IPv6",
+			job:           "job",
+			instance:      "[2001:db8::1]",
+			targetAddress: "[2001:db8::1]",
+			targetScheme:  "http",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "[2001:db8::1]",
+				"server.address":      "2001:db8::1",
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:          "Loopback IPv6 without port [::1]",
+			job:           "job",
+			instance:      "logical-local",
+			targetAddress: "[::1]",
+			targetScheme:  "http",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "logical-local",
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:          "Loopback IPv6 with port [::1]:9090",
+			job:           "job",
+			instance:      "[::1]:9090",
+			targetAddress: "[::1]:9090",
+			targetScheme:  "http",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "[::1]:9090",
+				"server.port":         "9090",
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:          "Loopback IPv4 with port 127.0.0.1:9090",
+			job:           "job",
+			instance:      "127.0.0.1:9090",
+			targetAddress: "127.0.0.1:9090",
+			targetScheme:  "http",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "127.0.0.1:9090",
+				"server.port":         "9090",
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:          "Unspecified IPv6 with port [::]:9090",
+			job:           "job",
+			instance:      "[::]:9090",
+			targetAddress: "[::]:9090",
+			targetScheme:  "http",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "[::]:9090",
+				"server.port":         "9090",
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:          "Unix socket / empty targetAddress omits server.address and server.port",
+			job:           "job",
+			instance:      "unix-target:8080",
+			targetAddress: "",
+			targetScheme:  "http",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "unix-target:8080",
+				"url.scheme":          "http",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := CreateResource(tt.job, tt.instance, tt.targetAddress, tt.targetScheme, tt.sdLabels)
+			require.Equal(t, tt.want, got.Attributes().AsRaw())
 		})
 	}
 }

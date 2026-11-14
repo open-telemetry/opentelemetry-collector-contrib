@@ -574,6 +574,9 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
+			mb.RecordSqlserverThreadPoolTaskCountDataPoint(ts, 1, AttributeSqlserverThreadPoolTaskStateCurrent)
+
+			allMetricsCount++
 			mb.RecordSqlserverTransactionDelayDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -2985,6 +2988,21 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("sqlserver.tempdb.file.id")
 						assert.False(t, ok)
 					}
+				case "sqlserver.thread_pool.task.count":
+					assert.False(t, validatedMetrics["sqlserver.thread_pool.task.count"], "Found a duplicate in the metrics slice: sqlserver.thread_pool.task.count")
+					validatedMetrics["sqlserver.thread_pool.task.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of SQL Server tasks tracked by schedulers.", mi.Description())
+					assert.Equal(t, "{task}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					sqlserverThreadPoolTaskStateAttrVal, ok := dp.Attributes().Get("sqlserver.thread_pool.task.state")
+					assert.True(t, ok)
+					assert.Equal(t, "current", sqlserverThreadPoolTaskStateAttrVal.Str())
 				case "sqlserver.transaction.delay":
 					assert.False(t, validatedMetrics["sqlserver.transaction.delay"], "Found a duplicate in the metrics slice: sqlserver.transaction.delay")
 					validatedMetrics["sqlserver.transaction.delay"] = true

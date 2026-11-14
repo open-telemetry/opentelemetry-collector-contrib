@@ -19,6 +19,14 @@ exclude_metrics:
   - vmpage_io.memory.in
   - vmpage_io.memory.out
 
+# Deprecated metrics computed by the default translation rules.
+- metric_names:
+  - memory.total
+  - process.cpu_time_seconds
+  - system.disk.operations.total
+  - system.network.io.total
+  - system.network.packets.total
+
 
 # Metrics in OpenTelemetry Convention.
 

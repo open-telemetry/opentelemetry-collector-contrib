@@ -5,11 +5,14 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"net"
+	"strings"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 // isDiscernibleHost checks if a host can be used as a value for the 'server.address' key.
@@ -32,20 +35,46 @@ func isDiscernibleHost(host string) bool {
 }
 
 // CreateResource creates the resource data added to OTLP payloads.
-func CreateResource(job, instance string, serviceDiscoveryLabels labels.Labels) pcommon.Resource {
-	host, port, err := net.SplitHostPort(instance)
-	if err != nil {
-		host = instance
-	}
+func CreateResource(job, instance, targetAddress, targetScheme string, serviceDiscoveryLabels labels.Labels) pcommon.Resource {
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
 	attrs.PutStr(string(conventions.ServiceNameKey), job)
-	if isDiscernibleHost(host) {
-		attrs.PutStr(string(conventions.ServerAddressKey), host)
-	}
 	attrs.PutStr(string(conventions.ServiceInstanceIDKey), instance)
-	attrs.PutStr(string(conventions.ServerPortKey), port)
-	attrs.PutStr(string(conventions.URLSchemeKey), serviceDiscoveryLabels.Get(model.SchemeLabel))
+
+	if metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.IsEnabled() {
+		var host, port string
+		if targetAddress != "" {
+			var err error
+			host, port, err = net.SplitHostPort(targetAddress)
+			if err != nil {
+				if strings.HasPrefix(targetAddress, "[") && strings.HasSuffix(targetAddress, "]") {
+					host = targetAddress[1 : len(targetAddress)-1]
+				} else {
+					host = targetAddress
+				}
+			}
+		}
+		if host != "" && isDiscernibleHost(host) {
+			attrs.PutStr(string(conventions.ServerAddressKey), host)
+		}
+		if port != "" {
+			attrs.PutStr(string(conventions.ServerPortKey), port)
+		}
+		scheme := targetScheme
+		if scheme != "" {
+			attrs.PutStr(string(conventions.URLSchemeKey), scheme)
+		}
+	} else {
+		host, port, err := net.SplitHostPort(instance)
+		if err != nil {
+			host = instance
+		}
+		if isDiscernibleHost(host) {
+			attrs.PutStr(string(conventions.ServerAddressKey), host)
+		}
+		attrs.PutStr(string(conventions.ServerPortKey), port)
+		attrs.PutStr(string(conventions.URLSchemeKey), serviceDiscoveryLabels.Get(model.SchemeLabel))
+	}
 
 	addKubernetesResource(attrs, serviceDiscoveryLabels)
 

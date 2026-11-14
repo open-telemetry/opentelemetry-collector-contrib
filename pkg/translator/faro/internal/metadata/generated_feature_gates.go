@@ -8,16 +8,18 @@ import (
 
 var PkgTranslatorFaroDontEmitV0DeploymentEnvironmentConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"pkg.translator.faro.DontEmitV0DeploymentEnvironmentConventions",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, the Faro translator no longer emits the deprecated deployment.environment attribute (semconv v1.26.0). Requires pkg.translator.faro.EmitV1DeploymentEnvironmentConventions to also be enabled."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45074"),
 	featuregate.WithRegisterFromVersion("v0.155.0"),
+	featuregate.WithRegisterToVersion("v0.170.0"),
 )
 
 var PkgTranslatorFaroEmitV1DeploymentEnvironmentConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"pkg.translator.faro.EmitV1DeploymentEnvironmentConventions",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, the Faro translator emits deployment.environment.name (semconv v1.40.0) instead of the deprecated deployment.environment (semconv v1.26.0)."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45074"),
 	featuregate.WithRegisterFromVersion("v0.155.0"),
+	featuregate.WithRegisterToVersion("v0.170.0"),
 )

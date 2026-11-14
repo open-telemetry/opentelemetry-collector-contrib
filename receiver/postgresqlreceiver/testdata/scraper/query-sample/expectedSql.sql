@@ -13,6 +13,7 @@ SELECT
     COALESCE(sa.query_id::TEXT, '') AS query_id,
     COALESCE(sa.pid::TEXT, '') AS pid,
     COALESCE(sa.application_name::TEXT, '') AS application_name,
+    COALESCE(sa.backend_type, '') AS backend_type,
     EXTRACT(EPOCH FROM sa.query_start) AS _query_start_timestamp,
     sa.state,
     sa.query,

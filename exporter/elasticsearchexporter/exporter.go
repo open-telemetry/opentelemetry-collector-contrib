@@ -48,7 +48,8 @@ type elasticsearchExporter struct {
 
 	telemetryBuilder *metadata.TelemetryBuilder
 
-	defaultHistogramMapping datapoints.HistogramMapping
+	defaultHistogramMapping      datapoints.HistogramMapping
+	cumulativeHistogramSupported bool
 }
 
 func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsearchExporter, error) {
@@ -94,6 +95,7 @@ func (e *elasticsearchExporter) Start(ctx context.Context, host component.Host) 
 	if e.config.VersionDetection.Enabled {
 		esVersion := getElasticsearchVersions(ctx, e.config, e.set, host)
 		e.defaultHistogramMapping = resolveDefaultHistogramMapping(e.config, esVersion)
+		e.cumulativeHistogramSupported = supportsCumulativeHistograms(esVersion)
 	}
 	return nil
 }
@@ -293,30 +295,46 @@ func (e *elasticsearchExporter) pushMetricsData(ctx context.Context, metrics pme
 					}
 				case pmetric.MetricTypeExponentialHistogram:
 					if metric.ExponentialHistogram().AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
-						validationErrs = append(validationErrs, fmt.Errorf("dropping cumulative temporality exponential histogram %q", metric.Name()))
-						continue
+						if !e.cumulativeHistogramSupported {
+							validationErrs = append(validationErrs,
+								fmt.Errorf("dropping cumulative temporality exponential histogram %q: requires Elasticsearch >= 9.5.0", metric.Name()))
+							continue
+						}
 					}
 					hm := e.defaultHistogramMapping
 					if mappingMode != MappingOTel {
 						hm = datapoints.HistogramMappingTDigest
 					}
 					for _, dp := range metric.ExponentialHistogram().DataPoints().All() {
-						if err := upsertDataPoint(datapoints.NewExponentialHistogram(metric, dp, hm)); err != nil {
+						expDp := datapoints.NewExponentialHistogram(metric, dp, hm)
+						if err := expDp.Validate(); err != nil {
+							validationErrs = append(validationErrs, err)
+							continue
+						}
+						if err := upsertDataPoint(expDp); err != nil {
 							validationErrs = append(validationErrs, err)
 							continue
 						}
 					}
 				case pmetric.MetricTypeHistogram:
 					if metric.Histogram().AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
-						validationErrs = append(validationErrs, fmt.Errorf("dropping cumulative temporality histogram %q", metric.Name()))
-						continue
+						if !e.cumulativeHistogramSupported {
+							validationErrs = append(validationErrs,
+								fmt.Errorf("dropping cumulative temporality histogram %q: requires Elasticsearch >= 9.5.0", metric.Name()))
+							continue
+						}
 					}
 					hm := e.defaultHistogramMapping
 					if mappingMode != MappingOTel {
 						hm = datapoints.HistogramMappingTDigest
 					}
 					for _, dp := range metric.Histogram().DataPoints().All() {
-						if err := upsertDataPoint(datapoints.NewHistogram(metric, dp, hm)); err != nil {
+						hdp := datapoints.NewHistogram(metric, dp, hm)
+						if err := hdp.Validate(); err != nil {
+							validationErrs = append(validationErrs, err)
+							continue
+						}
+						if err := upsertDataPoint(hdp); err != nil {
 							validationErrs = append(validationErrs, err)
 							continue
 						}

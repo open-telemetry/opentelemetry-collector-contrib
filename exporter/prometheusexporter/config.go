@@ -23,6 +23,8 @@ type Config struct {
 	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
 
 	// QueueBatchConfig defines the queue configuration.
+	//
+	// Deprecated: [v0.166.0] Use of sending_queue is deprecated and will be removed in a future release. The Prometheus exporter is pull-based and does not support queuing.
 	QueueBatchConfig configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// Namespace if set, exports metrics under the provided value.
@@ -68,6 +70,11 @@ func (cfg *Config) Validate() error {
 	//nolint:staticcheck // check deprecated fields
 	if cfg.ResourceConstantLabels.Enabled || cfg.ResourceConstantLabels.ExcludeServiceAttributes {
 		return errors.New("enabled and exclude_service_attributes are not supported under resource_constant_labels; use included and excluded instead")
+	}
+	if metadata.ExporterPrometheusDisableSendingQueueFeatureGate.IsEnabled() {
+		if cfg.QueueBatchConfig.HasValue() {
+			return errors.New("sending_queue is disabled by the exporter.prometheus.DisableSendingQueue feature gate; the Prometheus exporter is pull-based and does not support queuing")
+		}
 	}
 	if metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate.IsEnabled() {
 		if !cfg.ResourceToTelemetrySettings.IsEmpty() {

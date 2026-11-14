@@ -1,0 +1,30 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: receiver/kubelet_stats
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add `receiver.kubelet_stats.cpuUtilizationRounding` alpha feature gate that removes excessive float64 precision from pod and container CPU utilization metrics.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [47988]
+
+# (Optional) One or more lines of additional information to render under the main note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  When enabled, `k8s.{pod,container}.cpu.node.utilization`, `k8s.{pod,container}.cpu_limit_utilization`
+  and `k8s.{pod,container}.cpu_request_utilization` are computed from integer nanocore values and rounded
+  to the significant digits justified by the inputs.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your entry with the type `refactor` or `chore`.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change affects end users.
+# Include 'api' if there is a change to an API that is meant to be used by other developers in the project.
+# Default: '[user]'
+change_logs: [user]

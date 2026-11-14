@@ -275,7 +275,7 @@ func TestConvertDistributionToMetrics_NoDataPoints(t *testing.T) {
 		Metric: &metric.Metric{},
 	}
 	m := pmetric.NewMetric()
-	mb.ConvertDistributionToMetrics(ts, m)
+	mb.ConvertDistributionToMetrics(ts, m, pmetric.AggregationTemporalityDelta)
 	require.Equal(t, 0, m.Histogram().DataPoints().Len())
 }
 
@@ -305,7 +305,7 @@ func TestConvertDistributionToMetrics_InvalidConversion_NoInterval(t *testing.T)
 		},
 	}
 	m := pmetric.NewMetric()
-	mb.ConvertDistributionToMetrics(ts, m)
+	mb.ConvertDistributionToMetrics(ts, m, pmetric.AggregationTemporalityDelta)
 	require.Equal(t, 0, m.Histogram().DataPoints().Len())
 }
 
@@ -391,7 +391,7 @@ func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleData
 	}
 
 	m := pmetric.NewMetric()
-	mb.ConvertDistributionToMetrics(ts, m)
+	mb.ConvertDistributionToMetrics(ts, m, pmetric.AggregationTemporalityDelta)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleDataPoint_WithExemplars.yaml")
 	// Uncomment to regenerate the yaml file with the expected metrics:
@@ -434,7 +434,7 @@ func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleData
 	}
 
 	m := pmetric.NewMetric()
-	mb.ConvertDistributionToMetrics(ts, m)
+	mb.ConvertDistributionToMetrics(ts, m, pmetric.AggregationTemporalityDelta)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleDataPoint_ZeroBoundsZeroCounts.yaml")
 	// Uncomment to regenerate the yaml file with the expected metrics:
@@ -484,7 +484,7 @@ func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleData
 	}
 
 	m := pmetric.NewMetric()
-	mb.ConvertDistributionToMetrics(ts, m)
+	mb.ConvertDistributionToMetrics(ts, m, pmetric.AggregationTemporalityDelta)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleDataPoint_OnlyUnderAndOverflow.yaml")
 	// Uncomment to regenerate the yaml file with the expected metrics:
@@ -535,7 +535,7 @@ func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleData
 	}
 
 	m := pmetric.NewMetric()
-	mb.ConvertDistributionToMetrics(ts, m)
+	mb.ConvertDistributionToMetrics(ts, m, pmetric.AggregationTemporalityDelta)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_SingleDataPoint_ImplicitZeroCounts.yaml")
 	// Uncomment to regenerate the yaml file with the expected metrics:
@@ -597,7 +597,7 @@ func TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_MultipleDa
 	}
 
 	m := pmetric.NewMetric()
-	mb.ConvertDistributionToMetrics(ts, m)
+	mb.ConvertDistributionToMetrics(ts, m, pmetric.AggregationTemporalityDelta)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_ExplicitBuckets_MultipleDataPoint.yaml")
 	// Uncomment to regenerate the yaml file with the expected metrics:
@@ -655,7 +655,7 @@ func TestConvertDistributionToMetrics_ValidConversion_LinearBuckets_SingleDataPo
 	}
 
 	m := pmetric.NewMetric()
-	mb.ConvertDistributionToMetrics(ts, m)
+	mb.ConvertDistributionToMetrics(ts, m, pmetric.AggregationTemporalityDelta)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_LinearBuckets_SingleDataPoint.yaml")
 	// Uncomment to regenerate the yaml file with the expected metrics:
@@ -708,7 +708,7 @@ func TestConvertDistributionToMetrics_ValidConversion_LinearBuckets_SingleDataPo
 	}
 
 	m := pmetric.NewMetric()
-	mb.ConvertDistributionToMetrics(ts, m)
+	mb.ConvertDistributionToMetrics(ts, m, pmetric.AggregationTemporalityDelta)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_LinearBuckets_SingleDataPoint_OnlyUnderAndOverflow.yaml")
 	// Uncomment to regenerate the yaml file with the expected metrics:
@@ -762,7 +762,7 @@ func TestConvertDistributionToMetrics_ValidConversion_LinearBuckets_SingleDataPo
 	}
 
 	m := pmetric.NewMetric()
-	mb.ConvertDistributionToMetrics(ts, m)
+	mb.ConvertDistributionToMetrics(ts, m, pmetric.AggregationTemporalityDelta)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_LinearBuckets_SingleDataPoint_ImplicitZeroCounts.yaml")
 	// Uncomment to regenerate the yaml file with the expected metrics:
@@ -820,7 +820,7 @@ func TestConvertDistributionToMetrics_ValidConversion_ExponentialBuckets_SingleD
 	}
 
 	m := pmetric.NewMetric()
-	mb.ConvertDistributionToMetrics(ts, m)
+	mb.ConvertDistributionToMetrics(ts, m, pmetric.AggregationTemporalityDelta)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_ExponentialBuckets_SingleDataPoint.yaml")
 	// Uncomment to regenerate the yaml file with the expected metrics:
@@ -873,7 +873,7 @@ func TestConvertDistributionToMetrics_ValidConversion_ExponentialBuckets_SingleD
 	}
 
 	m := pmetric.NewMetric()
-	mb.ConvertDistributionToMetrics(ts, m)
+	mb.ConvertDistributionToMetrics(ts, m, pmetric.AggregationTemporalityDelta)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_ExponentialBuckets_SingleDataPoint_OnlyUnderAndOverflow.yaml")
 	// Uncomment to regenerate the yaml file with the expected metrics:
@@ -927,7 +927,7 @@ func TestConvertDistributionToMetrics_ValidConversion_ExponentialBuckets_SingleD
 	}
 
 	m := pmetric.NewMetric()
-	mb.ConvertDistributionToMetrics(ts, m)
+	mb.ConvertDistributionToMetrics(ts, m, pmetric.AggregationTemporalityDelta)
 
 	expectedFile := filepath.Join("testdata", "TestConvertDistributionToMetrics_ValidConversion_ExponentialBuckets_SingleDataPoint_ImplicitZeroCounts.yaml")
 	// Uncomment to regenerate the yaml file with the expected metrics:
@@ -935,6 +935,56 @@ func TestConvertDistributionToMetrics_ValidConversion_ExponentialBuckets_SingleD
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, wrapMetric(m)))
+}
+
+func TestConvertDistributionToMetrics_CumulativeTemporality(t *testing.T) {
+	logger := zap.NewNop()
+	mb := NewMetricsBuilder(logger)
+
+	ts := &monitoringpb.TimeSeries{
+		Metric: &metric.Metric{
+			Type:   "custom.googleapis.com/latency",
+			Labels: map[string]string{"key": "val"},
+		},
+		Points: []*monitoringpb.Point{
+			{
+				Interval: &monitoringpb.TimeInterval{
+					StartTime: &timestamppb.Timestamp{Seconds: 10},
+					EndTime:   &timestamppb.Timestamp{Seconds: 70},
+				},
+				Value: &monitoringpb.TypedValue{
+					Value: &monitoringpb.TypedValue_DistributionValue{
+						DistributionValue: &distribution.Distribution{
+							Count: 10,
+							Mean:  15.5,
+							BucketOptions: &distribution.Distribution_BucketOptions{
+								Options: &distribution.Distribution_BucketOptions_ExplicitBuckets{
+									ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{
+										Bounds: []float64{10, 20},
+									},
+								},
+							},
+							BucketCounts: []int64{2, 5, 3},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	m := pmetric.NewMetric()
+	mb.ConvertDistributionToMetrics(ts, m, pmetric.AggregationTemporalityCumulative)
+
+	require.Equal(t, pmetric.MetricTypeHistogram, m.Type())
+	histogram := m.Histogram()
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, histogram.AggregationTemporality())
+	require.Equal(t, 1, histogram.DataPoints().Len())
+	dp := histogram.DataPoints().At(0)
+	assert.Equal(t, uint64(10), dp.Count())
+	assert.Equal(t, []uint64{2, 5, 3}, dp.BucketCounts().AsRaw())
+	assert.Equal(t, []float64{10, 20}, dp.ExplicitBounds().AsRaw())
+	assert.Equal(t, 155.0, dp.Sum())
+	assert.Equal(t, "val", dp.Attributes().AsRaw()["key"])
 }
 
 func wrapMetric(m pmetric.Metric) pmetric.Metrics {

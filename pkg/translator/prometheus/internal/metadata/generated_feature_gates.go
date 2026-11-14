@@ -14,6 +14,14 @@ var PkgPrometheusKeepIdentifyingResourceAttributesFeatureGate = featuregate.Glob
 	featuregate.WithRegisterFromVersion("v0.165.0"),
 )
 
+var PkgTranslatorPrometheusCorrectUCUMUnitsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"pkg.translator.prometheus.CorrectUCUMUnits",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Use spec-compliant UCUM unit mappings."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52480"),
+	featuregate.WithRegisterFromVersion("v0.165.0"),
+)
+
 var PkgTranslatorPrometheusPermissiveLabelSanitizationFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"pkg.translator.prometheus.PermissiveLabelSanitization",
 	featuregate.StageStable,

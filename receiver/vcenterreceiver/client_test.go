@@ -407,6 +407,39 @@ func TestSessionReestablish(t *testing.T) {
 	})
 }
 
+func TestEnsureConnectionReusesSession(t *testing.T) {
+	// ESX does not implement SessionIsActive, like a vCenter user without the Sessions.ValidateSession privilege.
+	for name, model := range map[string]*simulator.Model{"vpx": simulator.VPX(), "esx": simulator.ESX()} {
+		t.Run(name, func(t *testing.T) {
+			simulator.Test(func(ctx context.Context, c *vim25.Client) {
+				pw, _ := simulator.DefaultLogin.Password()
+				client := vcenterClient{
+					logger: zap.NewNop(),
+					cfg: &Config{
+						Username: simulator.DefaultLogin.Username(),
+						Password: configopaque.String(pw),
+						Endpoint: fmt.Sprintf("%s://%s", c.URL().Scheme, c.URL().Host),
+						ClientConfig: configtls.ClientConfig{
+							Insecure: true,
+						},
+					},
+				}
+				require.NoError(t, client.EnsureConnection(ctx))
+				driver := client.vimDriver
+
+				require.NoError(t, client.EnsureConnection(ctx))
+				require.Same(t, driver, client.vimDriver, "an active session should be reused")
+
+				// A failed session check may be transient, so it does not log in again.
+				canceled, cancel := context.WithCancel(ctx)
+				cancel()
+				require.Error(t, client.EnsureConnection(canceled))
+				require.Same(t, driver, client.vimDriver, "a failed session check should not log in again")
+			}, model)
+		})
+	}
+}
+
 func TestApplyProxy(t *testing.T) {
 	tests := []struct {
 		desc          string

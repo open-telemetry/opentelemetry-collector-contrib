@@ -278,6 +278,10 @@ func getPodContainerProperties(pod *corev1.Pod, logger *zap.Logger) map[experime
 	km := map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}
 	for i := range pod.Status.ContainerStatuses {
 		cs := pod.Status.ContainerStatuses[i]
+		// Containers that haven't been created by the runtime yet have no ID to identify them by.
+		if cs.ContainerID == "" {
+			continue
+		}
 		md := container.GetMetadata(pod, cs, logger)
 		km[md.ResourceID] = md
 	}

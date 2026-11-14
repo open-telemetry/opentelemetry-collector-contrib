@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: exporter/file
-note: Report file close errors during shutdown when group_by is enabled.
-issues: [52587]
-change_logs: [user]

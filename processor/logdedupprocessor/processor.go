@@ -72,6 +72,7 @@ type multiShardAggregator struct {
 	timezone          *time.Location
 	telemetryBuilder  *metadata.TelemetryBuilder
 	includeFields     []string
+	timestampMode     TimestampMode
 
 	shards map[attribute.Set]*aggregatorShard
 	// lock protects the shards map during concurrent lookups and creation.
@@ -118,7 +119,7 @@ func (m *multiShardAggregator) getOrCreateShard(info client.Info, aset attribute
 		md[k] = info.Metadata.Get(k)
 	}
 	shard = &aggregatorShard{
-		aggregator: newLogAggregator(m.logCountAttribute, m.timezone, m.telemetryBuilder, m.includeFields),
+		aggregator: newLogAggregator(m.logCountAttribute, m.timezone, m.telemetryBuilder, m.includeFields, m.timestampMode),
 		clientInfo: client.Info{
 			Metadata: client.NewMetadata(md),
 		},
@@ -184,7 +185,7 @@ func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Se
 	var agg shardedAggregator
 	if len(metadataKeys) == 0 {
 		agg = &singleShardAggregator{
-			aggregator: newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder, cfg.IncludeFields),
+			aggregator: newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder, cfg.IncludeFields, cfg.TimestampMode),
 		}
 	} else {
 		if cfg.MetadataCardinalityLimit == 0 {
@@ -199,6 +200,7 @@ func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Se
 			timezone:                 timezone,
 			telemetryBuilder:         telemetryBuilder,
 			includeFields:            cfg.IncludeFields,
+			timestampMode:            cfg.TimestampMode,
 			shards:                   make(map[attribute.Set]*aggregatorShard),
 		}
 	}
@@ -213,8 +215,8 @@ func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Se
 }
 
 // Start starts the processor.
-func (p *logDedupProcessor) Start(ctx context.Context, _ component.Host) error {
-	ctx, cancel := context.WithCancel(ctx)
+func (p *logDedupProcessor) Start(_ context.Context, _ component.Host) error {
+	ctx, cancel := context.WithCancel(context.Background())
 	p.cancel = cancel
 
 	p.wg.Add(1)
@@ -307,8 +309,8 @@ func (p *logDedupProcessor) handleExportInterval(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			// Export any remaining logs
-			p.exportLogs(ctx)
+			// Export any remaining logs with a live context so downstream does not reject them.
+			p.exportLogs(context.WithoutCancel(ctx))
 			if err := ctx.Err(); err != context.Canceled {
 				p.logger.Error("context error", zap.Error(err))
 			}
