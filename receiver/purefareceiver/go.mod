@@ -5,7 +5,7 @@ go 1.26.7
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.165.1
-	github.com/prometheus/common v0.72.1
+	github.com/prometheus/common v0.74.0
 	github.com/prometheus/prometheus v0.316.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.71.1-0.20261112225459-4888f0b280f9
@@ -185,6 +185,7 @@ require (
 	github.com/oracle/oci-go-sdk/v65 v65.127.0 // indirect
 	github.com/outscale/osc-sdk-go/v2 v2.35.0 // indirect
 	github.com/ovh/go-ovh v1.9.0 // indirect
+	github.com/pandatix/go-abnf v0.5.5 // indirect
 	github.com/pb33f/go-yaml v0.1.1 // indirect
 	github.com/pb33f/jsonpath v0.8.4 // indirect
 	github.com/pb33f/libopenapi v0.41.6 // indirect
@@ -246,7 +247,7 @@ require (
 	go.uber.org/atomic v1.12.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
 	go.uber.org/zap/exp v0.3.0 // indirect
-	go.yaml.in/yaml/v2 v2.4.4 // indirect
+	go.yaml.in/yaml/v2 v2.4.5 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/exp v0.0.0-20261014143641-f0251eb4aa3e // indirect
 	golang.org/x/net v0.62.0 // indirect

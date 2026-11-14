@@ -14,7 +14,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.165.1
 	github.com/prometheus/client_golang v1.25.0
-	github.com/prometheus/common v0.72.1
+	github.com/prometheus/common v0.74.0
 	github.com/prometheus/exporter-toolkit v0.20.0
 	github.com/prometheus/prometheus v0.316.0
 	github.com/stretchr/testify v1.12.1
@@ -224,6 +224,7 @@ require (
 	github.com/oracle/oci-go-sdk/v65 v65.127.0 // indirect
 	github.com/outscale/osc-sdk-go/v2 v2.35.0 // indirect
 	github.com/ovh/go-ovh v1.9.0 // indirect
+	github.com/pandatix/go-abnf v0.5.5 // indirect
 	github.com/pb33f/go-yaml v0.1.1 // indirect
 	github.com/pb33f/jsonpath v0.8.4 // indirect
 	github.com/pb33f/libopenapi v0.41.6 // indirect
@@ -318,11 +319,11 @@ require (
 	go.opentelemetry.io/proto/otlp v1.11.1 // indirect
 	go.uber.org/atomic v1.12.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.yaml.in/yaml/v2 v2.4.4 // indirect
+	go.yaml.in/yaml/v2 v2.4.5 // indirect
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/exp v0.0.0-20261014143641-f0251eb4aa3e // indirect
-	golang.org/x/oauth2 v0.37.0 // indirect
+	golang.org/x/oauth2 v0.38.0 // indirect
 	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/term v0.47.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
