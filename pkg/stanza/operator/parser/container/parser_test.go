@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/recombine"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
@@ -99,7 +100,7 @@ func TestInternalRecombineCfg(t *testing.T) {
 	expected.IsLastEntry = "attributes.logtag == 'F'"
 	expected.CombineField = entry.NewBodyField()
 	expected.CombineWith = ""
-	expected.SourceIdentifier = entry.NewAttributeField(attrs.LogFilePath)
+	expected.SourceIdentifier = entry.NewAttributeField(recombineSourceIdentifier)
 	expected.MaxLogSize = 102400
 	expected.MaxBatchSize = 0
 	expected.MaxUnmatchedBatchSize = 0
@@ -2030,4 +2031,605 @@ func TestParseCRIOFields(t *testing.T) {
 			require.Equal(t, tc.wantLog, m["log"])
 		})
 	}
+}
+
+func TestContainerRecombineInterleavedStreams(t *testing.T) {
+	filePath := "/var/log/pods/default_pod_123/container/0.log"
+	filePathA := "/var/log/pods/default_pod_123/container/0.log"
+	filePathB := "/var/log/pods/default_pod_456/container/0.log"
+
+	cases := []struct {
+		name           string
+		addMetadata    bool
+		input          []*entry.Entry
+		expectedOutput []*entry.Entry
+		useBatch       bool
+	}{
+		{
+			name: "exact_issue_52471_reproduction",
+			input: []*entry.Entry{
+				{
+					Body: `2024-04-13T07:59:37.505201169Z stdout P AAAAAA`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:38.505201169Z stdout P BBBBBB`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:39.505201169Z stdout P CCCCCC`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:40.505201169Z stderr F done`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:41.505201169Z stdout P DDDDDD`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:42.505201169Z stdout F DDDDDD`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:43.505201169Z stdout F END`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+			},
+			expectedOutput: []*entry.Entry{
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stderr",
+						"logtag":          "F",
+						attrs.LogFilePath: filePath,
+					},
+					Body:      "done",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 40, 505201169, time.UTC),
+				},
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stdout",
+						"logtag":          "P",
+						attrs.LogFilePath: filePath,
+					},
+					Body:      "AAAAAABBBBBBCCCCCCDDDDDDDDDDDD",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 37, 505201169, time.UTC),
+				},
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stdout",
+						"logtag":          "F",
+						attrs.LogFilePath: filePath,
+					},
+					Body:      "END",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 43, 505201169, time.UTC),
+				},
+			},
+		},
+		{
+			name:     "exact_issue_52471_reproduction_batch",
+			useBatch: true,
+			input: []*entry.Entry{
+				{
+					Body: `2024-04-13T07:59:37.505201169Z stdout P AAAAAA`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:38.505201169Z stdout P BBBBBB`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:39.505201169Z stdout P CCCCCC`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:40.505201169Z stderr F done`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:41.505201169Z stdout P DDDDDD`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:42.505201169Z stdout F DDDDDD`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:43.505201169Z stdout F END`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+			},
+			expectedOutput: []*entry.Entry{
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stderr",
+						"logtag":          "F",
+						attrs.LogFilePath: filePath,
+					},
+					Body:      "done",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 40, 505201169, time.UTC),
+				},
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stdout",
+						"logtag":          "P",
+						attrs.LogFilePath: filePath,
+					},
+					Body:      "AAAAAABBBBBBCCCCCCDDDDDDDDDDDD",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 37, 505201169, time.UTC),
+				},
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stdout",
+						"logtag":          "F",
+						attrs.LogFilePath: filePath,
+					},
+					Body:      "END",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 43, 505201169, time.UTC),
+				},
+			},
+		},
+		{
+			name: "stderr_partial_followed_by_stderr_final",
+			input: []*entry.Entry{
+				{
+					Body: `2024-04-13T07:59:37.505201169Z stderr P err_part_1_`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:38.505201169Z stderr P err_part_2_`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:39.505201169Z stderr F err_final`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+			},
+			expectedOutput: []*entry.Entry{
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stderr",
+						"logtag":          "P",
+						attrs.LogFilePath: filePath,
+					},
+					Body:      "err_part_1_err_part_2_err_final",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 37, 505201169, time.UTC),
+				},
+			},
+		},
+		{
+			name: "stdout_partial_interleaved_with_stderr_final",
+			input: []*entry.Entry{
+				{
+					Body: `2024-04-13T07:59:37.505201169Z stdout P out_part_1_`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:38.505201169Z stderr F err_single`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:39.505201169Z stdout F out_final`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+			},
+			expectedOutput: []*entry.Entry{
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stderr",
+						"logtag":          "F",
+						attrs.LogFilePath: filePath,
+					},
+					Body:      "err_single",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 38, 505201169, time.UTC),
+				},
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stdout",
+						"logtag":          "P",
+						attrs.LogFilePath: filePath,
+					},
+					Body:      "out_part_1_out_final",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 37, 505201169, time.UTC),
+				},
+			},
+		},
+		{
+			name: "stderr_partial_interleaved_with_stdout_final",
+			input: []*entry.Entry{
+				{
+					Body: `2024-04-13T07:59:37.505201169Z stderr P err_part_1_`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:38.505201169Z stdout F out_single`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:39.505201169Z stderr F err_final`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+			},
+			expectedOutput: []*entry.Entry{
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stdout",
+						"logtag":          "F",
+						attrs.LogFilePath: filePath,
+					},
+					Body:      "out_single",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 38, 505201169, time.UTC),
+				},
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stderr",
+						"logtag":          "P",
+						attrs.LogFilePath: filePath,
+					},
+					Body:      "err_part_1_err_final",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 37, 505201169, time.UTC),
+				},
+			},
+		},
+		{
+			name: "multiple_interleaved_partial_sequences_both_streams",
+			input: []*entry.Entry{
+				{
+					Body: `2024-04-13T07:59:37.505201169Z stdout P out1_`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:38.505201169Z stderr P err1_`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:39.505201169Z stdout P out2_`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:40.505201169Z stderr P err2_`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:41.505201169Z stdout F out_done`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:42.505201169Z stderr F err_done`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+			},
+			expectedOutput: []*entry.Entry{
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stdout",
+						"logtag":          "P",
+						attrs.LogFilePath: filePath,
+					},
+					Body:      "out1_out2_out_done",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 37, 505201169, time.UTC),
+				},
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stderr",
+						"logtag":          "P",
+						attrs.LogFilePath: filePath,
+					},
+					Body:      "err1_err2_err_done",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 38, 505201169, time.UTC),
+				},
+			},
+		},
+		{
+			name: "different_log_files_same_stream",
+			input: []*entry.Entry{
+				{
+					Body: `2024-04-13T07:59:37.505201169Z stdout P f1_part1_`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePathA,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:38.505201169Z stdout P f2_part1_`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePathB,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:39.505201169Z stdout F f1_final`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePathA,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:40.505201169Z stdout F f2_final`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePathB,
+					},
+				},
+			},
+			expectedOutput: []*entry.Entry{
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stdout",
+						"logtag":          "P",
+						attrs.LogFilePath: filePathA,
+					},
+					Body:      "f1_part1_f1_final",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 37, 505201169, time.UTC),
+				},
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stdout",
+						"logtag":          "P",
+						attrs.LogFilePath: filePathB,
+					},
+					Body:      "f2_part1_f2_final",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 38, 505201169, time.UTC),
+				},
+			},
+		},
+		{
+			name: "crio_interleaved_streams",
+			input: []*entry.Entry{
+				{
+					Body: `2024-04-13T07:59:37.505201169-10:00 stdout P crio_out_part1_`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:38.505201169-10:00 stderr F crio_err_single`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:39.505201169-10:00 stdout F crio_out_final`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: filePath,
+					},
+				},
+			},
+			expectedOutput: []*entry.Entry{
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stderr",
+						"logtag":          "F",
+						attrs.LogFilePath: filePath,
+					},
+					Body:      "crio_err_single",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 38, 505201169, time.FixedZone("", -10*60*60)),
+				},
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stdout",
+						"logtag":          "P",
+						attrs.LogFilePath: filePath,
+					},
+					Body:      "crio_out_part1_crio_out_final",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 37, 505201169, time.FixedZone("", -10*60*60)),
+				},
+			},
+		},
+		{
+			name: "missing_log_file_path_still_isolates_streams",
+			input: []*entry.Entry{
+				{
+					Body: `2024-04-13T07:59:37.505201169Z stdout P no_path_out1_`,
+				},
+				{
+					Body: `2024-04-13T07:59:38.505201169Z stderr F no_path_err`,
+				},
+				{
+					Body: `2024-04-13T07:59:39.505201169Z stdout F no_path_out2`,
+				},
+			},
+			expectedOutput: []*entry.Entry{
+				{
+					Attributes: map[string]any{
+						"log.iostream": "stderr",
+						"logtag":       "F",
+					},
+					Body:      "no_path_err",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 38, 505201169, time.UTC),
+				},
+				{
+					Attributes: map[string]any{
+						"log.iostream": "stdout",
+						"logtag":       "P",
+					},
+					Body:      "no_path_out1_no_path_out2",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 37, 505201169, time.UTC),
+				},
+			},
+		},
+		{
+			name:        "interleaved_streams_with_k8s_metadata",
+			addMetadata: true,
+			input: []*entry.Entry{
+				{
+					Body: `2024-04-13T07:59:37.505201169Z stdout P k8s_out_part1_`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:38.505201169Z stderr F k8s_err_single`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:39.505201169Z stdout F k8s_out_final`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+				},
+			},
+			expectedOutput: []*entry.Entry{
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stderr",
+						"logtag":          "F",
+						attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+					Resource: map[string]any{
+						"k8s.pod.name":                "kube-scheduler-kind-control-plane",
+						"k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d3",
+						"k8s.container.name":          "kube-scheduler44",
+						"k8s.container.restart_count": "1",
+						"k8s.namespace.name":          "some",
+					},
+					Body:      "k8s_err_single",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 38, 505201169, time.UTC),
+				},
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stdout",
+						"logtag":          "P",
+						attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+					Resource: map[string]any{
+						"k8s.pod.name":                "kube-scheduler-kind-control-plane",
+						"k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d3",
+						"k8s.container.name":          "kube-scheduler44",
+						"k8s.container.restart_count": "1",
+						"k8s.namespace.name":          "some",
+					},
+					Body:      "k8s_out_part1_k8s_out_final",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 37, 505201169, time.UTC),
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
+			cfg := NewConfigWithID("test_id")
+			cfg.AddMetadataFromFilePath = tc.addMetadata
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set)
+			require.NoError(t, err)
+			defer func() { require.NoError(t, op.Stop()) }()
+			r := op.(*Parser)
+
+			fake := testutil.NewFakeOutput(t)
+			r.OutputOperators = []operator.Operator{fake}
+
+			if tc.useBatch {
+				require.NoError(t, r.ProcessBatch(ctx, tc.input))
+			} else {
+				for _, e := range tc.input {
+					require.NoError(t, r.Process(ctx, e))
+				}
+			}
+
+			fake.ExpectEntries(t, tc.expectedOutput)
+
+			select {
+			case e := <-fake.Received:
+				require.FailNow(t, "Received unexpected entry: ", "%+v", e)
+			default:
+			}
+		})
+	}
+}
+
+func TestContainerRecombineInternalKeyCleanupOnError(t *testing.T) {
+	ctx := t.Context()
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = false
+	cfg.OnError = helper.SendOnError
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, op.Stop()) }()
+	p := op.(*Parser)
+
+	failOp := testutil.NewFakeOutputWithProcessError(t)
+	p.recombineParser.SetOutputIDs([]string{failOp.ID()})
+	require.NoError(t, p.recombineParser.SetOutputs([]operator.Operator{failOp}))
+
+	// Single entry Process error cleanup
+	e := &entry.Entry{
+		Body: `2024-04-13T07:59:37.505201169Z stdout F single line`,
+		Attributes: map[string]any{
+			attrs.LogFilePath: "/var/log/pods/test/0.log",
+		},
+	}
+	_ = p.Process(ctx, e)
+	require.NotContains(t, e.Attributes, recombineSourceIdentifier)
+
+	// Batch ProcessBatch error cleanup
+	batchEntries := []*entry.Entry{
+		{
+			Body: `2024-04-13T07:59:37.505201169Z stdout F batch line`,
+			Attributes: map[string]any{
+				attrs.LogFilePath: "/var/log/pods/test/0.log",
+			},
+		},
+	}
+	_ = p.ProcessBatch(ctx, batchEntries)
+	require.NotContains(t, batchEntries[0].Attributes, recombineSourceIdentifier)
 }

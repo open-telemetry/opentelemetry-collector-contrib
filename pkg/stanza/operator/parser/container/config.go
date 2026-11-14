@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -21,7 +20,7 @@ import (
 
 const (
 	operatorType              = "container"
-	recombineSourceIdentifier = attrs.LogFilePath
+	recombineSourceIdentifier = "_container_stream_key"
 	recombineIsLastEntry      = "attributes.logtag == 'F'"
 	defaultMaxLogSize         = 1024 * 1024
 	defaultPathCacheSize      = 1024

@@ -159,6 +159,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 				errs = append(errs, p.HandleEntryErrorWithWrite(ctx, ent, err, write))
 				continue
 			}
+			setStreamSourceIdentifier(ent)
 			criEntries = append(criEntries, ent)
 
 		default:
@@ -169,6 +170,9 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 	// Send CRI entries as a batch to recombine
 	if len(criEntries) > 0 {
 		if err := p.recombineParser.ProcessBatch(ctx, criEntries); err != nil {
+			for _, ent := range criEntries {
+				delete(ent.Attributes, recombineSourceIdentifier)
+			}
 			errs = append(errs, fmt.Errorf("failed to recombine cri logs: %w", err))
 		}
 	}
@@ -278,9 +282,12 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 			}
 		}
 
+		setStreamSourceIdentifier(entry)
+
 		// send it to the recombine operator
 		err = p.recombineParser.Process(ctx, entry)
 		if err != nil {
+			delete(entry.Attributes, recombineSourceIdentifier)
 			return p.HandleEntryError(ctx, entry, fmt.Errorf("failed to recombine the crio log: %w", err))
 		}
 	default:
@@ -528,9 +535,34 @@ func (*Parser) setK8sMetadataFromParsedValues(e *entry.Entry, parsedValues map[s
 }
 
 func (p *Parser) consumeEntries(ctx context.Context, entries []*entry.Entry) {
+	for _, ent := range entries {
+		delete(ent.Attributes, recombineSourceIdentifier)
+	}
 	if err := p.WriteBatch(ctx, entries); err != nil {
 		p.Logger().Error("failed to write batch of entries", zap.Error(err))
 	}
+}
+
+func setStreamSourceIdentifier(e *entry.Entry) {
+	var filePath, stream string
+	if v, ok := e.Attributes[logPathField]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			filePath = s
+		} else {
+			filePath = fmt.Sprint(v)
+		}
+	}
+	if v, ok := e.Attributes["log.iostream"]; ok && v != nil {
+		if s, ok := v.(string); ok {
+			stream = s
+		} else {
+			stream = fmt.Sprint(v)
+		}
+	}
+	if e.Attributes == nil {
+		e.Attributes = make(map[string]any, 1)
+	}
+	e.Attributes[recombineSourceIdentifier] = filePath + "\x00" + stream
 }
 
 func moveField(e *entry.Entry, originalKey, mappedKey string) error {
