@@ -3,7 +3,15 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/sdnot
 go 1.26.0
 
 require (
-	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
+	// v22.7.0 broke compatibility with BSD and Solaris by assuming that `unix.CLOCK_MONOTONIC`
+	// is defined across all Unix platforms. Until the issue is fixed we will pin
+	// to version v22.6.0. Based on my understanding the fix is relatively easy
+	// for FreeBSD, OpenBSD, Dragonfly, Solaris, but NetBSD and Aix don't support
+	// these symbols.
+	//
+	// See the comment below for more information for the root cause:
+	// https://github.com/coreos/go-systemd/issues/512#issuecomment-5016747175
+	github.com/coreos/go-systemd/v22 v22.6.0
 	github.com/moby/moby/api v1.56.1
 	github.com/stretchr/testify v1.12.1
 	github.com/testcontainers/testcontainers-go v0.45.0
