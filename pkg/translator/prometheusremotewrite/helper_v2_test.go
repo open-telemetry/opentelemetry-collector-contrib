@@ -332,6 +332,7 @@ func TestPrometheusConverterV2_AddSummaryDataPoints(t *testing.T) {
 				metric.Summary().DataPoints(),
 				pcommon.NewResource(),
 				pcommon.NewInstrumentationScope(),
+				"",
 				Settings{},
 				metric.Name(),
 				m,
@@ -504,6 +505,19 @@ func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 			},
 		},
 		{
+			name: "NHCB drops data point without sum",
+			metric: func() pmetric.Metric {
+				metric := newTestExplicitHistogram()
+				metric.Histogram().DataPoints().At(0).RemoveSum()
+				return metric
+			},
+			settings: Settings{ConvertExplicitHistogramsToNHCB: true},
+			wantErr:  true,
+			check: func(t *testing.T, converter *prometheusConverterV2) {
+				assert.Empty(t, converter.unique, "no series emitted for a data point without sum")
+			},
+		},
+		{
 			name: "NHCB conversion error keeps classic",
 			metric: func() pmetric.Metric {
 				metric := newTestExplicitHistogram()
@@ -534,6 +548,7 @@ func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 				metric.Histogram().DataPoints(),
 				pcommon.NewResource(),
 				pcommon.NewInstrumentationScope(),
+				"",
 				tt.settings,
 				metric.Name(),
 				m,

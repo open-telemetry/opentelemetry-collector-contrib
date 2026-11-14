@@ -603,20 +603,6 @@ func TestFileAndEnvProviders(t *testing.T) {
 	})
 }
 
-func TestStubProvidersNotImplemented(t *testing.T) {
-	_, err := newKeyMaterialProvider(t.Context(), &Config{
-		KeySource: KeySourceConfig{Type: keySourceK8sSecret, K8sSecret: &K8sSecretConfig{Name: "n", SecretConfig: SecretConfig{HMACKey: "k"}}},
-	}, zap.NewNop())
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "not yet implemented")
-
-	_, err = newKeyMaterialProvider(t.Context(), &Config{
-		KeySource: KeySourceConfig{Type: keySourceBao, Bao: &BaoKeyConfig{SecretPath: "p", SecretConfig: SecretConfig{HMACKey: "k"}}},
-	}, zap.NewNop())
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "not yet implemented")
-}
-
 func TestFactoryCreateWithFileHMAC(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)

@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -299,6 +300,131 @@ func Test_receiveBytes_traces(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_receiveBytes_configuredDecompression(t *testing.T) {
+	testTrace := generateTraceData()
+
+	jsonTrace, err := (&ptrace.JSONMarshaler{}).MarshalTraces(testTrace)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name          string
+		decompression configcompression.Type
+		key           string
+		data          []byte
+		wantErr       bool
+		wantTrace     bool
+	}{
+		{
+			name:          "gzip without suffix",
+			decompression: configcompression.TypeGzip,
+			key:           "test.json",
+			data:          gzipCompress(jsonTrace),
+			wantTrace:     true,
+		},
+		{
+			name:          "zstd without suffix",
+			decompression: configcompression.TypeZstd,
+			key:           "test.json",
+			data:          zstdCompress(jsonTrace),
+			wantTrace:     true,
+		},
+		{
+			name:          "gzip without suffix, encoding extension",
+			decompression: configcompression.TypeGzip,
+			key:           "test.test",
+			data:          gzipCompress([]byte("test")),
+			wantTrace:     true,
+		},
+		{
+			name:          "key suffix takes precedence over configured decompression",
+			decompression: configcompression.TypeZstd,
+			key:           "test.json.gz",
+			data:          gzipCompress(jsonTrace),
+			wantTrace:     true,
+		},
+		{
+			name:          "gzip configured, object not compressed",
+			decompression: configcompression.TypeGzip,
+			key:           "test.json",
+			data:          jsonTrace,
+			wantErr:       true,
+		},
+		{
+			name:          "zstd configured, object not compressed",
+			decompression: configcompression.TypeZstd,
+			key:           "test.json",
+			data:          jsonTrace,
+			wantErr:       true,
+		},
+		{
+			name:          "zstd configured, object gzip compressed",
+			decompression: configcompression.TypeZstd,
+			key:           "test.json",
+			data:          gzipCompress(jsonTrace),
+			wantErr:       true,
+		},
+		{
+			name:          "none configured, object not compressed",
+			decompression: configcompression.Type("none"),
+			key:           "test.json",
+			data:          jsonTrace,
+			wantTrace:     true,
+		},
+		{
+			name:      "empty configured, object not compressed",
+			key:       "test.json",
+			data:      jsonTrace,
+			wantTrace: true,
+		},
+		{
+			name:          "none configured, object compressed without suffix",
+			decompression: configcompression.Type("none"),
+			key:           "test.json",
+			data:          gzipCompress(jsonTrace),
+			wantErr:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var traceConsumed bool
+			tracesConsumer, _ := consumer.NewTraces(func(_ context.Context, td ptrace.Traces) error {
+				traceConsumed = true
+				require.Equal(t, testTrace, td)
+				return nil
+			})
+			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
+			require.NoError(t, err)
+			r := &awss3Receiver{
+				logger:  zap.NewNop(),
+				obsrecv: obsrecv,
+				extensions: encodingExtensions{
+					{
+						extension: &unmarshalExtension{trace: testTrace},
+						suffix:    ".test",
+					},
+				},
+				dataProcessor: &traceReceiver{
+					consumer: tracesConsumer,
+				},
+				decompression: tt.decompression,
+			}
+			err = r.receiveBytes(t.Context(), tt.key, tt.data)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.wantTrace, traceConsumed)
+		})
+	}
+}
+
+func Test_decompress_unsupported(t *testing.T) {
+	_, err := decompress(configcompression.TypeSnappy, []byte("test"))
+	assert.ErrorContains(t, err, `unsupported decompression type "snappy"`)
 }
 
 func Test_receiveBytes_metrics(t *testing.T) {

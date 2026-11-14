@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -107,4 +108,22 @@ func TestConfigValidate(t *testing.T) {
 
 	cfg.ResourceToTelemetrySettings = resourcetotelemetry.Settings{}
 	assert.NoError(t, cfg.Validate())
+}
+
+func TestConfigValidate_SendingQueue(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	assert.NoError(t, cfg.Validate())
+
+	// Setting sending_queue explicitly should be valid when the feature gate is disabled
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	cfg.QueueBatchConfig = configoptional.Some(queueCfg)
+	assert.NoError(t, cfg.Validate())
+
+	// Setting sending_queue explicitly must fail when the feature gate is enabled
+	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusDisableSendingQueueFeatureGate, true)()
+	assert.ErrorContains(t, cfg.Validate(), "sending_queue is disabled by the exporter.prometheus.DisableSendingQueue feature gate")
+
+	// Default config (HasValue() == false) must remain valid even when the feature gate is enabled
+	defaultCfg := createDefaultConfig().(*Config)
+	assert.NoError(t, defaultCfg.Validate())
 }

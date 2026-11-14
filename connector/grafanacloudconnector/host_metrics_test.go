@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHostMetrics(t *testing.T) {
@@ -45,19 +45,19 @@ func TestHostMetrics(t *testing.T) {
 
 			metrics, count := hm.metrics()
 			hm.reset()
-			assert.Equal(t, tc.expectedHostCount, count)
+			require.Equal(t, tc.expectedHostCount, count)
 			if metrics != nil {
-				assert.Equal(t, tc.expectedMetricCount, metrics.MetricCount())
-				assert.Equal(t, tc.expectedDatapointCount, metrics.DataPointCount())
+				require.Equal(t, tc.expectedMetricCount, metrics.MetricCount())
+				require.Equal(t, tc.expectedDatapointCount, metrics.DataPointCount())
 				rm := metrics.ResourceMetrics()
 				metric := rm.At(0).ScopeMetrics().At(0).Metrics().At(0)
-				assert.Equal(t, hostInfoMetric, metric.Name())
+				require.Equal(t, hostInfoMetric, metric.Name())
 				for i := range count {
 					dp := metric.Gauge().DataPoints().At(i)
 					val, ok := dp.Attributes().Get(hostIdentifierAttr)
-					assert.Assert(t, ok)
-					assert.Assert(t, strings.HasPrefix(val.AsString(), "host"))
-					assert.Equal(t, int64(1), dp.IntValue())
+					require.True(t, ok)
+					require.True(t, strings.HasPrefix(val.AsString(), "host"))
+					require.Equal(t, int64(1), dp.IntValue())
 				}
 			}
 		})
