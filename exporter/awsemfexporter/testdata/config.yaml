@@ -1,5 +1,6 @@
 awsemf:
 awsemf/1:
+  timeout: 15s
   region: 'us-west-2'
   role_arn: "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole"
   detailed_metrics: false
