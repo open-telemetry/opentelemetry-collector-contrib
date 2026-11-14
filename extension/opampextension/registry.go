@@ -113,6 +113,9 @@ func (cr *customCapabilityRegistry) removeCapabilityFunc(capability string, call
 		defer cr.mux.Unlock()
 
 		msgChanList := cr.capabilityToMsgChannels[capability]
+		if msgChanList == nil {
+			return
+		}
 		msgChanList.Remove(callbackElement)
 
 		if msgChanList.Front() == nil {
@@ -200,6 +203,10 @@ func (c *customMessageHandler) SendMessage(messageType string, message []byte) (
 func (c *customMessageHandler) Unregister() {
 	c.unregisteredMux.Lock()
 	defer c.unregisteredMux.Unlock()
+
+	if c.unregistered {
+		return
+	}
 
 	c.unregistered = true
 
