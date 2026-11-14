@@ -1545,10 +1545,20 @@ func (ms *SqlserverLockTimeoutRateMetricConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
+// SqlserverLockWaitCountMetricAttributeKey specifies the key of an attribute for the sqlserver.lock.wait.count metric.
+type SqlserverLockWaitCountMetricAttributeKey string
+
+const (
+	SqlserverLockWaitCountMetricAttributeKeySqlserverWorkloadGroupName SqlserverLockWaitCountMetricAttributeKey = "sqlserver.workload_group.name"
+)
+
 // SqlserverLockWaitCountMetricConfig provides config for the sqlserver.lock.wait.count metric.
 type SqlserverLockWaitCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverLockWaitCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SqlserverLockWaitCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1562,6 +1572,24 @@ func (ms *SqlserverLockWaitCountMetricConfig) Unmarshal(parser *confmap.Conf) er
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverLockWaitCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverLockWaitCountMetricAttributeKeySqlserverWorkloadGroupName:
+		default:
+			return fmt.Errorf("metric sqlserver.lock.wait.count doesn't have an attribute %v, valid attributes: [sqlserver.workload_group.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -1829,10 +1857,20 @@ func (ms *SqlserverMemoryPageCountMetricConfig) Validate() error {
 	return nil
 }
 
+// SqlserverMemoryUsageMetricAttributeKey specifies the key of an attribute for the sqlserver.memory.usage metric.
+type SqlserverMemoryUsageMetricAttributeKey string
+
+const (
+	SqlserverMemoryUsageMetricAttributeKeySqlserverResourcePoolName SqlserverMemoryUsageMetricAttributeKey = "sqlserver.resource_pool.name"
+)
+
 // SqlserverMemoryUsageMetricConfig provides config for the sqlserver.memory.usage metric.
 type SqlserverMemoryUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverMemoryUsageMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SqlserverMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1846,6 +1884,24 @@ func (ms *SqlserverMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) erro
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverMemoryUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverMemoryUsageMetricAttributeKeySqlserverResourcePoolName:
+		default:
+			return fmt.Errorf("metric sqlserver.memory.usage doesn't have an attribute %v, valid attributes: [sqlserver.resource_pool.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -3380,7 +3436,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SqlserverLockWaitCount: SqlserverLockWaitCountMetricConfig{
-			Enabled: false,
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SqlserverLockWaitCountMetricAttributeKey{SqlserverLockWaitCountMetricAttributeKeySqlserverWorkloadGroupName},
 		},
 		SqlserverLockWaitRate: SqlserverLockWaitRateMetricConfig{
 			Enabled: true,
@@ -3416,7 +3474,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			EnabledAttributes:   []SqlserverMemoryPageCountMetricAttributeKey{SqlserverMemoryPageCountMetricAttributeKeyPagePool},
 		},
 		SqlserverMemoryUsage: SqlserverMemoryUsageMetricConfig{
-			Enabled: false,
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SqlserverMemoryUsageMetricAttributeKey{SqlserverMemoryUsageMetricAttributeKeySqlserverResourcePoolName},
 		},
 		SqlserverOsWaitDuration: SqlserverOsWaitDurationMetricConfig{
 			Enabled:             false,

@@ -352,6 +352,10 @@ attributes:
     description: Status of the request (e.g., running, suspended).
     type: string
     requirement_level: recommended
+  sqlserver.resource_pool.name:
+    description: The name of the SQL Server Resource Governor resource pool.
+    type: string
+    requirement_level: recommended
   sqlserver.row_count:
     description: Number of rows affected or returned by the query.
     type: int
@@ -449,6 +453,10 @@ attributes:
     requirement_level: recommended
   sqlserver.wait_type:
     description: Type of wait encountered by the request. Empty if none.
+    type: string
+    requirement_level: recommended
+  sqlserver.workload_group.name:
+    description: The name of the SQL Server Resource Governor workload group.
     type: string
     requirement_level: recommended
   sqlserver.writes:
@@ -1088,6 +1096,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
       value_type: int
+    attributes: [sqlserver.workload_group.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.wait.rate:
     enabled: true
@@ -1177,7 +1186,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
       value_type: double
-    attributes: []
+    attributes: [sqlserver.resource_pool.name]
   sqlserver.os.wait.duration:
     enabled: false
     description: Total wait time for this wait type

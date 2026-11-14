@@ -121,6 +121,7 @@ all_set:
       enabled: true
     sqlserver.lock.wait.count:
       enabled: true
+      attributes: ["sqlserver.workload_group.name"]
     sqlserver.lock.wait.rate:
       enabled: true
     sqlserver.lock.wait_time.avg:
@@ -144,6 +145,7 @@ all_set:
       attributes: ["page.pool"]
     sqlserver.memory.usage:
       enabled: true
+      attributes: ["sqlserver.resource_pool.name"]
     sqlserver.os.wait.duration:
       enabled: true
       attributes: ["wait.category","wait.type"]
@@ -398,6 +400,7 @@ reaggregate_set:
       enabled: true
     sqlserver.lock.wait.count:
       enabled: true
+      attributes: []
     sqlserver.lock.wait.rate:
       enabled: true
     sqlserver.lock.wait_time.avg:
@@ -421,6 +424,7 @@ reaggregate_set:
       attributes: []
     sqlserver.memory.usage:
       enabled: true
+      attributes: []
     sqlserver.os.wait.duration:
       enabled: true
       attributes: []
@@ -675,6 +679,7 @@ none_set:
       enabled: false
     sqlserver.lock.wait.count:
       enabled: false
+      attributes: ["sqlserver.workload_group.name"]
     sqlserver.lock.wait.rate:
       enabled: false
     sqlserver.lock.wait_time.avg:
@@ -698,6 +703,7 @@ none_set:
       attributes: ["page.pool"]
     sqlserver.memory.usage:
       enabled: false
+      attributes: ["sqlserver.resource_pool.name"]
     sqlserver.os.wait.duration:
       enabled: false
       attributes: ["wait.category","wait.type"]
