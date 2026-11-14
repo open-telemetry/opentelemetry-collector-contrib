@@ -119,7 +119,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["tcpcheck.duration"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Measures the duration of TCP connection.", mi.Description())
+					assert.Equal(t, "Measures the duration of a successful TCP check, including query_response operations.", mi.Description())
 					assert.Equal(t, "ms", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -185,7 +185,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["tcpcheck.status"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "1 if the TCP client successfully connected, otherwise 0.", mi.Description())
+					assert.Equal(t, "1 if the TCP connection and all query_response operations succeeded, otherwise 0.", mi.Description())
 					assert.Equal(t, "1", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

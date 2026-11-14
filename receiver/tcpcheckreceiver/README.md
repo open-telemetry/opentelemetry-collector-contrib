@@ -46,6 +46,84 @@ receivers:
 ```
 The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml).
 
+## Query and response checks
+
+Each target can optionally configure `query_response` to check the service after
+connecting. An omitted or empty list retains the connection-only check.
+
+Steps run in order on the same connection. Within each step, the receiver first
+waits for the expectation, if present, and then sends the configured data. Use
+separate steps to send a request before expecting its response.
+
+| Setting | Description |
+| --- | --- |
+| `send` | String to write. No newline or other delimiter is added. |
+| `send_bytes` | Base64-encoded bytes to write. Mutually exclusive with `send`. |
+| `expect` | Go regular expression to find in the response stream. |
+| `expect_bytes` | Exact base64-encoded byte sequence to find in the response stream. Mutually exclusive with `expect`. |
+
+Each step must contain at least one nonempty operation. Regular expressions and
+base64 values are validated before checks start. Reads continue until a match,
+the peer closes the connection, the size limit is reached, or the check times out.
+Bytes after a match remain available to the next step.
+
+Set a positive `dialer.timeout` when using `query_response`. It bounds the entire
+check, including connecting and all steps; it is not restarted for each step.
+The scrape context can impose an earlier deadline or cancel the check.
+
+The per-target `max_read_size` limits buffered response bytes for each expectation.
+Its default is 65536 bytes (64 KiB); zero also selects the default. A negative
+value is invalid. A match ending exactly at the limit succeeds.
+
+For an SMTP banner:
+
+```yaml
+receivers:
+  tcp_check:
+    targets:
+      - endpoint: mail.example.com:25
+        dialer:
+          timeout: 10s
+        max_read_size: 4096
+        query_response:
+          - expect: '^220'
+```
+
+For Redis, send the request in a separate step:
+
+```yaml
+query_response:
+  - send: "PING\r\n"
+  - expect: '^\+PONG\r\n'
+```
+
+An `expect` expression's capture groups can be referenced by the `send` in the
+same step using `${1}`, `${2}`, and so on. Escape the dollar sign as `$$` in
+Collector configuration to preserve the reference during configuration expansion:
+
+```yaml
+query_response:
+  - send: "NICK prober\r\n"
+  - expect: 'PING :([^\r\n]+)\r\n'
+    send: "PONG $${1}\r\n"
+  - expect: '^:[^ ]+ 001'
+```
+
+For binary protocols:
+
+```yaml
+query_response:
+  - send_bytes: AAE=   # 0x00 0x01
+  - expect_bytes: AgM= # 0x02 0x03
+```
+
+The receiver reuses its existing metrics. `tcpcheck.status` is 1 only when the
+connection and every step succeed. `tcpcheck.duration` includes the entire
+successful check. A failed expectation or response-size limit records
+`error.code=expect_mismatch`; a timed-out step records `error.code=step_timeout`.
+Scrape errors identify the zero-based step index. Response data and patterns are
+not included in metric attributes.
+
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
