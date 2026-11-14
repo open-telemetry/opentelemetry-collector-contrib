@@ -380,3 +380,179 @@ func configKeys(typ reflect.Type) []string {
 	}
 	return keys
 }
+
+// TestStartWarnsTLSSettingsOverHTTP checks that tls settings set while the
+// target is still scraped over http are named in a warning when the receiver
+// starts, because they are not used.
+func TestStartWarnsTLSSettingsOverHTTP(t *testing.T) {
+	certPem, keyPem := generateSelfSignedPEM(t)
+
+	tests := []struct {
+		name       string
+		tls        map[string]any
+		wantScheme string
+		wantKeys   []any
+	}{
+		{
+			name:       "default config",
+			wantScheme: "http",
+		},
+		{
+			name: "defaults written out explicitly",
+			tls: map[string]any{
+				"insecure":             true,
+				"insecure_skip_verify": false,
+				"server_name_override": "",
+				"cert_file":            "",
+				"min_version":          "",
+				"cipher_suites":        []any{},
+				"reload_interval":      "0s",
+			},
+			wantScheme: "http",
+		},
+		{
+			name:       "cert and key only",
+			tls:        map[string]any{"cert_file": "client.crt", "key_file": "client.key"},
+			wantScheme: "http",
+			wantKeys:   []any{"cert_file", "key_file"},
+		},
+		{
+			name:       "insecure_skip_verify only",
+			tls:        map[string]any{"insecure_skip_verify": true},
+			wantScheme: "http",
+			wantKeys:   []any{"insecure_skip_verify"},
+		},
+		{
+			name: "several settings",
+			tls: map[string]any{
+				"insecure":             true,
+				"insecure_skip_verify": true,
+				"server_name_override": "example.com",
+				"cert_pem":             string(certPem),
+				"key_pem":              string(keyPem),
+				"min_version":          "1.3",
+				"cipher_suites":        []any{"TLS_AES_128_GCM_SHA256"},
+				"tpm":                  map[string]any{"enabled": true},
+			},
+			wantScheme: "http",
+			wantKeys: []any{
+				"insecure_skip_verify", "server_name_override", "cert_pem",
+				"cipher_suites", "key_pem", "min_version", "tpm",
+			},
+		},
+		{
+			name:       "insecure false with insecure_skip_verify",
+			tls:        map[string]any{"insecure": false, "insecure_skip_verify": true},
+			wantScheme: "https",
+		},
+		{
+			name: "insecure false with cert and key",
+			tls: map[string]any{
+				"insecure": false,
+				"cert_pem": string(certPem),
+				"key_pem":  string(keyPem),
+			},
+			wantScheme: "https",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			raw := map[string]any{"endpoint": "localhost:1234"}
+			if tt.tls != nil {
+				raw["tls"] = tt.tls
+			}
+			cfg := createDefaultConfig().(*Config)
+			require.NoError(t, confmap.NewFromStringMap(raw).Unmarshal(cfg))
+			require.NoError(t, confmap.Validate(cfg))
+
+			got, err := getPrometheusConfig(cfg, zap.NewNop())
+			require.NoError(t, err)
+			require.NoError(t, got.PrometheusConfig.Reload())
+			assert.Equal(t, tt.wantScheme, got.PrometheusConfig.ScrapeConfigs[0].Scheme)
+
+			core, logs := observer.New(zapcore.WarnLevel)
+			set := receivertest.NewNopSettings(metadata.Type)
+			set.Logger = zap.New(core)
+			r, err := NewFactory().CreateMetrics(t.Context(), set, cfg, consumertest.NewNop())
+			require.NoError(t, err)
+			require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+			require.NoError(t, r.Shutdown(t.Context()))
+
+			warned := logs.FilterMessageSnippet("scraped over http").All()
+			if tt.wantKeys == nil {
+				assert.Empty(t, warned)
+				return
+			}
+			require.Len(t, warned, 1)
+			assert.Equal(t, tt.wantKeys, warned[0].ContextMap()["settings"])
+		})
+	}
+}
+
+// TestIgnoredHTTPTLSSettingsCoversEveryKey fails when configtls.ClientConfig
+// gains a setting that ignoredHTTPTLSSettings does not report, so a tls
+// setting set on an http scrape cannot be ignored without a warning.
+func TestIgnoredHTTPTLSSettingsCoversEveryKey(t *testing.T) {
+	keys := configKeys(reflect.TypeFor[configtls.ClientConfig]())
+	require.Contains(t, keys, "insecure")
+	for _, key := range keys {
+		t.Run(key, func(t *testing.T) {
+			tls := configtls.NewDefaultClientConfig()
+			tls.Insecure = true
+			if key == "insecure" {
+				// insecure selects the scheme; it is not reported.
+				assert.Empty(t, ignoredHTTPTLSSettings(tls))
+				return
+			}
+			setNonDefault(t, fieldByKey(t, reflect.ValueOf(&tls).Elem(), key))
+			assert.Equal(t, []string{key}, ignoredHTTPTLSSettings(tls))
+		})
+	}
+}
+
+// fieldByKey returns the field of the struct value v whose config key is key,
+// looking into squashed fields the same way configKeys does.
+func fieldByKey(t *testing.T, v reflect.Value, key string) reflect.Value {
+	t.Helper()
+	for i := range v.NumField() {
+		field := v.Type().Field(i)
+		name, opts, _ := strings.Cut(field.Tag.Get("mapstructure"), ",")
+		if strings.Contains(opts, "squash") {
+			if f := fieldByKey(t, v.Field(i), key); f.IsValid() {
+				return f
+			}
+			continue
+		}
+		if field.IsExported() && (name == key || (name == "" && field.Name == key)) {
+			return v.Field(i)
+		}
+	}
+	return reflect.Value{}
+}
+
+// setNonDefault sets v to a non-zero value of its kind.
+func setNonDefault(t *testing.T, v reflect.Value) {
+	t.Helper()
+	require.True(t, v.IsValid() && v.CanSet())
+	switch v.Kind() {
+	case reflect.String:
+		v.SetString("x")
+	case reflect.Bool:
+		v.SetBool(true)
+	case reflect.Int64:
+		v.SetInt(1)
+	case reflect.Slice:
+		v.Set(reflect.Append(v, reflect.New(v.Type().Elem()).Elem()))
+	case reflect.Struct:
+		for i := range v.NumField() {
+			if v.Type().Field(i).IsExported() {
+				setNonDefault(t, v.Field(i))
+				return
+			}
+		}
+		t.Fatalf("struct %s has no exported field", v.Type())
+	default:
+		t.Fatalf("setNonDefault does not handle kind %s; extend it", v.Kind())
+	}
+}

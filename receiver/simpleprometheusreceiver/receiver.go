@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"reflect"
+	"strings"
 
 	configutil "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
@@ -108,6 +110,9 @@ func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.C
 			logger.Warn("tls settings have no equivalent in the prometheus scrape config and are ignored",
 				zap.Strings("settings", keys))
 		}
+	} else if keys := ignoredHTTPTLSSettings(cfg.ClientConfig.TLS); len(keys) > 0 {
+		logger.Warn("tls settings are ignored because the target is scraped over http; set tls insecure to false to scrape over https",
+			zap.Strings("settings", keys))
 	}
 
 	if bearerTokenFile != "" {
@@ -208,6 +213,45 @@ func unsupportedTLSSettings(tls configtls.ClientConfig) []string {
 	// listed because the prometheus client re-reads changed files on its own.
 	if tls.TPMConfig.Enabled {
 		keys = append(keys, "tpm")
+	}
+	return keys
+}
+
+// ignoredHTTPTLSSettings returns the keys of the tls settings that differ from
+// their defaults. It is used when the target is scraped over http, where no
+// tls setting is used. insecure is not returned because it selects the scheme.
+func ignoredHTTPTLSSettings(tls configtls.ClientConfig) []string {
+	return changedSettings(reflect.ValueOf(tls), reflect.ValueOf(configtls.NewDefaultClientConfig()), "insecure")
+}
+
+// changedSettings returns the mapstructure keys of the exported fields of the
+// struct value v that differ from def, flattening squashed fields. An empty
+// slice or map is treated as equal to a nil one.
+func changedSettings(v, def reflect.Value, skip string) []string {
+	var keys []string
+	for i := range v.NumField() {
+		field := v.Type().Field(i)
+		name, opts, _ := strings.Cut(field.Tag.Get("mapstructure"), ",")
+		if strings.Contains(opts, "squash") {
+			keys = append(keys, changedSettings(v.Field(i), def.Field(i), skip)...)
+			continue
+		}
+		if !field.IsExported() {
+			continue
+		}
+		if name == "" {
+			name = field.Name
+		}
+		if name == skip {
+			continue
+		}
+		fv, dv := v.Field(i), def.Field(i)
+		if (fv.Kind() == reflect.Slice || fv.Kind() == reflect.Map) && fv.Len() == 0 && dv.Len() == 0 {
+			continue
+		}
+		if !reflect.DeepEqual(fv.Interface(), dv.Interface()) {
+			keys = append(keys, name)
+		}
 	}
 	return keys
 }
