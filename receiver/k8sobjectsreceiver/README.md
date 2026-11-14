@@ -50,17 +50,17 @@ Brief description of configuration properties:
 the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 (to use the standard service account token provided to the agent pod), or
 `kubeConfig` to use credentials from `~/.kube/config`.
-- `error_mode` (default = `propagate`): Determines how to handle errors when the receiver is unable to pull or watch objects due to missing resources. This can be one of `propagate`, `ignore`, or `silent`.
-  - `propagate` will propagate the error to the collector as an Error.
-  - `ignore` will log and ignore the error and continue.
-  - `silent` will ignore the error and continue without logging.
+- `error_mode` (default = `propagate`): Determines how to handle errors when the receiver is unable to collect an object. This includes a missing resource and, when the informer observer is enabled, a failed initial cache sync (for example a slow list or missing RBAC). This can be one of `propagate`, `ignore`, or `silent`.
+  - `propagate` will return the error from `Start` and the collector stops. A failed observer is not retried. When a leader elector is used, or when a `pull` object fails after its `initial_delay`, `Start` has already returned, so the error is logged and the object stays inactive.
+  - `ignore` will log the error and continue starting other objects. A missing resource is skipped. An observer that fails to start is retried in the background with exponential backoff (starting at 1s, capped at 60s, plus up to 20% jitter) until it starts, the receiver shuts down, or leadership is lost. Collection resumes once the object starts. In `pull` mode, the first attempt still waits for `initial_delay` when that is set.
+  - `silent` will do the same as `ignore`, but will not log the error.
 - `interval`: Top level pull interval applied to all pull-mode objects that do not set their own `interval`. Falls back to `1h` when neither this field nor the per-resource `objects[*].interval` is set. Has no effect on watch-mode objects.
 - `name`: Name of the resource object to collect
 - `mode`: define in which way it collects this type of object, either "pull" or "watch".
   - `pull` mode will read all objects of this type use the list API at an interval.
   - `watch` mode will do setup a long connection using the watch API to just get updates.
 - `include_initial_state` (default = `false`): When set to `true` (watch-mode only) the receiver sends a one-time snapshot of the current objects before it starts processing watch events.
-- `cache_sync_timeout` (default = `10s`): maximum time the receiver waits for the initial object cache to populate on startup. If the cache does not sync within this timeout, startup fails. No-op unless the `receiver.k8sobjects.useInformerObserver` feature gate is enabled (see [documentation.md](./documentation.md)).
+- `cache_sync_timeout` (default = `10s`): maximum time the receiver waits for the initial object cache to populate when starting an object. If the cache does not sync within this timeout, `error_mode` decides what happens (see above): `ignore` and `silent` keep the receiver running and retry that object in the background with backoff. Each retry attempt also waits up to this timeout. No-op unless the `receiver.k8sobjects.useInformerObserver` feature gate is enabled (see [documentation.md](./documentation.md)).
 - `label_selector`: select objects by label(s)
 - `field_selector`: select objects by field(s)
 - `objects[*].interval`: per-resource pull interval override. When set, takes precedence over the top-level `interval`. Only applies to `pull` mode objects.
