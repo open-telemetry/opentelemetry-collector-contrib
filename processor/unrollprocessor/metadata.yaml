@@ -8,7 +8,7 @@ description: |
 status:
   class: processor
   stability:
-    alpha: [logs]
+    beta: [logs]
   distributions: [contrib]
   codeowners:
     active: [schmikei, rnishtala-sumo]
