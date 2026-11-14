@@ -681,6 +681,74 @@ func TestExporterWithOrdering(t *testing.T) {
 	})
 }
 
+func TestExporterWithOrderingAllResourcesKeyed(t *testing.T) {
+	// The mock encodings return a payload for an empty batch, like json_log_encoding does.
+	// Nothing may be published for the no-ordering-key batch when every resource has a key.
+	const orderingKey = "ordering.key"
+	withOrdering := func(cfg *Config) {
+		cfg.Ordering.Enabled = true
+		cfg.Ordering.FromResourceAttribute = orderingKey
+		cfg.LogsSignalConfig.Encoding = component.MustNewID("log_mock_encoding")
+		cfg.MetricsSignalConfig.Encoding = component.MustNewID("metric_mock_encoding")
+		cfg.TracesSignalConfig.Encoding = component.MustNewID("trace_mock_encoding")
+	}
+	ctx := t.Context()
+
+	orderingKeys := func(publisher *mockPublisher) []string {
+		var keys []string
+		for _, request := range publisher.requests {
+			for _, msg := range request.Messages {
+				keys = append(keys, msg.OrderingKey)
+			}
+		}
+		return keys
+	}
+
+	t.Run("logs", func(t *testing.T) {
+		exporter, publisher := newTestExporter(t, withOrdering)
+
+		logs := plog.NewLogs()
+		for _, value := range []string{"value 1", "value 2"} {
+			resourceLogs := logs.ResourceLogs().AppendEmpty()
+			resourceLogs.Resource().Attributes().PutStr(orderingKey, value)
+			resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("some log message")
+		}
+
+		require.NoError(t, exporter.consumeLogs(ctx, logs))
+		assert.ElementsMatch(t, []string{"value 1", "value 2"}, orderingKeys(publisher))
+	})
+
+	t.Run("metrics", func(t *testing.T) {
+		exporter, publisher := newTestExporter(t, withOrdering)
+
+		metrics := pmetric.NewMetrics()
+		for _, value := range []string{"value 1", "value 2"} {
+			resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+			resourceMetrics.Resource().Attributes().PutStr(orderingKey, value)
+			metric := resourceMetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+			metric.SetName("some metric")
+			metric.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(1)
+		}
+
+		require.NoError(t, exporter.consumeMetrics(ctx, metrics))
+		assert.ElementsMatch(t, []string{"value 1", "value 2"}, orderingKeys(publisher))
+	})
+
+	t.Run("traces", func(t *testing.T) {
+		exporter, publisher := newTestExporter(t, withOrdering)
+
+		traces := ptrace.NewTraces()
+		for _, value := range []string{"value 1", "value 2"} {
+			resourceSpans := traces.ResourceSpans().AppendEmpty()
+			resourceSpans.Resource().Attributes().PutStr(orderingKey, value)
+			resourceSpans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("some span")
+		}
+
+		require.NoError(t, exporter.consumeTraces(ctx, traces))
+		assert.ElementsMatch(t, []string{"value 1", "value 2"}, orderingKeys(publisher))
+	})
+}
+
 // Helpers
 
 func newTestExporter(t *testing.T, options ...func(*Config)) (*pubsubExporter, *mockPublisher) {
