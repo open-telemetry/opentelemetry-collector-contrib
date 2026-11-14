@@ -1,0 +1,6 @@
+change_type: enhancement
+component: cmd/opampsupervisor
+note: Store remote configuration status as a human-readable string in `persistent_state.yaml` instead of a numeric value.
+issues: [44658]
+subtext:
+change_logs: [user]
