@@ -692,5 +692,9 @@ Uptime of the node.
 | rabbitmq.exchange.name | The name of the RabbitMQ exchange. | Any Str | true | - | - |
 | rabbitmq.exchange.type | The type of the RabbitMQ exchange (direct, fanout, topic, or headers). | Any Str | true | - | - |
 | rabbitmq.node.name | The name of the RabbitMQ node. | Any Str | true | - | - |
+| rabbitmq.queue.auto_delete | Whether the queue will be deleted when its last consumer disconnects. | Any Bool | false | - | - |
+| rabbitmq.queue.durable | Whether the queue survives a broker restart. | Any Bool | false | - | - |
 | rabbitmq.queue.name | The name of the RabbitMQ queue. | Any Str | true | - | - |
+| rabbitmq.queue.policy.expires | The queue expiry in milliseconds set by the queue's effective policy. Absent when the policy doesn't set one. | Any Int | false | - | - |
+| rabbitmq.queue.policy.name | The name of the user policy applied to the queue. Absent when no policy applies. | Any Str | false | - | - |
 | rabbitmq.vhost.name | The name of the RabbitMQ vHost. | Any Str | true | - | - |

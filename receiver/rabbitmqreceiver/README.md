@@ -35,6 +35,7 @@ The following settings are optional:
 - `endpoint` (default: `http://localhost:15672`): The URL of the node to be monitored.
 - `collection_interval` (default = `10s`): This receiver collects metrics on an interval. Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 - `tls`: TLS control. [By default, insecure settings are rejected and certificate verification is on](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).
+- `queues::extract::arguments`: A list of rules for extracting arbitrary RabbitMQ queue `arguments` (an application's own custom, per-queue key/value metadata) into resource attributes. Each rule sets either `key` (an exact argument key) or `key_regex` (a regular expression matched against argument keys), and optionally `tag_name` (the resulting attribute name, defaulting to the argument's own key; with `key_regex` it may reference capture groups, e.g. `tag_name: $1`). Extracted attributes never overwrite an attribute already on the resource; when several arguments map to the same name, the first rule wins, then the lexically first matching key. For example, a rule with `key: x-expires` records each queue's expiry argument.
 
 ### Example Configuration
 
@@ -85,6 +86,24 @@ receivers:
         enabled: true
       rabbitmq.exchange.messages.published_out:
         enabled: true
+    resource_attributes:
+      rabbitmq.queue.durable:
+        enabled: true
+      rabbitmq.queue.auto_delete:
+        enabled: true
+      rabbitmq.queue.policy.name:
+        enabled: true
+      rabbitmq.queue.policy.expires:
+        enabled: true
+    queues:
+      extract:
+        arguments:
+          # Copy a queue's expiry argument into a resource attribute.
+          - tag_name: rabbitmq.queue.argument.expires
+            key: x-expires
+          # Copy every x-* argument, named without its x- prefix.
+          - tag_name: $1
+            key_regex: x-(.*)
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml). TLS config is documented further under the [opentelemetry collector's configtls package](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).

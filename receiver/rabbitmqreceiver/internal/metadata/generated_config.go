@@ -2044,12 +2044,16 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for rabbitmq resource attributes.
 type ResourceAttributesConfig struct {
-	RabbitmqClusterName  ResourceAttributeConfig `mapstructure:"rabbitmq.cluster.name"`
-	RabbitmqExchangeName ResourceAttributeConfig `mapstructure:"rabbitmq.exchange.name"`
-	RabbitmqExchangeType ResourceAttributeConfig `mapstructure:"rabbitmq.exchange.type"`
-	RabbitmqNodeName     ResourceAttributeConfig `mapstructure:"rabbitmq.node.name"`
-	RabbitmqQueueName    ResourceAttributeConfig `mapstructure:"rabbitmq.queue.name"`
-	RabbitmqVhostName    ResourceAttributeConfig `mapstructure:"rabbitmq.vhost.name"`
+	RabbitmqClusterName        ResourceAttributeConfig `mapstructure:"rabbitmq.cluster.name"`
+	RabbitmqExchangeName       ResourceAttributeConfig `mapstructure:"rabbitmq.exchange.name"`
+	RabbitmqExchangeType       ResourceAttributeConfig `mapstructure:"rabbitmq.exchange.type"`
+	RabbitmqNodeName           ResourceAttributeConfig `mapstructure:"rabbitmq.node.name"`
+	RabbitmqQueueAutoDelete    ResourceAttributeConfig `mapstructure:"rabbitmq.queue.auto_delete"`
+	RabbitmqQueueDurable       ResourceAttributeConfig `mapstructure:"rabbitmq.queue.durable"`
+	RabbitmqQueueName          ResourceAttributeConfig `mapstructure:"rabbitmq.queue.name"`
+	RabbitmqQueuePolicyExpires ResourceAttributeConfig `mapstructure:"rabbitmq.queue.policy.expires"`
+	RabbitmqQueuePolicyName    ResourceAttributeConfig `mapstructure:"rabbitmq.queue.policy.name"`
+	RabbitmqVhostName          ResourceAttributeConfig `mapstructure:"rabbitmq.vhost.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -2066,8 +2070,20 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		RabbitmqNodeName: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		RabbitmqQueueAutoDelete: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		RabbitmqQueueDurable: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		RabbitmqQueueName: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		RabbitmqQueuePolicyExpires: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		RabbitmqQueuePolicyName: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		RabbitmqVhostName: ResourceAttributeConfig{
 			Enabled: true,

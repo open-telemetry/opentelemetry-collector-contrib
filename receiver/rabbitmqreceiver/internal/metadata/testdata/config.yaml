@@ -175,7 +175,15 @@ all_set:
       enabled: true
     rabbitmq.node.name:
       enabled: true
+    rabbitmq.queue.auto_delete:
+      enabled: true
+    rabbitmq.queue.durable:
+      enabled: true
     rabbitmq.queue.name:
+      enabled: true
+    rabbitmq.queue.policy.expires:
+      enabled: true
+    rabbitmq.queue.policy.name:
       enabled: true
     rabbitmq.vhost.name:
       enabled: true
@@ -355,7 +363,15 @@ reaggregate_set:
       enabled: true
     rabbitmq.node.name:
       enabled: true
+    rabbitmq.queue.auto_delete:
+      enabled: true
+    rabbitmq.queue.durable:
+      enabled: true
     rabbitmq.queue.name:
+      enabled: true
+    rabbitmq.queue.policy.expires:
+      enabled: true
+    rabbitmq.queue.policy.name:
       enabled: true
     rabbitmq.vhost.name:
       enabled: true
@@ -535,7 +551,15 @@ none_set:
       enabled: false
     rabbitmq.node.name:
       enabled: false
+    rabbitmq.queue.auto_delete:
+      enabled: false
+    rabbitmq.queue.durable:
+      enabled: false
     rabbitmq.queue.name:
+      enabled: false
+    rabbitmq.queue.policy.expires:
+      enabled: false
+    rabbitmq.queue.policy.name:
       enabled: false
     rabbitmq.vhost.name:
       enabled: false
@@ -557,7 +581,23 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+    rabbitmq.queue.auto_delete:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    rabbitmq.queue.durable:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
     rabbitmq.queue.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    rabbitmq.queue.policy.expires:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    rabbitmq.queue.policy.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -583,10 +623,26 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "rabbitmq.node.name-val"
+    rabbitmq.queue.auto_delete:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
+    rabbitmq.queue.durable:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
     rabbitmq.queue.name:
       enabled: true
       metrics_exclude:
         - strict: "rabbitmq.queue.name-val"
+    rabbitmq.queue.policy.expires:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
+    rabbitmq.queue.policy.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "rabbitmq.queue.policy.name-val"
     rabbitmq.vhost.name:
       enabled: true
       metrics_exclude:
