@@ -1117,11 +1117,6 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig,
 		},
 		{
-			name:                      "Deprecated ReportsRemoteConfig has no effect",
-			capabilities:              Capabilities{ReportsRemoteConfig: true},
-			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
-		},
-		{
 			name: "Many capabilities",
 			capabilities: Capabilities{
 				AcceptsRemoteConfig:            true,
@@ -1132,7 +1127,6 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				ReportsOwnLogs:                 true,
 				ReportsOwnTraces:               true,
 				ReportsHealth:                  true,
-				ReportsRemoteConfig:            true,
 				ReportsAvailableComponents:     true,
 				ReportsHeartbeat:               true,
 				AcceptsPackages:                true,
@@ -1159,16 +1153,6 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 			require.Equal(t, tc.expectedAgentCapabilities, tc.capabilities.SupportedCapabilities())
 		})
 	}
-}
-
-func TestCapabilities_Validate(t *testing.T) {
-	require.NoError(t, Capabilities{AcceptsRemoteConfig: true}.Validate())
-	require.ErrorContains(t, Capabilities{ReportsRemoteConfig: true}.Validate(), "reports_remote_config is deprecated")
-
-	// confmap.Validate at the supervisor-config root surfaces the error so NewSupervisor fails.
-	cfg := DefaultSupervisor()
-	cfg.Capabilities.ReportsRemoteConfig = true
-	require.ErrorContains(t, confmap.Validate(cfg), "reports_remote_config is deprecated")
 }
 
 func TestLoad(t *testing.T) {
@@ -1237,7 +1221,6 @@ capabilities:
   reports_own_metrics: false
   reports_health: false
   accepts_remote_config: true
-  reports_remote_config: true
   accepts_restart_command: true
   accepts_opamp_connection_settings: true
   reports_heartbeat: true
@@ -1288,7 +1271,6 @@ telemetry:
 						ReportsOwnTraces:               false,
 						ReportsHealth:                  false,
 						AcceptsRemoteConfig:            true,
-						ReportsRemoteConfig:            true,
 						AcceptsRestartCommand:          true,
 						AcceptsOpAMPConnectionSettings: true,
 						ReportsHeartbeat:               true,
@@ -1378,6 +1360,25 @@ agent:
 			desc: "Empty Config Filepath",
 			testFunc: func(t *testing.T) {
 				runSupervisorConfigLoadTest(t, "", Supervisor{}, errors.New("path to config file cannot be empty"))
+			},
+		},
+		{
+			desc: "Removed reports_remote_config Key",
+			testFunc: func(t *testing.T) {
+				config := `
+server:
+  endpoint: ws://localhost/v1/opamp
+
+capabilities:
+  reports_remote_config: true
+
+agent:
+  executable: %s
+`
+				config = fmt.Sprintf(config, executablePath)
+
+				cfgPath := setupSupervisorConfigFile(t, tmpDir, config)
+				runSupervisorConfigLoadTest(t, cfgPath, Supervisor{}, errors.New("has invalid keys: reports_remote_config"))
 			},
 		},
 		{
