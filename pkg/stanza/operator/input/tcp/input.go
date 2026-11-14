@@ -224,7 +224,11 @@ func (i *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 		dec := i.encoding.NewDecoder()
 		if i.OneLogPerPacket {
 			var buf bytes.Buffer
-			_, err := io.Copy(&buf, conn)
+			// Buffer at most MaxLogSize bytes and discard the rest, so memory stays bounded.
+			_, err := io.Copy(&buf, io.LimitReader(conn, int64(i.MaxLogSize)))
+			if err == nil {
+				_, err = io.Copy(io.Discard, conn)
+			}
 			if err != nil {
 				i.Logger().Error("IO copy net connection buffer error", zap.Error(err))
 				return
