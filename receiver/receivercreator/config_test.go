@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/xcomponentdiscovery"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer"
@@ -261,6 +262,11 @@ func (*nopWithEndpointFactory) ProfilesStability() component.StabilityLevel {
 	return component.StabilityLevelAlpha
 }
 
+// DiscoveryRule is required to implement xreceiver.Factory.
+func (*nopWithEndpointFactory) DiscoveryRule() xcomponentdiscovery.Rule {
+	return xcomponentdiscovery.Rule{}
+}
+
 type nopWithoutEndpointConfig struct {
 	NotEndpoint string `mapstructure:"not_endpoint"`
 	IntField    int    `mapstructure:"int_field"`
@@ -340,6 +346,11 @@ func (*nopWithoutEndpointFactory) CreateProfiles(
 
 func (*nopWithoutEndpointFactory) ProfilesStability() component.StabilityLevel {
 	return component.StabilityLevelAlpha
+}
+
+// DiscoveryRule is required to implement xreceiver.Factory.
+func (*nopWithoutEndpointFactory) DiscoveryRule() xcomponentdiscovery.Rule {
+	return xcomponentdiscovery.Rule{}
 }
 
 type nopWithFileLogConfig struct {

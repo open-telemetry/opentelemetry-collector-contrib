@@ -43,6 +43,9 @@ type observerHandler struct {
 	nextProfilesConsumer xconsumer.Profiles
 	// runner starts and stops receiver instances.
 	runner runner
+	// defaultTemplates are built from the default discovery rules of the
+	// components listed under discovery::defaults.
+	defaultTemplates []receiverTemplate
 }
 
 // shutdown all receivers started at runtime.
@@ -107,6 +110,30 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 				continue
 			}
 			obs.params.Logger.Debug("starting receiver for match")
+			obs.startReceiver(template, env, e)
+		}
+
+		obs.startDefaults(env, e)
+	}
+}
+
+// startDefaults starts the components whose default discovery rules match the
+// endpoint, unless the endpoint is claimed by hints.
+func (obs *observerHandler) startDefaults(env observer.EndpointEnv, e observer.Endpoint) {
+	if len(obs.defaultTemplates) == 0 {
+		return
+	}
+	if claimedByMetricsHints(obs.config.Discovery, env) {
+		obs.params.Logger.Debug("skipping default discovery for endpoint claimed by hints", zap.String("endpoint_id", string(e.ID)))
+		return
+	}
+	for _, template := range obs.defaultTemplates {
+		matches, err := template.matches(e, env)
+		if err != nil {
+			obs.params.Logger.Debug("failed matching default discovery rule", zap.String("scraper", template.receiverConfig.id.String()), zap.Error(err))
+			continue
+		}
+		if matches {
 			obs.startReceiver(template, env, e)
 		}
 	}
@@ -221,9 +248,10 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 	var receiver component.Component
 	if receiver, err = obs.runner.start(
 		receiverConfig{
-			id:         template.receiverConfig.id,
-			config:     resolvedConfig,
-			endpointID: e.ID,
+			id:             template.receiverConfig.id,
+			config:         resolvedConfig,
+			endpointID:     e.ID,
+			scraperFactory: template.receiverConfig.scraperFactory,
 		},
 		discoveredConfig,
 		consumer,

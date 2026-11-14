@@ -147,6 +147,8 @@ github.com/dlclark/regexp2 v1.12.0 h1:0j4c5qQmnC6XOWNjP3PIXURXN2gWx76rd3KvgdPkCz
 github.com/dlclark/regexp2 v1.12.0/go.mod h1:DHkYz0B9wPfa6wondMfaivmHpzrQ3v9q8cnmRbL6yW8=
 github.com/dlclark/regexp2/v2 v2.2.1 h1:mf4KkFUj0gJuarK8P+LgiS+Lit7m9N1yAwEfPbee7R0=
 github.com/dlclark/regexp2/v2 v2.2.1/go.mod h1:avUrQvPaLz2DrFNHJF0taWAFFX2C1GMSSoeiqFjcBmU=
+github.com/dmitryax/opentelemetry-collector/cmd/mdatagen v0.0.0-20261114014407-0242376c78b1 h1:/7SqZcyEEgpWdIO/21ZyoASMUT51Y7u2sGy8n+0bF68=
+github.com/dmitryax/opentelemetry-collector/cmd/mdatagen v0.0.0-20261114014407-0242376c78b1/go.mod h1:95vmL9B8OJDSTdcCD6yz+0Rv6zFTDlK/d9bngK3s+Vg=
 github.com/dnephin/pflag v1.0.7 h1:oxONGlWxhmUct0YzKTgrpQv9AUA1wtPBn7zuSjJqptk=
 github.com/dnephin/pflag v1.0.7/go.mod h1:uxE91IoWURlOiTUIA8Mq5ZZkAv3dPUfZNaT80Zm7OQE=
 github.com/elazarl/goproxy v1.7.2 h1:Y2o6urb7Eule09PjlhQRGNsqRfPmYI3KKQLFpCAV3+o=
@@ -632,8 +634,6 @@ go.opentelemetry.io/collector/client v1.71.1-0.20261112225459-4888f0b280f9 h1:8y
 go.opentelemetry.io/collector/client v1.71.1-0.20261112225459-4888f0b280f9/go.mod h1:maR9HE5eZOCdVSmDd3gwL4WMtn3ymwwFwCNbUolVLaQ=
 go.opentelemetry.io/collector/cmd/builder v0.165.1-0.20261112225459-4888f0b280f9 h1:3miy8PfRGFrkeddxlzvGaMc5IsSgyTqw19eBE4PBTjY=
 go.opentelemetry.io/collector/cmd/builder v0.165.1-0.20261112225459-4888f0b280f9/go.mod h1:CnAWiy8Ci+3WY7QKQb0tTsn/EoDjjy0323PSU9ytU+Q=
-go.opentelemetry.io/collector/cmd/mdatagen v0.165.1-0.20261112225459-4888f0b280f9 h1:PJ64dN1FXKNvlTzvukdYcJxWfRZeB5+5nWYN2z9ndX4=
-go.opentelemetry.io/collector/cmd/mdatagen v0.165.1-0.20261112225459-4888f0b280f9/go.mod h1:kYdAyAvI8tCgH5WxMAXwzTZqsCC2Zlhc85EYizTgJf0=
 go.opentelemetry.io/collector/cmd/schemagen v0.165.1-0.20261112225459-4888f0b280f9 h1:Gi9MH+3G/Ju9PIuVyGR+bW6D5jVw5ijZBL8Ggl3O9mI=
 go.opentelemetry.io/collector/cmd/schemagen v0.165.1-0.20261112225459-4888f0b280f9/go.mod h1:tVZPXzZo/68BojruilviXhiEN3uqAkpowldHXJFsn3A=
 go.opentelemetry.io/collector/component v1.71.1-0.20261112225459-4888f0b280f9 h1:RLepikmlOjKfJcKHZqEX5yd1wblVeGkJGwxu/f2zk30=
