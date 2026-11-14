@@ -10,8 +10,7 @@ import (
 
 // AgentPackage describes how collector executable updates downloaded by the
 // supervisor are identified and verified. The archive format is not configured
-// here; the supervisor detects it at update time from the download URL and
-// Content-Type header.
+// here; the supervisor detects it at update time from the download URL.
 type AgentPackage struct {
 	// AgentBinary is the name of the collector binary as it appears inside the
 	// downloaded archive. Used to locate the binary in archives that bundle
