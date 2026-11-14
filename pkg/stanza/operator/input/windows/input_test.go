@@ -66,11 +66,14 @@ func TestInputStart_NoErrorIfIgnoreChannelErrorEnabled(t *testing.T) {
 	assert.NoError(t, err, "Expected no error when ignoreMissingChannel is true")
 }
 
-// TestInputStart_RemoteSubscriptionError ensures the input correctly handles remote subscription errors.
+// TestInputStart_RemoteSubscriptionError ensures the input correctly handles remote subscription errors asynchronously.
 func TestInputStart_RemoteSubscriptionError(t *testing.T) {
 	persister := testutil.NewMockPersister("")
 
-	input := newTestInput()
+	core, logs := observer.New(zap.ErrorLevel)
+	input := newInput(component.TelemetrySettings{
+		Logger: zap.New(core),
+	})
 	input.startRemoteSession = func() error { return nil }
 	input.channel = "test-channel"
 	input.startAt = "beginning"
@@ -79,8 +82,12 @@ func TestInputStart_RemoteSubscriptionError(t *testing.T) {
 		Server: "remote-server",
 	}
 
-	err := input.Start(persister)
-	assert.ErrorContains(t, err, "The specified channel could not be found")
+	require.NoError(t, input.Start(persister))
+	require.NoError(t, input.Stop())
+
+	require.Equal(t, 1, logs.Len())
+	assert.Contains(t, logs.All()[0].Message, "failed to open subscription for remote server: remote-server")
+	assert.Contains(t, logs.All()[0].ContextMap()["error"], "The specified channel could not be found")
 }
 
 // TestInputStart_RemoteSessionError ensures the input correctly handles remote session errors.
@@ -102,7 +109,35 @@ func TestInputStart_RemoteSessionError(t *testing.T) {
 	assert.ErrorContains(t, err, "failed to start remote session for server remote-server: remote session error")
 }
 
-// TestInputStart_RemoteAccessDeniedError ensures the input correctly handles remote access denied errors.
+// TestInputStart_RemoteSessionErrorIgnoredWhenIgnoreChannelErrorsEnabled ensures remote session errors
+// log a warning and do not fail Start() when ignore_channel_errors is true.
+func TestInputStart_RemoteSessionErrorIgnoredWhenIgnoreChannelErrorsEnabled(t *testing.T) {
+	persister := testutil.NewMockPersister("")
+
+	core, logs := observer.New(zap.WarnLevel)
+	input := newInput(component.TelemetrySettings{
+		Logger: zap.New(core),
+	})
+	input.startRemoteSession = func() error {
+		return errors.New("remote session error")
+	}
+	input.ignoreChannelErrors = true
+	input.channel = "test-channel"
+	input.startAt = "beginning"
+	input.pollInterval = 1 * time.Second
+	input.remote = RemoteConfig{
+		Server: "remote-server",
+	}
+
+	require.NoError(t, input.Start(persister))
+	require.NoError(t, input.Stop())
+
+	require.Equal(t, 1, logs.Len())
+	assert.Contains(t, logs.All()[0].Message, "failed to start remote session for server remote-server")
+	assert.Contains(t, logs.All()[0].ContextMap()["error"], "remote session error")
+}
+
+// TestInputStart_RemoteAccessDeniedError ensures the input correctly handles remote access denied errors asynchronously.
 func TestInputStart_RemoteAccessDeniedError(t *testing.T) {
 	persister := testutil.NewMockPersister("")
 
@@ -113,7 +148,10 @@ func TestInputStart_RemoteAccessDeniedError(t *testing.T) {
 		return 0, windows.ERROR_ACCESS_DENIED
 	}
 
-	input := newTestInput()
+	core, logs := observer.New(zap.ErrorLevel)
+	input := newInput(component.TelemetrySettings{
+		Logger: zap.New(core),
+	})
 	input.startRemoteSession = func() error { return nil }
 	input.channel = "test-channel"
 	input.startAt = "beginning"
@@ -122,12 +160,15 @@ func TestInputStart_RemoteAccessDeniedError(t *testing.T) {
 		Server: "remote-server",
 	}
 
-	err := input.Start(persister)
-	assert.ErrorContains(t, err, "failed to open subscription for remote server")
-	assert.ErrorContains(t, err, "Access is denied")
+	require.NoError(t, input.Start(persister))
+	require.NoError(t, input.Stop())
+
+	require.Equal(t, 1, logs.Len())
+	assert.Contains(t, logs.All()[0].Message, "failed to open subscription for remote server")
+	assert.Contains(t, logs.All()[0].ContextMap()["error"], "Access is denied")
 }
 
-// TestInputStart_BadChannelName ensures the input correctly handles bad channel names.
+// TestInputStart_BadChannelName ensures the input correctly handles bad channel names asynchronously.
 func TestInputStart_BadChannelName(t *testing.T) {
 	persister := testutil.NewMockPersister("")
 
@@ -138,7 +179,10 @@ func TestInputStart_BadChannelName(t *testing.T) {
 		return 0, windows.ERROR_EVT_CHANNEL_NOT_FOUND
 	}
 
-	input := newTestInput()
+	core, logs := observer.New(zap.ErrorLevel)
+	input := newInput(component.TelemetrySettings{
+		Logger: zap.New(core),
+	})
 	input.startRemoteSession = func() error { return nil }
 	input.channel = "bad-channel"
 	input.startAt = "beginning"
@@ -147,9 +191,59 @@ func TestInputStart_BadChannelName(t *testing.T) {
 		Server: "remote-server",
 	}
 
-	err := input.Start(persister)
-	assert.ErrorContains(t, err, "failed to open subscription for remote server")
-	assert.ErrorContains(t, err, "The specified channel could not be found")
+	require.NoError(t, input.Start(persister))
+	require.NoError(t, input.Stop())
+
+	require.Equal(t, 1, logs.Len())
+	assert.Contains(t, logs.All()[0].Message, "failed to open subscription for remote server")
+	assert.Contains(t, logs.All()[0].ContextMap()["error"], "The specified channel could not be found")
+}
+
+// TestInputStart_RemoteDoesNotBlockOnSubscribe ensures Input.Start() returns without waiting for
+// a slow or unreachable remote EvtSubscribe call in both polling and event-driven modes.
+func TestInputStart_RemoteDoesNotBlockOnSubscribe(t *testing.T) {
+	for _, eventDriven := range []bool{false, true} {
+		name := "polling"
+		if eventDriven {
+			name = "event_driven"
+		}
+		t.Run(name, func(t *testing.T) {
+			persister := testutil.NewMockPersister("")
+
+			subscribeEntered := make(chan struct{})
+			unblockSubscribe := make(chan struct{})
+			t.Cleanup(mockWithDeferredRestore(&evtSubscribe, func(_ uintptr, _ windows.Handle, _, _ *uint16, _, _, _ uintptr, _ uint32) (uintptr, error) {
+				close(subscribeEntered)
+				<-unblockSubscribe
+				return 0, windows.RPC_S_SERVER_UNAVAILABLE
+			}))
+
+			core, logs := observer.New(zap.WarnLevel)
+			input := newInput(component.TelemetrySettings{
+				Logger: zap.New(core),
+			})
+			input.startRemoteSession = func() error { return nil }
+			input.channel = "Application"
+			input.startAt = "beginning"
+			input.pollInterval = 10 * time.Second
+			input.waitTimeout = 10 * time.Second
+			input.eventDrivenScraping = eventDriven
+			input.remote = RemoteConfig{
+				Server: "192.0.2.10",
+			}
+
+			// Start() must return before unblockSubscribe is closed.
+			require.NoError(t, input.Start(persister))
+
+			<-subscribeEntered
+			close(unblockSubscribe)
+
+			require.NoError(t, input.Stop())
+
+			require.Equal(t, 1, logs.Len())
+			assert.Contains(t, logs.All()[0].Message, "Transient error opening subscription for remote server, continuing")
+		})
+	}
 }
 
 func TestInputStart_RemoteSessionWithDomain(t *testing.T) {
