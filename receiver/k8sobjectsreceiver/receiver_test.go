@@ -5,6 +5,7 @@ package k8sobjectsreceiver
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -20,10 +21,13 @@ import (
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic/fake"
 	k8s_testing "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
@@ -1043,4 +1047,89 @@ func primeStorage(t *testing.T, host component.Host, storageID, receiverID compo
 	require.NoError(t, err)
 	require.NoError(t, client.Set(t.Context(), checkpoint.CheckpointKey(namespace, resource), []byte(rv)))
 	require.NoError(t, client.Close(t.Context()))
+}
+
+func TestDropManagedFieldsTransform(t *testing.T) {
+	pod := generatePod("pod1", "default", map[string]any{"app": "web"}, "1")
+	pod.SetManagedFields([]metav1.ManagedFieldsEntry{{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply}})
+
+	got, err := dropManagedFields(pod)
+	require.NoError(t, err)
+	u, ok := got.(*unstructured.Unstructured)
+	require.True(t, ok)
+	assert.Nil(t, u.GetManagedFields())
+	assert.Equal(t, "pod1", u.GetName())
+	assert.Equal(t, map[string]string{"app": "web"}, u.GetLabels())
+
+	_, err = dropManagedFields(u)
+	require.NoError(t, err)
+
+	tombstone := cache.DeletedFinalStateUnknown{Key: "default/pod1", Obj: pod}
+	got, err = dropManagedFields(tombstone)
+	require.NoError(t, err)
+	assert.Equal(t, tombstone, got)
+}
+
+func TestDropManagedFields(t *testing.T) {
+	for _, drop := range []bool{true, false} {
+		t.Run(fmt.Sprintf("drop=%t", drop), func(t *testing.T) {
+			enableInformerObserver(t)
+
+			podWithManagedFields := func(name, rv string) *unstructured.Unstructured {
+				pod := generatePod(name, "default", nil, rv)
+				pod.SetManagedFields([]metav1.ManagedFieldsEntry{{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply}})
+				return pod
+			}
+			mockClient := newMockDynamicClient()
+			mockClient.createPods(podWithManagedFields("pod1", "1"))
+
+			rCfg := createDefaultConfig().(*Config)
+			rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+			rCfg.makeDiscoveryClient = getMockDiscoveryClient
+			rCfg.DropManagedFields = drop
+			rCfg.Objects = []*K8sObjectsConfig{
+				{Name: "pods", Mode: k8sinventory.PullMode, Interval: 30 * time.Second},
+				{Name: "pods", Mode: k8sinventory.WatchMode},
+			}
+
+			consumer := newMockLogConsumer()
+			r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), rCfg, consumer)
+			require.NoError(t, err)
+			require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
+			t.Cleanup(func() { assert.NoError(t, r.Shutdown(t.Context())) })
+
+			mockClient.createPods(podWithManagedFields("pod2", "2"))
+
+			// Collect the metadata of every emitted object, unwrapping watch bodies.
+			collect := func() (metadatas []pcommon.Map, watched bool) {
+				for _, logs := range consumer.Logs() {
+					for _, rl := range logs.ResourceLogs().All() {
+						for _, sl := range rl.ScopeLogs().All() {
+							for _, lr := range sl.LogRecords().All() {
+								body := lr.Body().Map()
+								if obj, ok := body.Get("object"); ok {
+									body = obj.Map()
+									watched = true
+								}
+								if md, ok := body.Get("metadata"); ok {
+									metadatas = append(metadatas, md.Map())
+								}
+							}
+						}
+					}
+				}
+				return metadatas, watched
+			}
+			require.Eventually(t, func() bool {
+				metadatas, watched := collect()
+				return watched && len(metadatas) >= 2
+			}, 5*time.Second, 10*time.Millisecond)
+
+			metadatas, _ := collect()
+			for _, md := range metadatas {
+				_, found := md.Get("managedFields")
+				assert.Equal(t, !drop, found)
+			}
+		})
+	}
 }
