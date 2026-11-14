@@ -488,29 +488,35 @@ func metaSpanLinks(raw string, dest ptrace.SpanLinkSlice) error {
 		return err
 	}
 
+	// A link is appended only once all of its fields decode, so an invalid link is skipped
+	// instead of leaving an empty link behind, and the links after it are still kept.
+	var errs []error
 	for _, l := range links {
-		link := dest.AppendEmpty()
-
 		traceID, err := decodeLinkTraceID(l.TraceID, l.TraceIDHigh)
 		if err != nil {
-			return err
+			errs = append(errs, err)
+			continue
 		}
-		link.SetTraceID(traceID)
-
 		spanID, err := decodeLinkSpanID(l.SpanID)
 		if err != nil {
-			return err
+			errs = append(errs, err)
+			continue
 		}
-		link.SetSpanID(spanID)
+		attrs := pcommon.NewMap()
+		if err := attrs.FromRaw(l.Attributes); err != nil {
+			errs = append(errs, err)
+			continue
+		}
 
+		link := dest.AppendEmpty()
+		link.SetTraceID(traceID)
+		link.SetSpanID(spanID)
 		link.TraceState().FromRaw(l.Tracestate)
 		link.SetFlags(l.Flags)
-		if err := link.Attributes().FromRaw(l.Attributes); err != nil {
-			return err
-		}
+		attrs.MoveTo(link.Attributes())
 	}
 
-	return nil
+	return errors.Join(errs...)
 }
 
 func decodeLinkTraceID(traceID, traceIDHigh json.RawMessage) (pcommon.TraceID, error) {
@@ -592,11 +598,22 @@ func setSpanEvents(span *pb.Span, dest ptrace.SpanEventSlice, logger *zap.Logger
 		return
 	}
 
+	// Only a JSON array is span-event data. Any other value, such as a count a tracer user tagged as
+	// "events", is an ordinary tag and stays one.
 	if hasMeta {
+		if !isJSONArray(raw) {
+			span.Meta["events"] = raw
+			return
+		}
 		if err := metaSpanEvents(raw, dest); err != nil {
 			logger.Error("error parsing span events", zap.Error(err))
 		}
 	}
+}
+
+func isJSONArray(raw string) bool {
+	trimmed := strings.TrimSpace(raw)
+	return strings.HasPrefix(trimmed, "[") && json.Valid([]byte(trimmed))
 }
 
 // ddSpanEvent mirrors an entry of the "events" meta JSON array emitted by tracers that do not use the
