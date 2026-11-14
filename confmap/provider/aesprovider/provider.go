@@ -23,6 +23,8 @@ const (
 	schemaName = "aes"
 	// This environment variable holds a base64-encoded AES key, either 16, 24, or 32 bytes to select AES-128, AES-192, or AES-256.
 	keyEnvVar = "OTEL_AES_CREDENTIAL_PROVIDER"
+	// gcmNonceSize is the standard GCM nonce size that prefixes every encrypted value.
+	gcmNonceSize = 12
 )
 
 type provider struct {
@@ -89,19 +91,21 @@ func (p *provider) decrypt(cipherText string) (string, error) {
 		return "", err
 	}
 
-	aesGCM, err := cipher.NewGCM(block)
+	// The value is the 12 byte nonce followed by the ciphertext and tag. NewGCMWithRandomNonce
+	// reads the nonce from the front of the input itself, which is the only GCM form the Go
+	// FIPS 140-3 module accepts under GODEBUG=fips140=only. The wire format is unchanged.
+	// Its NonceSize() is 0 because the nonce travels inside the message, so the length check
+	// uses the standard GCM nonce size directly.
+	aesGCM, err := cipher.NewGCMWithRandomNonce(block)
 	if err != nil {
 		return "", err
 	}
 
-	nonceSize := aesGCM.NonceSize()
-	if len(cipherBytes) < nonceSize {
+	if len(cipherBytes) < gcmNonceSize {
 		return "", errors.New("ciphertext too short")
 	}
 
-	nonce, cipherBytes := cipherBytes[:nonceSize], cipherBytes[nonceSize:]
-
-	clearBytes, err := aesGCM.Open(nil, nonce, cipherBytes, nil)
+	clearBytes, err := aesGCM.Open(nil, nil, cipherBytes, nil)
 	if err != nil {
 		return "", err
 	}
