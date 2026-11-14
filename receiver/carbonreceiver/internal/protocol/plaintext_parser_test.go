@@ -229,6 +229,7 @@ func buildIntMetric(
 	if typ == CumulativeMetricType {
 		sum := m.SetEmptySum()
 		sum.SetIsMonotonic(true)
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		dp = sum.DataPoints().AppendEmpty()
 	} else {
 		dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
