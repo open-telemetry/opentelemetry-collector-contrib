@@ -72,6 +72,11 @@ func (m *mockSQSClient) ReceiveMessage(ctx context.Context, params *sqs.ReceiveM
 	return args.Get(0).(*sqs.ReceiveMessageOutput), args.Error(1)
 }
 
+func (m *mockSQSClient) ChangeMessageVisibility(ctx context.Context, params *sqs.ChangeMessageVisibilityInput, _ ...func(*sqs.Options)) (*sqs.ChangeMessageVisibilityOutput, error) {
+	args := m.Called(ctx, params)
+	return &sqs.ChangeMessageVisibilityOutput{}, args.Error(1)
+}
+
 func (m *mockSQSClient) DeleteMessage(ctx context.Context, params *sqs.DeleteMessageInput, _ ...func(*sqs.Options)) (*sqs.DeleteMessageOutput, error) {
 	args := m.Called(ctx, params)
 	if args.Get(0) == nil {
@@ -115,6 +120,7 @@ func TestNewS3SQSReader(t *testing.T) {
 		// check all defaults are set
 		assert.Equal(t, int32(10), r.maxNumberOfMessages)
 		assert.Equal(t, int32(20), r.waitTimeSeconds)
+		assert.Zero(t, r.visibilityTimeoutSeconds)
 	})
 
 	t.Run("override non-default config", func(t *testing.T) {
@@ -124,10 +130,11 @@ func TestNewS3SQSReader(t *testing.T) {
 				Region:   "us-east-1",
 			},
 			SQS: &SQSConfig{
-				QueueURL:            "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
-				Region:              "us-east-1",
-				MaxNumberOfMessages: aws.Int64(5),
-				WaitTimeSeconds:     aws.Int64(10),
+				QueueURL:                 "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
+				Region:                   "us-east-1",
+				MaxNumberOfMessages:      aws.Int64(5),
+				WaitTimeSeconds:          aws.Int64(10),
+				VisibilityTimeoutSeconds: aws.Int64(300),
 			},
 		}
 
@@ -136,6 +143,7 @@ func TestNewS3SQSReader(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, int32(5), r.maxNumberOfMessages)
 		assert.Equal(t, int32(10), r.waitTimeSeconds)
+		assert.Equal(t, int32(300), r.visibilityTimeoutSeconds)
 	})
 }
 
