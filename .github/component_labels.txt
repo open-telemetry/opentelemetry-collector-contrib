@@ -343,7 +343,6 @@ receiver/simpleprometheusreceiver receiver/simpleprometheus
 receiver/skywalkingreceiver receiver/skywalking
 receiver/snmpreceiver receiver/snmp
 receiver/snowflakereceiver receiver/snowflake
-receiver/solacereceiver receiver/solace
 receiver/splunkenterprisereceiver receiver/splunkenterprise
 receiver/splunkhecreceiver receiver/splunkhec
 receiver/sqlqueryreceiver receiver/sqlquery
@@ -377,3 +376,4 @@ reports/distributions/otlp.yaml reports/distributions/otlp.yaml
 exporter/logicmonitorexporter exporter/logicmonitor
 extension/encoding/avrologencodingextension extension/encoding/avrologencoding
 receiver/riakreceiver receiver/riak
+receiver/solacereceiver receiver/solace
