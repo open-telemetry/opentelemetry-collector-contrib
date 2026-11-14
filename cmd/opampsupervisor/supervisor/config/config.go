@@ -149,8 +149,11 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 			protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
 	}
 
+	// AcceptsRestartCommand enables both the AcceptsRestartCommand and ReportsCommandStatus
+	// OpAMP capabilities, so the server knows when a restart has completed.
 	if c.AcceptsRestartCommand {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand |
+			protobufs.AgentCapabilities_AgentCapabilities_ReportsCommandStatus
 	}
 
 	if c.AcceptsOpAMPConnectionSettings {

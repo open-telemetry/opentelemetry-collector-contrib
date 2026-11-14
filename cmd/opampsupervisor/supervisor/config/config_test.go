@@ -1146,6 +1146,7 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig |
 				protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsCommandStatus |
 				protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat |

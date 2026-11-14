@@ -1333,6 +1333,7 @@ func TestOpAMPAgent_onCommand(t *testing.T) {
 			sighupReceived <- true
 		})
 
+		t.Cleanup(func() { pendingRestartCommand.Store(nil) })
 		require.NoError(t, agent.onCommand(ctx, &protobufs.ServerToAgentCommand{
 			Type: protobufs.CommandType_CommandType_Restart,
 		}))
@@ -1343,6 +1344,58 @@ func TestOpAMPAgent_onCommand(t *testing.T) {
 		case <-time.After(250 * time.Millisecond):
 			t.Error("should have received SIGHUP")
 		}
+	})
+	t.Run("restart completion is reported after reload", func(t *testing.T) {
+		t.Cleanup(func() { pendingRestartCommand.Store(nil) })
+
+		ctx, cancel := context.WithCancel(t.Context())
+		t.Cleanup(cancel)
+
+		sighupReceived := make(chan bool, 1)
+		setupSignalHandler(ctx, t, func() {
+			sighupReceived <- true
+		})
+
+		reported := make(chan *protobufs.CommandStatus, 1)
+		newAgent := func() *opampAgent {
+			return &opampAgent{
+				logger:       zaptest.NewLogger(t),
+				capabilities: Capabilities{AcceptsRestartCommand: true},
+				readyCh:      make(chan struct{}),
+				opampClient: mockOpAMPClient{
+					setCommandStatusFunc: func(status *protobufs.CommandStatus) error {
+						reported <- status
+						return nil
+					},
+				},
+			}
+		}
+
+		command := &protobufs.ServerToAgentCommand{
+			Type:      protobufs.CommandType_CommandType_Restart,
+			CommandId: []byte("restart-1"),
+		}
+		require.NoError(t, newAgent().onCommand(ctx, command))
+		select {
+		case <-sighupReceived:
+		case <-time.After(250 * time.Millisecond):
+			t.Fatal("should have received SIGHUP")
+		}
+		require.Empty(t, reported, "COMPLETED must not be reported before the reload finishes")
+
+		// The reload replaces the extension with a new instance.
+		require.NoError(t, newAgent().Ready())
+		select {
+		case status := <-reported:
+			require.Equal(t, command.CommandId, status.CommandId)
+			require.Equal(t, protobufs.CommandType_CommandType_Restart, status.Type)
+			require.Equal(t, protobufs.CommandStatuses_CommandStatuses_COMPLETED, status.Status)
+		default:
+			t.Fatal("COMPLETED should have been reported")
+		}
+
+		require.NoError(t, newAgent().Ready())
+		require.Empty(t, reported, "COMPLETED must be reported only once")
 	})
 }
 
@@ -1393,7 +1446,15 @@ func (m *mockStatusAggregator) RecordStatus(source *componentstatus.InstanceID, 
 }
 
 type mockOpAMPClient struct {
-	setHealthFunc func(health *protobufs.ComponentHealth) error
+	setHealthFunc        func(health *protobufs.ComponentHealth) error
+	setCommandStatusFunc func(status *protobufs.CommandStatus) error
+}
+
+func (m mockOpAMPClient) SetCommandStatus(status *protobufs.CommandStatus) error {
+	if m.setCommandStatusFunc != nil {
+		return m.setCommandStatusFunc(status)
+	}
+	return nil
 }
 
 func (mockOpAMPClient) SetCapabilities(*protobufs.AgentCapabilities) error {

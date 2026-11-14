@@ -747,7 +747,7 @@ func TestHandleRestartCommandClearsPassthroughLogs(t *testing.T) {
 		require.NoError(t, cmdr.Stop(t.Context()))
 	})
 
-	require.NoError(t, s.handleRestartCommand())
+	require.NoError(t, s.handleRestartCommand(&protobufs.ServerToAgentCommand{}))
 	require.Equal(t, "collector crashed", s.appendCollectorCrashDetails("collector crashed"))
 }
 
@@ -784,8 +784,77 @@ func TestHandleRestartCommandClearsPassthroughShutdownLogsBeforeRestart(t *testi
 		require.NoError(t, cmdr.Stop(t.Context()))
 	})
 
-	require.NoError(t, s.handleRestartCommand())
+	require.NoError(t, s.handleRestartCommand(&protobufs.ServerToAgentCommand{}))
 	require.Equal(t, "collector crashed", s.appendCollectorCrashDetails("collector crashed"))
+}
+
+func TestHandleRestartCommandReportsCommandStatus(t *testing.T) {
+	newSupervisor := func(t *testing.T, executable string, reported chan<- *protobufs.CommandStatus) *Supervisor {
+		cmdr, err := commander.NewCommander(
+			zap.NewNop(),
+			filepath.Join(t.TempDir(), agentLogFileName),
+			config.Agent{
+				Executable: executable,
+				Env: map[string]string{
+					supervisorRestartHelperEnv: "sleep",
+				},
+				StopGracePeriod: 10 * time.Second,
+			},
+		)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, cmdr.Stop(context.Background()))
+		})
+
+		return &Supervisor{
+			runCtx:            t.Context(),
+			commander:         cmdr,
+			config:            config.Supervisor{Capabilities: config.Capabilities{AcceptsRestartCommand: true}},
+			telemetrySettings: newNopTelemetrySettings(),
+			agentReadyChan:    make(chan struct{}, 1),
+			opampClient: &mockOpAMPClient{
+				setCommandStatusFunc: func(status *protobufs.CommandStatus) error {
+					reported <- status
+					return nil
+				},
+			},
+		}
+	}
+
+	command := &protobufs.ServerToAgentCommand{
+		Type:      protobufs.CommandType_CommandType_Restart,
+		CommandId: []byte("restart-1"),
+	}
+
+	t.Run("completed after agent is ready", func(t *testing.T) {
+		reported := make(chan *protobufs.CommandStatus, 1)
+		s := newSupervisor(t, os.Args[0], reported)
+		s.markAgentReady()
+
+		require.NoError(t, s.handleRestartCommand(command))
+		require.False(t, s.agentReady.Load())
+		require.Empty(t, reported, "COMPLETED must not be reported before the agent is ready")
+
+		s.markAgentReady()
+		status := <-reported
+		require.Equal(t, command.CommandId, status.CommandId)
+		require.Equal(t, protobufs.CommandType_CommandType_Restart, status.Type)
+		require.Equal(t, protobufs.CommandStatuses_CommandStatuses_COMPLETED, status.Status)
+
+		s.markAgentReady()
+		require.Empty(t, reported, "COMPLETED must be reported only once")
+	})
+
+	t.Run("not reported when restart fails", func(t *testing.T) {
+		reported := make(chan *protobufs.CommandStatus, 1)
+		s := newSupervisor(t, filepath.Join(t.TempDir(), "missing-executable"), reported)
+
+		require.Error(t, s.handleRestartCommand(command))
+		require.Nil(t, s.pendingRestartCommand.Load())
+
+		s.markAgentReady()
+		require.Empty(t, reported)
+	})
 }
 
 func TestComposeAgentConfigFilesBranches(t *testing.T) {
@@ -3056,6 +3125,14 @@ type mockOpAMPClient struct {
 	updateEffectiveConfigFunc func(ctx context.Context) error
 	setRemoteConfigStatusFunc func(rcs *protobufs.RemoteConfigStatus) error
 	setHealthFunc             func(health *protobufs.ComponentHealth)
+	setCommandStatusFunc      func(status *protobufs.CommandStatus) error
+}
+
+func (m mockOpAMPClient) SetCommandStatus(status *protobufs.CommandStatus) error {
+	if m.setCommandStatusFunc != nil {
+		return m.setCommandStatusFunc(status)
+	}
+	return nil
 }
 
 func (mockOpAMPClient) SetCapabilities(*protobufs.AgentCapabilities) error {
