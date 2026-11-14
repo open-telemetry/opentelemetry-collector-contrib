@@ -576,6 +576,14 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 		startTime := now.Add(time.Duration(-timeGrains[compositeKey.timeGrain]) * time.Second * 4) // times 4 because for some resources, data are missing for the very latest timestamp. The processing will keep only the latest timestamp with data.
 
 		for region := range s.regions[subscriptionID] {
+			// A regional batch endpoint must only be asked about the resources located in its region. Asked about a resource
+			// of another region, it answers anyway, with all values at zero for the metrics without dimensions, and
+			// those zeros are emitted before or after the real values depending on the order the regions are visited.
+			regionResourceIDs := s.resourceIDsInRegion(subscriptionID, resType.resourceIDs, region)
+			if len(regionResourceIDs) == 0 {
+				continue
+			}
+
 			clientMetrics, clientErr := s.GetMetricsBatchValuesClient(region)
 			if clientErr != nil {
 				s.settings.Logger.Error("Failed to initialize the client for Azure Metrics",
@@ -590,8 +598,8 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 				end := min(start+s.cfg.MaximumNumberOfMetricsInACall, len(metricsByGrain.metrics))
 
 				startResources := 0
-				for startResources < len(resType.resourceIDs) {
-					endResources := min(startResources+maxPerBatch, len(resType.resourceIDs))
+				for startResources < len(regionResourceIDs) {
+					endResources := min(startResources+maxPerBatch, len(regionResourceIDs))
 
 					logFields := []zap.Field{
 						zap.Any("metrics", metricsByGrain.metrics[start:end]),
@@ -600,7 +608,7 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 						zap.String("aggregations", compositeKey.aggregations),
 						zap.String("timegrain", compositeKey.timeGrain),
 						zap.String("resource_type", resourceType),
-						zap.Any("resourceIDs", resType.resourceIDs[startResources:endResources]),
+						zap.Any("resourceIDs", regionResourceIDs[startResources:endResources]),
 						zap.String("subscription_id", subscriptionID),
 						zap.String("region", region),
 						zap.Time("startTime", startTime),
@@ -623,7 +631,7 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 						subscriptionID,
 						compositeKey.namespace,
 						metricsByGrain.metrics[start:end],
-						azmetrics.ResourceIDList{ResourceIDs: resType.resourceIDs[startResources:endResources]},
+						azmetrics.ResourceIDList{ResourceIDs: regionResourceIDs[startResources:endResources]},
 						&opts,
 					)
 					if err != nil {
@@ -694,6 +702,22 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 	s.settings.Logger.Info("Loaded the Azure Metrics",
 		zap.String("resource_type", resourceType),
 		zap.String("subscription_id", subscriptionID))
+}
+
+// resourceIDsInRegion returns, in the same order, the resource IDs that are located in the given region.
+// Resources without a location are left out: no regional endpoint can be asked about them.
+func (s *azureBatchScraper) resourceIDsInRegion(subscriptionID string, resourceIDs []string, region string) []string {
+	var ids []string
+	for _, id := range resourceIDs {
+		res := s.resources[subscriptionID][id]
+		if res == nil {
+			continue
+		}
+		if location := res.attributes[attributeLocation]; location != nil && strings.EqualFold(*location, region) {
+			ids = append(ids, id)
+		}
+	}
+	return ids
 }
 
 // newQueryResourcesOptions builds the options to make the QueryResources request.
