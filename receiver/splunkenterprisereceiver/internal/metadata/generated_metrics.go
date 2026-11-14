@@ -34,6 +34,10 @@ var MetricsInfo = metricsInfo{
 		Name:       "splunk.aggregation.queue.ratio",
 		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
 	},
+	SplunkAPIInfoUp: metricInfo{
+		Name:       "splunk.api.info.up",
+		Attributes: []string{"splunk.host", "splunk.splunkd.build", "splunk.splunkd.version"},
+	},
 	SplunkBucketsSearchableStatus: metricInfo{
 		Name:       "splunk.buckets.searchable.status",
 		Attributes: []string{"splunk.host", "splunk.indexer.searchable", "splunk.splunkd.build", "splunk.splunkd.version"},
@@ -238,6 +242,7 @@ var MetricsInfo = metricsInfo{
 
 type metricsInfo struct {
 	SplunkAggregationQueueRatio                 metricInfo
+	SplunkAPIInfoUp                             metricInfo
 	SplunkBucketsSearchableStatus               metricInfo
 	SplunkDataIndexesExtendedBucketCount        metricInfo
 	SplunkDataIndexesExtendedBucketEventCount   metricInfo
@@ -384,6 +389,103 @@ func (m *metricSplunkAggregationQueueRatio) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSplunkAggregationQueueRatio(cfg SplunkAggregationQueueRatioMetricConfig) metricSplunkAggregationQueueRatio {
 	m := metricSplunkAggregationQueueRatio{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSplunkAPIInfoUp struct {
+	data          pmetric.Metric              // data buffer for generated metric.
+	config        SplunkAPIInfoUpMetricConfig // metric config provided by user.
+	capacity      int                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                     // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int              // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills splunk.api.info.up metric with initial data.
+func (m *metricSplunkAPIInfoUp) init() {
+	m.data.SetName("splunk.api.info.up")
+	m.data.SetDescription("Availability of the authenticated /services/server/info endpoint. 1 for HTTP 200, 0 for other HTTP responses or transport errors.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricSplunkAPIInfoUp) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SplunkAPIInfoUpMetricAttributeKeySplunkHost) {
+		dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkAPIInfoUpMetricAttributeKeySplunkSplunkdBuild) {
+		dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, SplunkAPIInfoUpMetricAttributeKeySplunkSplunkdVersion) {
+		dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Gauge().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkAPIInfoUp) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkAPIInfoUp) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkAPIInfoUp(cfg SplunkAPIInfoUpMetricConfig) metricSplunkAPIInfoUp {
+	m := metricSplunkAPIInfoUp{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -5278,6 +5380,7 @@ type MetricsBuilder struct {
 	metricsBuffer                                     pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                                         component.BuildInfo  // contains version information.
 	metricSplunkAggregationQueueRatio                 metricSplunkAggregationQueueRatio
+	metricSplunkAPIInfoUp                             metricSplunkAPIInfoUp
 	metricSplunkBucketsSearchableStatus               metricSplunkBucketsSearchableStatus
 	metricSplunkDataIndexesExtendedBucketCount        metricSplunkDataIndexesExtendedBucketCount
 	metricSplunkDataIndexesExtendedBucketEventCount   metricSplunkDataIndexesExtendedBucketEventCount
@@ -5354,6 +5457,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricsBuffer:                       pmetric.NewMetrics(),
 		buildInfo:                           settings.BuildInfo,
 		metricSplunkAggregationQueueRatio:   newMetricSplunkAggregationQueueRatio(mbc.Metrics.SplunkAggregationQueueRatio),
+		metricSplunkAPIInfoUp:               newMetricSplunkAPIInfoUp(mbc.Metrics.SplunkAPIInfoUp),
 		metricSplunkBucketsSearchableStatus: newMetricSplunkBucketsSearchableStatus(mbc.Metrics.SplunkBucketsSearchableStatus),
 		metricSplunkDataIndexesExtendedBucketCount:        newMetricSplunkDataIndexesExtendedBucketCount(mbc.Metrics.SplunkDataIndexesExtendedBucketCount),
 		metricSplunkDataIndexesExtendedBucketEventCount:   newMetricSplunkDataIndexesExtendedBucketEventCount(mbc.Metrics.SplunkDataIndexesExtendedBucketEventCount),
@@ -5470,6 +5574,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSplunkAggregationQueueRatio.emit(ils.Metrics())
+	mb.metricSplunkAPIInfoUp.emit(ils.Metrics())
 	mb.metricSplunkBucketsSearchableStatus.emit(ils.Metrics())
 	mb.metricSplunkDataIndexesExtendedBucketCount.emit(ils.Metrics())
 	mb.metricSplunkDataIndexesExtendedBucketEventCount.emit(ils.Metrics())
@@ -5544,6 +5649,11 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 // RecordSplunkAggregationQueueRatioDataPoint adds a data point to splunk.aggregation.queue.ratio metric.
 func (mb *MetricsBuilder) RecordSplunkAggregationQueueRatioDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	mb.metricSplunkAggregationQueueRatio.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
+}
+
+// RecordSplunkAPIInfoUpDataPoint adds a data point to splunk.api.info.up metric.
+func (mb *MetricsBuilder) RecordSplunkAPIInfoUpDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkAPIInfoUp.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkBucketsSearchableStatusDataPoint adds a data point to splunk.buckets.searchable.status metric.
