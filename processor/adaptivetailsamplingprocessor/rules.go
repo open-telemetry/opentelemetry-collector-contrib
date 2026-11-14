@@ -6,6 +6,7 @@ package adaptivetailsamplingprocessor // import "github.com/open-telemetry/opent
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -27,6 +28,9 @@ type rule struct {
 	matchMode   MatchMode
 	sampler     sampler.Sampler
 	fingerprint []sampler.Selector
+	// durationBuckets are cut points for span.duration / trace.duration
+	// fingerprint selectors. Nil when unused.
+	durationBuckets []time.Duration
 	// needsRootMatcher is precomputed so evaluate only constructs the
 	// ctx-capturing root matcher closure when a root.-scoped selector exists.
 	needsRootMatcher bool
@@ -150,6 +154,7 @@ func compileRule(cfg *RuleConfig, s sampler.Sampler, fingerprint []sampler.Selec
 		name:             cfg.Name,
 		sampler:          s,
 		fingerprint:      fingerprint,
+		durationBuckets:  append([]time.Duration(nil), cfg.Sampler.DurationBuckets...),
 		needsRootMatcher: needsRoot,
 		matchMode:        matchMode,
 		logger:           settings.Logger,

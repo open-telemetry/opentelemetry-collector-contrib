@@ -40,7 +40,7 @@ func BenchmarkExtractKey(b *testing.B) {
 			b.Run(fmt.Sprintf("%dspans/%s", size, name), func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
-					ExtractKey(spans, selectors, isRoot)
+					ExtractKey(spans, selectors, isRoot, nil)
 				}
 			})
 		}

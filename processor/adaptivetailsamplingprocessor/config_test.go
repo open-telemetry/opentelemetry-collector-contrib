@@ -183,6 +183,43 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: "fingerprint_attributes",
 		},
 		{
+			name: "adaptive_percentage_duration_buckets_without_selector",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                  AdaptivePercentage,
+					GoalPercentage:        10,
+					FingerprintAttributes: []string{`resource.attributes["service.name"]`},
+					DurationBuckets:       []time.Duration{time.Millisecond},
+				},
+			}),
+			wantErr: "duration_buckets requires",
+		},
+		{
+			name: "adaptive_percentage_duration_selector_without_buckets",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                  AdaptivePercentage,
+					GoalPercentage:        10,
+					FingerprintAttributes: []string{"trace.duration"},
+				},
+			}),
+			wantErr: "duration_buckets is required",
+		},
+		{
+			name: "valid_adaptive_percentage_with_duration_buckets",
+			cfg: baseCfg(RuleConfig{
+				Name: "r",
+				Sampler: SamplerConfig{
+					Type:                  AdaptivePercentage,
+					GoalPercentage:        10,
+					FingerprintAttributes: []string{`resource.attributes["service.name"]`, "trace.duration"},
+					DurationBuckets:       []time.Duration{2 * time.Millisecond, 24 * time.Millisecond, time.Second},
+				},
+			}),
+		},
+		{
 			name: "adaptive_percentage_invalid_weight",
 			cfg: baseCfg(RuleConfig{
 				Name: "r",
