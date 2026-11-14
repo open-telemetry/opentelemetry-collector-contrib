@@ -226,6 +226,20 @@ attributes:
   postgresql.queryid:
     description: Hash code to identify identical normalized queries.
     type: string
+  postgresql.replication.slot.name:
+    description: The name of the replication slot.
+    type: string
+    requirement_level: recommended
+  postgresql.replication.slot.type:
+    description: The type of the replication slot (physical or logical).
+    type: string
+    enum: [physical, logical]
+    requirement_level: recommended
+  postgresql.replication.slot.wal_status:
+    description: The WAL availability status of the replication slot.
+    type: string
+    enum: [reserved, extended, unreserved, lost]
+    requirement_level: recommended
   postgresql.rolname:
     description: The name of the PostgreSQL role that executed the query.
     type: string
@@ -580,6 +594,36 @@ metrics:
     gauge:
       value_type: int
     unit: By
+  postgresql.replication_slot.active:
+    description: >-
+      Whether the replication slot is active (1) or inactive (0).
+      An inactive slot continues to retain WAL segments and can silently
+      exhaust disk space if left unmonitored.
+    stability: development
+    enabled: false
+    unit: "{slot}"
+    gauge:
+      value_type: int
+    attributes: [postgresql.replication.slot.name, postgresql.replication.slot.type, postgresql.replication.slot.wal_status]
+    extended_documentation: |
+      Requires PostgreSQL 13 or later. Scraped from pg_replication_slots.
+      A value of 1 means an active walsender is using this slot; 0 means the
+      replica or subscriber is currently disconnected.
+
+  postgresql.replication_slot.wal.safe_size:
+    description: >-
+      Bytes of WAL remaining before the slot's retained WAL exceeds
+      max_slot_wal_keep_size. -1 when no limit is configured.
+      A value near 0 (or wal_status=lost) signals imminent slot invalidation.
+    stability: development
+    enabled: false
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [postgresql.replication.slot.name, postgresql.replication.slot.type]
+    extended_documentation: |
+      Requires PostgreSQL 13 or later. Scraped from pg_replication_slots.safe_wal_size.
+      Returns -1 when max_slot_wal_keep_size is not set (i.e. no WAL retention limit).
   postgresql.rollbacks:
     enabled: true
     description: The number of rollbacks.

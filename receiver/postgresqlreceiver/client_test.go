@@ -287,6 +287,116 @@ AND relnamespace NOT IN (
 	}
 }
 
+func TestGetReplicationSlotStats(t *testing.T) {
+	const slotQuery = `SELECT
+	slot_name,
+	slot_type,
+	CASE WHEN active THEN 1 ELSE 0 END AS is_active,
+	coalesce(wal_status, 'unknown')   AS wal_status,
+	coalesce(safe_wal_size, -1)       AS safe_wal_size
+	FROM pg_replication_slots;`
+
+	tests := []struct {
+		name          string
+		serverVersion string
+		versionErr    error
+		queryErr      error
+		rows          *sqlmock.Rows
+		expected      []replicationSlotStat
+		wantErr       bool
+	}{
+		{
+			name:          "PostgreSQL 12 returns nil without querying pg_replication_slots",
+			serverVersion: "12.4",
+			expected:      nil,
+		},
+		{
+			name:          "PostgreSQL 13 queries pg_replication_slots and parses rows",
+			serverVersion: "13.2",
+			rows: sqlmock.NewRows([]string{"slot_name", "slot_type", "is_active", "wal_status", "safe_wal_size"}).
+				AddRow("slot_active", "logical", 1, "reserved", int64(1048576)).
+				AddRow("slot_inactive", "physical", 0, "lost", int64(-1)),
+			expected: []replicationSlotStat{
+				{
+					slotName:    "slot_active",
+					slotType:    "logical",
+					isActive:    1,
+					walStatus:   "reserved",
+					safeWALSize: 1048576,
+				},
+				{
+					slotName:    "slot_inactive",
+					slotType:    "physical",
+					isActive:    0,
+					walStatus:   "lost",
+					safeWALSize: -1,
+				},
+			},
+		},
+		{
+			name:          "PostgreSQL 17 queries pg_replication_slots",
+			serverVersion: "17.1",
+			rows: sqlmock.NewRows([]string{"slot_name", "slot_type", "is_active", "wal_status", "safe_wal_size"}).
+				AddRow("sub_1", "logical", 1, "reserved", int64(2097152)),
+			expected: []replicationSlotStat{
+				{
+					slotName:    "sub_1",
+					slotType:    "logical",
+					isActive:    1,
+					walStatus:   "reserved",
+					safeWALSize: 2097152,
+				},
+			},
+		},
+		{
+			name:          "error resolving version",
+			serverVersion: "",
+			versionErr:    errors.New("connection failed"),
+			wantErr:       true,
+		},
+		{
+			name:          "query error",
+			serverVersion: "15.0",
+			queryErr:      errors.New("query failed"),
+			wantErr:       true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+			require.NoError(t, err)
+			defer db.Close()
+
+			client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
+
+			if tc.versionErr != nil {
+				mock.ExpectQuery("SHOW server_version;").WillReturnError(tc.versionErr)
+			} else {
+				mock.ExpectQuery("SHOW server_version;").
+					WillReturnRows(sqlmock.NewRows([]string{"server_version"}).AddRow(tc.serverVersion))
+			}
+
+			if tc.versionErr == nil && tc.serverVersion != "12.4" {
+				if tc.queryErr != nil {
+					mock.ExpectQuery(slotQuery).WillReturnError(tc.queryErr)
+				} else if tc.rows != nil {
+					mock.ExpectQuery(slotQuery).WillReturnRows(tc.rows)
+				}
+			}
+
+			stats, err := client.getReplicationSlotStats(t.Context())
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tc.expected, stats)
+			}
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
 func TestLockQueries(t *testing.T) {
 	// Both queries outer-join pg_class to keep non-relation targets, and split on
 	// pg_locks.database so a lock is reported exactly once.

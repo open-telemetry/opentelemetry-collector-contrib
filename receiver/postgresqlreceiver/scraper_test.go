@@ -2485,6 +2485,11 @@ func (m *mockClient) getReplicationStats(ctx context.Context) ([]replicationStat
 	return args.Get(0).([]replicationStats), args.Error(1)
 }
 
+func (m *mockClient) getReplicationSlotStats(ctx context.Context) ([]replicationSlotStat, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]replicationSlotStat), args.Error(1)
+}
+
 func (m *mockClient) listDatabases(_ context.Context) ([]string, error) {
 	args := m.Called()
 	return args.Get(0).([]string), args.Error(1)
@@ -2626,6 +2631,22 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 				flushLag:     -1,
 				replayLag:    -1,
 				writeLag:     -1,
+			},
+		}, nil)
+		m.On("getReplicationSlotStats", mock.Anything).Return([]replicationSlotStat{
+			{
+				slotName:    "sub_slot_1",
+				slotType:    "logical",
+				isActive:    1,
+				walStatus:   "reserved",
+				safeWALSize: 1048576,
+			},
+			{
+				slotName:    "standby_slot",
+				slotType:    "physical",
+				isActive:    0,
+				walStatus:   "lost",
+				safeWALSize: -1,
 			},
 		}, nil)
 	} else {
@@ -2915,6 +2936,14 @@ func TestScraperSkipsServerWideQueriesForDisabledMetrics(t *testing.T) {
 			disableMetrics: func(cfg *Config) { cfg.MetricsBuilderConfig.Metrics.PostgresqlWalAge.Enabled = false },
 			mockMethod:     "getLatestWalAgeSeconds",
 		},
+		{
+			name: "getReplicationSlotStats skipped when replication slot metrics disabled",
+			disableMetrics: func(cfg *Config) {
+				cfg.MetricsBuilderConfig.Metrics.PostgresqlReplicationSlotActive.Enabled = false
+				cfg.MetricsBuilderConfig.Metrics.PostgresqlReplicationSlotWalSafeSize.Enabled = false
+			},
+			mockMethod: "getReplicationSlotStats",
+		},
 	}
 
 	for _, tc := range tests {
@@ -3053,6 +3082,60 @@ func TestCollectServerScopedLocksError(t *testing.T) {
 	require.Error(t, errs.combine())
 }
 
+func TestCollectReplicationSlotStats(t *testing.T) {
+	c := new(mockClient)
+	c.On("getReplicationSlotStats", mock.Anything).Return([]replicationSlotStat{
+		{
+			slotName:    "slot_logical",
+			slotType:    "logical",
+			isActive:    1,
+			walStatus:   "reserved",
+			safeWALSize: 1048576,
+		},
+		{
+			slotName:    "slot_physical",
+			slotType:    "physical",
+			isActive:    0,
+			walStatus:   "lost",
+			safeWALSize: -1,
+		},
+	}, nil)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.PostgresqlReplicationSlotActive.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.PostgresqlReplicationSlotWalSafeSize.Enabled = true
+
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	var errs errsMux
+	scraper.collectReplicationSlotStats(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, &errs)
+	require.NoError(t, errs.combine())
+
+	metrics := scraper.mb.Emit()
+	counts := dataPointCounts(metrics)
+	assert.Equal(t, 2, counts["postgresql.replication_slot.active"])
+	assert.Equal(t, 2, counts["postgresql.replication_slot.wal.safe_size"])
+}
+
+func TestCollectReplicationSlotStatsError(t *testing.T) {
+	c := new(mockClient)
+	c.On("getReplicationSlotStats", mock.Anything).Return([]replicationSlotStat(nil), errors.New("replication slot query error"))
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics.PostgresqlReplicationSlotActive.Enabled = true
+
+	scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+	require.NoError(t, err)
+
+	var errs errsMux
+	scraper.collectReplicationSlotStats(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, &errs)
+	require.Error(t, errs.combine())
+	require.ErrorContains(t, errs.combine(), "unable to retrieve replication slot stats: replication slot query error")
+}
+
 // queryGuard maps one *MetricsEnabled guard method (scraper.go) to the
 // MetricsConfig fields it checks. guard is called directly, not looked up by
 // name, since reflect.Value.MethodByName can't see unexported methods.
@@ -3096,6 +3179,9 @@ var queryGuards = []queryGuard{
 	}},
 	{"replicationMetricsEnabled", (*postgreSQLScraper).replicationMetricsEnabled, []string{
 		"PostgresqlReplicationDataDelay", "PostgresqlWalDelay", "PostgresqlWalLag",
+	}},
+	{"replicationSlotMetricsEnabled", (*postgreSQLScraper).replicationSlotMetricsEnabled, []string{
+		"PostgresqlReplicationSlotActive", "PostgresqlReplicationSlotWalSafeSize",
 	}},
 }
 
