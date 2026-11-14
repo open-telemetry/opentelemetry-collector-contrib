@@ -7,100 +7,89 @@ package aks // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os"
-	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
+	"go.opentelemetry.io/contrib/detectors/azure/azureaks"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
+	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/sdkbridge"
 )
 
 // Environment variable that is set when running on Kubernetes
 const kubernetesServiceHostEnvVar = "KUBERNETES_SERVICE_HOST"
 
+// newResourceDetector is overridden in tests to substitute a fake SDK detector.
+var newResourceDetector = func() sdkresource.Detector {
+	return azureaks.NewResourceDetector()
+}
+
+// Ensure Detector implements internal.Detector.
+var _ internal.Detector = (*Detector)(nil)
+
+// Detector is an AKS metadata detector. Detection is delegated to the upstream
+// SDK detector so that the attributes reported here match the ones the
+// collector's own telemetry reports.
 type Detector struct {
-	provider              azure.Provider
+	detector              sdkresource.Detector
+	logger                *zap.Logger
 	resourceAttributes    metadata.ResourceAttributesConfig
 	failOnMissingMetadata bool
 }
 
 // NewDetector creates a new AKS detector
-func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
+func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	return &Detector{provider: azure.NewProvider(), resourceAttributes: cfg.ResourceAttributes, failOnMissingMetadata: failOnMissingMetadata}, nil
+
+	return &Detector{
+		detector:              newResourceDetector(),
+		logger:                p.Logger,
+		resourceAttributes:    cfg.ResourceAttributes,
+		failOnMissingMetadata: failOnMissingMetadata,
+	}, nil
 }
 
-func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	res := pcommon.NewResource()
-
+// Detect queries the Azure Instance Metadata Service and returns a populated resource.
+func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+	// Not running on Kubernetes is never a failure, even with fail_on_missing_metadata. The SDK
+	// detector reports an empty resource here too, which is indistinguishable from an
+	// unreachable metadata service, so this has to be decided before calling it.
 	if !onK8s() {
-		return res, "", nil
+		return pcommon.NewResource(), "", nil
 	}
 
-	m, err := d.provider.Metadata(ctx)
-	// If we can't get a response from the metadata endpoint, we're not running in Azure
+	// Detection runs unfiltered so that an empty result answers "is this process on AKS?"; the
+	// configured attributes are applied afterwards. A partial result still came from a reachable
+	// metadata service, so the bridge keeps what it did return. fail_on_missing_metadata covers
+	// an unusable metadata service, not individual fields absent from its response.
+	res, schemaURL, err := sdkbridge.Detect(ctx, d.detector)
 	if err != nil {
+		d.logger.Debug("AKS metadata unavailable", zap.Error(err))
 		if d.failOnMissingMetadata {
-			return res, "", fmt.Errorf("aks metadata unavailable: %w", err)
+			return pcommon.NewResource(), "", err
 		}
-		return res, "", nil
+		return pcommon.NewResource(), "", nil
 	}
 
-	attrs := res.Attributes()
-	if d.resourceAttributes.CloudProvider.Enabled {
-		attrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
-	}
-	if d.resourceAttributes.CloudPlatform.Enabled {
-		attrs.PutStr(string(conventions.CloudPlatformKey), conventions.CloudPlatformAzureAKS.Value.AsString())
-	}
-	if d.resourceAttributes.K8sClusterName.Enabled {
-		attrs.PutStr(string(conventions.K8SClusterNameKey), parseClusterName(m.ResourceGroupName))
+	// The SDK detector reports an empty resource and no error when the metadata
+	// service is unreachable or answers with a client error.
+	if res.Attributes().Len() == 0 {
+		d.logger.Debug("AKS detector: metadata unavailable or not running on Azure")
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errors.New("aks metadata unavailable")
+		}
+		return pcommon.NewResource(), "", nil
 	}
 
-	return res, conventions.SchemaURL, nil
+	sdkbridge.RemoveDisabledAttributes(res, d.resourceAttributes)
+	return res, schemaURL, nil
 }
 
 func onK8s() bool {
 	return os.Getenv(kubernetesServiceHostEnvVar) != ""
-}
-
-// parseClusterName parses the cluster name from the infrastructure
-// resource group name. AKS IMDS returns the resource group name in
-// the following formats:
-//
-// 1. Generated group: MC_<resource group>_<cluster name>_<location>
-//   - Example:
-//   - Resource group: my-resource-group
-//   - Cluster name:   my-cluster
-//   - Location:       eastus
-//   - Generated name: MC_my-resource-group_my-cluster_eastus
-//
-// 2. Custom group: custom-infra-resource-group-name
-//
-// When using the generated infrastructure resource group, the resource
-// group will include the cluster name. If the cluster's resource group
-// or cluster name contains underscores, parsing will fall back on the
-// unparsed infrastructure resource group name.
-//
-// When using a custom infrastructure resource group, the resource group name
-// does not contain the cluster name. The custom infrastructure resource group
-// name is returned instead.
-//
-// It is safe to use the infrastructure resource group name as a unique identifier
-// because Azure will not allow the user to create multiple AKS clusters with the same
-// infrastructure resource group name.
-func parseClusterName(resourceGroup string) string {
-	// Code inspired by https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/datadogexporter/internal/hostmetadata/internal/azure/provider.go#L36
-	splitAll := strings.Split(resourceGroup, "_")
-
-	if len(splitAll) == 4 && strings.EqualFold(splitAll[0], "mc") {
-		return splitAll[len(splitAll)-2]
-	}
-
-	return resourceGroup
 }

@@ -8,7 +8,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-var _ TailStorage = (*inMemoryTailStorage)(nil)
+var (
+	_ TailStorage      = (*inMemoryTailStorage)(nil)
+	_ BatchTailStorage = (*inMemoryTailStorage)(nil)
+)
 
 type inMemoryTailStorage struct {
 	idToSpans map[pcommon.TraceID]ptrace.Traces
@@ -44,4 +47,13 @@ func (s *inMemoryTailStorage) Take(traceID pcommon.TraceID) (ptrace.Traces, erro
 func (s *inMemoryTailStorage) Delete(traceID pcommon.TraceID) error {
 	delete(s.idToSpans, traceID)
 	return nil
+}
+
+func (s *inMemoryTailStorage) TakeMany(traceIDs []pcommon.TraceID) ([]ptrace.Traces, []error) {
+	out := make([]ptrace.Traces, len(traceIDs))
+	errs := make([]error, len(traceIDs))
+	for i, id := range traceIDs {
+		out[i], errs[i] = s.Take(id)
+	}
+	return out, errs
 }
