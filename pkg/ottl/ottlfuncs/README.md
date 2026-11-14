@@ -2328,8 +2328,8 @@ attributes:
 Once the `SliceToMap` function has been applied to a value, the converted entries are addressable via their keys:
 
 - `set(resource.attributes["thingsMap"], SliceToMap(resource.attributes["things"], ["name"]))`
-- `set(resource.attributes["element_1"], resource.attributes["thingsMap"]["foo'])`
-- `set(resource.attributes["element_2"], resource.attributes["thingsMap"]["bar'])`
+- `set(resource.attributes["element_1"], resource.attributes["thingsMap"]["foo"])`
+- `set(resource.attributes["element_2"], resource.attributes["thingsMap"]["bar"])`
 
 ### Sort
 
@@ -2421,7 +2421,7 @@ Examples:
 
 `TrimSuffix(target, suffix)`
 
-The `TrimSuffix` function returns the `target` without the provided trailing `suffix` string. If `target` doesn't start with `suffix`, `target` is returned unchanged.
+The `TrimSuffix` function returns the `target` without the provided trailing `suffix` string. If `target` doesn't end with `suffix`, `target` is returned unchanged.
 
 The returned type is `string`.
 
@@ -2586,7 +2586,7 @@ The `ToKeyValueString` Converter takes a `pcommon.Map` and converts it to a `str
 For example, the following map `{"k1":"v1","k2":"v2","k3":"v3"}` will use default delimiters and be converted into the following string:
 
 ```
-`k1=v1 k2=v2 k3=v3`
+k1=v1 k2=v2 k3=v3
 ```
 
 **Note:** Any nested arrays or maps will be represented as a JSON string. It is recommended to [flatten](#flatten) `target` before using this function. 
@@ -2594,15 +2594,15 @@ For example, the following map `{"k1":"v1","k2":"v2","k3":"v3"}` will use defaul
 For example, `{"k1":"v1","k2":{"k3":"v3","k4":["v4","v5"]}}` will be converted to:
 
 ```
-`k1=v1 k2={\"k3\":\"v3\",\"k4\":[\"v4\",\"v5\"]}`
+k1=v1 k2={\"k3\":\"v3\",\"k4\":[\"v4\",\"v5\"]}
 ```
 
 **Note:** If any keys or values contain either delimiter, they will be double quoted. If any double quotes are present in the quoted value, they will be escaped.
 
-For example, `{"k1":"v1","k2":"v=2","k3"="\"v=3\""}` will be converted to:
+For example, `{"k1":"v1","k2":"v=2","k3":"\"v=3\""}` will be converted to:
 
 ```
-`k1=v1 k2="v=2" k3="\"v=3\""`
+k1=v1 k2="v=2" k3="\"v=3\""
 ```
 
 Examples:
@@ -2767,14 +2767,14 @@ Examples:
   "user_agent.original": "curl/7.81.0",
   "os.name": "Other",
   ```
-- `Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0`
+- `UserAgent("Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0")`
   ```yaml
   "user_agent.name": "Firefox"
   "user_agent.version": "126.0"
   "user_agent.original": "Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0",
   "os.name": "Linux",
   ```
-- `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.59`
+- `UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.59")`
   ```yaml
   "user_agent.name": "Edge"
   "user_agent.version": "91.0.864"
