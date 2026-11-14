@@ -1342,6 +1342,7 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			sample.clientName,
 			blockerCount,
 			blockerDetailsJSON,
+			sample.statementEventID,
 		)
 
 		// The plan describes the statement rather than this execution of it, so it carries neither the
