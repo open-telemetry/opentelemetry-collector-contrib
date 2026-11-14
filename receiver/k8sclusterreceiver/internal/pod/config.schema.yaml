@@ -1,0 +1,14 @@
+$defs:
+  container_metrics_config:
+    description: ContainerMetricsConfig controls which non-primary pod containers are included when collecting k8s.container metrics and entities. All are opt-in to preserve the receiver's default output.
+    type: object
+    properties:
+      collect_all_init_container_metrics:
+        description: CollectAllInitContainerMetrics includes all init containers (regular and sidecar) when true.
+        type: boolean
+      collect_ephemeral_container_metrics:
+        description: CollectEphemeralContainerMetrics includes ephemeral (debug) containers when true.
+        type: boolean
+      collect_sidecar_container_metrics:
+        description: 'CollectSidecarContainerMetrics includes sidecar containers (init containers with restartPolicy: Always) when true.'
+        type: boolean

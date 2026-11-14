@@ -46,11 +46,13 @@ type DataCollector struct {
 	nodeConditionsToReport   []string
 	allocatableTypesToReport []string
 	metricsBuilder           *metadata.MetricsBuilder
+	podContainerMetricsCfg   pod.ContainerMetricsConfig
 }
 
 // NewDataCollector returns a DataCollector.
 func NewDataCollector(set receiver.Settings, ms *metadata.Store,
 	metricsBuilderConfig metadata.MetricsBuilderConfig, nodeConditionsToReport, allocatableTypesToReport []string,
+	podContainerMetricsCfg pod.ContainerMetricsConfig,
 ) *DataCollector {
 	return &DataCollector{
 		settings:                 set,
@@ -58,6 +60,7 @@ func NewDataCollector(set receiver.Settings, ms *metadata.Store,
 		nodeConditionsToReport:   nodeConditionsToReport,
 		allocatableTypesToReport: allocatableTypesToReport,
 		metricsBuilder:           metadata.NewMetricsBuilder(metricsBuilderConfig, set),
+		podContainerMetricsCfg:   podContainerMetricsCfg,
 	}
 }
 
@@ -66,7 +69,7 @@ func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metric
 	customRMs := pmetric.NewResourceMetricsSlice()
 
 	dc.metadataStore.ForEach(gvk.Pod, func(o any) {
-		pod.RecordMetrics(dc.settings.Logger, dc.metricsBuilder, o.(*corev1.Pod), ts)
+		pod.RecordMetrics(dc.settings.Logger, dc.metricsBuilder, o.(*corev1.Pod), ts, dc.podContainerMetricsCfg)
 	})
 	dc.metadataStore.ForEach(gvk.Node, func(o any) {
 		crm := node.CustomMetrics(dc.settings, dc.metricsBuilder.NewResourceBuilder(), o.(*corev1.Node),
