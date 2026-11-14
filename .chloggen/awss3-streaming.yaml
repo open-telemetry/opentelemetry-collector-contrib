@@ -1,0 +1,4 @@
+change_type: enhancement
+component: receiver/aws_s3
+note: Stream S3 object downloads and decompression when using streaming log and metric encoding extensions.
+issues: [53137]

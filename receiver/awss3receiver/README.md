@@ -90,6 +90,23 @@ By default, the receiver understands the following encodings:
 
 The `encodings` options allows you to specify Encoding Extensions to use to decode keys with matching suffixes.
 
+### Streaming
+
+In both retrieval modes, encoding extensions that implement streaming log or metric decoding
+(such as `text_encoding`) receive the S3 response body directly and emit batches while the object
+is downloaded. Gzip and zstd decompression also stream. Batch sizes follow the encoding extension's
+defaults, typically 1,000 records or 1 MiB. Memory use depends on the decoder, individual record
+sizes, and downstream buffering, rather than requiring the entire object in memory.
+
+Built-in OTLP JSON/Protocol Buffers decoding, traces, and encoding extensions without streaming
+support still buffer the decompressed object before decoding.
+
+An object is tagged as ingested, and its SQS message is deleted, only after the entire object has
+been read and all batches accepted by the pipeline. A failure after some batches have been accepted
+leaves the SQS message available for retry; retrying the object can duplicate those batches.
+Pipeline acceptance does not imply delivery to an exporter’s destination when asynchronous
+processors or exporter queues are enabled.
+
 ### Decompression
 Objects with a key ending in `.gz` or `.zst` are always decompressed with gzip or zstd respectively, and the
 compression suffix is removed before the encoding is selected.
