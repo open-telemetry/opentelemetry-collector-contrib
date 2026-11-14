@@ -242,6 +242,7 @@ components:
     - processor/tencentcvmdetector
     - processor/transform
     - processor/transformprocessor/internal/logparsingfuncs
+    - processor/transformprocessor/xtransformprocessor
     - processor/unroll
     - processor/upclouddetector
     - processor/verify

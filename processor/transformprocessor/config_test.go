@@ -480,3 +480,37 @@ func Test_LoadConfig_FlattenLog(t *testing.T) {
 
 	assert.True(t, cfg.(*Config).Flatten.Log)
 }
+
+func setProfilesFeatureGate(t *testing.T, enabled bool) {
+	original := metadata.ProcessorTransformEnableProfilesFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorTransformEnableProfilesFeatureGate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorTransformEnableProfilesFeatureGate.ID(), original))
+	})
+}
+
+func Test_LoadConfig_ProfileStatementsGateDisabled(t *testing.T) {
+	setProfilesFeatureGate(t, false)
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	cfg := NewFactory().CreateDefaultConfig()
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+	assert.ErrorIs(t, confmap.Validate(cfg), errProfileStatementsGateDisabled)
+}
+
+func Test_Validate_ProfileStatementsGateDisabledSkipsParsing(t *testing.T) {
+	setProfilesFeatureGate(t, false)
+
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.ProfileStatements = []common.ContextStatements{
+		{
+			Context:    "profile",
+			Statements: []string{`set(123`},
+		},
+	}
+	assert.Equal(t, errProfileStatementsGateDisabled, cfg.Validate())
+}

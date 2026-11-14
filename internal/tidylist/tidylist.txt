@@ -246,6 +246,7 @@ processor/spanprocessor
 processor/spanpruningprocessor
 processor/sumologicprocessor
 processor/telemetrypolicyprocessor
+processor/transformprocessor/xtransformprocessor
 processor/unrollprocessor
 processor/verifyprocessor
 receiver/activedirectorydsreceiver
