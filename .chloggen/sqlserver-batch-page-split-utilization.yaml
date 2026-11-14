@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/sql_server
+
+note: "Add `sqlserver.batch.compilation.utilization` and `sqlserver.page.split.utilization` metrics."
+
+issues: [52425]
+
+subtext: The two new metrics are disabled by default.
+
+change_logs: [user]

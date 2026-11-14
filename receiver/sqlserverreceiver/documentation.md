@@ -116,8 +116,6 @@ This metric is available when running on Windows via PDH or when the receiver is
 
 Number of pages split as a result of overflowing index pages.
 
-This metric is only available when running on Windows.
-
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {pages}/s | Gauge | Double | Development |
@@ -296,6 +294,16 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | sqlserver.availability_group.name | The name of the SQL Server Availability Group. | Any Str | Recommended | - |
 | sqlserver.replica.name | The name of the SQL Server Availability Group replica. | Any Str | Recommended | - |
+
+### sqlserver.batch.compilation.ratio
+
+Ratio of SQL compilations to batch requests, expressed as a percentage.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
 
 ### sqlserver.clr.execution.time
 
@@ -1013,6 +1021,16 @@ This metric is only available when the receiver is configured to directly connec
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {page}/s | Gauge | Double | Development |
+
+### sqlserver.page.split.ratio
+
+Ratio of page splits to batch requests, expressed as a percentage.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
 
 ### sqlserver.parameterization.rate
 

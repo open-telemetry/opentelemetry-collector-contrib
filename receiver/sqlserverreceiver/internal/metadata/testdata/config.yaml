@@ -14,6 +14,8 @@ all_set:
     sqlserver.availability_group.database_replica.secondary_lag:
       enabled: true
       attributes: ["sqlserver.availability_group.name","sqlserver.replica.name"]
+    sqlserver.batch.compilation.ratio:
+      enabled: true
     sqlserver.batch.request.rate:
       enabled: true
     sqlserver.batch.sql_compilation.rate:
@@ -170,6 +172,8 @@ all_set:
     sqlserver.page.read_ahead.rate:
       enabled: true
     sqlserver.page.split.rate:
+      enabled: true
+    sqlserver.page.split.ratio:
       enabled: true
     sqlserver.parameterization.rate:
       enabled: true
@@ -291,6 +295,8 @@ reaggregate_set:
     sqlserver.availability_group.database_replica.secondary_lag:
       enabled: true
       attributes: []
+    sqlserver.batch.compilation.ratio:
+      enabled: true
     sqlserver.batch.request.rate:
       enabled: true
     sqlserver.batch.sql_compilation.rate:
@@ -448,6 +454,8 @@ reaggregate_set:
       enabled: true
     sqlserver.page.split.rate:
       enabled: true
+    sqlserver.page.split.ratio:
+      enabled: true
     sqlserver.parameterization.rate:
       enabled: true
       attributes: []
@@ -568,6 +576,8 @@ none_set:
     sqlserver.availability_group.database_replica.secondary_lag:
       enabled: false
       attributes: ["sqlserver.availability_group.name","sqlserver.replica.name"]
+    sqlserver.batch.compilation.ratio:
+      enabled: false
     sqlserver.batch.request.rate:
       enabled: false
     sqlserver.batch.sql_compilation.rate:
@@ -724,6 +734,8 @@ none_set:
     sqlserver.page.read_ahead.rate:
       enabled: false
     sqlserver.page.split.rate:
+      enabled: false
+    sqlserver.page.split.ratio:
       enabled: false
     sqlserver.parameterization.rate:
       enabled: false
