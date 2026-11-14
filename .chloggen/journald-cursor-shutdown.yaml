@@ -15,10 +15,7 @@ issues: [51794]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  The read cursor is now saved only after an entry has been written, and not at all if the receiver
-  is stopped during the write, so the entry is read again after a restart. Shutdown now waits for
-  the journalctl reader to exit before the storage extension is closed.
+subtext:
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

@@ -100,7 +100,10 @@ func (operator *Input) run(ctx context.Context) {
 			operator.Logger().Debug("Starting the journalctl command")
 			if err := operator.runJournalctl(ctx, jctl); err != nil {
 				ee := &exec.ExitError{}
-				if ok := errors.As(err, &ee); ok && ee.ExitCode() != 0 {
+				if errors.Is(ctx.Err(), context.Canceled) {
+					// exec.CommandContext kills journalctl when the context is canceled
+					operator.Logger().Info("journalctl command stopped")
+				} else if ok := errors.As(err, &ee); ok && ee.ExitCode() != 0 {
 					operator.Logger().Error("journalctl command exited", zap.Error(ee))
 				} else {
 					operator.Logger().Info("journalctl command exited")

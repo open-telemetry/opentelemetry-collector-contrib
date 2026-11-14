@@ -20,6 +20,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -806,4 +808,46 @@ func TestInputJournaldStopDuringWrite(t *testing.T) {
 	saved, err := persister.Get(t.Context(), lastReadCursorKey)
 	require.NoError(t, err)
 	assert.Empty(t, saved, "cursor was saved for an entry interrupted by Stop")
+}
+
+// killedJournaldCmd behaves like journalctl started with exec.CommandContext:
+// it runs until the context is canceled and then exits with an error.
+type killedJournaldCmd struct {
+	ctx context.Context
+}
+
+func (*killedJournaldCmd) Start() error { return nil }
+
+func (*killedJournaldCmd) StdoutPipe() (io.ReadCloser, error) {
+	return io.NopCloser(bytes.NewReader(nil)), nil
+}
+
+func (*killedJournaldCmd) StderrPipe() (io.ReadCloser, error) {
+	return io.NopCloser(bytes.NewReader(nil)), nil
+}
+
+func (c *killedJournaldCmd) Wait() error {
+	<-c.ctx.Done()
+	return &exec.ExitError{}
+}
+
+func TestInputJournaldStopLogsAtInfo(t *testing.T) {
+	cfg := NewConfigWithID("my_journald_input")
+	cfg.OutputIDs = []string{"output"}
+
+	core, logs := observer.New(zapcore.DebugLevel)
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zap.New(core)
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	require.NoError(t, op.SetOutputs([]operator.Operator{testutil.NewMockOperator("output")}))
+
+	op.(*Input).newCmd = func(ctx context.Context, _ []byte) cmd {
+		return &killedJournaldCmd{ctx: ctx}
+	}
+	require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
+	require.NoError(t, op.Stop())
+
+	assert.Equal(t, 1, logs.FilterMessage("journalctl command stopped").FilterLevelExact(zapcore.InfoLevel).Len())
+	assert.Zero(t, logs.FilterLevelExact(zapcore.ErrorLevel).Len(), "a normal Stop must not log errors")
 }
