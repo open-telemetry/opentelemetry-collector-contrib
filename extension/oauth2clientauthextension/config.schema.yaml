@@ -2,21 +2,21 @@ description: Config stores the configuration for OAuth2 Client Credentials (2-le
 type: object
 properties:
   audience:
-    description: Audience optionally specifies the intended audience of the request.  If empty, the value of TokenURL is used as the intended audience. Only used if GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
+    description: Audience optionally specifies the "aud" claim of the signed JWT. If empty, the value of TokenURL is used. Only used if GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer" or TokenEndpointAuthMethod is set to "private_key_jwt".
     type: string
   claims:
-    description: Claims is a map of claims to be added to the JWT token. Only used if GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
+    description: Claims is a map of claims to be added to the JWT token. Only used if GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer" or TokenEndpointAuthMethod is set to "private_key_jwt".
     type: object
     additionalProperties:
       x-customType: any
   client_certificate_key:
-    description: ClientCertificateKey is the application's private key. Only used if GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
+    description: ClientCertificateKey is the application's PEM encoded RSA private key. Only used if GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer" or TokenEndpointAuthMethod is set to "private_key_jwt".
     $ref: go.opentelemetry.io/collector/config/configopaque.string
   client_certificate_key_file:
-    description: ClientSecrClientCertificateKeyFileetFile is the file pathg to read the application's secret from. Only used if GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
+    description: ClientCertificateKeyFile is the file path to read the application's private key from. Only used if GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer" or TokenEndpointAuthMethod is set to "private_key_jwt".
     type: string
   client_certificate_key_id:
-    description: ClientCertificateKeyID is the Key ID to include in the jwt. Only used if GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer".
+    description: ClientCertificateKeyID is the Key ID to include in the jwt. Only used if GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer" or TokenEndpointAuthMethod is set to "private_key_jwt".
     type: string
   client_id:
     description: ClientID is the application's ID. See https://datatracker.ietf.org/doc/html/rfc6749#section-2.2
@@ -49,7 +49,7 @@ properties:
     items:
       type: string
   signature_algorithm:
-    description: SignatureAlgorithm is the RSA algorithm used to sign JWT token. Only used if GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer". Default value is RS256 and valid values RS256, RS384, RS512
+    description: SignatureAlgorithm is the RSA algorithm used to sign JWT token. Only used if GrantType is set to "urn:ietf:params:oauth:grant-type:jwt-bearer" or TokenEndpointAuthMethod is set to "private_key_jwt". Default value is RS256 and valid values RS256, RS384, RS512
     type: string
   timeout:
     description: Timeout parameter configures `http.Client.Timeout` for the underneath client to authorization server while fetching and refreshing tokens.
@@ -58,6 +58,9 @@ properties:
   tls:
     description: TLS struct exposes TLS client configuration for the underneath client to authorization server.
     $ref: go.opentelemetry.io/collector/config/configtls.client_config
+  token_endpoint_auth_method:
+    description: TokenEndpointAuthMethod is the method used to authenticate the client at the token endpoint when GrantType is "client_credentials". It can be one of "client_secret_basic", "client_secret_post" or "private_key_jwt" (RFC 7523 section 2.2). If empty, the client secret is sent and the placement (header or body) is auto-detected.
+    type: string
   token_url:
     description: TokenURL is the resource server's token endpoint URL. This is a constant specific to each server. See https://datatracker.ietf.org/doc/html/rfc6749#section-3.2
     type: string
