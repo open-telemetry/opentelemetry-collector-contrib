@@ -217,6 +217,44 @@ func TestStart(t *testing.T) {
 		require.Equal(t, &pmetric.JSONMarshaler{}, gcsExporter.metricsMarshaler)
 	})
 
+	t.Run("metrics exporter with logs-only encoding falls back to JSON", func(t *testing.T) {
+		logsOnlyID := component.MustNewID(encodingLogsOnlyID)
+		metricsExp := newTestGCSExporter(t, &Config{
+			Bucket: bucketConfig{
+				Name: newBucketName,
+			},
+			Encoding: &logsOnlyID,
+		}, signalTypeMetrics)
+		err := metricsExp.Start(t.Context(), mHost)
+		require.NoError(t, err)
+		require.Equal(t, &pmetric.JSONMarshaler{}, metricsExp.metricsMarshaler)
+	})
+
+	t.Run("metrics exporter with unknown encoding fails", func(t *testing.T) {
+		unknownID := component.MustNewID("unknown")
+		metricsExp := newTestGCSExporter(t, &Config{
+			Bucket: bucketConfig{
+				Name: newBucketName,
+			},
+			Encoding: &unknownID,
+		}, signalTypeMetrics)
+		err := metricsExp.Start(t.Context(), mHost)
+		require.ErrorContains(t, err, "unknown extension")
+	})
+
+	t.Run("metrics exporter with valid metrics marshaler", func(t *testing.T) {
+		validID := component.MustNewID(encodingSucceedsID)
+		metricsExp := newTestGCSExporter(t, &Config{
+			Bucket: bucketConfig{
+				Name: newBucketName,
+			},
+			Encoding: &validID,
+		}, signalTypeMetrics)
+		err := metricsExp.Start(t.Context(), mHost)
+		require.NoError(t, err)
+		require.IsType(t, &mockBothMarshaler{}, metricsExp.metricsMarshaler)
+	})
+
 	id = component.MustNewID(encodingSucceedsID)
 	gcsExporter.cfg.Encoding = &id
 
@@ -532,9 +570,10 @@ func TestConsumeLogs(t *testing.T) {
 			expectsConsumeErr: "failed to marshal logs",
 		},
 		{
-			name:   "logs encoding succeeds",
-			id:     encodingSucceedsID,
-			signal: signalTypeLogs,
+			name:              "logs encoding succeeds",
+			id:                encodingSucceedsID,
+			signal:            signalTypeLogs,
+			expectedMarshaler: &mockBothMarshaler{},
 		},
 		{
 			name:              "traces with logs-only encoding falls back to JSON",
@@ -543,9 +582,10 @@ func TestConsumeLogs(t *testing.T) {
 			expectedMarshaler: &ptrace.JSONMarshaler{},
 		},
 		{
-			name:   "traces encoding succeeds",
-			id:     encodingSucceedsID,
-			signal: signalTypeTraces,
+			name:              "traces encoding succeeds",
+			id:                encodingSucceedsID,
+			signal:            signalTypeTraces,
+			expectedMarshaler: &mockBothMarshaler{},
 		},
 		{
 			name:              "metrics with logs-only encoding falls back to JSON",
@@ -554,9 +594,10 @@ func TestConsumeLogs(t *testing.T) {
 			expectedMarshaler: &pmetric.JSONMarshaler{},
 		},
 		{
-			name:   "metrics encoding succeeds",
-			id:     encodingSucceedsID,
-			signal: signalTypeMetrics,
+			name:              "metrics encoding succeeds",
+			id:                encodingSucceedsID,
+			signal:            signalTypeMetrics,
+			expectedMarshaler: &mockBothMarshaler{},
 		},
 		{
 			name:              "metrics encoding fails",
@@ -839,13 +880,15 @@ var _ ptrace.Marshaler = (*mockTraceMarshaler)(nil)
 type mockMetricMarshaler struct {
 	extension.Extension
 	shouldFail bool
+	called     bool
 }
 
 func (m *mockMetricMarshaler) MarshalMetrics(_ pmetric.Metrics) ([]byte, error) {
+	m.called = true
 	if m.shouldFail {
 		return nil, errors.New("marshaling failed")
 	}
-	return nil, nil
+	return []byte("mock-metric-content"), nil
 }
 
 var _ pmetric.Marshaler = (*mockMetricMarshaler)(nil)
@@ -906,6 +949,31 @@ func TestConsumeMetrics(t *testing.T) {
 	t.Run("empty metrics", func(t *testing.T) {
 		err = gcsExporter.ConsumeMetrics(t.Context(), pmetric.NewMetrics())
 		require.NoError(t, err)
+	})
+
+	t.Run("custom metrics marshaler from extension", func(t *testing.T) {
+		customID := component.MustNewID("custom_encoding")
+		customMarshaler := &mockMetricMarshaler{}
+		host := &mockHost{
+			extensions: map[component.ID]component.Component{
+				customID: customMarshaler,
+			},
+		}
+
+		customExporter := newTestGCSExporter(t, &Config{
+			Bucket: bucketConfig{
+				Name: uploadBucketName,
+			},
+			Encoding: &customID,
+		}, signalTypeMetrics)
+
+		errStart := customExporter.Start(t.Context(), host)
+		require.NoError(t, errStart)
+		require.Equal(t, customMarshaler, customExporter.metricsMarshaler)
+
+		errConsume := customExporter.ConsumeMetrics(t.Context(), pmetric.NewMetrics())
+		require.NoError(t, errConsume)
+		require.True(t, customMarshaler.called)
 	})
 
 	t.Run("marshaling error", func(t *testing.T) {
