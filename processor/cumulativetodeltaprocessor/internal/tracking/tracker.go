@@ -264,6 +264,11 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 			prevValue.ZeroCount += prevValue.Positive.TrimZeros(thresholdBucket)
 			prevValue.ZeroCount += prevValue.Negative.TrimZeros(thresholdBucket)
 		}
+		// ZeroCount should only increase, so a decrease means the stream was reset.
+		if value.ZeroCount < prevValue.ZeroCount {
+			state.prevPoint = metricPoint
+			return out, false, ReasonReset
+		}
 		delta.ZeroCount -= prevValue.ZeroCount
 
 		if value.Scale < prevValue.Scale {
