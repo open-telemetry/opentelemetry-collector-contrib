@@ -1901,6 +1901,13 @@ func Test_e2e_ottl_features(t *testing.T) {
 			},
 		},
 		{
+			name:      "compare Split results of uncomparable type []string",
+			statement: `set(attributes["test"], "pass") where Split(attributes["flags"], "|") == Split(attributes["flags"], "|")`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
 			name:      "map value with nil",
 			statement: `set(body, {"value": nil})`,
 			want: func(tCtx *ottllog.TransformContext) {
