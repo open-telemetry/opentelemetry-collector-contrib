@@ -20,7 +20,7 @@ import (
 )
 
 type textLogCodec struct {
-	decoder               *txt.Decoder
+	encoding              txt.Encoding
 	marshalingSeparator   string
 	unmarshalingSeparator *regexp.Regexp
 }
@@ -42,6 +42,7 @@ func (r *textLogCodec) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 // NewLogsDecoder implements the encoding.LogsCodec interface. Tracks offset by bytes read from the stream.
 func (r *textLogCodec) NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	decoder := r.encoding.NewDecoder()
 	batchHelper := xstreamencoding.NewBatchHelper(options...)
 	offsetTracker := batchHelper.Options().Offset
 
@@ -98,7 +99,7 @@ func (r *textLogCodec) NewLogsDecoder(reader io.Reader, options ...encoding.Deco
 			l.SetObservedTimestamp(now)
 
 			b := s.Bytes()
-			decoded, err := textutils.DecodeAsString(r.decoder, b)
+			decoded, err := textutils.DecodeAsString(decoder, b)
 			if err != nil {
 				return p, err
 			}

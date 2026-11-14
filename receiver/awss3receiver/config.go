@@ -49,6 +49,9 @@ type SQSConfig struct {
 	// MaxNumberOfMessages specifies the maximum number of messages to receive in a single poll.
 	// Valid values: 1-10. Default is 10.
 	MaxNumberOfMessages *int64 `mapstructure:"max_number_of_messages"`
+	// ClientConcurrency is the number of independent SQS polling workers.
+	// Each worker processes one object at a time. Must be positive. Default is 1.
+	ClientConcurrency *int `mapstructure:"client_concurrency"`
 }
 
 // Notifications groups optional notification sources.
@@ -152,6 +155,9 @@ func (c Config) Validate() error {
 		// Validate wait time seconds
 		if c.SQS.WaitTimeSeconds != nil && (*c.SQS.WaitTimeSeconds < 0 || *c.SQS.WaitTimeSeconds > 20) {
 			errs = multierr.Append(errs, errors.New("sqs.wait_time_seconds must be between 0 and 20"))
+		}
+		if c.SQS.ClientConcurrency != nil && *c.SQS.ClientConcurrency < 1 {
+			errs = multierr.Append(errs, errors.New("sqs.client_concurrency must be positive"))
 		}
 		// Validate max number of messages
 		if c.SQS.MaxNumberOfMessages != nil && (*c.SQS.MaxNumberOfMessages < 1 || *c.SQS.MaxNumberOfMessages > 10) {

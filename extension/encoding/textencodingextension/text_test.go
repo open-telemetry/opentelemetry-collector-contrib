@@ -22,7 +22,7 @@ func TestTextRoundtrip(t *testing.T) {
 	enc, err := textutils.LookupEncoding("utf8")
 	require.NoError(t, err)
 	r := regexp.MustCompile(`\r?\n`)
-	codec := &textLogCodec{decoder: enc.NewDecoder(), unmarshalingSeparator: r, marshalingSeparator: "\n"}
+	codec := &textLogCodec{encoding: enc, unmarshalingSeparator: r, marshalingSeparator: "\n"}
 	require.NoError(t, err)
 	ld, err := codec.UnmarshalLogs([]byte("foo\r\nbar\n"))
 	require.NoError(t, err)
@@ -36,7 +36,7 @@ func TestTextRoundtripMissingNewline(t *testing.T) {
 	enc, err := textutils.LookupEncoding("utf8")
 	require.NoError(t, err)
 	r := regexp.MustCompile(`\r?\n`)
-	codec := &textLogCodec{decoder: enc.NewDecoder(), unmarshalingSeparator: r, marshalingSeparator: "\n"}
+	codec := &textLogCodec{encoding: enc, unmarshalingSeparator: r, marshalingSeparator: "\n"}
 	require.NoError(t, err)
 	ld, err := codec.UnmarshalLogs([]byte("foo\r\nbar"))
 	require.NoError(t, err)
@@ -49,7 +49,7 @@ func TestTextRoundtripMissingNewline(t *testing.T) {
 func TestNoSeparator(t *testing.T) {
 	enc, err := textutils.LookupEncoding("utf8")
 	require.NoError(t, err)
-	codec := &textLogCodec{decoder: enc.NewDecoder()}
+	codec := &textLogCodec{encoding: enc}
 	require.NoError(t, err)
 	ld, err := codec.UnmarshalLogs([]byte("foo\r\nbar\n"))
 	require.NoError(t, err)
@@ -65,7 +65,7 @@ func TestNoSeparatorLargeMessage(t *testing.T) {
 	// split function would return immediately without waiting for EOF.
 	enc, err := textutils.LookupEncoding("utf8")
 	require.NoError(t, err)
-	codec := &textLogCodec{decoder: enc.NewDecoder()}
+	codec := &textLogCodec{encoding: enc}
 
 	// Create a message larger than bufio.Scanner's default 4096 byte buffer
 	largeMessage := make([]byte, 10*1024*1024)
@@ -86,7 +86,7 @@ func TestStreamDecoding_singleFlush(t *testing.T) {
 	enc, err := textutils.LookupEncoding("utf8")
 	require.NoError(t, err)
 	r := regexp.MustCompile(`\r?\n`)
-	codec := &textLogCodec{decoder: enc.NewDecoder(), unmarshalingSeparator: r, marshalingSeparator: "\n"}
+	codec := &textLogCodec{encoding: enc, unmarshalingSeparator: r, marshalingSeparator: "\n"}
 
 	reader := bytes.NewReader([]byte("foo\nbar\nbaz\n"))
 
@@ -125,7 +125,7 @@ func TestStreamDecoding_offsetWithFlush(t *testing.T) {
 	enc, err := textutils.LookupEncoding("utf8")
 	require.NoError(t, err)
 	r := regexp.MustCompile(`\r?\n`)
-	codec := &textLogCodec{decoder: enc.NewDecoder(), unmarshalingSeparator: r, marshalingSeparator: "\n"}
+	codec := &textLogCodec{encoding: enc, unmarshalingSeparator: r, marshalingSeparator: "\n"}
 
 	reader := bytes.NewReader([]byte("foo\nbar\nbaz\n"))
 
@@ -157,7 +157,7 @@ func TestStreamDecoding_flushAll(t *testing.T) {
 	enc, err := textutils.LookupEncoding("utf8")
 	require.NoError(t, err)
 	r := regexp.MustCompile(`\r?\n`)
-	codec := &textLogCodec{decoder: enc.NewDecoder(), unmarshalingSeparator: r, marshalingSeparator: "\n"}
+	codec := &textLogCodec{encoding: enc, unmarshalingSeparator: r, marshalingSeparator: "\n"}
 
 	reader := bytes.NewReader([]byte("foo\nbar\nbaz\n"))
 
@@ -185,7 +185,7 @@ func TestUnmarshalLogsAcrossMultipleBatches(t *testing.T) {
 	enc, err := textutils.LookupEncoding("utf8")
 	require.NoError(t, err)
 	r := regexp.MustCompile(`\r?\n`)
-	codec := &textLogCodec{decoder: enc.NewDecoder(), unmarshalingSeparator: r, marshalingSeparator: "\n"}
+	codec := &textLogCodec{encoding: enc, unmarshalingSeparator: r, marshalingSeparator: "\n"}
 
 	var input strings.Builder
 	const recordCount = 1863

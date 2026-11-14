@@ -51,6 +51,10 @@ $defs:
     description: SQSConfig holds SQS queue configuration for receiving object change notifications.
     type: object
     properties:
+      client_concurrency:
+        description: ClientConcurrency is the number of independent SQS polling workers. Each worker processes one object at a time. Must be positive. Default is 1.
+        x-pointer: true
+        type: integer
       endpoint:
         description: Endpoint is the optional custom endpoint for SQS (useful for testing).
         type: string

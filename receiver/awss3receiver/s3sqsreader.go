@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -66,6 +67,7 @@ type s3SQSNotificationReader struct {
 	s3Prefix                   string
 	maxNumberOfMessages        int32
 	waitTimeSeconds            int32
+	clientConcurrency          int
 	tagObjectAfterIngestion    bool
 	skipIngestingTaggedObjects bool
 }
@@ -96,6 +98,11 @@ func newS3SQSReader(ctx context.Context, logger *zap.Logger, cfg *Config) (*s3SQ
 		waitTime = int32(*cfg.SQS.WaitTimeSeconds)
 	}
 
+	concurrency := 1
+	if cfg.SQS.ClientConcurrency != nil {
+		concurrency = *cfg.SQS.ClientConcurrency
+	}
+
 	return &s3SQSNotificationReader{
 		logger:                     logger,
 		s3Client:                   singleObjectClient,
@@ -105,12 +112,25 @@ func newS3SQSReader(ctx context.Context, logger *zap.Logger, cfg *Config) (*s3SQ
 		s3Prefix:                   cfg.S3Downloader.S3Prefix,
 		maxNumberOfMessages:        maxMessages,
 		waitTimeSeconds:            waitTime,
+		clientConcurrency:          concurrency,
 		tagObjectAfterIngestion:    cfg.S3Downloader.TagObjectAfterIngestion,
 		skipIngestingTaggedObjects: cfg.S3Downloader.SkipIngestingTaggedObjects,
 	}, nil
 }
 
 func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callback s3ObjectCallback) error {
+	if r.clientConcurrency <= 1 {
+		return r.readMessages(ctx, callback)
+	}
+	var workers sync.WaitGroup
+	for range r.clientConcurrency {
+		workers.Go(func() { _ = r.readMessages(ctx, callback) })
+	}
+	workers.Wait()
+	return ctx.Err()
+}
+
+func (r *s3SQSNotificationReader) readMessages(ctx context.Context, callback s3ObjectCallback) error {
 	r.logger.Info("Starting SQS notification processing",
 		zap.String("queueURL", r.queueURL),
 		zap.String("s3Bucket", r.s3Bucket),
@@ -136,7 +156,11 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 				}
 				r.logger.Warn("Error receiving messages from SQS", zap.Error(err))
 				// Add a small sleep to avoid tight loops on persistent errors
-				time.Sleep(5 * time.Second)
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-time.After(5 * time.Second):
+				}
 				continue
 			}
 			r.logger.Debug("Received messages from SQS",

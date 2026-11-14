@@ -115,6 +115,7 @@ func TestNewS3SQSReader(t *testing.T) {
 		// check all defaults are set
 		assert.Equal(t, int32(10), r.maxNumberOfMessages)
 		assert.Equal(t, int32(20), r.waitTimeSeconds)
+		assert.Equal(t, 1, r.clientConcurrency)
 	})
 
 	t.Run("override non-default config", func(t *testing.T) {
