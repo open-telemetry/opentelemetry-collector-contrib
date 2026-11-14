@@ -229,15 +229,10 @@ func processGRPCSpan(span spanView, newSpan *ptrace.Span) {
 
 	spanName := ""
 	if method != "" {
+		newSpan.Attributes().Remove("rpc.service")
 		newSpan.Attributes().PutStr(string(conventions.RPCMethodKey), method)
-		if !metadata.ReceiverDatadogreceiverDontEmitDeprecatedRPCServiceAttrFeatureGate.IsEnabled() {
-			newSpan.Attributes().PutStr("rpc.service", service)
-		}
 		spanName = service + "/" + method
 	} else if service != "" {
-		if !metadata.ReceiverDatadogreceiverDontEmitDeprecatedRPCServiceAttrFeatureGate.IsEnabled() {
-			newSpan.Attributes().PutStr("rpc.service", service)
-		}
 		spanName = service
 	}
 	if spanName != "" {
