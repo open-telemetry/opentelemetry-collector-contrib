@@ -13,6 +13,7 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
+			rb.SetAwsEksClusterArn("aws.eks.cluster.arn-val")
 			rb.SetCloudAccountID("cloud.account.id-val")
 			rb.SetCloudAvailabilityZone("cloud.availability_zone-val")
 			rb.SetCloudPlatform("cloud.platform-val")
@@ -31,12 +32,17 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 2, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 10, res.Attributes().Len())
+				assert.Equal(t, 11, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
+			}
+			awsEksClusterArnAttrVal, ok := res.Attributes().Get("aws.eks.cluster.arn")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "aws.eks.cluster.arn-val", awsEksClusterArnAttrVal.Str())
 			}
 			cloudAccountIDAttrVal, ok := res.Attributes().Get("cloud.account.id")
 			assert.Equal(t, tt == "all_set", ok)
