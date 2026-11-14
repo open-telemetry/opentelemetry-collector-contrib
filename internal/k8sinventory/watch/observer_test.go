@@ -6,15 +6,25 @@ package watch
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
+	"net/url"
+	"os"
+	"slices"
 	"sync"
+	"sync/atomic"
+	"syscall"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -480,6 +490,7 @@ func TestResourceVersionRetryStopsPromptly(t *testing.T) {
 		_, err := obs.getResourceVersionWithRetry(
 			t.Context(),
 			fakeClient.Resource(gvr),
+			"",
 			"",
 			stopperChan,
 		)
@@ -1370,7 +1381,7 @@ func TestGetResourceVersion(t *testing.T) {
 				require.NoError(t, err)
 
 				resource := mockClient.Resource(cfg.Gvr)
-				version, err := obs.getResourceVersion(t.Context(), resource.Namespace("default"), "default")
+				version, err := obs.getResourceVersion(t.Context(), resource.Namespace("default"), "default", cfg.ResourceVersion)
 				require.NoError(t, err)
 				assert.Equal(t, tt.expectedVersion, version)
 
@@ -1425,7 +1436,7 @@ func TestGetResourceVersion(t *testing.T) {
 				require.NoError(t, err)
 
 				resource := mockClient.Resource(cfg.Gvr)
-				version, err := obs.getResourceVersion(t.Context(), resource.Namespace("default"), "default")
+				version, err := obs.getResourceVersion(t.Context(), resource.Namespace("default"), "default", cfg.ResourceVersion)
 				require.NoError(t, err)
 				assert.Equal(t, tt.expectedVersion, version)
 			})
@@ -1473,10 +1484,388 @@ func TestGetResourceVersion(t *testing.T) {
 				require.NoError(t, err)
 
 				resource := mockClient.Resource(cfg.Gvr)
-				version, err := obs.getResourceVersion(t.Context(), resource.Namespace("default"), "default")
+				version, err := obs.getResourceVersion(t.Context(), resource.Namespace("default"), "default", cfg.ResourceVersion)
 				require.NoError(t, err)
 				assert.Equal(t, tt.expectedVersion, version)
 			})
 		}
 	})
+}
+
+type watchTestClient struct {
+	client    *fake.FakeDynamicClient
+	listCalls atomic.Int32
+
+	mu       sync.Mutex
+	watchRVs map[string][]string
+}
+
+// newWatchTestClient returns a fake client whose pod lists return listRVs in
+// order, repeating the last one, and whose pod watches are set up by watchFn.
+// An error from watchFn fails the watch call.
+func newWatchTestClient(watchFn func(ns, rv string, w *apiWatch.FakeWatcher) error, listRVs ...string) *watchTestClient {
+	tc := &watchTestClient{watchRVs: map[string][]string{}}
+	tc.client = fake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(), map[schema.GroupVersionResource]string{
+		{Version: "v1", Resource: "pods"}: "PodList",
+	})
+	tc.client.PrependReactor("list", "pods", func(k8s_testing.Action) (bool, runtime.Object, error) {
+		i := min(int(tc.listCalls.Add(1)), len(listRVs)) - 1
+		return true, podListWithResourceVersion(listRVs[i]), nil
+	})
+	tc.client.PrependWatchReactor("pods", func(action k8s_testing.Action) (bool, apiWatch.Interface, error) {
+		watchAction := action.(k8s_testing.WatchAction)
+		ns, rv := watchAction.GetNamespace(), watchAction.GetWatchRestrictions().ResourceVersion
+		tc.mu.Lock()
+		tc.watchRVs[ns] = append(tc.watchRVs[ns], rv)
+		tc.mu.Unlock()
+		w := apiWatch.NewFakeWithChanSize(1, false)
+		if err := watchFn(ns, rv, w); err != nil {
+			return true, nil, err
+		}
+		return true, w, nil
+	})
+	return tc
+}
+
+// watched returns the resourceVersions that watches in ns started from.
+func (tc *watchTestClient) watched(ns string) []string {
+	tc.mu.Lock()
+	defer tc.mu.Unlock()
+	return slices.Clone(tc.watchRVs[ns])
+}
+
+// runPodWatch runs an observer with fast restarts that re-lists after five
+// restarts without progress, and stops it once every namespace has delivered
+// an event.
+func runPodWatch(t *testing.T, tc *watchTestClient, storageClient storage.Client, namespaces []string, configRV string) (*Observer, *observer.ObservedLogs) {
+	t.Helper()
+	core, logs := observer.New(zapcore.InfoLevel)
+	cfg := Config{Config: k8sinventory.Config{
+		Gvr:             schema.GroupVersionResource{Version: "v1", Resource: "pods"},
+		Namespaces:      namespaces,
+		ResourceVersion: configRV,
+	}}
+	events := make(chan *apiWatch.Event, 16)
+	obs, err := New(mockDynamicClient{client: tc.client}, cfg, zap.New(core), storageClient, func(e *apiWatch.Event) {
+		events <- e
+	})
+	require.NoError(t, err)
+	setRetryBackoffs(obs, time.Millisecond)
+	obs.noProgressRestarts = 5
+
+	wg := sync.WaitGroup{}
+	stopChan, err := obs.Start(t.Context(), &wg)
+	require.NoError(t, err)
+	for range namespaces {
+		select {
+		case e := <-events:
+			assert.Equal(t, apiWatch.Added, e.Type)
+		case <-time.After(15 * time.Second):
+			close(stopChan)
+			wg.Wait()
+			t.Fatal("timeout waiting for watch event")
+		}
+	}
+	close(stopChan)
+	wg.Wait()
+	return obs, logs
+}
+
+// TestObserverRelistsStuckWatch verifies that a watch that client-go's
+// RetryWatcher would retry forever from the same resourceVersion is restarted
+// from a fresh one, without touching the shared config.
+func TestObserverRelistsStuckWatch(t *testing.T) {
+	t.Parallel()
+	const stuckLog = "watch is stuck, grabbing new resource version"
+	stuck := []string{"50", "50", "50", "50", "50", "200"}
+	emptyWatch := func(w *apiWatch.FakeWatcher) error {
+		w.Stop()
+		return nil
+	}
+	for _, tt := range []struct {
+		name        string
+		namespaces  []string
+		persistedRV string
+		configRV    string
+		onStale     func(w *apiWatch.FakeWatcher) error
+		wantWatched []string
+		wantLog     string
+		wantLevel   zapcore.Level
+	}{
+		{
+			name:        "empty_watch_with_checkpoint",
+			namespaces:  []string{"default"},
+			persistedRV: "50",
+			onStale:     emptyWatch,
+			wantWatched: stuck,
+			wantLog:     stuckLog,
+			wantLevel:   zapcore.WarnLevel,
+		},
+		{
+			name:       "failing_watch_with_config_version",
+			namespaces: []string{"default"},
+			configRV:   "50",
+			onStale: func(*apiWatch.FakeWatcher) error {
+				return apierrors.NewInternalError(errors.New("watch failed"))
+			},
+			wantWatched: stuck,
+			wantLog:     stuckLog,
+			wantLevel:   zapcore.WarnLevel,
+		},
+		{
+			name:       "too_large_resource_version",
+			namespaces: []string{"default"},
+			configRV:   "50",
+			onStale: func(*apiWatch.FakeWatcher) error {
+				err := apierrors.NewTimeoutError("Too large resource version: 50, current: 40", 1)
+				err.ErrStatus.Details.Causes = []v1.StatusCause{{Type: v1.CauseTypeResourceVersionTooLarge}}
+				return err
+			},
+			wantWatched: stuck,
+			wantLog:     stuckLog,
+			wantLevel:   zapcore.WarnLevel,
+		},
+		{
+			name:       "resource_expired",
+			namespaces: []string{"default"},
+			configRV:   "50",
+			onStale: func(*apiWatch.FakeWatcher) error {
+				return apierrors.NewResourceExpired("too old resource version: 50 (200)")
+			},
+			wantWatched: []string{"50", "200"},
+			wantLog:     "received a 410, grabbing new resource version",
+			wantLevel:   zapcore.InfoLevel,
+		},
+		{
+			name:        "concurrent_namespaces",
+			namespaces:  []string{"ns-a", "ns-b"},
+			configRV:    "50",
+			onStale:     emptyWatch,
+			wantWatched: stuck,
+			wantLog:     stuckLog,
+			wantLevel:   zapcore.WarnLevel,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			var storageClient storage.Client
+			if tt.persistedRV != "" {
+				storageClient = storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+				cp := checkpoint.New(storageClient, zap.NewNop())
+				require.NoError(t, cp.SetCheckpoint(t.Context(), "default", "pods", tt.persistedRV))
+				require.NoError(t, cp.Flush(t.Context()))
+			}
+			tc := newWatchTestClient(func(ns, rv string, w *apiWatch.FakeWatcher) error {
+				if rv == "50" {
+					return tt.onStale(w)
+				}
+				go w.Add(generatePod("pod-"+ns, ns, nil, "201"))
+				return nil
+			}, "200")
+
+			obs, logs := runPodWatch(t, tc, storageClient, tt.namespaces, tt.configRV)
+			for _, ns := range tt.namespaces {
+				assert.Equal(t, tt.wantWatched, tc.watched(ns), ns)
+			}
+			assert.Equal(t, len(tt.namespaces), int(tc.listCalls.Load()))
+			assert.Equal(t, len(tt.namespaces), logs.FilterMessage(tt.wantLog).FilterLevelExact(tt.wantLevel).Len())
+			assert.Equal(t, tt.configRV, obs.config.ResourceVersion)
+			if storageClient != nil {
+				rv, err := checkpoint.New(storageClient, zap.NewNop()).GetCheckpoint(t.Context(), "default", "pods")
+				require.NoError(t, err)
+				assert.Equal(t, "201", rv)
+			}
+		})
+	}
+}
+
+// TestObserverKeepsResourceVersionWhileAPIServerUnavailable verifies that a
+// blip of network errors or 403, 429, 503 and 504 responses longer than the
+// stall threshold keeps retrying from the same resourceVersion and keeps the
+// checkpoint.
+func TestObserverKeepsResourceVersionWhileAPIServerUnavailable(t *testing.T) {
+	t.Parallel()
+	dialErr := func(err error) error {
+		return &url.Error{Op: "Get", URL: "https://10.0.0.1/api/v1/namespaces/default/pods", Err: &net.OpError{Op: "dial", Net: "tcp", Err: err}}
+	}
+	inBand := func(status v1.Status) func(*apiWatch.FakeWatcher) error {
+		return func(w *apiWatch.FakeWatcher) error {
+			w.Error(&status)
+			return nil
+		}
+	}
+	for _, tt := range []struct {
+		name      string
+		onFailure func(w *apiWatch.FakeWatcher) error
+	}{
+		{
+			name: "connection_refused",
+			onFailure: func(*apiWatch.FakeWatcher) error {
+				return dialErr(os.NewSyscallError("connect", syscall.ECONNREFUSED))
+			},
+		},
+		{
+			name: "no_such_host",
+			onFailure: func(*apiWatch.FakeWatcher) error {
+				return dialErr(&net.DNSError{Err: "no such host", Name: "kubernetes.default.svc", IsNotFound: true})
+			},
+		},
+		{
+			name: "too_many_requests",
+			onFailure: func(*apiWatch.FakeWatcher) error {
+				return apierrors.NewTooManyRequests("throttled", 0)
+			},
+		},
+		{
+			name: "service_unavailable",
+			onFailure: func(*apiWatch.FakeWatcher) error {
+				return apierrors.NewServiceUnavailable("apiserver is shutting down")
+			},
+		},
+		{
+			name: "gateway_timeout",
+			onFailure: func(*apiWatch.FakeWatcher) error {
+				return apierrors.NewTimeoutError("request timed out", 0)
+			},
+		},
+		{
+			name:      "in_band_too_many_requests",
+			onFailure: inBand(apierrors.NewTooManyRequests("storage is (re)initializing", 1).Status()),
+		},
+		{
+			name:      "in_band_forbidden",
+			onFailure: inBand(apierrors.NewForbidden(schema.GroupResource{Resource: "pods"}, "", errors.New("forbidden")).Status()),
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			storageClient := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+			var attempts atomic.Int32
+			tc := newWatchTestClient(func(_, rv string, w *apiWatch.FakeWatcher) error {
+				if attempts.Add(1) <= 6 {
+					return tt.onFailure(w)
+				}
+				go w.Add(generatePod("pod", "default", nil, rv+"1"))
+				return nil
+			}, "100", "300")
+
+			_, logs := runPodWatch(t, tc, storageClient, []string{"default"}, "")
+			assert.Equal(t, slices.Repeat([]string{"100"}, 7), tc.watched("default"))
+			assert.Equal(t, int32(1), tc.listCalls.Load())
+			assert.Empty(t, logs.Filter(func(e observer.LoggedEntry) bool { return e.Level >= zapcore.WarnLevel }).All())
+			// 1001 comes from the watch at 100; a re-list would have watched from 300.
+			rv, err := checkpoint.New(storageClient, zap.NewNop()).GetCheckpoint(t.Context(), "default", "pods")
+			require.NoError(t, err)
+			assert.Equal(t, "1001", rv)
+		})
+	}
+}
+
+func TestStallDetector(t *testing.T) {
+	internalErr := apierrors.NewInternalError(errors.New("watch failed"))
+	unavailableErr := apierrors.NewServiceUnavailable("apiserver is shutting down")
+	expiredErr := apierrors.NewResourceExpired("too old resource version: 50 (200)")
+	type attempt struct {
+		rv    string
+		after time.Duration
+		err   error
+	}
+	for _, tt := range []struct {
+		name     string
+		attempts []attempt
+		stalled  bool
+	}{
+		{
+			name:     "short_restarts_from_same_version",
+			attempts: []attempt{{"50", 0, internalErr}, {"50", time.Second, internalErr}, {"50", time.Second, internalErr}},
+			stalled:  true,
+		},
+		{
+			name:     "moved_version_resets_count",
+			attempts: []attempt{{"50", 0, internalErr}, {"50", time.Second, internalErr}, {"51", time.Second, internalErr}, {"51", time.Second, internalErr}},
+		},
+		{
+			name:     "long_attempt_resets_count",
+			attempts: []attempt{{"50", 0, internalErr}, {"50", time.Second, internalErr}, {"50", time.Minute, internalErr}, {"50", time.Second, internalErr}},
+		},
+		{
+			name:     "unavailable_attempt_is_not_counted",
+			attempts: []attempt{{"50", 0, unavailableErr}, {"50", time.Second, internalErr}, {"50", time.Second, internalErr}},
+		},
+		{
+			name:     "unavailable_flag_is_cleared",
+			attempts: []attempt{{"50", 0, unavailableErr}, {"50", time.Second, internalErr}, {"50", time.Second, internalErr}, {"50", time.Second, internalErr}},
+			stalled:  true,
+		},
+		{
+			name:     "resource_expired",
+			attempts: []attempt{{"50", 0, expiredErr}},
+			stalled:  true,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			now := time.Now()
+			var watchErr error
+			calls := 0
+			d := newStallDetector(2)
+			d.now = func() time.Time { return now }
+			watchFunc := d.wrap(func(context.Context, v1.ListOptions) (apiWatch.Interface, error) {
+				calls++
+				return nil, watchErr
+			})
+			for _, a := range tt.attempts {
+				now, watchErr = now.Add(a.after), a.err
+				_, err := watchFunc(t.Context(), v1.ListOptions{ResourceVersion: a.rv})
+				require.Error(t, err)
+			}
+			select {
+			case <-d.detected:
+				require.True(t, tt.stalled, "unexpected stall: %v", d.err)
+				// RetryWatcher may retry once more before doWatch stops it.
+				callsBefore := calls
+				_, err := watchFunc(t.Context(), v1.ListOptions{ResourceVersion: "50"})
+				assert.Equal(t, d.err, err)
+				assert.Equal(t, callsBefore, calls)
+			default:
+				assert.False(t, tt.stalled, "expected a stall")
+			}
+		})
+	}
+}
+
+type stopCountingWatcher struct {
+	*apiWatch.FakeWatcher
+	stops atomic.Int32
+}
+
+func (w *stopCountingWatcher) Stop() {
+	w.stops.Add(1)
+	w.FakeWatcher.Stop()
+}
+
+func TestStallDetectorForwardStop(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		pending bool
+	}{
+		{name: "idle"},
+		{name: "blocked_on_send", pending: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				inner := &stopCountingWatcher{FakeWatcher: apiWatch.NewFakeWithChanSize(1, false)}
+				if tt.pending {
+					inner.Add(generatePod("pod", "default", nil, "1"))
+				}
+				w := newStallDetector(1).forward(inner)
+				synctest.Wait()
+				w.Stop()
+				w.Stop()
+				synctest.Wait()
+				_, ok := <-w.ResultChan()
+				assert.False(t, ok, "result channel should be closed")
+				assert.Equal(t, int32(1), inner.stops.Load())
+			})
+		})
+	}
 }
