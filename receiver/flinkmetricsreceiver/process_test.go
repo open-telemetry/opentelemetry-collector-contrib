@@ -5,6 +5,7 @@ package flinkmetricsreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"encoding/json"
+	"strconv"
 	"testing"
 	"time"
 
@@ -82,14 +83,20 @@ func TestProcessSubtaskMetricsOperatorSuffixMatch(t *testing.T) {
 // TestProcessGarbageCollectorMetrics checks that JVM garbage collector metrics are
 // recorded for both the JobManager and the TaskManagers, whichever of the
 // supported collectors the JVM uses. Flink exposes the same
-// Status.JVM.GarbageCollector.* metrics for both components.
+// Status.JVM.GarbageCollector.* metrics for both components. The collector
+// names are the ones Flink 1.20.5 (Java 17) and Flink 2.3.0 (Java 21) report.
 func TestProcessGarbageCollectorMetrics(t *testing.T) {
 	collectors := []struct {
 		name  string
-		names [2]string
+		names []string
 	}{
-		{name: "G1", names: [2]string{"G1_Young_Generation", "G1_Old_Generation"}},
-		{name: "Parallel", names: [2]string{"PS_Scavenge", "PS_MarkSweep"}},
+		{name: "G1", names: []string{"G1_Young_Generation", "G1_Old_Generation"}},
+		{name: "G1_Java21", names: []string{"G1_Young_Generation", "G1_Old_Generation", "G1_Concurrent_GC"}},
+		{name: "Parallel", names: []string{"PS_Scavenge", "PS_MarkSweep"}},
+		{name: "Serial", names: []string{"Copy", "MarkSweepCompact"}},
+		{name: "ZGC", names: []string{"ZGC_Cycles", "ZGC_Pauses"}},
+		{name: "ZGC_generational", names: []string{"ZGC_Minor_Cycles", "ZGC_Minor_Pauses", "ZGC_Major_Cycles", "ZGC_Major_Pauses"}},
+		{name: "Shenandoah", names: []string{"Shenandoah_Cycles", "Shenandoah_Pauses"}},
 	}
 	components := []struct {
 		name    string
@@ -107,24 +114,34 @@ func TestProcessGarbageCollectorMetrics(t *testing.T) {
 		for _, collector := range collectors {
 			names, process := collector.names, component.process
 			t.Run(component.name+"/"+collector.name, func(t *testing.T) {
+				raw := make([]map[string]string, 0, 3*len(names)+2)
+				wantCount := map[string]int64{}
+				wantTime := map[string]int64{}
+				for i, name := range names {
+					count := int64(11 * (i + 1))
+					raw = append(raw,
+						map[string]string{"id": "Status.JVM.GarbageCollector." + name + ".Count", "value": strconv.FormatInt(count, 10)},
+						map[string]string{"id": "Status.JVM.GarbageCollector." + name + ".Time", "value": strconv.FormatInt(count*10, 10)},
+						map[string]string{"id": "Status.JVM.GarbageCollector." + name + ".TimeMsPerSecond", "value": "1"},
+					)
+					wantCount[name] = count
+					wantTime[name] = count * 10
+				}
+				raw = append(raw,
+					map[string]string{"id": "Status.JVM.GarbageCollector.All.Count", "value": "999"},
+					map[string]string{"id": "Status.JVM.GarbageCollector.All.Time", "value": "9990"},
+				)
+				body, err := json.Marshal(raw)
+				require.NoError(t, err)
 				var metrics models.MetricsResponse
-				require.NoError(t, json.Unmarshal([]byte(`[
-					{"id": "Status.JVM.GarbageCollector.`+names[0]+`.Count", "value": "11"},
-					{"id": "Status.JVM.GarbageCollector.`+names[0]+`.Time", "value": "110"},
-					{"id": "Status.JVM.GarbageCollector.`+names[0]+`.TimeMsPerSecond", "value": "1"},
-					{"id": "Status.JVM.GarbageCollector.`+names[1]+`.Count", "value": "22"},
-					{"id": "Status.JVM.GarbageCollector.`+names[1]+`.Time", "value": "220"},
-					{"id": "Status.JVM.GarbageCollector.`+names[1]+`.TimeMsPerSecond", "value": "2"},
-					{"id": "Status.JVM.GarbageCollector.All.Count", "value": "33"},
-					{"id": "Status.JVM.GarbageCollector.All.Time", "value": "330"}
-				]`), &metrics))
+				require.NoError(t, json.Unmarshal(body, &metrics))
 
 				scraper := newflinkScraper(createDefaultConfig().(*Config), receivertest.NewNopSettings(metadata.Type))
 				process(scraper, pcommon.NewTimestampFromTime(time.Now()), metrics)
 
 				require.Equal(t, map[string]map[string]int64{
-					"flink.jvm.gc.collections.count": {names[0]: 11, names[1]: 22},
-					"flink.jvm.gc.collections.time":  {names[0]: 110, names[1]: 220},
+					"flink.jvm.gc.collections.count": wantCount,
+					"flink.jvm.gc.collections.time":  wantTime,
 				}, garbageCollectorDataPoints(t, scraper.mb.Emit()))
 			})
 		}

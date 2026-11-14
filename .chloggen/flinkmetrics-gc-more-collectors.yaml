@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/flink_metrics
+
+note: Record JVM garbage collector metrics for the Serial, ZGC (including generational ZGC) and Shenandoah collectors, and for G1's concurrent cycles on Java 20 and later.
+
+issues: [52405]
+
+subtext:
+
+change_logs: [user]

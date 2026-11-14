@@ -67,6 +67,17 @@ const (
 	AttributeGarbageCollectorNamePSScavenge
 	AttributeGarbageCollectorNameG1YoungGeneration
 	AttributeGarbageCollectorNameG1OldGeneration
+	AttributeGarbageCollectorNameG1ConcurrentGC
+	AttributeGarbageCollectorNameCopy
+	AttributeGarbageCollectorNameMarkSweepCompact
+	AttributeGarbageCollectorNameZGCCycles
+	AttributeGarbageCollectorNameZGCPauses
+	AttributeGarbageCollectorNameZGCMinorCycles
+	AttributeGarbageCollectorNameZGCMinorPauses
+	AttributeGarbageCollectorNameZGCMajorCycles
+	AttributeGarbageCollectorNameZGCMajorPauses
+	AttributeGarbageCollectorNameShenandoahCycles
+	AttributeGarbageCollectorNameShenandoahPauses
 )
 
 // String returns the string representation of the AttributeGarbageCollectorName.
@@ -80,6 +91,28 @@ func (av AttributeGarbageCollectorName) String() string {
 		return "G1_Young_Generation"
 	case AttributeGarbageCollectorNameG1OldGeneration:
 		return "G1_Old_Generation"
+	case AttributeGarbageCollectorNameG1ConcurrentGC:
+		return "G1_Concurrent_GC"
+	case AttributeGarbageCollectorNameCopy:
+		return "Copy"
+	case AttributeGarbageCollectorNameMarkSweepCompact:
+		return "MarkSweepCompact"
+	case AttributeGarbageCollectorNameZGCCycles:
+		return "ZGC_Cycles"
+	case AttributeGarbageCollectorNameZGCPauses:
+		return "ZGC_Pauses"
+	case AttributeGarbageCollectorNameZGCMinorCycles:
+		return "ZGC_Minor_Cycles"
+	case AttributeGarbageCollectorNameZGCMinorPauses:
+		return "ZGC_Minor_Pauses"
+	case AttributeGarbageCollectorNameZGCMajorCycles:
+		return "ZGC_Major_Cycles"
+	case AttributeGarbageCollectorNameZGCMajorPauses:
+		return "ZGC_Major_Pauses"
+	case AttributeGarbageCollectorNameShenandoahCycles:
+		return "Shenandoah_Cycles"
+	case AttributeGarbageCollectorNameShenandoahPauses:
+		return "Shenandoah_Pauses"
 	}
 	return ""
 }
@@ -90,6 +123,17 @@ var MapAttributeGarbageCollectorName = map[string]AttributeGarbageCollectorName{
 	"PS_Scavenge":         AttributeGarbageCollectorNamePSScavenge,
 	"G1_Young_Generation": AttributeGarbageCollectorNameG1YoungGeneration,
 	"G1_Old_Generation":   AttributeGarbageCollectorNameG1OldGeneration,
+	"G1_Concurrent_GC":    AttributeGarbageCollectorNameG1ConcurrentGC,
+	"Copy":                AttributeGarbageCollectorNameCopy,
+	"MarkSweepCompact":    AttributeGarbageCollectorNameMarkSweepCompact,
+	"ZGC_Cycles":          AttributeGarbageCollectorNameZGCCycles,
+	"ZGC_Pauses":          AttributeGarbageCollectorNameZGCPauses,
+	"ZGC_Minor_Cycles":    AttributeGarbageCollectorNameZGCMinorCycles,
+	"ZGC_Minor_Pauses":    AttributeGarbageCollectorNameZGCMinorPauses,
+	"ZGC_Major_Cycles":    AttributeGarbageCollectorNameZGCMajorCycles,
+	"ZGC_Major_Pauses":    AttributeGarbageCollectorNameZGCMajorPauses,
+	"Shenandoah_Cycles":   AttributeGarbageCollectorNameShenandoahCycles,
+	"Shenandoah_Pauses":   AttributeGarbageCollectorNameShenandoahPauses,
 }
 
 // AttributeRecord specifies the value record attribute.
