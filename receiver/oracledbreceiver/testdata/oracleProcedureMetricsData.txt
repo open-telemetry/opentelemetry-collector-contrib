@@ -1,6 +1,7 @@
 [
     {
         "SCHEMA_NAME": "ADMIN",
+        "OBJECT_NAME": "MY_PROCEDURE",
         "PROCEDURE_NAME": "ADMIN.MY_PROCEDURE",
         "PROCEDURE_TYPE": "PROCEDURE",
         "PROGRAM_ID": "98765",

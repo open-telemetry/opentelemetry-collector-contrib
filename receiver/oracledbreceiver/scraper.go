@@ -367,7 +367,15 @@ FROM (
 	planHashValueAttr = "PLAN_HASH_VALUE"
 
 	// Procedure metrics columns
-	lastActiveTimeAttr = "LAST_ACTIVE_TIME"
+	connectionIDAttr    = "CON_ID"
+	innerObjectNameAttr = "OBJECT_NAME"
+	lastActiveTimeAttr  = "LAST_ACTIVE_TIME"
+
+	// Procedure source columns
+	procOwnerAttr = "OWNER"
+	procNameAttr  = "NAME"
+	procTypeAttr  = "TYPE"
+	procTextAttr  = "TEXT"
 )
 
 var (
@@ -389,6 +397,10 @@ var (
 	oracleProcedureMetricsSQL string
 	//go:embed templates/oracleProcedureMetricsCDBSql.tmpl
 	oracleProcedureMetricsCDBSQL string
+	//go:embed templates/oracleProcedureSourceSql.tmpl
+	oracleProcedureSourceSQL string
+	//go:embed templates/oracleProcedureSourceCDBSql.tmpl
+	oracleProcedureSourceCDBSQL string
 )
 
 // sgaComponentNames maps V$SGAINFO.NAME values to the snake_case enum keys
@@ -549,6 +561,126 @@ func (s *oracleScraper) buildProcedureMetricsSQL() string {
 	return oracleProcedureMetricsSQL
 }
 
+type procedureSourceQuery struct {
+	sql  string
+	args []any
+}
+
+func (q procedureSourceQuery) SQL() string { return q.sql }
+func (q procedureSourceQuery) Args() []any { return q.args }
+
+// buildProcedureSourceQuery builds the DBA_SOURCE or CDB_SOURCE query using a tuple-IN
+// clause with named bind parameters. Each identity is bound as one tuple so the database
+// returns only the (OWNER, NAME, TYPE[, CON_ID]) combinations we requested, not every
+// cross-product that would match if columns were filtered independently. CON_ID is
+// included only when isCDB is true.
+func buildProcedureSourceQuery(identities []procedureIdentity, isCDB bool) procedureSourceQuery {
+	tuples := make([]string, len(identities))
+	argsPerIdentity := 3
+	if isCDB {
+		argsPerIdentity = 4
+	}
+	args := make([]any, 0, len(identities)*argsPerIdentity)
+
+	for i, id := range identities {
+		n := strconv.Itoa(i)
+		if isCDB {
+			tuples[i] = fmt.Sprintf("(:owner%s, :name%s, :type%s, :connectionid%s)", n, n, n, n)
+			args = append(args,
+				sql.Named("owner"+n, id.owner),
+				sql.Named("name"+n, id.name),
+				sql.Named("type"+n, id.procType),
+				sql.Named("connectionid"+n, id.connectionID),
+			)
+		} else {
+			tuples[i] = fmt.Sprintf("(:owner%s, :name%s, :type%s)", n, n, n)
+			args = append(args,
+				sql.Named("owner"+n, id.owner),
+				sql.Named("name"+n, id.name),
+				sql.Named("type"+n, id.procType),
+			)
+		}
+	}
+
+	tmpl := oracleProcedureSourceSQL
+	if isCDB {
+		tmpl = oracleProcedureSourceCDBSQL
+	}
+	return procedureSourceQuery{
+		sql:  fmt.Sprintf(tmpl, strings.Join(tuples, ",")),
+		args: args,
+	}
+}
+
+// isWrappedDefinition reports whether a procedure's source begins with Oracle's
+// `wrapped` keyword, which marks the body as encrypted. The following lines contain
+// only the encoded payload, not readable source.
+func isWrappedDefinition(definition string) bool {
+	firstLine := definition
+	if idx := strings.IndexByte(firstLine, '\n'); idx >= 0 {
+		firstLine = firstLine[:idx]
+	}
+	return strings.HasSuffix(strings.TrimSpace(firstLine), " wrapped")
+}
+
+// groupSourceRowsByIdentity concatenates source lines per procedure identity.
+// Wrapped (encrypted) procedures map to an empty string so the encoded payload
+// is never shipped downstream.
+func groupSourceRowsByIdentity(rows []metricRow, isCDB bool) map[procedureIdentity]string {
+	builders := make(map[procedureIdentity]*strings.Builder)
+	for _, row := range rows {
+		if _, ok := row[procOwnerAttr]; !ok {
+			continue
+		}
+		if _, ok := row[procNameAttr]; !ok {
+			continue
+		}
+		if _, ok := row[procTypeAttr]; !ok {
+			continue
+		}
+		if isCDB {
+			if _, ok := row[connectionIDAttr]; !ok {
+				continue
+			}
+		}
+		id := procedureIdentity{owner: row[procOwnerAttr], name: row[procNameAttr], procType: row[procTypeAttr], connectionID: row[connectionIDAttr]}
+		if builders[id] == nil {
+			builders[id] = &strings.Builder{}
+		}
+		builders[id].WriteString(row[procTextAttr])
+	}
+	result := make(map[procedureIdentity]string, len(builders))
+	for id, b := range builders {
+		def := b.String()
+		if isWrappedDefinition(def) {
+			def = ""
+		}
+		result[id] = def
+	}
+	return result
+}
+
+// fetchProcedureDefinitions fetches source lines for all top-N procedures in a single
+// IN-clause query (one DB roundtrip) and returns them grouped by procedureIdentity.
+func (s *oracleScraper) fetchProcedureDefinitions(ctx context.Context, hits []procedureMetricCacheHit) (map[procedureIdentity]string, error) {
+	if len(hits) == 0 {
+		return nil, nil
+	}
+
+	identities := make([]procedureIdentity, len(hits))
+	for i := range hits {
+		identities[i] = hits[i].identity()
+	}
+	q := buildProcedureSourceQuery(identities, s.useCDBProceduresView)
+
+	rawRows, err := s.clientProviderFunc(s.db, q.SQL(), s.logger).metricRows(ctx, q.Args()...)
+	if err != nil {
+		return nil, err
+	}
+
+	return groupSourceRowsByIdentity(rawRows, s.useCDBProceduresView), nil
+}
+
 func (s *oracleScraper) buildTopQuerySQL() string {
 	if s.useCDBProceduresView {
 		return oracleQueryMetricsCDBSQL
@@ -615,6 +747,11 @@ func (s *oracleScraper) start(ctx context.Context, _ component.Host) error {
 	if s.useCDBDictionaryViews {
 		s.logger.Debug("oracledbreceiver: using container-qualified dictionary joins for query-sample collection")
 	}
+	if s.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled &&
+		!s.logsBuilderConfig.Events.DbServerTopProcedure.Enabled {
+		s.logger.Warn("db.server.procedure_definition is enabled but db.server.top_procedure is not — no definition events will be emitted")
+	}
+
 	s.tablespaceUsageClient = s.clientProviderFunc(s.db, s.buildTablespaceSQL(), s.logger)
 	s.systemResourceLimitsClient = s.clientProviderFunc(s.db, systemResourceLimitsSQL, s.logger)
 	if s.instanceInfo.connectedToPDB {
@@ -2222,16 +2359,38 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 	return errors.Join(errs...)
 }
 
+// In a CDB context the same owner/name/type combination can exist in multiple PDBs, so
+// connectionID is part of identity; for direct-PDB connections connectionID is empty.
+// Used as a map key so Go's native struct equality handles the lookup instead of a
+// hand-encoded composite string.
+type procedureIdentity struct {
+	owner        string
+	name         string
+	procType     string
+	connectionID string
+}
+
 type procedureMetricCacheHit struct {
 	schemaName     string
+	objectName     string
 	procedureName  string
 	procedureType  string
 	programID      int64
 	dbNamespace    string
 	service        string
+	connectionID   string
 	firstLoadTime  string
 	lastActiveTime string
 	metrics        map[string]int64
+}
+
+func (h *procedureMetricCacheHit) identity() procedureIdentity {
+	return procedureIdentity{
+		owner:        h.schemaName,
+		name:         h.objectName,
+		procType:     h.procedureType,
+		connectionID: h.connectionID,
+	}
 }
 
 // getProcedureResourceMetricNames returns the SUM()-based counters, where a negative delta means a cursor purge.
@@ -2285,10 +2444,12 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 		if oldCacheVal, ok := s.procedureMetricCache.Get(cacheKey); ok {
 			hit := procedureMetricCacheHit{
 				schemaName:     row[schemaNameAttr],
+				objectName:     row[innerObjectNameAttr],
 				procedureName:  row[objectNameAttr],
 				procedureType:  row[objectTypeAttr],
 				dbNamespace:    row[dbNamespaceAttr],
 				service:        row[serviceAttr],
+				connectionID:   row[connectionIDAttr],
 				firstLoadTime:  row[firstLoadTimeAttr],
 				lastActiveTime: row[lastActiveTimeAttr],
 				metrics:        make(map[string]int64, len(metricNames)),
@@ -2345,11 +2506,20 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 	maxHitsSize := min(len(hits), int(s.procedureMetricsCfg.TopProcedureCount))
 	hits = hits[:maxHitsSize]
 
+	// nil definitions means fetch failed; don't emit events so empty definitions remain unambiguous.
+	var definitions map[procedureIdentity]string
+	if s.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled {
+		var defErr error
+		definitions, defErr = s.fetchProcedureDefinitions(ctx, hits)
+		if defErr != nil {
+			errs = append(errs, fmt.Errorf("failed to fetch procedure definitions: %w", defErr))
+		}
+	}
+
 	rb := s.setupResourceBuilder(s.lb.NewResourceBuilder())
 
 	for i := range hits {
 		hit := &hits[i]
-
 		s.lb.RecordDbServerTopProcedureEvent(context.Background(),
 			pcommon.NewTimestampFromTime(collectionTime),
 			dbSystemNameVal,
@@ -2371,6 +2541,16 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 			hit.metrics[physicalWriteBytesMetric],
 			hit.firstLoadTime,
 			hit.lastActiveTime)
+
+		if definitions != nil {
+			s.lb.RecordDbServerProcedureDefinitionEvent(context.Background(),
+				pcommon.NewTimestampFromTime(collectionTime),
+				dbSystemNameVal,
+				hit.dbNamespace,
+				hit.programID,
+				hit.procedureName,
+				definitions[hit.identity()])
+		}
 	}
 
 	s.lb.Emit(metadata.WithLogsResource(rb.Emit())).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())

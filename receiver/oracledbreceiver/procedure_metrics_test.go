@@ -9,6 +9,7 @@ import (
 	"errors"
 	"maps"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -92,16 +93,20 @@ func newProcedureMetricsScraperWithSeeds(t *testing.T, dbclientFn clientProvider
 
 func procedureMetricsDbClientFn(t *testing.T) clientProviderFunc {
 	t.Helper()
-	return func(*sql.DB, string, *zap.Logger) dbClient {
-		var rows []metricRow
-		require.NoError(t, json.Unmarshal(readFile("oracleProcedureMetricsData.txt"), &rows))
-		return &fakeDbClient{Responses: [][]metricRow{rows}}
+	var metricsRows []metricRow
+	require.NoError(t, json.Unmarshal(readFile("oracleProcedureMetricsData.txt"), &metricsRows))
+	sourceRows := []metricRow{procedureSourceRow("")}
+	return func(_ *sql.DB, query string, _ *zap.Logger) dbClient {
+		if strings.Contains(query, "DBA_SOURCE") || strings.Contains(query, "CDB_SOURCE") {
+			return &fakeDbClient{Responses: [][]metricRow{sourceRows}}
+		}
+		return &fakeDbClient{Responses: [][]metricRow{metricsRows}}
 	}
 }
 
 func procedureRow(service string, overrides map[string]string) metricRow {
 	row := metricRow{
-		"SCHEMA_NAME": "ADMIN", "PROCEDURE_NAME": "ADMIN.MY_PROCEDURE",
+		"SCHEMA_NAME": "ADMIN", "OBJECT_NAME": "MY_PROCEDURE", "PROCEDURE_NAME": "ADMIN.MY_PROCEDURE",
 		"PROCEDURE_TYPE": "PROCEDURE", "PROGRAM_ID": "98765",
 		"DB_NAMESPACE": "ORCLPDB1", "SERVICE": service,
 		"EXECUTIONS": "300413", "CPU_TIME": "39736887", "ELAPSED_TIME": "99172810",
@@ -113,8 +118,26 @@ func procedureRow(service string, overrides map[string]string) metricRow {
 	return row
 }
 
-func staticProcedureRowsFn(rows []metricRow) clientProviderFunc {
-	return func(*sql.DB, string, *zap.Logger) dbClient {
+// procedureSourceRow returns a DBA_SOURCE row for the default test procedure.
+func procedureSourceRow(textOverride string) metricRow {
+	text := "CREATE OR REPLACE PROCEDURE ADMIN.MY_PROCEDURE AS BEGIN NULL; END;"
+	if textOverride != "" {
+		text = textOverride
+	}
+	return metricRow{
+		"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": text,
+	}
+}
+
+func staticProcedureRowsFn(rows []metricRow, srcRows ...[]metricRow) clientProviderFunc {
+	var source []metricRow
+	if len(srcRows) > 0 {
+		source = srcRows[0]
+	}
+	return func(_ *sql.DB, query string, _ *zap.Logger) dbClient {
+		if strings.Contains(query, "DBA_SOURCE") || strings.Contains(query, "CDB_SOURCE") {
+			return &fakeDbClient{Responses: [][]metricRow{source}}
+		}
 		return &fakeDbClient{Responses: [][]metricRow{rows}}
 	}
 }
@@ -170,10 +193,87 @@ func TestBuildProcedureMetricsSQL(t *testing.T) {
 func TestProcedureMetricsSQLDoesNotRankInDatabase(t *testing.T) {
 	for _, useCDB := range []bool{true, false} {
 		scrpr := oracleScraper{useCDBProceduresView: useCDB}
+		sql := scrpr.buildProcedureMetricsSQL()
 
-		assert.NotContains(t, scrpr.buildProcedureMetricsSQL(), "ORDER BY",
+		// WITHIN GROUP (ORDER BY LINE) inside LISTAGG is an aggregate ordering, not a ranking clause — allowed.
+		// A top-level ORDER BY would push ranking into the database over cumulative totals rather than deltas.
+		sqlWithoutAggregateOrdering := strings.ReplaceAll(sql, "WITHIN GROUP (ORDER BY LINE)", "")
+		assert.NotContains(t, sqlWithoutAggregateOrdering, "ORDER BY",
 			"ranking must happen in the collector over deltas, not in SQL over cumulative totals")
 	}
+}
+
+func TestBuildProcedureSourceQuery(t *testing.T) {
+	identities := []procedureIdentity{
+		{owner: "ADMIN", name: "MY_PROC", procType: "PROCEDURE", connectionID: "1"},
+		{owner: "SYS", name: "OTHER_PROC", procType: "FUNCTION", connectionID: "2"},
+	}
+
+	t.Run("non-CDB uses DBA_SOURCE with 3 args per identity", func(t *testing.T) {
+		q := buildProcedureSourceQuery(identities, false)
+		assert.Contains(t, q.SQL(), "DBA_SOURCE")
+		assert.NotContains(t, q.SQL(), "CDB_SOURCE")
+		assert.NotContains(t, q.SQL(), ":connectionid")
+		assert.Len(t, q.Args(), 6) // 3 per identity × 2 identities
+	})
+
+	t.Run("CDB uses CDB_SOURCE with 4 args per identity", func(t *testing.T) {
+		q := buildProcedureSourceQuery(identities, true)
+		assert.Contains(t, q.SQL(), "CDB_SOURCE")
+		assert.NotContains(t, q.SQL(), "DBA_SOURCE")
+		assert.Contains(t, q.SQL(), ":connectionid0")
+		assert.Contains(t, q.SQL(), ":connectionid1")
+		assert.Len(t, q.Args(), 8) // 4 per identity × 2 identities
+	})
+
+	t.Run("one tuple per identity", func(t *testing.T) {
+		q := buildProcedureSourceQuery(identities, false)
+		assert.Equal(t, 2, strings.Count(q.SQL(), ":owner"))
+	})
+}
+
+func TestGroupSourceRowsByIdentity(t *testing.T) {
+	t.Run("concatenates multiple lines for same identity", func(t *testing.T) {
+		rows := []metricRow{
+			{"OWNER": "ADMIN", "NAME": "MY_PROC", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "line1\n"},
+			{"OWNER": "ADMIN", "NAME": "MY_PROC", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "line2\n"},
+		}
+		result := groupSourceRowsByIdentity(rows, false)
+		assert.Equal(t, "line1\nline2\n", result[procedureIdentity{owner: "ADMIN", name: "MY_PROC", procType: "PROCEDURE"}])
+	})
+
+	t.Run("skips row missing OWNER", func(t *testing.T) {
+		rows := []metricRow{{"NAME": "MY_PROC", "TYPE": "PROCEDURE", "TEXT": "body"}}
+		assert.Empty(t, groupSourceRowsByIdentity(rows, false))
+	})
+
+	t.Run("skips row missing NAME", func(t *testing.T) {
+		rows := []metricRow{{"OWNER": "ADMIN", "TYPE": "PROCEDURE", "TEXT": "body"}}
+		assert.Empty(t, groupSourceRowsByIdentity(rows, false))
+	})
+
+	t.Run("skips row missing TYPE", func(t *testing.T) {
+		rows := []metricRow{{"OWNER": "ADMIN", "NAME": "MY_PROC", "TEXT": "body"}}
+		assert.Empty(t, groupSourceRowsByIdentity(rows, false))
+	})
+
+	t.Run("CDB skips row missing CON_ID", func(t *testing.T) {
+		rows := []metricRow{{"OWNER": "ADMIN", "NAME": "MY_PROC", "TYPE": "PROCEDURE", "TEXT": "body"}}
+		assert.Empty(t, groupSourceRowsByIdentity(rows, true))
+	})
+
+	t.Run("non-CDB accepts row without CON_ID", func(t *testing.T) {
+		rows := []metricRow{{"OWNER": "ADMIN", "NAME": "MY_PROC", "TYPE": "PROCEDURE", "TEXT": "body"}}
+		assert.Len(t, groupSourceRowsByIdentity(rows, false), 1)
+	})
+
+	t.Run("wrapped procedure maps to empty string", func(t *testing.T) {
+		rows := []metricRow{
+			{"OWNER": "ADMIN", "NAME": "MY_PROC", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "MY_PROC wrapped\nabc123encodedpayload"},
+		}
+		result := groupSourceRowsByIdentity(rows, false)
+		assert.Empty(t, result[procedureIdentity{owner: "ADMIN", name: "MY_PROC", procType: "PROCEDURE"}])
+	})
 }
 
 func TestScraper_ScrapeProcedureMetricsLogs(t *testing.T) {
@@ -443,6 +543,140 @@ func TestScrapesProcedureMetricsLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, scrpr.lastProcedureMetricsTimestamp.After(beforeOpen),
 		"procedure_metrics collection must run after the collection interval has elapsed")
+}
+
+// TestProcedureDefinitionContent verifies the oracledb.procedure.definition attribute value
+// for various source-row scenarios. Each sub-test enables the definition event, rebuilds lb,
+// calls scrapeLogs, and checks the attribute on the emitted db.server.procedure_definition event.
+func TestProcedureDefinitionContent(t *testing.T) {
+	const ddlDefault = "CREATE OR REPLACE PROCEDURE ADMIN.MY_PROCEDURE AS BEGIN NULL; END;"
+	const ddlWrappedName = "CREATE OR REPLACE PROCEDURE ADMIN.WRAPPED_ORDERS_REPORT AS BEGIN NULL; END;"
+
+	wrappedRows := []metricRow{
+		{"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "PROCEDURE MY_PROCEDURE wrapped\n"},
+		{"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "a000000\n"},
+		{"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "354\n"},
+		{"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "abcd\n"},
+		{"OWNER": "ADMIN", "NAME": "MY_PROCEDURE", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": "gL4Nq8IVCqO9DAh8W6nhfzw5\n"},
+	}
+
+	tests := []struct {
+		name           string
+		clientFn       clientProviderFunc
+		wantDefinition string
+	}{
+		{
+			name:           "definition present",
+			clientFn:       procedureMetricsDbClientFn(t),
+			wantDefinition: ddlDefault,
+		},
+		{
+			// Pass empty source rows so fetchProcedureDefinitions returns no results → empty definition.
+			name:           "empty when source rows missing",
+			clientFn:       staticProcedureRowsFn([]metricRow{procedureRow("ORCLPDB1", nil)}, []metricRow{}),
+			wantDefinition: "",
+		},
+		{
+			// Wrapped (encrypted) procedures must map to an empty definition. DBA_SOURCE returns the
+			// `wrapped` header followed by the encoded payload; shipping that blob downstream would
+			// mislead consumers and contradict the documented behavior.
+			name:           "empty when procedure is wrapped",
+			clientFn:       staticProcedureRowsFn([]metricRow{procedureRow("ORCLPDB1", nil)}, wrappedRows),
+			wantDefinition: "",
+		},
+		{
+			// A procedure whose name begins with "WRAPPED" must not be mistaken for an
+			// Oracle-encrypted procedure. Only " wrapped" as the last token of the header
+			// line (Oracle's wrap output format) triggers the empty-definition path.
+			name: "not empty when procedure name contains wrapped",
+			clientFn: staticProcedureRowsFn(
+				[]metricRow{maps.Clone(procedureRow("ORCLPDB1", map[string]string{
+					"OBJECT_NAME":    "WRAPPED_ORDERS_REPORT",
+					"PROCEDURE_NAME": "ADMIN.WRAPPED_ORDERS_REPORT",
+				}))},
+				[]metricRow{{"OWNER": "ADMIN", "NAME": "WRAPPED_ORDERS_REPORT", "TYPE": "PROCEDURE", "CON_ID": "", "TEXT": ddlWrappedName}},
+			),
+			wantDefinition: ddlWrappedName,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			scrpr := newProcedureMetricsScraper(t, tc.clientFn, procedureCacheValue)
+			scrpr.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
+			scrpr.lb = metadata.NewLogsBuilder(scrpr.logsBuilderConfig, receivertest.NewNopSettings(metadata.Type))
+
+			logs, err := scrpr.scrapeLogs(t.Context())
+			require.NoError(t, err)
+
+			records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+			for i := range records.Len() {
+				if records.At(i).EventName() == "db.server.procedure_definition" {
+					def, ok := records.At(i).Attributes().Get("oracledb.procedure.definition")
+					require.True(t, ok)
+					assert.Equal(t, tc.wantDefinition, def.Str())
+					return
+				}
+			}
+			t.Fatal("expected a db.server.procedure_definition event")
+		})
+	}
+}
+
+func TestProcedureDefinitionNotEmittedWhenDisabled(t *testing.T) {
+	scrpr := newProcedureMetricsScraper(t, procedureMetricsDbClientFn(t), procedureCacheValue)
+
+	logs, err := scrpr.scrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	for i := range records.Len() {
+		assert.NotEqual(t, "db.server.procedure_definition", records.At(i).EventName(),
+			"procedure_definition must not be emitted when disabled")
+	}
+}
+
+// When fetchProcedureDefinitions fails, no definition events must be emitted
+// (otherwise an empty definition is indistinguishable from a wrapped procedure),
+// and the error must surface via scrapeLogs.
+func TestProcedureDefinitionNotEmittedWhenFetchFails(t *testing.T) {
+	fetchErr := errors.New("ORA-00942: table or view does not exist")
+
+	dbclientFn := func(_ *sql.DB, query string, _ *zap.Logger) dbClient {
+		if strings.Contains(query, "DBA_SOURCE") || strings.Contains(query, "CDB_SOURCE") {
+			return &fakeDbClient{Err: fetchErr}
+		}
+		return &fakeDbClient{Responses: [][]metricRow{{procedureRow("ORCLPDB1", nil)}}}
+	}
+
+	scrpr := newProcedureMetricsScraper(t, dbclientFn, procedureCacheValue)
+	scrpr.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
+	scrpr.lb = metadata.NewLogsBuilder(scrpr.logsBuilderConfig, receivertest.NewNopSettings(metadata.Type))
+
+	logs, err := scrpr.scrapeLogs(t.Context())
+	require.Error(t, err, "fetchProcedureDefinitions error must surface")
+	require.ErrorIs(t, err, fetchErr)
+
+	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	for i := range records.Len() {
+		assert.NotEqual(t, "db.server.procedure_definition", records.At(i).EventName(),
+			"procedure_definition must not be emitted when definitions fetch fails")
+	}
+}
+
+func TestProcedureDefinitionWarningWhenTopProcedureDisabled(t *testing.T) {
+	core, observed := observer.New(zapcore.WarnLevel)
+
+	scrpr := newProcedureMetricsScraper(t, procedureMetricsDbClientFn(t), nil)
+	scrpr.logger = zap.New(core)
+	scrpr.logsBuilderConfig.Events.DbServerProcedureDefinition.Enabled = true
+	scrpr.logsBuilderConfig.Events.DbServerTopProcedure.Enabled = false
+
+	require.NoError(t, scrpr.start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { assert.NoError(t, scrpr.shutdown(t.Context())) })
+
+	entries := observed.FilterMessage("db.server.procedure_definition is enabled but db.server.top_procedure is not — no definition events will be emitted").All()
+	require.Len(t, entries, 1)
 }
 
 // A discarded interval is otherwise indistinguishable from "the procedure did not run", and one child
