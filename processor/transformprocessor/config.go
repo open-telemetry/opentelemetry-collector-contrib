@@ -23,6 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
 var errFlatLogsGateDisabled = errors.New("'flatten.log' requires the 'transform.flatten.logs' feature gate to be enabled")
@@ -153,7 +154,7 @@ func (c *Config) Validate() error {
 	var errors error
 
 	if len(c.TraceStatements) > 0 {
-		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(c.spanFunctions), common.WithSpanEventParser(c.spanEventFunctions))
+		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(c.spanFunctions), common.WithSpanEventParser(c.spanEventFunctions), common.WithSpanLinkParser(traces.SpanLinkFunctions()))
 		if err != nil {
 			return err
 		}
