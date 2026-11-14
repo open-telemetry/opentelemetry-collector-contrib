@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
@@ -29,6 +30,15 @@ type heartbeater struct {
 	hbDoneChan chan struct{}
 }
 
+func logTelemetryDeprecation(config *Config, logger *zap.Logger) {
+	if !config.Telemetry.Enabled && len(config.Telemetry.OverrideMetricsNames) == 0 && len(config.Telemetry.ExtraAttributes) == 0 {
+		return
+	}
+	logger.Warn("The `telemetry` configuration block is deprecated and will be removed in a future release. " +
+		"The heartbeat metrics " + defaultHBSentMetricsName + " and " + defaultHBFailedMetricsName +
+		" are emitted whenever a heartbeat interval is configured.")
+}
+
 func getMetricsName(overrides map[string]string, metricName string) string {
 	if name, ok := overrides[metricName]; ok {
 		return name
@@ -36,11 +46,8 @@ func getMetricsName(overrides map[string]string, metricName string) string {
 	return metricName
 }
 
-// heartbeatCounter returns the counter defined in metadata.yaml unless the user
-// configured a custom name for it through telemetry.override_metrics_names, in
-// which case a counter with the overridden name is created on the meter. The
-// override mechanism is retained for backwards compatibility and is expected to
-// be removed together with telemetry.enabled.
+// heartbeatCounter returns the generated counter, or a counter with the deprecated
+// telemetry.override_metrics_names name when one is configured.
 func heartbeatCounter(meter metric.Meter, defaultCounter metric.Int64Counter, overrides map[string]string, defaultName, description string) (metric.Int64Counter, error) {
 	if name := getMetricsName(overrides, defaultName); name != defaultName {
 		return meter.Int64Counter(
@@ -52,33 +59,32 @@ func heartbeatCounter(meter metric.Meter, defaultCounter metric.Int64Counter, ov
 	return defaultCounter, nil
 }
 
-func newHeartbeater(config *Config, buildInfo component.BuildInfo, pushLogFn func(ctx context.Context, ld plog.Logs) error, telemetryBuilder *metadata.TelemetryBuilder, meter metric.Meter) *heartbeater {
+func newHeartbeater(config *Config, buildInfo component.BuildInfo, pushLogFn func(ctx context.Context, ld plog.Logs) error, telemetryBuilder *metadata.TelemetryBuilder, meter metric.Meter, logger *zap.Logger) *heartbeater {
 	interval := config.Heartbeat.Interval
 	if interval == 0 {
 		return nil
 	}
 
-	var heartbeatsSent, heartbeatsFailed metric.Int64Counter
-	var attrs attribute.Set
-	if config.Telemetry.Enabled {
-		overrides := config.Telemetry.OverrideMetricsNames
-		extraAttributes := config.Telemetry.ExtraAttributes
-		var tags []attribute.KeyValue
-		for key, val := range extraAttributes {
-			tags = append(tags, attribute.String(key, val))
-		}
-		attrs = attribute.NewSet(tags...)
-		var err error
-		heartbeatsSent, err = heartbeatCounter(meter, telemetryBuilder.ExporterSplunkhecHeartbeatsSent, overrides, defaultHBSentMetricsName, "number of heartbeats sent")
-		if err != nil {
-			return nil
-		}
+	logTelemetryDeprecation(config, logger)
 
-		heartbeatsFailed, err = heartbeatCounter(meter, telemetryBuilder.ExporterSplunkhecHeartbeatsFailed, overrides, defaultHBFailedMetricsName, "number of heartbeats failed")
-		if err != nil {
-			return nil
-		}
+	// Deprecated override_metrics_names and extra_attributes are still honored for backwards compatibility.
+	overrides := config.Telemetry.OverrideMetricsNames
+	heartbeatsSent, err := heartbeatCounter(meter, telemetryBuilder.ExporterSplunkhecHeartbeatsSent, overrides, defaultHBSentMetricsName, "number of heartbeats sent")
+	if err != nil {
+		logger.Error("failed to create heartbeat metric", zap.Error(err))
+		return nil
 	}
+	heartbeatsFailed, err := heartbeatCounter(meter, telemetryBuilder.ExporterSplunkhecHeartbeatsFailed, overrides, defaultHBFailedMetricsName, "number of heartbeats failed")
+	if err != nil {
+		logger.Error("failed to create heartbeat metric", zap.Error(err))
+		return nil
+	}
+
+	var tags []attribute.KeyValue
+	for key, val := range config.Telemetry.ExtraAttributes {
+		tags = append(tags, attribute.String(key, val))
+	}
+	attrs := attribute.NewSet(tags...)
 
 	hbter := &heartbeater{
 		hbDoneChan: make(chan struct{}),
@@ -92,9 +98,7 @@ func newHeartbeater(config *Config, buildInfo component.BuildInfo, pushLogFn fun
 				return
 			case <-ticker.C:
 				err := hbter.sendHeartbeat(config, buildInfo, pushLogFn)
-				if config.Telemetry.Enabled {
-					observe(heartbeatsSent, heartbeatsFailed, attrs, err)
-				}
+				observe(heartbeatsSent, heartbeatsFailed, attrs, err)
 			}
 		}
 	}()
