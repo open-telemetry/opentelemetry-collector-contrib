@@ -4,10 +4,12 @@
 package collection
 
 import (
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -131,6 +133,91 @@ func TestCollectMetricData(t *testing.T) {
 
 	// Second scrape should be the same as the first one except for the timestamp.
 	assert.NoError(t, pmetrictest.CompareMetrics(m1, m2, pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreResourceMetricsOrder()))
+}
+
+func TestCollectMetricDataWithClusterUID(t *testing.T) {
+	dc := NewDataCollector(receivertest.NewNopSettings(metadata.Type), newStoreWithPodAndNode(),
+		metadata.NewDefaultMetricsBuilderConfig(), []string{"Ready"}, nil)
+	dc.SetClusterUID("cluster1-uid")
+
+	// Every resource, including the ones built by the custom metrics path, carries the cluster UID.
+	rms := dc.CollectMetricData(time.Now()).ResourceMetrics()
+	require.Positive(t, rms.Len())
+	for i := 0; i < rms.Len(); i++ {
+		clusterUID, ok := rms.At(i).Resource().Attributes().Get("k8s.cluster.uid")
+		require.True(t, ok, "k8s.cluster.uid is missing from resource %d", i)
+		assert.Equal(t, "cluster1-uid", clusterUID.Str())
+	}
+}
+
+func TestCollectMetricDataWithoutClusterUID(t *testing.T) {
+	dc := NewDataCollector(receivertest.NewNopSettings(metadata.Type), newStoreWithPodAndNode(),
+		metadata.NewDefaultMetricsBuilderConfig(), []string{"Ready"}, nil)
+
+	// Without a cluster UID, the resource attribute is left off.
+	rms := dc.CollectMetricData(time.Now()).ResourceMetrics()
+	require.Positive(t, rms.Len())
+	for i := 0; i < rms.Len(); i++ {
+		_, ok := rms.At(i).Resource().Attributes().Get("k8s.cluster.uid")
+		assert.False(t, ok, "k8s.cluster.uid should not be set when the cluster UID is unknown")
+	}
+}
+
+// With leader election in place the receiver starts over, and thus might set the cluster UID again,
+// on every lease acquisition, while the collection of the previous term may still be running. Run
+// both concurrently so that the race detector covers that overlap.
+func TestSetClusterUIDConcurrentlyWithCollectMetricData(t *testing.T) {
+	dc := NewDataCollector(receivertest.NewNopSettings(metadata.Type), newStoreWithPodAndNode(),
+		metadata.NewDefaultMetricsBuilderConfig(), []string{"Ready"}, nil)
+	dc.SetClusterUID("cluster1-uid")
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for range 100 {
+			dc.SetClusterUID("cluster1-uid")
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		for range 100 {
+			dc.CollectMetricData(time.Now())
+		}
+	}()
+	wg.Wait()
+
+	rms := dc.CollectMetricData(time.Now()).ResourceMetrics()
+	require.Positive(t, rms.Len())
+	for i := 0; i < rms.Len(); i++ {
+		clusterUID, ok := rms.At(i).Resource().Attributes().Get("k8s.cluster.uid")
+		require.True(t, ok, "k8s.cluster.uid is missing from resource %d", i)
+		assert.Equal(t, "cluster1-uid", clusterUID.Str())
+	}
+}
+
+// newStoreWithPodAndNode returns a metadata store holding one pod and one node. Nodes are reported
+// through the custom metrics path, which builds its own resource metrics.
+func newStoreWithPodAndNode() *metadata.Store {
+	ms := metadata.NewStore()
+
+	ms.Setup(gvk.Pod, metadata.ClusterWideInformerKey, &testutils.MockStore{
+		Cache: map[string]any{
+			"pod1-uid": testutils.NewPodWithContainer(
+				"1",
+				testutils.NewPodSpecWithContainer("container-name"),
+				testutils.NewPodStatusWithContainer("container-name", "container-id"),
+			),
+		},
+	})
+
+	ms.Setup(gvk.Node, metadata.ClusterWideInformerKey, &testutils.MockStore{
+		Cache: map[string]any{
+			"node1-uid": testutils.NewNode("1"),
+		},
+	})
+
+	return ms
 }
 
 func TestCollectServiceMetrics(t *testing.T) {
