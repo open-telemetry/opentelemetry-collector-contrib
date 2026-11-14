@@ -1823,19 +1823,23 @@ Examples:
 
 ### ParseJSON
 
-`ParseJSON(target)`
+`ParseJSON(target, Optional[parse_ints])`
 
 The `ParseJSON` Converter returns a `pcommon.Map` or `pcommon.Slice` struct that is a result of parsing the target string as JSON
 
 `target` is a Getter that returns a string. This string should be in json format.
 If `target` is not a string, nil, or cannot be parsed as JSON, `ParseJSON` will return an error.
 
+`parse_ints` is an optional boolean that defaults to `false`. When enabled, integer literals within the signed 64-bit range are
+preserved as `int64`. All the other numbers are converted to `float64`. Decimal and exponent forms such as `1.0` and `1e3` remain
+floats.
+
 Unmarshalling is done using [goccy/go-json](https://github.com/goccy/go-json).
 Each JSON type is converted into a `pdata.Value` using the following map:
 
 ```
 JSON boolean -> bool
-JSON number  -> float64
+JSON number  -> float64 if parse_ints is false, otherwise int64 or float64 according to the field type
 JSON string  -> string
 JSON null    -> nil
 JSON arrays  -> pdata.SliceValue
@@ -1854,6 +1858,9 @@ Examples:
 
 
 - `ParseJSON(log.body)`
+
+
+- `ParseJSON(log.body, parse_ints=true)`
 
 ### ParseKeyValue
 
