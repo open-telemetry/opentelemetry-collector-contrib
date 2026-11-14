@@ -12,12 +12,13 @@ import (
 
 const (
 	serviceNameKey        = string(conventions.ServiceNameKey)
-	dbSystemKey           = string(conventions.DBSystemNameKey)
-	statementExecDuration = "db.client.operation.duration" // OpenTelemetry non-standard constant.
-	spanKindKey           = "span.kind"                    // OpenTelemetry non-standard constant.
-	spanNameKey           = "span.name"                    // OpenTelemetry non-standard constant.
-	statusCodeKey         = "status.code"                  // OpenTelemetry non-standard constant.
-	dbStatementKey        = "db.statement"                 // OpenTelemetry non-standard constant.
+	dbSystemKey           = string(conventions.DBSystemNameKey) // db.system.name
+	legacyDBSystemKey     = "db.system"                         // legacy semconv constant
+	statementExecDuration = "db.client.operation.duration"      // OpenTelemetry non-standard constant.
+	spanKindKey           = "span.kind"                         // OpenTelemetry non-standard constant.
+	spanNameKey           = "span.name"                         // OpenTelemetry non-standard constant.
+	statusCodeKey         = "status.code"                       // OpenTelemetry non-standard constant.
+	dbStatementKey        = "db.statement"                      // OpenTelemetry non-standard constant.
 )
 
 func newDimensions(cfgDims []Dimension) []pdatautil.Dimension {
@@ -33,6 +34,16 @@ func newDimensions(cfgDims []Dimension) []pdatautil.Dimension {
 		}
 	}
 	return dims
+}
+
+func getDBSystem(attributes ...pcommon.Map) (string, bool) {
+	if val, ok := findAttributeValue(dbSystemKey, attributes...); ok {
+		return val, true
+	}
+	if val, ok := findAttributeValue(legacyDBSystemKey, attributes...); ok {
+		return val, true
+	}
+	return "", false
 }
 
 func findAttributeValue(key string, attributes ...pcommon.Map) (string, bool) {
