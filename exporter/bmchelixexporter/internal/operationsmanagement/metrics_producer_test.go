@@ -5,10 +5,12 @@ package operationsmanagement
 
 import (
 	"maps"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
@@ -568,4 +570,92 @@ func TestCreateEnrichedMetricWithEmptyName(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestComputeRateMetricFromCounterOutOfOrderKeepsNewestBaseline(t *testing.T) {
+	t.Parallel()
+	producer := NewMetricsProducer(zap.NewNop(), false)
+	labels := map[string]string{
+		"entityId":   "OTEL:host:network:eth0",
+		"metricName": "hw.network.io",
+		"unit":       "By",
+	}
+
+	// Values chosen so a buggy store-before-check baseline would yield 2500, not 1000.
+	newer := BMCHelixOMMetric{
+		Labels:  labels,
+		Samples: []BMCHelixOMSample{{Value: 5000, Timestamp: 2000}},
+	}
+	older := BMCHelixOMMetric{
+		Labels:  labels,
+		Samples: []BMCHelixOMSample{{Value: 1000, Timestamp: 1000}},
+	}
+	next := BMCHelixOMMetric{
+		Labels:  labels,
+		Samples: []BMCHelixOMSample{{Value: 6000, Timestamp: 3000}},
+	}
+
+	assert.Nil(t, producer.computeRateMetricFromCounter(newer))
+	assert.Nil(t, producer.computeRateMetricFromCounter(older), "out-of-order sample must not replace newer baseline")
+
+	rate := producer.computeRateMetricFromCounter(next)
+	require.NotNil(t, rate)
+	// Baseline stayed at t=2000 / v=5000, so rate over 1s is (6000-5000)/1 = 1000
+	assert.InDelta(t, 1000.0, rate.Samples[0].Value, 0.001)
+}
+
+func TestComputeRateMetricFromCounterDuplicateTimestampKeepsBaseline(t *testing.T) {
+	t.Parallel()
+	producer := NewMetricsProducer(zap.NewNop(), false)
+	labels := map[string]string{
+		"entityId":   "OTEL:host:network:eth0",
+		"metricName": "hw.network.io",
+		"unit":       "By",
+	}
+
+	// Same timestamp with a different value must not replace the baseline.
+	first := BMCHelixOMMetric{
+		Labels:  labels,
+		Samples: []BMCHelixOMSample{{Value: 1000, Timestamp: 1000}},
+	}
+	dup := BMCHelixOMMetric{
+		Labels:  labels,
+		Samples: []BMCHelixOMSample{{Value: 500, Timestamp: 1000}},
+	}
+	next := BMCHelixOMMetric{
+		Labels:  labels,
+		Samples: []BMCHelixOMSample{{Value: 2000, Timestamp: 2000}},
+	}
+
+	assert.Nil(t, producer.computeRateMetricFromCounter(first))
+	assert.Nil(t, producer.computeRateMetricFromCounter(dup), "same-timestamp sample must not replace baseline")
+
+	rate := producer.computeRateMetricFromCounter(next)
+	require.NotNil(t, rate)
+	// Baseline stayed at v=1000, so rate over 1s is (2000-1000)/1 = 1000 (old code would give 1500)
+	assert.InDelta(t, 1000.0, rate.Samples[0].Value, 0.001)
+}
+
+func TestComputeRateMetricFromCounterConcurrent(t *testing.T) {
+	t.Parallel()
+	producer := NewMetricsProducer(zap.NewNop(), false)
+	labels := map[string]string{
+		"entityId":   "OTEL:host:network:eth0",
+		"metricName": "hw.network.io",
+		"unit":       "By",
+	}
+
+	var wg sync.WaitGroup
+	for i := range 64 {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			metric := BMCHelixOMMetric{
+				Labels:  labels,
+				Samples: []BMCHelixOMSample{{Value: float64(1000 + i), Timestamp: int64(1000 + i)}},
+			}
+			_ = producer.computeRateMetricFromCounter(metric)
+		}(i)
+	}
+	wg.Wait()
 }
