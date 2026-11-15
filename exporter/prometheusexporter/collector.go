@@ -192,12 +192,7 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 	return nil, errUnknownMetricType
 }
 
-// defaultZeroThreshold matches the remote-write translator's default for native histograms
-// when an explicit zero threshold is not provided in the datapoint.
-const (
-	defaultZeroThreshold = 1e-128
-	cbnhScale            = -53
-)
+const cbnhScale = -53
 
 func bucketsToNativeMap(buckets pmetric.ExponentialHistogramDataPointBuckets, scaleDown int32) map[int]int64 {
 	counts := buckets.BucketCounts()
@@ -247,11 +242,6 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 	pos := bucketsToNativeMap(dp.Positive(), scaleDown)
 	neg := bucketsToNativeMap(dp.Negative(), scaleDown)
 
-	zeroThresh := dp.ZeroThreshold()
-	if zeroThresh == 0 {
-		zeroThresh = defaultZeroThreshold
-	}
-
 	// Use created timestamp if start time is set (> 0), else zero value.
 	created := time.Time{}
 	if dp.StartTimestamp().AsTime().Unix() > 0 {
@@ -266,7 +256,7 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 		neg,
 		dp.ZeroCount(),
 		schema,
-		zeroThresh,
+		dp.ZeroThreshold(),
 		created,
 		attributes...,
 	)

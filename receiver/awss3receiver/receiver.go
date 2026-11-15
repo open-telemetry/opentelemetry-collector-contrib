@@ -14,6 +14,7 @@ import (
 
 	"github.com/klauspost/compress/zstd"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -44,6 +45,7 @@ type awss3Receiver struct {
 	dataProcessor   receiverProcessor
 	extensions      encodingExtensions
 	notifier        statusNotifier
+	decompression   configcompression.Type
 }
 
 func newAWSS3Receiver(ctx context.Context, cfg *Config, telemetryType string, settings receiver.Settings, processor receiverProcessor) (*awss3Receiver, error) {
@@ -85,6 +87,7 @@ func newAWSS3Receiver(ctx context.Context, cfg *Config, telemetryType string, se
 		dataProcessor:   processor,
 		encodingsConfig: cfg.Encodings,
 		notifier:        notifier,
+		decompression:   cfg.S3Downloader.Decompression,
 	}, nil
 }
 
@@ -125,34 +128,11 @@ func (r *awss3Receiver) receiveBytes(ctx context.Context, key string, data []byt
 	if data == nil {
 		return nil
 	}
-	if strings.HasSuffix(key, ".gz") {
-		var reader *gzip.Reader
-		reader, err = gzip.NewReader(bytes.NewReader(data))
-		if err != nil {
-			return err
-		}
-		defer func() {
-			if closeErr := reader.Close(); closeErr != nil && err == nil {
-				err = closeErr
-			}
-		}()
+	switch {
+	case strings.HasSuffix(key, ".gz"):
 		key = strings.TrimSuffix(key, ".gz")
-		data, err = io.ReadAll(reader)
-		if err != nil {
-			return err
-		}
-	} else if strings.HasSuffix(key, ".zst") {
-		var reader *zstd.Decoder
-		reader, err = zstd.NewReader(bytes.NewReader(data))
-		if err != nil {
-			return err
-		}
-		decompressedReader := reader.IOReadCloser()
-		defer func() {
-			if closeErr := decompressedReader.Close(); closeErr != nil && err == nil {
-				err = closeErr
-			}
-		}()
+		data, err = decompress(configcompression.TypeGzip, data)
+	case strings.HasSuffix(key, ".zst"):
 		// Strip the compression suffix so the downstream format
 		// detection sees the underlying marshaler's suffix (.json /
 		// .binpb). Matches the .gz branch; without it, a file written
@@ -161,12 +141,42 @@ func (r *awss3Receiver) receiveBytes(ctx context.Context, key string, data []byt
 		// in .zst, falls through every format check, and is dropped
 		// with "Unsupported file format" (#47802).
 		key = strings.TrimSuffix(key, ".zst")
-		data, err = io.ReadAll(decompressedReader)
-		if err != nil {
-			return err
-		}
+		data, err = decompress(configcompression.TypeZstd, data)
+	case r.decompression.IsCompressed():
+		// The key has no recognized compression suffix, apply the
+		// configured decompression algorithm.
+		data, err = decompress(r.decompression, data)
+	}
+	if err != nil {
+		return err
 	}
 	return r.dataProcessor.processReceivedData(ctx, r, key, data)
+}
+
+func decompress(algorithm configcompression.Type, data []byte) (result []byte, err error) {
+	var reader io.ReadCloser
+	switch algorithm {
+	case configcompression.TypeGzip:
+		reader, err = gzip.NewReader(bytes.NewReader(data))
+		if err != nil {
+			return nil, err
+		}
+	case configcompression.TypeZstd:
+		var decoder *zstd.Decoder
+		decoder, err = zstd.NewReader(bytes.NewReader(data))
+		if err != nil {
+			return nil, err
+		}
+		reader = decoder.IOReadCloser()
+	default:
+		return nil, fmt.Errorf("unsupported decompression type %q", algorithm)
+	}
+	defer func() {
+		if closeErr := reader.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
+	return io.ReadAll(reader)
 }
 
 type traceReceiver struct {

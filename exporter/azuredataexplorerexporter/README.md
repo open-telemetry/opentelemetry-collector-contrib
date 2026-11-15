@@ -58,7 +58,7 @@ An example configuration is provided as follows:
 
 ```yaml
 exporters:
-  azuredataexplorer:
+  azure_data_explorer:
     # Kusto cluster uri
     cluster_uri: "https://CLUSTER.kusto.windows.net"
     # Client ID

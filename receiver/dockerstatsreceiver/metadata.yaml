@@ -15,11 +15,14 @@ status:
   codeowners:
     active: [jamesmoessis]
     emeritus: [rmfitzpatrick]
-  unsupported_platforms: [darwin, windows]
+  unsupported_platforms: [darwin]
 
 sem_conv_version: 1.43.0
 
 tests:
+  # Start dials the Docker daemon, which the Windows CI runners do not provide.
+  # TestLifecycle in lifecycle_test.go covers start/shutdown against a mock daemon.
+  skip_lifecycle: true
   goleak:
     ignore:
       top:
