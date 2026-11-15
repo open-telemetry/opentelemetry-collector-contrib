@@ -483,6 +483,11 @@ func TestStopListAndWatchIdempotency(t *testing.T) {
 	require.NotPanics(t, func() {
 		watcher.StopListAndWatch()
 	})
+	select {
+	case <-watcher.stop:
+	default:
+		t.Fatal("expected stop channel to be closed after StopListAndWatch")
+	}
 	require.NotPanics(t, func() {
 		watcher.StopListAndWatch()
 	})
