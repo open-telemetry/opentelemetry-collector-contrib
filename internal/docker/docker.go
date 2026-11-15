@@ -164,6 +164,30 @@ func (dc *Client) LoadContainerList(ctx context.Context) error {
 	return nil
 }
 
+// ContainerStateCounts returns the number of containers in each state
+// (created, running, paused, restarting, removing, exited, dead).
+// It queries the Docker daemon for all containers and filters out
+// excluded images per configuration.
+func (dc *Client) ContainerStateCounts(ctx context.Context) (map[string]int64, error) {
+	listCtx, cancel := context.WithTimeout(ctx, dc.config.Timeout)
+	defer cancel()
+
+	result, err := dc.client.ContainerList(listCtx, docker.ContainerListOptions{All: true})
+	if err != nil {
+		return nil, err
+	}
+
+	counts := make(map[string]int64)
+	for i := range result.Items {
+		c := &result.Items[i]
+		if dc.shouldBeExcluded(c.Image) {
+			continue
+		}
+		counts[string(c.State)]++
+	}
+	return counts, nil
+}
+
 // FetchContainerStatsAsJSON will query the desired container stats
 // and return them as StatsJSON
 func (dc *Client) FetchContainerStatsAsJSON(
