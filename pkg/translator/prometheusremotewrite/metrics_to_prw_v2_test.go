@@ -11,6 +11,7 @@ import (
 
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -411,4 +412,55 @@ func TestFromMetricsV2_TranslationStrategies(t *testing.T) {
 			require.Equal(t, tt.expectedUnit, actualUnit)
 		})
 	}
+}
+
+func TestFromMetricsV2_NonMonotonicSum(t *testing.T) {
+	// Create a non-monotonic sum metric
+	metricNonMonotonic := pmetric.NewMetric()
+	metricNonMonotonic.SetName("test_non_monotonic_sum")
+	metricNonMonotonic.SetEmptySum().SetIsMonotonic(false)
+	metricNonMonotonic.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	pt1 := metricNonMonotonic.Sum().DataPoints().AppendEmpty()
+	pt1.SetTimestamp(pcommon.Timestamp(1000000000))
+	pt1.SetDoubleValue(1.23)
+	pt1.Exemplars().AppendEmpty().SetDoubleValue(4.56)
+
+	// Create a monotonic sum metric
+	metricMonotonic := pmetric.NewMetric()
+	metricMonotonic.SetName("test_monotonic_sum")
+	metricMonotonic.SetEmptySum().SetIsMonotonic(true)
+	metricMonotonic.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	pt2 := metricMonotonic.Sum().DataPoints().AppendEmpty()
+	pt2.SetTimestamp(pcommon.Timestamp(1000000000))
+	pt2.SetDoubleValue(7.89)
+	pt2.Exemplars().AppendEmpty().SetDoubleValue(0.12)
+
+	md := pmetric.NewMetrics()
+	metrics := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+	metricNonMonotonic.CopyTo(metrics.AppendEmpty())
+	metricMonotonic.CopyTo(metrics.AppendEmpty())
+
+	tsMap, symbolsTable, err := FromMetricsV2(md, Settings{AddMetricSuffixes: true})
+	require.NoError(t, err)
+	require.Len(t, tsMap, 2)
+
+	symbols := symbolsTable.Symbols()
+	var tsNonMonotonic, tsMonotonic *writev2.TimeSeries
+	for _, ts := range tsMap {
+		switch getMetricNameV2(t, ts, symbols) {
+		case "test_non_monotonic_sum":
+			tsNonMonotonic = ts
+		case "test_monotonic_sum_total":
+			tsMonotonic = ts
+		}
+	}
+
+	require.NotNil(t, tsNonMonotonic, "non-monotonic sum series not found")
+	require.NotNil(t, tsMonotonic, "monotonic sum series not found")
+
+	// Non-monotonic sum should NOT have exemplars (intentional)
+	assert.Empty(t, tsNonMonotonic.Exemplars)
+
+	// Monotonic sum SHOULD have exemplars
+	assert.Len(t, tsMonotonic.Exemplars, 1)
 }

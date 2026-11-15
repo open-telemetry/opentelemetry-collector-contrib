@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/config/configstorage"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -84,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 					queue := exporterhelper.NewDefaultQueueConfig()
 					queue.NumConsumers = 10
 					queue.QueueSize = 100
-					queue.StorageID = &storageID
+					queue.StorageID = configoptional.Some(configstorage.ID(storageID))
 					return queue
 				}()),
 				AsyncInsert: true,
