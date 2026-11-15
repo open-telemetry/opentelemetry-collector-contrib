@@ -24,6 +24,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/internal/metadata"
 )
 
+// inClusterConfig is a seam so tests can stub the in-cluster Kubernetes config.
+var inClusterConfig = rest.InClusterConfig
+
 type prometheusReceiverWrapper struct {
 	params             receiver.Settings
 	config             *Config
@@ -60,20 +63,24 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 }
 
 func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.Config, error) {
-	var bearerToken string
+	var bearerTokenFile string
 	if cfg.UseServiceAccount {
-		restConfig, err := rest.InClusterConfig()
+		restConfig, err := inClusterConfig()
 		if err != nil {
 			return nil, err
 		}
-		bearerToken = restConfig.BearerToken
-		if bearerToken == "" {
+		if restConfig.BearerToken == "" {
 			return nil, errors.New("bearer token was empty")
 		}
+		// Pass the token file rather than the token so Prometheus re-reads it
+		// on each scrape and picks up rotated service account tokens.
+		bearerTokenFile = restConfig.BearerTokenFile
 	}
 
 	out := &prometheusreceiver.Config{}
-	httpConfig := configutil.HTTPClientConfig{}
+	// Start from the Prometheus defaults: the prometheus receiver round-trips this
+	// config through YAML, so zero values would replace them.
+	httpConfig := configutil.DefaultHTTPClientConfig
 
 	scheme := "http"
 
@@ -103,7 +110,12 @@ func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.C
 		}
 	}
 
-	httpConfig.BearerToken = configutil.Secret(bearerToken)
+	if bearerTokenFile != "" {
+		httpConfig.Authorization = &configutil.Authorization{
+			Type:            "Bearer",
+			CredentialsFile: bearerTokenFile,
+		}
+	}
 
 	if len(cfg.ClientConfig.Headers) > 0 {
 		headers := make(map[string]configutil.Header, len(cfg.ClientConfig.Headers))
@@ -144,20 +156,21 @@ func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.C
 		}
 	}
 
-	scrapeConfig := &config.ScrapeConfig{
-		ScrapeInterval:  model.Duration(cfg.CollectionInterval),
-		ScrapeTimeout:   model.Duration(scrapeTimeout),
-		JobName:         jobName,
-		HonorTimestamps: true,
-		Scheme:          scheme,
-		MetricsPath:     cfg.MetricsPath,
-		Params:          cfg.Params,
-		ServiceDiscoveryConfigs: discovery.Configs{
-			discovery.StaticConfig{
-				{
-					Targets: []model.LabelSet{{model.AddressLabel: model.LabelValue(cfg.ClientConfig.Endpoint)}},
-					Labels:  labels,
-				},
+	scrapeConfig := new(config.ScrapeConfig)
+	*scrapeConfig = config.DefaultScrapeConfig
+	scrapeConfig.ScrapeInterval = model.Duration(cfg.CollectionInterval)
+	scrapeConfig.ScrapeTimeout = model.Duration(scrapeTimeout)
+	scrapeConfig.JobName = jobName
+	scrapeConfig.Scheme = scheme
+	scrapeConfig.MetricsPath = cfg.MetricsPath
+	scrapeConfig.Params = cfg.Params
+	// Match the prometheus receiver, which sets this in PromConfig.Validate.
+	scrapeConfig.ScrapeFallbackProtocol = config.PrometheusText0_0_4
+	scrapeConfig.ServiceDiscoveryConfigs = discovery.Configs{
+		discovery.StaticConfig{
+			{
+				Targets: []model.LabelSet{{model.AddressLabel: model.LabelValue(cfg.ClientConfig.Endpoint)}},
+				Labels:  labels,
 			},
 		},
 	}

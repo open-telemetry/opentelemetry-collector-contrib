@@ -49,7 +49,6 @@ exporter/googlecloudpubsubexporter exporter/googlecloudpubsub
 exporter/googlecloudstorageexporter exporter/googlecloudstorage
 exporter/googlemanagedprometheusexporter exporter/googlemanagedprometheus
 exporter/honeycombmarkerexporter exporter/honeycombmarker
-exporter/influxdbexporter exporter/influxdb
 exporter/kafkaexporter exporter/kafka
 exporter/loadbalancingexporter exporter/loadbalancing
 exporter/logzioexporter exporter/logzio
@@ -300,7 +299,6 @@ receiver/httpcheckreceiver receiver/httpcheck
 receiver/huaweicloudcesreceiver receiver/huaweicloudces
 receiver/icmpcheckreceiver receiver/icmpcheck
 receiver/iisreceiver receiver/iis
-receiver/influxdbreceiver receiver/influxdb
 receiver/jaegerreceiver receiver/jaeger
 receiver/journaldreceiver receiver/journald
 receiver/k8sclusterreceiver receiver/k8scluster
@@ -374,6 +372,8 @@ reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
+exporter/influxdbexporter exporter/influxdb
 exporter/logicmonitorexporter exporter/logicmonitor
 extension/encoding/avrologencodingextension extension/encoding/avrologencoding
+receiver/influxdbreceiver receiver/influxdb
 receiver/riakreceiver receiver/riak

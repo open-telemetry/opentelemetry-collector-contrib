@@ -6,6 +6,14 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var ReceiverKubeletStatsCPUUtilizationRoundingFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.kubelet_stats.cpuUtilizationRounding",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the pod and container cpu utilization metrics (*.cpu.node.utilization, *.cpu_limit_utilization and *.cpu_request_utilization) are computed from integer nanocore values and rounded to the number of significant digits justified by the inputs, removing float64 artifacts from the emitted values."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47988"),
+	featuregate.WithRegisterFromVersion("v0.165.0"),
+)
+
 var ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.kubeletstats.cpuUsageScrapeBased",
 	featuregate.StageBeta,

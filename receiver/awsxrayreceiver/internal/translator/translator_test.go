@@ -1038,6 +1038,9 @@ func TestTranslation(t *testing.T) {
 		},
 	}
 
+	origDontEmitV0 := metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.IsEnabled()
+	origEmitV1 := metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.IsEnabled()
+
 	for _, tc := range tests {
 		for _, emitV0 := range []bool{true, false} {
 			for _, emitV1 := range []bool{true, false} {
@@ -1080,8 +1083,8 @@ func TestTranslation(t *testing.T) {
 					record := recorder.Rotate()
 					assert.Equal(t, *tc.expectedRecord.SegmentsReceivedCount, *record.SegmentsReceivedCount)
 					assert.Equal(t, *tc.expectedRecord.SegmentsRejectedCount, *record.SegmentsRejectedCount)
-					assert.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.ID(), false))
-					assert.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.ID(), false))
+					assert.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate.ID(), origDontEmitV0))
+					assert.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate.ID(), origEmitV1))
 				})
 			}
 		}

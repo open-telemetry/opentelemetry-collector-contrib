@@ -22,6 +22,9 @@ import (
 // Prometheus histogram with custom buckets (schema -53) via Prometheus' own
 // convertnhcb helper. Exactly one of the returned histograms is non-nil.
 func explicitToNHCB(pt pmetric.HistogramDataPoint) (*histogram.Histogram, *histogram.FloatHistogram, error) {
+	if !pt.HasSum() {
+		return nil, nil, errors.New("cannot convert explicit histogram to native histogram with custom buckets: sum is not set")
+	}
 	th := convertnhcb.NewTempHistogram()
 	bounds := pt.ExplicitBounds()
 	counts := pt.BucketCounts()
@@ -50,10 +53,8 @@ func explicitToNHCB(pt pmetric.HistogramDataPoint) (*histogram.Histogram, *histo
 	if err := th.SetCount(float64(cumulative)); err != nil {
 		return nil, nil, err
 	}
-	if pt.HasSum() {
-		if err := th.SetSum(pt.Sum()); err != nil {
-			return nil, nil, err
-		}
+	if err := th.SetSum(pt.Sum()); err != nil {
+		return nil, nil, err
 	}
 	return th.Convert()
 }
@@ -131,6 +132,18 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		scale = 8
 	}
 
+	timestamp := convertTimeStamp(p.Timestamp())
+	if p.Flags().NoRecordedValue() {
+		// Staleness is signaled by a stale-NaN Sum; Count is 0 and ZeroCount/buckets are left empty.
+		// https://prometheus.io/docs/specs/native_histograms/#staleness-markers
+		return prompb.Histogram{
+			Schema:        scale,
+			ZeroThreshold: p.ZeroThreshold(),
+			Sum:           math.Float64frombits(value.StaleNaN),
+			Timestamp:     timestamp,
+		}, nil
+	}
+
 	pSpans, pDeltas := convertBucketsLayout(p.Positive(), scaleDown)
 	nSpans, nDeltas := convertBucketsLayout(p.Negative(), scaleDown)
 
@@ -155,15 +168,9 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		NegativeSpans:  nSpans,
 		NegativeDeltas: nDeltas,
 
-		Timestamp: convertTimeStamp(p.Timestamp()),
-	}
-
-	if p.Flags().NoRecordedValue() {
-		h.Sum = math.Float64frombits(value.StaleNaN)
-		h.Count = &prompb.Histogram_CountInt{CountInt: value.StaleNaN}
-	} else {
-		h.Sum = p.Sum()
-		h.Count = &prompb.Histogram_CountInt{CountInt: p.Count()}
+		Timestamp: timestamp,
+		Sum:       p.Sum(),
+		Count:     &prompb.Histogram_CountInt{CountInt: p.Count()},
 	}
 	return h, nil
 }
