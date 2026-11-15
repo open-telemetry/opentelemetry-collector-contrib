@@ -5340,7 +5340,7 @@ func TestOnlyHistogramsPrometheusRefusesFailTheRequest(t *testing.T) {
 				PositiveSpans:  []writev2.BucketSpan{{Offset: math.MinInt32, Length: 1}},
 				PositiveDeltas: []int64{1},
 			},
-			status: http.StatusNoContent,
+			status: http.StatusBadRequest,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
