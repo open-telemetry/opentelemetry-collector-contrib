@@ -505,6 +505,31 @@ func TestMarshalResponse_Msgpack(t *testing.T) {
 	}
 }
 
+// TestMarshalResponse_MsgpackFieldNames verifies the msgpack batch response uses
+// the lowercase keys that libhoney clients read, not the Go field names.
+func TestMarshalResponse_MsgpackFieldNames(t *testing.T) {
+	data, err := MpEncoder.MarshalResponse([]response.ResponseInBatch{
+		{Status: 202},
+		{Status: 400, ErrorStr: "bad request"},
+	})
+	require.NoError(t, err)
+
+	// Decode by key name, the way a client does.
+	var decoded []map[string]any
+	require.NoError(t, msgpack.Unmarshal(data, &decoded))
+	require.Len(t, decoded, 2)
+
+	assert.EqualValues(t, 202, decoded[0]["status"])
+	assert.NotContains(t, decoded[0], "error") // omitted when empty, same as JSON
+	assert.EqualValues(t, 400, decoded[1]["status"])
+	assert.Equal(t, "bad request", decoded[1]["error"])
+
+	for _, m := range decoded {
+		assert.NotContains(t, m, "Status")
+		assert.NotContains(t, m, "ErrorStr")
+	}
+}
+
 func TestGetEncoder(t *testing.T) {
 	tests := []struct {
 		name        string
