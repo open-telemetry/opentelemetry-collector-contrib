@@ -17,12 +17,14 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -53,6 +55,14 @@ type sharedInformer interface {
 	WaitForCacheSync(<-chan struct{}) map[reflect.Type]bool
 }
 
+// kubeSystemNamespace is the namespace whose UID identifies the cluster, see
+// https://opentelemetry.io/docs/specs/semconv/registry/attributes/k8s/#k8s-cluster-uid
+const kubeSystemNamespace = "kube-system"
+
+// clusterUIDTimeout bounds the request for the kube-system namespace, so that an unresponsive API
+// server cannot hold up the start of the receiver indefinitely.
+const clusterUIDTimeout = 5 * time.Second
+
 type resourceWatcher struct {
 	client              kubernetes.Interface
 	osQuotaClient       quotaclientset.Interface
@@ -65,6 +75,10 @@ type resourceWatcher struct {
 	initialSyncTimedOut *atomic.Bool
 	config              *Config
 	entityLogConsumer   consumer.Logs
+
+	// clusterUID is the UID of the kube-system namespace. It is attached to all emitted
+	// telemetry as the k8s.cluster.uid resource attribute.
+	clusterUID atomic.Pointer[string]
 
 	// For mocking.
 	makeClient               func(apiConf k8sconfig.APIConfig) (kubernetes.Interface, error)
@@ -87,12 +101,18 @@ func newResourceWatcher(set receiver.Settings, cfg *Config, metadataStore *metad
 	}
 }
 
-func (rw *resourceWatcher) initialize() error {
+func (rw *resourceWatcher) initialize(ctx context.Context) error {
 	client, err := rw.makeClient(rw.config.APIConfig)
 	if err != nil {
 		return fmt.Errorf("Failed to create Kubernetes client: %w", err)
 	}
 	rw.client = client
+
+	if rw.config.MetricsBuilderConfig.ResourceAttributes.K8sClusterUID.Enabled && rw.getClusterUID() == "" {
+		if uid := rw.fetchClusterUID(ctx); uid != "" {
+			rw.clusterUID.Store(&uid)
+		}
+	}
 
 	if rw.config.Distribution == distributionOpenShift && rw.config.Namespace == "" && len(rw.config.Namespaces) == 0 {
 		rw.osQuotaClient, err = rw.makeOpenShiftQuotaClient(rw.config.APIConfig)
@@ -107,6 +127,43 @@ func (rw *resourceWatcher) initialize() error {
 	}
 
 	return nil
+}
+
+// getClusterUID returns the UID of the cluster, or an empty string if it has not been determined.
+func (rw *resourceWatcher) getClusterUID() string {
+	if uid := rw.clusterUID.Load(); uid != nil {
+		return *uid
+	}
+	return ""
+}
+
+// fetchClusterUID returns the UID of the kube-system namespace (e.g. the value for the
+// k8s.cluster.uid resource attribute). It returns an empty string if the UID cannot be
+// determined, in which case the k8s.cluster.uid resource attribute is omitted from the
+// emitted telemetry.
+func (rw *resourceWatcher) fetchClusterUID(ctx context.Context) string {
+	ctx, cancel := context.WithTimeout(ctx, clusterUIDTimeout)
+	defer cancel()
+
+	ns, err := rw.client.CoreV1().Namespaces().Get(ctx, kubeSystemNamespace, metav1.GetOptions{})
+	if err != nil {
+		if apierrors.IsForbidden(err) || apierrors.IsUnauthorized(err) {
+			rw.logger.Warn("Not allowed to get the kube-system namespace, the k8s.cluster.uid resource "+
+				"attribute will be missing from the emitted telemetry. Grant the collector permission to "+
+				"get the kube-system namespace, or disable the k8s.cluster.uid resource attribute.",
+				zap.Error(err))
+			return ""
+		}
+		rw.logger.Warn("Failed to get the kube-system namespace, the k8s.cluster.uid resource attribute "+
+			"will be missing from the emitted telemetry.", zap.Error(err))
+		return ""
+	}
+	if ns.UID == "" {
+		rw.logger.Warn("The kube-system namespace has no UID, the k8s.cluster.uid resource attribute " +
+			"will be missing from the emitted telemetry.")
+		return ""
+	}
+	return string(ns.UID)
 }
 
 // shouldWatchResourceForMetadataOnly returns true if a resource should be watched even though
@@ -524,6 +581,13 @@ func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[exper
 
 		// Convert entity events to log representation.
 		logs := entityEvents.ConvertAndMoveToLogs()
+
+		if clusterUID := rw.getClusterUID(); clusterUID != "" {
+			rls := logs.ResourceLogs()
+			for i := 0; i < rls.Len(); i++ {
+				rls.At(i).Resource().Attributes().PutStr(string(conventions.K8SClusterUIDKey), clusterUID)
+			}
+		}
 
 		if logs.LogRecordCount() != 0 {
 			err := rw.entityLogConsumer.ConsumeLogs(context.Background(), logs)

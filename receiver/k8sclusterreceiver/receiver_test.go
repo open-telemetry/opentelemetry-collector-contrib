@@ -13,6 +13,7 @@ import (
 
 	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	fakeQuota "github.com/openshift/client-go/quota/clientset/versioned/fake"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -97,6 +98,42 @@ func TestReceiver(t *testing.T) {
 		return metricsCountDelta == expectedNumMetrics
 	}, 10*time.Second, 100*time.Millisecond,
 		"updated metrics not collected")
+
+	require.NoError(t, r.Shutdown(ctx))
+}
+
+func TestReceiverAttachesClusterUID(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	defer func() {
+		require.NoError(t, tt.Shutdown(t.Context()))
+	}()
+
+	client := newFakeClientWithAllResources()
+	sink := new(consumertest.MetricsSink)
+
+	r := setupReceiver(client, nil, sink, nil, 10*time.Second, tt, nil, component.MustNewID("foo"))
+	// The attribute is off by default, opting in is what makes the receiver look up the cluster UID.
+	r.config.MetricsBuilderConfig.ResourceAttributes.K8sClusterUID.Enabled = true
+
+	// Setup k8s resources.
+	createKubeSystemNamespace(t, client, "cluster1-uid")
+	createPods(t, client, 1, false)
+
+	ctx := t.Context()
+	require.NoError(t, r.Start(ctx, newNopHost()))
+
+	require.Eventually(t, func() bool {
+		return sink.DataPointCount() > 0
+	}, 10*time.Second, 100*time.Millisecond, "metrics not collected")
+
+	for _, m := range sink.AllMetrics() {
+		rms := m.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			clusterUID, ok := rms.At(i).Resource().Attributes().Get("k8s.cluster.uid")
+			require.True(t, ok, "k8s.cluster.uid is missing")
+			assert.Equal(t, "cluster1-uid", clusterUID.Str())
+		}
+	}
 
 	require.NoError(t, r.Shutdown(ctx))
 }

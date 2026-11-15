@@ -4,12 +4,14 @@
 package collection // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 
 import (
+	"sync/atomic"
 	"time"
 
 	quotav1 "github.com/openshift/api/quota/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	batchv1 "k8s.io/api/batch/v1"
@@ -46,6 +48,7 @@ type DataCollector struct {
 	nodeConditionsToReport   []string
 	allocatableTypesToReport []string
 	metricsBuilder           *metadata.MetricsBuilder
+	clusterUID               atomic.Pointer[string]
 }
 
 // NewDataCollector returns a DataCollector.
@@ -59,6 +62,12 @@ func NewDataCollector(set receiver.Settings, ms *metadata.Store,
 		allocatableTypesToReport: allocatableTypesToReport,
 		metricsBuilder:           metadata.NewMetricsBuilder(metricsBuilderConfig, set),
 	}
+}
+
+// SetClusterUID sets the UID of the cluster, which is attached to every emitted resource as the
+// k8s.cluster.uid resource attribute. An empty value leaves the attribute off.
+func (dc *DataCollector) SetClusterUID(clusterUID string) {
+	dc.clusterUID.Store(&clusterUID)
 }
 
 func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metrics {
@@ -126,6 +135,17 @@ func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metric
 
 	m := dc.metricsBuilder.Emit()
 	customRMs.MoveAndAppendTo(m.ResourceMetrics())
+
+	// The cluster UID belongs on every resource, including the ones the custom metrics path above
+	// builds outside the metrics builder. It is therefore attached here rather than per resource
+	// type.
+	if clusterUID := dc.clusterUID.Load(); clusterUID != nil && *clusterUID != "" {
+		rms := m.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			rms.At(i).Resource().Attributes().PutStr(string(conventions.K8SClusterUIDKey), *clusterUID)
+		}
+	}
+
 	return m
 }
 
