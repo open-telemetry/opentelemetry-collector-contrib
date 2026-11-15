@@ -299,9 +299,6 @@ exclusions:
       - name: internal.coreinternal.goldendataset.DontEmitV0NetworkConventions
         validation:
           enabled: false
-      - name: internal.coreinternal.goldendataset.DontEmitV0RPCConventions
-        validation:
-          enabled: false
       - name: internal.coreinternal.goldendataset.EmitV1DatabaseConventions
         validation:
           enabled: false
@@ -315,9 +312,6 @@ exclusions:
         validation:
           enabled: false
       - name: internal.coreinternal.goldendataset.EmitV1NetworkConventions
-        validation:
-          enabled: false
-      - name: internal.coreinternal.goldendataset.EmitV1RPCConventions
         validation:
           enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog

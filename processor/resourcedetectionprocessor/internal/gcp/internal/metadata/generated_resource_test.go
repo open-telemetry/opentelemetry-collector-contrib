@@ -22,7 +22,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetFaasName("faas.name-val")
 			rb.SetFaasVersion("faas.version-val")
 			rb.SetGcpCloudRunJobExecution("gcp.cloud_run.job.execution-val")
-			rb.SetGcpCloudRunJobTaskIndex("gcp.cloud_run.job.task_index-val")
+			rb.SetGcpCloudRunJobTaskIndex(28)
 			rb.SetGcpGceInstanceHostname("gcp.gce.instance.hostname-val")
 			rb.SetGcpGceInstanceName("gcp.gce.instance.name-val")
 			rb.SetGcpGceInstanceGroupManagerName("gcp.gce.instance_group_manager.name-val")
@@ -95,7 +95,7 @@ func TestResourceBuilder(t *testing.T) {
 			gcpCloudRunJobTaskIndexAttrVal, ok := res.Attributes().Get("gcp.cloud_run.job.task_index")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "gcp.cloud_run.job.task_index-val", gcpCloudRunJobTaskIndexAttrVal.Str())
+				assert.EqualValues(t, 28, gcpCloudRunJobTaskIndexAttrVal.Int())
 			}
 			gcpGceInstanceHostnameAttrVal, ok := res.Attributes().Get("gcp.gce.instance.hostname")
 			assert.Equal(t, tt == "all_set", ok)
