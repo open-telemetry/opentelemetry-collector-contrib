@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
@@ -79,7 +80,7 @@ func TestChainingWithAdditionalAuth_HTTP(t *testing.T) {
 		HeadersConfig: []HeaderConfig{
 			{
 				Key:    new("X-Custom-Header"),
-				Value:  new("custom-value"),
+				Value:  new(configopaque.String("custom-value")),
 				Action: UPSERT,
 			},
 		},
@@ -132,7 +133,7 @@ func TestChainingWithAdditionalAuth_gRPC(t *testing.T) {
 		HeadersConfig: []HeaderConfig{
 			{
 				Key:    new("x-custom-header"),
-				Value:  new("custom-value"),
+				Value:  new(configopaque.String("custom-value")),
 				Action: UPSERT,
 			},
 		},
@@ -179,7 +180,7 @@ func TestChainingWithMissingAuth(t *testing.T) {
 		HeadersConfig: []HeaderConfig{
 			{
 				Key:    new("X-Custom-Header"),
-				Value:  new("custom-value"),
+				Value:  new(configopaque.String("custom-value")),
 				Action: UPSERT,
 			},
 		},
@@ -215,7 +216,7 @@ func TestWithoutAdditionalAuth(t *testing.T) {
 		HeadersConfig: []HeaderConfig{
 			{
 				Key:    new("X-Custom-Header"),
-				Value:  new("custom-value"),
+				Value:  new(configopaque.String("custom-value")),
 				Action: UPSERT,
 			},
 		},
@@ -276,7 +277,7 @@ func TestDependencies(t *testing.T) {
 				HeadersConfig: []HeaderConfig{
 					{
 						Key:    new("X-Test"),
-						Value:  new("test"),
+						Value:  new(configopaque.String("test")),
 						Action: UPSERT,
 					},
 				},
