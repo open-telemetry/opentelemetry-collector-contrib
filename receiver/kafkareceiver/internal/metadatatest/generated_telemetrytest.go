@@ -211,8 +211,10 @@ func AssertEqualKafkaReceiverPartitionInFlightRecords(t *testing.T, tt *componen
 		Name:        "otelcol_kafka_receiver_partition_in_flight_records",
 		Description: "The number of active record-processing calls, including decoding, Consume, and retry backoff. [Development]",
 		Unit:        "1",
-		Data: metricdata.Gauge[int64]{
-			DataPoints: dps,
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: false,
+			DataPoints:  dps,
 		},
 	}
 	got, err := tt.GetMetric("otelcol_kafka_receiver_partition_in_flight_records")

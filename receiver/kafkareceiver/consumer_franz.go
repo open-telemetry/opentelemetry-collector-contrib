@@ -69,10 +69,6 @@ type franzConsumer struct {
 	// lifecycle hooks. This allows readers to use the snapshot without
 	// acquiring a read lock on the `mu` mutex.
 	assignmentsSnapshot atomic.Pointer[[]*pc]
-	// partitionTelemetry retains cumulative wait totals across assignments.
-	// Assignment callbacks update it under mu; collection uses the snapshot.
-	partitionTelemetry         map[topicPartition]*partitionTelemetry
-	partitionTelemetrySnapshot atomic.Pointer[[]*partitionTelemetry]
 
 	// controls serializes SetOffsets between PollRecords calls.
 	controls chan partitionControl
@@ -134,17 +130,6 @@ func newFranzKafkaConsumer(
 		telemetryBuilder.Shutdown()
 		return nil, err
 	}
-	if config.PartitionProcessing.Independent {
-		consumer.partitionTelemetry = make(map[topicPartition]*partitionTelemetry)
-		if err := telemetryBuilder.RegisterKafkaReceiverPartitionDataWaitCallback(consumer.observePartitionDataWait); err != nil {
-			telemetryBuilder.Shutdown()
-			return nil, err
-		}
-		if err := telemetryBuilder.RegisterKafkaReceiverPartitionInFlightRecordsCallback(consumer.observePartitionInFlight); err != nil {
-			telemetryBuilder.Shutdown()
-			return nil, err
-		}
-	}
 	return consumer, nil
 }
 
@@ -192,13 +177,6 @@ func (c *franzConsumer) storeAssignmentSnapshot() {
 		}
 	}
 	c.assignmentsSnapshot.Store(&assignments)
-	if len(c.partitionTelemetry) > 0 {
-		telemetry := make([]*partitionTelemetry, 0, len(c.partitionTelemetry))
-		for _, p := range c.partitionTelemetry {
-			telemetry = append(telemetry, p)
-		}
-		c.partitionTelemetrySnapshot.Store(&telemetry)
-	}
 }
 
 // reportStatus emits a component status event if we have a host.
@@ -649,12 +627,7 @@ func (c *franzConsumer) assigned(ctx context.Context, cl *kgo.Client, assigned m
 			c.assignments[tp] = &partitionConsumer
 			haveAssignmentsChanged = true
 			if c.config.PartitionProcessing.Independent {
-				partitionConsumer.telemetry = newPartitionTelemetry(partitionConsumer.attrs)
-				if previous := c.partitionTelemetry[tp]; previous != nil {
-					previous.stop()
-					_, partitionConsumer.telemetry.dataWait = previous.snapshot()
-				}
-				c.partitionTelemetry[tp] = partitionConsumer.telemetry
+				partitionConsumer.telemetry = newPartitionTelemetry(c.telemetryBuilder, partitionConsumer.attrs)
 				partitionConsumer.mailbox = newPartitionMailbox(
 					partitionConsumer.ctx,
 					c.config.PartitionProcessing.MaxPrefetch.Batches,

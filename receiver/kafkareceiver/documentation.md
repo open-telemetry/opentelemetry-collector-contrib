@@ -191,7 +191,7 @@ Number of finished partitions
 
 Time waiting for data with no queued batch, current batch, or active record-processing call.
 
-Only produced with independent partition processing. Includes ongoing waits; excludes retries, rewinds, and shutdown. Cumulative totals remain available while unassigned and continue across reassignments.
+Only produced with independent partition processing. Wait durations are recorded when a wait ends, including on partition loss or shutdown; ongoing waits, retries, rewinds, and time after shutdown are excluded. The SDK accumulates completed waits across assignments.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -208,11 +208,11 @@ Only produced with independent partition processing. Includes ongoing waits; exc
 
 The number of active record-processing calls, including decoding, Consume, and retry backoff.
 
-Only produced for active assignments with independent partition processing. Excludes queued records and completed calls awaiting marking.
+Only produced with independent partition processing. Excludes queued records, completed calls awaiting marking, and calls from stopped assignments. The count returns to zero when an assignment stops.
 
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | Development |
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | false | Development |
 
 #### Attributes
 

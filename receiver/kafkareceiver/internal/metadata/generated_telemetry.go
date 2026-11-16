@@ -7,11 +7,10 @@ import (
 	"errors"
 	"sync"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/embedded"
 	"go.opentelemetry.io/otel/trace"
-
-	"go.opentelemetry.io/collector/component"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -39,8 +38,8 @@ type TelemetryBuilder struct {
 	KafkaReceiverMessages                    metric.Int64Counter
 	KafkaReceiverOffsetLag                   metric.Int64ObservableGauge
 	KafkaReceiverPartitionClose              metric.Int64Counter
-	KafkaReceiverPartitionDataWait           metric.Float64ObservableCounter
-	KafkaReceiverPartitionInFlightRecords    metric.Int64ObservableGauge
+	KafkaReceiverPartitionDataWait           metric.Float64Counter
+	KafkaReceiverPartitionInFlightRecords    metric.Int64UpDownCounter
 	KafkaReceiverPartitionStart              metric.Int64Counter
 	KafkaReceiverReadLatency                 metric.Float64Histogram
 	KafkaReceiverRecordProcessingDuration    metric.Float64Histogram
@@ -93,36 +92,6 @@ func (builder *TelemetryBuilder) RegisterKafkaReceiverOffsetLagCallback(cb metri
 	return nil
 }
 
-// RegisterKafkaReceiverPartitionDataWaitCallback sets callback for observable KafkaReceiverPartitionDataWait metric.
-func (builder *TelemetryBuilder) RegisterKafkaReceiverPartitionDataWaitCallback(cb metric.Float64Callback) error {
-	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
-		cb(ctx, &observerFloat64{inst: builder.KafkaReceiverPartitionDataWait, obs: o})
-		return nil
-	}, builder.KafkaReceiverPartitionDataWait)
-	if err != nil {
-		return err
-	}
-	builder.mu.Lock()
-	defer builder.mu.Unlock()
-	builder.registrations = append(builder.registrations, reg)
-	return nil
-}
-
-// RegisterKafkaReceiverPartitionInFlightRecordsCallback sets callback for observable KafkaReceiverPartitionInFlightRecords metric.
-func (builder *TelemetryBuilder) RegisterKafkaReceiverPartitionInFlightRecordsCallback(cb metric.Int64Callback) error {
-	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
-		cb(ctx, &observerInt64{inst: builder.KafkaReceiverPartitionInFlightRecords, obs: o})
-		return nil
-	}, builder.KafkaReceiverPartitionInFlightRecords)
-	if err != nil {
-		return err
-	}
-	builder.mu.Lock()
-	defer builder.mu.Unlock()
-	builder.registrations = append(builder.registrations, reg)
-	return nil
-}
-
 type observerInt64 struct {
 	embedded.Int64Observer
 	inst metric.Int64Observable
@@ -131,16 +100,6 @@ type observerInt64 struct {
 
 func (oi *observerInt64) Observe(value int64, opts ...metric.ObserveOption) {
 	oi.obs.ObserveInt64(oi.inst, value, opts...)
-}
-
-type observerFloat64 struct {
-	embedded.Float64Observer
-	inst metric.Float64Observable
-	obs  metric.Observer
-}
-
-func (oi *observerFloat64) Observe(value float64, opts ...metric.ObserveOption) {
-	oi.obs.ObserveFloat64(oi.inst, value, opts...)
 }
 
 // Shutdown unregister all registered callbacks for async instruments.
@@ -228,13 +187,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.KafkaReceiverPartitionDataWait, err = builder.meter.Float64ObservableCounter(
+	builder.KafkaReceiverPartitionDataWait, err = builder.meter.Float64Counter(
 		"otelcol_kafka_receiver_partition_data_wait",
 		metric.WithDescription("Time waiting for data with no queued batch, current batch, or active record-processing call. [Development]"),
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
-	builder.KafkaReceiverPartitionInFlightRecords, err = builder.meter.Int64ObservableGauge(
+	builder.KafkaReceiverPartitionInFlightRecords, err = builder.meter.Int64UpDownCounter(
 		"otelcol_kafka_receiver_partition_in_flight_records",
 		metric.WithDescription("The number of active record-processing calls, including decoding, Consume, and retry backoff. [Development]"),
 		metric.WithUnit("1"),

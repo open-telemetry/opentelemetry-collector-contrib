@@ -1374,8 +1374,7 @@ func newIndependentConsumer(
 	if maxInFlight > 1 {
 		partitionConsumer.window = newInflightWindow(consumer, partitionConsumer)
 	}
-	partitionConsumer.telemetry = newPartitionTelemetry(partitionConsumer.attrs)
-	consumer.partitionTelemetry[topicPartition{topic: topic, partition: 0}] = partitionConsumer.telemetry
+	partitionConsumer.telemetry = newPartitionTelemetry(consumer.telemetryBuilder, partitionConsumer.attrs)
 	consumer.assignments[topicPartition{topic: topic, partition: 0}] = partitionConsumer
 	consumer.storeAssignmentSnapshot()
 	return consumer, kafkaClient, partitionConsumer, telemetry

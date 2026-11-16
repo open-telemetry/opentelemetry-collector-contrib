@@ -164,23 +164,22 @@ telemetry:
     kafka_receiver_partition_data_wait:
       enabled: true
       description: Time waiting for data with no queued batch, current batch, or active record-processing call.
-      extended_documentation: Only produced with independent partition processing. Includes ongoing waits; excludes retries, rewinds, and shutdown. Cumulative totals remain available while unassigned and continue across reassignments.
+      extended_documentation: Only produced with independent partition processing. Wait durations are recorded when a wait ends, including on partition loss or shutdown; ongoing waits, retries, rewinds, and time after shutdown are excluded. The SDK accumulates completed waits across assignments.
       stability: development
       unit: s
       sum:
         value_type: double
         monotonic: true
-        async: true
       attributes: [topic, partition]
     kafka_receiver_partition_in_flight_records:
       enabled: true
       description: The number of active record-processing calls, including decoding, Consume, and retry backoff.
-      extended_documentation: Only produced for active assignments with independent partition processing. Excludes queued records and completed calls awaiting marking.
+      extended_documentation: Only produced with independent partition processing. Excludes queued records, completed calls awaiting marking, and calls from stopped assignments. The count returns to zero when an assignment stops.
       stability: development
       unit: "1"
-      gauge:
+      sum:
         value_type: int
-        async: true
+        monotonic: false
       attributes: [topic, partition]
     kafka_receiver_partition_start:
       enabled: true

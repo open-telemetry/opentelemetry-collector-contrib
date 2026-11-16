@@ -7,12 +7,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
-	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestSetupTelemetry(t *testing.T) {
@@ -28,14 +28,6 @@ func TestSetupTelemetry(t *testing.T) {
 		observer.Observe(1)
 		return nil
 	}))
-	require.NoError(t, tb.RegisterKafkaReceiverPartitionDataWaitCallback(func(_ context.Context, observer metric.Float64Observer) error {
-		observer.Observe(1)
-		return nil
-	}))
-	require.NoError(t, tb.RegisterKafkaReceiverPartitionInFlightRecordsCallback(func(_ context.Context, observer metric.Int64Observer) error {
-		observer.Observe(1)
-		return nil
-	}))
 	tb.KafkaBrokerClosed.Add(context.Background(), 1)
 	tb.KafkaBrokerConnects.Add(context.Background(), 1)
 	tb.KafkaBrokerThrottlingDuration.Record(context.Background(), 1)
@@ -45,6 +37,8 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.KafkaReceiverLatency.Record(context.Background(), 1)
 	tb.KafkaReceiverMessages.Add(context.Background(), 1)
 	tb.KafkaReceiverPartitionClose.Add(context.Background(), 1)
+	tb.KafkaReceiverPartitionDataWait.Add(context.Background(), 1)
+	tb.KafkaReceiverPartitionInFlightRecords.Add(context.Background(), 1)
 	tb.KafkaReceiverPartitionStart.Add(context.Background(), 1)
 	tb.KafkaReceiverReadLatency.Record(context.Background(), 1)
 	tb.KafkaReceiverRecordProcessingDuration.Record(context.Background(), 1)

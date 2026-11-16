@@ -10,12 +10,14 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
-// partitionTelemetry tracks one assignment without retaining its worker or
-// mailbox. Its cumulative wait survives reassignment.
+// partitionTelemetry records completed waits and active calls for one assignment.
 type partitionTelemetry struct {
-	attrs          attribute.Set
+	builder        *metadata.TelemetryBuilder
+	options        [1]metric.AddOption
 	decodeOptions  [1]metric.RecordOption
 	consumeOptions [1]metric.RecordOption
 	mu             sync.Mutex
@@ -24,18 +26,21 @@ type partitionTelemetry struct {
 	stopped        bool
 	recovering     bool
 	waitStart      time.Time
-	dataWait       time.Duration
 }
 
 // newPartitionTelemetry creates telemetry with cached stage attributes.
-func newPartitionTelemetry(attrs attribute.Set) *partitionTelemetry {
+func newPartitionTelemetry(builder *metadata.TelemetryBuilder, attrs attribute.Set) *partitionTelemetry {
 	stageOptions := func(stage string) [1]metric.RecordOption {
 		values := attrs.ToSlice()
 		values = append(values, attribute.String("stage", stage))
 		return [1]metric.RecordOption{metric.WithAttributeSet(attribute.NewSet(values...))}
 	}
+	options := [1]metric.AddOption{metric.WithAttributeSet(attrs)}
+	builder.KafkaReceiverPartitionDataWait.Add(context.Background(), 0, options[:]...)
+	builder.KafkaReceiverPartitionInFlightRecords.Add(context.Background(), 0, options[:]...)
 	return &partitionTelemetry{
-		attrs:          attrs,
+		builder:        builder,
+		options:        options,
 		decodeOptions:  stageOptions("decode"),
 		consumeOptions: stageOptions("consume"),
 	}
@@ -59,7 +64,11 @@ func (p *partitionTelemetry) startCall() {
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	if p.stopped {
+		return
+	}
 	p.active++
+	p.builder.KafkaReceiverPartitionInFlightRecords.Add(context.Background(), 1, p.options[:]...)
 	p.updateWait()
 }
 
@@ -70,7 +79,11 @@ func (p *partitionTelemetry) finishCall(err error) {
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	if p.stopped {
+		return
+	}
 	p.active--
+	p.builder.KafkaReceiverPartitionInFlightRecords.Add(context.Background(), -1, p.options[:]...)
 	// A failed cross-fetch call can finish while the worker awaits data.
 	// Keep recovery separate from waiting until the rewind has completed.
 	if err != nil {
@@ -90,15 +103,20 @@ func (p *partitionTelemetry) resume() {
 	p.updateWait()
 }
 
-// stop permanently stops data-wait tracking.
+// stop ends the wait and clears active calls for this assignment.
 func (p *partitionTelemetry) stop() {
 	if p == nil {
 		return
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	if p.stopped {
+		return
+	}
 	p.stopped = true
 	p.updateWait()
+	p.builder.KafkaReceiverPartitionInFlightRecords.Add(context.Background(), -p.active, p.options[:]...)
+	p.active = 0
 }
 
 // updateWait runs under mu. A cross-fetch worker can be waiting for another
@@ -108,43 +126,7 @@ func (p *partitionTelemetry) updateWait() {
 	if waiting && p.waitStart.IsZero() {
 		p.waitStart = time.Now()
 	} else if !waiting && !p.waitStart.IsZero() {
-		p.dataWait += time.Since(p.waitStart)
+		p.builder.KafkaReceiverPartitionDataWait.Add(context.Background(), time.Since(p.waitStart).Seconds(), p.options[:]...)
 		p.waitStart = time.Time{}
 	}
-}
-
-// snapshot returns active calls and total data wait, including the ongoing wait.
-func (p *partitionTelemetry) snapshot() (int64, time.Duration) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	wait := p.dataWait
-	if !p.waitStart.IsZero() {
-		wait += time.Since(p.waitStart)
-	}
-	return p.active, wait
-}
-
-// observePartitionDataWait reports cumulative wait for all tracked partitions.
-func (c *franzConsumer) observePartitionDataWait(_ context.Context, observer metric.Float64Observer) error {
-	if partitions := c.partitionTelemetrySnapshot.Load(); partitions != nil {
-		for _, p := range *partitions {
-			_, wait := p.snapshot()
-			// Keep frozen totals observable so delta readers retain their baseline.
-			observer.Observe(wait.Seconds(), metric.WithAttributeSet(p.attrs))
-		}
-	}
-	return nil
-}
-
-// observePartitionInFlight reports active calls for current assignments.
-func (c *franzConsumer) observePartitionInFlight(_ context.Context, observer metric.Int64Observer) error {
-	if assignments := c.assignmentsSnapshot.Load(); assignments != nil {
-		for _, p := range *assignments {
-			if p.telemetry != nil && p.ctx.Err() == nil {
-				active, _ := p.telemetry.snapshot()
-				observer.Observe(active, metric.WithAttributeSet(p.attrs))
-			}
-		}
-	}
-	return nil
 }
