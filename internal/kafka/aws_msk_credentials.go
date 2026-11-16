@@ -93,8 +93,6 @@ func (p *awsMSKRefreshProvider) Retrieve(ctx context.Context) (aws.Credentials, 
 	p.logger.Debug("AWS MSK credential refresh started")
 	creds, err := p.provider.Retrieve(ctx)
 	if err != nil {
-		p.logger.Warn("AWS MSK credential refresh failed",
-			zap.Duration("duration", time.Since(started)), zap.Error(err))
 		return aws.Credentials{}, err
 	}
 	if creds.CanExpire && !creds.Expires.After(time.Now()) {
@@ -125,6 +123,7 @@ func (p *awsMSKRefreshProvider) HandleFailToRefresh(_ context.Context, current a
 	// window again would cause a refresh storm.
 	p.skipExpiryAdjustment = true
 	p.logger.Warn("AWS MSK credential refresh retaining still-valid credentials",
+		zap.Error(refreshErr),
 		zap.Duration("credential_time_to_expiry", p.actualExpiry.Sub(now)),
 		zap.Duration("retry_in", retryIn))
 	return current, nil

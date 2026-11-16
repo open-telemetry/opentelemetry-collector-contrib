@@ -250,9 +250,11 @@ func TestAWSMSKCredentialCacheRefreshLifecycle(t *testing.T) {
 		time.Sleep(time.Until(creds.Expires))
 
 		fallbackExpiry := actualExpiry.Add(-awsMSKFallbackSafetyMargin)
+		var fallbacks int
 		for time.Now().Before(fallbackExpiry) {
 			fallback, retrieveErr := cache.Retrieve(t.Context())
 			require.NoError(t, retrieveErr)
+			fallbacks++
 			assert.Equal(t, "AKID1", fallback.AccessKeyID)
 			retryIn := time.Until(fallback.Expires)
 			remaining := time.Until(fallbackExpiry)
@@ -283,14 +285,15 @@ func TestAWSMSKCredentialCacheRefreshLifecycle(t *testing.T) {
 		assert.NotEqual(t, "AKID1", recovered.AccessKeyID)
 		assert.True(t, recovered.Expires.After(time.Now()))
 		authenticate(recovered.AccessKeyID)
-		assert.Positive(t, observed.FilterMessage("AWS MSK credential refresh retaining still-valid credentials").Len())
-		failures := observed.FilterMessage("AWS MSK credential refresh failed").All()
-		require.NotEmpty(t, failures)
-		for _, entry := range failures {
-			assert.Equal(t, zap.WarnLevel, entry.Level)
+		warnings := observed.FilterLevelExact(zap.WarnLevel).All()
+		require.NotEmpty(t, warnings)
+		require.Len(t, warnings, fallbacks, "each failed early refresh should log one warning; failures without fallback should propagate to the caller")
+		for _, entry := range warnings {
+			assert.Equal(t, "AWS MSK credential refresh retaining still-valid credentials", entry.Message)
 			fields := entry.ContextMap()
 			assert.Equal(t, refreshErr.Error(), fields["error"])
-			assert.Contains(t, fields, "duration")
+			assert.Contains(t, fields, "credential_time_to_expiry")
+			assert.Contains(t, fields, "retry_in")
 		}
 		for _, entry := range observed.All() {
 			assert.NotContains(t, fmt.Sprint(entry.ContextMap()), "SECRET")
