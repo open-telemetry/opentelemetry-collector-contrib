@@ -268,6 +268,32 @@ func TestKubeletPodOnlySkipsKubernetesAPIClient(t *testing.T) {
 	assert.NotNil(t, c)
 }
 
+func TestKubeletWithHPALabelsAnnotationsCreatesKubernetesAPIClient(t *testing.T) {
+	clientCreated := false
+	clientProvider := func(k8sconfig.APIConfig) (k8sconfig.ClientBundle, error) {
+		clientCreated = true
+		return newFakeAPIClientset(k8sconfig.APIConfig{})
+	}
+	rules := ExtractionRules{
+		Labels: []FieldExtractionRule{
+			{Name: "hpa_label", Key: "label1", From: MetadataFromHPA},
+		},
+		Annotations: []FieldExtractionRule{
+			{Name: "hpa_annotation", Key: "annotation1", From: MetadataFromHPA},
+		},
+	}
+	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone}, rules, Filters{Node: "node-a"}, []Association{}, Excludes{}, clientProvider, InformersFactoryList{}, false, 10*time.Second, 0, 120*time.Second, KubeletConfig{
+		Enabled:           true,
+		Endpoint:          "http://node-a:10250",
+		AllowInsecureHTTP: true,
+	})
+	require.NoError(t, err)
+	require.True(t, clientCreated)
+	wc := c.(*WatchClient)
+	assert.NotNil(t, wc.mc)
+	assert.NotNil(t, wc.hpaInformer)
+}
+
 func TestPodAdd(t *testing.T) {
 	c, _ := newTestClient(t)
 	podAddAndUpdateTest(t, c, c.handlePodAdd)
@@ -6258,33 +6284,48 @@ func TestHandleCronJobDelete(t *testing.T) {
 
 func TestHandleHPAUpdate(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.Rules = ExtractionRules{
+		Labels: []FieldExtractionRule{
+			{Name: "hpa_label", Key: "label1", From: MetadataFromHPA},
+		},
+		Annotations: []FieldExtractionRule{
+			{Name: "hpa_annotation", Key: "annotation1", From: MetadataFromHPA},
+		},
+	}
 
 	hpa := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name:      "test-hpa",
-			Namespace: "default",
-			UID:       "hpa-uid-123",
+			Name:        "test-hpa",
+			Namespace:   "default",
+			UID:         "hpa-uid-123",
+			Labels:      map[string]string{"label1": "lv1"},
+			Annotations: map[string]string{"annotation1": "av1"},
 		},
 	}
 
 	// Add initial hpa
 	c.handleHPAAdd(hpa)
 	assert.Len(t, c.HPAs, 1)
+	h, ok := c.GetHPA(string(hpa.UID))
+	require.True(t, ok)
+	assert.Equal(t, map[string]string{"hpa_label": "lv1", "hpa_annotation": "av1"}, h.Attributes)
 
-	// Update hpa
+	// Update hpa: change the label value and remove the annotation
 	updatedHPA := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name:      "test-hpa-updated",
+			Name:      "test-hpa",
 			Namespace: "default",
 			UID:       "hpa-uid-123",
+			Labels:    map[string]string{"label1": "lv2"},
 		},
 	}
 	c.handleHPAUpdate(hpa, updatedHPA)
 
 	// Verify update
-	h, ok := c.GetHPA(string(updatedHPA.UID))
+	h, ok = c.GetHPA(string(updatedHPA.UID))
 	require.True(t, ok)
-	assert.Equal(t, "test-hpa-updated", h.Name)
+	assert.Equal(t, "test-hpa", h.Name)
+	assert.Equal(t, map[string]string{"hpa_label": "lv2"}, h.Attributes)
 }
 
 func TestHandleHPADelete(t *testing.T) {

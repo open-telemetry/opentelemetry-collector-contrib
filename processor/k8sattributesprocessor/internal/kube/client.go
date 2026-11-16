@@ -248,6 +248,7 @@ func New(
 	needDaemonSetInformer := c.extractDaemonSetLabelsAnnotations()
 	needJobInformer := c.extractJobLabelsAnnotations() || rules.CronJobUID || c.extractCronJobLabelsAnnotations()
 	needCronJobInformer := c.extractCronJobLabelsAnnotations()
+	needHPAInformer := c.extractHPALabelsAnnotations()
 	needAPIClient := !kubelet.Enabled ||
 		needNamespaceInformer ||
 		needReplicaSetInformer ||
@@ -256,7 +257,8 @@ func New(
 		needStatefulSetInformer ||
 		needDaemonSetInformer ||
 		needJobInformer ||
-		needCronJobInformer
+		needCronJobInformer ||
+		needHPAInformer
 
 	if needAPIClient {
 		if newClientSet == nil {
@@ -329,7 +331,7 @@ func New(
 		c.cronJobInformer = newCronJobSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 
-	if c.extractHPALabelsAnnotations() {
+	if needHPAInformer {
 		c.hpaInformer = newHPASharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 	return c, err
