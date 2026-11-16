@@ -43,6 +43,8 @@ type loadBalancer struct {
 
 	// port is appended to backends that the resolver returns without one.
 	port string
+	// http is set when the backends are OTLP/HTTP exporters.
+	http bool
 
 	componentFactory    componentFactory
 	exporters           map[string]*wrappedExporter
@@ -151,12 +153,14 @@ func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory component
 	}
 
 	port := defaultPort
-	if oCfg.Protocol.OTLPHTTP.HasValue() {
+	isHTTP := oCfg.Protocol.OTLPHTTP.HasValue()
+	if isHTTP {
 		port = httpPort(oCfg.Protocol.OTLPHTTP.Get())
 	}
 
 	return &loadBalancer{
 		port:             port,
+		http:             isHTTP,
 		logger:           logger,
 		res:              res,
 		componentFactory: factory,
@@ -254,20 +258,26 @@ func (lb *loadBalancer) startExporter(endpoint string) (*wrappedExporter, error)
 }
 
 func endpointWithPort(endpoint string) string {
-	return endpointWithDefaultPort(endpoint, defaultPort)
-}
-
-func endpointWithDefaultPort(endpoint, port string) string {
-	// A bracketed IPv6 address without a port contains colons too.
-	bareIPv6 := strings.HasPrefix(endpoint, "[") && strings.HasSuffix(endpoint, "]")
-	if bareIPv6 || !strings.Contains(endpoint, ":") {
-		endpoint = fmt.Sprintf("%s:%s", endpoint, port)
+	if !strings.Contains(endpoint, ":") {
+		endpoint = fmt.Sprintf("%s:%s", endpoint, defaultPort)
 	}
 	return endpoint
 }
 
 func (lb *loadBalancer) endpointWithPort(endpoint string) string {
-	return endpointWithDefaultPort(endpoint, lb.port)
+	if !lb.http {
+		// OTLP/gRPC keeps its original behavior, a bracketed IPv6 address without a port is left as is.
+		if !strings.Contains(endpoint, ":") {
+			endpoint = fmt.Sprintf("%s:%s", endpoint, lb.port)
+		}
+		return endpoint
+	}
+	// A bracketed IPv6 address without a port contains colons too.
+	bareIPv6 := strings.HasPrefix(endpoint, "[") && strings.HasSuffix(endpoint, "]")
+	if bareIPv6 || !strings.Contains(endpoint, ":") {
+		endpoint = fmt.Sprintf("%s:%s", endpoint, lb.port)
+	}
+	return endpoint
 }
 
 func (lb *loadBalancer) removeExtraExporters(ctx context.Context, endpoints []string) {
