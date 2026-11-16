@@ -88,12 +88,19 @@ func generateInstanceID(serverAddress string, serverPort int64) string {
 }
 
 type mongodbScraper struct {
-	logger                *zap.Logger
-	config                *Config
-	client                client
-	members               []*member
-	settings              receiver.Settings
-	lastDiscovery         time.Time
+	logger        *zap.Logger
+	config        *Config
+	client        client
+	members       []*member
+	settings      receiver.Settings
+	lastDiscovery time.Time
+	// self is the address hello reported for the node the main client is connected to when members
+	// were last reconciled. The main client follows the primary, so a change means an election moved
+	// it and the member list must be rebuilt around the new primary.
+	self string
+	// isMember marks the scraper of a discovered member. Its client is pinned to that member, so it
+	// must never discover members of its own.
+	isMember              bool
 	mongoVersion          *version.Version
 	mb                    *metadata.MetricsBuilder
 	lb                    *metadata.LogsBuilder
@@ -169,15 +176,24 @@ type member struct {
 	failing bool
 }
 
-// discoverMembers reconciles the member list with the deployment's current topology: members that
-// appeared are connected, and members that left are disconnected.
+// discoverMembers reconciles the member list with the deployment's current topology.
 func (s *mongodbScraper) discoverMembers(ctx context.Context) {
-	s.lastDiscovery = time.Now()
-	hosts, err := s.findSecondaryHosts(ctx)
+	topo, err := s.readTopology(ctx)
 	if err != nil {
+		s.lastDiscovery = time.Now()
 		s.logger.Warn("failed to find secondary hosts", zap.Error(err))
 		return
 	}
+	s.reconcileMembers(ctx, topo)
+}
+
+// reconcileMembers makes the member list match topo: members that appeared are connected, and
+// members that left, including a member that has become the node the main client scrapes, are
+// disconnected.
+func (s *mongodbScraper) reconcileMembers(ctx context.Context, topo replicaSetTopology) {
+	s.lastDiscovery = time.Now()
+	s.self = topo.self
+	hosts := topo.members
 
 	wanted := make(map[string]struct{}, len(hosts))
 	for _, h := range hosts {
@@ -191,7 +207,7 @@ func (s *mongodbScraper) discoverMembers(ctx context.Context) {
 			delete(wanted, m.host)
 			continue
 		}
-		s.logger.Info("replica set member left the topology, no longer scraping it", zap.String("host", m.host))
+		s.logger.Info("no longer scraping replica set member separately", zap.String("host", m.host))
 		if err := m.client.Disconnect(ctx); err != nil {
 			s.logger.Debug("failed to disconnect from removed member", zap.String("host", m.host), zap.Error(err))
 		}
@@ -215,6 +231,7 @@ func (s *mongodbScraper) discoverMembers(ctx context.Context) {
 		if s.config.Secondaries.CollectMetrics || s.config.Secondaries.CollectTopQuery {
 			child := newMongodbScraper(s.settings, &memberConfig)
 			child.client = c
+			child.isMember = true
 			child.collectorHostName = s.collectorHostName
 			if s.planCache != nil {
 				child.planCache = buildPlanCache(&memberConfig, s.logger)
@@ -226,27 +243,47 @@ func (s *mongodbScraper) discoverMembers(ctx context.Context) {
 	}
 }
 
-// refreshMembers re-runs discovery when the configured refresh interval has elapsed.
+// refreshMembers keeps the member list in step with the topology before each scrape. It reads
+// hello on every scrape, which is cheap, so that an election is handled on the next scrape whatever
+// refresh_interval is: the main client follows the primary, so without this the new primary would
+// be scraped twice (as the main node and as a member) and the old primary not at all. A full
+// reconcile also runs whenever refresh_interval has elapsed.
 func (s *mongodbScraper) refreshMembers(ctx context.Context) {
-	interval := s.config.Secondaries.RefreshInterval
-	if interval <= 0 || s.config.secondaryDiscoverySkipReason() != "" || time.Since(s.lastDiscovery) < interval {
+	// lastDiscovery is zero only when start did not attempt discovery.
+	if s.isMember || s.lastDiscovery.IsZero() || s.config.secondaryDiscoverySkipReason() != "" {
 		return
 	}
-	s.discoverMembers(ctx)
+	interval := s.config.Secondaries.RefreshInterval
+	due := interval > 0 && time.Since(s.lastDiscovery) >= interval
+
+	topo, err := s.readTopology(ctx)
+	if err != nil {
+		// No primary is reachable, for example during an election; keep the current members.
+		s.logger.Debug("failed to read replica set topology, keeping the current members", zap.Error(err))
+		return
+	}
+	switch {
+	case topo.self != s.self:
+		s.logger.Info("replica set primary changed, rebuilding the member list",
+			zap.String("previous", s.self), zap.String("current", topo.self))
+		s.reconcileMembers(ctx, topo)
+	case due:
+		s.reconcileMembers(ctx, topo)
+	}
 }
 
-// recordMemberHealth logs a member's reachability when it changes, at warn level when it becomes
-// unreachable, so a member that cannot be reached is visible without debug logging and without
-// repeating the message on every scrape.
+// recordMemberHealth logs when collection from a member starts or stops failing, at warn level when
+// it fails, so the failure is visible without debug logging and without repeating the message on
+// every scrape.
 func (s *mongodbScraper) recordMemberHealth(m *member, err error) {
 	switch {
 	case err != nil && !m.failing:
 		m.failing = true
-		s.logger.Warn("replica set member is unreachable, its data is missing until it recovers",
+		s.logger.Warn("failed to collect from replica set member, its data is missing until it recovers",
 			zap.String("host", m.host), zap.Error(err))
 	case err == nil && m.failing:
 		m.failing = false
-		s.logger.Info("replica set member is reachable again", zap.String("host", m.host))
+		s.logger.Info("collecting from replica set member again", zap.String("host", m.host))
 	}
 }
 
@@ -352,7 +389,7 @@ func (s *mongodbScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 		snapshots[i] = fetchCurrentOp(ctx, m.client)
 	})
 
-	_ = s.scrapeLogsFromClient(ctx, s.client, now)
+	s.scrapeLogsFromClient(ctx, s.client, now)
 
 	for i, m := range s.members {
 		s.recordMemberHealth(m, s.emitCurrentOp(ctx, snapshots[i], now))
@@ -365,39 +402,58 @@ func (s *mongodbScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 type currentOpSnapshot struct {
 	serverStatus bson.M
 	operations   []bson.M
-	err          error
+	// statusErr and opErr record which of the two reads failed, so each is logged at the level the
+	// receiver has always used for it.
+	statusErr error
+	opErr     error
 }
 
 func fetchCurrentOp(ctx context.Context, c client) currentOpSnapshot {
 	serverStatus, err := c.ServerStatus(ctx, "admin")
 	if err != nil {
-		return currentOpSnapshot{err: err}
+		return currentOpSnapshot{statusErr: err}
 	}
 	operations, err := c.CurrentOp(ctx)
 	if err != nil {
-		return currentOpSnapshot{err: err}
+		return currentOpSnapshot{opErr: err}
 	}
 	return currentOpSnapshot{serverStatus: serverStatus, operations: operations}
 }
 
-func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now pcommon.Timestamp) error {
-	return s.emitCurrentOp(ctx, fetchCurrentOp(ctx, c), now)
+// scrapeLogsFromClient collects query samples from the node the main client is connected to and logs
+// any failure itself: that node has no member health tracking, so a failure that is only returned
+// would never be seen.
+func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now pcommon.Timestamp) {
+	snap := fetchCurrentOp(ctx, c)
+	switch {
+	case snap.statusErr != nil:
+		s.logger.Debug("Failed to get server status for logs", zap.Error(snap.statusErr))
+		return
+	case snap.opErr != nil:
+		s.logger.Error("Failed to get current operations", zap.Error(snap.opErr))
+		return
+	}
+	if err := s.emitCurrentOp(ctx, snap, now); err != nil {
+		s.logger.Debug("Failed to extract server address and port for logs", zap.Error(err))
+	}
 }
 
+// emitCurrentOp turns a snapshot into query sample log records. It returns the snapshot's error, or
+// the error resolving the node's address, without logging it; callers decide how to report it.
 func (s *mongodbScraper) emitCurrentOp(ctx context.Context, snap currentOpSnapshot, now pcommon.Timestamp) error {
-	if snap.err != nil {
-		s.logger.Debug("Failed to get server status or current operations for logs", zap.Error(snap.err))
-		return snap.err
+	if snap.statusErr != nil {
+		return fmt.Errorf("failed to get server status: %w", snap.statusErr)
 	}
-	serverStatus, operations := snap.serverStatus, snap.operations
+	if snap.opErr != nil {
+		return fmt.Errorf("failed to get current operations: %w", snap.opErr)
+	}
 
-	serverAddress, serverPort, err := s.resolveServerAddress(serverStatus)
+	serverAddress, serverPort, err := s.resolveServerAddress(snap.serverStatus)
 	if err != nil {
-		s.logger.Debug("Failed to extract server address and port for logs", zap.Error(err))
-		return err
+		return fmt.Errorf("failed to extract server address and port: %w", err)
 	}
 
-	s.processCurrentOp(ctx, operations, now)
+	s.processCurrentOp(ctx, snap.operations, now)
 
 	rb := s.lb.NewResourceBuilder()
 	setResourceAttributes(rb, serverAddress, serverPort, s.mongoVersion)
@@ -1143,23 +1199,36 @@ func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bs
 	s.recordIndexAccess(now, indexStats, databaseName, collectionName, errs)
 }
 
+// replicaSetTopology is the membership hello reports: self is the node the main client is connected
+// to, and members are the other data-bearing members.
+type replicaSetTopology struct {
+	self    string
+	members []string
+}
+
 // findSecondaryHosts returns the address of every replica set member other than the one the main
-// client is connected to. It reads them from hello rather than replSetGetStatus: hello reports
-// members under the replica set horizon that matches the name the client connected with, which
-// is how a deployment behind a private endpoint or other address translation makes its members
-// reachable. replSetGetStatus always reports the internal member names. Arbiters hold no data and
-// hidden members are not advertised, so neither is returned.
+// client is connected to.
 func (s *mongodbScraper) findSecondaryHosts(ctx context.Context) ([]string, error) {
+	topo, err := s.readTopology(ctx)
+	return topo.members, err
+}
+
+// readTopology reads the replica set membership from hello rather than replSetGetStatus: hello
+// reports members under the replica set horizon that matches the name the client connected with,
+// which is how a deployment behind a private endpoint or other address translation makes its
+// members reachable. replSetGetStatus always reports the internal member names. Arbiters hold no
+// data and hidden members are not advertised, so neither is returned.
+func (s *mongodbScraper) readTopology(ctx context.Context) (replicaSetTopology, error) {
 	result, err := s.client.RunCommand(ctx, adminDatabase, bson.M{"hello": 1})
 	if err != nil {
-		return nil, fmt.Errorf("failed to run hello: %w", err)
+		return replicaSetTopology{}, fmt.Errorf("failed to run hello: %w", err)
 	}
 	if _, ok := result["setName"]; !ok {
-		return nil, nil
+		return replicaSetTopology{}, nil
 	}
 
 	self, _ := result["me"].(string)
-	var hosts []string
+	topo := replicaSetTopology{self: self}
 	for _, key := range []string{"hosts", "passives"} {
 		list, ok := result[key].(bson.A)
 		if !ok {
@@ -1171,8 +1240,8 @@ func (s *mongodbScraper) findSecondaryHosts(ctx context.Context) ([]string, erro
 				continue
 			}
 			s.logger.Debug("Found replica set member", zap.String("host", host))
-			hosts = append(hosts, host)
+			topo.members = append(topo.members, host)
 		}
 	}
-	return hosts, nil
+	return topo, nil
 }

@@ -1111,6 +1111,80 @@ func TestDiscoverMembersReconciles(t *testing.T) {
 	created["b:1"].AssertCalled(t, "Disconnect", mock.Anything)
 }
 
+func TestRefreshMembersFollowsElection(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+
+	hello := func(self string) bson.M {
+		return bson.M{"setName": "rs0", "me": self, "hosts": bson.A{"a:1", "b:1", "c:1"}}
+	}
+	primary := &fakeClient{}
+	primary.On("RunCommand", mock.Anything, "admin", bson.M{"hello": 1}).Return(hello("a:1"), nil).Once()
+	// The main client follows the primary, so after an election hello is answered by b.
+	primary.On("RunCommand", mock.Anything, "admin", bson.M{"hello": 1}).Return(hello("b:1"), nil).Twice()
+	scraper.client = primary
+
+	created := map[string]int{}
+	clients := map[string]*fakeClient{}
+	orig := newClient
+	t.Cleanup(func() { newClient = orig })
+	newClient = func(_ context.Context, c *Config, _ *zap.Logger, _ bool) (client, error) {
+		fc := &fakeClient{}
+		fc.On("Disconnect", mock.Anything).Return(nil)
+		created[c.Hosts[0].Endpoint]++
+		clients[c.Hosts[0].Endpoint] = fc
+		return fc, nil
+	}
+
+	scraper.discoverMembers(t.Context())
+	require.Equal(t, []string{"b:1", "c:1"}, memberHosts(scraper))
+
+	// refresh_interval is 0, yet the election is still handled: b is now the main node, so it is no
+	// longer a member, and a, the former primary, becomes one.
+	scraper.refreshMembers(t.Context())
+	require.Equal(t, []string{"c:1", "a:1"}, memberHosts(scraper))
+	clients["b:1"].AssertCalled(t, "Disconnect", mock.Anything)
+
+	// Without another change, nothing is reconnected.
+	scraper.refreshMembers(t.Context())
+	require.Equal(t, []string{"c:1", "a:1"}, memberHosts(scraper))
+	require.Equal(t, map[string]int{"a:1": 1, "b:1": 1, "c:1": 1}, created)
+	primary.AssertExpectations(t)
+}
+
+func TestRefreshMembersSkippedForMemberScraper(t *testing.T) {
+	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), createDefaultConfig().(*Config))
+	fc := &fakeClient{}
+	scraper.client = fc
+	scraper.isMember = true
+	scraper.lastDiscovery = time.Now()
+
+	scraper.refreshMembers(t.Context())
+	fc.AssertNotCalled(t, "RunCommand", mock.Anything, mock.Anything, mock.Anything)
+	require.Empty(t, scraper.members)
+}
+
+func TestScrapeLogsReportsPrimaryCurrentOpFailure(t *testing.T) {
+	core, logs := observer.New(zap.InfoLevel)
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(core)
+	cfg := createDefaultConfig().(*Config)
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+	scraper := newMongodbScraper(settings, cfg)
+
+	primary := &fakeClient{}
+	primary.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "primary:27017"}, nil)
+	primary.On("CurrentOp", mock.Anything).Return([]bson.M(nil), errors.New("not authorized on admin to execute command"))
+	scraper.client = primary
+
+	_, err := scraper.scrapeLogs(t.Context())
+	require.NoError(t, err)
+
+	failures := logs.FilterMessage("Failed to get current operations").All()
+	require.Len(t, failures, 1)
+	require.Equal(t, zap.ErrorLevel, failures[0].Level)
+}
+
 func memberHosts(s *mongodbScraper) []string {
 	hosts := make([]string, 0, len(s.members))
 	for _, m := range s.members {

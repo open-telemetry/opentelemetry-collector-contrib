@@ -120,8 +120,13 @@ Every member emits its own resource, identified by its `server.address` and `ser
 that uses `direct_connection: true`.
 
 Members are scraped concurrently, each within the shorter of `timeout` and `collection_interval`, so a member
-that cannot be reached only delays its own data. The receiver logs a warning when a member becomes
-unreachable and an info message when it recovers.
+that cannot be reached only delays its own data. The receiver logs a warning when collection from a member
+starts failing and an info message when it recovers.
+
+The receiver checks the replica set topology with `hello` before every scrape. When an election moves the
+primary, the member list is rebuilt on the next scrape, so the new primary is not scraped twice and the
+former primary is scraped as a member. Adding or removing members is picked up when
+`secondaries.refresh_interval` elapses.
 
 ```yaml
 receivers:
