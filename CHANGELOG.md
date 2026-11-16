@@ -19,6 +19,10 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 - `all`: Remove the deprecated SignalFx receiver. Use the OTLP receiver instead. (#51934)
 - `connector/service_graph`: Remove deprecated feature gates connector.servicegraph.legacyLatencyMetricNames and connector.servicegraph.legacyLatencyUnitMs (#52246)
+- `exporter/elasticsearch`: Remove the deprecated `mapping::mode`, `retry::max_requests`, `logs_dynamic_index`, `metrics_dynamic_index` and `traces_dynamic_index` config options. (#52027)
+  Configurations that still set these options will fail to load.
+  Use `retry::max_retries` instead of `retry::max_requests`, and the `X-Elastic-Mapping-Mode` client metadata key or the `elastic.mapping.mode` scope attribute instead of `mapping::mode`.
+  
 - `exporter/signalfx`: Stop producing `disk_ops.total` and `disk_ops.pending` metrics with the default translation rules. (#52729)
   Use `system.disk.operations` instead of `disk_ops.total`. It is sent by default as a cumulative counter, so the per-period
   number of operations on a host can be charted with SignalFlow, for example:

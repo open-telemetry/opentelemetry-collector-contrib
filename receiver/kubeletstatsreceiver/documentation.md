@@ -104,9 +104,9 @@ Container memory working_set
 
 Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability | Semantic Convention |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ------------------- |
+| s | Sum | Double | Cumulative | true | Beta | [k8s.node.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.44.0/docs/system/k8s-metrics.md#metric-k8snodecputime) |
 
 ### k8s.node.cpu.usage
 
@@ -222,9 +222,9 @@ Node network IO
 
 Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Double | Cumulative | true | Development |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability | Semantic Convention |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ------------------- |
+| s | Sum | Double | Cumulative | true | Beta | [k8s.pod.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.44.0/docs/system/k8s-metrics.md#metric-k8spodcputime) |
 
 ### k8s.pod.cpu.usage
 
@@ -613,6 +613,7 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.kubelet_stats.cpuUtilizationRounding` | alpha | When enabled, the pod and container cpu utilization metrics (*.cpu.node.utilization, *.cpu_limit_utilization and *.cpu_request_utilization) are computed from integer nanocore values and rounded to the number of significant digits justified by the inputs, removing float64 artifacts from the emitted values. | v0.165.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47988) |
 | `receiver.kubeletstats.cpuUsageScrapeBased` | beta | When enabled, container.cpu.usage, k8s.pod.cpu.usage and k8s.node.cpu.usage (and the cpu utilization metrics derived from them) are calculated by the receiver as the rate of the corresponding *.cpu.time counter between consecutive scrapes, instead of being read directly from the kubelet's UsageNanoCores value. | v0.156.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49477) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

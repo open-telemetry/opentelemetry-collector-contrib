@@ -11,6 +11,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 )
 
 // Config defines configuration for kubernetes cluster receiver.
@@ -53,6 +54,10 @@ type Config struct {
 	// K8sLeaderElector defines the reference to the k8s leader elector extension
 	// use this when k8s cluster receiver needs to be deployed in HA mode
 	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
+
+	// ContainerMetricsConfig controls collection of k8s.container metrics for sidecar, init and
+	// ephemeral containers.
+	pod.ContainerMetricsConfig `mapstructure:",squash"`
 }
 
 func (cfg *Config) Validate() error {
