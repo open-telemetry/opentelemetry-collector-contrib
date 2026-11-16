@@ -29,7 +29,7 @@ type lateEventClient struct {
 	lastWindow    [2]int64
 }
 
-func (c *lateEventClient) DescribeLogGroups(context.Context, *cloudwatchlogs.DescribeLogGroupsInput, ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.DescribeLogGroupsOutput, error) {
+func (*lateEventClient) DescribeLogGroups(context.Context, *cloudwatchlogs.DescribeLogGroupsInput, ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.DescribeLogGroupsOutput, error) {
 	return &cloudwatchlogs.DescribeLogGroupsOutput{}, nil
 }
 
