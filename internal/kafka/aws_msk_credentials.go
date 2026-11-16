@@ -21,6 +21,7 @@ const (
 	awsMSKRefreshTimeout       = 30 * time.Second
 	awsMSKCachedRefreshTimeout = 10 * time.Second
 	awsMSKFallbackSafetyMargin = time.Minute
+	awsMSKFallbackRetryBase    = 30 * time.Second
 )
 
 // loadAWSCredentialsProvider is a variable so tests can replace it.
@@ -116,7 +117,8 @@ func (p *awsMSKRefreshProvider) HandleFailToRefresh(_ context.Context, current a
 	if !current.HasKeys() || !current.CanExpire || !fallbackExpiry.After(now) {
 		return aws.Credentials{}, refreshErr
 	}
-	retryIn := min(30*time.Second+time.Duration(rand.Int64N(int64(30*time.Second)+1)), fallbackExpiry.Sub(now))
+	retryIn := awsMSKFallbackRetryBase + time.Duration(rand.Int64N(int64(awsMSKFallbackRetryBase)+1))
+	retryIn = min(retryIn, fallbackExpiry.Sub(now))
 	current.Expires = now.Add(retryIn)
 	// This expiry is already the next retry deadline, capped before the original
 	// AWS expiry to leave time for broker authentication. Subtracting the SDK
