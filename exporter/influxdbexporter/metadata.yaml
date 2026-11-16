@@ -4,9 +4,10 @@ display_name: InfluxDB Exporter
 status:
   class: exporter
   stability:
-    unmaintained: [traces, metrics, logs]
+    beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
+    active: [chinmaychahar]
     emeritus: [jacobmarble]
 
 sending_queue:
