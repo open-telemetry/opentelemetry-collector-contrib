@@ -67,28 +67,18 @@ func TestMetricsBuilder(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
-			if tt.name == "all_set" {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"receiver.kubelet_stats.EmitV1K8sConventions", true))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.EmitV1K8sConventions", false)
-				})
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"receiver.kubelet_stats.EmitV1K8sConventions", true))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.EmitV1K8sConventions", false)
-				})
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"receiver.kubelet_stats.EmitV1K8sConventions", true))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.EmitV1K8sConventions", false)
-				})
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"receiver.kubelet_stats.EmitV1K8sConventions", true))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.EmitV1K8sConventions", false)
-				})
-			}
+			// Pin migration gates so the warning and metric counts are deterministic. When a gate's
+			// stage forbids the requested state (e.g. once promoted to stable), only the gate-dependent
+			// assertions below are skipped; the rest of the test still runs.
+			migrationGatesPinned := true
+			migrationGatesPinned = setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, false) && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, false) && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, false) && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, false) && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["k8s.container.ephemeral_storage.usage"] = mb.metricK8sContainerEphemeralStorageUsage.config.AggregationStrategy
@@ -120,8 +110,10 @@ func TestMetricsBuilder(t *testing.T) {
 				expectedWarnings++ // type differs
 				expectedWarnings++ // type differs
 			}
-			if tt.metricsSet != testDataSetReag {
-				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if migrationGatesPinned {
+				if tt.metricsSet != testDataSetReag {
+					assert.Equal(t, expectedWarnings, observedLogs.Len())
+				}
 			}
 
 			defaultMetricsCount := 0
@@ -403,10 +395,10 @@ func TestMetricsBuilder(t *testing.T) {
 					allMetricsList = append(allMetricsList, ms.At(mi))
 				}
 			}
-			if tt.metricsSet == testDataSetDefault {
+			if tt.metricsSet == testDataSetDefault && migrationGatesPinned {
 				assert.Equal(t, defaultMetricsCount, totalMetricsCount)
 			}
-			if tt.metricsSet == testDataSetAll {
+			if tt.metricsSet == testDataSetAll && migrationGatesPinned {
 				assert.Equal(t, allMetricsCount, totalMetricsCount)
 			}
 			validatedMetrics := make(map[string]bool)
@@ -1422,14 +1414,13 @@ func TestVersionedMetrics(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"receiver.kubelet_stats.DontEmitV0K8sConventions", tt.disableOld))
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"receiver.kubelet_stats.EmitV1K8sConventions", tt.enableNew))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.DontEmitV0K8sConventions", false)
-					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.EmitV1K8sConventions", false)
-				})
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
 
 				start := pcommon.Timestamp(1_000_000_000)
 				ts := pcommon.Timestamp(1_000_001_000)
@@ -1496,14 +1487,13 @@ func TestVersionedMetrics(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"receiver.kubelet_stats.DontEmitV0K8sConventions", tt.disableOld))
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"receiver.kubelet_stats.EmitV1K8sConventions", tt.enableNew))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.DontEmitV0K8sConventions", false)
-					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.EmitV1K8sConventions", false)
-				})
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
 
 				start := pcommon.Timestamp(1_000_000_000)
 				ts := pcommon.Timestamp(1_000_001_000)
@@ -1570,14 +1560,13 @@ func TestVersionedMetrics(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"receiver.kubelet_stats.DontEmitV0K8sConventions", tt.disableOld))
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"receiver.kubelet_stats.EmitV1K8sConventions", tt.enableNew))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.DontEmitV0K8sConventions", false)
-					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.EmitV1K8sConventions", false)
-				})
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
 
 				start := pcommon.Timestamp(1_000_000_000)
 				ts := pcommon.Timestamp(1_000_001_000)
@@ -1644,14 +1633,13 @@ func TestVersionedMetrics(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"receiver.kubelet_stats.DontEmitV0K8sConventions", tt.disableOld))
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"receiver.kubelet_stats.EmitV1K8sConventions", tt.enableNew))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.DontEmitV0K8sConventions", false)
-					featuregate.GlobalRegistry().Set("receiver.kubelet_stats.EmitV1K8sConventions", false)
-				})
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
 
 				start := pcommon.Timestamp(1_000_000_000)
 				ts := pcommon.Timestamp(1_000_001_000)
@@ -1684,4 +1672,24 @@ func TestVersionedMetrics(t *testing.T) {
 			})
 		}
 	})
+}
+
+// setFeatureGateForTest sets the gate for the duration of the test and restores its previous state afterwards.
+// It reports whether the gate reached the requested state. A gate whose stage forbids the requested state
+// (e.g. a stable gate cannot be disabled) is left at its registered default and false is returned, so the
+// caller can decide whether its gate-dependent expectations still apply.
+func setFeatureGateForTest(t *testing.T, gate *featuregate.Gate, enabled bool) bool {
+	t.Helper()
+	if gate.IsEnabled() == enabled {
+		return true
+	}
+	if stage := gate.Stage(); stage == featuregate.StageStable || stage == featuregate.StageDeprecated {
+		return false
+	}
+	prev := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
+	})
+	return true
 }
