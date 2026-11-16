@@ -26,7 +26,7 @@ type Config struct {
 	Token configopaque.String `mapstructure:"token"`
 
 	// TokenFile is a file containing the current token to use for this client.
-	// If provided it is read once at startup and never again.
+	// If provided it is read on every detection.
 	// Token or Tokenfile are only required if [Consul's ACL
 	// System](https://www.consul.io/docs/security/acl/acl-system) is enabled.
 	TokenFile string `mapstructure:"token_file"`

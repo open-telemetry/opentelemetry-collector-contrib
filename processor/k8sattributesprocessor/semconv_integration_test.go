@@ -7,12 +7,11 @@ package k8sattributesprocessor
 
 // These tests validate the resource attributes that the processor adds
 // against the OpenTelemetry semantic conventions, using a Weaver live-check
-// container via pkg/semconvtest. By default the check runs against the
-// latest published semantic-conventions registry, which Weaver downloads at
-// startup, on the tested otel/weaver version pinned in pkg/semconvtest.
-// The registry can be pinned with semconvtest.WithRegistry when
-// deterministic results are needed; semconvtest.WithVersion selects a
-// different image version.
+// container via pkg/semconvtest. The check runs against the released
+// semantic-conventions version that the processor declares as
+// sem_conv_version in metadata.yaml, pinned with semconvtest.WithRegistry,
+// so that unreleased changes on the main branch of the registry do not
+// affect the result.
 
 import (
 	"net"
@@ -31,6 +30,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
+
+// semconvRegistry must match sem_conv_version in metadata.yaml.
+const semconvRegistry = "https://github.com/open-telemetry/semantic-conventions.git@v1.44.0[model]"
 
 // TestSemconvCompliancePodAttributes checks the pod resource attributes that
 // the processor adds against semantic conventions. The input metric is fully
@@ -72,7 +74,7 @@ func TestSemconvCompliancePodAttributes(t *testing.T) {
 	_, ok := res.Attributes().Get("k8s.pod.name")
 	require.True(t, ok, "expected the processor to add k8s.pod.name")
 
-	semconvtest.TestMetrics(t, enriched)
+	semconvtest.TestMetrics(t, enriched, semconvtest.WithRegistry(semconvRegistry))
 }
 
 // TestSemconvComplianceContainerAttributesV1 checks the container attributes
@@ -126,7 +128,7 @@ func TestSemconvComplianceContainerAttributesV1(t *testing.T) {
 	_, ok := res.Attributes().Get("container.image.tags")
 	require.True(t, ok, "expected the processor to add container.image.tags")
 
-	semconvtest.TestMetrics(t, enriched)
+	semconvtest.TestMetrics(t, enriched, semconvtest.WithRegistry(semconvRegistry))
 }
 
 // generateSemconvCarrierMetrics builds a semconv-compliant

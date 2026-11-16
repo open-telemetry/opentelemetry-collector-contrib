@@ -2578,47 +2578,6 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Total free space in temporary DB.
-            name: sqlserver.database.tempdb.space
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "18256656"
-                  attributes:
-                    - key: tempdb.state
-                      value:
-                        stringValue: free
-                  startTimeUnixNano: "2000000"
-                  timeUnixNano: "1000000"
-            unit: kBy
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: host.name
-          value:
-            stringValue: 0.0.0.0
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
-        - key: service.instance.id
-          value:
-            stringValue: 0.0.0.0:1433
-        - key: service.name
-          value:
-            stringValue: unknown_service:microsoft.sql_server
-        - key: service.namespace
-          value:
-            stringValue: ""
-        - key: sqlserver.instance.name
-          value:
-            stringValue: d26d40521426
-    scopeMetrics:
-      - metrics:
           - description: TempDB version store size.
             gauge:
               dataPoints:

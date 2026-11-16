@@ -2414,6 +2414,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 	const finalBlockingSession = "FINAL_BLOCKING_SESSION"
 	const blockingSessionStatus = "BLOCKING_SESSION_STATUS"
 	const secondsInWait = "SECONDS_IN_WAIT"
+	const waitStartTime = "WAIT_START_TIME"
 	const blockingStartTime = "BLOCKING_START_TIME"
 	const lockType = "LOCK_TYPE"
 	const lockMode = "LOCK_MODE"
@@ -2494,7 +2495,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 
 		s.lb.RecordDbServerQuerySampleEvent(queryContext, timestamp, obfuscatedSQL, dbSystemNameVal, row[username], row[dbNamespaceCol], row[serviceName], row[hostName],
 			clientPort, row[hostName], clientPort, queryPlanHashVal, row[sqlID], row[sqlChildNumber], row[childAddress], row[sid], row[serialNumber], row[process],
-			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], waitTime, objID, row[objectName], row[objectType],
+			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], waitTime, row[waitStartTime], objID, row[objectName], row[objectType],
 			row[osUser], queryDuration, queryComments, row[sqlExecStart], row[logonTime], sessionDurationSec,
 			row[blockingSession], row[finalBlockingSession], row[blockingSessionStatus], row[blockingStartTime], secondsInWaitVal,
 			row[lockMode], row[lockType], row[blockedObjectOwner], row[blockedObjectName])

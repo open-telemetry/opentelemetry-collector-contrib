@@ -21,6 +21,13 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetFlinkJobID sets provided value as "flink.job.id" attribute.
+func (rb *ResourceBuilder) SetFlinkJobID(val string) {
+	if rb.config.FlinkJobID.Enabled {
+		rb.res.Attributes().PutStr("flink.job.id", val)
+	}
+}
+
 // SetFlinkJobName sets provided value as "flink.job.name" attribute.
 func (rb *ResourceBuilder) SetFlinkJobName(val string) {
 	if rb.config.FlinkJobName.Enabled {

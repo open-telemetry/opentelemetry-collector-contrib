@@ -27,7 +27,7 @@ feature_gates:
     from_version: v0.147.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46533
   - id: exporter.awsxray.EmitV1DBConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, the AWS X-Ray exporter reads database span attributes
       using semconv v1.38.0 keys (db.namespace, db.system.name,
@@ -50,6 +50,11 @@ feature_gates:
     stage: beta
     from_version: v0.84.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48737
+  - id: exporter.xray.allowDot
+    description: "X-Ray Exporter will no longer convert . to _ in annotation keys when this feature gate is enabled. "
+    stage: beta
+    from_version: v0.97.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/31732
 
 tests:
   config:

@@ -50,7 +50,13 @@ func (f *logsRouter) consumeByHealthyPipeline(ctx context.Context, ld plog.Logs)
 			return errNoValidPipeline
 		}
 
-		if err := tc.ConsumeLogs(ctx, ld); err != nil {
+		// Preserve the original data for later attempts.
+		data := ld
+		if tc.Capabilities().MutatesData {
+			data = plog.NewLogs()
+			ld.CopyTo(data)
+		}
+		if err := tc.ConsumeLogs(ctx, data); err != nil {
 			if f.shouldFailoverOnError(err) {
 				f.reportConsumerError(idx, err)
 				continue
@@ -68,7 +74,12 @@ func (f *logsRouter) sampleRetryConsumers(ctx context.Context, ld plog.Logs) (bo
 	stableIndex := f.pS.CurrentPipeline()
 	for i := range stableIndex {
 		consumer := f.getConsumerAtIndex(i)
-		err := consumer.ConsumeLogs(ctx, ld)
+		data := ld
+		if consumer.Capabilities().MutatesData {
+			data = plog.NewLogs()
+			ld.CopyTo(data)
+		}
+		err := consumer.ConsumeLogs(ctx, data)
 		// if the returned error is nil
 		// or not considered as failure - reset the pipeline to healthy
 		if err == nil || !f.shouldFailoverOnError(err) {

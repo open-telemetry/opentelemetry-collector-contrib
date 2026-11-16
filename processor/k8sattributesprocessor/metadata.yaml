@@ -5,7 +5,7 @@ deprecated_type: k8sattributes
 description: |
   The Kubernetes Attributes Processor allows adding k8s metadata to resource attributes for spans, metrics and logs.
 
-sem_conv_version: 1.42.0
+sem_conv_version: 1.44.0
 
 status:
   class: processor
@@ -15,8 +15,8 @@ status:
   distributions: [contrib, k8s]
   warnings: [Memory consumption, Other]
   codeowners:
-    active: [dmitryax, TylerHelmuth, ChrsMark, odubajDT]
-    emeritus: [rmfitzpatrick, fatsheep9146]
+    active: [TylerHelmuth, ChrsMark, odubajDT, jinja2]
+    emeritus: [rmfitzpatrick, fatsheep9146, dmitryax]
 # resource attributes are exposed through a different configuration interface (extract::metadata).
 resource_attributes:
   container.id:
