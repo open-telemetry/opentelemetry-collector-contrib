@@ -215,20 +215,7 @@ func TestAWSMSKCredentialCacheRefreshLifecycle(t *testing.T) {
 			return aws.Credentials{AccessKeyID: fmt.Sprintf("AKID%d", call), SecretAccessKey: "SECRET", SessionToken: "SESSION_TOKEN", CanExpire: true, Expires: time.Now().Add(time.Hour)}, nil
 		}), zap.New(logs))
 		cache := aws.NewCredentialsCache(provider, configureAWSMSKCache)
-		originalLoader := loadAWSCredentialsProvider
-		t.Cleanup(func() { loadAWSCredentialsProvider = originalLoader })
-		loadAWSCredentialsProvider = func(context.Context, string, *zap.Logger) (aws.CredentialsProvider, error) {
-			return cache, nil
-		}
-		opt, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
-			Mechanism: AWSMSKIAMOAUTHBEARER,
-			AWSMSK:    configkafka.AWSMSKConfig{Region: "us-west-2"},
-		}, componenttest.NewNopHost(), zap.NewNop())
-		require.NoError(t, err)
-		cl, err := kgo.NewClient(opt)
-		require.NoError(t, err)
-		mechanism := cl.OptValue(kgo.SASL).([]sasl.Mechanism)[0]
-		cl.Close()
+		mechanism := newAWSMSKMechanism(t, cache)
 		authenticate := func(wantKey string) {
 			t.Helper()
 			_, response, authErr := mechanism.Authenticate(t.Context(), "broker:9098")
@@ -317,20 +304,7 @@ func TestAWSMSKCredentialCacheRefreshTimeoutWithFallback(t *testing.T) {
 			return aws.Credentials{}, ctx.Err()
 		}), zap.NewNop())
 		cache := aws.NewCredentialsCache(provider, configureAWSMSKCache)
-		originalLoader := loadAWSCredentialsProvider
-		t.Cleanup(func() { loadAWSCredentialsProvider = originalLoader })
-		loadAWSCredentialsProvider = func(context.Context, string, *zap.Logger) (aws.CredentialsProvider, error) {
-			return cache, nil
-		}
-		opt, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
-			Mechanism: AWSMSKIAMOAUTHBEARER,
-			AWSMSK:    configkafka.AWSMSKConfig{Region: "us-west-2"},
-		}, componenttest.NewNopHost(), zap.NewNop())
-		require.NoError(t, err)
-		cl, err := kgo.NewClient(opt)
-		require.NoError(t, err)
-		mechanism := cl.OptValue(kgo.SASL).([]sasl.Mechanism)[0]
-		cl.Close()
+		mechanism := newAWSMSKMechanism(t, cache)
 		creds, err := cache.Retrieve(t.Context())
 		require.NoError(t, err)
 		_, hasDeadline := t.Context().Deadline()
@@ -433,4 +407,25 @@ func TestAWSMSKCredentialCacheFallbackExpiresDuringRefresh(t *testing.T) {
 		require.ErrorIs(t, err, context.DeadlineExceeded)
 		assert.Equal(t, awsMSKRefreshTimeout, time.Since(started), "fresh credentials now require the full refresh budget")
 	})
+}
+
+func newAWSMSKMechanism(t *testing.T, provider aws.CredentialsProvider) sasl.Mechanism {
+	t.Helper()
+	originalLoader := loadAWSCredentialsProvider
+	t.Cleanup(func() { loadAWSCredentialsProvider = originalLoader })
+	loadAWSCredentialsProvider = func(context.Context, string, *zap.Logger) (aws.CredentialsProvider, error) {
+		return provider, nil
+	}
+	opt, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
+		Mechanism: AWSMSKIAMOAUTHBEARER,
+		AWSMSK:    configkafka.AWSMSKConfig{Region: "us-west-2"},
+	}, componenttest.NewNopHost(), zap.NewNop())
+	require.NoError(t, err)
+	cl, err := kgo.NewClient(opt)
+	require.NoError(t, err)
+	// Close before returning to stop Kafka background work during fake-time advances.
+	defer cl.Close()
+	mechanisms := cl.OptValue(kgo.SASL).([]sasl.Mechanism)
+	require.Len(t, mechanisms, 1)
+	return mechanisms[0]
 }
