@@ -4,6 +4,7 @@
 package natsexporter
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -110,4 +113,46 @@ func TestExporter_InvalidSubjectIsPermanent(t *testing.T) {
 	err := exp.pushLogs(ctx, testdata.GenerateLogs(1))
 	require.Error(t, err)
 	assert.True(t, consumererror.IsPermanent(err), "an invalid NATS subject should be a permanent error")
+}
+
+// TestExporter_ReportsLostConnection verifies that the exporter reports a lost
+// NATS connection as a recoverable error through its host.
+func TestExporter_ReportsLostConnection(t *testing.T) {
+	t.Parallel()
+
+	opts := natstest.DefaultTestOptions
+	opts.Port = -1 // random free port
+	srv := natstest.RunServer(&opts)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.ClientConfig.Endpoint = srv.ClientURL()
+	exp := newExporter(exportertest.NewNopSettings(metadata.Type), cfg)
+	host := &statusHost{}
+	require.NoError(t, exp.Start(t.Context(), host))
+	defer func() { require.NoError(t, exp.Shutdown(t.Context())) }()
+
+	srv.Shutdown()
+	require.Eventually(t, func() bool {
+		return host.lastStatus() == componentstatus.StatusRecoverableError
+	}, 5*time.Second, 10*time.Millisecond)
+}
+
+// statusHost is a component.Host that records the last reported status.
+type statusHost struct {
+	mu   sync.Mutex
+	last componentstatus.Status
+}
+
+func (*statusHost) GetExtensions() map[component.ID]component.Component { return nil }
+
+func (h *statusHost) Report(e *componentstatus.Event) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.last = e.Status()
+}
+
+func (h *statusHost) lastStatus() componentstatus.Status {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.last
 }
