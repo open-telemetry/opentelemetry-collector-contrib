@@ -23,6 +23,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateReceivers(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
+	cfg.(*Config).ClientConfig.Endpoint = runServer(t)
 	set := receivertest.NewNopSettings(factory.Type())
 	host := componenttest.NewNopHost()
 
