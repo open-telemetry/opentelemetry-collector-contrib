@@ -5,6 +5,7 @@ package reader // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"context"
 	"errors"
@@ -12,10 +13,12 @@ import (
 	"os"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
+	"golang.org/x/text/encoding/unicode"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
@@ -62,6 +65,7 @@ type Reader struct {
 	maxLogSize             int
 	headerSplitFunc        bufio.SplitFunc
 	contentSplitFunc       bufio.SplitFunc
+	encoding               encoding.Encoding
 	decoder                *encoding.Decoder
 	headerReader           *header.Reader
 	emitFunc               emit.Callback
@@ -204,7 +208,7 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 			return true
 		}
 
-		token, err := textutils.DecodeAsString(r.decoder, s.Bytes())
+		token, err := textutils.DecodeAsString(r.getDecoder(), s.Bytes())
 		if err != nil {
 			r.set.Logger.Error("failed to decode header token", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
@@ -258,6 +262,9 @@ func (r *Reader) readContents(ctx context.Context) (completed bool) {
 	tokenBodies := make([][]byte, r.maxBatchSize)
 	tokenOffsets := make([]int64, r.maxBatchSize+1)
 
+	isNopEncoding := r.encoding == encoding.Nop || r.encoding == textutils.UTF8Raw
+	isUTF8Encoding := r.encoding == unicode.UTF8 || r.encoding == nil
+
 	numTokensBatched := 0
 	tokenOffsets[0] = r.Offset
 	// Iterate over the contents of the file.
@@ -290,8 +297,17 @@ func (r *Reader) readContents(ctx context.Context) (completed bool) {
 			return true
 		}
 
+		raw := s.Bytes()
 		var err error
-		tokenBodies[numTokensBatched], err = r.decoder.Bytes(s.Bytes())
+		if isNopEncoding || (isUTF8Encoding && utf8.Valid(raw)) {
+			if raw == nil {
+				tokenBodies[numTokensBatched] = []byte{}
+			} else {
+				tokenBodies[numTokensBatched] = bytes.Clone(raw)
+			}
+		} else {
+			tokenBodies[numTokensBatched], err = r.getDecoder().Bytes(raw)
+		}
 		tokenOffsets[numTokensBatched+1] = s.Pos()
 		if err != nil {
 			r.set.Logger.Error("failed to decode token", zap.Error(err))
@@ -413,4 +429,15 @@ func (r *Reader) getBufPtrFromPool() *[]byte {
 		return &buf
 	}
 	return bufP.(*[]byte)
+}
+
+func (r *Reader) getDecoder() *encoding.Decoder {
+	if r.decoder == nil {
+		if r.encoding == nil {
+			r.decoder = unicode.UTF8.NewDecoder()
+		} else {
+			r.decoder = r.encoding.NewDecoder()
+		}
+	}
+	return r.decoder
 }
