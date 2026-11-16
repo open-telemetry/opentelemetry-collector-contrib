@@ -18,7 +18,7 @@ Total cumulative CPU time (sum of all cores) spent by the container/pod/node sin
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability | Semantic Convention |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ------------------- |
-| s | Sum | Double | Cumulative | true | Beta | [container.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.44.0/docs/system/container-metrics.md#metric-containercputime) |
+| s | Sum | Double | Cumulative | true | Beta | [container.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.45.0/docs/system/container-metrics.md#metric-containercputime) |
 
 ### container.cpu.usage
 
@@ -106,7 +106,7 @@ Total cumulative CPU time (sum of all cores) spent by the container/pod/node sin
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability | Semantic Convention |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ------------------- |
-| s | Sum | Double | Cumulative | true | Beta | [k8s.node.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.44.0/docs/system/k8s-metrics.md#metric-k8snodecputime) |
+| s | Sum | Double | Cumulative | true | Beta | [k8s.node.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.45.0/docs/system/k8s-metrics.md#metric-k8snodecputime) |
 
 ### k8s.node.cpu.usage
 
@@ -224,7 +224,7 @@ Total cumulative CPU time (sum of all cores) spent by the container/pod/node sin
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability | Semantic Convention |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ------------------- |
-| s | Sum | Double | Cumulative | true | Beta | [k8s.pod.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.44.0/docs/system/k8s-metrics.md#metric-k8spodcputime) |
+| s | Sum | Double | Cumulative | true | Beta | [k8s.pod.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.45.0/docs/system/k8s-metrics.md#metric-k8spodcputime) |
 
 ### k8s.pod.cpu.usage
 
