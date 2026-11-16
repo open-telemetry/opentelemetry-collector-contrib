@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	experimentalgrpc "google.golang.org/grpc/experimental"
@@ -161,8 +162,30 @@ func (e *signalExporter) startSignalExporter(ctx context.Context, host component
 	return nil
 }
 
-func (e *signalExporter) EnableRateLimit() {
-	e.rateError.enableRateLimit()
+// EnableRateLimit records a permanent error that counts toward the rate limiter
+// drop window. It logs once when the window actually opens.
+func (e *signalExporter) EnableRateLimit(reason dropReason, statusText string) {
+	opened := e.rateError.enableRateLimit(reason, statusText)
+	if !opened {
+		return
+	}
+
+	fields := []zap.Field{
+		zap.String("reason", reason.String()),
+		zap.String("status", statusText),
+		zap.Int("threshold", e.rateError.threshold),
+		zap.Time("resume_at", e.rateError.getResumeAt()),
+	}
+
+	switch reason {
+	case dropReasonAuth:
+		fields = append(fields, zap.String("hint", "check private_key and restart the collector after a key rotation"))
+		e.settings.Logger.Error("Authentication with Coralogix failed; dropping data until the key is fixed", fields...)
+	case dropReasonQuota:
+		e.settings.Logger.Error("Coralogix quota exceeded; dropping data", fields...)
+	default:
+		e.settings.Logger.Error("Coralogix exporter drop window opened", fields...)
+	}
 }
 
 func (e *signalExporter) canSend() bool {
@@ -171,7 +194,10 @@ func (e *signalExporter) canSend() bool {
 	}
 
 	if e.rateError.canDisableRateLimit() {
-		e.rateError.disableRateLimit()
+		if e.rateError.disableRateLimit() {
+			e.settings.Logger.Info("Drop window closed; resuming sends to Coralogix",
+				zap.String("reason", e.rateError.getReason().String()))
+		}
 		return true
 	}
 
@@ -182,7 +208,13 @@ func (e *signalExporter) canSend() bool {
 // Send a telemetry data request to the server. "perform" function is expected to make
 // the actual gRPC unary call that sends the request.
 func (e *signalExporter) processError(err error) error {
-	switch e.config.Protocol {
+	// Empty protocol means gRPC, matching startSignalExporter.
+	protocol := e.config.Protocol
+	if protocol == "" {
+		protocol = grpcProtocol
+	}
+
+	switch protocol {
 	case grpcProtocol:
 		st := status.Convert(err)
 		if st.Code() == codes.OK {
@@ -192,12 +224,12 @@ func (e *signalExporter) processError(err error) error {
 
 		retryInfo := getRetryInfo(st)
 
-		shouldRetry, shouldFlagRateLimit := shouldRetry(st.Code(), retryInfo)
-		if !shouldRetry {
-			if shouldFlagRateLimit {
-				e.EnableRateLimit()
+		retry, reason := shouldRetry(st.Code(), retryInfo)
+		if !retry {
+			if reason != dropReasonNone {
+				e.EnableRateLimit(reason, st.Code().String())
 			}
-			return consumererror.NewPermanent(err)
+			return permanentErrorFromRPC(reason, err)
 		}
 
 		throttleDuration := getThrottleDuration(retryInfo)
@@ -215,12 +247,13 @@ func (e *signalExporter) processError(err error) error {
 			return nil
 		}
 
-		shouldRetry, shouldFlagRateLimit := shouldRetryHTTP(httpErr.StatusCode)
-		if !shouldRetry {
-			if shouldFlagRateLimit {
-				e.EnableRateLimit()
+		retry, reason := shouldRetryHTTP(httpErr.StatusCode)
+		if !retry {
+			if reason != dropReasonNone {
+				statusText := fmt.Sprintf("%d %s", httpErr.StatusCode, http.StatusText(httpErr.StatusCode))
+				e.EnableRateLimit(reason, statusText)
 			}
-			return consumererror.NewPermanent(err)
+			return permanentErrorFromRPC(reason, err)
 		}
 
 		throttleDuration := getHTTPThrottleDuration(httpErr.StatusCode, httpErr.Header)
@@ -229,4 +262,11 @@ func (e *signalExporter) processError(err error) error {
 		}
 	}
 	return err
+}
+
+func permanentErrorFromRPC(reason dropReason, err error) error {
+	if reason == dropReasonAuth {
+		return consumererror.NewPermanent(fmt.Errorf("authentication failed (private key rotated or invalid): %w", err))
+	}
+	return consumererror.NewPermanent(err)
 }
