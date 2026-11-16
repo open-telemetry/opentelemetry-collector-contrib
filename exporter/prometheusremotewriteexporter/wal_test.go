@@ -18,7 +18,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v7"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
@@ -932,38 +931,6 @@ func TestAllPayloadRejections(t *testing.T) {
 				rejection(),
 			),
 			want: false,
-		},
-		{
-			name: "retry error from a permanent rejection",
-			err: &backoff.RetryError{
-				LastErr: consumererror.NewPermanent(rejection()),
-				Cause:   backoff.ErrPermanent,
-			},
-			want: true,
-		},
-		{
-			name: "retry error from a permanent transient error",
-			err: &backoff.RetryError{
-				LastErr: consumererror.NewPermanent(transient),
-				Cause:   backoff.ErrPermanent,
-			},
-			want: false,
-		},
-		{
-			name: "retry error that ran out of retries on a rejection",
-			err: &backoff.RetryError{
-				LastErr: consumererror.NewPermanent(rejection()),
-				Cause:   backoff.ErrExhausted,
-			},
-			want: false,
-		},
-		{
-			name: "multierr of permanent retry errors",
-			err: multierr.Append(
-				&backoff.RetryError{LastErr: consumererror.NewPermanent(rejection()), Cause: backoff.ErrPermanent},
-				&backoff.RetryError{LastErr: consumererror.NewPermanent(rejection()), Cause: backoff.ErrPermanent},
-			),
-			want: true,
 		},
 	}
 

@@ -5,6 +5,7 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v7"
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
@@ -380,6 +382,12 @@ func TestPermanentErrorsAreNotRetried(t *testing.T) {
 	require.Error(t, err)
 	assert.True(t, consumererror.IsPermanent(err))
 	assert.Equal(t, int64(1), server.attempts.Load())
+
+	// The failure is reported as such, without the wrapper that backoff.Retry adds around a
+	// permanent failure.
+	var retryErr *backoff.RetryError
+	assert.False(t, errors.As(err, &retryErr), "unexpected retry wrapper: %v", err)
+	assert.NotErrorIs(t, err, backoff.ErrPermanent)
 }
 
 // TestParentCancelDuringBackoff verifies that canceling the context while a request waits to be
