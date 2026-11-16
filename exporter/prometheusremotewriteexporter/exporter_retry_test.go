@@ -5,7 +5,6 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
-	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -386,7 +385,7 @@ func TestPermanentErrorsAreNotRetried(t *testing.T) {
 	// The failure is reported as such, without the wrapper that backoff.Retry adds around a
 	// permanent failure.
 	var retryErr *backoff.RetryError
-	assert.False(t, errors.As(err, &retryErr), "unexpected retry wrapper: %v", err)
+	assert.NotErrorAs(t, err, &retryErr, "unexpected retry wrapper")
 	assert.NotErrorIs(t, err, backoff.ErrPermanent)
 }
 
