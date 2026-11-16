@@ -20,6 +20,9 @@ $defs:
       issuer_url:
         description: IssuerURL is the base URL for the OIDC provider. Required.
         type: string
+      jwks_url:
+        description: URL of a remote JWKS endpoint used instead of OpenID Connect discovery. Mutually exclusive with PublicKeysFile. Optional.
+        type: string
       public_keys_file:
         description: Path to a local JWKS file containing public keys for token verification. When provided, only keys from this file will be used - no remote key discovery will happen. The file is watched for changes and keys are automatically reloaded on updates. Optional.
         type: string
