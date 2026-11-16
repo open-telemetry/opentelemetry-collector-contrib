@@ -12,8 +12,11 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -33,6 +36,8 @@ type defaultHecWorker struct {
 	client  *http.Client
 	headers map[string]string
 	logger  *zap.Logger
+	// telemetry is nil when the exporter has not started, e.g. in tests.
+	telemetry *metadata.TelemetryBuilder
 }
 
 func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[string]string) error {
@@ -85,7 +90,11 @@ func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[s
 	if json.Unmarshal(body, &splunkResp) == nil {
 		switch splunkResp.Code {
 		case splunkCodeApproachingQueueCapacity, splunkCodeApproachingAckCapacity:
-			hec.logger.Warn("Splunk HEC accepted the data but is approaching capacity; consider reducing the send rate",
+			if hec.telemetry != nil {
+				hec.telemetry.ExporterSplunkhecApproachingCapacity.Add(ctx, 1,
+					metric.WithAttributes(attribute.Int("splunk_response_code", splunkResp.Code)))
+			}
+			hec.logger.Debug("Splunk HEC accepted the data and reported it is approaching capacity",
 				zap.Int("splunk_response_code", splunkResp.Code),
 				zap.String("host", hec.url.String()))
 		}

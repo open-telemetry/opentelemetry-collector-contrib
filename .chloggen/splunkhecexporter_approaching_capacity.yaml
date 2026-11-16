@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporter/splunk_hec
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Log a warning when Splunk accepts data but reports it is approaching queue or ack capacity
+note: Count requests that Splunk accepts but reports as approaching queue or ack capacity
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [51393]
@@ -19,7 +19,10 @@ subtext: |
   On a 200 response Splunk may report codes 24 or 25, meaning the data was
   accepted but the HEC queue or ack channel is approaching its capacity limit.
   The exporter previously discarded the response body and ignored these signals.
-  It now inspects the body and logs a warning so operators can see the pressure.
+  It now inspects the body and increments the
+  `otelcol_exporter_splunkhec_approaching_capacity` counter, with a
+  `splunk_response_code` attribute, so operators can alert on the pressure.
+  Each occurrence is also logged at Debug level.
   The data is not resent (it was accepted, so retrying would duplicate it); the
   at-capacity codes 26/27 already surface as retryable 429 responses.
 

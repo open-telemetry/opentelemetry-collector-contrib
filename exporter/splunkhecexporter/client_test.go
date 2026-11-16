@@ -19,6 +19,7 @@ import (
 	"os"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -40,12 +41,16 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
@@ -1666,7 +1671,7 @@ func Test_pushLogData_LogsPermanentErrorsWhenPostFails(t *testing.T) {
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, true
 	httpClient, _ := newTestClient(http.StatusServiceUnavailable, "NOK")
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	logs := plog.NewLogs()
 	logRecords := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
@@ -1728,7 +1733,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 
 	// An HTTP client that returns status code 400 and response body responseBody.
 	httpClient, _ := newTestClient(400, responseBody)
-	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 	// Sending logs using the client.
 	err := splunkClient.pushLogData(t.Context(), logs)
 	require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
@@ -1737,7 +1742,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 
 	// An HTTP client that returns some other status code other than 400 and response body responseBody.
 	httpClient, _ = newTestClient(500, responseBody)
-	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 	// Sending logs using the client.
 	err = splunkClient.pushLogData(t.Context(), logs)
 	require.False(t, consumererror.IsPermanent(err), "Expecting non-permanent error")
@@ -1746,22 +1751,38 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	assert.NotContains(t, err.Error(), responseBody)
 }
 
-func Test_pushLogData_WarnsWhenSplunkApproachingCapacity(t *testing.T) {
-	config := NewFactory().CreateDefaultConfig().(*Config)
-	url := &url.URL{Scheme: "http", Host: "splunk", Path: "/v1/endpoint"}
-	splunkClient := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
-	logs := createLogData(1, 1, 1)
+func Test_pushLogData_RecordsSplunkApproachingCapacity(t *testing.T) {
+	for _, code := range []int{splunkCodeApproachingQueueCapacity, splunkCodeApproachingAckCapacity} {
+		t.Run(strconv.Itoa(code), func(t *testing.T) {
+			config := NewFactory().CreateDefaultConfig().(*Config)
+			url := &url.URL{Scheme: "http", Host: "splunk", Path: "/v1/endpoint"}
+			splunkClient := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
 
-	core, observed := observer.New(zap.WarnLevel)
+			tt := componenttest.NewTelemetry()
+			defer func() { require.NoError(t, tt.Shutdown(t.Context())) }()
+			tb, err := metadata.NewTelemetryBuilder(tt.NewTelemetrySettings())
+			require.NoError(t, err)
+			defer tb.Shutdown()
 
-	// 200 with code 24: accepted, so no error, but a warning.
-	httpClient, _ := newTestClient(200, `{"text":"HEC queue is approaching its capacity limit","code":24}`)
-	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.New(core)}
+			core, observed := observer.New(zap.DebugLevel)
 
-	err := splunkClient.pushLogData(t.Context(), logs)
-	require.NoError(t, err)
-	assert.Equal(t, 1, observed.FilterMessageSnippet("approaching capacity").Len(),
-		"expected a warning when Splunk reports approaching capacity")
+			// 200 with code 24/25: accepted, so no error, but counted and logged at Debug.
+			httpClient, _ := newTestClient(200, fmt.Sprintf(`{"text":"approaching its capacity limit","code":%d}`, code))
+			splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.New(core), tb}
+
+			require.NoError(t, splunkClient.pushLogData(t.Context(), createLogData(1, 1, 1)))
+
+			metadatatest.AssertEqualExporterSplunkhecApproachingCapacity(t, tt,
+				[]metricdata.DataPoint[int64]{{
+					Value:      1,
+					Attributes: attribute.NewSet(attribute.Int("splunk_response_code", code)),
+				}},
+				metricdatatest.IgnoreTimestamp())
+			entries := observed.FilterMessageSnippet("approaching capacity").All()
+			require.Len(t, entries, 1)
+			assert.Equal(t, zapcore.DebugLevel, entries[0].Level)
+		})
+	}
 }
 
 func Test_pushLogData_DrainsLargeSuccessBodyForConnReuse(t *testing.T) {
@@ -1791,7 +1812,7 @@ func Test_pushLogData_DrainsLargeSuccessBodyForConnReuse(t *testing.T) {
 	require.NoError(t, err)
 
 	splunkClient := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
-	splunkClient.hecWorker = &defaultHecWorker{serverURL, server.Client(), buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	splunkClient.hecWorker = &defaultHecWorker{serverURL, server.Client(), buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	require.NoError(t, splunkClient.pushLogData(t.Context(), createLogData(1, 1, 1)))
 	require.NoError(t, splunkClient.pushLogData(t.Context(), createLogData(1, 1, 1)))
@@ -1815,7 +1836,7 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 
 	// The first record is to be sent successfully, the second one should not
 	httpClient, _ := newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"}, func(_ []byte) {})
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	err := c.pushLogData(t.Context(), logs)
 	require.Error(t, err)
@@ -1841,7 +1862,7 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 
 	httpClient, headers := newTestClient(200, "OK")
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	err := c.pushLogData(t.Context(), logs)
 	require.NoError(t, err)
@@ -1902,7 +1923,7 @@ func TestProfileData(t *testing.T) {
 	s.Values().Append(42)
 
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	err := c.pushProfilesData(t.Context(), profiles)
 	require.NoError(t, err)
@@ -2089,7 +2110,7 @@ func TestProfileDataUnsupportedProfilesAreDroppedAndCounted(t *testing.T) {
 		}
 	})
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	profiles := pprofile.NewProfiles()
 	dict := profiles.Dictionary()
@@ -2129,7 +2150,7 @@ func TestProfileDataTransientSendErrorRemainsRetryableWithUnsupportedProfiles(t 
 
 	httpClient, _ := newTestClient(http.StatusServiceUnavailable, "NOK")
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	profiles := pprofile.NewProfiles()
 	dict := profiles.Dictionary()
@@ -2172,7 +2193,7 @@ func TestProfileDataUnsupportedProfileCountIsNotRepeatedOnRetry(t *testing.T) {
 		[]int{http.StatusServiceUnavailable, http.StatusOK}, []string{"NOK", "OK"}, func(_ []byte) {},
 	)
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	profiles := pprofile.NewProfiles()
 	dict := profiles.Dictionary()
@@ -2222,7 +2243,7 @@ func TestProfileDataRetryPreservesResourceAttributes(t *testing.T) {
 		}
 	})
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	profiles := pprofile.NewProfiles()
 	profiles.Dictionary().StackTable().AppendEmpty()
@@ -2271,7 +2292,7 @@ func TestProfileDataPartialSuccessRetriesOnlyUnsentProfiles(t *testing.T) {
 		},
 	)
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	profiles := pprofile.NewProfiles()
 	profiles.Dictionary().StackTable().AppendEmpty()
@@ -2441,7 +2462,7 @@ func TestProfileDataMultipleResources(t *testing.T) {
 	p2.Samples().AppendEmpty().Values().Append(2)
 
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	require.NoError(t, c.pushProfilesData(t.Context(), profiles))
 
@@ -2518,7 +2539,7 @@ func TestProfileDataTotalFrameCount(t *testing.T) {
 	// Total frames = 3 + 1 = 4; sample count = 2 (wrong value without the fix)
 
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	require.NoError(t, c.pushProfilesData(t.Context(), profiles))
 
@@ -2576,7 +2597,7 @@ func TestProfileDataTranslationErrorIsPerProfile(t *testing.T) {
 	badSample.Values().Append(1)
 
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	err := c.pushProfilesData(t.Context(), profiles)
 
@@ -2849,7 +2870,7 @@ func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 		config.DisableCompression = disable
 
 		c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
-		c.hecWorker = &defaultHecWorker{&url.URL{Scheme: "http", Host: "splunk"}, http.DefaultClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+		c.hecWorker = &defaultHecWorker{&url.URL{Scheme: "http", Host: "splunk"}, http.DefaultClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 		err := c.pushLogData(t.Context(), logs)
 		require.Error(t, err)
@@ -2961,7 +2982,7 @@ func TestPushLogsPartialSuccess(t *testing.T) {
 	// The first request succeeds, the second fails.
 	httpClient, _ := newTestClientWithPresetResponses([]int{200, 503}, []string{"OK", "NOK"}, func(_ []byte) {})
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(cfg, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(cfg, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	logs := plog.NewLogs()
 	logRecords := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
@@ -2982,7 +3003,7 @@ func TestPushLogsRetryableFailureMultipleResources(t *testing.T) {
 
 	httpClient, _ := newTestClientWithPresetResponses([]int{503}, []string{"NOK"}, func(_ []byte) {})
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	logs := plog.NewLogs()
 	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
