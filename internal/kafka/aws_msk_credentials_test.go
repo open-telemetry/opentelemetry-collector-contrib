@@ -34,6 +34,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
+// Long enough for SigV4 HMAC under GODEBUG=fips140=only.
+const testAWSSecretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+
 func TestWrapAWSMSKCredentialsProviderIncompleteOptions(t *testing.T) {
 	client := sts.New(sts.Options{})
 	tokenRetriever := stscreds.IdentityTokenFile("test-token")
@@ -75,7 +78,7 @@ func TestAWSMSKCredentialCacheFallbackSafetyMargin(t *testing.T) {
 				provider := newAWSMSKRefreshProvider(aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
 					calls++
 					if calls == 1 {
-						return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: "SECRET", CanExpire: true, Expires: actualExpiry}, nil
+						return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: testAWSSecretAccessKey, CanExpire: true, Expires: actualExpiry}, nil
 					}
 					deadline, ok := ctx.Deadline()
 					assert.True(t, ok)
@@ -136,7 +139,7 @@ func TestLoadAWSCredentialsProvider_ExpiryWindow(t *testing.T) {
 					lifetime = time.Hour
 				}
 				w.Header().Set("Content-Type", "text/xml")
-				_, err := fmt.Fprintf(w, `<AssumeRoleWithWebIdentityResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/"><AssumeRoleWithWebIdentityResult><Credentials><AccessKeyId>AKID%d</AccessKeyId><SecretAccessKey>SECRET</SecretAccessKey><SessionToken>TOKEN</SessionToken><Expiration>%s</Expiration></Credentials></AssumeRoleWithWebIdentityResult></AssumeRoleWithWebIdentityResponse>`, call, time.Now().Add(lifetime).UTC().Format(time.RFC3339))
+				_, err := fmt.Fprintf(w, `<AssumeRoleWithWebIdentityResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/"><AssumeRoleWithWebIdentityResult><Credentials><AccessKeyId>AKID%d</AccessKeyId><SecretAccessKey>%s</SecretAccessKey><SessionToken>TOKEN</SessionToken><Expiration>%s</Expiration></Credentials></AssumeRoleWithWebIdentityResult></AssumeRoleWithWebIdentityResponse>`, call, testAWSSecretAccessKey, time.Now().Add(lifetime).UTC().Format(time.RFC3339))
 				if err != nil {
 					t.Error(err)
 				}
@@ -165,7 +168,7 @@ func TestLoadAWSCredentialsProvider_ExpiryWindow(t *testing.T) {
 			}
 			if tt.static {
 				t.Setenv("AWS_ACCESS_KEY_ID", "STATIC")
-				t.Setenv("AWS_SECRET_ACCESS_KEY", "SECRET")
+				t.Setenv("AWS_SECRET_ACCESS_KEY", testAWSSecretAccessKey)
 			}
 			provider, err := loadAWSCredentialsProvider(t.Context(), "us-west-2", zap.NewNop())
 			require.NoError(t, err)
@@ -190,7 +193,7 @@ func TestLoadAWSCredentialsProvider_ExpiryWindow(t *testing.T) {
 func TestAWSMSKCredentialCacheJitter(t *testing.T) {
 	actualExpiry := time.Now().Add(time.Hour)
 	provider := newAWSMSKRefreshProvider(aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) {
-		return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: "SECRET", CanExpire: true, Expires: actualExpiry}, nil
+		return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: testAWSSecretAccessKey, CanExpire: true, Expires: actualExpiry}, nil
 	}), zap.NewNop())
 	cache := aws.NewCredentialsCache(provider, configureAWSMSKCache)
 	creds, err := cache.Retrieve(t.Context())
@@ -212,7 +215,7 @@ func TestAWSMSKCredentialCacheRefreshLifecycle(t *testing.T) {
 			if failing.Load() {
 				return aws.Credentials{}, refreshErr
 			}
-			return aws.Credentials{AccessKeyID: fmt.Sprintf("AKID%d", call), SecretAccessKey: "SECRET", SessionToken: "SESSION_TOKEN", CanExpire: true, Expires: time.Now().Add(time.Hour)}, nil
+			return aws.Credentials{AccessKeyID: fmt.Sprintf("AKID%d", call), SecretAccessKey: testAWSSecretAccessKey, SessionToken: "SESSION_TOKEN", CanExpire: true, Expires: time.Now().Add(time.Hour)}, nil
 		}), zap.New(logs))
 		cache := aws.NewCredentialsCache(provider, configureAWSMSKCache)
 		mechanism := newAWSMSKMechanism(t, cache)
@@ -280,7 +283,7 @@ func TestAWSMSKCredentialCacheRefreshLifecycle(t *testing.T) {
 			assert.Contains(t, fields, "retry_in")
 		}
 		for _, entry := range observed.All() {
-			assert.NotContains(t, fmt.Sprint(entry.ContextMap()), "SECRET")
+			assert.NotContains(t, fmt.Sprint(entry.ContextMap()), testAWSSecretAccessKey)
 			assert.NotContains(t, fmt.Sprint(entry.ContextMap()), "AKID")
 			assert.NotContains(t, fmt.Sprint(entry.ContextMap()), "SESSION_TOKEN")
 		}
@@ -292,7 +295,7 @@ func TestAWSMSKCredentialCacheRefreshTimeoutWithFallback(t *testing.T) {
 		var calls atomic.Int32
 		provider := newAWSMSKRefreshProvider(aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
 			if calls.Add(1) == 1 {
-				return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: "SECRET", CanExpire: true, Expires: time.Now().Add(time.Hour)}, nil
+				return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: testAWSSecretAccessKey, CanExpire: true, Expires: time.Now().Add(time.Hour)}, nil
 			}
 			deadline, ok := ctx.Deadline()
 			assert.True(t, ok)
@@ -371,7 +374,7 @@ func TestAWSMSKCredentialCacheRefreshTimeout(t *testing.T) {
 
 func TestAWSMSKRefreshProviderRejectsExpiredCredentials(t *testing.T) {
 	provider := newAWSMSKRefreshProvider(aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) {
-		return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: "SECRET", CanExpire: true, Expires: time.Now().Add(-time.Second)}, nil
+		return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: testAWSSecretAccessKey, CanExpire: true, Expires: time.Now().Add(-time.Second)}, nil
 	}), zap.NewNop())
 	creds, err := aws.NewCredentialsCache(provider, configureAWSMSKCache).Retrieve(t.Context())
 	require.ErrorContains(t, err, "expired credentials")
@@ -383,7 +386,7 @@ func TestAWSMSKCredentialCacheFallbackExpiresDuringRefresh(t *testing.T) {
 		var calls atomic.Int32
 		provider := newAWSMSKRefreshProvider(aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
 			if calls.Add(1) == 1 {
-				return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: "SECRET", CanExpire: true, Expires: time.Now().Add(awsMSKFallbackSafetyMargin + awsMSKCachedRefreshTimeout/2)}, nil
+				return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: testAWSSecretAccessKey, CanExpire: true, Expires: time.Now().Add(awsMSKFallbackSafetyMargin + awsMSKCachedRefreshTimeout/2)}, nil
 			}
 			<-ctx.Done()
 			return aws.Credentials{}, ctx.Err()
