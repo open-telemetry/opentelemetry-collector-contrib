@@ -1,5 +1,5 @@
 # Use the official Redis image as the base
-FROM redis:8.10.3@sha256:de1068af6f552240dfab67bcc9bfef99bfc60f776bb4580ef077ea4c8c97e848
+FROM redis:8.10.3@sha256:1f88291b4c57bdf249f02eb085a8669889b2d2954e91d4de5118a5da6b78dd53
 
 RUN apt update && apt install --assume-yes socat
 

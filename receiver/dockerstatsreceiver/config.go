@@ -6,6 +6,7 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
@@ -24,7 +25,16 @@ type Config struct {
 	// for the mapped name.  E.g. `io.kubernetes.container.name: container_spec_name`
 	// would result in a MetricDescriptor label called `container_spec_name` whose
 	// Metric DataPoints have the value of the `io.kubernetes.container.name` container label.
+	//
+	// Deprecated: Use ContainerLabelsToResourceAttributes, which records labels as
+	// `container.label.<key>` resource attributes per the semantic conventions.
 	ContainerLabelsToMetricLabels map[string]string `mapstructure:"container_labels_to_metric_labels"`
+
+	// ContainerLabelsToResourceAttributes selects container labels to record as
+	// resource attributes. A label is recorded if its key matches any of the
+	// filters. Matching labels are recorded as `container.label.<key>`, following
+	// the container resource semantic conventions.
+	ContainerLabelsToResourceAttributes []filter.Config `mapstructure:"container_labels_to_resource_attributes"`
 
 	// A mapping of container environment variable names to MetricDescriptor label
 	// keys.  The corresponding env var values become the DataPoint label value.

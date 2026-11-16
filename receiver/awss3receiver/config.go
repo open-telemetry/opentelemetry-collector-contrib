@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/multierr"
 )
 
@@ -28,6 +29,10 @@ type S3DownloaderConfig struct {
 	S3ForcePathStyle               bool   `mapstructure:"s3_force_path_style"`
 	TagObjectAfterIngestion        bool   `mapstructure:"tag_object_after_ingestion"`
 	SkipIngestingTaggedObjects     bool   `mapstructure:"skip_ingesting_tagged_objects"`
+	// Decompression sets the algorithm used to decompress objects whose key does not
+	// end with a recognized compression suffix (`.gz` or `.zst`).
+	// Valid values are: `gzip`, `zstd`, `none` or no value set.
+	Decompression configcompression.Type `mapstructure:"decompression"`
 }
 
 // SQSConfig holds SQS queue configuration for receiving object change notifications.
@@ -128,6 +133,12 @@ func (c Config) Validate() error {
 		if _, err := parseTime(c.EndTime, "endtime"); err != nil {
 			errs = multierr.Append(errs, err)
 		}
+	}
+
+	if c.S3Downloader.Decompression.IsCompressed() &&
+		c.S3Downloader.Decompression != configcompression.TypeGzip &&
+		c.S3Downloader.Decompression != configcompression.TypeZstd {
+		errs = multierr.Append(errs, fmt.Errorf("unsupported decompression type %q, valid values are: gzip, zstd, none", c.S3Downloader.Decompression))
 	}
 
 	// Validate SQS notifications if configured

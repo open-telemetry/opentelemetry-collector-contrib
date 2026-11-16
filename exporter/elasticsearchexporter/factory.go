@@ -66,8 +66,29 @@ func createDefaultConfig() component.Config {
 			MaxRetries:      0, // default is set in exporter code
 			InitialInterval: 100 * time.Millisecond,
 			MaxInterval:     1 * time.Minute,
+			// Request-level retries. A non-2xx bulk HTTP status has no per-document results.
+			// Elasticsearch returns HTTP 200 for a parsed bulk body and reports a
+			// document problem, such as a mapping error, as item status 400.
+			// A request-level 400 is an unparseable bulk body, or a bad proxy.
 			RetryOnStatus: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusNotFound,
+				http.StatusConflict,
 				http.StatusTooManyRequests,
+				http.StatusInternalServerError,
+				http.StatusBadGateway,
+				http.StatusServiceUnavailable,
+				http.StatusGatewayTimeout,
+			},
+			// Document-level retries for item statuses inside an HTTP 200 bulk response.
+			RetryOnDocumentStatus: []int{
+				http.StatusTooManyRequests,
+				http.StatusInternalServerError,
+				http.StatusBadGateway,
+				http.StatusServiceUnavailable,
+				http.StatusGatewayTimeout,
 			},
 		},
 		Mapping: MappingsSettings{

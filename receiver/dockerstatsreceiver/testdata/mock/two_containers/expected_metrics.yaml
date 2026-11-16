@@ -8,11 +8,53 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: container.state.status
+                      value:
+                        stringValue: created
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "2"
                   attributes:
                     - key: container.state.status
                       value:
                         stringValue: running
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: container.state.status
+                      value:
+                        stringValue: paused
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: container.state.status
+                      value:
+                        stringValue: restarting
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: container.state.status
+                      value:
+                        stringValue: removing
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: container.state.status
+                      value:
+                        stringValue: exited
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: container.state.status
+                      value:
+                        stringValue: dead
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{status}'
@@ -33,6 +75,9 @@ resourceMetrics:
         - key: container.image.name
           value:
             stringValue: ubuntu
+        - key: container.label.team
+          value:
+            stringValue: container-label
         - key: container.name
           value:
             stringValue: pensive_aryabhata
@@ -820,6 +865,9 @@ resourceMetrics:
         - key: container.image.name
           value:
             stringValue: alpine
+        - key: container.label.team
+          value:
+            stringValue: container-label2
         - key: container.name
           value:
             stringValue: loving_torvalds
