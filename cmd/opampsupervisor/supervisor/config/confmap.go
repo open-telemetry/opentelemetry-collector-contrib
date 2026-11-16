@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.uber.org/zap"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 var configURISchemeRegexp = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9+.-]+:`)
