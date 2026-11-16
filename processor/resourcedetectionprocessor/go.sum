@@ -401,6 +401,8 @@ go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.19.0 h1:jod9iG
 go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.19.0/go.mod h1:Do2FZ7+9YKeCiUuDDI3OcnRhBvrmQFowkviZOZWLDJc=
 go.opentelemetry.io/contrib/detectors/azure/azurefunctions v0.19.0 h1:Dn5+LcOW0qvxP/2eNDZr3HA+RoJe3L/UhjwWAEFzPz0=
 go.opentelemetry.io/contrib/detectors/azure/azurefunctions v0.19.0/go.mod h1:El4KDS9Hl9yQyTkypuHezFz2WenecSuImht7JSUsUNQ=
+go.opentelemetry.io/contrib/detectors/azure/azurevm v0.19.1-0.20261116111143-95d7d47ab65a h1:irIxgTK2ShUNppyCtZxwmaCbPCZbVoWi5hFXNHZ/79E=
+go.opentelemetry.io/contrib/detectors/azure/azurevm v0.19.1-0.20261116111143-95d7d47ab65a/go.mod h1:nMRtRYKmlDYQ/i9VMypO2dM9Fe8960xJXV1ZQtLbR4E=
 go.opentelemetry.io/contrib/detectors/consul v0.0.0-20261106092722-ca27f49bc143 h1:/KLqud70ZXJ9/C/+E4lJ24EgTBPfjbOO+r9Iazo0DNI=
 go.opentelemetry.io/contrib/detectors/consul v0.0.0-20261106092722-ca27f49bc143/go.mod h1:TPNxZt/tvJGDthD8Mtn2jpcnQ9gATF+ulk5m+iP6gJ0=
 go.opentelemetry.io/contrib/detectors/dynatrace v0.0.0-20261106092722-ca27f49bc143 h1:ahtqFa3jAbvsjHvNtab05Z4lOB37QM0fsgIZN75+ekk=
@@ -487,8 +489,8 @@ golang.org/x/sys v0.0.0-20201204225414-ed752295db88/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20210927094055-39ccf1dd6fa6/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20220503163025-988cb79eb6c6/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
-golang.org/x/sys v0.49.0 h1:XbzkgYJHdqh/8m2Uu0W/dQv8nktxx4BFHp1M0gROTXA=
-golang.org/x/sys v0.49.0/go.mod h1:hNLxWAXmnKAxqDtdwIYC4bM9oQPEecfsnNMuSxOs3og=
+golang.org/x/sys v0.50.0 h1:dkKZEFTEKaLr1sjhs0WiKqoi8Jj5nHbS3Njmx1UoMJs=
+golang.org/x/sys v0.50.0/go.mod h1:hNLxWAXmnKAxqDtdwIYC4bM9oQPEecfsnNMuSxOs3og=
 golang.org/x/term v0.47.0 h1:cpyOwQkr2Nzxe2p6KnrTG7Ei2wtzjsuSjhpXXepZ/BM=
 golang.org/x/term v0.47.0/go.mod h1:efAfAuG6RKABvg1ArGebRkvX6LXul14SM67o2e4mUCY=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
