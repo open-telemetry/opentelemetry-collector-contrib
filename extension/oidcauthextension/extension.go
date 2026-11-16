@@ -332,8 +332,8 @@ func (e *oidcExtension) processProviderConfig(ctx context.Context, p ProviderCfg
 		Transport: pc.transport,
 	}
 	oidcContext := oidc.ClientContext(ctx, pc.client)
-	if p.JWKSURL != "" {
-		keySet := oidc.NewRemoteKeySet(oidcContext, p.JWKSURL)
+	if p.JWKSURI != "" {
+		keySet := oidc.NewRemoteKeySet(oidcContext, p.JWKSURI)
 		pc.verifier = oidc.NewVerifier(p.IssuerURL, keySet, vCfg)
 		e.providerContainers[p.IssuerURL] = &pc
 		return nil
