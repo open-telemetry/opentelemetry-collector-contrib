@@ -25,6 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/nfsscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pressurescraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/systemscraper"
@@ -82,6 +83,7 @@ func TestLoadConfig(t *testing.T) {
 					component.MustNewType("nfs"):       nfsscraper.NewFactory().CreateDefaultConfig(),
 					component.MustNewType("processes"): processesscraper.NewFactory().CreateDefaultConfig(),
 					component.MustNewType("paging"):    pagingscraper.NewFactory().CreateDefaultConfig(),
+					component.MustNewType("pressure"):  pressurescraper.NewFactory().CreateDefaultConfig(),
 					component.MustNewType("process"): func() component.Config {
 						cfg := processscraper.NewFactory().CreateDefaultConfig()
 						cfg.(*processscraper.Config).Include = processscraper.MatchConfig{
@@ -165,6 +167,7 @@ func TestLoadDeprecatedConfig(t *testing.T) {
 					component.MustNewType("nfs"):       nfsscraper.NewFactory().CreateDefaultConfig(),
 					component.MustNewType("processes"): processesscraper.NewFactory().CreateDefaultConfig(),
 					component.MustNewType("paging"):    pagingscraper.NewFactory().CreateDefaultConfig(),
+					component.MustNewType("pressure"):  pressurescraper.NewFactory().CreateDefaultConfig(),
 					component.MustNewType("process"): func() component.Config {
 						cfg := processscraper.NewFactory().CreateDefaultConfig()
 						cfg.(*processscraper.Config).Include = processscraper.MatchConfig{

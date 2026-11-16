@@ -374,6 +374,7 @@ components:
     - scraper/network
     - scraper/nfs
     - scraper/paging
+    - scraper/pressure
     - scraper/process
     - scraper/processes
     - scraper/system
