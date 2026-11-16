@@ -318,6 +318,7 @@ receiver/httpcheckreceiver/                                      @open-telemetry
 receiver/huaweicloudcesreceiver/                                 @open-telemetry/collector-contrib-approvers @vyagh
 receiver/icmpcheckreceiver/                                      @open-telemetry/collector-contrib-approvers @atoulme @jkoronaAtCisco
 receiver/iisreceiver/                                            @open-telemetry/collector-contrib-approvers @ishleenk17 @pjanotti
+receiver/influxdbreceiver/                                       @open-telemetry/collector-contrib-approvers @chinmaychahar
 receiver/jaegerreceiver/                                         @open-telemetry/collector-contrib-approvers @yurishkuro
 receiver/journaldreceiver/                                       @open-telemetry/collector-contrib-approvers @belimawr @namco1992
 receiver/k8sclusterreceiver/                                     @open-telemetry/collector-contrib-approvers @TylerHelmuth @povilasv @ChrsMark @jinja2
@@ -416,7 +417,6 @@ reports/distributions/otlp.yaml    @open-telemetry/collector-contrib-approvers
 exporter/influxdbexporter/                                       @open-telemetry/collector-contrib-approvers
 exporter/logicmonitorexporter/                                   @open-telemetry/collector-contrib-approvers
 extension/encoding/avrologencodingextension/                     @open-telemetry/collector-contrib-approvers
-receiver/influxdbreceiver/                                       @open-telemetry/collector-contrib-approvers
 receiver/riakreceiver/                                           @open-telemetry/collector-contrib-approvers
 
 # End unmaintained components list
