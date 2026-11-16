@@ -311,6 +311,15 @@ type ProducerConfig struct {
 	// `queue.buffering.max.messages` in librdkafka.
 	FlushMaxMessages int `mapstructure:"flush_max_messages"`
 
+	// MaxInflightRequestsPerBroker is the maximum number of produce requests
+	// the producer keeps in flight to each broker. Maps to franz-go's
+	// kgo.MaxProduceRequestsInflightPerBroker. It only takes effect when
+	// idempotent produce is disabled (required_acks 0 or 1); with
+	// required_acks "all" (-1) idempotent produce manages the limit itself,
+	// so this must be left at 1. Values above 1 may reorder records and may
+	// produce duplicates on connection errors. (default 1)
+	MaxInflightRequestsPerBroker int `mapstructure:"max_inflight_requests_per_broker"`
+
 	// Whether or not to allow automatic topic creation.
 	// (default enabled).
 	AllowAutoTopicCreation bool `mapstructure:"allow_auto_topic_creation"`
@@ -322,13 +331,14 @@ type ProducerConfig struct {
 
 func NewDefaultProducerConfig() ProducerConfig {
 	return ProducerConfig{
-		MaxMessageBytes:        1000000,
-		MaxBrokerWriteBytes:    franzGoMinBrokerWriteBytes,
-		RequiredAcks:           WaitForLocal,
-		Compression:            "none",
-		FlushMaxMessages:       10000,
-		AllowAutoTopicCreation: true,
-		Linger:                 10 * time.Millisecond,
+		MaxMessageBytes:              1000000,
+		MaxBrokerWriteBytes:          franzGoMinBrokerWriteBytes,
+		RequiredAcks:                 WaitForLocal,
+		Compression:                  "none",
+		FlushMaxMessages:             10000,
+		MaxInflightRequestsPerBroker: 1,
+		AllowAutoTopicCreation:       true,
+		Linger:                       10 * time.Millisecond,
 	}
 }
 
@@ -378,6 +388,12 @@ func (c ProducerConfig) Validate() error {
 	}
 	if c.FlushMaxMessages < 1 {
 		return fmt.Errorf("flush_max_messages (%d) must be at least 1", c.FlushMaxMessages)
+	}
+	if c.MaxInflightRequestsPerBroker < 1 {
+		return fmt.Errorf("max_inflight_requests_per_broker (%d) must be at least 1", c.MaxInflightRequestsPerBroker)
+	}
+	if c.MaxInflightRequestsPerBroker > 1 && c.RequiredAcks == WaitForAll {
+		return fmt.Errorf("max_inflight_requests_per_broker (%d) must be 1 when required_acks is 'all' (-1)", c.MaxInflightRequestsPerBroker)
 	}
 	return nil
 }

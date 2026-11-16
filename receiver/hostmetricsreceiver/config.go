@@ -72,7 +72,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	for keyStr := range scrapersSection.ToStringMap() {
 		key, err := component.NewType(keyStr)
 		if err != nil {
-			return fmt.Errorf("invalid scraper key name: %s", key)
+			return fmt.Errorf("invalid scraper key name: %s: %w", keyStr, err)
 		}
 		factory, ok := scraperFactories[key]
 		if !ok {

@@ -1274,9 +1274,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 		operator.poll(ctx)
 	})
 
-	// Wait until both files have been read. A file is deleted synchronously
-	// before its tokens are emitted (see Reader.readContents), so once the short
-	// file's line is emitted the short file has already been deleted.
+	// Wait until both readers enter their emit callbacks.
 	for _, ch := range []chan struct{}{shortEmitted, longEmitted} {
 		select {
 		case <-ch:
@@ -1285,8 +1283,10 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 		}
 	}
 
-	// Short file was fully consumed and should already be deleted.
-	require.NoFileExists(t, shortFile.Name())
+	// The short file is deleted only after its emit callback returns.
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.NoFileExists(c, shortFile.Name())
+	}, 5*time.Second, 10*time.Millisecond)
 
 	// Stop consuming before long file has been fully consumed
 	cancel()
@@ -1296,7 +1296,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	require.FileExists(t, longFile.Name())
 }
 
-func TestHeaderPersistance(t *testing.T) {
+func TestHeaderPersistence(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
@@ -1309,8 +1309,8 @@ func TestHeaderPersistance(t *testing.T) {
 	filetest.WriteString(t, temp, "#headerField: headerValue\nlog line\n")
 
 	persister := testutil.NewUnscopedMockPersister()
-
-	require.NoError(t, op1.Start(persister))
+	op1.persister = persister
+	op1.poll(t.Context())
 	sink1.ExpectCall(t, []byte("log line"), map[string]any{
 		"header_key":      "headerField",
 		"header_value":    "headerValue",
@@ -1331,7 +1331,7 @@ func TestHeaderPersistance(t *testing.T) {
 	require.NoError(t, op2.Stop())
 }
 
-func TestHeaderPersistanceInHeader(t *testing.T) {
+func TestHeaderPersistenceInHeader(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg1 := NewConfig().includeDir(tempDir)
 	cfg1.StartAt = "beginning"

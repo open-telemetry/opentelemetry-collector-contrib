@@ -6,6 +6,7 @@ package ottl
 import (
 	"context"
 	"errors"
+	"math"
 	"testing"
 	"time"
 
@@ -1460,6 +1461,32 @@ func Test_FunctionGetter(t *testing.T) {
 	}
 }
 
+func BenchmarkStandardStringLikeGetter(b *testing.B) {
+	benchmarks := []struct {
+		name string
+		val  any
+	}{
+		{name: "string", val: "hello"},
+		{name: "int64", val: int64(1234567)},
+		{name: "bool", val: true},
+		{name: "float64", val: 1.5},
+	}
+
+	for _, bm := range benchmarks {
+		getter := StandardStringLikeGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return bm.val, nil
+			},
+		}
+		b.Run(bm.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				_, _, _ = getter.Get(b.Context(), nil)
+			}
+		})
+	}
+}
+
 //nolint:errorlint
 func Test_StandardStringGetter_WrappedError(t *testing.T) {
 	getter := StandardStringGetter[any]{
@@ -1509,6 +1536,56 @@ func Test_StandardStringLikeGetter(t *testing.T) {
 				},
 			},
 			want:  "1",
+			valid: true,
+		},
+		{
+			name: "bool type false",
+			getter: StandardStringLikeGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return false, nil
+				},
+			},
+			want:  "false",
+			valid: true,
+		},
+		{
+			name: "int64 type zero",
+			getter: StandardStringLikeGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return int64(0), nil
+				},
+			},
+			want:  "0",
+			valid: true,
+		},
+		{
+			name: "int64 type negative",
+			getter: StandardStringLikeGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return int64(-42), nil
+				},
+			},
+			want:  "-42",
+			valid: true,
+		},
+		{
+			name: "int64 type max",
+			getter: StandardStringLikeGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return int64(math.MaxInt64), nil
+				},
+			},
+			want:  "9223372036854775807",
+			valid: true,
+		},
+		{
+			name: "int64 type min",
+			getter: StandardStringLikeGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return int64(math.MinInt64), nil
+				},
+			},
+			want:  "-9223372036854775808",
 			valid: true,
 		},
 		{

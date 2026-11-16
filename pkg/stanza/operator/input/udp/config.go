@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
@@ -67,13 +68,14 @@ type AsyncConfig struct {
 
 // BaseConfig is the details configuration of a udp input operator.
 type BaseConfig struct {
-	ListenAddress   string       `mapstructure:"listen_address,omitempty"`
-	OneLogPerPacket bool         `mapstructure:"one_log_per_packet,omitempty"`
-	AddAttributes   bool         `mapstructure:"add_attributes,omitempty"`
-	Encoding        string       `mapstructure:"encoding,omitempty"`
-	SplitConfig     split.Config `mapstructure:"multiline,omitempty"`
-	TrimConfig      trim.Config  `mapstructure:",squash"`
-	AsyncConfig     *AsyncConfig `mapstructure:"async,omitempty"`
+	ListenAddress   string                        `mapstructure:"listen_address,omitempty"`
+	OneLogPerPacket bool                          `mapstructure:"one_log_per_packet,omitempty"`
+	AddAttributes   bool                          `mapstructure:"add_attributes,omitempty"`
+	ResolveNames    configoptional.Optional[bool] `mapstructure:"resolve_names,omitempty"`
+	Encoding        string                        `mapstructure:"encoding,omitempty"`
+	SplitConfig     split.Config                  `mapstructure:"multiline,omitempty"`
+	TrimConfig      trim.Config                   `mapstructure:",squash"`
+	AsyncConfig     *AsyncConfig                  `mapstructure:"async,omitempty"`
 }
 
 // Build will build a udp input operator.
@@ -104,8 +106,15 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 	splitFunc = trim.WithFunc(splitFunc, c.TrimConfig.Func())
 
-	var resolver *helper.IPResolver
-	if c.AddAttributes {
+	resolveNames := true
+	if c.ResolveNames.HasValue() {
+		if val := c.ResolveNames.Get(); val != nil {
+			resolveNames = *val
+		}
+	}
+
+	var resolver ipResolver
+	if c.AddAttributes && resolveNames {
 		resolver = helper.NewIPResolver()
 	}
 
@@ -126,6 +135,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		address:                    address,
 		buffer:                     make([]byte, MaxUDPSize),
 		addAttributes:              c.AddAttributes,
+		resolveNames:               resolveNames,
 		useStableNetworkAttributes: metadata.StanzaUDPUseStableNetworkAttributesFeatureGate.IsEnabled(),
 		encoding:                   enc,
 		splitFunc:                  splitFunc,

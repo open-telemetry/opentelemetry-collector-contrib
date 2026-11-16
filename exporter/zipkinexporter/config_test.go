@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v5"
+	"github.com/cenkalti/backoff/v7"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -68,14 +68,8 @@ func TestLoadConfig(t *testing.T) {
 					config.TLS = configtls.ClientConfig{
 						InsecureSkipVerify: true,
 					}
-					// max_idle_conns and idle_conn_timeout are deprecated keys; unmarshal them
-					// through confmap (rather than setting the fields directly) so that config
-					// picks up the same deprecation-warning bookkeeping that loading
-					// testdata/config.yaml produces below.
-					require.NoError(t, confmap.NewFromStringMap(map[string]any{
-						"max_idle_conns":    maxIdleConns,
-						"idle_conn_timeout": idleConnTimeout,
-					}).Unmarshal(config))
+					config.Keepalive.Get().IdleConnTimeout = idleConnTimeout
+					config.Keepalive.Get().MaxIdleConns = maxIdleConns
 				}),
 				Format:             "proto",
 				DefaultServiceName: "test_name",

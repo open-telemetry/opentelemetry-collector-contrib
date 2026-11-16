@@ -91,6 +91,9 @@ resourceLogs:
               - key: oracledb.query.wait_time
                 value:
                   doubleValue: 0
+              - key: oracledb.wait.start_time
+                value:
+                  stringValue: "2026-05-06T09:59:45Z"
               - key: oracledb.procedure_id
                 value:
                   intValue: "0"
