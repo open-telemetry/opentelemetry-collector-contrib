@@ -9,6 +9,7 @@ import (
 	"maps"
 	"net"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -572,4 +573,152 @@ func TestNewLoadBalancerInvalidServiceAwsResolver(t *testing.T) {
 
 func newNopMockExporter() *wrappedExporter {
 	return newWrappedExporter(mockComponent{}, "mock")
+}
+
+func TestShutdown_DuringBackendChanges_NoMapPanicOrLeak(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := simpleConfig()
+
+	reached := make(chan struct{})
+	release := make(chan struct{})
+	closeRelease := sync.OnceFunc(func() { close(release) })
+	t.Cleanup(closeRelease)
+
+	var ep1Shutdown, ep2Shutdown atomic.Bool
+
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		if endpoint == endpointWithPort("endpoint-2") {
+			close(reached)
+			<-release
+			return mockComponent{
+				ShutdownFunc: func(context.Context) error {
+					ep2Shutdown.Store(true)
+					return nil
+				},
+			}, nil
+		}
+
+		return mockComponent{
+			ShutdownFunc: func(context.Context) error {
+				ep1Shutdown.Store(true)
+				return nil
+			},
+		}, nil
+	}
+
+	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	// Initial backend: endpoint-1
+	p.onBackendChanges([]string{"endpoint-1"})
+	require.Len(t, p.exporters, 1)
+
+	// Trigger onBackendChanges to add endpoint-2 in background
+	backendChangeDone := make(chan struct{})
+	go func() {
+		defer close(backendChangeDone)
+		p.onBackendChanges([]string{"endpoint-1", "endpoint-2"})
+	}()
+
+	// Wait until endpoint-2 is in startMissingExporters
+	<-reached
+
+	// While endpoint-2 is starting, invoke Shutdown in parallel
+	shutdownDone := make(chan struct{})
+	go func() {
+		defer close(shutdownDone)
+		assert.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// Release endpoint-2 so startMissingExporters can complete
+	closeRelease()
+
+	// Wait for both onBackendChanges and Shutdown to finish
+	select {
+	case <-backendChangeDone:
+	case <-time.After(5 * time.Second):
+		require.Fail(t, "onBackendChanges timed out")
+	}
+
+	select {
+	case <-shutdownDone:
+	case <-time.After(5 * time.Second):
+		require.Fail(t, "Shutdown timed out")
+	}
+
+	// Verify no resource leak: both endpoint-1 and endpoint-2 had Shutdown called
+	assert.True(t, ep1Shutdown.Load(), "endpoint-1 should have been shut down")
+	assert.True(t, ep2Shutdown.Load(), "endpoint-2 should have been shut down when stopped")
+
+	// Verify loadbalancer state
+	assert.True(t, p.stopped)
+	assert.Empty(t, p.exporters)
+	assert.Equal(t, 0, p.NumBackends())
+
+	// Verify routing after shutdown returns error
+	_, _, err = p.exporterAndEndpoint([]byte("any"))
+	assert.Error(t, err)
+
+	// Subsequent onBackendChanges after shutdown should be a no-op
+	p.onBackendChanges([]string{"endpoint-3"})
+	assert.Empty(t, p.exporters)
+}
+
+func TestShutdown_ConcurrentWithBackendChanges_Race(t *testing.T) {
+	for range 10 {
+		ts, tb := getTelemetryAssets(t)
+		cfg := simpleConfig()
+
+		componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+			return newNopMockExporter(), nil
+		}
+
+		p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+		require.NotNil(t, p)
+		require.NoError(t, err)
+
+		var wg sync.WaitGroup
+		wg.Add(2)
+
+		go func() {
+			defer wg.Done()
+			for range 20 {
+				p.onBackendChanges([]string{"endpoint-1", "endpoint-2"})
+				p.onBackendChanges([]string{"endpoint-1"})
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+			time.Sleep(5 * time.Millisecond)
+			_ = p.Shutdown(t.Context())
+		}()
+
+		wg.Wait()
+		assert.True(t, p.stopped)
+	}
+}
+
+func TestShutdown_Idempotent(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := simpleConfig()
+
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newNopMockExporter(), nil
+	}
+
+	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	p.onBackendChanges([]string{"endpoint-1"})
+	require.Len(t, p.exporters, 1)
+
+	require.NoError(t, p.Shutdown(t.Context()))
+	assert.True(t, p.stopped)
+	assert.Empty(t, p.exporters)
+
+	// Calling Shutdown again should succeed and be a no-op
+	require.NoError(t, p.Shutdown(t.Context()))
 }

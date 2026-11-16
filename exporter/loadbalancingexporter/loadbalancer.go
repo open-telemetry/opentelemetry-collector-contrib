@@ -164,11 +164,16 @@ func (lb *loadBalancer) onBackendChanges(resolved []string) {
 	lb.backendChangeMu.Lock()
 	defer lb.backendChangeMu.Unlock()
 
+	lb.updateLock.RLock()
+	if lb.stopped {
+		lb.updateLock.RUnlock()
+		return
+	}
+
 	newRing := newHashRing(resolved)
 
 	// prepare phase: take a snapshot of the current state, holding updateLock only for the
 	// duration of the copy
-	lb.updateLock.RLock()
 	if newRing.equal(lb.ring) {
 		lb.updateLock.RUnlock()
 		return
@@ -193,11 +198,20 @@ func (lb *loadBalancer) onBackendChanges(resolved []string) {
 
 	// commit phase: install the new exporters and publish the new ring atomically
 	lb.updateLock.Lock()
-	defer lb.updateLock.Unlock()
+	if lb.stopped {
+		lb.updateLock.Unlock()
+		for endpoint, we := range added {
+			if err := we.Shutdown(context.Background()); err != nil {
+				lb.logger.Warn("failed to shutdown exporter created during shutdown", zap.String("endpoint", endpoint), zap.Error(err))
+			}
+		}
+		return
+	}
 
 	maps.Copy(lb.exporters, added)
 	lb.ring = newHashRing(available)
 	lb.removeExtraExporters(context.Background(), resolved)
+	lb.updateLock.Unlock()
 }
 
 // startMissingExporters creates and starts an exporter for every endpoint that isn't part of the
@@ -205,6 +219,13 @@ func (lb *loadBalancer) onBackendChanges(resolved []string) {
 func (lb *loadBalancer) startMissingExporters(endpoints []string, existing map[string]*wrappedExporter) map[string]*wrappedExporter {
 	added := make(map[string]*wrappedExporter)
 	for _, endpoint := range endpoints {
+		lb.updateLock.RLock()
+		stopped := lb.stopped
+		lb.updateLock.RUnlock()
+		if stopped {
+			break
+		}
+
 		endpoint = endpointWithPort(endpoint)
 
 		if _, ok := existing[endpoint]; ok {
@@ -268,10 +289,26 @@ func (lb *loadBalancer) removeExtraExporters(ctx context.Context, endpoints []st
 }
 
 func (lb *loadBalancer) Shutdown(ctx context.Context) error {
-	err := lb.res.shutdown(ctx)
+	lb.updateLock.Lock()
+	if lb.stopped {
+		lb.updateLock.Unlock()
+		return nil
+	}
 	lb.stopped = true
+	lb.updateLock.Unlock()
 
-	for _, e := range lb.exporters {
+	err := lb.res.shutdown(ctx)
+
+	lb.backendChangeMu.Lock()
+	defer lb.backendChangeMu.Unlock()
+
+	lb.updateLock.Lock()
+	exporters := maps.Clone(lb.exporters)
+	clear(lb.exporters)
+	lb.ring = newHashRing(nil)
+	lb.updateLock.Unlock()
+
+	for _, e := range exporters {
 		err = errors.Join(err, e.Shutdown(ctx))
 	}
 	lb.exportersShutdownWG.Wait()
@@ -285,6 +322,9 @@ func (lb *loadBalancer) exporterAndEndpoint(identifier []byte) (*wrappedExporter
 	// for details: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1690
 	lb.updateLock.RLock()
 	defer lb.updateLock.RUnlock()
+	if lb.stopped {
+		return nil, "", errors.New("load balancer is stopped")
+	}
 	endpoint := lb.ring.endpointFor(identifier)
 	exp, found := lb.exporters[endpointWithPort(endpoint)]
 	if !found {
