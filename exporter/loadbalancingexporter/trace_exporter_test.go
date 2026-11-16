@@ -1379,7 +1379,7 @@ func TestConsumeTracesByID_NoConsumeWGLeakOnResolveError(t *testing.T) {
 	// trace ID routed to "missing" makes exporterAndEndpoint return an error.
 	good := newWrappedExporter(newNopMockTracesExporter(), endpointWithPort("good"))
 	lb := &loadBalancer{
-		port: defaultPort,
+		port:      defaultPort,
 		ring:      newHashRing([]string{"good", "missing"}),
 		exporters: map[string]*wrappedExporter{endpointWithPort("good"): good},
 	}
