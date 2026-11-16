@@ -25,7 +25,7 @@ var FilelogAllowHeaderMetadataParsingFeatureGate = featuregate.GlobalRegistry().
 var FilelogMtimeSortTypeFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"filelog.mtimeSortType",
 	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled, allows usage of `ordering_criteria.mode` = `mtime`."),
+	featuregate.WithRegisterDescription("When enabled, allows usage of `ordering_criteria.sort_by[].sort_type` = `mtime`."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812"),
 	featuregate.WithRegisterFromVersion("v0.89.0"),
 )
