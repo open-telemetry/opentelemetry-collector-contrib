@@ -28,6 +28,15 @@ func (f *failingTailStorage) Take(_ pcommon.TraceID) (ptrace.Traces, error) {
 	return ptrace.NewTraces(), f.takeErr
 }
 
+func (f *failingTailStorage) TakeMany(traceIDs []pcommon.TraceID) ([]ptrace.Traces, []error) {
+	out := make([]ptrace.Traces, len(traceIDs))
+	errs := make([]error, len(traceIDs))
+	for i := range traceIDs {
+		out[i], errs[i] = ptrace.NewTraces(), f.takeErr
+	}
+	return out, errs
+}
+
 func (f *failingTailStorage) Delete(_ pcommon.TraceID) error { return f.deleteErr }
 
 func (*failingTailStorage) Close() error { return nil }

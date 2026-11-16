@@ -1133,6 +1133,9 @@ func TestStaleWorkerDoesNotMutateReplacement(t *testing.T) {
 	t.Run("mark", func(t *testing.T) {
 		kafkaClient, cfg := mustNewMarkedFakeCluster(t, kfake.SeedTopics(1, topic))
 		consumer := newStaleWorkerConsumer(t, kafkaClient, cfg, topic)
+		// Without this, franz-go drops the mark and the test passes even
+		// when the stale worker is allowed to mark.
+		consumePartition(t, kafkaClient, topic)
 		batch := mailboxBatch(10)
 		batch.Topic = topic
 		batch.Records[0].Topic = topic

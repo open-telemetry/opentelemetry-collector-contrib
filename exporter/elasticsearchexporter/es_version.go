@@ -99,6 +99,7 @@ func getElasticsearchVersions(ctx context.Context, cfg *Config, set exporter.Set
 			DisableRetry:  !cfg.Retry.Enabled,
 			MaxRetries:    maxRetries,
 			RetryOnStatus: retryOnStatus,
+			RetryOnError:  retryOnError,
 			RetryBackoff:  createElasticsearchBackoffFunc(&cfg.Retry),
 		})
 		if err != nil {

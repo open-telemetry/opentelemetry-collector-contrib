@@ -7,35 +7,33 @@ package akamai // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
-	"fmt"
-	"strconv"
+	"errors"
 
-	linodemeta "github.com/linode/go-metadata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
+	akamaidetector "go.opentelemetry.io/contrib/detectors/akamai"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/sdkbridge"
 )
+
+// newResourceDetector is overridden in tests to substitute a fake SDK detector.
+var newResourceDetector = func() sdkresource.Detector {
+	return akamaidetector.NewResourceDetector()
+}
 
 var _ internal.Detector = (*Detector)(nil)
 
-// newAkamaiClient is overridden in tests to point the client at a fake server.
-var newAkamaiClient = func(ctx context.Context) (akamaiAPI, error) {
-	return linodemeta.NewClient(ctx)
-}
-
-type akamaiAPI interface {
-	GetInstance(ctx context.Context) (*linodemeta.InstanceData, error)
-}
-
-// Detector is a Akamai metadata detector.
+// Detector is an Akamai metadata detector. Detection is delegated to the upstream
+// SDK detector so that the attributes reported here match the ones the
+// collector's own telemetry reports.
 type Detector struct {
-	client                akamaiAPI
+	detector              sdkresource.Detector
 	logger                *zap.Logger
-	rb                    *metadata.ResourceBuilder
+	resourceAttributes    metadata.ResourceAttributesConfig
 	failOnMissingMetadata bool
 }
 
@@ -43,40 +41,40 @@ type Detector struct {
 func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 
-	cli, err := newAkamaiClient(context.Background())
-	if err != nil {
-		return nil, err
-	}
-
 	return &Detector{
-		client:                cli,
+		detector:              newResourceDetector(),
 		logger:                p.Logger,
-		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		resourceAttributes:    cfg.ResourceAttributes,
 		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
-// Detect detects system metadata and returns a resource with the available ones.
+// Detect queries the Akamai metadata service and returns a populated resource.
 func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
-	// Try to fetch instance metadata; if it fails we're not on Akamai (or metadata unreachable).
-	inst, err := d.client.GetInstance(ctx)
+	// Detection runs unfiltered so that an empty result answers "is this process on an
+	// Akamai instance?"; the configured attributes are applied afterwards. A partial result
+	// still came from a reachable metadata service, so the bridge keeps what it did return.
+	// fail_on_missing_metadata covers an unusable metadata service, not individual fields
+	// absent from its response.
+	res, schemaURL, err := sdkbridge.Detect(ctx, d.detector)
 	if err != nil {
-		d.logger.Debug("Akamai detector: not running on Akamai or metadata unavailable", zap.Error(err))
+		d.logger.Debug("Akamai metadata unavailable", zap.Error(err))
 		if d.failOnMissingMetadata {
-			return pcommon.NewResource(), "", fmt.Errorf("akamai metadata unavailable: %w", err)
+			return pcommon.NewResource(), "", err
 		}
 		return pcommon.NewResource(), "", nil
 	}
 
-	d.rb.SetCloudAccountID(inst.AccountEUUID)
-	d.rb.SetCloudProvider(conventions.CloudProviderAkamaiCloud.Value.AsString())
-	d.rb.SetCloudPlatform(conventions.CloudPlatformAkamaiCloudCompute.Value.AsString())
-	d.rb.SetCloudRegion(inst.Region)
-	d.rb.SetHostID(strconv.Itoa(inst.ID))
-	d.rb.SetHostImageID(inst.Image.ID)
-	d.rb.SetHostImageName(inst.Image.Label)
-	d.rb.SetHostName(inst.Label)
-	d.rb.SetHostType(inst.Type)
+	// The SDK detector reports an empty resource and no error both when the
+	// metadata service is unreachable and when running outside Akamai.
+	if res.Attributes().Len() == 0 {
+		d.logger.Debug("Akamai detector: metadata unavailable or not running on an Akamai instance")
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errors.New("akamai metadata unavailable")
+		}
+		return pcommon.NewResource(), "", nil
+	}
 
-	return d.rb.Emit(), conventions.SchemaURL, nil
+	sdkbridge.RemoveDisabledAttributes(res, d.resourceAttributes)
+	return res, schemaURL, nil
 }
