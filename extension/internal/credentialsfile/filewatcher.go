@@ -16,6 +16,13 @@ import (
 	"go.uber.org/zap"
 )
 
+// Bounds of the backoff used to retry re-adding the watch after it failed,
+// e.g. while a Kubernetes projected volume swaps its ..data symlink.
+const (
+	reAddInitialBackoff = 100 * time.Millisecond
+	reAddMaxBackoff     = 5 * time.Second
+)
+
 // fileWatcher implements ValueResolver by watching a file for changes
 // and caching its contents atomically.
 type fileWatcher struct {
@@ -125,12 +132,48 @@ func (w *fileWatcher) Shutdown() error {
 func (w *fileWatcher) watch(ctx context.Context, watcher *fsnotify.Watcher) {
 	defer close(w.doneCH)
 	defer watcher.Close()
+
+	// While re-adding the watch keeps failing no events arrive for the file,
+	// so retryC drives further attempts with a bounded exponential backoff.
+	var (
+		retry   *time.Timer
+		retryC  <-chan time.Time
+		backoff time.Duration
+	)
+	scheduleRetry := func() {
+		if retry == nil {
+			backoff = reAddInitialBackoff
+			retry = time.NewTimer(backoff)
+		} else {
+			backoff = min(backoff*2, reAddMaxBackoff)
+			retry.Reset(backoff)
+		}
+		retryC = retry.C
+	}
+	stopRetry := func() {
+		if retry != nil {
+			retry.Stop()
+			retry, retryC = nil, nil
+		}
+	}
+	defer stopRetry()
+
 	for {
 		select {
 		case <-w.shutdownCH:
 			return
 		case <-ctx.Done():
 			return
+		case <-retryC:
+			if err := watcher.Add(w.path); err != nil {
+				scheduleRetry()
+				w.logger.Debug("failed to re-add watcher, retrying",
+					zap.String("file", w.path), zap.Duration("next_attempt_in", backoff), zap.Error(err))
+				continue
+			}
+			w.logger.Info("re-added watcher", zap.String("file", w.path))
+			stopRetry()
+			w.reloadQuietly()
 		case event, ok := <-watcher.Events:
 			if !ok {
 				return
@@ -144,7 +187,13 @@ func (w *fileWatcher) watch(ctx context.Context, watcher *fsnotify.Watcher) {
 					w.logger.Warn("failed to remove watcher", zap.Error(err))
 				}
 				if err := watcher.Add(w.path); err != nil {
-					w.logger.Error("failed to re-add watcher", zap.Error(err))
+					if retry == nil {
+						scheduleRetry()
+						w.logger.Error("failed to re-add watcher, retrying",
+							zap.String("file", w.path), zap.Duration("next_attempt_in", backoff), zap.Error(err))
+					}
+				} else {
+					stopRetry()
 				}
 				w.reloadQuietly()
 			}
