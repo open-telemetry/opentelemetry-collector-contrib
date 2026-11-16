@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/hostmetrics
+component: receiver/host_metrics
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Add a Linux-only `pressure` scraper that reports Pressure Stall Information (PSI) metrics from `/proc/pressure`.
