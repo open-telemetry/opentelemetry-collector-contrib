@@ -46,6 +46,8 @@ Only one credential source is allowed per mode: `secret_provider` cannot be comb
 
 If both `htpasswd` and `client_auth` are configured, the extension will throw an error.
 
+When the collector runs in FIPS 140-3 mode (`GODEBUG=fips140=on` or `only`), htpasswd entries hashed with MD5 (`$apr1$`, `$1$`) or SHA-1 (`{SHA}`, `{SSHA}`) are rejected at startup, and a secret provider update that contains them is logged and ignored. Use bcrypt entries (`htpasswd -B`) instead.
+
 ### Secret Provider
 
 The `secret_provider` option delegates credential management to a separate extension that implements the `SecretProvider` interface (`GetSecret` + `OnChange`). This allows credentials to be fetched from external systems and automatically rotated without restarting the collector.

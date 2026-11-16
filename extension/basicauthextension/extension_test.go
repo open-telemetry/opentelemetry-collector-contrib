@@ -6,6 +6,7 @@ package basicauthextension // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"bytes"
 	"context"
+	"crypto/fips140"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -51,11 +52,18 @@ var credentials = [][]string{
 	{"ππππππππ", "$2a$10$.TtQJ4Jr6isd4Hp.mVfZeuh6Gws4rOQ/vdBczhDx.19NFK0Y84Dle"},
 }
 
+func skipInFIPSMode(c []string) bool {
+	return fips140.Enabled() && rejectNonFIPSHashes(c[0]+":"+c[1]) != nil
+}
+
 func TestBasicAuth_Valid(t *testing.T) {
 	t.Parallel()
 
 	var buf bytes.Buffer
 	for _, c := range credentials {
+		if skipInFIPSMode(c) {
+			continue
+		}
 		_, err := fmt.Fprintf(&buf, "%s:%s\n", c[0], c[1])
 		require.NoError(t, err)
 	}
@@ -77,6 +85,9 @@ func TestBasicAuth_Valid(t *testing.T) {
 	for _, c := range credentials {
 		t.Run(c[0], func(t *testing.T) {
 			t.Parallel()
+			if skipInFIPSMode(c) {
+				t.Skip("MD5 and SHA-1 entries are rejected in FIPS 140-3 mode")
+			}
 			auth := fmt.Sprintf("%s:%s", c[0], c[0])
 			auth = base64.StdEncoding.EncodeToString([]byte(auth))
 
@@ -410,7 +421,7 @@ func TestServerAuth_SecretProvider(t *testing.T) {
 	t.Parallel()
 
 	mock := &mockSecretProvider{}
-	mock.setSecret("testuser:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=")
+	mock.setSecret("testuser:$2a$04$mtCDZZ7NNMP3tybhwPTBFOnS6bvrHv5ix9EZ9tg4NOQeJ/SAIs0/e")
 
 	providerID := component.MustNewID("testprovider")
 	host := newMockHost(map[component.ID]component.Component{
@@ -434,7 +445,7 @@ func TestServerAuth_SecretProvider(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, ctx)
 
-	mock.rotate("rotateduser:{SHA}lC8D1OcbC+CLcd7f0EM8KI87HRg=")
+	mock.rotate("rotateduser:$2a$04$0Gl5hoWV0hV65H/C..Z.5uW2kkW3iUwd3sxe4CMWPbWH07I8uaJPS")
 
 	newAuth := "cm90YXRlZHVzZXI6cm90YXRlZHBhc3M=" // rotateduser:rotatedpass
 	_, err = ext.Authenticate(t.Context(), map[string][]string{"authorization": {"Basic " + newAuth}})
@@ -519,3 +530,13 @@ type nopExtension struct{}
 
 func (nopExtension) Start(context.Context, component.Host) error { return nil }
 func (nopExtension) Shutdown(context.Context) error              { return nil }
+
+func TestRejectNonFIPSHashes(t *testing.T) {
+	require.NoError(t, rejectNonFIPSHashes("plain:password\nbcrypt:$2a$06$m0CrhHm10qJ3lXRY.5zDGO3rS2KdeeWLuGmsfGlMfOxih58VYVfxe\nmalformed\n"))
+
+	err := rejectNonFIPSHashes("md5user:$apr1$FVVioVP7$ZdIWPG1p4E/ErujO7kA2n0\nshauser:{SHA}vFznddje0Ht4+pmO0FaxwrUKN/M=\nokuser:password")
+	require.Error(t, err)
+	assert.ErrorContains(t, err, `entry for "md5user" uses a $apr1$ hash`)
+	assert.ErrorContains(t, err, `entry for "shauser" uses a {SHA} hash`)
+	assert.NotContains(t, err.Error(), "okuser")
+}

@@ -5,10 +5,10 @@ package basicauthextension // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"crypto/fips140"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -59,7 +59,33 @@ type htpasswdMatcher struct {
 }
 
 func (m *htpasswdMatcher) verify(username, password string) bool {
-	return m.htp.Match(username, password)
+	// go-htpasswd compares entries through a SHA-1 based helper that
+	// GODEBUG=fips140=only refuses. MD5 and SHA-1 hashes never get this far.
+	var ok bool
+	fips140.WithoutEnforcement(func() {
+		ok = m.htp.Match(username, password)
+	})
+	return ok
+}
+
+var nonFIPSHashPrefixes = []string{"$apr1$", "$1$", "{SHA}", "{SSHA}"}
+
+// rejectNonFIPSHashes names the users whose entries use MD5 or SHA-1.
+func rejectNonFIPSHashes(raw string) error {
+	var errs error
+	for line := range strings.Lines(raw) {
+		user, hash, ok := strings.Cut(strings.TrimSpace(line), ":")
+		if !ok {
+			continue
+		}
+		for _, prefix := range nonFIPSHashPrefixes {
+			if strings.HasPrefix(hash, prefix) {
+				errs = errors.Join(errs, fmt.Errorf("htpasswd entry for %q uses a %s hash, which is not allowed when the collector runs in FIPS 140-3 mode, use bcrypt", user, prefix))
+				break
+			}
+		}
+	}
+	return errs
 }
 
 type basicAuthServer struct {
@@ -98,29 +124,21 @@ func (ba *basicAuthServer) Start(ctx context.Context, host component.Host) error
 		return nil
 	}
 
-	var rs []io.Reader
-
+	var content strings.Builder
 	if ba.htpasswd.File != "" {
-		f, err := os.Open(ba.htpasswd.File)
+		b, err := os.ReadFile(ba.htpasswd.File)
 		if err != nil {
 			return fmt.Errorf("open htpasswd file: %w", err)
 		}
-		defer f.Close()
-
-		rs = append(rs, f, strings.NewReader("\n"))
+		content.Write(b)
+		content.WriteString("\n")
 	}
+	// Inline content comes last so it overrides the file.
+	content.WriteString(ba.htpasswd.Inline)
 
-	// Ensure that the inline content is read the last.
-	// This way the inline content will override the content from file.
-	rs = append(rs, strings.NewReader(ba.htpasswd.Inline))
-
-	mr := io.MultiReader(rs...)
-	htp, err := htpasswd.NewFromReader(mr, htpasswd.DefaultSystems, nil)
-	if err != nil {
+	if err := ba.updateHtpasswd(content.String()); err != nil {
 		return fmt.Errorf("read htpasswd content: %w", err)
 	}
-
-	ba.matcher.Store(&htpasswdMatcher{htp: htp})
 	return nil
 }
 
@@ -144,6 +162,11 @@ func (ba *basicAuthServer) Dependencies() []component.ID {
 }
 
 func (ba *basicAuthServer) updateHtpasswd(raw string) error {
+	if fips140.Enabled() {
+		if err := rejectNonFIPSHashes(raw); err != nil {
+			return err
+		}
+	}
 	htp, err := htpasswd.NewFromReader(strings.NewReader(raw), htpasswd.DefaultSystems, nil)
 	if err != nil {
 		return err

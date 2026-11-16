@@ -15,4 +15,4 @@ status:
 tests:
   config:
     htpasswd:
-      inline: "username:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g="
+      inline: "username:$2a$06$m0CrhHm10qJ3lXRY.5zDGO3rS2KdeeWLuGmsfGlMfOxih58VYVfxe"
