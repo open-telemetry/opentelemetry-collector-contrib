@@ -16,7 +16,7 @@ issues: [52565]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  `server.address`, `server.port`, and `url.scheme` are now populated from the scraped target's post-relabeling `__address__` and `__scheme__` labels by default instead of parsing the `instance` label and pre-relabeling service discovery labels.
+  `server.address`, `server.port`, and `url.scheme` now reflect the actual host, port, and scheme of the scraped target (`__address__` and `__scheme__` after relabeling) rather than values relabeled into `instance`. If the scraped target host is `localhost`, a loopback IP (`127.0.0.1` or `::1`), or an unspecified IP (`0.0.0.0` or `::`), `server.address` is omitted even when `instance` is relabeled to a hostname.
   To temporarily restore the previous behavior, disable the feature gate with `--feature-gates=-receiver.prometheus.UseTargetUrlForServerAddress`.
 
 # If your change doesn't affect end users or the exported elements of any package,
