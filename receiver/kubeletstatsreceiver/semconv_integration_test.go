@@ -53,6 +53,10 @@ func TestSemconvCompliance(t *testing.T) {
 				receivertest.NewNopSettings(metadata.Type),
 				&scraperOptions{
 					metricGroupsToCollect: map[kubelet.MetricGroup]bool{group: true},
+					// Since semconv 1.45, container.cpu.time is associated with the
+					// container entity, whose identifying attribute container.id is
+					// required. The receiver only populates it when opted in.
+					extraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
 				},
 				metadata.NewDefaultMetricsBuilderConfig(),
 				"worker-42",
