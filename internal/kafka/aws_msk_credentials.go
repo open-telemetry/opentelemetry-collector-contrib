@@ -70,8 +70,7 @@ type awsMSKRefreshProvider struct {
 	provider aws.CredentialsProvider
 	logger   *zap.Logger
 
-	actualExpiry         time.Time
-	skipExpiryAdjustment bool
+	actualExpiry time.Time
 }
 
 func newAWSMSKRefreshProvider(provider aws.CredentialsProvider, logger *zap.Logger) *awsMSKRefreshProvider {
@@ -100,7 +99,6 @@ func (p *awsMSKRefreshProvider) Retrieve(ctx context.Context) (aws.Credentials, 
 		return aws.Credentials{}, errors.New("AWS MSK credential refresh returned expired credentials")
 	}
 	p.actualExpiry = creds.Expires
-	p.skipExpiryAdjustment = false
 	p.logger.Debug("AWS MSK credential refresh succeeded",
 		zap.Duration("duration", time.Since(started)),
 		zap.Duration("credential_time_to_expiry", time.Until(creds.Expires)))
@@ -119,11 +117,9 @@ func (p *awsMSKRefreshProvider) HandleFailToRefresh(_ context.Context, current a
 	}
 	retryIn := awsMSKFallbackRetryBase + time.Duration(rand.Int64N(int64(awsMSKFallbackRetryBase)+1))
 	retryIn = min(retryIn, fallbackExpiry.Sub(now))
+	// The retry deadline stays at least the safety margin before the original
+	// AWS expiry, so AdjustExpiresBy leaves it unchanged.
 	current.Expires = now.Add(retryIn)
-	// This expiry is already the next retry deadline, capped before the original
-	// AWS expiry to leave time for broker authentication. Subtracting the SDK
-	// window again would cause a refresh storm.
-	p.skipExpiryAdjustment = true
 	p.logger.Warn("AWS MSK credential refresh retaining still-valid credentials",
 		zap.Error(refreshErr),
 		zap.Duration("credential_time_to_expiry", p.actualExpiry.Sub(now)),
@@ -132,9 +128,10 @@ func (p *awsMSKRefreshProvider) HandleFailToRefresh(_ context.Context, current a
 }
 
 func (p *awsMSKRefreshProvider) AdjustExpiresBy(creds aws.Credentials, adjustment time.Duration) (aws.Credentials, error) {
-	if p.skipExpiryAdjustment {
-		p.skipExpiryAdjustment = false
-	} else if creds.CanExpire {
+	// Only fresh credentials still carry the original AWS expiry. Fallback
+	// credentials carry their retry deadline, which is already capped before
+	// that expiry; subtracting the SDK window again would cause a refresh storm.
+	if creds.CanExpire && creds.Expires.Equal(p.actualExpiry) {
 		creds.Expires = creds.Expires.Add(adjustment)
 	}
 	return creds, nil
