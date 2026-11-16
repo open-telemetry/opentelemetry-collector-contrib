@@ -6,6 +6,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"bytes"
 	"context"
+	"crypto/fips140"
 	"errors"
 	"fmt"
 	"net/http"
@@ -120,6 +121,21 @@ func (rt *clientRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
 	return resp, err
 }
 
+// digestRoundTripper runs the digest exchange outside strict FIPS 140-3
+// enforcement. Atlas sends an MD5 digest challenge, which GODEBUG=fips140=only
+// refuses, so every API call failed with "alg not implemented". TLS is not
+// affected, crypto/tls follows the FIPS 140-3 mode, not the enforcement flag.
+type digestRoundTripper struct {
+	next http.RoundTripper
+}
+
+func (d digestRoundTripper) RoundTrip(r *http.Request) (resp *http.Response, err error) {
+	fips140.WithoutEnforcement(func() {
+		resp, err = d.next.RoundTrip(r)
+	})
+	return resp, err
+}
+
 // MongoDBAtlasClient wraps the official MongoDB Atlas client to manage pagination
 // and mapping to OpenTelemetry metric and log structures.
 type MongoDBAtlasClient struct {
@@ -140,7 +156,7 @@ func NewMongoDBAtlasClient(
 ) (*MongoDBAtlasClient, error) {
 	defaultTransporter := http.DefaultTransport.(*http.Transport)
 	t := digest.NewTransportWithHTTPTransport(publicKey, privateKey, defaultTransporter)
-	roundTripper := newClientRoundTripper(t, log, backoffConfig)
+	roundTripper := newClientRoundTripper(digestRoundTripper{next: t}, log, backoffConfig)
 	tc := &http.Client{Transport: roundTripper}
 
 	if baseURL == "" {
