@@ -5,6 +5,7 @@ package ctxutil_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -478,4 +479,88 @@ func Test_GetMapKeyName(t *testing.T) {
 			assert.Equal(t, tt.key, *resolvedKey)
 		})
 	}
+}
+
+func Test_MapGetSetter(t *testing.T) {
+	t.Run("Get and Set", func(t *testing.T) {
+		target := pcommon.NewMap()
+		target.PutStr("k1", "v1")
+
+		gs := ctxutil.MapGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Map, error) {
+				return target, nil
+			},
+		}
+
+		got, err := gs.Get(t.Context(), nil)
+		require.NoError(t, err)
+		assert.Equal(t, target, got)
+
+		require.NoError(t, gs.Set(t.Context(), nil, map[string]any{"k2": "v2"}))
+		expected := pcommon.NewMap()
+		expected.PutStr("k2", "v2")
+		assert.Equal(t, expected, target)
+
+		newMap := pcommon.NewMap()
+		newMap.PutStr("k3", "v3")
+		require.NoError(t, gs.Set(t.Context(), nil, newMap))
+		assert.Equal(t, newMap, target)
+
+		require.NoError(t, gs.Set(t.Context(), nil, nil))
+		assert.Equal(t, 0, target.Len())
+
+		err = gs.Set(t.Context(), nil, "invalid")
+		assert.EqualError(t, err, "unsupported type provided for setting a pcommon.Map: string")
+	})
+
+	t.Run("PMapGetter and PMapGetSetter", func(t *testing.T) {
+		target := pcommon.NewMap()
+		target.PutStr("k1", "v1")
+
+		gs := ctxutil.MapGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Map, error) {
+				return target, nil
+			},
+		}
+
+		pmapGetter := gs.PMapGetter()
+		got, err := pmapGetter.Get(t.Context(), nil)
+		require.NoError(t, err)
+		assert.Equal(t, target, got)
+
+		pmapGetSetter := gs.PMapGetSetter()
+		got, err = pmapGetSetter.Get(t.Context(), nil)
+		require.NoError(t, err)
+		assert.Equal(t, target, got)
+
+		replacement := pcommon.NewMap()
+		replacement.PutStr("k2", "v2")
+		require.NoError(t, pmapGetSetter.Set(t.Context(), nil, replacement))
+		assert.Equal(t, replacement, target)
+	})
+
+	t.Run("Getter error", func(t *testing.T) {
+		getterErr := errors.New("getter error")
+		gs := ctxutil.MapGetSetter[any]{
+			Getter: func(context.Context, any) (pcommon.Map, error) {
+				return pcommon.Map{}, getterErr
+			},
+		}
+
+		got, err := gs.Get(t.Context(), nil)
+		assert.ErrorIs(t, err, getterErr)
+		assert.Nil(t, got)
+
+		err = gs.Set(t.Context(), nil, pcommon.NewMap())
+		assert.ErrorIs(t, err, getterErr)
+
+		_, err = gs.PMapGetter().Get(t.Context(), nil)
+		assert.ErrorIs(t, err, getterErr)
+
+		_, err = gs.PMapGetSetter().Get(t.Context(), nil)
+		assert.ErrorIs(t, err, getterErr)
+
+		err = gs.PMapGetSetter().Set(t.Context(), nil, pcommon.NewMap())
+		assert.ErrorIs(t, err, getterErr)
+	})
 }

@@ -99,7 +99,7 @@ func TestDetect_DefaultGates(t *testing.T) {
 		"service.instance.id":    deploymentID,
 		"service.version":        versionLabel,
 	}, res.Attributes().AsRaw())
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.40.0", schemaURL)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.43.0", schemaURL)
 }
 
 func TestDetect_EmitV1Only(t *testing.T) {

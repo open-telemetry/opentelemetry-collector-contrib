@@ -626,7 +626,8 @@ func (c *franzConsumer) assigned(ctx context.Context, cl *kgo.Client, assigned m
 			if c.config.PartitionProcessing.Independent {
 				partitionConsumer.mailbox = newPartitionMailbox(
 					partitionConsumer.ctx,
-					c.config.PartitionProcessing.MaxBufferedBatches,
+					c.config.PartitionProcessing.MaxPrefetch.Batches,
+					c.config.PartitionProcessing.MaxPrefetch.Bytes,
 				)
 				if partitionConsumer.add() {
 					go c.runPartitionWorker(&partitionConsumer, tp)

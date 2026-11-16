@@ -179,6 +179,7 @@ body:
       - pkg/kafka/topic
       - pkg/ottl
       - pkg/ottl/contexts/xprofile
+      - pkg/ottl/contexts/xspanlink
       - pkg/ottl/xottl
       - pkg/pdatatest
       - pkg/resourcetotelemetry
@@ -258,6 +259,7 @@ body:
       - processor/transform
       - processor/transform/internal/logparsingfuncs
       - processor/unroll
+      - processor/verify
       - receiver/activedirectoryds
       - receiver/activedirectoryinv
       - receiver/aerospike
@@ -306,6 +308,7 @@ body:
       - receiver/hostmetrics/internal/scraper/cpuscraper
       - receiver/hostmetrics/internal/scraper/diskscraper
       - receiver/hostmetrics/internal/scraper/filesystemscraper
+      - receiver/hostmetrics/internal/scraper/hardwarescraper
       - receiver/hostmetrics/internal/scraper/loadscraper
       - receiver/hostmetrics/internal/scraper/memoryscraper
       - receiver/hostmetrics/internal/scraper/networkscraper
@@ -358,7 +361,6 @@ body:
       - receiver/redis
       - receiver/riak
       - receiver/saphana
-      - receiver/signalfx
       - receiver/simpleprometheus
       - receiver/skywalking
       - receiver/snmp
@@ -388,6 +390,7 @@ body:
       - receiver/zookeeper
       - scraper/zookeeperscraper
       - testbed
+      - testbed/integrationtests/elasticsearch
       - testbed/mockdatasenders/mockdatadogagentexporter
       # End components list
   - type: textarea

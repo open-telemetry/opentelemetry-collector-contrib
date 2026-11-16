@@ -377,6 +377,7 @@ func TestGetJobsMetrics(t *testing.T) {
 				require.NoError(t, err)
 				require.Len(t, actual, 1)
 				require.Equal(t, expected, &actual[0].Metrics)
+				require.Equal(t, "54a5c6e527e00e1bb861272a39fe13e4", actual[0].JobID)
 				require.Equal(t, "State machine job", actual[0].JobName)
 
 				hostname, err := os.Hostname()
@@ -557,6 +558,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 				require.NoError(t, err)
 				require.Len(t, actual, 2)
 				require.Equal(t, expected, &actual[0].Metrics)
+				require.Equal(t, "54a5c6e527e00e1bb861272a39fe13e4", actual[0].JobID)
 				require.Equal(t, "State machine job", actual[0].JobName)
 				require.Equal(t, "172.26.0.3", actual[0].Host)
 				// require.EqualValues(t, "flink-worker", actual[0].Host)

@@ -18,7 +18,7 @@ import (
 	conventionsv118 "go.opentelemetry.io/otel/semconv/v1.18.0"
 	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
 	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -367,30 +367,19 @@ func zipkinEndpointFromTags(
 		}
 	}
 
-	var ipKey, v0IPKey, portKey string
+	var ipKey, portKey string
 	if remoteEndpoint {
 		ipKey, portKey = string(conventions.NetworkPeerAddressKey), string(conventionsv125.NetPeerPortKey)
-		v0IPKey = "net.peer.ip"
 	} else {
 		ipKey, portKey = string(conventions.NetworkLocalAddressKey), string(conventionsv125.NetHostPortKey)
-		v0IPKey = "net.host.ip"
 	}
 
 	var ip net.IP
 	ipv6Selected := false
-	if metadata.PkgTranslatorZipkinEmitV1NetworkConventionsFeatureGate.IsEnabled() {
-		if ipStr, ok := zTags[ipKey]; ok {
-			ipv6Selected = isIPv6Address(ipStr)
-			ip = net.ParseIP(ipStr)
-			redundantKeys[ipKey] = true
-		}
-	}
-	if !metadata.PkgTranslatorZipkinDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
-		if ipStr, ok := zTags[v0IPKey]; ok && ip == nil {
-			ipv6Selected = isIPv6Address(ipStr)
-			ip = net.ParseIP(ipStr)
-			redundantKeys[v0IPKey] = true
-		}
+	if ipStr, ok := zTags[ipKey]; ok {
+		ipv6Selected = isIPv6Address(ipStr)
+		ip = net.ParseIP(ipStr)
+		redundantKeys[ipKey] = true
 	}
 
 	var port uint64

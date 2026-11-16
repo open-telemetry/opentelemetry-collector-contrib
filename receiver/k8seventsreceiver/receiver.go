@@ -53,6 +53,7 @@ type k8seventsReceiver struct {
 	wg              sync.WaitGroup
 	// dedupCache holds the last-emit time per Event UID. nil unless dedup_interval > 0.
 	dedupCache *ttlmap.TTLMap
+	stopped    bool
 }
 
 // newReceiver creates the Kubernetes events receiver with the given configuration.
@@ -130,20 +131,23 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 		// for the lifetime of the receiver, allowing it to restart when leadership is regained.
 		elector.SetCallBackFuncs(
 			func(ctx context.Context) {
+				kr.mu.Lock()
+				if kr.stopped {
+					kr.mu.Unlock()
+					return
+				}
 				cctx, cancel := context.WithCancel(ctx)
 				kr.cancel = cancel
 				kr.ctx = cctx
+				kr.mu.Unlock()
 				kr.settings.Logger.Info("Events Receiver started as leader")
 				kr.startWatchers()
 			},
 			func() {
-				// Shutdown on leader loss. The receiver will restart if leadership is regained
-				// since the callbacks remain registered with the leader elector extension.
+				// Tear down watches on leader loss so a leadership regain
+				// can restart cleanly. Stays reversible: does not close storage or telemetry.
 				kr.settings.Logger.Info("no longer leader, stopping")
-				err := kr.Shutdown(context.Background())
-				if err != nil {
-					kr.settings.Logger.Error("shutdown receiver error:", zap.Error(err))
-				}
+				kr.stopWatches()
 			},
 		)
 		return nil
@@ -156,8 +160,36 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 }
 
 func (kr *k8seventsReceiver) Shutdown(ctx context.Context) error {
-	if kr.cancel != nil {
-		kr.cancel()
+	kr.mu.Lock()
+	kr.stopped = true
+	kr.mu.Unlock()
+
+	kr.stopWatches()
+
+	// Close storage client if it exists.
+	if kr.storageClient != nil {
+		if err := kr.storageClient.Close(ctx); err != nil {
+			kr.settings.Logger.Error("failed to close storage client", zap.Error(err))
+		}
+	}
+
+	if kr.telemetry != nil {
+		kr.telemetry.Shutdown()
+	}
+	return nil
+}
+
+// stopWatches tears down the current leader term: cancels the term context,
+// closes stopper channels, waits for watcher goroutines to exit, and clears the dedup cache.
+// It leaves storageClient and telemetry intact so leadership regain can resume cleanly.
+func (kr *k8seventsReceiver) stopWatches() {
+	kr.mu.Lock()
+	cancel := kr.cancel
+	kr.cancel = nil
+	kr.mu.Unlock()
+
+	if cancel != nil {
+		cancel()
 	}
 
 	kr.mu.Lock()
@@ -168,22 +200,12 @@ func (kr *k8seventsReceiver) Shutdown(ctx context.Context) error {
 	kr.mu.Unlock()
 	kr.wg.Wait()
 
-	// Close storage client if it exists.
-	if kr.storageClient != nil {
-		if err := kr.storageClient.Close(ctx); err != nil {
-			kr.settings.Logger.Error("failed to close storage client", zap.Error(err))
-		}
-	}
-
+	kr.mu.Lock()
 	if kr.dedupCache != nil {
 		kr.dedupCache.Shutdown()
 		kr.dedupCache = nil
 	}
-
-	if kr.telemetry != nil {
-		kr.telemetry.Shutdown()
-	}
-	return nil
+	kr.mu.Unlock()
 }
 
 // startWatchers creates and starts the k8sinventory watch observer

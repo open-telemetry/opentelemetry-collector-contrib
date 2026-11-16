@@ -1808,12 +1808,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for kubelet_stats resource attributes.
 type ResourceAttributesConfig struct {
-	AwsVolumeID                  ResourceAttributeConfig `mapstructure:"aws.volume.id"`
 	ContainerID                  ResourceAttributeConfig `mapstructure:"container.id"`
-	FsType                       ResourceAttributeConfig `mapstructure:"fs.type"`
-	GcePdName                    ResourceAttributeConfig `mapstructure:"gce.pd.name"`
-	GlusterfsEndpointsName       ResourceAttributeConfig `mapstructure:"glusterfs.endpoints.name"`
-	GlusterfsPath                ResourceAttributeConfig `mapstructure:"glusterfs.path"`
 	K8sContainerName             ResourceAttributeConfig `mapstructure:"k8s.container.name"`
 	K8sNamespaceName             ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
 	K8sNodeName                  ResourceAttributeConfig `mapstructure:"k8s.node.name"`
@@ -1823,28 +1818,12 @@ type ResourceAttributesConfig struct {
 	K8sPodUID                    ResourceAttributeConfig `mapstructure:"k8s.pod.uid"`
 	K8sVolumeName                ResourceAttributeConfig `mapstructure:"k8s.volume.name"`
 	K8sVolumeType                ResourceAttributeConfig `mapstructure:"k8s.volume.type"`
-	Partition                    ResourceAttributeConfig `mapstructure:"partition"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		AwsVolumeID: ResourceAttributeConfig{
-			Enabled: false,
-		},
 		ContainerID: ResourceAttributeConfig{
 			Enabled: true,
-		},
-		FsType: ResourceAttributeConfig{
-			Enabled: false,
-		},
-		GcePdName: ResourceAttributeConfig{
-			Enabled: false,
-		},
-		GlusterfsEndpointsName: ResourceAttributeConfig{
-			Enabled: false,
-		},
-		GlusterfsPath: ResourceAttributeConfig{
-			Enabled: false,
 		},
 		K8sContainerName: ResourceAttributeConfig{
 			Enabled: true,
@@ -1872,9 +1851,6 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		K8sVolumeType: ResourceAttributeConfig{
 			Enabled: true,
-		},
-		Partition: ResourceAttributeConfig{
-			Enabled: false,
 		},
 	}
 }

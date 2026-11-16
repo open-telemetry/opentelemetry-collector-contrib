@@ -561,8 +561,8 @@ Available Converters:
 - [Day](#day)
 - [Double](#double)
 - [Duration](#duration)
-- [ExtractPatterns](#extractpatterns)
 - [ExtractGrokPatterns](#extractgrokpatterns)
+- [ExtractPatterns](#extractpatterns)
 - [FNV](#fnv)
 - [Format](#format)
 - [FormatTime](#formattime)
@@ -744,6 +744,8 @@ The output format is base64 encoding string of <2-byte-seed><source-IP-bytes><de
 `protocol` (optional) is a protocol, one of `ICMP`, `TCP`, `UDP`, `RSVP`, `ICMP6` or `SCTP`. Defaults to `TCP` if not specified.
 `seed` (optional) is seed value (must be between 0 and 65535). Defaults to `0` if not specified.
 
+The Community ID specification mandates SHA-1, which is not a FIPS 140-3 approved algorithm for new uses. The converter computes the hash outside strict FIPS enforcement (`GODEBUG=fips140=only`) because the output is a flow identifier and not a security function.
+
 Examples:
 
 - `CommunityID(attributes["source.ip"], attributes["source.port"], attributes["destination.ip"], attributes["destination.port"], "TCP", 1)`
@@ -756,7 +758,7 @@ Examples:
 
 `Concat(vals[], delimiter)`
 
-The `Concat` Converter takes a sequence of values and a delimiter and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
+The `Concat` Converter takes a sequence of values and a delimiter and concatenates their string representation.
 
 `vals` can be a list of values or an expression/path that resolves to a slice. Its values support paths, primitive values, and byte slices (such as trace IDs or span IDs). Passing an expression/path requires the [`pkg.ottl.functions.enableDynamicSliceArguments`](../README.md#pkgottlfunctionsenabledynamicslicearguments) feature gate, which is enabled by default.
 
@@ -927,22 +929,6 @@ Examples:
 - `Duration("333ms")`
 - `Duration("1000000h")`
 
-### ExtractPatterns
-
-`ExtractPatterns(target, pattern)`
-
-The `ExtractPatterns` Converter returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string. If not matches are found then an empty `pcommon.Map` is returned.
-
-`target` is a Getter that returns a string. `pattern` is a regex string.
-
-If `target` is not a string or nil `ExtractPatterns` will return an error. If `pattern` does not contain at least 1 named capture group then `ExtractPatterns` will error on startup.
-
-Examples:
-
-- `ExtractPatterns(resource.attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
-
-- `ExtractPatterns(log.body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
-
 ### ExtractGrokPatterns
 
 `ExtractGrokPatterns(target, pattern, Optional[namedCapturesOnly], Optional[patternDefinitions])`
@@ -956,7 +942,7 @@ It returns a `pcommon.Map` struct that is a result of extracting named capture g
 - `patternDefinitions` (optional) is a list of custom pattern definition strings used inside `pattern` in the form of `PATTERN_NAME=PATTERN`. 
 This parameter lets you define your own custom patterns to improve readability when the extracted `pattern` is not part of the default set or when you need custom naming. 
 
-If `target` is not a string or nil `ExtractGrokPatterns` returns an error. If `pattern` does not contain at least 1 named capture group and `namedCapturesOnly` is set to `true` then `ExtractPatterns` errors on startup.
+If `target` is not a string or nil `ExtractGrokPatterns` returns an error. If `pattern` does not contain at least 1 named capture group and `namedCapturesOnly` is set to `true` then `ExtractGrokPatterns` errors on startup.
 
 Parsing is done using [Elastic Go-Grok](https://github.com/elastic/go-grok?tab=readme-ov-file) library.
 Grok is a regular expression dialect that supports reusable aliased expressions. It sits on `re2` regex library so any valid `re2` expressions are valid in grok.
@@ -1000,7 +986,7 @@ Examples:
 
 - _Uses regex pattern with named captures to extract_:
 
-  `ExtractGrokPatterns(resource.attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
+  `ExtractGrokPatterns(resource.attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\\w+)")`
 
 - _Uses regex pattern with named captures to extract_:
 
@@ -1032,6 +1018,22 @@ Examples:
   - Return values: 
      - `user.name`: smith
      - `user.password`: pass123
+
+### ExtractPatterns
+
+`ExtractPatterns(target, pattern)`
+
+The `ExtractPatterns` Converter returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string. If not matches are found then an empty `pcommon.Map` is returned.
+
+`target` is a Getter that returns a string. `pattern` is a regex string.
+
+If `target` is not a string or nil `ExtractPatterns` will return an error. If `pattern` does not contain at least 1 named capture group then `ExtractPatterns` will error on startup.
+
+Examples:
+
+- `ExtractPatterns(resource.attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\\w+)")`
+
+- `ExtractPatterns(log.body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
 
 ### FNV
 
@@ -1126,7 +1128,7 @@ Examples:
 
 - `FormatTime(Time("02/04/2023", "%m/%d/%Y"), "%A %h %e %Y")`
 - `FormatTime(UnixNano(span.attributes["time_nanoseconds"]), "%b %d %Y %H:%M:%S")`
-- `FormatTime(TruncateTime(spanevent.time, Duration("10h 20m"))), "%Y-%m-%d %H:%M:%S")`
+- `FormatTime(TruncateTime(spanevent.time, Duration("10h20m")), "%Y-%m-%d %H:%M:%S")`
 
 ### GetXML
 
@@ -1615,6 +1617,8 @@ Examples:
 - `MD5("name")`
 
 **Note:** According to the National Institute of Standards and Technology (NIST), MD5 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer a SHA-2 family function (e.g. SHA-256, SHA-512) whenever possible.
+
+MD5 is not a FIPS 140-3 approved algorithm. The converter computes the digest outside strict FIPS enforcement (`GODEBUG=fips140=only`) because the output is a plain hash of telemetry data and not a security function. Do not rely on `MD5` for any security purpose in a FIPS deployment.
 
 ### Microseconds
 
@@ -2212,6 +2216,8 @@ Examples:
 - `SHA1("name")`
 
 **Note:** [According to the National Institute of Standards and Technology (NIST)](https://csrc.nist.gov/projects/hash-functions), SHA1 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer a SHA-2 family function (such as SHA-256 or SHA-512) whenever possible.
+
+SHA-1 is not a FIPS 140-3 approved algorithm for new uses. The converter computes the digest outside strict FIPS enforcement (`GODEBUG=fips140=only`) because the output is a plain hash of telemetry data and not a security function. Do not rely on `SHA1` for any security purpose in a FIPS deployment.
 
 ### SHA256
 
