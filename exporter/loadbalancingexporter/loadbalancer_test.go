@@ -585,6 +585,9 @@ func TestShutdown_DuringBackendChanges_NoMapPanicOrLeak(t *testing.T) {
 	t.Cleanup(closeRelease)
 
 	var ep1Shutdown, ep2Shutdown atomic.Bool
+	var ep2ShutdownByBackendChanges atomic.Bool
+
+	backendChangeDone := make(chan struct{})
 
 	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
 		if endpoint == endpointWithPort("endpoint-2") {
@@ -593,6 +596,11 @@ func TestShutdown_DuringBackendChanges_NoMapPanicOrLeak(t *testing.T) {
 			return mockComponent{
 				ShutdownFunc: func(context.Context) error {
 					ep2Shutdown.Store(true)
+					select {
+					case <-backendChangeDone:
+					default:
+						ep2ShutdownByBackendChanges.Store(true)
+					}
 					return nil
 				},
 			}, nil
@@ -615,7 +623,6 @@ func TestShutdown_DuringBackendChanges_NoMapPanicOrLeak(t *testing.T) {
 	require.Len(t, p.exporters, 1)
 
 	// Trigger onBackendChanges to add endpoint-2 in background
-	backendChangeDone := make(chan struct{})
 	go func() {
 		defer close(backendChangeDone)
 		p.onBackendChanges([]string{"endpoint-1", "endpoint-2"})
@@ -631,7 +638,15 @@ func TestShutdown_DuringBackendChanges_NoMapPanicOrLeak(t *testing.T) {
 		assert.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	// Release endpoint-2 so startMissingExporters can complete
+	// Wait until Shutdown has marked the loadbalancer as stopped so onBackendChanges
+	// reaches the commit phase while stopped is true.
+	require.Eventually(t, func() bool {
+		p.updateLock.RLock()
+		defer p.updateLock.RUnlock()
+		return p.stopped
+	}, 2*time.Second, 5*time.Millisecond)
+
+	// Release endpoint-2 so startMissingExporters can complete and reach the commit phase
 	closeRelease()
 
 	// Wait for both onBackendChanges and Shutdown to finish
@@ -650,6 +665,7 @@ func TestShutdown_DuringBackendChanges_NoMapPanicOrLeak(t *testing.T) {
 	// Verify no resource leak: both endpoint-1 and endpoint-2 had Shutdown called
 	assert.True(t, ep1Shutdown.Load(), "endpoint-1 should have been shut down")
 	assert.True(t, ep2Shutdown.Load(), "endpoint-2 should have been shut down when stopped")
+	assert.True(t, ep2ShutdownByBackendChanges.Load(), "endpoint-2 should have been shut down by onBackendChanges in the stopped commit phase")
 
 	// Verify loadbalancer state
 	assert.True(t, p.stopped)
