@@ -214,7 +214,7 @@ func TestFieldUnmarshalYAMLFailure(t *testing.T) {
 		{
 			"Map",
 			[]byte(`invalid: field`),
-			"cannot unmarshal !!map into string",
+			"cannot construct !!map into string",
 		},
 		{
 			"AttributesRoot",
