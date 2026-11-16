@@ -187,6 +187,40 @@ Number of finished partitions
 | ---- | ----------- | ---------- | --------- | --------- |
 | 1 | Sum | Int | true | Development |
 
+### otelcol_kafka_receiver_partition_data_wait
+
+Time waiting for data with no queued batch, current batch, or active record-processing call.
+
+Only produced with independent partition processing. Includes ongoing waits; excludes retries, rewinds, and shutdown. Cumulative totals remain available while unassigned and continue across reassignments.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| s | Sum | Double | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
+
+### otelcol_kafka_receiver_partition_in_flight_records
+
+The number of active record-processing calls, including decoding, Consume, and retry backoff.
+
+Only produced for active assignments with independent partition processing. Excludes queued records and completed calls awaiting marking.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
+
 ### otelcol_kafka_receiver_partition_start
 
 Number of started partitions
@@ -213,6 +247,24 @@ Only produced when franz-go is enabled.
 | topic | The Kafka topic. | Any Str | - |
 | partition | The Kafka topic partition. | Any Int | - |
 | outcome | The operation outcome. | Str: ``success``, ``failure`` | - |
+
+### otelcol_kafka_receiver_record_processing_duration
+
+The duration of each decode or Consume attempt, including failures and excluding retry backoff.
+
+Only produced with independent partition processing. Observations are recorded when attempts return.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Histogram | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
+| stage | The record processing stage. | Str: ``decode``, ``consume`` | - |
 
 ### otelcol_kafka_receiver_records
 

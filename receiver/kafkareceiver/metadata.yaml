@@ -35,6 +35,10 @@ attributes:
   partition:
     description: The Kafka topic partition.
     type: int
+  stage:
+    description: The record processing stage.
+    type: string
+    enum: [decode, consume]
   topic:
     description: The Kafka topic.
     type: string
@@ -157,6 +161,27 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    kafka_receiver_partition_data_wait:
+      enabled: true
+      description: Time waiting for data with no queued batch, current batch, or active record-processing call.
+      extended_documentation: Only produced with independent partition processing. Includes ongoing waits; excludes retries, rewinds, and shutdown. Cumulative totals remain available while unassigned and continue across reassignments.
+      stability: development
+      unit: s
+      sum:
+        value_type: double
+        monotonic: true
+        async: true
+      attributes: [topic, partition]
+    kafka_receiver_partition_in_flight_records:
+      enabled: true
+      description: The number of active record-processing calls, including decoding, Consume, and retry backoff.
+      extended_documentation: Only produced for active assignments with independent partition processing. Excludes queued records and completed calls awaiting marking.
+      stability: development
+      unit: "1"
+      gauge:
+        value_type: int
+        async: true
+      attributes: [topic, partition]
     kafka_receiver_partition_start:
       enabled: true
       description: Number of started partitions
@@ -175,6 +200,16 @@ telemetry:
         value_type: double
         bucket_boundaries: [0, 0.005, 0.010, 0.025, 0.050, 0.075, 0.100, 0.250, 0.500, 0.750, 1, 2.5, 5, 7.5, 10, 25, 50, 75, 100]
       attributes: [node_id, topic, partition, outcome]
+    kafka_receiver_record_processing_duration:
+      enabled: true
+      description: The duration of each decode or Consume attempt, including failures and excluding retry backoff.
+      extended_documentation: Only produced with independent partition processing. Observations are recorded when attempts return.
+      stability: development
+      unit: s
+      histogram:
+        value_type: double
+        bucket_boundaries: [0, 0.005, 0.010, 0.025, 0.050, 0.075, 0.100, 0.250, 0.500, 0.750, 1, 2.5, 5, 7.5, 10, 25, 50, 75, 100]
+      attributes: [topic, partition, stage]
     kafka_receiver_records:
       enabled: true
       description: The number of received records.
