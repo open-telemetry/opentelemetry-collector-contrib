@@ -4,10 +4,12 @@
 package reader
 
 import (
+	"bytes"
 	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,6 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	"golang.org/x/text/encoding/unicode"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
@@ -364,6 +368,234 @@ func TestFileCacheAdvise(t *testing.T) {
 		sink.ExpectToken(t, fmt.Appendf(nil, "log line %d", i))
 	}
 	sink.ExpectNoCalls(t)
+}
+
+func TestReadGzipIncompleteStream(t *testing.T) {
+	t.Parallel()
+
+	const flushPeriod = 100 * time.Millisecond
+	f, sink := testFactory(t, withCompression("gzip"), withFlushPeriod(flushPeriod))
+	core, logs := observer.New(zap.DebugLevel)
+	f.Logger = zap.New(core)
+
+	temp := filetest.OpenTemp(t, t.TempDir())
+	writer := gzip.NewWriter(temp)
+	_, err := writer.Write([]byte("testlog1\ntest"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
+
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+	reader, err := f.NewReader(filetest.OpenFile(t, temp.Name()), fp)
+	require.NoError(t, err)
+	defer reader.Close()
+
+	// The complete line of the incomplete gzip member is read, the offset stays at the start of the member,
+	// and the incomplete line is not read yet.
+	reader.ReadToEnd(t.Context())
+	sink.ExpectToken(t, []byte("testlog1"))
+	sink.ExpectNoCalls(t)
+	require.Zero(t, reader.Offset)
+	require.Equal(t, int64(len("testlog1\n")), reader.DecompressedBytesToSkip)
+	info, err := temp.Stat()
+	require.NoError(t, err)
+	require.Equal(t, info.Size(), reader.incompleteGzipSize)
+	require.Equal(t, 1, logs.FilterMessageSnippet("gzip member is incomplete").Len())
+
+	// While the file does not grow, it is not read again and no additional log is emitted.
+	reader.ReadToEnd(t.Context())
+	reader.ReadToEnd(t.Context())
+	sink.ExpectNoCalls(t)
+	require.Equal(t, 1, logs.FilterMessageSnippet("gzip member is incomplete").Len())
+
+	// The rest of the member is read without reading its first line again. The incomplete line was seen longer
+	// than the flush period ago, and the rest of it is in another deflate block, but it is not flushed in two parts.
+	time.Sleep(2 * flushPeriod)
+	_, err = writer.Write([]byte("log2\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	reader.ReadToEnd(t.Context())
+	sink.ExpectToken(t, []byte("testlog2"))
+	sink.ExpectNoCalls(t)
+	info, err = temp.Stat()
+	require.NoError(t, err)
+	require.Equal(t, info.Size(), reader.Offset)
+	require.Zero(t, reader.DecompressedBytesToSkip)
+	require.Zero(t, reader.incompleteGzipSize)
+}
+
+func TestReadGzipOffsetFromEarlierVersion(t *testing.T) {
+	t.Parallel()
+
+	f, sink := testFactory(t, withCompression("gzip"))
+	temp := filetest.OpenTemp(t, t.TempDir())
+
+	// A complete gzip member, followed by a gzip member that is still being written.
+	writer := gzip.NewWriter(temp)
+	_, err := writer.Write([]byte("testlog1\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	writer = gzip.NewWriter(temp)
+	_, err = writer.Write([]byte("testlog2\ntestlog3\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Flush())
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+
+	// Earlier versions read all of it and saved the end of the file as the offset, inside the second gzip member.
+	info, err := temp.Stat()
+	require.NoError(t, err)
+	_, err = writer.Write([]byte("testlog4\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+
+	reader, err := f.NewReaderFromMetadata(filetest.OpenFile(t, temp.Name()), &Metadata{Fingerprint: fp, Offset: info.Size(), FileType: gzipExtension})
+	require.NoError(t, err)
+	defer reader.Close()
+
+	// Only the line written after that offset is read.
+	reader.ReadToEnd(t.Context())
+	sink.ExpectToken(t, []byte("testlog4"))
+	sink.ExpectNoCalls(t)
+	info, err = temp.Stat()
+	require.NoError(t, err)
+	require.Equal(t, info.Size(), reader.Offset)
+	require.Zero(t, reader.DecompressedBytesToSkip)
+}
+
+func TestReadGzipOffsetFromEarlierVersionNotRecoverable(t *testing.T) {
+	t.Parallel()
+
+	f, sink := testFactory(t, withCompression("gzip"))
+	core, logs := observer.New(zap.WarnLevel)
+	f.Logger = zap.New(core)
+	temp := filetest.OpenTemp(t, t.TempDir())
+
+	writer := gzip.NewWriter(temp)
+	_, err := writer.Write([]byte("testlog1\ntestlog2\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	firstMember, err := temp.Stat()
+	require.NoError(t, err)
+	writer = gzip.NewWriter(temp)
+	_, err = writer.Write([]byte("testlog3\ntestlog4\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+
+	// The offset is inside the second gzip member, but the first one cannot be decompressed because its
+	// checksum is wrong.
+	info, err := temp.Stat()
+	require.NoError(t, err)
+	_, err = temp.WriteAt([]byte{0xff}, firstMember.Size()-8)
+	require.NoError(t, err)
+	offset := firstMember.Size() + (info.Size()-firstMember.Size())/2
+
+	reader, err := f.NewReaderFromMetadata(filetest.OpenFile(t, temp.Name()), &Metadata{Fingerprint: fp, Offset: offset, FileType: gzipExtension})
+	require.NoError(t, err)
+	defer reader.Close()
+
+	// Reading continues from the end of the file.
+	reader.ReadToEnd(t.Context())
+	sink.ExpectNoCalls(t)
+	require.Equal(t, info.Size(), reader.Offset)
+	require.Equal(t, 1, logs.FilterMessageSnippet("cannot be recovered").Len())
+}
+
+func TestUpdateGzipOffsetWhenReadingStopped(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+	writer := gzip.NewWriter(&buf)
+	_, err := writer.Write([]byte("testlog1\ntestlog2\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+	firstMember := int64(buf.Len())
+	writer = gzip.NewWriter(&buf)
+	_, err = writer.Write([]byte("testlog3\n"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+
+	for name, tc := range map[string]struct {
+		read, offset, skip int64
+	}{
+		"inside the first member": {read: 9, offset: 0, skip: 9},
+		"end of the first member": {read: 18, offset: firstMember, skip: 0},
+		"inside the last member":  {read: 20, offset: firstMember, skip: 2},
+		"everything":              {read: 27, offset: int64(buf.Len()), skip: 0},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			g, err := newGzipMembersReader(bytes.NewReader(buf.Bytes()), 0, int64(buf.Len()))
+			require.NoError(t, err)
+			_, err = io.Copy(io.Discard, g)
+			require.NoError(t, err)
+			require.ErrorIs(t, g.err, io.EOF)
+
+			// The whole file was decompressed, but reading stopped early, for example because the collector is shutting down.
+			r := &Reader{Metadata: &Metadata{Offset: tc.read}}
+			r.updateGzipOffset(g)
+			require.Equal(t, tc.offset, r.Offset)
+			require.Equal(t, tc.skip, r.DecompressedBytesToSkip)
+		})
+	}
+}
+
+func TestReadGzipInvalidStream(t *testing.T) {
+	t.Parallel()
+
+	for name, corrupt := range map[string]func([]byte) []byte{
+		"zero padding": func(b []byte) []byte { return append(b, make([]byte, 16)...) },
+		"bad checksum": func(b []byte) []byte {
+			b[len(b)-8] ^= 0xff
+			return b
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			// The content is longer than the fingerprint, so the fingerprint can be read.
+			var buf bytes.Buffer
+			var lines [][]byte
+			writer := gzip.NewWriter(&buf)
+			for i := range 20 {
+				line := fmt.Appendf(nil, "testlog%02d %s", i, strings.Repeat("x", 100))
+				lines = append(lines, line)
+				_, err := writer.Write(append(line, '\n'))
+				require.NoError(t, err)
+			}
+			require.NoError(t, writer.Close())
+
+			f, sink := testFactory(t, withCompression("gzip"))
+			core, logs := observer.New(zap.ErrorLevel)
+			f.Logger = zap.New(core)
+			temp := filetest.OpenTemp(t, t.TempDir())
+			_, err := temp.Write(corrupt(buf.Bytes()))
+			require.NoError(t, err)
+
+			fp, err := f.NewFingerprint(temp)
+			require.NoError(t, err)
+			reader, err := f.NewReader(filetest.OpenFile(t, temp.Name()), fp)
+			require.NoError(t, err)
+			defer reader.Close()
+
+			// The lines are read as before, and the offset moves to the end of the file,
+			// so the file is not decompressed again on the next poll.
+			reader.ReadToEnd(t.Context())
+			sink.ExpectTokens(t, lines...)
+			info, err := temp.Stat()
+			require.NoError(t, err)
+			require.Equal(t, info.Size(), reader.Offset)
+			require.Zero(t, reader.DecompressedBytesToSkip)
+
+			// The error says which part of the file was skipped.
+			invalid := logs.FilterMessageSnippet("invalid gzip data").All()
+			require.Len(t, invalid, 1)
+			require.Equal(t, info.Size(), invalid[0].ContextMap()["file_size"])
+		})
+	}
 }
 
 func BenchmarkFileRead(b *testing.B) {

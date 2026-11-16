@@ -253,6 +253,11 @@ When this option is set, all files ending with that suffix are scanned using a g
 before scanning through it. Please note that if the compressed file is expected to be updated, the additional compressed logs must be appended to the
 compressed file, rather than recompressing the whole content and overwriting the previous file.
 
+A gzip compressed file can be read while it is still being written. Its lines are read as they are written, but a gzip member
+can only be decompressed from its start, so while the last gzip member of a file is incomplete, the member is decompressed
+again from its start whenever the file grows, and the lines of it that were already read are skipped. While the file does
+not grow, its incomplete gzip member is not decompressed again.
+
 ## Example - Collector self-monitoring
 
 Receiver Configuration
