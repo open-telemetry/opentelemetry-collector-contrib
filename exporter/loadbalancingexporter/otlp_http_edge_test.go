@@ -57,15 +57,13 @@ func TestValidateHTTPEndpointsOrderIsStable(t *testing.T) {
 	}
 }
 
-func TestEndpointWithPortIPv6(t *testing.T) {
-	httpLB := &loadBalancer{port: "4318", http: true}
-	assert.Equal(t, "[fd00::1]:4318", httpLB.endpointWithPort("[fd00::1]"))
-	assert.Equal(t, "[fd00::1]:9000", httpLB.endpointWithPort("[fd00::1]:9000"))
-
-	// OTLP/gRPC is unchanged: a bracketed IPv6 address without a port is left as is.
-	grpcLB := &loadBalancer{port: defaultPort}
-	assert.Equal(t, "[fd00::1]", grpcLB.endpointWithPort("[fd00::1]"))
-	assert.Equal(t, "host:4317", grpcLB.endpointWithPort("host"))
+func TestEndpointWithPortSameForBothProtocols(t *testing.T) {
+	for _, port := range []string{defaultPort, defaultHTTPPort} {
+		lb := &loadBalancer{port: port}
+		assert.Equal(t, "host:"+port, lb.endpointWithPort("host"))
+		assert.Equal(t, "host:9000", lb.endpointWithPort("host:9000"))
+		assert.Equal(t, "[fd00::1]:9000", lb.endpointWithPort("[fd00::1]:9000"))
+	}
 	assert.Equal(t, "host:4317", endpointWithPort("host"))
 }
 

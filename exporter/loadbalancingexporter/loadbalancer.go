@@ -43,8 +43,6 @@ type loadBalancer struct {
 
 	// port is appended to backends that the resolver returns without one.
 	port string
-	// http is set when the backends are OTLP/HTTP exporters.
-	http bool
 
 	componentFactory    componentFactory
 	exporters           map[string]*wrappedExporter
@@ -153,14 +151,12 @@ func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory component
 	}
 
 	port := defaultPort
-	isHTTP := oCfg.Protocol.OTLPHTTP.HasValue()
-	if isHTTP {
+	if oCfg.Protocol.OTLPHTTP.HasValue() {
 		port = httpPort(oCfg.Protocol.OTLPHTTP.Get())
 	}
 
 	return &loadBalancer{
 		port:             port,
-		http:             isHTTP,
 		logger:           logger,
 		res:              res,
 		componentFactory: factory,
@@ -265,16 +261,7 @@ func endpointWithPort(endpoint string) string {
 }
 
 func (lb *loadBalancer) endpointWithPort(endpoint string) string {
-	if !lb.http {
-		// OTLP/gRPC keeps its original behavior, a bracketed IPv6 address without a port is left as is.
-		if !strings.Contains(endpoint, ":") {
-			endpoint = fmt.Sprintf("%s:%s", endpoint, lb.port)
-		}
-		return endpoint
-	}
-	// A bracketed IPv6 address without a port contains colons too.
-	bareIPv6 := strings.HasPrefix(endpoint, "[") && strings.HasSuffix(endpoint, "]")
-	if bareIPv6 || !strings.Contains(endpoint, ":") {
+	if !strings.Contains(endpoint, ":") {
 		endpoint = fmt.Sprintf("%s:%s", endpoint, lb.port)
 	}
 	return endpoint
