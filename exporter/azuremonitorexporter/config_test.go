@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configstorage"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -56,7 +57,7 @@ func TestLoadConfig(t *testing.T) {
 					queue := exporterhelper.NewDefaultQueueConfig()
 					queue.QueueSize = 1000
 					queue.NumConsumers = 10
-					queue.StorageID = &disk
+					queue.StorageID = configoptional.Some(configstorage.ID(disk))
 					return queue
 				}()),
 				ShutdownTimeout: 2 * time.Second,
