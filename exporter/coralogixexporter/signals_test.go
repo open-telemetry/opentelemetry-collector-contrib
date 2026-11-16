@@ -191,15 +191,15 @@ func TestProcessError(t *testing.T) {
 
 func TestFakeBadSituations_LogMessages(t *testing.T) {
 	cases := []struct {
-		name           string
-		protocol       string
-		threshold      int
-		inject         func(*signalExporter)
-		wantOpenMsg    string
-		wantStatus     string
-		wantReason     string
-		wantHint       bool
-		wantErrSubstr  string
+		name            string
+		protocol        string
+		threshold       int
+		inject          func(*signalExporter)
+		wantOpenMsg     string
+		wantStatus      string
+		wantReason      string
+		wantHint        bool
+		wantErrSubstr   string
 		forbidErrSubstr string
 	}{
 		{
