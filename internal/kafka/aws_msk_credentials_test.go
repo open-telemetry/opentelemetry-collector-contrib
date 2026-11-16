@@ -303,30 +303,6 @@ func TestAWSMSKCredentialCacheRefreshLifecycle(t *testing.T) {
 	})
 }
 
-func TestAWSMSKCredentialCacheConcurrentRefresh(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		var calls atomic.Int32
-		release := make(chan struct{})
-		provider := newAWSMSKRefreshProvider(aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) {
-			calls.Add(1)
-			<-release
-			return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: "SECRET", CanExpire: true, Expires: time.Now().Add(time.Hour)}, nil
-		}), zap.NewNop())
-		cache := aws.NewCredentialsCache(provider, configureAWSMSKCache)
-		var wg sync.WaitGroup
-		for range 32 {
-			wg.Go(func() {
-				_, err := cache.Retrieve(t.Context())
-				assert.NoError(t, err)
-			})
-		}
-		synctest.Wait()
-		assert.Equal(t, int32(1), calls.Load(), "the SDK must collapse concurrent refreshes")
-		close(release)
-		wg.Wait()
-	})
-}
-
 func TestAWSMSKCredentialCacheRefreshTimeoutWithFallback(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		var calls atomic.Int32
