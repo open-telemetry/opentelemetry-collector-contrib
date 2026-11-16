@@ -276,6 +276,30 @@ func TestToLengthWithTruncate(t *testing.T) {
 				splittest.ExpectAdvanceToken(len(" extra "), " extra "),
 			},
 		},
+		{
+			// The implicit last step expects the remainder to be kept at EOF,
+			// because the rest of the entry may be written later.
+			name:      "KeepRemainderAtEOF",
+			input:     []byte("aaaaaaaaaaaaaaa"),
+			baseFunc:  splittest.ScanLinesStrict,
+			maxLength: 10,
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(10, "aaaaaaaaaa"),
+			},
+		},
+		{
+			name:      "SkipRemainderLongerThanMaxLength",
+			input:     []byte("aaaaaaaaaabbbbbbbbbbbb\nnext\n"),
+			baseFunc:  splittest.ScanLinesStrict,
+			maxLength: 10,
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(10, "aaaaaaaaaa"),
+				// The last half of maxLength bytes is kept in case it holds the start of a boundary.
+				splittest.ExpectAdvanceNil(5),
+				splittest.ExpectAdvanceNil(len("bbbbbbb\n")),
+				splittest.ExpectAdvanceToken(len("next\n"), "next"),
+			},
+		},
 	}
 
 	for _, tc := range testCases {

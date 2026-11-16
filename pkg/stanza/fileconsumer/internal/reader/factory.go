@@ -22,6 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/stanzatime"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenlen"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
@@ -154,11 +155,17 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		r.Offset = info.Size()
 	}
 
-	tokenLenFunc := m.TokenLenState.Func(f.SplitFunc)
+	splitFunc := f.SplitFunc
+	if f.TruncateOnMaxLogSize && m.FileType == gzipExtension {
+		// A gzip stream is read to its end at once, so EOF ends the last entry. Otherwise the
+		// remainder of a truncated last entry is emitted by the scanner's flush at EOF.
+		splitFunc = flushAtEOF(splitFunc)
+	}
+	tokenLenFunc := m.TokenLenState.Func(splitFunc)
 	flushFunc := m.FlushState.Func(tokenLenFunc, f.FlushTimeout)
 	var lengthLimitedFunc bufio.SplitFunc
 	if f.TruncateOnMaxLogSize {
-		lengthLimitedFunc = trim.ToLengthWithTruncate(flushFunc, f.MaxLogSize, &m.TruncateSkipping)
+		lengthLimitedFunc = trim.ToLengthWithTruncate(skipFlushWhileSkipping(flushFunc, tokenLenFunc, m), f.MaxLogSize, &m.TruncateSkipping)
 	} else {
 		lengthLimitedFunc = trim.ToLength(flushFunc, f.MaxLogSize)
 	}
@@ -184,4 +191,29 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 	r.FileAttributes = mergedAttributes
 
 	return r, nil
+}
+
+// skipFlushWhileSkipping bypasses the flush timeout while the remainder of a truncated entry is skipped.
+// A flushed token would end the skip, so the rest of the entry written later would be emitted as a new log.
+// The flush timer restarts when the skip ends.
+func skipFlushWhileSkipping(flushFunc, splitFunc bufio.SplitFunc, m *Metadata) bufio.SplitFunc {
+	return func(data []byte, atEOF bool) (int, []byte, error) {
+		if !m.TruncateSkipping {
+			return flushFunc(data, atEOF)
+		}
+		m.FlushState.LastDataChange = stanzatime.Now()
+		m.FlushState.LastDataLength = 0
+		return splitFunc(data, atEOF)
+	}
+}
+
+// flushAtEOF returns the data left at EOF as the last token, like the scanner does for gzip files.
+func flushAtEOF(splitFunc bufio.SplitFunc) bufio.SplitFunc {
+	return func(data []byte, atEOF bool) (int, []byte, error) {
+		advance, token, err := splitFunc(data, atEOF)
+		if advance == 0 && token == nil && err == nil && atEOF && len(data) > 0 {
+			return len(data), data, nil
+		}
+		return advance, token, err
+	}
 }
