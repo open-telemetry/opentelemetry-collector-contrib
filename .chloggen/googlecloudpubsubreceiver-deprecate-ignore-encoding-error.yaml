@@ -18,7 +18,7 @@ issues: [50637]
 subtext: |
   `ignore_encoding_error: true` keeps behaving as `on_decode_error: ignore` and `false` as
   `on_decode_error: propagate`. Either value now logs a deprecation warning, and the option can no longer
-  be combined with `on_decode_error`. It is removed no earlier than v0.177.0, six months after this release.
+  be combined with `on_decode_error`. It is removed no earlier than v0.179.0, six months after this release.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

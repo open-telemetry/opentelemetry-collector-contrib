@@ -34,7 +34,7 @@ The following configuration options are supported:
 * `on_decode_error` (Optional): What to do with a message that the configured encoding fails to decode. See
   [Error handling](#error-handling) for more details. One of:
   * `ignore` (default): acknowledge and drop the message, counting it in the encoding error metric.
-  * `propagate`: do not acknowledge the message; it is redelivered after the ack deadline expires. This was the previous default and makes an undecodable message redeliver forever — prefer `ignore` or `nack`.
+  * `propagate`: do not acknowledge the message; it is redelivered after the ack deadline expires. This was the previous default; without a dead-letter policy it makes an undecodable message redeliver forever — prefer `ignore` or `nack`.
   * `nack`: negatively acknowledge the message, so the subscription retry policy or dead-letter policy applies.
 * `on_pipeline_error` (Optional): What to do with a message that the downstream pipeline rejects with a permanent
   error. Transient rejections (a full sending queue, memory limiter refusal) are never acknowledged nor negatively
@@ -45,7 +45,7 @@ The following configuration options are supported:
 * `ignore_encoding_error` (Deprecated): Use `on_decode_error` instead. `true` behaves as `on_decode_error: ignore`,
   which is the default; `false` behaves as `on_decode_error: propagate`, the behavior from before `on_decode_error`
   existed. Either value logs a deprecation warning at startup, and setting it together with `on_decode_error` is a
-  configuration error. Deprecated in v0.164.0 and removed no earlier than v0.177.0, six months later.
+  configuration error. Deprecated in v0.166.0 and removed no earlier than v0.179.0, six months later.
 * `flow_control` (Optional): Allows to fine tune the flow control settings for the subscription stream. See
   [Flow control](#flow-control) for more details.
 

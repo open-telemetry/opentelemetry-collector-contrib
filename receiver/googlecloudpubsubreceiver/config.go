@@ -53,8 +53,8 @@ type Config struct {
 	// on_decode_error fails validation. A pointer so that an explicit value in the
 	// configuration can be told apart from the option being absent.
 	//
-	// Deprecated: use on_decode_error set to "ignore" instead. Deprecated in v0.164.0;
-	// removed no earlier than v0.177.0, six months later, following the collector's
+	// Deprecated: use on_decode_error set to "ignore" instead. Deprecated in v0.166.0;
+	// removed no earlier than v0.179.0, six months later, following the collector's
 	// component stability policy. See the Error handling section of the README for
 	// the migration.
 	IgnoreEncodingError *bool `mapstructure:"ignore_encoding_error"`
@@ -62,10 +62,10 @@ type Config struct {
 	// on_decode_error sets how a message that the configured encoding fails to decode is
 	// handled. "ignore" (the default) acknowledges and drops the message, counting it in
 	// the encoding error metric. "propagate" leaves the message unacknowledged, so it is
-	// redelivered after the ack deadline expires; this was the previous default and it
-	// makes an undecodable message redeliver forever. "nack" negatively acknowledges the
-	// message (a modify ack deadline of 0), so the subscription retry policy or dead
-	// letter policy applies.
+	// redelivered after the ack deadline expires; this was the previous default and, without
+	// a dead-letter policy, it makes an undecodable message redeliver forever. "nack" negatively
+	// acknowledges the message (a modify ack deadline of 0), so the subscription retry policy
+	// or dead letter policy applies.
 	OnDecodeError string `mapstructure:"on_decode_error"`
 
 	// on_pipeline_error sets how a message that the downstream pipeline rejects with a

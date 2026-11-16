@@ -59,7 +59,7 @@ func (factory *pubsubReceiverFactory) ensureReceiver(settings receiver.Settings,
 	}
 	rconfig := config.(*Config)
 	if rconfig.IgnoreEncodingError != nil {
-		settings.Logger.Warn("ignore_encoding_error is deprecated and will be removed no earlier than v0.177.0; use on_decode_error instead",
+		settings.Logger.Warn("ignore_encoding_error is deprecated and will be removed no earlier than v0.179.0; use on_decode_error instead",
 			zap.String("replacement", "on_decode_error: ignore"),
 			zap.String("documentation", "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/googlecloudpubsubreceiver/README.md#error-handling"),
 		)
