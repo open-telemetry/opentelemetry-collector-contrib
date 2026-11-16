@@ -174,3 +174,61 @@ func TestCPUUtilizationRoundingFeatureGate(t *testing.T) {
 		}
 	})
 }
+
+func TestAddCPUUtilizationMetrics(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.Metrics.K8sPodCPUNodeUtilization.Enabled = true
+	cfg.Metrics.K8sPodCPULimitUtilization.Enabled = true
+	cfg.Metrics.K8sPodCPURequestUtilization.Enabled = true
+
+	tests := []struct {
+		name         string
+		r            resources
+		nodeCPULimit float64
+		want         map[string]float64
+	}{
+		{
+			name: "no limits, requests or node capacity",
+			want: map[string]float64{},
+		},
+		{
+			name:         "node capacity only",
+			nodeCPULimit: 4,
+			want:         map[string]float64{"k8s.pod.cpu.node.utilization": 0.375},
+		},
+		{
+			name: "limit only",
+			r:    resources{cpuLimit: 2},
+			want: map[string]float64{"k8s.pod.cpu_limit_utilization": 0.75},
+		},
+		{
+			name: "request only",
+			r:    resources{cpuRequest: 0.5},
+			want: map[string]float64{"k8s.pod.cpu_request_utilization": 3},
+		},
+		{
+			name:         "limit, request and node capacity",
+			r:            resources{cpuLimit: 2, cpuRequest: 0.5},
+			nodeCPULimit: 4,
+			want: map[string]float64{
+				"k8s.pod.cpu.node.utilization":    0.375,
+				"k8s.pod.cpu_limit_utilization":   0.75,
+				"k8s.pod.cpu_request_utilization": 3,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mb := metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type))
+			// Usage of 1.5 cores makes each expected ratio distinct from 1/x, so a wrong divisor is caught.
+			addCPUUtilizationMetrics(mb, metadata.PodCPUMetrics, 1.5, 0, tt.r, tt.nodeCPULimit)
+
+			got := indexedFakeMetrics([]pmetric.Metrics{mb.Emit()})
+			require.Len(t, got, len(tt.want))
+			for name, want := range tt.want {
+				requireContains(t, got, name)
+				require.InDelta(t, want, got[name][0].Gauge().DataPoints().At(0).DoubleValue(), 1e-9)
+			}
+		})
+	}
+}
