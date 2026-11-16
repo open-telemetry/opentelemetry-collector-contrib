@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: exporter/prometheus_remote_write
+note: Drop explicit histogram data points without a sum instead of converting them to NHCB with a zero sum when `convert_explicit_histograms_to_nhcb` is enabled.
+issues: [53042]
+change_logs: [user, api]

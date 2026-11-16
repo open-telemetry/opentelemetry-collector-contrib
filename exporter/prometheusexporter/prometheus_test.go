@@ -506,17 +506,15 @@ func metricBuilder(delta int64, prefix, job, instance string) pmetric.Metrics {
 
 func TestPrometheusExporter_TranslationStrategies(t *testing.T) {
 	tests := []struct {
-		name               string
-		featureGateEnabled bool
-		config             *Config
-		extraHeaders       map[string]string
-		want               string
+		name         string
+		config       *Config
+		extraHeaders map[string]string
+		want         string
 	}{
 		{
-			name:               "Legacy AddMetricSuffixes=true (no translation_strategy set)",
-			featureGateEnabled: false,
+			name: "Legacy AddMetricSuffixes=false is ignored (no translation_strategy set)",
 			config: &Config{
-				AddMetricSuffixes: true,
+				AddMetricSuffixes: false, // Ignored since DisableAddMetricSuffixes is stable; default translation_strategy (UnderscoreEscapingWithSuffixes) is used.
 			},
 			want: `# HELP target_info Target metadata
 # TYPE target_info gauge
@@ -528,38 +526,7 @@ this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-s
 `,
 		},
 		{
-			name:               "Legacy AddMetricSuffixes=false (no translation_strategy set)",
-			featureGateEnabled: false,
-			config: &Config{
-				AddMetricSuffixes: false,
-			},
-			want: `# HELP target_info Target metadata
-# TYPE target_info gauge
-target_info{instance="test-instance",job="test-service"} 1
-# HELP this_one_there_where Extra ones
-# TYPE this_one_there_where counter
-this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
-this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
-`,
-		},
-		{
-			name:               "Legacy AddMetricSuffixes=true with feature gate enabled (no translation_strategy set)",
-			featureGateEnabled: true,
-			config: &Config{
-				AddMetricSuffixes: true, // Should be ignored and default 'translation_strategy' is used (UnderscoreEscapingWithSuffixes).
-			},
-			want: `# HELP target_info Target metadata
-# TYPE target_info gauge
-target_info{instance="test-instance",job="test-service"} 1
-# HELP this_one_there_where_bytes_total Extra ones
-# TYPE this_one_there_where_bytes_total counter
-this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
-this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
-`,
-		},
-		{
-			name:               "TranslationStrategy takes precedence over AddMetricSuffixes (feature gate disabled)",
-			featureGateEnabled: false,
+			name: "TranslationStrategy takes precedence over AddMetricSuffixes",
 			config: &Config{
 				AddMetricSuffixes:   true, // This should be ignored
 				TranslationStrategy: underscoreEscapingWithoutSuffixes,
@@ -636,8 +603,7 @@ this_one_there_where__bytes_total{arch="x86",instance="test-instance",job="test-
 `,
 		},
 		{
-			name:               "NoTranslation/escaping=allow-utf-8",
-			featureGateEnabled: true,
+			name: "NoTranslation/escaping=allow-utf-8",
 			config: &Config{
 				TranslationStrategy: noTranslation,
 			},
@@ -674,9 +640,6 @@ this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os=
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Set feature gate state for this test
-			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate, tt.featureGateEnabled)()
-
 			// Configure the exporter
 			addr := testutil.GetAvailableLocalAddress(t)
 			cfg := tt.config
@@ -840,45 +803,59 @@ func TestPrometheusExporterResourceConstantLabels(t *testing.T) {
 }
 
 func TestPrometheusExporterDisableResourceToTelemetryConversion(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate, true)()
+	for _, tc := range []struct {
+		name        string
+		gateEnabled bool
+		wantAttr    bool
+	}{
+		{name: "enabled_by_default", gateEnabled: true, wantAttr: false},
+		{name: "disabled", gateEnabled: false, wantAttr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate, tc.gateEnabled)()
 
-	addr := testutil.GetAvailableLocalAddress(t)
-	serverConfig := confighttp.NewDefaultServerConfig()
-	serverConfig.NetAddr.Endpoint = addr
+			addr := testutil.GetAvailableLocalAddress(t)
+			serverConfig := confighttp.NewDefaultServerConfig()
+			serverConfig.NetAddr.Endpoint = addr
 
-	cfg := &Config{
-		ServerConfig:     serverConfig,
-		SendTimestamps:   true,
-		MetricExpiration: 120 * time.Minute,
-		//nolint:staticcheck // test deprecated field
-		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
-			Enabled: true,
-		},
+			cfg := &Config{
+				ServerConfig:     serverConfig,
+				SendTimestamps:   true,
+				MetricExpiration: 120 * time.Minute,
+				//nolint:staticcheck // test deprecated field
+				ResourceToTelemetrySettings: resourcetotelemetry.Settings{
+					Enabled: true,
+				},
+			}
+
+			factory := NewFactory()
+			set := exportertest.NewNopSettings(metadata.Type)
+			exp, err := factory.CreateMetrics(t.Context(), set, cfg)
+			require.NoError(t, err)
+
+			defer func() {
+				require.NoError(t, exp.Shutdown(t.Context()))
+			}()
+
+			require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+
+			md := testdata.GenerateMetricsOneMetric()
+			require.NoError(t, exp.ConsumeMetrics(t.Context(), md))
+
+			rsp, err := http.Get("http://" + addr + "/metrics")
+			require.NoError(t, err)
+			defer rsp.Body.Close()
+			assert.Equal(t, http.StatusOK, rsp.StatusCode)
+
+			blob, err := io.ReadAll(rsp.Body)
+			require.NoError(t, err)
+
+			body := string(blob)
+			if tc.wantAttr {
+				assert.Contains(t, body, `resource_attr="resource-attr-val-1"`)
+			} else {
+				assert.NotContains(t, body, `resource_attr="resource-attr-val-1"`)
+			}
+		})
 	}
-
-	factory := NewFactory()
-	set := exportertest.NewNopSettings(metadata.Type)
-	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
-	require.NoError(t, err)
-
-	defer func() {
-		require.NoError(t, exp.Shutdown(t.Context()))
-	}()
-
-	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
-
-	md := testdata.GenerateMetricsOneMetric()
-	require.NoError(t, exp.ConsumeMetrics(t.Context(), md))
-
-	rsp, err := http.Get("http://" + addr + "/metrics")
-	require.NoError(t, err)
-	defer rsp.Body.Close()
-	assert.Equal(t, http.StatusOK, rsp.StatusCode)
-
-	blob, err := io.ReadAll(rsp.Body)
-	require.NoError(t, err)
-
-	body := string(blob)
-	// With the feature gate enabled, ResourceToTelemetrySettings is ignored, so resource_attr should not appear on the counter metric.
-	assert.NotContains(t, body, `resource_attr="resource-attr-val-1"`)
 }
