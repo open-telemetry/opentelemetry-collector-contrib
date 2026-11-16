@@ -3667,6 +3667,39 @@ func TestStartWaitsForKubeletPods(t *testing.T) {
 	assert.True(t, ok)
 }
 
+func TestStartDoesNotWaitForHPAInformerSync(t *testing.T) {
+	neverSyncedHPAInformer := func() cache.SharedInformer {
+		return &neverSyncedFakeClient{NewFakeInformer(fake.NewClientset(), "", nil, nil)}
+	}
+
+	t.Run("kubelet polling", func(t *testing.T) {
+		c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+		c.kubelet = KubeletConfig{Enabled: true, PollInterval: time.Hour}
+		c.waitForMetadata = true
+		c.waitForMetadataTimeout = time.Second
+		c.hpaInformer = neverSyncedHPAInformer()
+		c.kubeletPods = map[string]*api_v1.Pod{}
+		c.kubeletPodLister = fakePodLister{pods: &api_v1.PodList{Items: []api_v1.Pod{
+			kubeletTestPod("uid-a", "pod-a", "ns-a", "node-a", "10.0.0.1", nil),
+		}}}
+		defer c.Stop()
+
+		require.NoError(t, c.Start())
+		_, ok := c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.1"))
+		assert.True(t, ok)
+	})
+
+	t.Run("pod informer", func(t *testing.T) {
+		c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+		c.waitForMetadata = true
+		c.waitForMetadataTimeout = time.Second
+		c.hpaInformer = neverSyncedHPAInformer()
+		defer c.Stop()
+
+		require.NoError(t, c.Start())
+	})
+}
+
 func TestKubeletPodStartTimeUsesStatusStartTime(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 	c.Rules = ExtractionRules{

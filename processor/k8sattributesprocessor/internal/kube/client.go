@@ -448,7 +448,7 @@ func (c *WatchClient) Start() error {
 	}
 
 	if c.hpaInformer != nil {
-		reg, err = c.hpaInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		_, err = c.hpaInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleHPAAdd,
 			UpdateFunc: c.handleHPAUpdate,
 			DeleteFunc: c.handleHPADelete,
@@ -456,7 +456,9 @@ func (c *WatchClient) Start() error {
 		if err != nil {
 			return err
 		}
-		synced = append(synced, reg.HasSynced)
+		// HPA metadata is looked up by k8s.hpa.uid at processing time and is not
+		// needed to associate pods, so pod handling is not gated on its sync.
+		// This prevents a missing HPA list permission from blocking pod metadata.
 		go c.hpaInformer.Run(c.stopCh)
 	}
 
