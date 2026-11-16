@@ -60,6 +60,16 @@ attributes:
       - success
       - failure
 
+feature_gates:
+  - id: processor.resource_detection.DetectHostIDByDefault
+    stage: alpha
+    description: >-
+      When enabled and `detectors` is not configured, the processor detects `host.id`, `cloud.provider`
+      and `cloud.platform` following the `host.id` semantic conventions priority order, instead of only
+      running the `env` detector.
+    from_version: v0.166.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52344
+
 telemetry:
   metrics:
     resourcedetection.attributes.detected:

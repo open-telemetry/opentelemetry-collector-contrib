@@ -27,20 +27,42 @@ func RemoveDisabledAttributes(res pcommon.Resource, rac any) {
 	})
 }
 
+// SetEnabledAttributes sets the Enabled flag of every attribute in rac, a pointer to an
+// mdatagen-generated ResourceAttributesConfig, to enabled(key). Keys come from the fields'
+// mapstructure tags, as in RemoveDisabledAttributes. It does nothing if rac is not a pointer.
+func SetEnabledAttributes(rac any, enabled func(key string) bool) {
+	if reflect.ValueOf(rac).Kind() != reflect.Pointer {
+		return
+	}
+	forEachAttribute(rac, func(key string, flag reflect.Value) {
+		flag.SetBool(enabled(key))
+	})
+}
+
 func enabledAttributes(rac any) map[string]bool {
+	enabled := map[string]bool{}
+	forEachAttribute(rac, func(key string, flag reflect.Value) {
+		enabled[key] = flag.Bool()
+	})
+	return enabled
+}
+
+// forEachAttribute calls fn with the key and the Enabled flag of every attribute in rac, an
+// mdatagen-generated ResourceAttributesConfig or a pointer to one. The flag is settable when
+// rac is a pointer.
+func forEachAttribute(rac any, fn func(key string, flag reflect.Value)) {
 	v := reflect.ValueOf(rac)
 	for v.Kind() == reflect.Pointer {
 		if v.IsNil() {
-			return nil
+			return
 		}
 		v = v.Elem()
 	}
 	if v.Kind() != reflect.Struct {
-		return nil
+		return
 	}
 
 	t := v.Type()
-	enabled := make(map[string]bool, t.NumField())
 	for i := 0; i < t.NumField(); i++ {
 		// The tag may carry options (e.g. `key,squash`); only the name is the attribute key.
 		key, _, _ := strings.Cut(t.Field(i).Tag.Get("mapstructure"), ",")
@@ -55,7 +77,6 @@ func enabledAttributes(rac any) map[string]bool {
 		if !flag.IsValid() || flag.Kind() != reflect.Bool {
 			continue
 		}
-		enabled[key] = flag.Bool()
+		fn(key, flag)
 	}
-	return enabled
 }

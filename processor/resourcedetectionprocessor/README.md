@@ -1403,8 +1403,9 @@ The deprecated `k8snode` detector alias is compiled by
 `enable_detector_k8s_api`; it has no separate opt-in tag. The
 `elastic_beanstalk` detector uses the `elasticbeanstalk` configuration block.
 
-The factory default is `detectors: [env]`. A trimmed build that does not include the
-`env` tag must explicitly configure its compiled detector list. A binary built with only
+When `detectors` is not configured, only `env` runs, unless
+[default `host.id` detection](#default-hostid-detection) is enabled. A trimmed build that does
+not include the `env` tag must explicitly configure its compiled detector list. A binary built with only
 the removal tag compiles, but the resource detection processor must not be configured
 unless at least one detector is compiled and selected. Per-detector configuration blocks
 still decode and validate even when that detector is not compiled, which allows shared
@@ -1489,6 +1490,26 @@ For the latest benchmark results, see the [GitHub Actions workflow runs](https:/
 ## Internal Telemetry
 
 The processor emits internal telemetry to observe resource detection. For the complete list of metrics and their attributes, see the [Internal Telemetry documentation](./documentation.md#internal-telemetry).
+
+## Default `host.id` detection
+
+When the `processor.resource_detection.DetectHostIDByDefault` feature gate is enabled and `detectors` is not
+configured, the processor detects `host.id` following the [`host.id` semantic conventions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/host.md)
+priority order instead of only running the `env` detector:
+
+* It runs the `eks`, `ec2`, `azure`, `gcp`, `k8s_api` and `env` detectors, in this order, skipping
+  detectors that are not compiled into the binary. The first detector to set an attribute wins.
+* These detectors (except for `env`) only emit `host.id`, `cloud.provider` and `cloud.platform` attributes.
+* The detected attributes override existing ones unless `override: false` is set.
+
+> **Note**: `k8s_api` requires the `K8S_NODE_NAME` environment variable and the permissions listed in [K8S API Metadata](#k8s-api-metadata).
+
+Known limitations:
+
+* Outside of a cloud, the cloud detectors wait for their metadata endpoints, which can delay startup
+  by up to `timeout`.
+* `system` is not included, as it reads the container's machine ID when running in a container. Therefore,
+  `host.id` is not detected outside of a cloud or Kubernetes.
 
 ## Ordering
 

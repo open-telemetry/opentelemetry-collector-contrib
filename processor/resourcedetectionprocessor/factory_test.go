@@ -503,3 +503,61 @@ func TestDefaultDetectorRegistry(t *testing.T) {
 
 	assert.ElementsMatch(t, expectedTypes, actualTypes)
 }
+
+func TestResolveDetectors(t *testing.T) {
+	withDetectors := func(detectors []string) *Config {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Detectors = detectors
+		return cfg
+	}
+
+	tests := []struct {
+		name                  string
+		cfg                   *Config
+		compiled              []string
+		detectHostIDByDefault bool
+		wantDetectors         []string
+	}{
+		{
+			name:          "detectors not configured",
+			cfg:           createDefaultConfig().(*Config),
+			compiled:      []string{"env"},
+			wantDetectors: []string{"env"},
+		},
+		{
+			name:                  "detectors configured",
+			cfg:                   withDetectors([]string{"system", "ec2"}),
+			compiled:              []string{"ec2", "env", "system"},
+			detectHostIDByDefault: true,
+			wantDetectors:         []string{"system", "ec2"},
+		},
+		{
+			name:                  "detectors configured as empty",
+			cfg:                   withDetectors([]string{}),
+			compiled:              []string{"env"},
+			detectHostIDByDefault: true,
+			wantDetectors:         []string{},
+		},
+		{
+			name:                  "detectors not configured, host.id detected by default",
+			cfg:                   createDefaultConfig().(*Config),
+			compiled:              []string{"azure", "ec2", "eks", "env", "gcp", "k8s_api", "system"},
+			detectHostIDByDefault: true,
+			wantDetectors:         []string{"eks", "ec2", "azure", "gcp", "k8s_api", "env"},
+		},
+		{
+			name:                  "detectors not configured, host.id detected by default with detectors not compiled in",
+			cfg:                   createDefaultConfig().(*Config),
+			compiled:              []string{"ec2", "env", "system"},
+			detectHostIDByDefault: true,
+			wantDetectors:         []string{"ec2", "env"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			detectors, _ := resolveDetectors(tt.cfg, tt.compiled, tt.detectHostIDByDefault)
+
+			assert.Equal(t, tt.wantDetectors, detectors, "detectors must follow the priority order and skip the ones not compiled in")
+		})
+	}
+}

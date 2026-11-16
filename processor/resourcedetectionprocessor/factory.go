@@ -5,6 +5,7 @@ package resourcedetectionprocessor // import "github.com/open-telemetry/opentele
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper"
 	"go.opentelemetry.io/collector/processor/xprocessor"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -50,6 +52,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openstack/nova"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/oraclecloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/scaleway"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/sdkbridge"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 	tencentcvm "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/tencent/cvm"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/upcloud"
@@ -95,7 +98,6 @@ func (*factory) Type() component.Type {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Detectors:       []string{env.TypeStr},
 		ClientConfig:    defaultClientConfig(),
 		Override:        true,
 		DetectorConfig:  detectorCreateDefaultConfig(),
@@ -223,9 +225,12 @@ func (f *factory) getResourceDetectionProcessor(
 
 	warnDeprecatedPerDetectorFlags(params.Logger, oCfg)
 
+	detectors, detectorConfigs := resolveDetectors(oCfg, f.compiledDetectors,
+		metadata.ProcessorResourceDetectionDetectHostIDByDefaultFeatureGate.IsEnabled())
+
 	// The deprecated per-detector fail_on_missing_metadata fields are OR'd with this
 	// top-level flag inside each affected detector, preserving per-detector scope.
-	provider, err := f.getResourceProvider(params, oCfg.Retry, oCfg.Detectors, oCfg.DetectorConfig, oCfg.FailOnMissingMetadata)
+	provider, err := f.getResourceProvider(params, oCfg.Retry, detectors, detectorConfigs, oCfg.FailOnMissingMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -237,6 +242,46 @@ func (f *factory) getResourceDetectionProcessor(
 		refreshInterval:    oCfg.RefreshInterval,
 		telemetrySettings:  params.TelemetrySettings,
 	}, nil
+}
+
+// resolveDetectors returns the detectors to run and their configuration.
+//
+// When `detectors` is configured, it is used as is. Otherwise only 'env' runs, unless
+// detectHostIDByDefault is set. Then the detectors follow the host.id semantic conventions
+// priority order.
+func resolveDetectors(cfg *Config, compiledDetectors []string, detectHostIDByDefault bool) ([]string, DetectorConfig) {
+	switch {
+	case cfg.Detectors != nil:
+		return cfg.Detectors, cfg.DetectorConfig
+	case !detectHostIDByDefault:
+		return []string{env.TypeStr}, cfg.DetectorConfig
+	}
+
+	detectorConfigs := cfg.DetectorConfig
+	var detectors []string
+	add := func(detector string, resourceAttributes any) {
+		if !slices.Contains(compiledDetectors, detector) {
+			return
+		}
+		detectors = append(detectors, detector)
+		sdkbridge.SetEnabledAttributes(resourceAttributes, func(attribute string) bool {
+			switch attribute {
+			case string(conventions.HostIDKey), string(conventions.CloudProviderKey), string(conventions.CloudPlatformKey):
+				return true
+			}
+			return false
+		})
+	}
+
+	add(eks.TypeStr, &detectorConfigs.EKSConfig.ResourceAttributes)
+	add(ec2.TypeStr, &detectorConfigs.EC2Config.ResourceAttributes)
+	add(azure.TypeStr, &detectorConfigs.AzureConfig.ResourceAttributes)
+	add(gcp.TypeStr, &detectorConfigs.GcpConfig.ResourceAttributes)
+	add(k8sapi.TypeStr, &detectorConfigs.K8SAPIConfig.ResourceAttributes)
+	// TODO: include the system detector after making it skip the container's machine ID.
+	add(env.TypeStr, nil)
+
+	return detectors, detectorConfigs
 }
 
 // warnDeprecatedPerDetectorFlags emits a deprecation warning if any per-detector
