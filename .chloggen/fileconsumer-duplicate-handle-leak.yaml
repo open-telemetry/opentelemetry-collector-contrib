@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: pkg/stanza
+note: Close discarded file handles when newly discovered files have duplicate fingerprints.
+issues: [53150]
+subtext:
+change_logs: [user]
