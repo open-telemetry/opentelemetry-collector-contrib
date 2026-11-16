@@ -32,7 +32,10 @@ require (
 	go.uber.org/zap v1.28.0
 )
 
-require go.opentelemetry.io/otel/log v1.47.0 // indirect
+require (
+	go.opentelemetry.io/otel/log v1.47.0 // indirect
+	go.yaml.in/yaml/v4 v4.0.0 // indirect
+)
 
 require (
 	github.com/alecthomas/participle/v2 v2.1.4 // indirect
