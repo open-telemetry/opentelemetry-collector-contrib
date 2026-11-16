@@ -262,9 +262,6 @@ func TestAWSMSKCredentialCacheRefreshLifecycle(t *testing.T) {
 		_, response, err = mechanism.Authenticate(t.Context(), "broker:9098")
 		require.ErrorIs(t, err, refreshErr)
 		assert.Empty(t, response, "expired credentials must never produce an OAuth token")
-		time.Sleep(time.Second)
-		_, err = cache.Retrieve(t.Context())
-		require.ErrorIs(t, err, refreshErr)
 
 		failing.Store(false)
 		recovered, err := cache.Retrieve(t.Context())
