@@ -812,6 +812,70 @@ metrics:
     enabled: true
 ```
 
+### vcenter.datastore.alarm.count
+
+The number of triggered alarms on the datastore.
+
+Only triggered alarms with a red or yellow status are counted.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {alarms} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| vcenter.alarm.state | The state of the triggered alarm. | Str: ``red``, ``yellow`` | Recommended | - |
+
+### vcenter.datastore.maintenance.status
+
+The current maintenance status of the datastore.
+
+A data point is reported for every state, with a value of 1 for the current state and 0 for all other states.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| vcenter.datastore.maintenance.state | The maintenance state of the datastore. | Str: ``normal``, ``entering_maintenance``, ``in_maintenance``, ``unknown`` | Recommended | - |
+
+### vcenter.host.alarm.count
+
+The number of triggered alarms on the host.
+
+Only triggered alarms with a red or yellow status are counted.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {alarms} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| vcenter.alarm.state | The state of the triggered alarm. | Str: ``red``, ``yellow`` | Recommended | - |
+
+### vcenter.host.connection.status
+
+The current connection status of the host.
+
+A data point is reported for every state, with a value of 1 for the current state and 0 for all other states.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| vcenter.host.connection.state | The connection state of the host. | Str: ``connected``, ``disconnected``, ``not_responding``, ``unknown`` | Recommended | - |
+
 ### vcenter.host.memory.active
 
 The amount of memory the host's powered-on VMs are actively using.
@@ -849,6 +913,32 @@ As measured over the most recent 20s interval.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | MiBy | Sum | Int | Cumulative | false | Development |
+
+### vcenter.host.power.status
+
+The current power state of the host.
+
+A data point is reported for every state, with a value of 1 for the current state and 0 for all other states.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| power_state | The current power state of the host. | Str: ``on``, ``off``, ``standby``, ``unknown`` | Recommended | - |
+
+### vcenter.host.uptime
+
+Total time elapsed since last operating system boot-up.
+
+As reported by the host. Not reported when the host is not powered on.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
 
 ### vcenter.vm.cpu.time
 
@@ -908,6 +998,22 @@ As measured over the most recent 20s interval.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended | - |
 | object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
+
+### vcenter.vm.power.status
+
+The current power state of the virtual machine.
+
+A data point is reported for every state, with a value of 1 for the current state and 0 for all other states.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| 1 | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended``, ``unknown`` | Recommended | - |
 
 ## Resource Attributes
 

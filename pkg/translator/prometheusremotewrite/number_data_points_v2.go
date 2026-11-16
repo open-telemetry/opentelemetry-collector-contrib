@@ -24,7 +24,6 @@ func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.Numb
 	resource pcommon.Resource, scope pcommon.InstrumentationScope, schemaURL string, settings Settings, name string, metadata metadata,
 ) error {
 	var errs error
-	symbolize := func(s string) uint32 { return c.symbolTable.Symbolize(s) }
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 
@@ -46,8 +45,7 @@ func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.Numb
 		if pt.Flags().NoRecordedValue() {
 			sample.Value = math.Float64frombits(value.StaleNaN)
 		}
-		ts := c.addSample(sample, labels, metadata)
-		ts.Exemplars = append(ts.Exemplars, getPromExemplarsV2(pt, symbolize)...)
+		c.addSample(sample, labels, metadata)
 	}
 	return errs
 }
