@@ -407,3 +407,8 @@ func TestOTLPHTTPProfilesEndpointRejected(t *testing.T) {
 	require.ErrorContains(t, validateHTTPEndpoints(h), "profiles_endpoint is not supported")
 	require.ErrorContains(t, validateHTTPEndpoints(httpDefaults()), "at least one of endpoint")
 }
+
+func TestEmptyOTLPHTTPIsAnError(t *testing.T) {
+	_, err := unmarshalConfig(t, map[string]any{"protocol": map[string]any{"otlp_http": nil}})
+	require.ErrorContains(t, err, "at least one of endpoint")
+}

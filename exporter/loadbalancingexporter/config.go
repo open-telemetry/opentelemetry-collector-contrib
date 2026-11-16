@@ -69,11 +69,17 @@ var errMultipleProtocolsProvided = errors.New("only one of protocol::otlp and pr
 // Unmarshal rejects a configuration that sets both protocols. protocol::otlp is always populated by the
 // default config, so only the raw configuration can tell whether the user wrote it.
 func (c *Config) Unmarshal(conf *confmap.Conf) error {
-	// A null value, as written when a default config is marshaled, means the key is not set.
-	for _, key := range []string{"protocol::otlp", "protocol::otlp_http"} {
-		if conf.IsSet(key) && conf.Get(key) == nil {
-			conf.Delete(key)
+	// A null protocol::otlp, as written when a default config is marshaled, means the key is not set.
+	if conf.IsSet("protocol::otlp") && conf.Get("protocol::otlp") == nil {
+		conf.Delete("protocol::otlp")
+	}
+	// A marshaled default config also carries a null protocol::otlp_http next to protocol::otlp. Without
+	// protocol::otlp an empty protocol::otlp_http was written by the user, and Validate reports it.
+	if conf.IsSet("protocol::otlp_http") && conf.Get("protocol::otlp_http") == nil {
+		if !conf.IsSet("protocol::otlp") {
+			return errors.New("protocol::otlp_http: at least one of endpoint, traces_endpoint, metrics_endpoint or logs_endpoint must be set")
 		}
+		conf.Delete("protocol::otlp_http")
 	}
 	if conf.IsSet("protocol::otlp") && conf.IsSet("protocol::otlp_http") {
 		return errMultipleProtocolsProvided

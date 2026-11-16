@@ -267,9 +267,6 @@ func endpointWithDefaultPort(endpoint, port string) string {
 }
 
 func (lb *loadBalancer) endpointWithPort(endpoint string) string {
-	if lb.port == "" {
-		return endpointWithPort(endpoint)
-	}
 	return endpointWithDefaultPort(endpoint, lb.port)
 }
 
