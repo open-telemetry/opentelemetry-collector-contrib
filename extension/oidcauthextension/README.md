@@ -89,14 +89,18 @@ remain active, subject to the existing explicit issuer/audience opt-outs.
 Without discovery metadata, this mode accepts RS256 signatures, following the
 `go-oidc` verifier default.
 
-Keys are fetched on the first verification that needs them and cached in memory
-for at most five minutes. Cache hits do not extend this lifetime.
+Keys are fetched on the first verification that needs them and cached in memory.
+Cached keys are trusted for at most five minutes. Cache hits do not extend this
+lifetime.
 If cached keys cannot verify a token, the verifier fetches the current key set
 and tries again. After the five-minute lifetime, the next verification discards
 the old key set and fetches fresh keys before authenticating. If that fetch
 fails, authentication fails without falling back to expired cached keys. A
 removed signing key therefore cannot continue authenticating indefinitely,
 even when requests keep using the same key ID.
+
+Eviction happens on access: during inactivity, expired keys may remain in memory
+until the next verification, but that verification replaces them before use.
 
 No periodic refresh, local key file, or separate worker is required. The endpoint
 must be reachable for the initial fetch and subsequent refreshes. Requests use
