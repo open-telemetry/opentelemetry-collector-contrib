@@ -89,13 +89,19 @@ remain active, subject to the existing explicit issuer/audience opt-outs.
 Without discovery metadata, this mode accepts RS256 signatures, following the
 `go-oidc` verifier default.
 
-Keys are fetched on the first verification that needs them and cached in memory.
+Keys are fetched on the first verification that needs them and cached in memory
+for at most five minutes. Cache hits do not extend this lifetime.
 If cached keys cannot verify a token, the verifier fetches the current key set
-and tries again. No periodic refresh, local key file, or separate worker is
-required. Removing a key from the endpoint does not immediately evict it from
-an existing cache. The endpoint must be reachable for the initial fetch and
-subsequent refreshes. Requests use the existing five-second HTTP timeout, and
-`issuer_ca_path` applies to the JWKS endpoint's TLS certificate.
+and tries again. After the five-minute lifetime, the next verification discards
+the old key set and fetches fresh keys before authenticating. If that fetch
+fails, authentication fails without falling back to expired cached keys. A
+removed signing key therefore cannot continue authenticating indefinitely,
+even when requests keep using the same key ID.
+
+No periodic refresh, local key file, or separate worker is required. The endpoint
+must be reachable for the initial fetch and subsequent refreshes. Requests use
+the existing five-second HTTP timeout, and `issuer_ca_path` applies to the JWKS
+endpoint's TLS certificate.
 
 `jwks_uri` and `public_keys_file` are mutually exclusive. When neither is set,
 the extension continues to use discovery.
