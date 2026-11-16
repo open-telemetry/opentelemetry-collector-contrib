@@ -13,7 +13,6 @@ import (
 	"testing"
 
 	"github.com/elastic/go-docappender/v2/docappendertest"
-	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -306,14 +305,8 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 		return fmt.Errorf("failed to bind to address %s: %w", es.config.ServerConfig.NetAddr.Endpoint, err)
 	}
 
-	r := mux.NewRouter()
-	r.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("X-Elastic-Product", "Elasticsearch")
-			next.ServeHTTP(w, r)
-		})
-	})
-	r.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+	r := http.NewServeMux()
+	r.HandleFunc("/{$}", func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprintln(w, `{"version":{"number":"1.2.3"}}`)
 	})
 	r.HandleFunc("/_bulk", func(w http.ResponseWriter, r *http.Request) {
@@ -395,7 +388,11 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 		}
 	})
 
-	es.server, err = es.config.ServerConfig.ToServer(ctx, host.GetExtensions(), es.params.TelemetrySettings, r)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("X-Elastic-Product", "Elasticsearch")
+		r.ServeHTTP(w, req)
+	})
+	es.server, err = es.config.ServerConfig.ToServer(ctx, host.GetExtensions(), es.params.TelemetrySettings, handler)
 	if err != nil {
 		return fmt.Errorf("failed to create mock ES server: %w", err)
 	}

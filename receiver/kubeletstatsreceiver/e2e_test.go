@@ -66,6 +66,54 @@ func TestE2E(t *testing.T) {
 	require.NoError(t, pmetricassert.AssertMetrics(expectedFile, actualMetrics))
 }
 
+// TestE2EAllMetricGroups runs the receiver with every metric group, the extra
+// metadata labels and the opt-in utilization metrics (including the node
+// informer behind *.node.utilization), and checks them for a known workload pod.
+func TestE2EAllMetricGroups(t *testing.T) {
+	expectedFile := filepath.Join("testdata", "e2e", "all-groups", "expected.yaml")
+
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+	require.NoError(t, err)
+
+	testObjs, err := k8stest.CreateObjects(k8sClient, filepath.Join(".", "testdata", "e2e", "all-groups", "testobjects"))
+	require.NoErrorf(t, err, "failed to create test objects")
+	defer func() {
+		for _, obj := range testObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+		}
+	}()
+
+	metricsConsumer := new(consumertest.MetricsSink)
+	shutdownSink := startUpSink(t, metricsConsumer)
+	defer shutdownSink()
+
+	testID := uuid.NewString()[:8]
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "all-groups", "collector"), map[string]string{}, "")
+	defer func() {
+		for _, obj := range collectorObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+		}
+	}()
+
+	// waitForData waits for more than wantEntries batches: 4 batches, about 80s
+	// at the 20s collection interval. The scrape-based CPU usage only needs one
+	// earlier scrape of the same container.
+	wantEntries := 3 // Minimal number of metrics to wait for.
+	waitForData(t, wantEntries, metricsConsumer)
+
+	// Assert on the latest batch until it matches: a single scrape can lack a
+	// metric (for example a duplicate kubelet CPU sample skips CPU usage), and
+	// batches from a previous test's collector that is still terminating can
+	// reach the shared sink.
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
+		all := metricsConsumer.AllMetrics()
+		actualMetrics := all[len(all)-1]
+		// To regenerate: uncomment, run the test once, re-comment.
+		// require.NoError(t, pmetricassert.WriteAssertionFile(t, expectedFile, actualMetrics))
+		assert.NoError(tt, pmetricassert.AssertMetrics(expectedFile, actualMetrics))
+	}, 2*time.Minute, 5*time.Second)
+}
+
 func startUpSink(t *testing.T, mc *consumertest.MetricsSink) func() {
 	f := otlpreceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)

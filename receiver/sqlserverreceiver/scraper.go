@@ -989,7 +989,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const totalServerMemory = "Total Server Memory (KB)"
 	const cachePages = "Cache Pages"
 	const totalPages = "Total Pages"
-	const targetPages = "Target Pages"
+	const targetPages = "Target pages"
 	const databasePages = "Database pages"
 	const stolenPages = "Stolen Pages"
 	const reservedPages = "Reserved Pages"

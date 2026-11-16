@@ -1,0 +1,9 @@
+change_type: bug_fix
+component: pkg/translator/prometheusremotewrite
+note: Align Exponential Histogram NoRecordedValue staleness marker with the specification.
+issues: [52939]
+subtext: |
+  Exponential histogram staleness markers (`NoRecordedValue`) now leave `Count`, `ZeroCount`, and
+  bucket spans/deltas empty instead of setting `CountInt` to `value.StaleNaN` and populating
+  buckets.
+change_logs: [user, api]
