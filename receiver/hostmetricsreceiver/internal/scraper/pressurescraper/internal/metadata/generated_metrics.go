@@ -3,12 +3,13 @@
 package metadata
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
 	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
-	"time"
 )
 
 const (
