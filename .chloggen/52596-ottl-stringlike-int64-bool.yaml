@@ -1,6 +1,0 @@
-change_type: enhancement
-component: pkg/ottl
-note: "Improve StandardStringLikeGetter performance by adding direct string conversion for int64 and bool values, avoiding unnecessary JSON marshaling."
-issues: [52596]
-subtext:
-change_logs: [user]

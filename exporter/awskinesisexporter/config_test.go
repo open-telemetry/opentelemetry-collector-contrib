@@ -48,6 +48,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				MaxRecordsPerBatch: batch.MaxBatchedRecords,
 				MaxRecordSize:      batch.MaxRecordSize,
+				IdleConnTimeout:    defaultIdleConnTimeout,
 			},
 		},
 		{
@@ -75,6 +76,26 @@ func TestLoadConfig(t *testing.T) {
 				},
 				MaxRecordSize:      1000,
 				MaxRecordsPerBatch: 10,
+				IdleConnTimeout:    defaultIdleConnTimeout,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "custom_timeout"),
+			expected: &Config{
+				QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
+				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+				Encoding: Encoding{
+					Name:        "otlp",
+					Compression: "none",
+				},
+				AWS: AWSConfig{
+					StreamName: "test-stream",
+					Region:     "us-west-2",
+				},
+				MaxRecordsPerBatch: batch.MaxBatchedRecords,
+				MaxRecordSize:      batch.MaxRecordSize,
+				IdleConnTimeout:    2 * time.Second,
 			},
 		},
 	}
@@ -112,4 +133,16 @@ func TestValidate(t *testing.T) {
 	cfg.QueueSettings = configoptional.None[exporterhelper.QueueBatchConfig]()
 	err = cfg.Validate()
 	assert.NoError(t, err, "Validate() error = %v, wantNoErr", err)
+
+	cfg.IdleConnTimeout = -1 * time.Second
+	err = cfg.Validate()
+	assert.ErrorContains(t, err, "idle_conn_timeout must be non-negative")
+
+	cfg.IdleConnTimeout = 0
+	err = cfg.Validate()
+	assert.NoError(t, err)
+
+	cfg.IdleConnTimeout = 2 * time.Second
+	err = cfg.Validate()
+	assert.NoError(t, err)
 }

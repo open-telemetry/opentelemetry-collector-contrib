@@ -7,6 +7,28 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.4.0/v0.165.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Remove the deprecated SignalFx receiver. Use the OTLP receiver instead. (#51934)
+- `processor/resource_detection`: Change the type of the `openshift` detector `token` option to `configopaque.String` so it is redacted when the configuration is printed. (#52775)
+- `processor/transform`: Remove the deprecated `flatten_data` config option. Use `flatten.log` instead. (#32080)
+
+### 💡 Enhancements 💡
+
+- `extension/encoding`: Add optional message decoding interfaces with explicit client metadata options for all signals. (#51752)
+- `pkg/ottl/contexts/xspanlink`: Add `ottlspanlink` context, in the new experimental `xspanlink` module, exposing per-span-link fields (`trace_id`, `span_id`, `trace_state`, `attributes`, `dropped_attributes_count`, `flags`) for use in OTTL statements. (#26660)
+- `pkg/semconvtest`: Pin the default semantic-conventions registry to a release instead of floating on main (#52122)
+- `receiver/receiver_creator`: Improve extensibility of `receivercreator` rules by allowing use of custom `observer.EndpointDetails` "types" (#50548)
+  The `receivercreator` configuration validation no longer requires that the rule's `type == <endpoint_details>`
+  prefix match one of the `observer.EndpointDetails` "types" defined in this repository. Now it only enforces the syntax requirements.
+  The old enforcement didn't allow downstream distributions to create their own `observer.EndpointDetails` maps
+  making harder to developer new observers that could be used with the `receivercreator`.
+  
+
+<!-- previous-version -->
+
 ## v1.3.1/v0.164.1
 
 <!-- previous-version -->
