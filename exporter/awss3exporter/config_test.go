@@ -429,6 +429,17 @@ func TestConfig_Validate(t *testing.T) {
 			}(),
 			errExpected: errors.New("cannot use both static credentials (access_key/secret_key) and role_arn"),
 		},
+		{
+			name: "invalid marshaler name",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.Region = "us-east-1"
+				c.S3Uploader.S3Bucket = "mybucket"
+				c.MarshalerName = "invalid_marshaler"
+				return c
+			}(),
+			errExpected: errors.New("unknown marshaler: invalid_marshaler"),
+		},
 	}
 
 	for _, tt := range tests {
