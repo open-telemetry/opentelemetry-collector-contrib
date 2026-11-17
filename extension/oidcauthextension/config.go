@@ -147,7 +147,7 @@ type ProviderCfg struct {
 
 	// URL of a remote JWKS endpoint used instead of OpenID Connect discovery.
 	// Mutually exclusive with PublicKeysFile. Optional.
-	JWKSURI string `mapstructure:"jwks_uri"`
+	JWKSURL string `mapstructure:"jwks_url"`
 }
 
 func (p *ProviderCfg) Validate() error {
@@ -157,15 +157,15 @@ func (p *ProviderCfg) Validate() error {
 	if p.IssuerURL == "" {
 		return errNoIssuerURL
 	}
-	if p.JWKSURI != "" {
+	if p.JWKSURL != "" {
 		if p.PublicKeysFile != "" {
-			return errors.New("jwks_uri and public_keys_file are mutually exclusive")
+			return errors.New("jwks_url and public_keys_file are mutually exclusive")
 		}
-		endpoint, err := url.Parse(p.JWKSURI)
+		endpoint, err := url.Parse(p.JWKSURL)
 		if err != nil || endpoint.Hostname() == "" ||
 			(endpoint.Scheme != "http" && endpoint.Scheme != "https") ||
 			endpoint.User != nil || endpoint.Fragment != "" {
-			return errors.New("jwks_uri must be an absolute HTTP or HTTPS URL without credentials or fragment")
+			return errors.New("jwks_url must be an absolute HTTP or HTTPS URL without credentials or fragment")
 		}
 	}
 

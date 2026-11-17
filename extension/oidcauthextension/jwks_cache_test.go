@@ -15,11 +15,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func cacheTestVerifier(t *testing.T, uri string, now func() time.Time) *oidc.IDTokenVerifier {
+func cacheTestVerifier(t *testing.T, url string, now func() time.Time) *oidc.IDTokenVerifier {
 	t.Helper()
-	keys := newExpiringRemoteKeySet(t.Context(), uri)
+	keys := newExpiringRemoteKeySet(t.Context(), url)
 	keys.now = now
-	return oidc.NewVerifier(uri, keys, &oidc.Config{ClientID: "collector", Now: now})
+	return oidc.NewVerifier(url, keys, &oidc.Config{ClientID: "collector", Now: now})
 }
 
 func TestJWKSCacheExpiresDespiteContinuedUse(t *testing.T) {

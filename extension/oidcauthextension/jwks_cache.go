@@ -15,7 +15,7 @@ const jwksCacheTTL = 5 * time.Minute
 
 type expiringRemoteKeySet struct {
 	ctx context.Context
-	uri string
+	url string
 	now func() time.Time
 
 	mu        sync.Mutex
@@ -23,9 +23,9 @@ type expiringRemoteKeySet struct {
 	expiresAt time.Time
 }
 
-func newExpiringRemoteKeySet(ctx context.Context, uri string) *expiringRemoteKeySet {
+func newExpiringRemoteKeySet(ctx context.Context, url string) *expiringRemoteKeySet {
 	return &expiringRemoteKeySet{
-		ctx: context.WithoutCancel(ctx), uri: uri, now: time.Now,
+		ctx: context.WithoutCancel(ctx), url: url, now: time.Now,
 	}
 }
 
@@ -35,7 +35,7 @@ func (s *expiringRemoteKeySet) VerifySignature(ctx context.Context, token string
 	if s.keySet == nil || !now.Before(s.expiresAt) {
 		// go-oidc only refreshes on a cache miss. Replace its entire cache on
 		// expiry so a known, removed key cannot keep authenticating forever.
-		s.keySet = oidc.NewRemoteKeySet(s.ctx, s.uri)
+		s.keySet = oidc.NewRemoteKeySet(s.ctx, s.url)
 		s.expiresAt = now.Add(jwksCacheTTL)
 	}
 	keySet := s.keySet

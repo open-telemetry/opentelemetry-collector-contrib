@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
-func TestJWKSURIConfig(t *testing.T) {
+func TestJWKSURLConfig(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {
 		name string
@@ -37,17 +37,17 @@ func TestJWKSURIConfig(t *testing.T) {
 		{name: "https", url: "https://auth.example.com/keys"},
 		{name: "http", url: "http://localhost:8080/keys"},
 		{name: "query", url: "https://auth.example.com/keys?tenant=example"},
-		{name: "relative URL", url: "/keys", err: "jwks_uri"},
-		{name: "unsupported scheme", url: "file:///keys", err: "jwks_uri"},
-		{name: "missing host", url: "https:///keys", err: "jwks_uri"},
-		{name: "malformed URL", url: "https://%zz/keys", err: "jwks_uri"},
-		{name: "credentials", url: "https://user:password@auth.example.com/keys", err: "jwks_uri"},
-		{name: "fragment", url: "https://auth.example.com/keys#fragment", err: "jwks_uri"},
+		{name: "relative URL", url: "/keys", err: "jwks_url"},
+		{name: "unsupported scheme", url: "file:///keys", err: "jwks_url"},
+		{name: "missing host", url: "https:///keys", err: "jwks_url"},
+		{name: "malformed URL", url: "https://%zz/keys", err: "jwks_url"},
+		{name: "credentials", url: "https://user:password@auth.example.com/keys", err: "jwks_url"},
+		{name: "fragment", url: "https://auth.example.com/keys#fragment", err: "jwks_url"},
 		{name: "conflicting file", url: "https://auth.example.com/keys", file: "/not-read.json", err: "mutually exclusive"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := &Config{Providers: []ProviderCfg{{
-				IssuerURL: "https://issuer.example.com", Audience: "collector", JWKSURI: tc.url, PublicKeysFile: tc.file,
+				IssuerURL: "https://issuer.example.com", Audience: "collector", JWKSURL: tc.url, PublicKeysFile: tc.file,
 			}}}
 			if tc.err != "" {
 				require.ErrorContains(t, cfg.Validate(), tc.err)
@@ -58,12 +58,12 @@ func TestJWKSURIConfig(t *testing.T) {
 	}
 	var cfg Config
 	cm := confmap.NewFromStringMap(map[string]any{"providers": []any{map[string]any{
-		"issuer_url": "https://issuer.example.com", "audience": "collector", "jwks_uri": "https://auth.example.com/keys",
+		"issuer_url": "https://issuer.example.com", "audience": "collector", "jwks_url": "https://auth.example.com/keys",
 	}}})
 	require.NoError(t, cm.Unmarshal(&cfg))
 	require.NoError(t, cfg.Validate())
 	require.Len(t, cfg.Providers, 1)
-	assert.Equal(t, "https://auth.example.com/keys", cfg.Providers[0].JWKSURI)
+	assert.Equal(t, "https://auth.example.com/keys", cfg.Providers[0].JWKSURL)
 }
 
 func jwksResponse(t *testing.T, key *rsa.PrivateKey, id string) []byte {
@@ -105,7 +105,7 @@ func startJWKSAuthenticator(t *testing.T, cfg ProviderCfg) extensionauth.Server 
 	return auth
 }
 
-func TestJWKSURIAuthenticationAndRotation(t *testing.T) {
+func TestJWKSURLAuthenticationAndRotation(t *testing.T) {
 	t.Parallel()
 	keyA, err := createPrivateKey()
 	require.NoError(t, err)
@@ -126,7 +126,7 @@ func TestJWKSURIAuthenticationAndRotation(t *testing.T) {
 	t.Cleanup(server.Close)
 	issuer := server.URL + "/issuer"
 	auth := startJWKSAuthenticator(t, ProviderCfg{
-		IssuerURL: issuer, Audience: "collector", JWKSURI: server.URL + "/keys", UsernameClaim: "email", GroupsClaim: "groups",
+		IssuerURL: issuer, Audience: "collector", JWKSURL: server.URL + "/keys", UsernameClaim: "email", GroupsClaim: "groups",
 	})
 	assert.Zero(t, requests.Load(), "keys are fetched on the first verification")
 	tokenA := jwksToken(t, keyA, "a", jwksClaims(issuer))
@@ -151,7 +151,7 @@ func TestJWKSURIAuthenticationAndRotation(t *testing.T) {
 	assert.Zero(t, discovery.Load(), "direct JWKS must never request discovery")
 }
 
-func TestJWKSURIRejectsInvalidTokens(t *testing.T) {
+func TestJWKSURLRejectsInvalidTokens(t *testing.T) {
 	t.Parallel()
 	key, err := createPrivateKey()
 	require.NoError(t, err)
@@ -161,7 +161,7 @@ func TestJWKSURIRejectsInvalidTokens(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write(body) }))
 	t.Cleanup(server.Close)
 	issuer := "https://issuer.example.com"
-	auth := startJWKSAuthenticator(t, ProviderCfg{IssuerURL: issuer, Audience: "collector", JWKSURI: server.URL})
+	auth := startJWKSAuthenticator(t, ProviderCfg{IssuerURL: issuer, Audience: "collector", JWKSURL: server.URL})
 	for _, name := range []string{"issuer", "audience", "expiry", "signature", "malformed", "algorithm"} {
 		t.Run(name, func(t *testing.T) {
 			claims := jwksClaims(issuer)
@@ -197,7 +197,7 @@ func TestJWKSURIRejectsInvalidTokens(t *testing.T) {
 	}
 }
 
-func TestJWKSURIExplicitIgnoreSettings(t *testing.T) {
+func TestJWKSURLExplicitIgnoreSettings(t *testing.T) {
 	t.Parallel()
 	key, err := createPrivateKey()
 	require.NoError(t, err)
@@ -205,14 +205,14 @@ func TestJWKSURIExplicitIgnoreSettings(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write(body) }))
 	t.Cleanup(server.Close)
 	auth := startJWKSAuthenticator(t, ProviderCfg{
-		IssuerURL: "https://configured.example.com", IgnoreIssuer: true, IgnoreAudience: true, JWKSURI: server.URL,
+		IssuerURL: "https://configured.example.com", IgnoreIssuer: true, IgnoreAudience: true, JWKSURL: server.URL,
 	})
 	token := jwksToken(t, key, "key", jwksClaims("https://other.example.com"))
 	_, err = auth.Authenticate(t.Context(), map[string][]string{"authorization": {"Bearer " + token}})
 	require.NoError(t, err)
 }
 
-func TestJWKSURIWithDiscoveryProvider(t *testing.T) {
+func TestJWKSURLWithDiscoveryProvider(t *testing.T) {
 	t.Parallel()
 	discovery, err := newOIDCServer()
 	require.NoError(t, err)
@@ -225,7 +225,7 @@ func TestJWKSURIWithDiscoveryProvider(t *testing.T) {
 	t.Cleanup(server.Close)
 	cfg := &Config{
 		IssuerURL: discovery.URL, Audience: "collector",
-		Providers: []ProviderCfg{{IssuerURL: server.URL, Audience: "collector", JWKSURI: server.URL}},
+		Providers: []ProviderCfg{{IssuerURL: server.URL, Audience: "collector", JWKSURL: server.URL}},
 	}
 	require.NoError(t, cfg.Validate())
 	ext := newTestExtension(t, cfg)
@@ -244,7 +244,7 @@ func TestJWKSURIWithDiscoveryProvider(t *testing.T) {
 	}
 }
 
-func TestJWKSURIRejectsEmptyKeySet(t *testing.T) {
+func TestJWKSURLRejectsEmptyKeySet(t *testing.T) {
 	t.Parallel()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(`{"keys":[]}`))
@@ -252,13 +252,13 @@ func TestJWKSURIRejectsEmptyKeySet(t *testing.T) {
 	t.Cleanup(server.Close)
 	key, err := createPrivateKey()
 	require.NoError(t, err)
-	auth := startJWKSAuthenticator(t, ProviderCfg{IssuerURL: server.URL, Audience: "collector", JWKSURI: server.URL})
+	auth := startJWKSAuthenticator(t, ProviderCfg{IssuerURL: server.URL, Audience: "collector", JWKSURL: server.URL})
 	token := jwksToken(t, key, "key", jwksClaims(server.URL))
 	_, err = auth.Authenticate(t.Context(), map[string][]string{"authorization": {"Bearer " + token}})
 	require.Error(t, err)
 }
 
-func TestJWKSURIFailuresPreserveCachedKeys(t *testing.T) {
+func TestJWKSURLFailuresPreserveCachedKeys(t *testing.T) {
 	t.Parallel()
 	key, err := createPrivateKey()
 	require.NoError(t, err)
@@ -283,7 +283,7 @@ func TestJWKSURIFailuresPreserveCachedKeys(t *testing.T) {
 				_, _ = w.Write(r.body)
 			}))
 			t.Cleanup(server.Close)
-			auth := startJWKSAuthenticator(t, ProviderCfg{IssuerURL: server.URL, Audience: "collector", JWKSURI: server.URL})
+			auth := startJWKSAuthenticator(t, ProviderCfg{IssuerURL: server.URL, Audience: "collector", JWKSURL: server.URL})
 			token := jwksToken(t, key, "key", jwksClaims(server.URL))
 			_, err := auth.Authenticate(t.Context(), map[string][]string{"authorization": {"Bearer " + token}})
 			require.Error(t, err, "first fetch failure must reject the request")
@@ -302,7 +302,7 @@ func TestJWKSURIFailuresPreserveCachedKeys(t *testing.T) {
 	}
 }
 
-func TestJWKSURIUsesIssuerCA(t *testing.T) {
+func TestJWKSURLUsesIssuerCA(t *testing.T) {
 	t.Parallel()
 	key, err := createPrivateKey()
 	require.NoError(t, err)
@@ -313,7 +313,7 @@ func TestJWKSURIUsesIssuerCA(t *testing.T) {
 	require.NoError(t, os.WriteFile(caPath, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: server.Certificate().Raw}), 0o600))
 	for _, trusted := range []bool{false, true} {
 		name := "untrusted"
-		cfg := ProviderCfg{IssuerURL: "https://issuer.example.com", Audience: "collector", JWKSURI: server.URL}
+		cfg := ProviderCfg{IssuerURL: "https://issuer.example.com", Audience: "collector", JWKSURL: server.URL}
 		if trusted {
 			name = "trusted"
 			cfg.IssuerCAPath = caPath
