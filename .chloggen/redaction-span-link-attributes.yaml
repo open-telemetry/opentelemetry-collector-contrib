@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: processor/redaction
+note: Apply attribute redaction rules to span links.
+# One or more tracking issues or pull requests related to the change
+issues: [53356]
