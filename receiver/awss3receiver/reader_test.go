@@ -19,8 +19,26 @@ type readFunc func([]byte) (int, error)
 func (f readFunc) Read(p []byte) (int, error) { return f(p) }
 
 func TestReadCancellation(t *testing.T) {
-	for _, destination := range []string{"buffer", "discard"} {
-		t.Run(destination, func(t *testing.T) {
+	tests := []struct {
+		name string
+		read func(context.Context, io.Reader) error
+	}{
+		{
+			name: "buffer",
+			read: func(ctx context.Context, r io.Reader) error {
+				_, err := readAll(ctx, r, 0)
+				return err
+			},
+		},
+		{
+			name: "discard",
+			read: func(ctx context.Context, r io.Reader) error {
+				return copyReader(ctx, io.Discard, r)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 			var reads int
@@ -29,13 +47,7 @@ func TestReadCancellation(t *testing.T) {
 				cancel()
 				return copy(p, "data"), nil
 			})
-			var err error
-			if destination == "buffer" {
-				_, err = readAll(ctx, reader, 0)
-			} else {
-				err = copyReader(ctx, io.Discard, reader)
-			}
-			require.ErrorIs(t, err, context.Canceled)
+			require.ErrorIs(t, tt.read(ctx, reader), context.Canceled)
 			require.Equal(t, 1, reads)
 		})
 	}

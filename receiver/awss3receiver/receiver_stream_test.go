@@ -45,7 +45,10 @@ func newStreamTestReceiver(t *testing.T, processor receiverProcessor, ext compon
 		logger:        zap.NewNop(),
 		obsrecv:       obs,
 		dataProcessor: processor,
-		extensions:    encodingExtensions{{extension: ext, suffix: ".txt"}},
+		extensions: encodingExtensions{{
+			extension: ext,
+			suffix:    ".txt",
+		}},
 	}
 }
 
@@ -65,8 +68,36 @@ func newTextExtension(t *testing.T) extension.Extension {
 // The producer cannot finish the object until the first batch is consumed. A
 // receiver that buffers either the download or decompression deadlocks here.
 func TestReceiveStreamsBeforeEOF(t *testing.T) {
-	for _, compression := range []string{"none", "gzip", "zstd"} {
-		t.Run(compression, func(t *testing.T) {
+	tests := []struct {
+		name      string
+		suffix    string
+		newWriter func(io.Writer) (io.WriteCloser, func() error, error)
+	}{
+		{
+			name: "none",
+		},
+		{
+			name:   "gzip",
+			suffix: ".gz",
+			newWriter: func(output io.Writer) (io.WriteCloser, func() error, error) {
+				writer := gzip.NewWriter(output)
+				return writer, writer.Flush, nil
+			},
+		},
+		{
+			name:   "zstd",
+			suffix: ".zst",
+			newWriter: func(output io.Writer) (io.WriteCloser, func() error, error) {
+				writer, err := zstd.NewWriter(output)
+				if err != nil {
+					return nil, nil, err
+				}
+				return writer, writer.Flush, nil
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 			defer cancel()
 			input, output := io.Pipe()
@@ -86,28 +117,19 @@ func TestReceiveStreamsBeforeEOF(t *testing.T) {
 			})
 			require.NoError(t, err)
 			r := newStreamTestReceiver(t, &logsReceiver{consumer: c}, newTextExtension(t))
-			key := "logs.txt"
-			switch compression {
-			case "gzip":
-				key += ".gz"
-			case "zstd":
-				key += ".zst"
-			}
+			key := "logs.txt" + tt.suffix
 			producerDone := make(chan error, 1)
 			go func() {
 				var writer io.WriteCloser = output
 				flush := func() error { return nil }
-				switch compression {
-				case "gzip":
-					gz := gzip.NewWriter(output)
-					writer, flush = gz, gz.Flush
-				case "zstd":
-					zw, createErr := zstd.NewWriter(output)
-					if createErr != nil {
-						producerDone <- createErr
+				if tt.newWriter != nil {
+					var err error
+					writer, flush, err = tt.newWriter(output)
+					if err != nil {
+						_ = output.CloseWithError(err)
+						producerDone <- err
 						return
 					}
-					writer, flush = zw, zw.Flush
 				}
 				_, writeErr := io.WriteString(writer, strings.Repeat("first\n", 1000))
 				if writeErr == nil {
@@ -386,8 +408,13 @@ func TestReceiveCancellationAtEOF(t *testing.T) {
 		name             string
 		cancelDuringRead bool
 	}{
-		{name: "decoder"},
-		{name: "drain", cancelDuringRead: true},
+		{
+			name: "decoder",
+		},
+		{
+			name:             "drain",
+			cancelDuringRead: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

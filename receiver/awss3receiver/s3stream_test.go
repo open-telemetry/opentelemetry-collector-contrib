@@ -95,7 +95,6 @@ func TestS3StreamAcknowledgement(t *testing.T) {
 			closeErr:            failure,
 			wantErr:             failure,
 		},
-
 		{
 			name:             "buffer_limit",
 			key:              "logs.json.gz",
@@ -200,10 +199,22 @@ func TestProcessS3ObjectErrors(t *testing.T) {
 		processErr error
 		closeErr   error
 	}{
-		{name: "success"},
-		{name: "processing", processErr: processErr},
-		{name: "closing", closeErr: closeErr},
-		{name: "both", processErr: processErr, closeErr: closeErr},
+		{
+			name: "success",
+		},
+		{
+			name:       "processing",
+			processErr: processErr,
+		},
+		{
+			name:     "closing",
+			closeErr: closeErr,
+		},
+		{
+			name:       "both",
+			processErr: processErr,
+			closeErr:   closeErr,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
