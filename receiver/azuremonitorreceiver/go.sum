@@ -52,8 +52,8 @@ github.com/hashicorp/go-version v1.9.0 h1:CeOIz6k+LoN3qX9Z0tyQrPtiB1DFYRPfCIBtaX
 github.com/hashicorp/go-version v1.9.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/huandu/go-assert v1.1.5 h1:fjemmA7sSfYHJD7CUqs9qTwwfdNAx7/j2/ZlHXzNB3c=
 github.com/huandu/go-assert v1.1.5/go.mod h1:yOLvuqZwmcHIC5rIzrBhT7D3Q9c3GFnd0JrPVhn/06U=
-github.com/huandu/go-clone v1.7.4 h1:sMp0pE4tUnKxUycA5oo3RVXtPMeQQf2egPifdwlXGO8=
-github.com/huandu/go-clone v1.7.4/go.mod h1:ReGivhG6op3GYr+UY3lS6mxjKp7MIGTknuU5TbTVaXE=
+github.com/huandu/go-clone v1.7.5 h1:Q6RB4lv8R+DxQ4EUPbJLOD6n5ngBE3isb6Vg2ByKlgg=
+github.com/huandu/go-clone v1.7.5/go.mod h1:ReGivhG6op3GYr+UY3lS6mxjKp7MIGTknuU5TbTVaXE=
 github.com/iimos/ucum v0.0.3 h1:nXmi4ZM9ITooXgzLbFg9lL/RcB8TLI91qmgGQ8XT56s=
 github.com/iimos/ucum v0.0.3/go.mod h1:GLkwylGGfhLPvLSpmbgJr52tmpq+3EBh0LYSQR3i8MY=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
