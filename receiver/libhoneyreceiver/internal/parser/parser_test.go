@@ -389,3 +389,43 @@ func TestAddSpanLinksToSpan_IntegerTypeHandling(t *testing.T) {
 		})
 	}
 }
+
+func TestAddSpanEventsAndLinks_UnexpectedFieldTypes(t *testing.T) {
+	logger := zap.NewNop()
+	now := time.Now()
+
+	s := ptrace.NewSpan()
+	s.SetName("test-span")
+	s.SetSpanID([8]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef})
+	s.SetTraceID([16]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef})
+
+	events := []libhoneyevent.LibhoneyEvent{
+		{
+			// span event without a name
+			Data:             map[string]any{"attr": "value"},
+			MsgPackTimestamp: &now,
+		},
+		{
+			// span event with a non-string name
+			Data:             map[string]any{"name": int64(7)},
+			MsgPackTimestamp: &now,
+		},
+	}
+	links := []libhoneyevent.LibhoneyEvent{
+		{
+			Data: map[string]any{
+				"trace.link.trace_id": int64(1),
+				"trace.link.span_id":  int64(2),
+			},
+		},
+	}
+
+	require.NotPanics(t, func() {
+		addSpanEventsToSpan(s, events, []string{}, logger)
+		addSpanLinksToSpan(s, links, []string{}, logger)
+	})
+
+	require.Equal(t, 2, s.Events().Len())
+	assert.Empty(t, s.Events().At(0).Name())
+	assert.Empty(t, s.Events().At(1).Name())
+}

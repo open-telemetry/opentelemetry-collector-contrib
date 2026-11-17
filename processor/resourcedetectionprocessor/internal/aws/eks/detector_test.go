@@ -6,6 +6,8 @@ package eks
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -14,17 +16,22 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig/k8sconfigtypes"
 	apiprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/eks"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks/internal/metadata"
 )
 
 type mockIMDSProvider struct {
-	meta     imds.InstanceIdentityDocument
-	hostname string
-	err      error
+	meta        imds.InstanceIdentityDocument
+	hostname    string
+	hostnameErr error
+	err         error
 }
 
 func (m *mockIMDSProvider) Get(_ context.Context) (imds.InstanceIdentityDocument, error) {
@@ -32,6 +39,9 @@ func (m *mockIMDSProvider) Get(_ context.Context) (imds.InstanceIdentityDocument
 }
 
 func (m *mockIMDSProvider) Hostname(_ context.Context) (string, error) {
+	if m.hostnameErr != nil {
+		return "", m.hostnameErr
+	}
 	return m.hostname, m.err
 }
 
@@ -189,6 +199,7 @@ func TestDetectFromIMDS(t *testing.T) {
 		imdsMeta              imds.InstanceIdentityDocument
 		apiMeta               apiprovider.InstanceMetadata
 		hostname              string
+		hostnameErr           error
 		apiErr                error
 		imdsErr               error
 		failOnMissingMetadata bool
@@ -235,6 +246,29 @@ func TestDetectFromIMDS(t *testing.T) {
 			hostname:      "hostname.ip-192-168-1-1.us-west-2.compute.internal",
 			imdsErr:       errors.New("fail"),
 			expectedError: false,
+		},
+		{
+			name: "Hostname Failure - fail_on_missing_metadata",
+			imdsMeta: imds.InstanceIdentityDocument{
+				InstanceID: "i-123",
+				Region:     "us-west-2",
+			},
+			hostnameErr:           errors.New("fail"),
+			failOnMissingMetadata: true,
+			expectedError:         true,
+			errMsg:                "fail",
+		},
+		{
+			name: "Hostname Failure - suppressed",
+			imdsMeta: imds.InstanceIdentityDocument{
+				InstanceID: "i-123",
+				Region:     "us-west-2",
+			},
+			hostnameErr:   errors.New("fail"),
+			expectedError: false,
+			expectedOutput: map[string]any{
+				"host.id": "i-123",
+			},
 		},
 		{
 			name: "API Failure - Partial Result",
@@ -315,7 +349,7 @@ func TestDetectFromIMDS(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			d := &detector{
 				logger:       zaptest.NewLogger(t),
-				imdsProvider: &mockIMDSProvider{meta: tt.imdsMeta, hostname: tt.hostname, err: tt.imdsErr},
+				imdsProvider: &mockIMDSProvider{meta: tt.imdsMeta, hostname: tt.hostname, hostnameErr: tt.hostnameErr, err: tt.imdsErr},
 				apiProvider:  &mockAPIProvider{apiMeta: tt.apiMeta, apiErr: tt.apiErr},
 				rb: metadata.NewResourceBuilder(metadata.ResourceAttributesConfig{
 					K8sClusterName: metadata.ResourceAttributeConfig{Enabled: true},
@@ -492,14 +526,15 @@ type mockDetectorUtils struct {
 	cfg            Config
 	logger         *zap.Logger
 	imdsAccessible bool
+	awsConfigErr   error
 }
 
 func (m *mockDetectorUtils) isIMDSAccessible(_ context.Context) bool {
 	return m.imdsAccessible
 }
 
-func (*mockDetectorUtils) getAWSConfig(context.Context, bool) (aws.Config, error) {
-	return aws.Config{}, nil
+func (m *mockDetectorUtils) getAWSConfig(context.Context, bool) (aws.Config, error) {
+	return aws.Config{}, m.awsConfigErr
 }
 
 func TestDetect(t *testing.T) {
@@ -641,4 +676,261 @@ func TestDetectFailOnMissingMetadata(t *testing.T) {
 		assert.ErrorContains(t, err, "eks metadata unavailable")
 		assert.ErrorContains(t, err, isEKSErr.Error())
 	})
+}
+
+func TestDetectNotEKSFailOnMissingMetadata(t *testing.T) {
+	t.Setenv(kubernetesServiceHostEnvVar, "")
+	cfg := CreateDefaultConfig()
+	det := &detector{
+		cfg:                   cfg,
+		logger:                zap.NewNop(),
+		apiProvider:           &mockAPIProvider{},
+		imdsProvider:          &mockIMDSProvider{},
+		ra:                    cfg.ResourceAttributes,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		utils:                 &mockDetectorUtils{},
+		failOnMissingMetadata: true,
+	}
+
+	res, schemaURL, err := det.Detect(t.Context())
+	require.EqualError(t, err, "eks metadata unavailable: not running on EKS")
+	assert.Empty(t, schemaURL)
+	assert.Equal(t, 0, res.Attributes().Len())
+}
+
+func TestNewDetectorOutsideCluster(t *testing.T) {
+	isolateAWSConfig(t)
+	t.Setenv("KUBERNETES_SERVICE_HOST", "")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "")
+	stubAPIProvider(t, func(aws.Config, string, k8sconfig.APIConfig) (apiprovider.Provider, error) {
+		t.Fatal("the EKS API provider must not be created outside Kubernetes")
+		return nil, nil
+	})
+
+	t.Run("default", func(t *testing.T) {
+		d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+		require.NoError(t, err)
+
+		res, schemaURL, err := d.Detect(t.Context())
+		require.NoError(t, err)
+		assert.Empty(t, schemaURL)
+		assert.Equal(t, 0, res.Attributes().Len())
+	})
+
+	t.Run("fail_on_missing_metadata", func(t *testing.T) {
+		d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), true)
+		require.NoError(t, err)
+
+		res, _, err := d.Detect(t.Context())
+		require.EqualError(t, err, "eks metadata unavailable: not running on EKS")
+		assert.Equal(t, 0, res.Attributes().Len())
+	})
+}
+
+func TestNewDetectorInvalidAPIConfig(t *testing.T) {
+	cfg := CreateDefaultConfig()
+	cfg.APIConfig.AuthType = "invalid"
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	require.ErrorContains(t, err, "invalid authType for kubernetes")
+	assert.Nil(t, d)
+}
+
+// TestDetectInitProviders checks that the providers are created by Detect from the
+// configuration, that a failure is reported and retried, and that a success is kept.
+func TestDetectInitProviders(t *testing.T) {
+	t.Setenv(kubernetesServiceHostEnvVar, "1")
+	t.Setenv("K8S_NODE_NAME", "i-123")
+
+	cfg := CreateDefaultConfig()
+	cfg.NodeFromEnvVar = "K8S_NODE_NAME"
+	cfg.APIConfig = k8sconfigtypes.APIConfig{AuthType: k8sconfigtypes.AuthTypeKubeConfig, Context: "eks-context"}
+	cfg.ResourceAttributes.CloudRegion.Enabled = true
+	cfg.ResourceAttributes.HostID.Enabled = true
+	cfg.ResourceAttributes.HostName.Enabled = true
+	cfg.ResourceAttributes.K8sClusterName.Enabled = true
+
+	initErr := errors.New("could not load cluster config")
+	calls := 0
+	stubAPIProvider(t, func(_ aws.Config, nodeName string, apiConf k8sconfig.APIConfig) (apiprovider.Provider, error) {
+		calls++
+		assert.Equal(t, "i-123", nodeName)
+		assert.Equal(t, k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig, Context: "eks-context"}, apiConf)
+		if calls == 1 {
+			return nil, initErr
+		}
+		return &mockAPIProvider{
+			clusterVersion: "v1.32.3-eks-d0fe756",
+			nodeName:       nodeName,
+			k8sMeta:        apiprovider.InstanceMetadata{InstanceID: "i-123", Region: "us-west-2"},
+			apiMeta:        apiprovider.InstanceMetadata{ClusterName: "cluster", InstanceID: "i-123", Region: "us-west-2", Hostname: "i-123"},
+		}, nil
+	})
+
+	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	require.NoError(t, err)
+	assert.Zero(t, calls, "NewDetector must not create the providers")
+	det.(*detector).utils = &mockDetectorUtils{}
+
+	// A failure to create the providers is reported even without fail_on_missing_metadata.
+	_, _, err = det.Detect(t.Context())
+	require.ErrorIs(t, err, initErr)
+	assert.ErrorContains(t, err, "failed initializing eks detector")
+
+	for range 2 {
+		res, schemaURL, err := det.Detect(t.Context())
+		require.NoError(t, err)
+		assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
+		assert.Equal(t, map[string]any{
+			"cloud.provider":   "aws",
+			"cloud.platform":   "aws_eks",
+			"cloud.region":     "us-west-2",
+			"host.id":          "i-123",
+			"host.name":        "i-123",
+			"k8s.cluster.name": "cluster",
+		}, res.Attributes().AsRaw())
+	}
+	assert.Equal(t, 2, calls, "providers must be created once after a failed attempt")
+	assert.NotNil(t, det.(*detector).imdsProvider)
+}
+
+func TestDetectAWSConfigError(t *testing.T) {
+	t.Setenv(kubernetesServiceHostEnvVar, "1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "443")
+	stubAPIProvider(t, func(aws.Config, string, k8sconfig.APIConfig) (apiprovider.Provider, error) {
+		t.Fatal("the EKS API provider must not be created without an AWS config")
+		return nil, nil
+	})
+
+	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+	require.NoError(t, err)
+	awsErr := errors.New("malformed shared config")
+	det.(*detector).utils = &mockDetectorUtils{awsConfigErr: awsErr}
+
+	_, _, err = det.Detect(t.Context())
+	require.ErrorIs(t, err, awsErr)
+}
+
+// TestDetectPartialInClusterEnv checks that KUBERNETES_SERVICE_HOST without
+// KUBERNETES_SERVICE_PORT is treated as not running in Kubernetes for in-cluster auth.
+func TestDetectPartialInClusterEnv(t *testing.T) {
+	for _, authType := range []k8sconfigtypes.AuthType{k8sconfigtypes.AuthTypeServiceAccount, k8sconfigtypes.AuthTypeNone} {
+		t.Run(string(authType), func(t *testing.T) {
+			t.Setenv(kubernetesServiceHostEnvVar, "10.96.0.1")
+			t.Setenv("KUBERNETES_SERVICE_PORT", "")
+			stubAPIProvider(t, func(aws.Config, string, k8sconfig.APIConfig) (apiprovider.Provider, error) {
+				t.Fatal("the EKS API provider must not be created without KUBERNETES_SERVICE_PORT")
+				return nil, nil
+			})
+			cfg := CreateDefaultConfig()
+			cfg.APIConfig.AuthType = authType
+
+			det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+			require.NoError(t, err)
+			det.(*detector).utils = &mockDetectorUtils{}
+			res, schemaURL, err := det.Detect(t.Context())
+			require.NoError(t, err)
+			assert.Empty(t, schemaURL)
+			assert.Equal(t, 0, res.Attributes().Len())
+
+			det, err = NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, true)
+			require.NoError(t, err)
+			det.(*detector).utils = &mockDetectorUtils{}
+			res, _, err = det.Detect(t.Context())
+			require.ErrorIs(t, err, internal.ErrNotInKubernetes)
+			assert.ErrorContains(t, err, "eks metadata unavailable")
+			assert.Equal(t, 0, res.Attributes().Len())
+		})
+	}
+
+	t.Run("kubeConfig", func(t *testing.T) {
+		t.Setenv(kubernetesServiceHostEnvVar, "10.96.0.1")
+		t.Setenv("KUBERNETES_SERVICE_PORT", "")
+		t.Setenv(awsWebIdentityTokenFileEnvVar, "")
+		t.Setenv(awsContainerAuthTokenFileEnvVar, "")
+		calls := 0
+		stubAPIProvider(t, func(aws.Config, string, k8sconfig.APIConfig) (apiprovider.Provider, error) {
+			calls++
+			return &mockAPIProvider{clusterVersion: "v1.25.0"}, nil
+		})
+		cfg := CreateDefaultConfig()
+		cfg.APIConfig.AuthType = k8sconfigtypes.AuthTypeKubeConfig
+
+		det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+		require.NoError(t, err)
+		det.(*detector).utils = &mockDetectorUtils{}
+		_, _, err = det.Detect(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, 1, calls, "kubeConfig auth does not need the in-cluster environment")
+	})
+}
+
+// stubAPIProvider makes the detector create its EKS API provider with fn.
+func stubAPIProvider(t *testing.T, fn func(aws.Config, string, k8sconfig.APIConfig) (apiprovider.Provider, error)) {
+	t.Helper()
+	orig := newAPIProvider
+	newAPIProvider = fn
+	t.Cleanup(func() { newAPIProvider = orig })
+}
+
+func TestNewDetectorWithAPIConfig(t *testing.T) {
+	isolateAWSConfig(t)
+	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
+	cfg := CreateDefaultConfig()
+	cfg.APIConfig.AuthType = k8sconfigtypes.AuthTypeNone
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	require.NoError(t, err)
+	assert.NotNil(t, d)
+}
+
+func TestIsIMDSAccessible(t *testing.T) {
+	tests := []struct {
+		name     string
+		status   int
+		expected bool
+	}{
+		{name: "accessible", status: http.StatusOK, expected: true},
+		{name: "not accessible", status: http.StatusNotFound, expected: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			isolateAWSConfig(t)
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Connection", "close")
+				if r.Method == http.MethodPut && r.URL.Path == "/latest/api/token" {
+					w.Header().Set("X-Aws-Ec2-Metadata-Token-Ttl-Seconds", "21600")
+					_, _ = w.Write([]byte("token"))
+					return
+				}
+				if r.URL.Path == "/latest/meta-data/instance-id" && tt.status == http.StatusOK {
+					_, _ = w.Write([]byte("i-123"))
+					return
+				}
+				w.WriteHeader(tt.status)
+			}))
+			t.Cleanup(srv.Close)
+			t.Setenv("AWS_EC2_METADATA_SERVICE_ENDPOINT", srv.URL)
+
+			utils := eksDetectorUtils{cfg: CreateDefaultConfig(), logger: zap.NewNop()}
+			assert.Equal(t, tt.expected, utils.isIMDSAccessible(t.Context()))
+		})
+	}
+}
+
+func TestCreateDefaultConfig(t *testing.T) {
+	assert.Equal(t, Config{
+		APIConfig:          k8sconfigtypes.APIConfig{AuthType: k8sconfigtypes.AuthTypeServiceAccount},
+		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+	}, CreateDefaultConfig())
+}
+
+// isolateAWSConfig keeps the AWS SDK from reading the host's shared config and credentials.
+func isolateAWSConfig(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("AWS_CONFIG_FILE", dir+"/config")
+	t.Setenv("AWS_SHARED_CREDENTIALS_FILE", dir+"/credentials")
+	t.Setenv("AWS_PROFILE", "")
+	t.Setenv("AWS_REGION", "us-east-1")
 }

@@ -1,5 +1,6 @@
 display_name: Google Client Auth Extension
-type: googleclientauth
+type: google_client_auth
+deprecated_type: googleclientauth
 
 description: This extension provides Google OAuth2 Client Credentials and Metadata for gRPC and http based exporters.
 

@@ -206,3 +206,61 @@ func TestResourceMetricsUnmarshaler_UnmarshalMetrics(t *testing.T) {
 		require.Equal(t, 1, metrics.ResourceMetrics().Len())
 	})
 }
+
+func TestResourceMetricsUnmarshaler_MissingAggregates(t *testing.T) {
+	t.Parallel()
+
+	unmarshaler := NewAzureResourceMetricsUnmarshaler(
+		component.BuildInfo{Version: "test-version"},
+		zap.NewNop(),
+		MetricsConfig{},
+	)
+
+	// Standard Load Balancer diagnostic settings export total and count but no
+	// minimum/maximum aggregates; the unmarshaler must not fabricate 0-valued
+	// series for them, while an aggregate explicitly present as 0 is kept.
+	data := []byte(`{"records":[
+	{
+	  "count":23,
+	  "total":12292.1382,
+	  "resourceId":"/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/RG/PROVIDERS/MICROSOFT.NETWORK/LOADBALANCERS/LB",
+	  "time":"2025-07-14T12:45:00.0000000Z",
+	  "metricName":"bytecount",
+	  "timeGrain":"PT1M"
+	},
+	{
+	  "count":2,
+	  "total":10,
+	  "minimum":0,
+	  "maximum":8,
+	  "average":5,
+	  "resourceId":"/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/RG/PROVIDERS/MICROSOFT.NETWORK/LOADBALANCERS/LB",
+	  "time":"2025-07-14T12:45:00.0000000Z",
+	  "metricName":"withzeros",
+	  "timeGrain":"PT1M"
+	}
+	]}`)
+
+	metrics, err := unmarshaler.UnmarshalMetrics(data)
+	require.NoError(t, err)
+	require.Equal(t, 7, metrics.MetricCount())
+
+	names := map[string]bool{}
+	values := map[string]float64{}
+	ms := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < ms.Len(); i++ {
+		names[ms.At(i).Name()] = true
+		values[ms.At(i).Name()] = ms.At(i).Gauge().DataPoints().At(0).DoubleValue()
+	}
+
+	require.Equal(t, map[string]bool{
+		"bytecount_total":   true,
+		"bytecount_count":   true,
+		"withzeros_total":   true,
+		"withzeros_count":   true,
+		"withzeros_minimum": true,
+		"withzeros_maximum": true,
+		"withzeros_average": true,
+	}, names)
+	require.Equal(t, 0.0, values["withzeros_minimum"])
+}

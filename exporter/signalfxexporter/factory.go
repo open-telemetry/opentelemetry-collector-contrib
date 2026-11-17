@@ -134,6 +134,8 @@ func createMetricsExporter(
 		}
 	}
 
+	exp.logDeprecatedMetricsWarnings()
+
 	return &signalfMetadataExporter{
 		Metrics:  me,
 		exporter: exp,

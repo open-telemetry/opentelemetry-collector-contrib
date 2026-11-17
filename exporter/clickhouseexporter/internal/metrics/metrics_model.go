@@ -16,7 +16,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/sqltemplates"
@@ -28,6 +28,12 @@ var supportedMetricTypes = map[pmetric.MetricType]string{
 	pmetric.MetricTypeHistogram:            sqltemplates.MetricsHistogramCreateTable,
 	pmetric.MetricTypeExponentialHistogram: sqltemplates.MetricsExpHistogramCreateTable,
 	pmetric.MetricTypeSummary:              sqltemplates.MetricsSummaryCreateTable,
+}
+
+// MaxConcurrentInserts returns the maximum number of concurrent inserts InsertMetrics
+// may run for a single batch, one per supported metric type.
+func MaxConcurrentInserts() int {
+	return len(supportedMetricTypes)
 }
 
 var logger *zap.Logger

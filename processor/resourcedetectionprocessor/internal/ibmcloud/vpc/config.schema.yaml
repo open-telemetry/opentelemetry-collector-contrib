@@ -1,0 +1,8 @@
+description: Config defines user-specified configurations unique to the IBM Cloud VPC detector.
+type: object
+properties:
+  protocol:
+    description: Protocol selects the scheme used to reach the IMDS endpoint. Accepted values are "http" (default) and "https". Both use the host api.metadata.cloud.ibm.com.
+    type: string
+  resource_attributes:
+    $ref: ./internal/metadata.resource_attributes_config

@@ -4,144 +4,172 @@
 package classic
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/attribute"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
-	classicprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/ibmcloud/classic"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/classic/internal/metadata"
 )
 
-func TestNewDetector(t *testing.T) {
-	cfg := CreateDefaultConfig()
-	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), cfg, false)
+const testSchemaURL = "https://opentelemetry.io/schemas/1.43.0"
+
+// fakeDetector stands in for the upstream SDK detector. Its metadata endpoint is
+// not injectable, so the adapter is exercised against canned SDK results instead
+// of a fake metadata server.
+type fakeDetector struct {
+	res *sdkresource.Resource
+	err error
+}
+
+func (f fakeDetector) Detect(context.Context) (*sdkresource.Resource, error) {
+	return f.res, f.err
+}
+
+func withFakeDetector(t *testing.T, res *sdkresource.Resource, err error) {
+	t.Helper()
+
+	orig := newResourceDetector
+	newResourceDetector = func() sdkresource.Detector {
+		return fakeDetector{res: res, err: err}
+	}
+	t.Cleanup(func() { newResourceDetector = orig })
+}
+
+func newTestDetector(t *testing.T, cfg Config, failOnMissingMetadata bool) internal.Detector {
+	t.Helper()
+
+	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), cfg, failOnMissingMetadata)
 	require.NoError(t, err)
-	require.NotNil(t, d)
+	return d
+}
+
+// fullResource mirrors what the SDK detector reports for a healthy instance.
+func fullResource() *sdkresource.Resource {
+	return sdkresource.NewWithAttributes(testSchemaURL,
+		attribute.String("cloud.provider", "ibm_cloud"),
+		attribute.String("cloud.platform", "ibm_cloud.classic"),
+		attribute.String("cloud.account.id", "3186058"),
+		attribute.String("cloud.availability_zone", "par01"),
+		attribute.String("cloud.resource_id", "06220b70-9072-4f83-ba16-d62f03106c1c"),
+		attribute.String("host.id", "156800198"),
+		attribute.String("host.name", "otel-collector"),
+	)
+}
+
+// partialResource mirrors what the SDK detector reports when some fields failed.
+func partialResource() *sdkresource.Resource {
+	return sdkresource.NewWithAttributes(testSchemaURL,
+		attribute.String("cloud.provider", "ibm_cloud"),
+		attribute.String("cloud.platform", "ibm_cloud.classic"),
+		attribute.String("host.id", "156800198"),
+	)
+}
+
+func TestNewDetector(t *testing.T) {
+	require.NotNil(t, newTestDetector(t, CreateDefaultConfig(), false))
 }
 
 func TestDetect(t *testing.T) {
-	mp := &classicprovider.MockProvider{}
-	mp.On("InstanceMetadata").Return(&classicprovider.InstanceMetadata{
-		ID:               "156800198",
-		Hostname:         "otel-collector",
-		Datacenter:       "par01",
-		AccountID:        "3186058",
-		GlobalIdentifier: "06220b70-9072-4f83-ba16-d62f03106c1c",
-	}, nil)
+	withFakeDetector(t, fullResource(), nil)
 
-	detector := &Detector{
-		provider: mp,
-		logger:   processortest.NewNopSettings(metadata.Type).Logger,
-		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
-	}
-
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := newTestDetector(t, CreateDefaultConfig(), false).Detect(t.Context())
 	require.NoError(t, err)
-	assert.NotEmpty(t, schemaURL)
+	require.Equal(t, testSchemaURL, schemaURL)
 
-	attrs := res.Attributes()
-	assert.Equal(t, 7, attrs.Len())
-
-	assertAttribute(t, attrs, "cloud.provider", "ibm_cloud")
-	assertAttribute(t, attrs, "cloud.platform", "ibm_cloud.classic")
-	assertAttribute(t, attrs, "cloud.account.id", "3186058")
-	assertAttribute(t, attrs, "cloud.availability_zone", "par01")
-	assertAttribute(t, attrs, "cloud.resource_id", "06220b70-9072-4f83-ba16-d62f03106c1c")
-	assertAttribute(t, attrs, "host.id", "156800198")
-	assertAttribute(t, attrs, "host.name", "otel-collector")
-
-	mp.AssertExpectations(t)
-}
-
-func TestDetectError(t *testing.T) {
-	mp := &classicprovider.MockProvider{}
-	mp.On("InstanceMetadata").Return(nil, errors.New("connection refused"))
-
-	detector := &Detector{
-		provider: mp,
-		logger:   processortest.NewNopSettings(metadata.Type).Logger,
-		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
+	want := map[string]any{
+		"cloud.provider":          "ibm_cloud",
+		"cloud.platform":          "ibm_cloud.classic",
+		"cloud.account.id":        "3186058",
+		"cloud.availability_zone": "par01",
+		"cloud.resource_id":       "06220b70-9072-4f83-ba16-d62f03106c1c",
+		"host.id":                 "156800198",
+		"host.name":               "otel-collector",
 	}
-
-	res, schemaURL, err := detector.Detect(t.Context())
-	require.NoError(t, err) // errors are swallowed, not returned
-	assert.Empty(t, schemaURL)
-	assert.Equal(t, 0, res.Attributes().Len())
-
-	mp.AssertExpectations(t)
-}
-
-func TestDetectErrorWithFailOnMissingMetadata(t *testing.T) {
-	mp := &classicprovider.MockProvider{}
-	mp.On("InstanceMetadata").Return(nil, errors.New("connection refused"))
-
-	detector := &Detector{
-		provider:              mp,
-		logger:                processortest.NewNopSettings(metadata.Type).Logger,
-		rb:                    metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
-		failOnMissingMetadata: true,
-	}
-
-	res, schemaURL, err := detector.Detect(t.Context())
-	require.Error(t, err)
-	assert.ErrorContains(t, err, "ibmcloud classic metadata unavailable")
-	assert.ErrorContains(t, err, "connection refused") // verify original error is wrapped
-	assert.Empty(t, schemaURL)
-	assert.Equal(t, 0, res.Attributes().Len())
-
-	mp.AssertExpectations(t)
+	require.Equal(t, want, res.Attributes().AsRaw())
 }
 
 func TestDetectWithDisabledAttributes(t *testing.T) {
-	mp := &classicprovider.MockProvider{}
-	mp.On("InstanceMetadata").Return(&classicprovider.InstanceMetadata{
-		ID:               "12345",
-		Hostname:         "test-host",
-		Datacenter:       "dal13",
-		AccountID:        "99999",
-		GlobalIdentifier: "abcd-1234-efgh-5678",
-	}, nil)
+	withFakeDetector(t, fullResource(), nil)
 
-	cfg := metadata.DefaultResourceAttributesConfig()
-	cfg.CloudAvailabilityZone.Enabled = false
-	cfg.HostName.Enabled = false
+	cfg := CreateDefaultConfig()
+	cfg.ResourceAttributes.CloudAvailabilityZone.Enabled = false
+	cfg.ResourceAttributes.HostName.Enabled = false
 
-	detector := &Detector{
-		provider: mp,
-		logger:   processortest.NewNopSettings(metadata.Type).Logger,
-		rb:       metadata.NewResourceBuilder(cfg),
-	}
-
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := newTestDetector(t, cfg, false).Detect(t.Context())
 	require.NoError(t, err)
-	assert.NotEmpty(t, schemaURL)
+	require.Equal(t, testSchemaURL, schemaURL)
 
-	attrs := res.Attributes()
-	// 7 total - 2 disabled = 5
-	assert.Equal(t, 5, attrs.Len())
-
-	// These should be present
-	assertAttribute(t, attrs, "cloud.provider", "ibm_cloud")
-	assertAttribute(t, attrs, "host.id", "12345")
-
-	// These should be absent
-	_, ok := attrs.Get("cloud.availability_zone")
-	assert.False(t, ok)
-	_, ok = attrs.Get("host.name")
-	assert.False(t, ok)
-
-	mp.AssertExpectations(t)
+	want := map[string]any{
+		"cloud.provider":    "ibm_cloud",
+		"cloud.platform":    "ibm_cloud.classic",
+		"cloud.account.id":  "3186058",
+		"cloud.resource_id": "06220b70-9072-4f83-ba16-d62f03106c1c",
+		"host.id":           "156800198",
+	}
+	require.Equal(t, want, res.Attributes().AsRaw())
 }
 
-func assertAttribute(t *testing.T, attrs pcommon.Map, key, expected string) {
-	t.Helper()
-	val, ok := attrs.Get(key)
-	assert.True(t, ok, "attribute %s not found", key)
-	if ok {
-		assert.Equal(t, expected, val.AsString())
+func TestDetectNotOnIBMCloudClassic(t *testing.T) {
+	withFakeDetector(t, sdkresource.Empty(), nil)
+
+	res, schemaURL, err := newTestDetector(t, CreateDefaultConfig(), false).Detect(t.Context())
+	require.NoError(t, err)
+	require.True(t, internal.IsEmptyResource(res))
+	require.Empty(t, schemaURL)
+}
+
+func TestDetectNotOnIBMCloudClassicWithFailOnMissingMetadata(t *testing.T) {
+	withFakeDetector(t, sdkresource.Empty(), nil)
+
+	res, schemaURL, err := newTestDetector(t, CreateDefaultConfig(), true).Detect(t.Context())
+	require.EqualError(t, err, "ibmcloud classic metadata unavailable")
+	require.True(t, internal.IsEmptyResource(res))
+	require.Empty(t, schemaURL)
+}
+
+func TestDetectError(t *testing.T) {
+	withFakeDetector(t, nil, errors.New("connection refused"))
+
+	res, schemaURL, err := newTestDetector(t, CreateDefaultConfig(), false).Detect(t.Context())
+	require.NoError(t, err)
+	require.True(t, internal.IsEmptyResource(res))
+	require.Empty(t, schemaURL)
+}
+
+func TestDetectErrorWithFailOnMissingMetadata(t *testing.T) {
+	errNoMetadata := errors.New("connection refused")
+	withFakeDetector(t, nil, errNoMetadata)
+
+	res, schemaURL, err := newTestDetector(t, CreateDefaultConfig(), true).Detect(t.Context())
+	require.ErrorIs(t, err, errNoMetadata)
+	require.True(t, internal.IsEmptyResource(res))
+	require.Empty(t, schemaURL)
+}
+
+// A partial result is kept with or without fail_on_missing_metadata: the flag covers
+// an unusable metadata service, not a field absent from an otherwise good response.
+func TestDetectPartialMetadata(t *testing.T) {
+	for _, failOnMissingMetadata := range []bool{false, true} {
+		t.Run(fmt.Sprintf("failOnMissingMetadata=%t", failOnMissingMetadata), func(t *testing.T) {
+			withFakeDetector(t, partialResource(), fmt.Errorf("%w: hostname: not present in metadata", sdkresource.ErrPartialResource))
+
+			res, schemaURL, err := newTestDetector(t, CreateDefaultConfig(), failOnMissingMetadata).Detect(t.Context())
+			require.NoError(t, err)
+			require.Equal(t, testSchemaURL, schemaURL)
+
+			want := map[string]any{
+				"cloud.provider": "ibm_cloud",
+				"cloud.platform": "ibm_cloud.classic",
+				"host.id":        "156800198",
+			}
+			require.Equal(t, want, res.Attributes().AsRaw())
+		})
 	}
 }

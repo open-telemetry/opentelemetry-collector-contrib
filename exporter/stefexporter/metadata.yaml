@@ -7,7 +7,11 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [tigrannajaryan, dmitryax]
+    active: [tigrannajaryan]
+    emeritus: [dmitryax]
+sending_queue:
+  support: default
+
 tests:
   config:
     endpoint: "http://localhost:0"

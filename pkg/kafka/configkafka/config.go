@@ -76,6 +76,9 @@ type ClientConfig struct {
 
 	// ConnIdleTimeout specifies the time after which idle connections are not reused and may be closed.
 	ConnIdleTimeout time.Duration `mapstructure:"conn_idle_timeout"`
+
+	// DialTimeout specifies the time allowed to establish a connection to a broker (default 10s).
+	DialTimeout time.Duration `mapstructure:"dial_timeout"`
 }
 
 func NewDefaultClientConfig() ClientConfig {
@@ -85,6 +88,7 @@ func NewDefaultClientConfig() ClientConfig {
 		Metadata:        NewDefaultMetadataConfig(),
 		UseLeaderEpoch:  true,
 		ConnIdleTimeout: 9 * time.Minute,
+		DialTimeout:     10 * time.Second,
 	}
 }
 
@@ -99,6 +103,9 @@ func (c ClientConfig) Validate() error {
 	}
 	if c.ConnIdleTimeout <= 0 {
 		return fmt.Errorf("conn_idle_timeout (%s) must be positive", c.ConnIdleTimeout)
+	}
+	if c.DialTimeout <= 0 {
+		return fmt.Errorf("dial_timeout (%s) must be positive", c.DialTimeout)
 	}
 	if c.Metadata.Retry.Max < 0 {
 		return fmt.Errorf("metadata::retry::max (%d) must be non-negative", c.Metadata.Retry.Max)
@@ -144,6 +151,14 @@ type ConsumerConfig struct {
 	// per partition (default "1048576")
 	MaxPartitionFetchSize int32 `mapstructure:"max_partition_fetch_size"`
 
+	// MaxDecompressBatchBytes defines the maximum number of bytes to allow
+	// for decompressing a single Kafka record batch. This limit is applied
+	// after decompression, so it bounds the memory required for a decompressed
+	// record batch. The default is 1 GiB (1073741824 bytes).
+	// This setting is independent of MaxFetchSize and MaxPartitionFetchSize,
+	// which limit compressed bytes on the wire.
+	MaxDecompressBatchBytes int `mapstructure:"max_decompress_batch_bytes"`
+
 	// GroupRebalanceStrategies specifies the ordered strategies to advertise
 	// for partition assignment. Kafka selects the first strategy supported by
 	// every member of the consumer group. Built-in values are "range",
@@ -168,10 +183,11 @@ func NewDefaultConsumerConfig() ConsumerConfig {
 			Enable:   true,
 			Interval: time.Second,
 		},
-		MinFetchSize:          1,
-		MaxFetchSize:          1048576,
-		MaxFetchWait:          250 * time.Millisecond,
-		MaxPartitionFetchSize: 1048576,
+		MinFetchSize:            1,
+		MaxFetchSize:            1048576,
+		MaxFetchWait:            250 * time.Millisecond,
+		MaxPartitionFetchSize:   1048576,
+		MaxDecompressBatchBytes: 1073741824, // 1 GiB
 	}
 }
 
@@ -204,6 +220,9 @@ func (c ConsumerConfig) Validate() error {
 	}
 	if c.MaxPartitionFetchSize < 0 {
 		return fmt.Errorf("max_partition_fetch_size (%d) must be non-negative", c.MaxPartitionFetchSize)
+	}
+	if c.MaxDecompressBatchBytes < 1 || c.MaxDecompressBatchBytes > math.MaxInt32 {
+		return fmt.Errorf("max_decompress_batch_bytes (%d) must be between 1 and %d", c.MaxDecompressBatchBytes, math.MaxInt32)
 	}
 	if c.MaxFetchSize < c.MinFetchSize {
 		return fmt.Errorf(
@@ -286,10 +305,20 @@ type ProducerConfig struct {
 	// CompressionParams defines compression parameters for the producer.
 	CompressionParams configcompression.CompressionParams `mapstructure:"compression_params"`
 
-	// The maximum number of messages the producer will send in a single
-	// broker request. Defaults to 10000 (franz-go default). Similar to
-	// `queue.buffering.max.messages` in the JVM producer.
+	// The maximum number of records the producer buffers across all
+	// partitions before Produce blocks waiting for broker acknowledgements.
+	// Defaults to 10000 (franz-go default). Similar to
+	// `queue.buffering.max.messages` in librdkafka.
 	FlushMaxMessages int `mapstructure:"flush_max_messages"`
+
+	// MaxInflightRequestsPerBroker is the maximum number of produce requests
+	// the producer keeps in flight to each broker. Maps to franz-go's
+	// kgo.MaxProduceRequestsInflightPerBroker. It only takes effect when
+	// idempotent produce is disabled (required_acks 0 or 1); with
+	// required_acks "all" (-1) idempotent produce manages the limit itself,
+	// so this must be left at 1. Values above 1 may reorder records and may
+	// produce duplicates on connection errors. (default 1)
+	MaxInflightRequestsPerBroker int `mapstructure:"max_inflight_requests_per_broker"`
 
 	// Whether or not to allow automatic topic creation.
 	// (default enabled).
@@ -302,13 +331,14 @@ type ProducerConfig struct {
 
 func NewDefaultProducerConfig() ProducerConfig {
 	return ProducerConfig{
-		MaxMessageBytes:        1000000,
-		MaxBrokerWriteBytes:    franzGoMinBrokerWriteBytes,
-		RequiredAcks:           WaitForLocal,
-		Compression:            "none",
-		FlushMaxMessages:       10000,
-		AllowAutoTopicCreation: true,
-		Linger:                 10 * time.Millisecond,
+		MaxMessageBytes:              1000000,
+		MaxBrokerWriteBytes:          franzGoMinBrokerWriteBytes,
+		RequiredAcks:                 WaitForLocal,
+		Compression:                  "none",
+		FlushMaxMessages:             10000,
+		MaxInflightRequestsPerBroker: 1,
+		AllowAutoTopicCreation:       true,
+		Linger:                       10 * time.Millisecond,
 	}
 }
 
@@ -358,6 +388,12 @@ func (c ProducerConfig) Validate() error {
 	}
 	if c.FlushMaxMessages < 1 {
 		return fmt.Errorf("flush_max_messages (%d) must be at least 1", c.FlushMaxMessages)
+	}
+	if c.MaxInflightRequestsPerBroker < 1 {
+		return fmt.Errorf("max_inflight_requests_per_broker (%d) must be at least 1", c.MaxInflightRequestsPerBroker)
+	}
+	if c.MaxInflightRequestsPerBroker > 1 && c.RequiredAcks == WaitForAll {
+		return fmt.Errorf("max_inflight_requests_per_broker (%d) must be 1 when required_acks is 'all' (-1)", c.MaxInflightRequestsPerBroker)
 	}
 	return nil
 }
@@ -487,7 +523,9 @@ type SASLConfig struct {
 func (c SASLConfig) Validate() error {
 	switch c.Mechanism {
 	case "AWS_MSK_IAM_OAUTHBEARER":
-		// TODO validate c.AWSMSK
+		if c.AWSMSK.Region == "" {
+			return errors.New("region is required for AWS_MSK_IAM_OAUTHBEARER mechanism")
+		}
 	case "PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512":
 		// Do nothing, valid mechanism
 		if c.Username == "" {
@@ -502,7 +540,7 @@ func (c SASLConfig) Validate() error {
 		}
 	default:
 		return fmt.Errorf(
-			"mechanism should be one of 'PLAIN', 'AWS_MSK_IAM_OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value %v",
+			"mechanism should be one of 'PLAIN', 'AWS_MSK_IAM_OAUTHBEARER', 'OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value %v",
 			c.Mechanism,
 		)
 	}

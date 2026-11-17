@@ -1750,6 +1750,7 @@ sample query
 | oracledb.wait_class | The category of wait events a query or session is currently experiencing in Oracle Database. | Any Str | - |
 | oracledb.event | The specific wait event that a query or session is currently experiencing. | Any Str | - |
 | oracledb.query.wait_time | The wait time in seconds. If the session is currently waiting, the value is the time spent waiting in the current wait. Returns 0 if the session is not currently waiting. | Any Double | - |
+| oracledb.wait.start_time | Timestamp of when the current wait started (ISO 8601 UTC format). Empty if the session is not currently waiting. | Any Str | - |
 | oracledb.procedure_id | The identifier of the stored procedure or function being executed by the query. | Any Int | - |
 | oracledb.procedure_name | Name of the database object that a query is accessing. | Any Str | - |
 | oracledb.procedure_type | Type of the database object that a query is accessing. | Any Str | - |
@@ -1863,6 +1864,7 @@ Collection of event metrics for top N queries, filtered based on the highest CPU
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
 | host.name | The host name of Oracle Server | Any Str | true | - | - |
+| oracle.db.edition | The edition of the Oracle Database instance (e.g. "EE", "SE2", "XE"). | Any Str | false | - | - |
 | oracle.db.hosting_type | The hosting environment of the Oracle instance. One of "self-managed", "rds", or "oci". | Any Str | true | - | - |
 | oracle.db.open_mode | The open mode of the Oracle database (e.g. "READ WRITE", "READ ONLY", "MOUNTED"). | Any Str | true | - | - |
 | oracle.db.role | The database role of the Oracle instance (e.g. "PRIMARY", "PHYSICAL STANDBY"). | Any Str | true | - | - |

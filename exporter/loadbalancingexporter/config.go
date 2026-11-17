@@ -23,6 +23,7 @@ const (
 	resourceRouting
 	streamIDRouting
 	attrRouting
+	randomnessRouting
 )
 
 const (
@@ -32,6 +33,7 @@ const (
 	resourceRoutingStr   = "resource"
 	streamIDRoutingStr   = "streamID"
 	attrRoutingStr       = "attributes"
+	randomnessRoutingStr = "randomness"
 )
 
 // Config defines configuration for the exporter.

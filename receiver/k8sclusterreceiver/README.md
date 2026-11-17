@@ -13,7 +13,8 @@ receiver should be used to monitor a cluster.
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fk8scluster%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fk8scluster) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fk8scluster%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fk8scluster) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_k8scluster)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_k8scluster&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@povilasv](https://www.github.com/povilasv), [@ChrsMark](https://www.github.com/ChrsMark) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@povilasv](https://www.github.com/povilasv), [@ChrsMark](https://www.github.com/ChrsMark), [@jinja2](https://www.github.com/jinja2) |
+| Emeritus      | [@dmitryax](https://www.github.com/dmitryax) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -74,12 +75,22 @@ When enabled, this setting produces the following node-level metrics (one per se
 | allocatable type | metric name                      | unit     | type  | value type |
 | ---------------- | -------------------------------- | -------- | ----- | ---------- |
 | cpu              | k8s.node.allocatable_cpu         | {cpu}    | Gauge | Double     |
-| memory           | k8s.node.allocatable_memory      | By       | Gauge | Double     |
-| ephemeral-storage| k8s.node.allocatable_ephemeral_storage | By | Gauge | Double     |
+| memory           | k8s.node.allocatable_memory      | By       | Gauge | Int        |
+| ephemeral-storage| k8s.node.allocatable_ephemeral_storage | By | Gauge | Int        |
 | pods             | k8s.node.allocatable_pods        | {pod}    | Gauge | Int        |
+
+For any other allocatable resource, the metric name is `k8s.node.allocatable_` followed by the resource name in snake_case, the unit is the resource name in curly braces, and the value type is Int.
+For example, `hugepages-2Mi` produces `k8s.node.allocatable_hugepages_2_mi` with unit `{hugepages-2Mi}`.
 
 - `metrics`: Allows to enable/disable metrics.
 - `resource_attributes`: Allows to enable/disable resource attributes.
+- `collect_sidecar_container_metrics` (default = `false`): When enabled, `k8s.container` metrics and
+entities are collected for sidecar containers (init containers with `restartPolicy: Always`, which
+run for the pod's lifetime).
+- `collect_all_init_container_metrics` (default = `false`): When enabled, `k8s.container` metrics and
+entities are collected for all init containers (regular and sidecar).
+- `collect_ephemeral_container_metrics` (default = `false`): When enabled, `k8s.container` metrics and
+entities are collected for ephemeral (debug) containers.
 - `namespace` (deprecated, use `namespaces` instead): Allows to observe resources for a particular namespace only. If this option is set to a non-empty string, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed.
 - `namespaces`: Allows to observe resources for a list of given namespaces. If this option is set, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed, as those are cluster-scoped resources.
 

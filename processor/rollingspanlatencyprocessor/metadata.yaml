@@ -1,10 +1,11 @@
+display_name: Rolling Span Latency Processor
 type: rolling_span_latency
 
 status:
   class: processor
   stability:
-    development: [traces]
-  distributions: []
+    alpha: [traces]
+  distributions: [contrib]
   codeowners:
     active: [atoulme, rnterbush, pavankrish123]
 

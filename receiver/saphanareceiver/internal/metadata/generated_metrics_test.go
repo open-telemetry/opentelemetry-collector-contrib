@@ -115,6 +115,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSaphanaAlertCountDataPoint(ts, "1", "alert_rating-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaAlertCountDataPoint(ts, "3", "alert_rating-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaAlertCountDataPoint(ts+1, "3", "alert_rating-val-2")
+				assert.Equal(t, 2, mb.metricSaphanaAlertCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -124,42 +127,63 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSaphanaColumnMemoryUsedDataPoint(ts, "1", AttributeColumnMemoryTypeMain, AttributeColumnMemorySubtypeData)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaColumnMemoryUsedDataPoint(ts, "3", AttributeColumnMemoryTypeDelta, AttributeColumnMemorySubtypeDict)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaColumnMemoryUsedDataPoint(ts+1, "3", AttributeColumnMemoryTypeDelta, AttributeColumnMemorySubtypeDict)
+				assert.Equal(t, 2, mb.metricSaphanaColumnMemoryUsed.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaComponentMemoryUsedDataPoint(ts, "1", "component-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaComponentMemoryUsedDataPoint(ts, "3", "component-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaComponentMemoryUsedDataPoint(ts+1, "3", "component-val-2")
+				assert.Equal(t, 2, mb.metricSaphanaComponentMemoryUsed.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaConnectionCountDataPoint(ts, "1", AttributeConnectionStatusRunning)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaConnectionCountDataPoint(ts, "3", AttributeConnectionStatusIdle)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaConnectionCountDataPoint(ts+1, "3", AttributeConnectionStatusIdle)
+				assert.Equal(t, 2, mb.metricSaphanaConnectionCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaCPUUsedDataPoint(ts, "1", AttributeCPUTypeUser)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaCPUUsedDataPoint(ts, "3", AttributeCPUTypeSystem)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaCPUUsedDataPoint(ts+1, "3", AttributeCPUTypeSystem)
+				assert.Equal(t, 2, mb.metricSaphanaCPUUsed.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaDiskSizeCurrentDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeDiskStateUsedFreeUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaDiskSizeCurrentDataPoint(ts, "3", "path-val-2", "disk_usage_type-val-2", AttributeDiskStateUsedFreeFree)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaDiskSizeCurrentDataPoint(ts+1, "3", "path-val-2", "disk_usage_type-val-2", AttributeDiskStateUsedFreeFree)
+				assert.Equal(t, 2, mb.metricSaphanaDiskSizeCurrent.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaHostMemoryCurrentDataPoint(ts, "1", AttributeMemoryStateUsedFreeUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaHostMemoryCurrentDataPoint(ts, "3", AttributeMemoryStateUsedFreeFree)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaHostMemoryCurrentDataPoint(ts+1, "3", AttributeMemoryStateUsedFreeFree)
+				assert.Equal(t, 2, mb.metricSaphanaHostMemoryCurrent.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaHostSwapCurrentDataPoint(ts, "1", AttributeHostSwapStateUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaHostSwapCurrentDataPoint(ts, "3", AttributeHostSwapStateFree)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaHostSwapCurrentDataPoint(ts+1, "3", AttributeHostSwapStateFree)
+				assert.Equal(t, 2, mb.metricSaphanaHostSwapCurrent.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -169,6 +193,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSaphanaInstanceMemoryCurrentDataPoint(ts, "1", AttributeMemoryStateUsedFreeUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaInstanceMemoryCurrentDataPoint(ts, "3", AttributeMemoryStateUsedFreeFree)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaInstanceMemoryCurrentDataPoint(ts+1, "3", AttributeMemoryStateUsedFreeFree)
+				assert.Equal(t, 2, mb.metricSaphanaInstanceMemoryCurrent.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -193,132 +220,198 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSaphanaNetworkRequestCountDataPoint(ts, "1", AttributeActivePendingRequestStateActive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaNetworkRequestCountDataPoint(ts, "3", AttributeActivePendingRequestStatePending)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaNetworkRequestCountDataPoint(ts+1, "3", AttributeActivePendingRequestStatePending)
+				assert.Equal(t, 2, mb.metricSaphanaNetworkRequestCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaNetworkRequestFinishedCountDataPoint(ts, "1", AttributeInternalExternalRequestTypeInternal)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaNetworkRequestFinishedCountDataPoint(ts, "3", AttributeInternalExternalRequestTypeExternal)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaNetworkRequestFinishedCountDataPoint(ts+1, "3", AttributeInternalExternalRequestTypeExternal)
+				assert.Equal(t, 2, mb.metricSaphanaNetworkRequestFinishedCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaReplicationAverageTimeDataPoint(ts, "1", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaReplicationAverageTimeDataPoint(ts, "3", "primary_host-val-2", "secondary_host-val-2", "port-val-2", "replication_mode-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaReplicationAverageTimeDataPoint(ts+1, "3", "primary_host-val-2", "secondary_host-val-2", "port-val-2", "replication_mode-val-2")
+				assert.Equal(t, 2, mb.metricSaphanaReplicationAverageTime.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaReplicationBacklogSizeDataPoint(ts, "1", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaReplicationBacklogSizeDataPoint(ts, "3", "primary_host-val-2", "secondary_host-val-2", "port-val-2", "replication_mode-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaReplicationBacklogSizeDataPoint(ts+1, "3", "primary_host-val-2", "secondary_host-val-2", "port-val-2", "replication_mode-val-2")
+				assert.Equal(t, 2, mb.metricSaphanaReplicationBacklogSize.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaReplicationBacklogTimeDataPoint(ts, "1", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaReplicationBacklogTimeDataPoint(ts, "3", "primary_host-val-2", "secondary_host-val-2", "port-val-2", "replication_mode-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaReplicationBacklogTimeDataPoint(ts+1, "3", "primary_host-val-2", "secondary_host-val-2", "port-val-2", "replication_mode-val-2")
+				assert.Equal(t, 2, mb.metricSaphanaReplicationBacklogTime.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaRowStoreMemoryUsedDataPoint(ts, "1", AttributeRowMemoryTypeFixed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaRowStoreMemoryUsedDataPoint(ts, "3", AttributeRowMemoryTypeVariable)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaRowStoreMemoryUsedDataPoint(ts+1, "3", AttributeRowMemoryTypeVariable)
+				assert.Equal(t, 2, mb.metricSaphanaRowStoreMemoryUsed.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaSchemaMemoryUsedCurrentDataPoint(ts, "1", "schema-val", AttributeSchemaMemoryTypeMain)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaSchemaMemoryUsedCurrentDataPoint(ts, "3", "schema-val-2", AttributeSchemaMemoryTypeDelta)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaSchemaMemoryUsedCurrentDataPoint(ts+1, "3", "schema-val-2", AttributeSchemaMemoryTypeDelta)
+				assert.Equal(t, 2, mb.metricSaphanaSchemaMemoryUsedCurrent.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaSchemaMemoryUsedMaxDataPoint(ts, "1", "schema-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaSchemaMemoryUsedMaxDataPoint(ts, "3", "schema-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaSchemaMemoryUsedMaxDataPoint(ts+1, "3", "schema-val-2")
+				assert.Equal(t, 2, mb.metricSaphanaSchemaMemoryUsedMax.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaSchemaOperationCountDataPoint(ts, "1", "schema-val", AttributeSchemaOperationTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaSchemaOperationCountDataPoint(ts, "3", "schema-val-2", AttributeSchemaOperationTypeWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaSchemaOperationCountDataPoint(ts+1, "3", "schema-val-2", AttributeSchemaOperationTypeWrite)
+				assert.Equal(t, 2, mb.metricSaphanaSchemaOperationCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaSchemaRecordCompressedCountDataPoint(ts, "1", "schema-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaSchemaRecordCompressedCountDataPoint(ts, "3", "schema-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaSchemaRecordCompressedCountDataPoint(ts+1, "3", "schema-val-2")
+				assert.Equal(t, 2, mb.metricSaphanaSchemaRecordCompressedCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaSchemaRecordCountDataPoint(ts, "1", "schema-val", AttributeSchemaRecordTypeMain)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaSchemaRecordCountDataPoint(ts, "3", "schema-val-2", AttributeSchemaRecordTypeDelta)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaSchemaRecordCountDataPoint(ts+1, "3", "schema-val-2", AttributeSchemaRecordTypeDelta)
+				assert.Equal(t, 2, mb.metricSaphanaSchemaRecordCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceCodeSizeDataPoint(ts, "1", "service-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceCodeSizeDataPoint(ts, "3", "service-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaServiceCodeSizeDataPoint(ts+1, "3", "service-val-2")
+				assert.Equal(t, 2, mb.metricSaphanaServiceCodeSize.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceCountDataPoint(ts, "1", AttributeServiceStatusActive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceCountDataPoint(ts, "3", AttributeServiceStatusInactive)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaServiceCountDataPoint(ts+1, "3", AttributeServiceStatusInactive)
+				assert.Equal(t, 2, mb.metricSaphanaServiceCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemoryCompactorsAllocatedDataPoint(ts, "1", "service-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceMemoryCompactorsAllocatedDataPoint(ts, "3", "service-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaServiceMemoryCompactorsAllocatedDataPoint(ts+1, "3", "service-val-2")
+				assert.Equal(t, 2, mb.metricSaphanaServiceMemoryCompactorsAllocated.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemoryCompactorsFreeableDataPoint(ts, "1", "service-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceMemoryCompactorsFreeableDataPoint(ts, "3", "service-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaServiceMemoryCompactorsFreeableDataPoint(ts+1, "3", "service-val-2")
+				assert.Equal(t, 2, mb.metricSaphanaServiceMemoryCompactorsFreeable.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemoryEffectiveLimitDataPoint(ts, "1", "service-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceMemoryEffectiveLimitDataPoint(ts, "3", "service-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaServiceMemoryEffectiveLimitDataPoint(ts+1, "3", "service-val-2")
+				assert.Equal(t, 2, mb.metricSaphanaServiceMemoryEffectiveLimit.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemoryHeapCurrentDataPoint(ts, "1", "service-val", AttributeMemoryStateUsedFreeUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceMemoryHeapCurrentDataPoint(ts, "3", "service-val-2", AttributeMemoryStateUsedFreeFree)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaServiceMemoryHeapCurrentDataPoint(ts+1, "3", "service-val-2", AttributeMemoryStateUsedFreeFree)
+				assert.Equal(t, 2, mb.metricSaphanaServiceMemoryHeapCurrent.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemoryLimitDataPoint(ts, "1", "service-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceMemoryLimitDataPoint(ts, "3", "service-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaServiceMemoryLimitDataPoint(ts+1, "3", "service-val-2")
+				assert.Equal(t, 2, mb.metricSaphanaServiceMemoryLimit.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemorySharedCurrentDataPoint(ts, "1", "service-val", AttributeMemoryStateUsedFreeUsed)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceMemorySharedCurrentDataPoint(ts, "3", "service-val-2", AttributeMemoryStateUsedFreeFree)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaServiceMemorySharedCurrentDataPoint(ts+1, "3", "service-val-2", AttributeMemoryStateUsedFreeFree)
+				assert.Equal(t, 2, mb.metricSaphanaServiceMemorySharedCurrent.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceMemoryUsedDataPoint(ts, "1", "service-val", AttributeServiceMemoryUsedTypeLogical)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceMemoryUsedDataPoint(ts, "3", "service-val-2", AttributeServiceMemoryUsedTypeLogical)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaServiceMemoryUsedDataPoint(ts+1, "3", "service-val-2", AttributeServiceMemoryUsedTypeLogical)
+				assert.Equal(t, 2, mb.metricSaphanaServiceMemoryUsed.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceStackSizeDataPoint(ts, "1", "service-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceStackSizeDataPoint(ts, "3", "service-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaServiceStackSizeDataPoint(ts+1, "3", "service-val-2")
+				assert.Equal(t, 2, mb.metricSaphanaServiceStackSize.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaServiceThreadCountDataPoint(ts, "1", AttributeThreadStatusActive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaServiceThreadCountDataPoint(ts, "3", AttributeThreadStatusInactive)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaServiceThreadCountDataPoint(ts+1, "3", AttributeThreadStatusInactive)
+				assert.Equal(t, 2, mb.metricSaphanaServiceThreadCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -328,6 +421,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSaphanaTransactionCountDataPoint(ts, "1", AttributeTransactionTypeUpdate)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaTransactionCountDataPoint(ts, "3", AttributeTransactionTypeCommit)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaTransactionCountDataPoint(ts+1, "3", AttributeTransactionTypeCommit)
+				assert.Equal(t, 2, mb.metricSaphanaTransactionCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -337,18 +433,27 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSaphanaVolumeOperationCountDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaVolumeOperationCountDataPoint(ts, "3", "path-val-2", "disk_usage_type-val-2", AttributeVolumeOperationTypeWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaVolumeOperationCountDataPoint(ts+1, "3", "path-val-2", "disk_usage_type-val-2", AttributeVolumeOperationTypeWrite)
+				assert.Equal(t, 2, mb.metricSaphanaVolumeOperationCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaVolumeOperationSizeDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaVolumeOperationSizeDataPoint(ts, "3", "path-val-2", "disk_usage_type-val-2", AttributeVolumeOperationTypeWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaVolumeOperationSizeDataPoint(ts+1, "3", "path-val-2", "disk_usage_type-val-2", AttributeVolumeOperationTypeWrite)
+				assert.Equal(t, 2, mb.metricSaphanaVolumeOperationSize.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSaphanaVolumeOperationTimeDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSaphanaVolumeOperationTimeDataPoint(ts, "3", "path-val-2", "disk_usage_type-val-2", AttributeVolumeOperationTypeWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSaphanaVolumeOperationTimeDataPoint(ts+1, "3", "path-val-2", "disk_usage_type-val-2", AttributeVolumeOperationTypeWrite)
+				assert.Equal(t, 2, mb.metricSaphanaVolumeOperationTime.data.Sum().DataPoints().Len())
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -441,7 +546,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.alert.count"], "Found a duplicate in the metrics slice: saphana.alert.count")
 						validatedMetrics["saphana.alert.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of current alerts.", mi.Description())
 						assert.Equal(t, "{alerts}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -500,7 +607,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.column.memory.used"], "Found a duplicate in the metrics slice: saphana.column.memory.used")
 						validatedMetrics["saphana.column.memory.used"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The memory used in all columns.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -546,7 +655,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.component.memory.used"], "Found a duplicate in the metrics slice: saphana.component.memory.used")
 						validatedMetrics["saphana.component.memory.used"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The memory used in components.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -590,7 +701,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.connection.count"], "Found a duplicate in the metrics slice: saphana.connection.count")
 						validatedMetrics["saphana.connection.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of current connections.", mi.Description())
 						assert.Equal(t, "{connections}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -634,7 +747,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.cpu.used"], "Found a duplicate in the metrics slice: saphana.cpu.used")
 						validatedMetrics["saphana.cpu.used"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total CPU time spent.", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -684,7 +799,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.disk.size.current"], "Found a duplicate in the metrics slice: saphana.disk.size.current")
 						validatedMetrics["saphana.disk.size.current"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The disk size.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -732,7 +849,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.host.memory.current"], "Found a duplicate in the metrics slice: saphana.host.memory.current")
 						validatedMetrics["saphana.host.memory.current"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The amount of physical memory on the host.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -776,7 +895,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.host.swap.current"], "Found a duplicate in the metrics slice: saphana.host.swap.current")
 						validatedMetrics["saphana.host.swap.current"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The amount of swap space on the host.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -834,7 +955,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.instance.memory.current"], "Found a duplicate in the metrics slice: saphana.instance.memory.current")
 						validatedMetrics["saphana.instance.memory.current"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The size of the memory pool for all SAP HANA processes.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -976,7 +1099,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.network.request.count"], "Found a duplicate in the metrics slice: saphana.network.request.count")
 						validatedMetrics["saphana.network.request.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of active and pending service requests.", mi.Description())
 						assert.Equal(t, "{requests}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1020,7 +1145,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.network.request.finished.count"], "Found a duplicate in the metrics slice: saphana.network.request.finished.count")
 						validatedMetrics["saphana.network.request.finished.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of service requests that have completed.", mi.Description())
 						assert.Equal(t, "{requests}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1071,7 +1198,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.replication.average_time"], "Found a duplicate in the metrics slice: saphana.replication.average_time")
 						validatedMetrics["saphana.replication.average_time"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The average amount of time consumed replicating a log.", mi.Description())
 						assert.Equal(t, "us", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1128,7 +1257,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.replication.backlog.size"], "Found a duplicate in the metrics slice: saphana.replication.backlog.size")
 						validatedMetrics["saphana.replication.backlog.size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The current replication backlog size.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1187,7 +1318,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.replication.backlog.time"], "Found a duplicate in the metrics slice: saphana.replication.backlog.time")
 						validatedMetrics["saphana.replication.backlog.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The current replication backlog.", mi.Description())
 						assert.Equal(t, "us", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1237,7 +1370,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.row_store.memory.used"], "Found a duplicate in the metrics slice: saphana.row_store.memory.used")
 						validatedMetrics["saphana.row_store.memory.used"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The used memory for all row tables.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1284,7 +1419,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.schema.memory.used.current"], "Found a duplicate in the metrics slice: saphana.schema.memory.used.current")
 						validatedMetrics["saphana.schema.memory.used.current"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The memory size for all tables in schema.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1330,7 +1467,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.schema.memory.used.max"], "Found a duplicate in the metrics slice: saphana.schema.memory.used.max")
 						validatedMetrics["saphana.schema.memory.used.max"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The estimated maximum memory consumption for all fully loaded tables in schema (data for open transactions is not included).", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1377,7 +1516,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.schema.operation.count"], "Found a duplicate in the metrics slice: saphana.schema.operation.count")
 						validatedMetrics["saphana.schema.operation.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of operations done on all tables in schema.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1423,7 +1564,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.schema.record.compressed.count"], "Found a duplicate in the metrics slice: saphana.schema.record.compressed.count")
 						validatedMetrics["saphana.schema.record.compressed.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of entries in main during the last optimize compression run for all tables in schema.", mi.Description())
 						assert.Equal(t, "{records}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1470,7 +1613,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.schema.record.count"], "Found a duplicate in the metrics slice: saphana.schema.record.count")
 						validatedMetrics["saphana.schema.record.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of records for all tables in schema.", mi.Description())
 						assert.Equal(t, "{records}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1516,7 +1661,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.service.code_size"], "Found a duplicate in the metrics slice: saphana.service.code_size")
 						validatedMetrics["saphana.service.code_size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The service code size, including shared libraries.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1560,7 +1707,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.service.count"], "Found a duplicate in the metrics slice: saphana.service.count")
 						validatedMetrics["saphana.service.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of services in a given status.", mi.Description())
 						assert.Equal(t, "{services}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1604,7 +1753,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.service.memory.compactors.allocated"], "Found a duplicate in the metrics slice: saphana.service.memory.compactors.allocated")
 						validatedMetrics["saphana.service.memory.compactors.allocated"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The part of the memory pool that can potentially (if unpinned) be freed during a memory shortage.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1648,7 +1799,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.service.memory.compactors.freeable"], "Found a duplicate in the metrics slice: saphana.service.memory.compactors.freeable")
 						validatedMetrics["saphana.service.memory.compactors.freeable"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The memory that can be freed during a memory shortage.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1692,7 +1845,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.service.memory.effective_limit"], "Found a duplicate in the metrics slice: saphana.service.memory.effective_limit")
 						validatedMetrics["saphana.service.memory.effective_limit"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The effective maximum memory pool size, calculated considering the pool sizes of other processes.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1739,7 +1894,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.service.memory.heap.current"], "Found a duplicate in the metrics slice: saphana.service.memory.heap.current")
 						validatedMetrics["saphana.service.memory.heap.current"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The size of the heap portion of the memory pool.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1785,7 +1942,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.service.memory.limit"], "Found a duplicate in the metrics slice: saphana.service.memory.limit")
 						validatedMetrics["saphana.service.memory.limit"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The configured maximum memory pool size.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1832,7 +1991,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.service.memory.shared.current"], "Found a duplicate in the metrics slice: saphana.service.memory.shared.current")
 						validatedMetrics["saphana.service.memory.shared.current"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The size of the shared portion of the memory pool.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1881,7 +2042,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.service.memory.used"], "Found a duplicate in the metrics slice: saphana.service.memory.used")
 						validatedMetrics["saphana.service.memory.used"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The used memory from the operating system perspective.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1927,7 +2090,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.service.stack_size"], "Found a duplicate in the metrics slice: saphana.service.stack_size")
 						validatedMetrics["saphana.service.stack_size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The service stack size.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -1971,7 +2136,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.service.thread.count"], "Found a duplicate in the metrics slice: saphana.service.thread.count")
 						validatedMetrics["saphana.service.thread.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of service threads in a given status.", mi.Description())
 						assert.Equal(t, "{threads}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -2029,7 +2196,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.transaction.count"], "Found a duplicate in the metrics slice: saphana.transaction.count")
 						validatedMetrics["saphana.transaction.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of transactions.", mi.Description())
 						assert.Equal(t, "{transactions}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2099,7 +2268,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.volume.operation.count"], "Found a duplicate in the metrics slice: saphana.volume.operation.count")
 						validatedMetrics["saphana.volume.operation.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The number of operations executed.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2153,7 +2324,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.volume.operation.size"], "Found a duplicate in the metrics slice: saphana.volume.operation.size")
 						validatedMetrics["saphana.volume.operation.size"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The size of operations executed.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2207,7 +2380,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["saphana.volume.operation.time"], "Found a duplicate in the metrics slice: saphana.volume.operation.time")
 						validatedMetrics["saphana.volume.operation.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "The time spent executing operations.", mi.Description())
 						assert.Equal(t, "ms", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())

@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -181,7 +182,11 @@ func TestSerializeProfile(t *testing.T) {
 			buf := []*bytes.Buffer{}
 			ser, err := New()
 			require.NoError(t, err)
-			err = ser.SerializeProfile(dic, resource.Resource(), scope.Scope(), profile, func(b *bytes.Buffer, _, _ string) error {
+			err = ser.SerializeProfile(dic, resource.Resource(), scope.Scope(), profile, func(b *bytes.Buffer, _, index string) error {
+				// Downsampled events are random, skip them to keep the expected documents deterministic.
+				if strings.HasPrefix(index, "profiling-events-5pow") {
+					return nil
+				}
 				buf = append(buf, b)
 				return nil
 			})

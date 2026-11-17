@@ -12,7 +12,8 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [jmacd, dmitryax]
+    active: [jmacd]
+    emeritus: [dmitryax]
 
 # Feature gate controlling the default value of the is_monotonic_counter option.
 # When enabled, statsd counters default to monotonic (matching real-world statsd semantics)

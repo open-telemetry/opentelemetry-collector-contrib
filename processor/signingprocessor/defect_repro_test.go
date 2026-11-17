@@ -10,41 +10,12 @@
 package signingprocessor
 
 import (
-	"bytes"
-	"encoding/hex"
 	"strings"
 	"testing"
 
-	"github.com/gowebpki/jcs"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
-
-// TestDefect4_JCSSurrogateCollision documents a collision in gowebpki/jcs
-// v1.0.1: distinct escaped surrogate sequences canonicalize to the same U+FFFD
-// byte sequence. This defect exists at the jcs layer but is NOT reachable
-// through this processor: encoding/json never emits \ud800-style escapes, so
-// jcs.Transform never sees them from this code path. The processor-reachable
-// form of the collision (invalid-UTF-8 byte sequences collapsed by json.Marshal)
-// is prevented by the UTF-8 validation in serializeLogRecord / valueToInterface.
-func TestDefect4_JCSSurrogateCollision(t *testing.T) {
-	// jcs-level: two high surrogates vs two low surrogates, both → U+FFFD.
-	inA := []byte(`"\ud800\ud800"`)
-	inB := []byte(`"\udfff\udfff"`)
-	if bytes.Equal(inA, inB) {
-		t.Fatal("test inputs are not distinct")
-	}
-	outA, errA := jcs.Transform(inA)
-	outB, errB := jcs.Transform(inB)
-	if errA != nil || errB != nil {
-		t.Fatalf("jcs.Transform errored: A=%v B=%v", errA, errB)
-	}
-	if !strings.EqualFold(hex.EncodeToString(outA), hex.EncodeToString(outB)) {
-		t.Fatalf("expected identical canonical bytes; got A=%s B=%s", hex.EncodeToString(outA), hex.EncodeToString(outB))
-	}
-	t.Logf("jcs-level collision confirmed: %s and %s both canonicalize to %s",
-		inA, inB, hex.EncodeToString(outA))
-}
 
 // TestInvalidUTF8Rejected verifies that serializeLogRecord rejects log records
 // whose body or attribute strings contain invalid UTF-8, closing the

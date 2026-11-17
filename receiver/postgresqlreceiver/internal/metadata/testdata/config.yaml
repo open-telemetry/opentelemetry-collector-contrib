@@ -126,6 +126,8 @@ all_set:
       enabled: true
       attributes: ["operation","replication_client"]
   events:
+    db.server.query_plan:
+      enabled: true
     db.server.query_sample:
       enabled: true
     db.server.top_query:
@@ -278,6 +280,8 @@ reaggregate_set:
       enabled: true
       attributes: []
   events:
+    db.server.query_plan:
+      enabled: true
     db.server.query_sample:
       enabled: true
     db.server.top_query:
@@ -430,6 +434,8 @@ none_set:
       enabled: false
       attributes: ["operation","replication_client"]
   events:
+    db.server.query_plan:
+      enabled: false
     db.server.query_sample:
       enabled: false
     db.server.top_query:
