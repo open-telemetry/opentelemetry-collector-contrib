@@ -26,6 +26,7 @@ type TelemetryBuilder struct {
 	mu                                       sync.Mutex
 	registrations                            []metric.Registration
 	ExporterDroppedUnsupportedProfileRecords metric.Int64Counter
+	ExporterSplunkhecApproachingCapacity     metric.Int64Counter
 	ExporterSplunkhecHeartbeatsFailed        metric.Int64Counter
 	ExporterSplunkhecHeartbeatsSent          metric.Int64Counter
 }
@@ -63,6 +64,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_exporter_dropped_unsupported_profile_records",
 		metric.WithDescription("Number of eBPF profile records dropped during conversion because their measurement type is unsupported or ambiguous. [Development]"),
 		metric.WithUnit("{record}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterSplunkhecApproachingCapacity, err = builder.meter.Int64Counter(
+		"otelcol_exporter_splunkhec_approaching_capacity",
+		metric.WithDescription("Number of accepted requests for which Splunk HEC reported its queue or ack channel is approaching capacity (response codes 24 and 25). [Development]"),
+		metric.WithUnit("{request}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSplunkhecHeartbeatsFailed, err = builder.meter.Int64Counter(

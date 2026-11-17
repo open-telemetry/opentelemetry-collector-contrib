@@ -16,7 +16,7 @@ require (
 	github.com/digitalocean/go-metadata v0.0.0-20250129100319-e3650a3df44b
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
-	github.com/moby/moby/api v1.56.1
+	github.com/moby/moby/api v1.57.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.165.1
