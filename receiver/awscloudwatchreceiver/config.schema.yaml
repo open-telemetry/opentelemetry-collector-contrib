@@ -33,6 +33,10 @@ $defs:
     description: LogsConfig is the configuration for the logs portion of this receiver
     type: object
     properties:
+      delay:
+        description: Delay shifts the end of each poll window back from now to account for CloudWatch Logs ingestion latency. Events can become visible to FilterLogEvents some time after their timestamp; without a delay, such events fall before the next poll's start time and are never read. Defaults to 0 (the window ends at now).
+        type: string
+        format: duration
       groups:
         $ref: group_config
       initial_lookback:

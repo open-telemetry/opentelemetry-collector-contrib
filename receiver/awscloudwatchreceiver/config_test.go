@@ -72,6 +72,30 @@ func TestValidate(t *testing.T) {
 			expectedErr: errInvalidPollInterval,
 		},
 		{
+			name: "Invalid Logs Delay",
+			config: Config{
+				Region: "us-west-2",
+				Logs: LogsConfig{
+					MaxEventsPerRequest: defaultEventLimit,
+					PollInterval:        defaultPollInterval,
+					Delay:               500 * time.Millisecond,
+				},
+			},
+			expectedErr: errInvalidLogsDelay,
+		},
+		{
+			name: "Negative Logs Delay",
+			config: Config{
+				Region: "us-west-2",
+				Logs: LogsConfig{
+					MaxEventsPerRequest: defaultEventLimit,
+					PollInterval:        defaultPollInterval,
+					Delay:               -time.Minute,
+				},
+			},
+			expectedErr: errInvalidLogsDelay,
+		},
+		{
 			name: "Invalid Log Group Limit",
 			config: Config{
 				Region: "us-east-1",
