@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.114.9
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.52.11
 	github.com/itchyny/timefmt-go v0.1.9
-	github.com/klauspost/compress v1.20.3
+	github.com/klauspost/compress v1.20.4
 	github.com/open-telemetry/opamp-go v0.25.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension v0.165.1

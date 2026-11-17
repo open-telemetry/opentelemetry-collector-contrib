@@ -913,7 +913,7 @@ func TestConfigureKgoSASL_AWSMSKIAMOAUTHBEARER_ReusesCredentials(t *testing.T) {
 		// Mirror LoadDefaultConfig, which wraps the provider in a cache.
 		return aws.NewCredentialsCache(aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) {
 			retrievals.Add(1)
-			return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: "SECRET"}, nil
+			return aws.Credentials{AccessKeyID: "AKID", SecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"}, nil
 		})), nil
 	}
 
