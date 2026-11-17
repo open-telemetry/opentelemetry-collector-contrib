@@ -1,5 +1,5 @@
 change_type: bug_fix
-component: processor/resourcedetection
+component: processor/resource_detection
 note: Fix the `ibmcloud_vpc` detector returning no attributes on IBM Cloud VPC instances, whose metadata service answers the token request with HTTP 201.
 issues: [50895]
 subtext:
