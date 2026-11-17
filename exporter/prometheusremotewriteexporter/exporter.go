@@ -729,6 +729,11 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 			zap.String("error", string(body)),
 		)
 		rerr := errors.New("remote write request failed")
+		// NewOTLPHTTPError's retryability matches PRW for 429. Do not use it
+		// for every status: unlike OTLP, PRW retries all 5xx responses.
+		if resp.StatusCode == http.StatusTooManyRequests {
+			rerr = consumererror.NewOTLPHTTPError(rerr, resp.StatusCode)
+		}
 		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
 			return resp.StatusCode, rerr
 		}
