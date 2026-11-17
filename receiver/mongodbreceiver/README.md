@@ -75,7 +75,7 @@ The following settings are optional:
 
 - `hosts` (default: `[{endpoint: "localhost:27017"}]`): list of objects with an `endpoint` field set to `host:port` or a unix domain socket path. The `transport` option is no longer available.
   - For standalone MongoDB deployments this is the hostname and port of the mongod instance
-  - For replica sets specify the hostnames and ports of the mongod instances that are in the replica set configuration. The receiver discovers the other members; see [Replica set member discovery](#replica-set-member-discovery).
+  - For replica sets specify the hostnames and ports of the mongod instances that are in the replica set configuration. The receiver discovers the members to collect query samples from; see [Replica set member discovery](#replica-set-member-discovery).
   - For a sharded MongoDB deployment, please specify a list of the `mongos` hosts.
 - `scheme` (default: `mongodb`): connection scheme. Use `mongodb+srv` for clusters that use SRV DNS records (e.g. MongoDB Atlas). When using `mongodb+srv`, exactly one host must be specified. Connections to the replica set members the receiver discovers use TLS, as the `mongodb+srv` scheme requires.
 - `username`: If authentication is required, the user can with `clusterMonitor` permissions can be provided here.
@@ -89,58 +89,34 @@ The following settings are optional:
 - `timeout`: (default = `1m`) The timeout of running commands against mongo.
 - `tls`: TLS control. [By default, insecure settings are rejected and certificate verification is on](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).
 - `direct_connection`: If true, the receiver connects only to the configured host and does not discover other replica set members. Use it when you configure one receiver per member; it cannot be combined with the `mongodb+srv` scheme.
-- `secondaries`: What the receiver collects from the replica set members it discovers. See [Replica set member discovery](#replica-set-member-discovery).
-  - `collect_metrics` (default = `false`): Collect metrics from every discovered member, one resource per member.
-  - `collect_top_query` (default = `false`): Collect `db.server.top_query` events from every discovered member.
-  - `refresh_interval` (default = `0s`): How often to re-run member discovery, so members added or removed after start are picked up without a restart. `0s` discovers members only at start.
 - `query_sample_collection`: Additional configuration for query sample collection (`db.server.query_sample` event):
   - `max_rows_per_query`: (default = `100`) The maximum number of eligible query samples to emit per `$currentOp` query. Must be greater than `0`.
 
 ### Replica set member discovery
 
-Unless `direct_connection` is `true`, the receiver connects to the configured host, then discovers the
-other data-bearing members of the replica set with the `hello` command. Arbiters and hidden members are not
-discovered. Members are addressed by the names `hello` reports for the connection, so a deployment behind a
-private endpoint or other address translation that defines replica set horizons, such as MongoDB Atlas,
-reports its members under the names the collector can reach. This works with both the `mongodb` and
-`mongodb+srv` schemes.
+Unless `direct_connection` is `true`, the receiver connects to the configured host once at start and
+discovers the data-bearing members of the replica set, including the primary, with the `hello` command.
+Arbiters and hidden members are not discovered. Members are addressed by the names `hello` reports for the
+connection, so a deployment behind a private endpoint or other address translation that defines replica set
+horizons, such as MongoDB Atlas, reports its members under the names the collector can reach. This works
+with both the `mongodb` and `mongodb+srv` schemes.
 
-What the receiver collects from each member:
+Discovered members are used for `db.server.query_sample` events only. The receiver opens a direct
+connection to each member and collects query samples from every member over that connection, so each
+member is reported once, under its own `server.address` and `server.port`, whichever member is primary.
+When no members are discovered (a standalone server, a `mongos`, or a node that reports no valid replica
+set configuration), query samples come from the configured host.
 
-| Data | Configured host (primary) | Discovered members |
-|---|---|---|
-| Metrics | Yes | When `secondaries.collect_metrics` is `true` |
-| `db.server.query_sample` events | Yes | Yes |
-| `db.server.top_query` events | Yes | When `secondaries.collect_top_query` is `true` |
+Metrics and `db.server.top_query` events always come from the configured host. With a replica set
+connection that is the current primary. To collect them from every member, configure one receiver per
+member with `direct_connection: true`.
 
-Collecting metrics from every member multiplies the number of emitted series by the number of members.
+Members are discovered only at start; restart the collector to pick up members added to or removed from
+the set. Members are scraped concurrently, each within the shorter of `timeout` and `collection_interval`,
+so a member that cannot be reached only delays its own data. The receiver logs a warning when collection
+from a member starts failing and an info message when it recovers.
 
-Every member emits its own resource, identified by its `server.address` and `server.port`. An
-`override_value` set for `service.instance.id` applies to every member, so set it only on a receiver
-that uses `direct_connection: true`.
-
-Members are scraped concurrently, each within the shorter of `timeout` and `collection_interval`, so a member
-that cannot be reached only delays its own data. The receiver logs a warning when collection from a member
-starts failing and an info message when it recovers.
-
-The receiver checks the replica set topology with `hello` before every scrape. When an election moves the
-primary, the member list is rebuilt on the next scrape, so the new primary is not scraped twice and the
-former primary is scraped as a member. Adding or removing members is picked up when
-`secondaries.refresh_interval` elapses.
-
-```yaml
-receivers:
-  mongodb:
-    hosts:
-      - endpoint: cluster0.example.mongodb.net
-    scheme: mongodb+srv
-    username: otel
-    password: ${env:MONGODB_PASSWORD}
-    secondaries:
-      collect_metrics: true
-      collect_top_query: true
-      refresh_interval: 5m
-```
+Sharded clusters are not discovered: with a `mongos` host, only the configured host is scraped.
 
 ### Top Query Collection
 

@@ -41,24 +41,6 @@ type Config struct {
 	ReplicaSet              string                    `mapstructure:"replica_set,omitempty"`
 	Timeout                 time.Duration             `mapstructure:"timeout"`
 	DirectConnection        bool                      `mapstructure:"direct_connection"`
-	// Secondaries controls what the receiver collects from discovered replica set members.
-	Secondaries SecondariesConfig `mapstructure:"secondaries"`
-}
-
-// SecondariesConfig controls collection from the replica set members the receiver discovers.
-// Query samples are always collected from every discovered member; metrics and top queries are
-// opt-in because they multiply the emitted series by the number of members.
-type SecondariesConfig struct {
-	// CollectMetrics scrapes metrics from every discovered member, one resource per member.
-	CollectMetrics bool `mapstructure:"collect_metrics"`
-	// CollectTopQuery collects db.server.top_query events from every discovered member.
-	CollectTopQuery bool `mapstructure:"collect_top_query"`
-	// RefreshInterval re-runs member discovery on this interval so that members added or removed
-	// after start are picked up without a restart. Zero discovers only at start.
-	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
-
-	// prevent unkeyed literal initialization
-	_ struct{}
 }
 
 type QuerySampleCollection struct {
@@ -96,10 +78,6 @@ func (c *Config) Validate() error {
 
 	if c.Scheme == "mongodb+srv" && len(c.Hosts) != 1 {
 		err = multierr.Append(err, errors.New("mongodb+srv scheme requires exactly one host"))
-	}
-
-	if c.Secondaries.RefreshInterval < 0 {
-		err = multierr.Append(err, errors.New("secondaries.refresh_interval must not be negative"))
 	}
 
 	if c.Username != "" && c.Password == "" {

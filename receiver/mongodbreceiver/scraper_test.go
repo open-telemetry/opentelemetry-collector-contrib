@@ -872,170 +872,121 @@ func TestSecondaryDiscoverySkipReason(t *testing.T) {
 	}
 }
 
-func TestScrapeLogsWithSecondaries(t *testing.T) {
+func querySampleClient(host, collection string, opErr error) *fakeClient {
+	fc := &fakeClient{}
+	fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": host}, nil)
+	if opErr != nil {
+		fc.On("CurrentOp", mock.Anything).Return([]bson.M(nil), opErr)
+		return fc
+	}
+	fc.On("CurrentOp", mock.Anything).Return([]bson.M{
+		{"ns": "mydb." + collection, "op": "query", "command": bson.D{{Key: "find", Value: collection}}, "active": true, "microsecs_running": int64(1000)},
+	}, nil)
+	return fc
+}
+
+func TestScrapeLogsWithMembers(t *testing.T) {
 	testCases := []struct {
-		desc                  string
-		setupPrimaryClient    func(t *testing.T) *fakeClient
-		setupSecondaryClients func(t *testing.T) []*fakeClient
-		expectedLogCount      int
-		expectedResourceCount int
-		expectedErr           string
+		desc              string
+		members           []*fakeClient
+		expectedHosts     []string
+		expectMainScraped bool
 	}{
 		{
-			desc: "Primary and secondary both have operations",
-			setupPrimaryClient: func(_ *testing.T) *fakeClient {
-				fc := &fakeClient{}
-				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
-					{"ns": "mydb.orders", "op": "query", "command": bson.D{{Key: "find", Value: "orders"}}, "active": true, "microsecs_running": int64(1000)},
-				}, nil)
-				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "primary:27017"}, nil)
-				return fc
+			desc: "every member reports, the main client is not used",
+			members: []*fakeClient{
+				querySampleClient("a:27017", "orders", nil),
+				querySampleClient("b:27017", "products", nil),
+				querySampleClient("c:27017", "users", nil),
 			},
-			setupSecondaryClients: func(_ *testing.T) []*fakeClient {
-				fc := &fakeClient{}
-				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
-					{"ns": "mydb.products", "op": "query", "command": bson.D{{Key: "find", Value: "products"}}, "active": true, "microsecs_running": int64(2000)},
-				}, nil)
-				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "secondary1:27017"}, nil)
-				return []*fakeClient{fc}
-			},
-			expectedLogCount:      2,
-			expectedResourceCount: 2,
+			expectedHosts: []string{"a", "b", "c"},
 		},
 		{
-			desc: "Secondary CurrentOp fails gracefully",
-			setupPrimaryClient: func(_ *testing.T) *fakeClient {
-				fc := &fakeClient{}
-				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
-					{"ns": "mydb.orders", "op": "query", "command": bson.D{{Key: "find", Value: "orders"}}, "active": true, "microsecs_running": int64(1000)},
-				}, nil)
-				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "primary:27017"}, nil)
-				return fc
+			desc: "a failing member does not block the others",
+			members: []*fakeClient{
+				querySampleClient("a:27017", "orders", nil),
+				querySampleClient("b:27017", "products", errors.New("member unreachable")),
+				querySampleClient("c:27017", "users", nil),
 			},
-			setupSecondaryClients: func(_ *testing.T) []*fakeClient {
-				fc := &fakeClient{}
-				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "secondary1:27017"}, nil)
-				fc.On("CurrentOp", mock.Anything).Return([]bson.M{}, errors.New("secondary unreachable"))
-				return []*fakeClient{fc}
-			},
-			expectedLogCount:      1,
-			expectedResourceCount: 1,
+			expectedHosts: []string{"a", "c"},
 		},
 		{
-			desc: "Multiple secondaries with mixed results",
-			setupPrimaryClient: func(_ *testing.T) *fakeClient {
-				fc := &fakeClient{}
-				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
-					{"ns": "mydb.orders", "op": "query", "command": bson.D{{Key: "find", Value: "orders"}}, "active": true, "microsecs_running": int64(1000)},
-				}, nil)
-				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "primary:27017"}, nil)
-				return fc
-			},
-			setupSecondaryClients: func(_ *testing.T) []*fakeClient {
-				fc1 := &fakeClient{}
-				fc1.On("CurrentOp", mock.Anything).Return([]bson.M{
-					{"ns": "mydb.products", "op": "query", "command": bson.D{{Key: "find", Value: "products"}}, "active": true, "microsecs_running": int64(500)},
-				}, nil)
-				fc1.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "secondary1:27017"}, nil)
-
-				fc2 := &fakeClient{}
-				fc2.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "secondary2:27017"}, nil)
-				fc2.On("CurrentOp", mock.Anything).Return([]bson.M{}, errors.New("secondary2 down"))
-
-				fc3 := &fakeClient{}
-				fc3.On("CurrentOp", mock.Anything).Return([]bson.M{
-					{"ns": "mydb.users", "op": "query", "command": bson.D{{Key: "find", Value: "users"}}, "active": true, "microsecs_running": int64(300)},
-				}, nil)
-				fc3.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "secondary3:27017"}, nil)
-
-				return []*fakeClient{fc1, fc2, fc3}
-			},
-			expectedLogCount:      3,
-			expectedResourceCount: 3,
-		},
-		{
-			desc: "Primary CurrentOp failure does not block healthy secondaries",
-			setupPrimaryClient: func(_ *testing.T) *fakeClient {
-				fc := &fakeClient{}
-				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "primary:27017"}, nil)
-				fc.On("CurrentOp", mock.Anything).Return([]bson.M{}, errors.New("primary unreachable"))
-				return fc
-			},
-			setupSecondaryClients: func(_ *testing.T) []*fakeClient {
-				fc := &fakeClient{}
-				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
-					{"ns": "mydb.products", "op": "query", "command": bson.D{{Key: "find", Value: "products"}}, "active": true, "microsecs_running": int64(1000)},
-				}, nil)
-				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "secondary1:27017"}, nil)
-				return []*fakeClient{fc}
-			},
-			expectedLogCount:      1,
-			expectedResourceCount: 1,
-		},
-		{
-			desc: "No secondaries configured",
-			setupPrimaryClient: func(_ *testing.T) *fakeClient {
-				fc := &fakeClient{}
-				fc.On("CurrentOp", mock.Anything).Return([]bson.M{
-					{"ns": "mydb.orders", "op": "query", "command": bson.D{{Key: "find", Value: "orders"}}, "active": true, "microsecs_running": int64(1000)},
-				}, nil)
-				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{"host": "primary:27017"}, nil)
-				return fc
-			},
-			setupSecondaryClients: func(_ *testing.T) []*fakeClient {
-				return nil
-			},
-			expectedLogCount:      1,
-			expectedResourceCount: 1,
+			desc:              "no members discovered, the main client reports",
+			expectedHosts:     []string{"main"},
+			expectMainScraped: true,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraperCfg := createDefaultConfig().(*Config)
-			scraperCfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
-			scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
-			scraper.client = tc.setupPrimaryClient(t)
-
-			secondaryFakes := tc.setupSecondaryClients(t)
-			for i, fc := range secondaryFakes {
-				scraper.members = append(scraper.members, &member{host: fmt.Sprintf("secondary-%d:27017", i), client: fc})
+			cfg := createDefaultConfig().(*Config)
+			cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+			scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+			main := querySampleClient("main:27017", "main", nil)
+			scraper.client = main
+			for i, fc := range tc.members {
+				scraper.members = append(scraper.members, &member{host: fmt.Sprintf("m%d:27017", i), client: fc})
 			}
 
 			logs, err := scraper.scrapeLogs(t.Context())
-			if tc.expectedErr != "" {
-				require.ErrorContains(t, err, tc.expectedErr)
-				return
-			}
 			require.NoError(t, err)
-			require.Equal(t, tc.expectedLogCount, logs.LogRecordCount())
-			require.Equal(t, tc.expectedResourceCount, logs.ResourceLogs().Len())
 
+			var hosts []string
 			for i := 0; i < logs.ResourceLogs().Len(); i++ {
-				rl := logs.ResourceLogs().At(i)
-				addr, ok := rl.Resource().Attributes().Get("server.address")
-				require.True(t, ok, "resource %d should have server.address", i)
-				require.NotEmpty(t, addr.Str())
+				addr, ok := logs.ResourceLogs().At(i).Resource().Attributes().Get("server.address")
+				require.True(t, ok)
+				hosts = append(hosts, addr.Str())
+			}
+			require.Equal(t, tc.expectedHosts, hosts)
+			require.Equal(t, len(tc.expectedHosts), logs.LogRecordCount())
+			if !tc.expectMainScraped {
+				main.AssertNotCalled(t, "CurrentOp", mock.Anything)
+				main.AssertNotCalled(t, "ServerStatus", mock.Anything, mock.Anything)
 			}
 		})
 	}
 }
 
-func TestFindSecondaryHosts(t *testing.T) {
+// TestScrapeLogsUnaffectedByElection covers an election between discovery and collection: the main
+// client, which follows the primary, now reaches b. Member clients stay on their own nodes, so every
+// node is still reported exactly once.
+func TestScrapeLogsUnaffectedByElection(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+	scraper.client = querySampleClient("b:27017", "orders", nil)
+	for _, h := range []string{"a", "b", "c"} {
+		scraper.members = append(scraper.members, &member{host: h + ":27017", client: querySampleClient(h+":27017", "orders", nil)})
+	}
+
+	for range 2 {
+		logs, err := scraper.scrapeLogs(t.Context())
+		require.NoError(t, err)
+		seen := map[string]int{}
+		for i := 0; i < logs.ResourceLogs().Len(); i++ {
+			addr, _ := logs.ResourceLogs().At(i).Resource().Attributes().Get("server.address")
+			seen[addr.Str()]++
+		}
+		require.Equal(t, map[string]int{"a": 1, "b": 1, "c": 1}, seen)
+	}
+}
+
+func TestFindMemberHosts(t *testing.T) {
 	testCases := []struct {
 		desc          string
 		result        bson.M
 		resultErr     error
 		expectedHosts []string
-		expectedErr   string
+		expectedErr   error
+		expectedMsg   string
 	}{
 		{
-			desc: "horizon names, self excluded",
+			desc: "horizon names, self included once",
 			result: bson.M{
 				"setName": "rs0", "me": "pl-0.example.net:1024",
 				"hosts": bson.A{"pl-0.example.net:1024", "pl-0.example.net:1025", "pl-0.example.net:1026"},
 			},
-			expectedHosts: []string{"pl-0.example.net:1025", "pl-0.example.net:1026"},
+			expectedHosts: []string{"pl-0.example.net:1024", "pl-0.example.net:1025", "pl-0.example.net:1026"},
 		},
 		{
 			desc: "passives included, arbiters ignored",
@@ -1045,7 +996,7 @@ func TestFindSecondaryHosts(t *testing.T) {
 				"passives": bson.A{"mongo-3:27017"},
 				"arbiters": bson.A{"mongo-2:27017"},
 			},
-			expectedHosts: []string{"mongo-1:27017", "mongo-3:27017"},
+			expectedHosts: []string{"mongo-0:27017", "mongo-1:27017", "mongo-3:27017"},
 		},
 		{
 			desc:          "standalone has no members",
@@ -1053,9 +1004,25 @@ func TestFindSecondaryHosts(t *testing.T) {
 			expectedHosts: nil,
 		},
 		{
+			desc:          "mongos has no members",
+			result:        bson.M{"isWritablePrimary": true, "msg": "isdbgrid"},
+			expectedHosts: nil,
+		},
+		{
+			// The shape MongoDB returns for a node removed from the set or not yet initiated.
+			desc:        "set name without a usable configuration",
+			result:      bson.M{"setName": "rs0", "isreplicaset": true, "info": "Does not have a valid replica set config"},
+			expectedErr: errNoReplicaSetConfig,
+		},
+		{
+			desc:        "set name with an empty host list",
+			result:      bson.M{"setName": "rs0", "me": "mongo-0:27017", "hosts": bson.A{}},
+			expectedErr: errNoReplicaSetConfig,
+		},
+		{
 			desc:        "command failed",
 			resultErr:   errors.New("not authorized"),
-			expectedErr: "failed to run hello",
+			expectedMsg: "failed to run hello",
 		},
 	}
 
@@ -1067,101 +1034,74 @@ func TestFindSecondaryHosts(t *testing.T) {
 			scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), createDefaultConfig().(*Config))
 			scraper.client = fc
 
-			hosts, err := scraper.findSecondaryHosts(t.Context())
-			if tc.expectedErr != "" {
-				require.ErrorContains(t, err, tc.expectedErr)
+			hosts, err := scraper.findMemberHosts(t.Context())
+			switch {
+			case tc.expectedErr != nil:
+				require.ErrorIs(t, err, tc.expectedErr)
 				require.Nil(t, hosts)
-				return
+			case tc.expectedMsg != "":
+				require.ErrorContains(t, err, tc.expectedMsg)
+				require.Nil(t, hosts)
+			default:
+				require.NoError(t, err)
+				require.Equal(t, tc.expectedHosts, hosts)
 			}
-			require.NoError(t, err)
-			require.Equal(t, tc.expectedHosts, hosts)
 		})
 	}
 }
 
-func TestDiscoverMembersReconciles(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
-
-	primary := &fakeClient{}
-	primary.On("RunCommand", mock.Anything, "admin", bson.M{"hello": 1}).Return(bson.M{
-		"setName": "rs0", "me": "a:1", "hosts": bson.A{"a:1", "b:1", "c:1"},
-	}, nil).Once()
-	primary.On("RunCommand", mock.Anything, "admin", bson.M{"hello": 1}).Return(bson.M{
-		"setName": "rs0", "me": "a:1", "hosts": bson.A{"a:1", "c:1", "d:1"},
-	}, nil).Once()
-	scraper.client = primary
-
-	created := map[string]*fakeClient{}
-	orig := newClient
-	t.Cleanup(func() { newClient = orig })
-	newClient = func(_ context.Context, c *Config, _ *zap.Logger, secondary bool) (client, error) {
-		require.True(t, secondary)
-		fc := &fakeClient{}
-		fc.On("Disconnect", mock.Anything).Return(nil)
-		created[c.Hosts[0].Endpoint] = fc
-		return fc, nil
+func TestStartDiscoversMembers(t *testing.T) {
+	validHello := bson.M{"setName": "rs0", "me": "a:1", "hosts": bson.A{"a:1", "b:1", "c:1"}}
+	testCases := []struct {
+		desc            string
+		discoverMembers bool
+		hello           bson.M
+		expectedHosts   []string
+		expectHello     bool
+	}{
+		{
+			desc:            "query sample scraper connects to every member",
+			discoverMembers: true,
+			hello:           validHello,
+			expectedHosts:   []string{"a:1", "b:1", "c:1"},
+			expectHello:     true,
+		},
+		{
+			desc:            "no usable configuration keeps only the configured host",
+			discoverMembers: true,
+			hello:           bson.M{"setName": "rs0", "isreplicaset": true},
+			expectedHosts:   []string{},
+			expectHello:     true,
+		},
+		{
+			desc:          "metrics and top query scrapers do not discover",
+			hello:         validHello,
+			expectedHosts: []string{},
+		},
 	}
 
-	scraper.discoverMembers(t.Context())
-	require.Equal(t, []string{"b:1", "c:1"}, memberHosts(scraper))
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			main := &fakeClient{}
+			main.On("RunCommand", mock.Anything, "admin", bson.M{"hello": 1}).Return(tc.hello, nil)
+			orig := newClient
+			t.Cleanup(func() { newClient = orig })
+			newClient = func(_ context.Context, _ *Config, _ *zap.Logger, secondary bool) (client, error) {
+				if !secondary {
+					return main, nil
+				}
+				return &fakeClient{}, nil
+			}
 
-	scraper.discoverMembers(t.Context())
-	require.Equal(t, []string{"c:1", "d:1"}, memberHosts(scraper))
-	created["b:1"].AssertCalled(t, "Disconnect", mock.Anything)
-}
-
-func TestRefreshMembersFollowsElection(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
-
-	hello := func(self string) bson.M {
-		return bson.M{"setName": "rs0", "me": self, "hosts": bson.A{"a:1", "b:1", "c:1"}}
+			scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), createDefaultConfig().(*Config))
+			scraper.discoverMembers = tc.discoverMembers
+			require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+			require.Equal(t, tc.expectedHosts, memberHosts(scraper))
+			if !tc.expectHello {
+				main.AssertNotCalled(t, "RunCommand", mock.Anything, mock.Anything, mock.Anything)
+			}
+		})
 	}
-	primary := &fakeClient{}
-	primary.On("RunCommand", mock.Anything, "admin", bson.M{"hello": 1}).Return(hello("a:1"), nil).Once()
-	// The main client follows the primary, so after an election hello is answered by b.
-	primary.On("RunCommand", mock.Anything, "admin", bson.M{"hello": 1}).Return(hello("b:1"), nil).Twice()
-	scraper.client = primary
-
-	created := map[string]int{}
-	clients := map[string]*fakeClient{}
-	orig := newClient
-	t.Cleanup(func() { newClient = orig })
-	newClient = func(_ context.Context, c *Config, _ *zap.Logger, _ bool) (client, error) {
-		fc := &fakeClient{}
-		fc.On("Disconnect", mock.Anything).Return(nil)
-		created[c.Hosts[0].Endpoint]++
-		clients[c.Hosts[0].Endpoint] = fc
-		return fc, nil
-	}
-
-	scraper.discoverMembers(t.Context())
-	require.Equal(t, []string{"b:1", "c:1"}, memberHosts(scraper))
-
-	// refresh_interval is 0, yet the election is still handled: b is now the main node, so it is no
-	// longer a member, and a, the former primary, becomes one.
-	scraper.refreshMembers(t.Context())
-	require.Equal(t, []string{"c:1", "a:1"}, memberHosts(scraper))
-	clients["b:1"].AssertCalled(t, "Disconnect", mock.Anything)
-
-	// Without another change, nothing is reconnected.
-	scraper.refreshMembers(t.Context())
-	require.Equal(t, []string{"c:1", "a:1"}, memberHosts(scraper))
-	require.Equal(t, map[string]int{"a:1": 1, "b:1": 1, "c:1": 1}, created)
-	primary.AssertExpectations(t)
-}
-
-func TestRefreshMembersSkippedForMemberScraper(t *testing.T) {
-	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), createDefaultConfig().(*Config))
-	fc := &fakeClient{}
-	scraper.client = fc
-	scraper.isMember = true
-	scraper.lastDiscovery = time.Now()
-
-	scraper.refreshMembers(t.Context())
-	fc.AssertNotCalled(t, "RunCommand", mock.Anything, mock.Anything, mock.Anything)
-	require.Empty(t, scraper.members)
 }
 
 func TestScrapeLogsReportsPrimaryCurrentOpFailure(t *testing.T) {

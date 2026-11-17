@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/mongodb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Discover replica set members when using the `mongodb+srv` scheme and through private endpoints, and optionally collect metrics and top queries from every member.
+note: Discover replica set members for query samples when using the `mongodb+srv` scheme and through private endpoints.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [52983]
@@ -16,9 +16,9 @@ issues: [52983]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  With `scheme: mongodb+srv`, `db.server.query_sample` events are now also collected from discovered members.
+  With `scheme: mongodb+srv`, `db.server.query_sample` events are now collected from every replica set member.
+  When members are discovered, query samples from the primary come from its direct member connection, not the configured connection.
   Members are now discovered with `hello`, so hidden members are no longer discovered.
-  New settings: `secondaries.collect_metrics`, `secondaries.collect_top_query`, `secondaries.refresh_interval`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
