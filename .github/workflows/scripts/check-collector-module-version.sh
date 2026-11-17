@@ -12,7 +12,14 @@ source ./internal/buildscripts/modules
 
 set -eu -o pipefail
 
-mod_files=$(find . -type f -name "go.mod")
+# Compatibility libraries declare a tested minimum; component tests exercise
+# them again with the distribution's current Collector version.
+mod_files=$(find . -type f -name "go.mod" | while IFS= read -r mod; do
+   if [[ "$mod" == ./pkg/* ]] && grep -q '^// collector-version: minimum$' "$mod"; then
+      continue
+   fi
+   printf '%s\n' "$mod"
+done)
 
 # Check if GNU sed is installed
 GNU_SED_INSTALLED=false

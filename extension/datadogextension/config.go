@@ -16,12 +16,15 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/remoteconfig"
 )
 
 var _ component.Config = (*Config)(nil)
 
 // Config contains the information necessary for enabling the Datadog Extension.
 type Config struct {
+	// RemoteConfig serves the existing Datadog SDK RC protocol when enabled.
+	RemoteConfig *remoteconfig.Config    `mapstructure:"remote_config"`
 	ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
 	// Define the site and API key (and whether to fail on invalid API key) in API.
 	API datadogconfig.APIConfig `mapstructure:"api"`
@@ -70,5 +73,18 @@ func (c *Config) Validate() error {
 	if !slices.Contains(validInstallationMethods, c.InstallationMethod) {
 		return fmt.Errorf("installation_method must be one of: %s", strings.Join(validInstallationMethods[1:], ", "))
 	}
+	if c.RemoteConfig != nil && c.RemoteConfig.Enabled {
+		if c.ClientConfig.TLS.Insecure || c.ClientConfig.TLS.InsecureSkipVerify || c.ClientConfig.Auth.HasValue() || len(c.ClientConfig.Headers) > 0 || len(c.ClientConfig.Middlewares) > 0 || c.ClientConfig.Compression.IsCompressed() {
+			return errors.New("remote_config requires API-key authentication and verified TLS without custom headers, middleware or compression")
+		}
+		return remoteconfig.ValidateConfig(c.rcConfig())
+	}
 	return nil
+}
+
+func (c *Config) rcConfig() *remoteconfig.Config {
+	cfg := *c.RemoteConfig
+	cfg.API = remoteconfig.APIConfig{Key: c.API.Key, Site: c.API.Site}
+	cfg.Backend = c.ClientConfig
+	return &cfg
 }

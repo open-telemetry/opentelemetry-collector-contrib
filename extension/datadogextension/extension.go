@@ -32,6 +32,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/remoteconfig"
 )
 
 const (
@@ -76,6 +77,8 @@ type payloadSender struct {
 }
 
 type datadogExtension struct {
+	rc                  extension.Extension
+	rcStarted           bool
 	extension.Extension // Embed base Extension for common functionality.
 
 	// struct to store extension and collector configs
@@ -216,7 +219,7 @@ func (*datadogExtension) Changed(
 }
 
 // Start starts the extension via the component interface.
-func (e *datadogExtension) Start(_ context.Context, host component.Host) error {
+func (e *datadogExtension) Start(ctx context.Context, host component.Host) error {
 	// Store host for later use when creating the HTTP server
 	e.host = host
 
@@ -229,7 +232,18 @@ func (e *datadogExtension) Start(_ context.Context, host component.Host) error {
 
 	// Start the serializer if it's available
 	if e.serializer != nil {
-		return e.serializer.Start()
+		if err := e.serializer.Start(); err != nil {
+			return err
+		}
+	}
+	if e.rc != nil {
+		if err := e.rc.Start(ctx, host); err != nil {
+			if e.serializer != nil {
+				e.serializer.Stop()
+			}
+			return err
+		}
+		e.rcStarted = true
 	}
 	return nil
 }
@@ -241,6 +255,11 @@ func (e *datadogExtension) Shutdown(ctx context.Context) error {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
+	var rcErr error
+	if e.rcStarted {
+		rcErr = e.rc.Shutdown(ctx)
+		e.rcStarted = false
+	}
 	// Stop periodic payload sending
 	e.stopPeriodicPayloadSending()
 
@@ -251,7 +270,7 @@ func (e *datadogExtension) Shutdown(ctx context.Context) error {
 	if e.serializer != nil {
 		e.serializer.Stop()
 	}
-	return nil
+	return rcErr
 }
 
 // sendLivenessMetric sends the otel.datadog_extension.running metric to indicate the extension is active
@@ -413,6 +432,14 @@ func newExtension(
 
 	// Create agent components
 	configComponent := buildAgentConfig(cfg, configOptions...)
+	var rc extension.Extension
+	if cfg.RemoteConfig != nil && cfg.RemoteConfig.Enabled {
+		var err error
+		rc, err = remoteconfig.New(set, cfg.rcConfig(), configComponent)
+		if err != nil {
+			return nil, err
+		}
+	}
 	logComponent := agentcomponents.NewLogComponent(set.TelemetrySettings)
 	serializer := agentcomponents.NewSerializerComponent(configComponent, logComponent, host.SourceIdentifier.Primary)
 
@@ -436,6 +463,7 @@ func newExtension(
 	channel := make(chan struct{}, 1)
 
 	e := &datadogExtension{
+		rc:                rc,
 		configs:           &configs{extension: cfg},
 		logger:            set.Logger,
 		serializer:        serializer,

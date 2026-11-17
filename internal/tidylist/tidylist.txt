@@ -140,6 +140,7 @@ internal/aws/proxy
 extension/awsproxy
 extension/azureauthextension
 extension/cgroupruntimeextension
+pkg/datadog/remoteconfig
 extension/datadogextension
 extension/dbauth/awsiamdbauthextension
 extension/encoding/avrologencodingextension

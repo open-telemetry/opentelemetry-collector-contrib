@@ -109,3 +109,39 @@ extensions:
 ## Notes
 - The extension is in active development. Functionality and configuration options may change as Datadog OpenTelemetry monitoring features evolve.
 - Please see [official documentation on Datadog's website](https://docs.datadoghq.com/opentelemetry/integrations/datadog_extension/) for more details.
+
+## Experimental SDK Remote Configuration
+
+The opt-in `remote_config` capability serves the existing Datadog SDK RC protocol.
+It reuses the Agent RC service for verification, client tracking, shared polling and caching.
+The public `pkg/datadog/remoteconfig` adapter can also be used by DDOT.
+This experiment is not an approved support or release contract.
+
+```yaml
+extensions:
+  datadog:
+    api:
+      key: ${env:DD_API_KEY}
+      site: datadoghq.com
+    remote_config:
+      enabled: true
+      endpoint: 127.0.0.1:8234
+      cache_directory: /var/lib/otelcol/datadog-remote-config
+
+service:
+  extensions: [datadog]
+```
+
+RC is disabled by default and uses a separate listener from `/metadata`.
+The configured cache directory must be absolute and writable by the Collector.
+Each instance needs its own cache. Credential changes require a component restart.
+Only tracer clients are accepted; `/info` advertises `/v0.7/config`.
+
+Point the SDK's Agent endpoint at this listener and configure OTLP export separately.
+The application does not need a Datadog API key. Non-loopback deployments need TLS
+and workload access controls. Probe execution and application of configuration remain
+in the SDK. This extension does not deliver DI output or implement OpAMP.
+
+The experiment pins the Agent RC module from
+[the Agent RC prototype](https://github.com/DataDog/datadog-agent/pull/60194).
+The HTTP-client injection API and its module release need review before this can ship.
