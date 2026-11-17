@@ -347,9 +347,12 @@ func (r *logsReceiver) processReceivedData(ctx context.Context, rcvr *awss3Recei
 }
 
 func (r *logsReceiver) consumeStream(ctx context.Context, rcvr *awss3Receiver, format string, decoder encoding.LogsDecoder) error {
+	abort := ctx.Done()
 	for {
-		if err := ctx.Err(); err != nil {
-			return err
+		select {
+		case <-abort:
+			return ctx.Err()
+		default:
 		}
 		logs, err := decoder.DecodeLogs()
 		if errors.Is(err, io.EOF) {
@@ -368,9 +371,12 @@ func (r *logsReceiver) consumeStream(ctx context.Context, rcvr *awss3Receiver, f
 }
 
 func (r *metricsReceiver) consumeStream(ctx context.Context, rcvr *awss3Receiver, format string, decoder encoding.MetricsDecoder) error {
+	abort := ctx.Done()
 	for {
-		if err := ctx.Err(); err != nil {
-			return err
+		select {
+		case <-abort:
+			return ctx.Err()
+		default:
 		}
 		metrics, err := decoder.DecodeMetrics()
 		if errors.Is(err, io.EOF) {
