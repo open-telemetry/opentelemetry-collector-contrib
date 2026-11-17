@@ -26,7 +26,6 @@ type remoteConfigExtension struct {
 	telemetry         *instrumentationTelemetry
 	telemetryOnly     bool
 	maxRCRequestBytes int64
-	closeBackend      func()
 	config            *Config
 	settings          extension.Settings
 	newService        func(context.Context, component.Host) (remoteConfigService, error)
@@ -77,9 +76,6 @@ func (e *remoteConfigExtension) Start(ctx context.Context, host component.Host) 
 		if e.telemetry != nil {
 			e.telemetry.close()
 		}
-		if e.closeBackend != nil {
-			e.closeBackend()
-		}
 		_ = listener.Close()
 	}
 	if e.telemetry != nil {
@@ -126,9 +122,6 @@ func (e *remoteConfigExtension) Shutdown(ctx context.Context) error {
 	}
 	if e.telemetry != nil {
 		e.telemetry.close()
-	}
-	if e.closeBackend != nil {
-		e.closeBackend()
 	}
 	return errors.Join(err, serviceErr)
 }

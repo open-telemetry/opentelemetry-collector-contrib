@@ -7,7 +7,7 @@ go 1.26.0
 require (
 	github.com/DataDog/datadog-agent/pkg/config/mock v0.84.0-devel.0.20261030015547-4fcf7d423463
 	github.com/DataDog/datadog-agent/pkg/config/model v0.84.0-devel.0.20261030015547-4fcf7d423463
-	github.com/DataDog/datadog-agent/pkg/config/remote v0.84.0-devel.0.20261117175822-3905da59c8c4
+	github.com/DataDog/datadog-agent/pkg/config/remote v0.84.0-devel.0.20261030015547-4fcf7d423463
 	github.com/DataDog/datadog-agent/pkg/proto v0.85.0
 	github.com/DataDog/datadog-agent/pkg/trace/traceutil v0.84.0-devel.0.20261030015547-4fcf7d423463
 	github.com/DataDog/datadog-agent/pkg/version v0.85.0
@@ -19,12 +19,10 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.70.0
 	go.opentelemetry.io/collector/confmap v1.70.0
 	go.opentelemetry.io/collector/extension v1.70.0
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0
 	go.opentelemetry.io/otel v1.47.0
 	go.opentelemetry.io/otel/metric v1.47.0
 	go.opentelemetry.io/otel/sdk/metric v1.47.0
 	google.golang.org/grpc v1.85.0
-	google.golang.org/protobuf v1.36.12
 )
 
 require (
@@ -114,6 +112,7 @@ require (
 	go.opentelemetry.io/collector/internal/componentalias v0.164.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.70.0 // indirect
 	go.opentelemetry.io/collector/pipeline v1.70.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.47.0 // indirect
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
@@ -129,5 +128,6 @@ require (
 	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/time v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20261019180522-ce908d29299b // indirect
+	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

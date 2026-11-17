@@ -11,17 +11,12 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	configmock "github.com/DataDog/datadog-agent/pkg/config/mock"
-	configmodel "github.com/DataDog/datadog-agent/pkg/config/model"
-	rcapi "github.com/DataDog/datadog-agent/pkg/config/remote/api"
-	rcservice "github.com/DataDog/datadog-agent/pkg/config/remote/service"
 	pbgo "github.com/DataDog/datadog-agent/pkg/proto/pbgo/core"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -224,46 +219,18 @@ func TestAgentNormalization(t *testing.T) {
 	require.Equal(t, 200, w.Code)
 }
 
-func TestShutdownCancelsRealServiceBackend(t *testing.T) {
-	entered := make(chan struct{})
-	var once sync.Once
-	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/v0.1/org" {
-			once.Do(func() { close(entered) })
-			<-r.Context().Done()
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-	}))
-	t.Cleanup(backend.Close)
-	cfg := configmock.New(t)
-	cfg.Set("remote_configuration.no_tls", true, configmodel.SourceAgentRuntime)
-	u, err := url.Parse(backend.URL)
+func TestPublishedEngineCacheLifecycle(t *testing.T) {
+	set := extension.Settings{ID: component.NewID(Type), TelemetrySettings: componenttest.NewNopTelemetrySettings()}
+	config := DefaultConfig()
+	config.API.Key = "collector-secret"
+	config.CacheDirectory = t.TempDir()
+	server, err := New(set, config, configmock.New(t))
 	require.NoError(t, err)
-	api, err := rcapi.NewHTTPClient(rcapi.Auth{APIKey: "collector-secret"}, cfg, u)
-	require.NoError(t, err)
-	e := testExtension(t, &fakeService{})
-	reporter, err := newServiceReporter(e.settings)
-	require.NoError(t, err)
-	e.newService = func(ctx context.Context, _ component.Host) (remoteConfigService, error) {
-		return rcservice.NewService(cfg, "DDOT test", backend.URL, "test-host", func() []string { return nil }, reporter, "7.87.0",
-			rcservice.WithAPIKey("collector-secret"), rcservice.WithDatabasePath(t.TempDir()),
-			rcservice.WithAPIClient(boundedAPI{API: api, lifetime: ctx, timeout: time.Minute}))
-	}
-	require.NoError(t, e.Start(t.Context(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, e.Shutdown(t.Context())) })
-	select {
-	case <-entered:
-	case <-time.After(10 * time.Second):
-		t.Fatal("real service did not request organization data")
-	}
-	done := make(chan error, 1)
-	go func() { done <- e.Shutdown(t.Context()) }()
-	select {
-	case err := <-done:
+	e := server.(*remoteConfigExtension)
+	for range 2 {
+		service, err := e.newService(t.Context(), componenttest.NewNopHost())
 		require.NoError(t, err)
-	case <-time.After(5 * time.Second):
-		t.Fatal("shutdown did not cancel the stalled backend request")
+		require.NoError(t, service.Stop(), "the published engine must release the cache for reuse")
 	}
 }
 

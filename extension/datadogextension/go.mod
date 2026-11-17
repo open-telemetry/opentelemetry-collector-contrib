@@ -63,7 +63,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/config/helper v0.84.0-devel.0.20261030015547-4fcf7d423463 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/mock v0.84.0-devel.0.20261030015547-4fcf7d423463 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/nodetreemodel v0.84.0-devel.0.20261030015547-4fcf7d423463 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/remote v0.84.0-devel.0.20261117175822-3905da59c8c4 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/remote v0.84.0-devel.0.20261030015547-4fcf7d423463 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/setup v0.84.0-devel.0.20261030015547-4fcf7d423463 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/setup/constants v0.84.0-devel.0.20261030015547-4fcf7d423463 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/setup/generatedsettings v0.0.0-20261028224924-1c255663adbd // indirect

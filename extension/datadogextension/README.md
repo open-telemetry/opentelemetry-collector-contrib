@@ -142,9 +142,11 @@ The application does not need a Datadog API key. Non-loopback deployments need T
 and workload access controls. Probe execution and application of configuration remain
 in the SDK. This extension does not deliver DI output or implement OpAMP.
 
-The experiment pins the Agent RC module from
-[the Agent RC prototype](https://github.com/DataDog/datadog-agent/pull/60194).
-The HTTP-client injection API and its module release need review before this can ship.
+The experiment uses the published Agent RC engine at the public snapshot `v0.84.0-devel.0.20261030015547-4fcf7d423463`; it does not require changes to `datadog-agent`. The engine retains shared polling, caching, verification and targeting.
+
+The RC engine owns its backend HTTP client. Basic proxy settings pass through the extension's Agent configuration bridge, and normal HTTPS verification remains enabled. Collector custom CA/mTLS settings and HTTP instrumentation are not applied to RC backend calls. `remote_config.request_timeout` bounds SDK requests only: background RC requests do not gain an overall deadline, shutdown cancellation or explicit idle-pool cleanup from this adapter. They use the published client's default redirect policy. A stalled backend can delay updates and shutdown.
+
+These are documented POC limits, not production guarantees. See [published-engine limits](../../pkg/datadog/remoteconfig/README.md#published-engine-poc-limits). The SDK listener, SDK instrumentation telemetry forwarding and DI export keep their separate HTTP controls. Standalone Collector identity and RC backend health reporting still need agreement.
 
 ## Experimental SDK telemetry forwarding
 

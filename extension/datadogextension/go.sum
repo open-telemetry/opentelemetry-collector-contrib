@@ -68,8 +68,8 @@ github.com/DataDog/datadog-agent/pkg/config/model v0.84.0-devel.0.20261030015547
 github.com/DataDog/datadog-agent/pkg/config/model v0.84.0-devel.0.20261030015547-4fcf7d423463/go.mod h1:DF9WrFyhzFqbAfY2tJQPT6Y9TWZjYaMbzxR7MxRU9uU=
 github.com/DataDog/datadog-agent/pkg/config/nodetreemodel v0.84.0-devel.0.20261030015547-4fcf7d423463 h1:2Cax0NJb4uErt/gKq3Vm/CkIlCGg5JhH+0eXPPQCyeI=
 github.com/DataDog/datadog-agent/pkg/config/nodetreemodel v0.84.0-devel.0.20261030015547-4fcf7d423463/go.mod h1:3Mkc3seTvrtwqYBidYVaHQndfVVcGYC+vPb1GOSoZJE=
-github.com/DataDog/datadog-agent/pkg/config/remote v0.84.0-devel.0.20261117175822-3905da59c8c4 h1:K0/R9ne5fvdy/ZyQwMyt+KuHuKMe4Ctg13/StS2tuZU=
-github.com/DataDog/datadog-agent/pkg/config/remote v0.84.0-devel.0.20261117175822-3905da59c8c4/go.mod h1:SbB0WjaaniMDKccrq3BVKMkLBmept79/bCHdi3/xQtA=
+github.com/DataDog/datadog-agent/pkg/config/remote v0.84.0-devel.0.20261030015547-4fcf7d423463 h1:ELGMZ1j32q3F3NZgAI+XmV0HDXLjdjVkHG+eSpxofTM=
+github.com/DataDog/datadog-agent/pkg/config/remote v0.84.0-devel.0.20261030015547-4fcf7d423463/go.mod h1:g3hOH2rD+IqztwKcojKDJtulgsVWMb/TnD60NK8UVpU=
 github.com/DataDog/datadog-agent/pkg/config/setup v0.84.0-devel.0.20261030015547-4fcf7d423463 h1:qCxuDYniEiopLps4NnEKF/bHUFp0NwFixR9SiatD3Mc=
 github.com/DataDog/datadog-agent/pkg/config/setup v0.84.0-devel.0.20261030015547-4fcf7d423463/go.mod h1:gwm1n+ObyCB8uhguoC+UPOGczxAmVOoIiXCoaIr+Yf4=
 github.com/DataDog/datadog-agent/pkg/config/setup/constants v0.84.0-devel.0.20261030015547-4fcf7d423463 h1:TEO1nhiO5YiZySjnNTPWvpR3Qwbz8dmhZFe0iMmXmho=

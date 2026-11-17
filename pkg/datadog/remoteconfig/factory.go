@@ -9,10 +9,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
-	"net/url"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/config/model"
 	rcservice "github.com/DataDog/datadog-agent/pkg/config/remote/service"
@@ -41,7 +39,7 @@ func New(set extension.Settings, c *Config, cfg model.Reader) (extension.Extensi
 		return nil, err
 	}
 	e := &remoteConfigExtension{config: c, settings: set}
-	e.newService = func(ctx context.Context, host component.Host) (remoteConfigService, error) {
+	e.newService = func(context.Context, component.Host) (remoteConfigService, error) {
 		id := sha256.Sum256([]byte(set.ID.String()))
 		cache := filepath.Join(c.CacheDirectory, hex.EncodeToString(id[:]))
 		if err := os.MkdirAll(cache, 0o700); err != nil {
@@ -52,20 +50,10 @@ func New(set extension.Settings, c *Config, cfg model.Reader) (extension.Extensi
 			return nil, err
 		}
 		endpoint := "https://config." + c.API.Site
-		backendURL, err := url.Parse(endpoint)
-		if err != nil {
-			return nil, err
-		}
-		client, closeBackend, err := e.newAPIClient(ctx, host, cfg, backendURL)
-		if err != nil {
-			return nil, err
-		}
-		e.closeBackend = closeBackend
 		return rcservice.NewService(
 			staticConfig{cfg}, "OpenTelemetry Collector Remote Config", endpoint,
 			hostname, func() []string { return nil }, reporter, version.AgentVersion,
 			rcservice.WithAPIKey(string(c.API.Key)),
-			rcservice.WithAPIClient(boundedAPI{API: client, lifetime: ctx, timeout: 10 * time.Second}),
 			rcservice.WithDatabasePath(cache),
 			rcservice.WithConfigRootOverride(c.API.Site, ""),
 			rcservice.WithDirectorRootOverride(c.API.Site, ""),
