@@ -94,6 +94,7 @@ func (k *k8sObserver) Start(_ context.Context, _ component.Host) error {
 
 // Shutdown tells any cache.SharedInformers to stop running.
 func (k *k8sObserver) Shutdown(_ context.Context) error {
+	k.StopListAndWatch()
 	close(k.stop)
 	return nil
 }

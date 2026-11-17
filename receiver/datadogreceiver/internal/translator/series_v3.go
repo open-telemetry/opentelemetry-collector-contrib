@@ -192,7 +192,7 @@ func (d *seriesV3Decoder) decode() ([]*gogen.MetricPayload_MetricSeries, error) 
 			seriesType = gogen.MetricPayload_RATE
 		case intakev3.MetricType_Gauge:
 			seriesType = gogen.MetricPayload_GAUGE
-		case intakev3.MetricType_Sketch:
+		case intakev3.MetricType_DDSketch:
 			// The agent submits sketches to /api/intake/metrics/v3/sketches,
 			// never to the series endpoint.
 			return nil, fmt.Errorf("v3 payload: unexpected sketch metric %q in series payload", d.dictName[d.nameRef])

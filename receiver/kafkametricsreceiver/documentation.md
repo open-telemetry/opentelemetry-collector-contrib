@@ -256,13 +256,3 @@ replication factor of a topic.
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
 | kafka.cluster.alias | The alias name (string) of the cluster | Any Str | false | - | - |
 | kafka.cluster.id | The unique ID (string) of the Kafka cluster, as reported in cluster metadata. | Any Str | false | - | - |
-
-## Feature Gates
-
-This component has the following feature gates:
-
-| Feature Gate | Stage | Description | From Version | To Version | Reference |
-| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `receiver.kafkametricsreceiver.UseFranzGo` | stable | The Kafka Metrics receiver now uses the franz-go client to connect to Kafka. | v0.137.0 | v0.154.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41480) |
-
-For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

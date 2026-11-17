@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: exporter/faro
-note: Return an error instead of panicking when a stack trace frame cannot be parsed.
-issues: [52064]
-change_logs: [user]

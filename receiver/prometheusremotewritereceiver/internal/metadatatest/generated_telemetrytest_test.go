@@ -19,7 +19,11 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
+	tb.ReceiverPrometheusremotewriteDroppedSeries.Add(context.Background(), 1)
 	tb.ReceiverPrometheusremotewriteResourceCacheEvictions.Add(context.Background(), 1)
+	AssertEqualReceiverPrometheusremotewriteDroppedSeries(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualReceiverPrometheusremotewriteResourceCacheEvictions(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())

@@ -9,7 +9,7 @@ import (
 	"github.com/shirou/gopsutil/v4/mem"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/precision"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/precision"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper/internal/metadata"
 )
 

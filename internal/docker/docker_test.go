@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"runtime"
@@ -545,4 +546,141 @@ func TestTLSClientConfigInvalidCert(t *testing.T) {
 	assert.Nil(t, cli)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "could not load docker client TLS config")
+}
+
+// TestClientCloseClosesUnderlyingClient verifies that Client.Close closes idle transport connections.
+func TestClientCloseClosesUnderlyingClient(t *testing.T) {
+	var activeConns atomic.Int32
+
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`[]`))
+	}))
+	srv.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+		switch state {
+		case http.StateNew:
+			activeConns.Add(1)
+		case http.StateClosed:
+			activeConns.Add(-1)
+		}
+	}
+	srv.Start()
+	defer srv.Close()
+
+	cli, err := NewDockerClient(&Config{Endpoint: srv.URL, Timeout: 5 * time.Second}, zap.NewNop())
+	require.NoError(t, err)
+
+	err = cli.LoadContainerList(t.Context())
+	require.NoError(t, err)
+	assert.Positive(t, activeConns.Load())
+
+	err = cli.Close()
+	require.NoError(t, err)
+	time.Sleep(100 * time.Millisecond)
+
+	assert.Equal(t, int32(0), activeConns.Load(), "Underlying client transport should be closed")
+}
+
+// TestContainerEnvToMap verifies that ContainerEnvToMap correctly parses
+// environment variable strings, including those whose values contain "=".
+func TestContainerEnvToMap(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []string
+		expected map[string]string
+	}{
+		{
+			name:     "simple key=value",
+			input:    []string{"KEY=value"},
+			expected: map[string]string{"KEY": "value"},
+		},
+		{
+			name:     "value with embedded equals sign (issue #51948)",
+			input:    []string{"JAVA_OPTS=-Xmx=512m"},
+			expected: map[string]string{"JAVA_OPTS": "-Xmx=512m"},
+		},
+		{
+			name:     "value with multiple equals signs",
+			input:    []string{"CONN=host=db;pass=secret"},
+			expected: map[string]string{"CONN": "host=db;pass=secret"},
+		},
+		{
+			name:     "entry without equals sign is skipped",
+			input:    []string{"NOEQUALS"},
+			expected: map[string]string{},
+		},
+		{
+			name:     "entry with empty value is skipped",
+			input:    []string{"EMPTY="},
+			expected: map[string]string{},
+		},
+		{
+			name:     "mixed entries",
+			input:    []string{"SIMPLE=val", "JAVA_OPTS=-Xmx=512m", "NOEQUALS", "EMPTY="},
+			expected: map[string]string{"SIMPLE": "val", "JAVA_OPTS": "-Xmx=512m"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := ContainerEnvToMap(tc.input)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
+
+func TestContainerStateCounts(t *testing.T) {
+	containersJSON := `[
+		{"Id": "c1", "Image": "ubuntu:latest", "State": "running"},
+		{"Id": "c2", "Image": "redis:alpine", "State": "paused"},
+		{"Id": "c3", "Image": "postgres:14", "State": "created"},
+		{"Id": "c4", "Image": "nginx:latest", "State": "exited"},
+		{"Id": "c5", "Image": "busybox:latest", "State": "exited"},
+		{"Id": "c6", "Image": "dead_app:v1", "State": "dead"},
+		{"Id": "c7", "Image": "excluded_image:v1", "State": "exited"}
+	]`
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/containers/json") {
+			assert.Equal(t, "1", r.URL.Query().Get("all"))
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(containersJSON))
+	}))
+	defer srv.Close()
+
+	cli, err := NewDockerClient(&Config{
+		Endpoint:       srv.URL,
+		Timeout:        5 * time.Second,
+		ExcludedImages: []string{"excluded_image:*"},
+	}, zap.NewNop())
+	require.NoError(t, err)
+	defer cli.Close()
+
+	counts, err := cli.ContainerStateCounts(t.Context())
+	require.NoError(t, err)
+
+	assert.Equal(t, int64(1), counts["running"])
+	assert.Equal(t, int64(1), counts["paused"])
+	assert.Equal(t, int64(1), counts["created"])
+	assert.Equal(t, int64(2), counts["exited"])
+	assert.Equal(t, int64(1), counts["dead"])
+	assert.Equal(t, int64(0), counts["restarting"])
+}
+
+func TestContainerStateCountsError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	cli, err := NewDockerClient(&Config{Endpoint: srv.URL, Timeout: 5 * time.Second}, zap.NewNop())
+	require.NoError(t, err)
+	defer cli.Close()
+
+	counts, err := cli.ContainerStateCounts(t.Context())
+	require.Error(t, err)
+	assert.Nil(t, counts)
 }

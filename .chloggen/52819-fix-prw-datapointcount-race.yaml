@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: receiver/prometheus_remote_write
+note: Fix data race and panic when accessing metrics after ConsumeMetrics
+issues: [52819]
+subtext: Calculate dataPointCount prior to ConsumeMetrics to adhere to the consumer ownership contract.
+change_logs: [user]

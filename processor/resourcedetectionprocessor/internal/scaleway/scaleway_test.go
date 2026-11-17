@@ -4,184 +4,61 @@
 package scaleway
 
 import (
-	"net/http"
-	"net/http/httptest"
-	"strings"
+	"context"
+	"errors"
+	"fmt"
 	"testing"
 
-	instance "github.com/scaleway/scaleway-sdk-go/api/instance/v1"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/attribute"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
-const scalewaySample = `{
-  "allowed_actions": ["poweroff","terminate","reboot","stop_in_place","backup"],
-  "arch": "x86_64",
-  "boot_type": "local",
-  "bootscript": null,
-  "commercial_type": "STARDUST1-S",
-  "creation_date": "2025-09-12T22:42:24.690284+00:00",
-  "dynamic_ip_required": false,
-  "enable_ipv6": false,
-  "end_of_service": false,
-  "extra_networks": [],
-  "filesystems": [],
-  "hostname": "scw-interesting-bassi",
-  "id": "daa2ea5a-0ee6-4cdc-9f1a-e0d1cb4e6d86",
-  "image": {
-    "arch": "x86_64",
-    "creation_date": "2025-09-12T09:03:25.327625+00:00",
-    "default_bootscript": null,
-    "extra_volumes": {},
-    "from_server": "",
-    "id": "01fe25a9-2e95-41e2-9f3f-f7d3a00604be",
-    "modification_date": "2025-09-12T09:03:25.327625+00:00",
-    "name": "Ubuntu 24.04 Noble Numbat",
-    "organization": "51b656e3-4865-41e8-adbc-0c45bdd780db",
-    "project": "51b656e3-4865-41e8-adbc-0c45bdd780db",
-    "public": true,
-    "root_volume": {
-      "id": "4f312959-ef1f-41c9-9a98-a90f800e09c3",
-      "name": "",
-      "size": 0,
-      "volume_type": "sbs_snapshot"
-    },
-    "state": "available",
-    "tags": [],
-    "zone": "nl-ams-1"
-  },
-  "ipv6": null,
-  "location": {
-    "cluster_id": "15",
-    "hypervisor_id": "402",
-    "node_id": "134",
-    "platform_id": "23",
-    "zone_id": "nl-ams-1"
-  },
-  "mac_address": "de:00:00:58:4f:8f",
-  "maintenances": [],
-  "modification_date": "2025-09-12T22:42:28.448040+00:00",
-  "name": "scw-interesting-bassi",
-  "organization": "10542306-0c75-4265-9c2c-1fbfe4ea0bf0",
-  "placement_group": null,
-  "private_ip": null,
-  "private_nics": [],
-  "project": "10542306-0c75-4265-9c2c-1fbfe4ea0bf0",
-  "protected": false,
-  "public_ip": {
-    "address": "51.15.68.77",
-    "dynamic": false,
-    "family": "inet",
-    "gateway": "62.210.0.1",
-    "id": "8eb23745-d030-4da5-b0eb-75f2f2ccd9c1",
-    "ipam_id": "8dcfbb2c-83fb-4403-8bf0-8eae316b4be3",
-    "netmask": "32",
-    "provisioning_mode": "dhcp",
-    "state": "attached",
-    "tags": []
-  },
-  "public_ips": [
-    {
-      "address": "51.15.68.77",
-      "dynamic": false,
-      "family": "inet",
-      "gateway": "62.210.0.1",
-      "id": "8eb23745-d030-4da5-b0eb-75f2f2ccd9c1",
-      "ipam_id": "8dcfbb2c-83fb-4403-8bf0-8eae316b4be3",
-      "netmask": "32",
-      "provisioning_mode": "dhcp",
-      "state": "attached",
-      "tags": []
-    }
-  ],
-  "public_ips_v4": [
-    {
-      "address": "51.15.68.77",
-      "dynamic": false,
-      "family": "inet",
-      "gateway": "62.210.0.1",
-      "id": "8eb23745-d030-4da5-b0eb-75f2f2ccd9c1",
-      "ipam_id": "8dcfbb2c-83fb-4403-8bf0-8eae316b4be3",
-      "netmask": "32",
-      "provisioning_mode": "dhcp",
-      "state": "attached",
-      "tags": []
-    }
-  ],
-  "public_ips_v6": [],
-  "routed_ip_enabled": true,
-  "security_group": {
-    "id": "6dfa8805-0a86-42e8-b781-2889e726bf73",
-    "name": "Default security group"
-  },
-  "ssh_public_keys": [],
-  "state": "running",
-  "state_detail": "booted",
-  "tags": [],
-  "volumes": {
-    "0": {
-      "boot": false,
-      "id": "76d8ae14-6a36-43b3-b0e3-bce79cbd7b06",
-      "volume_type": "sbs_volume",
-      "zone": "nl-ams-1"
-    }
-  },
-  "zone": "nl-ams-1"
-}`
+const testSchemaURL = "https://opentelemetry.io/schemas/1.43.0"
 
-func TestNewDetector(t *testing.T) {
-	// Use a real SDK client pointed at a harmless test server.
-	srv := httptest.NewServer(http.NotFoundHandler())
-	t.Cleanup(srv.Close)
-
-	orig := newScalewayClient
-	t.Cleanup(func() { newScalewayClient = orig })
-
-	// Force the SDK to hit our test server instead of 169.254.42.42
-	newScalewayClient = func(opts ...instance.MetadataAPIOption) *instance.MetadataAPI {
-		api := instance.NewMetadataAPI(opts...)
-		api.MetadataURL = &srv.URL
-		return api
-	}
-
-	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
-	require.NoError(t, err)
-	require.NotNil(t, det)
+// fakeDetector stands in for the upstream SDK detector. Its metadata endpoints are
+// not injectable, so the adapter is exercised against canned SDK results instead
+// of a fake metadata server.
+type fakeDetector struct {
+	res *sdkresource.Resource
+	err error
 }
 
-func TestScalewayDetector_Detect_OK(t *testing.T) {
-	// Serve exactly your sample on /conf?format=json
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/conf") {
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(scalewaySample))
-			return
-		}
-		http.NotFound(w, r)
-	}))
-	t.Cleanup(srv.Close)
+func (f fakeDetector) Detect(context.Context) (*sdkresource.Resource, error) {
+	return f.res, f.err
+}
 
-	orig := newScalewayClient
-	t.Cleanup(func() { newScalewayClient = orig })
-	newScalewayClient = func(opts ...instance.MetadataAPIOption) *instance.MetadataAPI {
-		api := instance.NewMetadataAPI(opts...)
-		api.MetadataURL = &srv.URL
-		return api
+func withFakeDetector(t *testing.T, res *sdkresource.Resource, err error) {
+	t.Helper()
+
+	orig := newResourceDetector
+	newResourceDetector = func() sdkresource.Detector {
+		return fakeDetector{res: res, err: err}
 	}
+	t.Cleanup(func() { newResourceDetector = orig })
+}
 
-	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
-	require.NoError(t, err)
+// fullResource mirrors what the SDK detector reports for a healthy instance.
+func fullResource() *sdkresource.Resource {
+	return sdkresource.NewWithAttributes(testSchemaURL,
+		attribute.String("cloud.provider", "scaleway_cloud"),
+		attribute.String("cloud.platform", "scaleway_cloud_compute"),
+		attribute.String("cloud.account.id", "10542306-0c75-4265-9c2c-1fbfe4ea0bf0"),
+		attribute.String("cloud.availability_zone", "nl-ams-1"),
+		attribute.String("cloud.region", "nl-ams"),
+		attribute.String("host.id", "daa2ea5a-0ee6-4cdc-9f1a-e0d1cb4e6d86"),
+		attribute.String("host.image.id", "01fe25a9-2e95-41e2-9f3f-f7d3a00604be"),
+		attribute.String("host.image.name", "Ubuntu 24.04 Noble Numbat"),
+		attribute.String("host.name", "scw-interesting-bassi"),
+		attribute.String("host.type", "STARDUST1-S"),
+	)
+}
 
-	res, schemaURL, err := det.Detect(t.Context())
-	require.NoError(t, err)
-	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
-
-	attrs := res.Attributes().AsRaw()
-	// Region is derived from zone by trimming the trailing segment: "nl-ams-1" -> "nl-ams"
-	want := map[string]any{
+func fullAttributes() map[string]any {
+	return map[string]any{
 		"cloud.provider":          "scaleway_cloud",
 		"cloud.platform":          "scaleway_cloud_compute",
 		"cloud.account.id":        "10542306-0c75-4265-9c2c-1fbfe4ea0bf0",
@@ -193,27 +70,116 @@ func TestScalewayDetector_Detect_OK(t *testing.T) {
 		"host.name":               "scw-interesting-bassi",
 		"host.type":               "STARDUST1-S",
 	}
-	assert.Equal(t, want, attrs)
 }
 
-func TestScalewayDetector_NotOnScaleway(t *testing.T) {
-	// 404 everything to simulate "metadata not reachable"
-	srv := httptest.NewServer(http.NotFoundHandler())
-	t.Cleanup(srv.Close)
+func TestNewDetector(t *testing.T) {
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+	require.NoError(t, err)
+	require.NotNil(t, d)
+}
 
-	orig := newScalewayClient
-	t.Cleanup(func() { newScalewayClient = orig })
-	newScalewayClient = func(opts ...instance.MetadataAPIOption) *instance.MetadataAPI {
-		api := instance.NewMetadataAPI(opts...)
-		api.MetadataURL = &srv.URL
-		return api
+func TestScalewayDetector_Detect_OK(t *testing.T) {
+	withFakeDetector(t, fullResource(), nil)
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+	require.NoError(t, err)
+
+	res, schemaURL, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, testSchemaURL, schemaURL)
+	require.Equal(t, fullAttributes(), res.Attributes().AsRaw())
+}
+
+// The SDK detector always reports every attribute, so the detector must drop the
+// ones disabled in the configuration.
+func TestScalewayDetector_Detect_DisabledAttribute(t *testing.T) {
+	withFakeDetector(t, fullResource(), nil)
+
+	cfg := CreateDefaultConfig()
+	cfg.ResourceAttributes.HostImageName.Enabled = false
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	require.NoError(t, err)
+
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+
+	want := fullAttributes()
+	delete(want, "host.image.name")
+	require.Equal(t, want, res.Attributes().AsRaw())
+}
+
+func TestScalewayDetector_NoMetadata(t *testing.T) {
+	errNoMetadata := errors.New("no metadata")
+
+	tests := []struct {
+		name                  string
+		res                   *sdkresource.Resource
+		detectErr             error
+		failOnMissingMetadata bool
+		wantErr               string
+	}{
+		{
+			name: "not on Scaleway",
+			res:  sdkresource.Empty(),
+		},
+		{
+			name:                  "not on Scaleway, fail on missing metadata",
+			res:                   sdkresource.Empty(),
+			failOnMissingMetadata: true,
+			wantErr:               "scaleway metadata unavailable",
+		},
+		{
+			name:      "metadata service error",
+			detectErr: errNoMetadata,
+		},
+		{
+			name:                  "metadata service error, fail on missing metadata",
+			detectErr:             errNoMetadata,
+			failOnMissingMetadata: true,
+			wantErr:               errNoMetadata.Error(),
+		},
 	}
 
-	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
-	require.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			withFakeDetector(t, tt.res, tt.detectErr)
 
-	res, schemaURL, err := det.Detect(t.Context())
-	require.NoError(t, err)
-	assert.True(t, internal.IsEmptyResource(res))
-	assert.Empty(t, schemaURL)
+			d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), tt.failOnMissingMetadata)
+			require.NoError(t, err)
+
+			res, schemaURL, err := d.Detect(t.Context())
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+			require.True(t, internal.IsEmptyResource(res))
+			require.Empty(t, schemaURL)
+		})
+	}
+}
+
+// A partial result is kept with and without fail_on_missing_metadata: that flag
+// covers an unusable metadata service, not a field absent from a good response.
+func TestScalewayDetector_PartialMetadata(t *testing.T) {
+	for _, failOnMissingMetadata := range []bool{false, true} {
+		t.Run(fmt.Sprintf("failOnMissingMetadata=%t", failOnMissingMetadata), func(t *testing.T) {
+			partial := sdkresource.NewWithAttributes(testSchemaURL,
+				attribute.String("cloud.provider", "scaleway_cloud"),
+				attribute.String("host.name", "scw-interesting-bassi"),
+			)
+			withFakeDetector(t, partial, fmt.Errorf("%w: id: not present in metadata", sdkresource.ErrPartialResource))
+
+			d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), failOnMissingMetadata)
+			require.NoError(t, err)
+
+			res, schemaURL, err := d.Detect(t.Context())
+			require.NoError(t, err)
+			require.Equal(t, testSchemaURL, schemaURL)
+			require.Equal(t, map[string]any{
+				"cloud.provider": "scaleway_cloud",
+				"host.name":      "scw-interesting-bassi",
+			}, res.Attributes().AsRaw())
+		})
+	}
 }
