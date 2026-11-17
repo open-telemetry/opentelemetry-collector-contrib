@@ -1,0 +1,19 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: exporter/prometheus_remote_write
+
+# A brief description of the change. Surround with quotes if it needs to start with a backtick (`).
+note: Preserve HTTP 429 status information in errors returned after retries are exhausted.
+
+# Mandatory: One or more tracking issues related to the change.
+issues: [53251]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+subtext:
+
+# Include 'user' if the change is relevant to end users.
+change_logs: [user]
