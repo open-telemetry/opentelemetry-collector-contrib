@@ -37,7 +37,8 @@ type pc struct {
 	ctx    context.Context
 	cancel context.CancelCauseFunc
 
-	mailbox *partitionMailbox
+	mailbox   *partitionMailbox
+	telemetry *partitionTelemetry
 	// skipConsume holds offsets this worker already finished above a rewind
 	// hole. It stays nil until a rewind writes it. Entries drop when the
 	// marked prefix advances past them, and the map dies with pc on rebalance.
@@ -84,6 +85,7 @@ func (p *pc) cancelContext(err error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.cancel(err)
+	p.telemetry.stop()
 }
 
 // addPauseReason records why fetching must remain paused.
@@ -127,6 +129,7 @@ func (c *franzConsumer) runPartitionWorker(pc *pc, tp topicPartition) {
 	}
 	partition := map[string][]int32{tp.topic: {tp.partition}}
 	for {
+		pc.mailbox.waitForData()
 		select {
 		case <-pc.ctx.Done():
 			return
