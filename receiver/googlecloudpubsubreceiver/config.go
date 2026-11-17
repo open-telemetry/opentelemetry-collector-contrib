@@ -62,8 +62,9 @@ type Config struct {
 	// on_decode_error sets how a message that the configured encoding fails to decode is
 	// handled. "ignore" (the default) acknowledges and drops the message, counting it in
 	// the encoding error metric. "propagate" leaves the message unacknowledged, so it is
-	// redelivered after the ack deadline expires; this was the previous default and, without
-	// a dead-letter policy, it makes an undecodable message redeliver forever. "nack" negatively
+	// redelivered after the ack deadline expires; this was the previous default and it makes an
+	// undecodable message redeliver forever, even with a dead letter policy, because an expired
+	// ack deadline on the streaming pull does not count as a delivery attempt. "nack" negatively
 	// acknowledges the message (a modify ack deadline of 0), so the subscription retry policy
 	// or dead letter policy applies.
 	OnDecodeError string `mapstructure:"on_decode_error"`

@@ -34,7 +34,7 @@ The following configuration options are supported:
 * `on_decode_error` (Optional): What to do with a message that the configured encoding fails to decode. See
   [Error handling](#error-handling) for more details. One of:
   * `ignore` (default): acknowledge and drop the message, counting it in the encoding error metric.
-  * `propagate`: do not acknowledge the message; it is redelivered after the ack deadline expires. This was the previous default; without a dead-letter policy it makes an undecodable message redeliver forever — prefer `ignore` or `nack`.
+  * `propagate`: do not acknowledge the message; it is redelivered after the ack deadline expires. This was the previous default and makes an undecodable message redeliver forever, even with a dead-letter policy (see [Error handling](#error-handling)) — prefer `ignore` or `nack`.
   * `nack`: negatively acknowledge the message, so the subscription retry policy or dead-letter policy applies.
 * `on_pipeline_error` (Optional): What to do with a message that the downstream pipeline rejects with a permanent
   error. Transient rejections (a full sending queue, memory limiter refusal) are never acknowledged nor negatively
@@ -125,12 +125,13 @@ happens on failure:
 * `on_pipeline_error` applies when the downstream pipeline returns an error for a decoded message. The default
   `ack` acknowledges and drops the message, `nack` negatively acknowledges it.
 
-Both an ack deadline expiry and a `nack` (a modify-ack-deadline of 0) count as a delivery attempt toward the
-`maxDeliveryAttempts` of a subscription [dead-letter policy](https://cloud.google.com/pubsub/docs/handling-failures);
-without a dead-letter topic, a message that keeps failing is redelivered forever. **Only use `nack` with a
-subscription retry policy (exponential backoff) and/or a dead-letter topic configured**: on a subscription with
-the default immediate-retry policy and no dead-letter topic, a message that keeps failing is redelivered in a
-hot loop.
+A `nack` (a modify-ack-deadline of 0) counts as a delivery attempt toward the `maxDeliveryAttempts` of a
+subscription [dead-letter policy](https://cloud.google.com/pubsub/docs/handling-failures), so a message that keeps
+failing is dead-lettered after that many attempts. An ack deadline expiry on the receiver's streaming pull does
+not advance the delivery attempt counter, so with `propagate` a dead-letter policy does not end the redelivery
+loop; use `nack` to dead-letter undecodable messages. **Only use `nack` with a subscription retry policy
+(exponential backoff) and/or a dead-letter topic configured**: on a subscription with the default immediate-retry
+policy and no dead-letter topic, a message that keeps failing is redelivered in a hot loop.
 
 ### Flow control
 
