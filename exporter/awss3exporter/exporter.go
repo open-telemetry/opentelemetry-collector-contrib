@@ -88,6 +88,10 @@ func (*s3Exporter) Capabilities() consumer.Capabilities {
 }
 
 func (e *s3Exporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	if md.ResourceMetrics().Len() == 0 {
+		return nil
+	}
+
 	buf, err := e.marshaler.MarshalMetrics(md)
 	if err != nil {
 		return err
@@ -98,6 +102,10 @@ func (e *s3Exporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) err
 }
 
 func (e *s3Exporter) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
+	if logs.ResourceLogs().Len() == 0 {
+		return nil
+	}
+
 	buf, err := e.marshaler.MarshalLogs(logs)
 	if err != nil {
 		return err
@@ -109,6 +117,10 @@ func (e *s3Exporter) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
 }
 
 func (e *s3Exporter) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
+	if traces.ResourceSpans().Len() == 0 {
+		return nil
+	}
+
 	buf, err := e.marshaler.MarshalTraces(traces)
 	if err != nil {
 		return err

@@ -9,7 +9,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/upload"
@@ -95,4 +98,116 @@ func TestLogWithBucketAndPrefixAttrs(t *testing.T) {
 	logs := getTestLogs(t)
 	exporter := getLogExporterWithBucketAndPrefixAttrs(t)
 	assert.NoError(t, exporter.ConsumeLogs(t.Context(), logs))
+}
+
+type recordingWriter struct {
+	uploadedData []byte
+	uploadOpts   *upload.UploadOptions
+	uploadCalls  int
+}
+
+func (rw *recordingWriter) Upload(_ context.Context, buf []byte, uploadOpts *upload.UploadOptions) error {
+	rw.uploadedData = buf
+	rw.uploadOpts = uploadOpts
+	rw.uploadCalls++
+	return nil
+}
+
+func TestEmptyTelemetryDoesNotPanic(t *testing.T) {
+	marshaler, err := newMarshaler("otlp_json", zap.NewNop())
+	require.NoError(t, err)
+
+	writer := &recordingWriter{}
+	exporter := &s3Exporter{
+		config:    createDefaultConfig().(*Config),
+		uploader:  writer,
+		logger:    zap.NewNop(),
+		marshaler: marshaler,
+	}
+
+	ctx := t.Context()
+
+	// Empty logs
+	assert.NotPanics(t, func() {
+		err := exporter.ConsumeLogs(ctx, plog.NewLogs())
+		assert.NoError(t, err)
+	})
+	assert.Equal(t, 0, writer.uploadCalls, "Upload should not be called for empty logs")
+
+	// Empty metrics
+	assert.NotPanics(t, func() {
+		err := exporter.ConsumeMetrics(ctx, pmetric.NewMetrics())
+		assert.NoError(t, err)
+	})
+	assert.Equal(t, 0, writer.uploadCalls, "Upload should not be called for empty metrics")
+
+	// Empty traces
+	assert.NotPanics(t, func() {
+		err := exporter.ConsumeTraces(ctx, ptrace.NewTraces())
+		assert.NoError(t, err)
+	})
+	assert.Equal(t, 0, writer.uploadCalls, "Upload should not be called for empty traces")
+}
+
+func TestConsumeMetrics(t *testing.T) {
+	marshaler, err := newMarshaler("otlp_json", zap.NewNop())
+	require.NoError(t, err)
+
+	writer := &recordingWriter{}
+	config := createDefaultConfig().(*Config)
+	config.ResourceAttrsToS3.S3Bucket = s3BucketKey
+	config.ResourceAttrsToS3.S3Prefix = s3PrefixKey
+
+	exporter := &s3Exporter{
+		config:    config,
+		uploader:  writer,
+		logger:    zap.NewNop(),
+		marshaler: marshaler,
+	}
+
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr(s3BucketKey, overrideBucket)
+	rm.Resource().Attributes().PutStr(s3PrefixKey, overridePrefix)
+	metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric.SetName("system.cpu.load")
+	metric.SetEmptyGauge().DataPoints().AppendEmpty().SetDoubleValue(1.23)
+
+	err = exporter.ConsumeMetrics(t.Context(), md)
+	require.NoError(t, err)
+	assert.Equal(t, 1, writer.uploadCalls)
+	assert.Equal(t, overrideBucket, writer.uploadOpts.OverrideBucket)
+	assert.Equal(t, overridePrefix, writer.uploadOpts.OverridePrefix)
+	assert.Contains(t, string(writer.uploadedData), "system.cpu.load")
+}
+
+func TestConsumeTraces(t *testing.T) {
+	marshaler, err := newMarshaler("otlp_json", zap.NewNop())
+	require.NoError(t, err)
+
+	writer := &recordingWriter{}
+	config := createDefaultConfig().(*Config)
+	config.ResourceAttrsToS3.S3Bucket = s3BucketKey
+	config.ResourceAttrsToS3.S3Prefix = s3PrefixKey
+
+	exporter := &s3Exporter{
+		config:    config,
+		uploader:  writer,
+		logger:    zap.NewNop(),
+		marshaler: marshaler,
+	}
+
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr(s3BucketKey, overrideBucket)
+	rs.Resource().Attributes().PutStr(s3PrefixKey, overridePrefix)
+	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetName("GET /api/v1/resource")
+
+	err = exporter.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+	assert.Equal(t, 1, writer.uploadCalls)
+	assert.Equal(t, overrideBucket, writer.uploadOpts.OverrideBucket)
+	assert.Equal(t, overridePrefix, writer.uploadOpts.OverridePrefix)
+	assert.Contains(t, string(writer.uploadedData), "GET /api/v1/resource")
 }
