@@ -379,3 +379,33 @@ func TestReceiveDrainsDecoderRemainder(t *testing.T) {
 	err := r.receive(t.Context(), "object.txt", iotest.ErrReader(failure))
 	require.ErrorIs(t, err, failure)
 }
+
+func TestReceiveCancellationAtEOF(t *testing.T) {
+	tests := []struct {
+		name             string
+		cancelDuringRead bool
+	}{
+		{name: "decoder"},
+		{name: "drain", cancelDuringRead: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			ext := streamTestExtension{logs: func(io.Reader) (encoding.LogsDecoder, error) {
+				return streamTestDecoder{decode: func() error {
+					if !tt.cancelDuringRead {
+						cancel()
+					}
+					return io.EOF
+				}}, nil
+			}}
+			r := newStreamTestReceiver(t, &logsReceiver{}, ext)
+			input := readFunc(func([]byte) (int, error) {
+				cancel()
+				return 0, io.EOF
+			})
+			require.ErrorIs(t, r.receive(ctx, "logs.txt", input), context.Canceled)
+		})
+	}
+}
