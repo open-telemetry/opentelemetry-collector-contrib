@@ -35,12 +35,16 @@ func newStreamTestReceiver(t *testing.T, processor receiverProcessor, ext compon
 	t.Helper()
 	settings := receivertest.NewNopSettings(metadata.Type)
 	obs, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverID: settings.ID, Transport: "s3", ReceiverCreateSettings: settings,
+		ReceiverID:             settings.ID,
+		Transport:              "s3",
+		ReceiverCreateSettings: settings,
 	})
 	require.NoError(t, err)
 	return &awss3Receiver{
-		logger: zap.NewNop(), obsrecv: obs, dataProcessor: processor,
-		extensions: encodingExtensions{{extension: ext, suffix: ".txt"}},
+		logger:        zap.NewNop(),
+		obsrecv:       obs,
+		dataProcessor: processor,
+		extensions:    encodingExtensions{{extension: ext, suffix: ".txt"}},
 	}
 }
 
@@ -48,7 +52,8 @@ func newTextExtension(t *testing.T) extension.Extension {
 	t.Helper()
 	factory := textencodingextension.NewFactory()
 	ext, err := factory.Create(t.Context(), extension.Settings{
-		ID: component.NewID(factory.Type()), TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		ID:                component.NewID(factory.Type()),
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}, factory.CreateDefaultConfig())
 	require.NoError(t, err)
 	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
@@ -188,13 +193,56 @@ func TestReceiveStreamErrors(t *testing.T) {
 		wantDecoded        int
 		wantConsumed       int
 	}{
-		{name: "success", input: "ab", wantDecoded: 3, wantConsumed: 2},
-		{name: "create", input: "ab", createErr: failure, wantErr: failure},
-		{name: "decode", input: "ab", decodeErr: failure, wantErr: failure, wantDecoded: 2, wantConsumed: 1},
-		{name: "read", input: "a", readErr: failure, wantErr: failure, wantDecoded: 2, wantConsumed: 1},
-		{name: "consumer", input: "ab", consumerErr: failure, wantErr: failure, wantDecoded: 1, wantConsumed: 1},
-		{name: "cancel", input: "ab", cancelAfterConsume: true, wantErr: context.Canceled, wantDecoded: 1, wantConsumed: 1},
-		{name: "cancel_before_read", input: "ab", cancelBeforeRead: true, wantErr: context.Canceled},
+		{
+			name:         "success",
+			input:        "ab",
+			wantDecoded:  3,
+			wantConsumed: 2,
+		},
+		{
+			name:      "create",
+			input:     "ab",
+			createErr: failure,
+			wantErr:   failure,
+		},
+		{
+			name:         "decode",
+			input:        "ab",
+			decodeErr:    failure,
+			wantErr:      failure,
+			wantDecoded:  2,
+			wantConsumed: 1,
+		},
+		{
+			name:         "read",
+			input:        "a",
+			readErr:      failure,
+			wantErr:      failure,
+			wantDecoded:  2,
+			wantConsumed: 1,
+		},
+		{
+			name:         "consumer",
+			input:        "ab",
+			consumerErr:  failure,
+			wantErr:      failure,
+			wantDecoded:  1,
+			wantConsumed: 1,
+		},
+		{
+			name:               "cancel",
+			input:              "ab",
+			cancelAfterConsume: true,
+			wantErr:            context.Canceled,
+			wantDecoded:        1,
+			wantConsumed:       1,
+		},
+		{
+			name:             "cancel_before_read",
+			input:            "ab",
+			cancelBeforeRead: true,
+			wantErr:          context.Canceled,
+		},
 	}
 	for _, signal := range []string{"logs", "metrics"} {
 		for _, tt := range tests {
