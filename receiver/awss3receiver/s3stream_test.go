@@ -43,16 +43,18 @@ func TestS3StreamAcknowledgement(t *testing.T) {
 	corruptGzip := gzipCompress(content)
 	corruptGzip[len(corruptGzip)-1] ^= 0xff
 	tests := []struct {
-		name        string
-		key         string
-		content     []byte
-		readErr     error
-		consumerErr error
-		closeErr    error
-		wantErr     error
-		wantRecords int
-		wantTagged  int
-		wantDeleted int
+		name                string
+		key                 string
+		content             []byte
+		readErr             error
+		consumerErr         error
+		closeErr            error
+		wantErr             error
+		wantRecords         int
+		wantTagged          int
+		wantDeleted         int
+		maxUnmarshalSize    int64
+		wantPartialDelivery bool
 	}{
 		{
 			name:        "success",
@@ -63,31 +65,43 @@ func TestS3StreamAcknowledgement(t *testing.T) {
 			wantDeleted: 1,
 		},
 		{
-			name:    "read_error",
-			key:     "logs.txt",
-			content: content,
-			readErr: failure,
-			wantErr: failure,
+			name:                "read_error",
+			wantPartialDelivery: true,
+			key:                 "logs.txt",
+			content:             content,
+			readErr:             failure,
+			wantErr:             failure,
 		},
 		{
-			name:    "corrupt_gzip",
-			key:     "logs.txt.gz",
-			content: corruptGzip,
-			wantErr: gzip.ErrChecksum,
+			name:                "corrupt_gzip",
+			wantPartialDelivery: true,
+			key:                 "logs.txt.gz",
+			content:             corruptGzip,
+			wantErr:             gzip.ErrChecksum,
 		},
 		{
-			name:        "consumer_error",
-			key:         "logs.txt",
-			content:     content,
-			consumerErr: failure,
-			wantErr:     failure,
+			name:                "consumer_error",
+			wantPartialDelivery: true,
+			key:                 "logs.txt",
+			content:             content,
+			consumerErr:         failure,
+			wantErr:             failure,
 		},
 		{
-			name:     "close_error",
-			key:      "logs.txt",
-			content:  content,
-			closeErr: failure,
-			wantErr:  failure,
+			name:                "close_error",
+			wantPartialDelivery: true,
+			key:                 "logs.txt",
+			content:             content,
+			closeErr:            failure,
+			wantErr:             failure,
+		},
+
+		{
+			name:             "buffer_limit",
+			key:              "logs.json.gz",
+			content:          gzipCompress([]byte(strings.Repeat(" ", 4096) + "{}")),
+			maxUnmarshalSize: 16,
+			wantErr:          errUnmarshalSizeLimit,
 		},
 	}
 	for _, mode := range []string{"sqs", "time"} {
@@ -108,6 +122,7 @@ func TestS3StreamAcknowledgement(t *testing.T) {
 				})
 				require.NoError(t, err)
 				r := newStreamTestReceiver(t, &logsReceiver{consumer: c}, newTextExtension(t))
+				r.maxUnmarshalSize = tt.maxUnmarshalSize
 				client := &mockSingleObjectAPI{
 					getObjectFunc: func(context.Context, *s3.GetObjectInput, ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
 						return &s3.GetObjectOutput{Body: body}, nil
@@ -166,8 +181,9 @@ func TestS3StreamAcknowledgement(t *testing.T) {
 					queue.AssertNumberOfCalls(t, "DeleteMessage", tt.wantDeleted)
 				}
 				require.Equal(t, 1, body.closed)
-				require.Positive(t, consumed, "the stream should deliver a batch before a later failure")
-				if tt.wantErr == nil {
+				if tt.wantPartialDelivery {
+					require.Positive(t, consumed, "the stream should deliver a batch before a later failure")
+				} else {
 					require.Equal(t, tt.wantRecords, consumed)
 				}
 				require.Equal(t, tt.wantTagged, tagged)

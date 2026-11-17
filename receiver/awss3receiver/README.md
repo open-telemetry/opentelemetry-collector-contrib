@@ -44,6 +44,7 @@ The following exporter configuration parameters are supported.
 | `endpoint`              | overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                                       |             | Optional |
 | `endpoint_partition_id` | partition id to use if `endpoint` is specified.                                                                                            | "aws"       | Optional |
 | `s3_force_path_style`   | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html) | false       | Optional |
+| `max_unmarshal_size`   | Maximum decompressed bytes buffered by a non-streaming decoder. Zero uses the default; negative values are invalid. Streaming decoders are not subject to this limit. | 268435456 (256 MiB) | Optional |
 | `decompression`         | Algorithm used to decompress objects whose key does not end with `.gz` or `.zst`. See [Decompression](#decompression).                    | none        | Optional |
 | `sqs:`                  |                                                                                                                                            |             |          |
 | `queue_url`             | The URL of the SQS queue that receives S3 bucket notifications                                                                             |             | Required if fetching by SQS notification |
@@ -99,7 +100,11 @@ defaults, typically 1,000 records or 1 MiB. Memory use depends on the decoder, i
 sizes, and downstream buffering, rather than requiring the entire object in memory.
 
 Built-in OTLP JSON/Protocol Buffers decoding, traces, and encoding extensions without streaming
-support still buffer the decompressed object before decoding.
+support still buffer the decompressed object before decoding. These paths reject objects larger
+than `s3downloader.max_unmarshal_size` (256 MiB by default), measured after decompression.
+Increase this limit if you need to decode larger objects and have sufficient memory. A rejected
+object is not tagged as ingested and its SQS message is not deleted. The limit does not apply to
+streaming decoders; configure their record and batch size limits to control memory use.
 
 An object is tagged as ingested, and its SQS message is deleted, only after the entire object has
 been read and all batches accepted by the pipeline. A failure after some batches have been accepted

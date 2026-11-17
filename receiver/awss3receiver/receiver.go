@@ -37,16 +37,17 @@ type receiverProcessor interface {
 }
 
 type awss3Receiver struct {
-	reader          s3Reader
-	logger          *zap.Logger
-	cancel          context.CancelFunc
-	obsrecv         *receiverhelper.ObsReport
-	encodingsConfig []Encoding
-	telemetryType   string
-	dataProcessor   receiverProcessor
-	extensions      encodingExtensions
-	notifier        statusNotifier
-	decompression   configcompression.Type
+	reader           s3Reader
+	logger           *zap.Logger
+	cancel           context.CancelFunc
+	obsrecv          *receiverhelper.ObsReport
+	encodingsConfig  []Encoding
+	telemetryType    string
+	dataProcessor    receiverProcessor
+	extensions       encodingExtensions
+	notifier         statusNotifier
+	decompression    configcompression.Type
+	maxUnmarshalSize int64
 }
 
 func newAWSS3Receiver(ctx context.Context, cfg *Config, telemetryType string, settings receiver.Settings, processor receiverProcessor) (*awss3Receiver, error) {
@@ -80,15 +81,16 @@ func newAWSS3Receiver(ctx context.Context, cfg *Config, telemetryType string, se
 	}
 
 	return &awss3Receiver{
-		reader:          reader,
-		telemetryType:   telemetryType,
-		logger:          settings.Logger,
-		cancel:          nil,
-		obsrecv:         obsrecv,
-		dataProcessor:   processor,
-		encodingsConfig: cfg.Encodings,
-		notifier:        notifier,
-		decompression:   cfg.S3Downloader.Decompression,
+		reader:           reader,
+		telemetryType:    telemetryType,
+		logger:           settings.Logger,
+		cancel:           nil,
+		obsrecv:          obsrecv,
+		dataProcessor:    processor,
+		encodingsConfig:  cfg.Encodings,
+		notifier:         notifier,
+		decompression:    cfg.S3Downloader.Decompression,
+		maxUnmarshalSize: cfg.S3Downloader.MaxUnmarshalSize,
 	}, nil
 }
 
@@ -211,7 +213,7 @@ func (r *traceReceiver) processReceivedData(ctx context.Context, rcvr *awss3Rece
 		return nil
 	}
 	rcvr.logger.Debug("Processing trace file", zap.String("key", key), zap.String("format", format))
-	buf, err := readAll(ctx, data)
+	buf, err := readAll(ctx, data, rcvr.maxUnmarshalSize)
 	if err != nil {
 		return err
 	}
@@ -264,7 +266,7 @@ func (r *metricsReceiver) processReceivedData(ctx context.Context, rcvr *awss3Re
 		return nil
 	}
 	rcvr.logger.Debug("Processing metric file", zap.String("key", key), zap.String("format", format))
-	buf, err := readAll(ctx, data)
+	buf, err := readAll(ctx, data, rcvr.maxUnmarshalSize)
 	if err != nil {
 		return err
 	}
@@ -317,7 +319,7 @@ func (r *logsReceiver) processReceivedData(ctx context.Context, rcvr *awss3Recei
 		return nil
 	}
 	rcvr.logger.Debug("Processing log file", zap.String("key", key), zap.String("format", format))
-	buf, err := readAll(ctx, data)
+	buf, err := readAll(ctx, data, rcvr.maxUnmarshalSize)
 	if err != nil {
 		return err
 	}

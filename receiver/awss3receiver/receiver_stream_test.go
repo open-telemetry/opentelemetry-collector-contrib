@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -408,4 +409,116 @@ func TestReceiveCancellationAtEOF(t *testing.T) {
 			require.ErrorIs(t, r.receive(ctx, "logs.txt", input), context.Canceled)
 		})
 	}
+}
+
+func TestReceiveBufferedSizeLimit(t *testing.T) {
+	compressions := []struct {
+		name     string
+		suffix   string
+		compress func([]byte) []byte
+	}{
+		{
+			name:     "plain",
+			compress: bytes.Clone,
+		},
+		{
+			name:     "gzip",
+			suffix:   ".gz",
+			compress: gzipCompress,
+		},
+		{
+			name:     "zstd",
+			suffix:   ".zst",
+			compress: zstdCompress,
+		},
+	}
+	signals := []struct {
+		name      string
+		processor func(func()) receiverProcessor
+	}{
+		{
+			name: "logs",
+			processor: func(consume func()) receiverProcessor {
+				c, err := consumer.NewLogs(func(context.Context, plog.Logs) error {
+					consume()
+					return nil
+				})
+				require.NoError(t, err)
+				return &logsReceiver{consumer: c}
+			},
+		},
+		{
+			name: "metrics",
+			processor: func(consume func()) receiverProcessor {
+				c, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error {
+					consume()
+					return nil
+				})
+				require.NoError(t, err)
+				return &metricsReceiver{consumer: c}
+			},
+		},
+		{
+			name: "traces",
+			processor: func(consume func()) receiverProcessor {
+				c, err := consumer.NewTraces(func(context.Context, ptrace.Traces) error {
+					consume()
+					return nil
+				})
+				require.NoError(t, err)
+				return &traceReceiver{consumer: c}
+			},
+		},
+	}
+	content := []byte(strings.Repeat(" ", 4096) + "{}")
+	tests := []struct {
+		name         string
+		limit        int64
+		wantErr      error
+		wantConsumed int
+	}{
+		{
+			name:         "exact_limit",
+			limit:        int64(len(content)),
+			wantConsumed: 1,
+		},
+		{
+			name:    "over_limit",
+			limit:   int64(len(content) - 1),
+			wantErr: errUnmarshalSizeLimit,
+		},
+		{
+			name:    "large_expansion",
+			limit:   16,
+			wantErr: errUnmarshalSizeLimit,
+		},
+	}
+	for _, signal := range signals {
+		for _, compression := range compressions {
+			for _, tt := range tests {
+				t.Run(signal.name+"/"+compression.name+"/"+tt.name, func(t *testing.T) {
+					var consumed int
+					r := newStreamTestReceiver(t, signal.processor(func() { consumed++ }), nil)
+					r.maxUnmarshalSize = tt.limit
+					body := compression.compress(content)
+					err := r.receive(t.Context(), "object.json"+compression.suffix, bytes.NewReader(body))
+					require.ErrorIs(t, err, tt.wantErr)
+					require.Equal(t, tt.wantConsumed, consumed)
+				})
+			}
+		}
+	}
+}
+
+func TestReceiveStreamingExceedsBufferedLimit(t *testing.T) {
+	var consumed int
+	c, err := consumer.NewLogs(func(_ context.Context, logs plog.Logs) error {
+		consumed += logs.LogRecordCount()
+		return nil
+	})
+	require.NoError(t, err)
+	r := newStreamTestReceiver(t, &logsReceiver{consumer: c}, newTextExtension(t))
+	r.maxUnmarshalSize = 1
+	require.NoError(t, r.receive(t.Context(), "logs.txt.gz", bytes.NewReader(gzipCompress([]byte("one\ntwo\n")))))
+	require.Equal(t, 2, consumed)
 }

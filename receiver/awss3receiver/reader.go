@@ -7,12 +7,21 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 )
 
-func readAll(ctx context.Context, reader io.Reader) ([]byte, error) {
+var errUnmarshalSizeLimit = errors.New("decompressed object exceeds s3downloader.max_unmarshal_size")
+
+func readAll(ctx context.Context, reader io.Reader, limit int64) ([]byte, error) {
+	if limit == 0 {
+		limit = defaultMaxUnmarshalSize
+	}
 	var buf bytes.Buffer
-	err := copyReader(ctx, &buf, reader)
+	err := copyReader(ctx, &buf, io.LimitReader(reader, limit+1))
+	if int64(buf.Len()) > limit {
+		return nil, errors.Join(err, fmt.Errorf("%w (%d bytes)", errUnmarshalSizeLimit, limit))
+	}
 	return buf.Bytes(), err
 }
 
