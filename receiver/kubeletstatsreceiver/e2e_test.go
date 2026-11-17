@@ -83,6 +83,10 @@ func TestE2EAllMetricGroups(t *testing.T) {
 	defer func() {
 		for _, obj := range testObjs {
 			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+			// The test pod is shared with the semconv cases that run next. Wait
+			// until it is gone, otherwise they fail to create it while it is
+			// terminating.
+			waitForPodDeleted(t, k8sClient, obj.GetNamespace(), obj.GetName())
 		}
 	}()
 
@@ -96,6 +100,9 @@ func TestE2EAllMetricGroups(t *testing.T) {
 		for _, obj := range collectorObjs {
 			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
 		}
+		// Late batches from this collector must not reach the sink of the next
+		// case, which would see the same container metrics.
+		waitForCollectorPodsDeleted(t, k8sClient, "default", "otelcol-"+testID)
 	}()
 
 	// waitForData waits for more than wantEntries batches: 4 batches, about 80s
