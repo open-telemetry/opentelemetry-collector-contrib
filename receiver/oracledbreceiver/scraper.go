@@ -563,11 +563,6 @@ type procedureSourceQuery struct {
 func (q procedureSourceQuery) SQL() string { return q.sql }
 func (q procedureSourceQuery) Args() []any { return q.args }
 
-// buildProcedureSourceQuery builds the DBA_SOURCE or CDB_SOURCE query using a tuple-IN
-// clause with named bind parameters. Each identity is bound as one tuple so the database
-// returns only the (OWNER, NAME, TYPE[, CON_ID]) combinations we requested, not every
-// cross-product that would match if columns were filtered independently. CON_ID is
-// included only when isCDB is true.
 func buildProcedureSourceQuery(identities []procedureIdentity, isCDB bool) procedureSourceQuery {
 	tuples := make([]string, len(identities))
 	argsPerIdentity := 3
@@ -606,9 +601,6 @@ func buildProcedureSourceQuery(identities []procedureIdentity, isCDB bool) proce
 	}
 }
 
-// isWrappedDefinition reports whether a procedure's source begins with Oracle's
-// `wrapped` keyword, which marks the body as encrypted. The following lines contain
-// only the encoded payload, not readable source.
 func isWrappedDefinition(definition string) bool {
 	firstLine := definition
 	if idx := strings.IndexByte(firstLine, '\n'); idx >= 0 {
@@ -617,9 +609,6 @@ func isWrappedDefinition(definition string) bool {
 	return strings.HasSuffix(strings.TrimSpace(firstLine), " wrapped")
 }
 
-// groupSourceRowsByIdentity concatenates source lines per procedure identity.
-// Wrapped (encrypted) procedures map to an empty string so the encoded payload
-// is never shipped downstream.
 func groupSourceRowsByIdentity(rows []metricRow, isCDB bool) map[procedureIdentity]string {
 	builders := make(map[procedureIdentity]*strings.Builder)
 	for _, row := range rows {
@@ -654,8 +643,6 @@ func groupSourceRowsByIdentity(rows []metricRow, isCDB bool) map[procedureIdenti
 	return result
 }
 
-// fetchProcedureDefinitions fetches source lines for all top-N procedures in a single
-// IN-clause query (one DB roundtrip) and returns them grouped by procedureIdentity.
 func (s *oracleScraper) fetchProcedureDefinitions(ctx context.Context, hits []procedureMetricCacheHit) (map[procedureIdentity]string, error) {
 	if len(hits) == 0 {
 		return nil, nil
@@ -2353,10 +2340,8 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 	return errors.Join(errs...)
 }
 
-// In a CDB context the same owner/name/type combination can exist in multiple PDBs, so
-// connectionID is part of identity; for direct-PDB connections connectionID is empty.
-// Used as a map key so Go's native struct equality handles the lookup instead of a
-// hand-encoded composite string.
+// procedureIdentity includes connectionID because the same owner/name/type combination
+// can exist in multiple PDBs in a CDB; it is empty for direct-PDB connections.
 type procedureIdentity struct {
 	owner        string
 	name         string
@@ -2514,6 +2499,7 @@ func (s *oracleScraper) collectProcedureMetrics(ctx context.Context, logs plog.L
 
 	for i := range hits {
 		hit := &hits[i]
+
 		s.lb.RecordDbServerTopProcedureEvent(context.Background(),
 			pcommon.NewTimestampFromTime(collectionTime),
 			dbSystemNameVal,

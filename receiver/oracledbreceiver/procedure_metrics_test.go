@@ -118,7 +118,6 @@ func procedureRow(service string, overrides map[string]string) metricRow {
 	return row
 }
 
-// procedureSourceRow returns a DBA_SOURCE row for the default test procedure.
 func procedureSourceRow(textOverride string) metricRow {
 	text := "CREATE OR REPLACE PROCEDURE ADMIN.MY_PROCEDURE AS BEGIN NULL; END;"
 	if textOverride != "" {
@@ -196,7 +195,6 @@ func TestProcedureMetricsSQLDoesNotRankInDatabase(t *testing.T) {
 		sql := scrpr.buildProcedureMetricsSQL()
 
 		// WITHIN GROUP (ORDER BY LINE) inside LISTAGG is an aggregate ordering, not a ranking clause — allowed.
-		// A top-level ORDER BY would push ranking into the database over cumulative totals rather than deltas.
 		sqlWithoutAggregateOrdering := strings.ReplaceAll(sql, "WITHIN GROUP (ORDER BY LINE)", "")
 		assert.NotContains(t, sqlWithoutAggregateOrdering, "ORDER BY",
 			"ranking must happen in the collector over deltas, not in SQL over cumulative totals")
@@ -545,9 +543,6 @@ func TestScrapesProcedureMetricsLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
 		"procedure_metrics collection must run after the collection interval has elapsed")
 }
 
-// TestProcedureDefinitionContent verifies the oracledb.procedure.definition attribute value
-// for various source-row scenarios. Each sub-test enables the definition event, rebuilds lb,
-// calls scrapeLogs, and checks the attribute on the emitted db.server.procedure_definition event.
 func TestProcedureDefinitionContent(t *testing.T) {
 	const ddlDefault = "CREATE OR REPLACE PROCEDURE ADMIN.MY_PROCEDURE AS BEGIN NULL; END;"
 	const ddlWrappedName = "CREATE OR REPLACE PROCEDURE ADMIN.WRAPPED_ORDERS_REPORT AS BEGIN NULL; END;"
@@ -571,23 +566,17 @@ func TestProcedureDefinitionContent(t *testing.T) {
 			wantDefinition: ddlDefault,
 		},
 		{
-			// Pass empty source rows so fetchProcedureDefinitions returns no results → empty definition.
 			name:           "empty when source rows missing",
 			clientFn:       staticProcedureRowsFn([]metricRow{procedureRow("ORCLPDB1", nil)}, []metricRow{}),
 			wantDefinition: "",
 		},
 		{
-			// Wrapped (encrypted) procedures must map to an empty definition. DBA_SOURCE returns the
-			// `wrapped` header followed by the encoded payload; shipping that blob downstream would
-			// mislead consumers and contradict the documented behavior.
+			// Oracle's wrap output puts `wrapped` as the last token of the header line, followed by the encoded payload.
 			name:           "empty when procedure is wrapped",
 			clientFn:       staticProcedureRowsFn([]metricRow{procedureRow("ORCLPDB1", nil)}, wrappedRows),
 			wantDefinition: "",
 		},
 		{
-			// A procedure whose name begins with "WRAPPED" must not be mistaken for an
-			// Oracle-encrypted procedure. Only " wrapped" as the last token of the header
-			// line (Oracle's wrap output format) triggers the empty-definition path.
 			name: "not empty when procedure name contains wrapped",
 			clientFn: staticProcedureRowsFn(
 				[]metricRow{maps.Clone(procedureRow("ORCLPDB1", map[string]string{
@@ -636,9 +625,8 @@ func TestProcedureDefinitionNotEmittedWhenDisabled(t *testing.T) {
 	}
 }
 
-// When fetchProcedureDefinitions fails, no definition events must be emitted
-// (otherwise an empty definition is indistinguishable from a wrapped procedure),
-// and the error must surface via scrapeLogs.
+// On fetch failure, no definition events must be emitted — an empty definition
+// is otherwise indistinguishable from a wrapped procedure.
 func TestProcedureDefinitionNotEmittedWhenFetchFails(t *testing.T) {
 	fetchErr := errors.New("ORA-00942: table or view does not exist")
 
