@@ -9,6 +9,7 @@ import (
 	"crypto/fips140"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -190,6 +191,7 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	// collect table size metrics.
 
 	m.scrapeTableStats(now, errs)
+	m.scrapeAutoIncrementStats(now, errs)
 
 	// collect performance event statements metrics.
 	m.scrapeStatementEventsStats(now, errs)
@@ -721,6 +723,15 @@ func (m *mySQLScraper) tableStatsMetricsEnabled() bool {
 		metrics.MysqlTableSize.Enabled
 }
 
+// autoIncrementStatsMetricsEnabled reports whether any metric fed by the
+// auto_increment stats query is enabled.
+func (m *mySQLScraper) autoIncrementStatsMetricsEnabled() bool {
+	metrics := m.config.MetricsBuilderConfig.Metrics
+	return metrics.MysqlTableAutoIncrementLimit.Enabled ||
+		metrics.MysqlTableAutoIncrementUsage.Enabled ||
+		metrics.MysqlTableAutoIncrementUtilization.Enabled
+}
+
 // tableIoWaitsMetricsEnabled reports whether any metric fed by the table
 // io_waits query is enabled.
 func (m *mySQLScraper) tableIoWaitsMetricsEnabled() bool {
@@ -783,6 +794,26 @@ func (m *mySQLScraper) scrapeTableStats(now pcommon.Timestamp, errs *scrapererro
 		m.mb.RecordMysqlTableAverageRowLengthDataPoint(now, s.averageRowLength, s.name, s.schema)
 		m.mb.RecordMysqlTableSizeDataPoint(now, s.dataLength, s.name, s.schema, metadata.AttributeTableSizeTypeData)
 		m.mb.RecordMysqlTableSizeDataPoint(now, s.indexLength, s.name, s.schema, metadata.AttributeTableSizeTypeIndex)
+	}
+}
+
+func (m *mySQLScraper) scrapeAutoIncrementStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	if !m.autoIncrementStatsMetricsEnabled() {
+		return
+	}
+
+	autoIncrementStats, err := m.sqlclient.getAutoIncrementStats()
+	if err != nil {
+		m.logger.Error("Failed to fetch auto_increment stats", zap.Error(err))
+		errs.AddPartial(3, err)
+		return
+	}
+
+	for i := range autoIncrementStats {
+		s := autoIncrementStats[i]
+		m.mb.RecordMysqlTableAutoIncrementLimitDataPoint(now, s.maxValue, s.table, s.schema, s.column)
+		m.mb.RecordMysqlTableAutoIncrementUsageDataPoint(now, s.currentValue, s.table, s.schema, s.column)
+		m.mb.RecordMysqlTableAutoIncrementUtilizationDataPoint(now, s.utilizationRatio, s.table, s.schema, s.column)
 	}
 }
 
@@ -1220,7 +1251,7 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 }
 
 func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	samples, err := m.sqlclient.getQuerySamples(m.config.QuerySampleCollection.MaxRowsPerQuery, m.detectedVersion.supportsProcesslist())
+	samples, err := m.sqlclient.getQuerySamples(m.config.QuerySampleCollection.MaxRowsPerQuery, m.detectedVersion.supportsProcesslist(), m.detectedVersion.supportsDataLockWaits())
 	if err != nil {
 		m.logger.Error("Failed to fetch query samples", zap.Error(err))
 		errs.AddPartial(1, err)
@@ -1281,6 +1312,8 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			queryPlanHash = queryPlanCacheID
 		}
 
+		blockerDetailsJSON, blockerCount := m.deriveBlockingCount(sample.blockerDetails)
+
 		m.lb.RecordDbServerQuerySampleEvent(
 			recordCtx,
 			now,
@@ -1307,6 +1340,8 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			networkPeerAddress,
 			networkPeerPort,
 			sample.clientName,
+			blockerCount,
+			blockerDetailsJSON,
 		)
 
 		// The plan describes the statement rather than this execution of it, so it carries neither the
@@ -1373,6 +1408,42 @@ func createCacheKey(dbName, digestTextHash string) string {
 func getDigestTextHash(digestText string) string {
 	sum := sha256.Sum256([]byte(digestText))
 	return hex.EncodeToString(sum[:])
+}
+
+// blockerJSONEntry is one element of the raw blockers JSON produced by
+// querySample.tmpl. SessionID is nil when that blocker's PROCESSLIST_ID
+// couldn't be resolved (a LEFT JOIN miss, e.g. the blocker disconnected
+// between reads).
+type blockerJSONEntry struct {
+	ThreadID  int64  `json:"thread_id"`
+	SessionID *int64 `json:"session_id"`
+}
+
+// deriveBlockingCount parses the raw blockers JSON and returns the
+// normalized JSON to emit as mysql.blocking.blocker.details and the blocker
+// count for mysql.blocking.blocker.count. An empty input means blocking
+// isn't measurable on this engine/version (MariaDB, MySQL <8.0.11) and is
+// passed through as-is rather than normalized to "[]", so "not measured"
+// stays distinguishable from "measured and not blocked". Malformed JSON is
+// treated as "not blocked" rather than propagated.
+func (m *mySQLScraper) deriveBlockingCount(blockersJSON string) (normalizedBlockersJSON string, blockerCount int64) {
+	if blockersJSON == "" {
+		return "", 0
+	}
+	var blockers []blockerJSONEntry
+	if err := json.Unmarshal([]byte(blockersJSON), &blockers); err != nil {
+		m.logger.Warn("Failed to parse mysql.blocking.blocker.details; treating as not blocked", zap.Error(err))
+		return "[]", 0
+	}
+	if len(blockers) == 0 {
+		return "[]", 0
+	}
+	normalized, err := json.Marshal(blockers)
+	if err != nil {
+		m.logger.Warn("Failed to re-marshal mysql.blocking.blocker.details; treating as not blocked", zap.Error(err))
+		return "[]", 0
+	}
+	return string(normalized), int64(len(blockers))
 }
 
 // contextWithTraceparent extracts a W3C TraceContext traceparent from the given
