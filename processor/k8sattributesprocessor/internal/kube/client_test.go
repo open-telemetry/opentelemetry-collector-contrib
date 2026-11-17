@@ -3667,7 +3667,7 @@ func TestStartWaitsForKubeletPods(t *testing.T) {
 	assert.True(t, ok)
 }
 
-func TestStartDoesNotWaitForHPAInformerSync(t *testing.T) {
+func TestStartDoesNotBlockPodsOnHPAInformerSync(t *testing.T) {
 	neverSyncedHPAInformer := func() cache.SharedInformer {
 		return &neverSyncedFakeClient{NewFakeInformer(fake.NewClientset(), "", nil, nil)}
 	}
@@ -3675,8 +3675,6 @@ func TestStartDoesNotWaitForHPAInformerSync(t *testing.T) {
 	t.Run("kubelet polling", func(t *testing.T) {
 		c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 		c.kubelet = KubeletConfig{Enabled: true, PollInterval: time.Hour}
-		c.waitForMetadata = true
-		c.waitForMetadataTimeout = time.Second
 		c.hpaInformer = neverSyncedHPAInformer()
 		c.kubeletPods = map[string]*api_v1.Pod{}
 		c.kubeletPodLister = fakePodLister{pods: &api_v1.PodList{Items: []api_v1.Pod{
@@ -3685,18 +3683,20 @@ func TestStartDoesNotWaitForHPAInformerSync(t *testing.T) {
 		defer c.Stop()
 
 		require.NoError(t, c.Start())
-		_, ok := c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.1"))
-		assert.True(t, ok)
+		assert.Eventually(t, func() bool {
+			_, ok := c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.1"))
+			return ok
+		}, 5*time.Second, 10*time.Millisecond)
 	})
 
-	t.Run("pod informer", func(t *testing.T) {
+	t.Run("wait_for_metadata waits for HPA informer", func(t *testing.T) {
 		c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 		c.waitForMetadata = true
-		c.waitForMetadataTimeout = time.Second
+		c.waitForMetadataTimeout = 200 * time.Millisecond
 		c.hpaInformer = neverSyncedHPAInformer()
 		defer c.Stop()
 
-		require.NoError(t, c.Start())
+		require.EqualError(t, c.Start(), "failed to wait for caches to sync")
 	})
 }
 

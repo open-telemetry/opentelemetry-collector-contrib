@@ -447,8 +447,9 @@ func (c *WatchClient) Start() error {
 		go c.cronJobInformer.Run(c.stopCh)
 	}
 
+	var hpaSynced cache.InformerSynced
 	if c.hpaInformer != nil {
-		_, err = c.hpaInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		reg, err = c.hpaInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleHPAAdd,
 			UpdateFunc: c.handleHPAUpdate,
 			DeleteFunc: c.handleHPADelete,
@@ -459,6 +460,8 @@ func (c *WatchClient) Start() error {
 		// HPA metadata is looked up by k8s.hpa.uid at processing time and is not
 		// needed to associate pods, so pod handling is not gated on its sync.
 		// This prevents a missing HPA list permission from blocking pod metadata.
+		// It is still waited on below when wait_for_metadata is enabled.
+		hpaSynced = reg.HasSynced
 		go c.hpaInformer.Run(c.stopCh)
 	}
 
@@ -488,8 +491,13 @@ func (c *WatchClient) Start() error {
 		defer t.Stop()
 		// Wait for the Pod informer to be completed.
 		// The other informers will already be finished at this point, as the pod informer
-		// waits for them be finished before it can run
-		if !cache.WaitForCacheSync(timeoutCh, podSynced) {
+		// waits for them be finished before it can run.
+		// The HPA informer is not a pod dependency, so wait for it explicitly.
+		waitFor := []cache.InformerSynced{podSynced}
+		if hpaSynced != nil {
+			waitFor = append(waitFor, hpaSynced)
+		}
+		if !cache.WaitForCacheSync(timeoutCh, waitFor...) {
 			return errors.New("failed to wait for caches to sync")
 		}
 	}
