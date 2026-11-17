@@ -1,15 +1,10 @@
 # Configuration compatibility review
 
-This review addresses the configuration requirements in
-[issue #52033](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52033).
-It covers `FileLogConfig` and the configuration it embeds from the Stanza file input,
-file consumer, matcher, attribute resolver, multiline splitter, whitespace trimmer, and
-receiver adapter. Operator-specific configuration is also subject to the compatibility
-rules when used through `operators` or `header.metadata_operators`.
-
-This is configuration graduation evidence, not a change to the receiver's overall beta
-stability level. Runtime correctness, performance, and the other graduation requirements
-are separate from this review.
+This review maps [issue #52033](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52033)
+to configuration compatibility evidence. It covers `FileLogConfig`, its embedded Stanza
+configuration, and operator options used through `operators` or `header.metadata_operators`.
+Runtime correctness, performance, and other graduation requirements are separate; the
+receiver remains beta.
 
 ## Requirements and evidence
 
@@ -26,41 +21,24 @@ are separate from this review.
 
 ## Configuration surface
 
-The default fixture includes every field in the receiver's embedded configuration,
-including inherited operator identity and output fields. The non-default fixture exercises
-the following groups together through the public factory:
+The baseline pins the embedded file input, file consumer, matcher, attribute resolver,
+multiline, whitespace, and adapter defaults. The explicit fixture exercises file selection,
+reading and scheduling, metadata, lifecycle, ordering, header parsing, resources, storage,
+retry, and operator pipelines through the public factory.
 
-| Group | Fields |
-| --- | --- |
-| File selection | `include`, `exclude`, `exclude_older_than` |
-| Reading and scheduling | `start_at`, `poll_interval`, `max_concurrent_files`, `max_batches`, `fingerprint_size`, `initial_buffer_size`, `max_log_size`, `max_log_size_behavior`, `encoding`, `force_flush_period`, `compression` |
-| Multiline and whitespace | `multiline.line_start_pattern`, `multiline.line_end_pattern`, `multiline.omit_pattern`, `preserve_leading_whitespaces`, `preserve_trailing_whitespaces` |
-| File metadata | `include_file_name`, `include_file_path`, `include_file_name_resolved`, `include_file_path_resolved`, `include_file_owner_name`, `include_file_owner_group_name`, `include_file_permissions`, `include_file_record_number`, `include_file_record_offset` |
-| File lifecycle | `delete_after_read`, `acquire_fs_lock`, `file_cache_advise`, `skip_unmodified_files`, `polls_to_archive`, `on_truncate` |
-| Ordering | `ordering_criteria.regex`, `group_by`, `top_n`, and `sort_by` entries with `sort_type`, `regex_key`, `ascending`, `layout`, `location` |
-| Header metadata | `header.pattern`, `header.metadata_operators` |
-| Pipeline and resources | `attributes`, `resource`, `operators`, `storage`, and all four `retry_on_failure` fields |
-
-Mutually exclusive multiline modes, platform-specific owner/permission options, and
-individual encoding, compression, truncation, and operator variants also have tests in
-the receiver and shared Stanza packages. Those tests remain part of the validation scope;
-one combined fixture cannot exercise incompatible modes simultaneously. The Windows
-case-insensitive matching gate changes file matching rather than the accepted keys and
-has platform-specific matcher tests. Stanza's emitter and scope gates change runtime
-behavior, not which receiver configuration fields are required.
+Mutually exclusive multiline modes, platform-specific owner and permission options, and
+encoding, compression, truncation, and operator variants retain their receiver and Stanza
+tests. Windows case-insensitive matching and Stanza emitter/scope gates affect runtime
+behavior rather than required configuration keys. Release history and migration steps
+are documented in [MIGRATION.md](MIGRATION.md).
 
 ## History reviewed
 
-The configuration history and changelog distinguish Go API refactoring from user YAML
-changes. Moving fields into embedded types did not remove their YAML names. The receiver
-type rename shipped in v0.149.0 with the old alias retained. The v0.159.0 ordering change
-retained an omitted limit behind the disabled-by-default explicit-limit gate, but changed
-explicit zero to mean all files. The migration guide now records both paths.
-
-The removed `converter` block (v0.64.0) and explicit duration units (v0.60.0) predate beta;
-their migration paths are documented without reintroducing obsolete implementations.
-Recent options such as `max_log_size_behavior`, `on_truncate`, `file_cache_advise`, and
-`skip_unmodified_files` have defaults that preserve the prior behavior.
+Moving fields into embedded Go types preserved their YAML names. The v0.149.0 rename
+to `file_log` retained the `filelog` alias. In v0.159.0, omitted `top_n` retained its
+default behind the disabled-by-default `filelog.requireExplicitTopN` gate; explicit
+`top_n: 0` became all files. Pre-beta removal of `converter` (v0.64.0) and explicit
+duration units (v0.60.0) are documented in [MIGRATION.md](MIGRATION.md).
 
 ## Maintaining the contract
 

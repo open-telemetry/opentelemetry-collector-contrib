@@ -21,9 +21,20 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver/internal/metadata"
 )
+
+func TestFactoryCompatibility(t *testing.T) {
+	base := adapter.NewFactory(ReceiverType{}, metadata.LogsStability)
+	factory := NewFactory()
+	assert.Equal(t, base.Type(), factory.Type())
+	assert.Equal(t, base.CreateDefaultConfig(), factory.CreateDefaultConfig())
+	assert.Equal(t, base.LogsStability(), factory.LogsStability())
+	assert.Equal(t, base.TracesStability(), factory.TracesStability())
+	assert.Equal(t, base.MetricsStability(), factory.MetricsStability())
+}
 
 func TestOrderingConfigCompatibility(t *testing.T) {
 	const gateID = "filelog.requireExplicitTopN"

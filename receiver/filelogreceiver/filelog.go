@@ -29,7 +29,7 @@ func NewFactory() receiver.Factory {
 		xreceiver.WithLogs(func(ctx context.Context, set receiver.Settings, cfg component.Config, next consumer.Logs) (receiver.Logs, error) {
 			rcvr, err := factory.CreateLogs(ctx, set, cfg, next)
 			if err == nil && set.ID.Type() == metadata.DeprecatedType {
-				set.Logger.Warn("The filelog receiver type is deprecated; use file_log and update the pipeline receiver references, preserving the instance name and storage configuration",
+				set.Logger.Warn("To migrate filelog to file_log, update pipeline receiver references and preserve the instance name and storage configuration; see the migration guide",
 					zap.String("migration_guide", "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/filelogreceiver/MIGRATION.md#receiver-type-name"))
 			}
 			return rcvr, err

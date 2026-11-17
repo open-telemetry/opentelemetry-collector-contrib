@@ -48,8 +48,10 @@ change already shipped in v0.159.0 and is independent of the feature gate.
 
 ## Receiver type name
 
-Alias deprecated: v0.149.0. Receiver-specific warning with this migration link:
-next release containing this change. No alias removal release is scheduled.
+The alias was deprecated in v0.149.0, but the first release containing this PR is the
+first with a linked WARN. The policy clock starts with that release (N): retain the
+alias through N+1, do not gate it before N+2, and retain it and the warning until both
+N+2 and at least six months have passed. No removal release is scheduled.
 
 Use `file_log` for new configurations. The previous `filelog` type remains a deprecated
 alias. When migrating, change both the receiver key (for example, `filelog/app` to
