@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -31,38 +32,61 @@ func TestComponentConfigStruct(t *testing.T) {
 	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
 }
 
+type contextCapturingConsumer struct{ capturedCtx context.Context }
+
+func (*contextCapturingConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
+func (c *contextCapturingConsumer) ConsumeLogs(ctx context.Context, _ plog.Logs) error {
+	c.capturedCtx = ctx
+	return nil
+}
+
+func (c *contextCapturingConsumer) ConsumeMetrics(ctx context.Context, _ pmetric.Metrics) error {
+	c.capturedCtx = ctx
+	return nil
+}
+
+func (c *contextCapturingConsumer) ConsumeTraces(ctx context.Context, _ ptrace.Traces) error {
+	c.capturedCtx = ctx
+	return nil
+}
+
+type ccpKey struct{}
+
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
 	tests := []struct {
-		createFn func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error)
+		createFn func(ctx context.Context, set processor.Settings, cfg component.Config, next *contextCapturingConsumer) (component.Component, error)
 		name     string
 	}{
 
 		{
 			name: "logs",
-			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateLogs(ctx, set, cfg, consumertest.NewNop())
+			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config, next *contextCapturingConsumer) (component.Component, error) {
+				return factory.CreateLogs(ctx, set, cfg, next)
 			},
 		},
 
 		{
 			name: "metrics",
-			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateMetrics(ctx, set, cfg, consumertest.NewNop())
+			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config, next *contextCapturingConsumer) (component.Component, error) {
+				return factory.CreateMetrics(ctx, set, cfg, next)
 			},
 		},
 
 		{
 			name: "traces",
-			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateTraces(ctx, set, cfg, consumertest.NewNop())
+			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config, next *contextCapturingConsumer) (component.Component, error) {
+				return factory.CreateTraces(ctx, set, cfg, next)
 			},
 		},
 
 		{
 			name: "profiles",
-			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
+			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config, _ *contextCapturingConsumer) (component.Component, error) {
 				return factory.(xprocessor.Factory).CreateProfiles(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
@@ -77,7 +101,7 @@ func TestComponentLifecycle(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name+"-shutdown", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(typ), cfg)
+			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(typ), cfg, &contextCapturingConsumer{})
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)

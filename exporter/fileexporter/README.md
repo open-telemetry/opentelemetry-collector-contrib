@@ -19,17 +19,17 @@
 
 Writes telemetry data to files on disk.
 
-Use the [OTLP JSON File receiver](../../receiver/otlpjsonfilereceiver/README.md) to read the data back into the collector (as long as the data was exported using OTLP JSON format).
+Use the [OTLP JSON File receiver](../../receiver/otlpjsonfilereceiver/README.md) to read the data back into the collector. It only reads uncompressed, newline-delimited OTLP JSON (the default `format: json` without `compression` or `encoding`, see [File Format](#file-format)).
 
-Exporter supports the following features：
+The exporter supports the following features:
 
-+ Support for writing pipeline data to a file.
++ Writing pipeline data to a file.
 
-+ Support for rotation of telemetry files.
++ Rotation of telemetry files.
 
-+ Support for compressing the telemetry data before exporting.
++ Compressing the telemetry data before exporting.
 
-+ Support for writing into multiple files, where the file path is determined by a resource attribute.
++ Writing into multiple files, where the file path is determined by a resource attribute.
 
 Please note that there is no guarantee that exact field names will remain stable.
 
@@ -55,33 +55,36 @@ The following settings are required:
 
 The following settings are optional:
 
-- `rotation` settings to rotate telemetry files.
+- `rotation` settings to rotate telemetry files. Rotation is only enabled when `rotation:` is present in the config.
 
   - max_megabytes:  [default: 100]: the maximum size in megabytes of the telemetry file before it is rotated.
-  - max_days: [no default (unlimited)]: the maximum number of days to retain telemetry files based on the timestamp encoded in their filename.
-  - max_backups: [default: 100]: the maximum number of old telemetry files to retain.
+  - max_days: [no default (unlimited)]: the maximum number of days to retain rotated telemetry files based on the timestamp encoded in their filename. This only controls retention, it does not trigger rotation.
+  - max_backups: [default: 100]: the maximum number of rotated telemetry files to retain.
   - localtime : [default: false (use UTC)] whether or not the timestamps in backup files is formatted according to the host's local time.
 
-- `format`[default: json]: define the data format of encoded telemetry data. The setting can be overridden with `proto`.
-- `encoding`[default: none]: if specified, uses an encoding extension to encode telemetry data. Overrides `format`.
-- `append`[default: `false`] defines whether append to the file (`true`) or truncate (`false`). If `append: true` is set then setting `rotation` is currently not supported.
+- `format`[default: json]: the data format of encoded telemetry data, either `json` or `proto`.
+- `encoding`[default: none]: if specified, uses an encoding extension to encode telemetry data instead of the built-in `format` marshaler. How records are delimited in the file still depends on `format`, see [File Format](#file-format).
+- `append`[default: `false`] defines whether append to the file (`true`) or truncate (`false`). `append: true` cannot be combined with `rotation`.
 - `compression`[no default]: the compression algorithm used when exporting telemetry data to file. Supported compression algorithms:`zstd`
 - `compression_params`
-  - `level` (default = 0): the compression level used when exporting telemetry data.
+  - `level` (default = 0, which uses the zstd default level `3`): the compression level used when exporting telemetry data. Only applied when the `exporter.file.nativeCompression` feature gate is enabled, see [Known limitations](#known-limitations).
     - The following are valid combinations of `compression` and `level`:
       - `zstd`
         - SpeedFastest: `1`
         - SpeedDefault: `3`
         - SpeedBetterCompression: `6`
         - SpeedBestCompression: `11`
-- `flush_interval`[default: 1s]: `time.Duration` interval between flushes. See [time.ParseDuration](https://pkg.go.dev/time#ParseDuration) for valid formats. 
-NOTE: a value without unit is in nanoseconds and `flush_interval` is ignored and writes are not buffered if `rotation` is set.
+- `flush_interval`[default: 1s]: `time.Duration` interval between flushes of the write buffer. See [time.ParseDuration](https://pkg.go.dev/time#ParseDuration) for valid formats.
+  - A value without a unit is in nanoseconds, so always specify one (for example `5s`).
+  - `0` is treated as the default (`1s`); buffering cannot be disabled.
+  - Ignored when `rotation` is set and the `exporter.file.nativeCompression` feature gate is disabled, as writes are not buffered in that case.
+  - With the `exporter.file.nativeCompression` feature gate enabled and without `rotation`, each flush finalizes a zstd frame. With `rotation`, each batch is written as its own frame and flushing is a no-op.
 
 - `create_directory`[default: false]: when set, the exporter will create the parent directory of the configured `path` if it does not exist.
-- `directory_permissions`[default: 0755]: file mode (octal string) used when creating directories, minus the process umask. This also applies to directories created by `group_by`.
+- `directory_permissions`[default: 0755]: file mode (octal string) used when creating directories, minus the process umask. Can only be set when `create_directory` is `true`. This also applies to directories created by `group_by`.
 
 - `group_by` enables writing to separate files based on a resource attribute.
-  - enabled: [default: false] enables group_by.
+  - enabled: [default: false] enables group_by. When enabled, `path` must contain exactly one `*` and must not start with it.
   - resource_attribute: [default: fileexporter.path_segment]: specifies the name of the resource attribute that contains the path segment of the file to write to. The final path will be the `path` config value, with the `*` replaced with the value of this resource attribute.
   - max_open_files: [default: 100]: specifies the maximum number of open file descriptors for the output files.
 
@@ -90,13 +93,15 @@ Telemetry data is exported to a single file by default.
 `fileexporter` only enables file rotation when the user specifies `rotation:` in the config. However, if specified, related default settings would apply.
 
 Telemetry is first written to a file that exactly matches the `path` setting. 
-When the file size exceeds `max_megabytes` or age exceeds `max_days`, the file will be rotated.
+When writing the next batch would make the file exceed `max_megabytes`, the file is rotated. Rotation is size-based only; `max_days` and `max_backups` only control how many rotated files are kept.
 
-When a file is rotated, **it is renamed by putting the current time in a timestamp**
+When a file is rotated, **it is renamed by putting the current time and the rotation reason**
 in the name immediately before the file's extension (or the end of the filename if there's no extension).
 **A new telemetry file will be created at the original `path`.**
 
-For example, if your `path` is `data.json` and rotation is triggered, this file will be renamed to `data-2022-09-14T05-02-14.173.json`, and a new telemetry file created with `data.json`
+For example, if your `path` is `data.json` and rotation is triggered, this file will be renamed to `data-2022-09-14T05-02-14.173-size.json`, and a new telemetry file created with `data.json`.
+
+Rotated files from older collector versions (named without the `-size` suffix, e.g. `data-2022-09-14T05-02-14.173.json`) are renamed to the new format on startup, so `max_days` and `max_backups` keep applying to them.
 
 ## File Compression
 Telemetry data is compressed according to the `compression` setting.
@@ -109,13 +114,22 @@ Telemetry data is compressed according to the `compression` setting.
 
 Currently, `fileexporter` support the `zstd` compression algorithm, and we will support more compression algorithms in the future.
 
-##  File Format 
+## File Format
 
-Telemetry data is encoded according to the `format` setting and then written to the file.
+Telemetry data is encoded according to the `format` (or `encoding`) setting and then written to the file. How each batch is delimited depends on `format`, `encoding`, `compression` and the `exporter.file.nativeCompression` feature gate:
 
-When `format` is json and `compression` is none , telemetry data is written to file in JSON format. Each line in the file is a JSON object.
+| `exporter.file.nativeCompression` | `compression` | `format` / `encoding` | Written to the file |
+| --------------------------------- | ------------- | --------------------- | ------------------- |
+| any | none | `json`, no `encoding` | Newline-delimited OTLP JSON, one line per batch |
+| any | none | `json` + `encoding` | Encoder output followed by `\n` per batch (no length prefix) |
+| any | none | `proto`, with or without `encoding` | Length-prefixed messages |
+| disabled | `zstd` | any | Each batch compressed on its own, then length-prefixed. Not readable by `zstd -d` |
+| enabled | `zstd` | `json`, no `encoding` | Newline-delimited OTLP JSON inside a standard zstd stream |
+| enabled | `zstd` | `proto`, or any `encoding` | Length-prefixed messages inside a standard zstd stream |
 
-Otherwise, when using `proto` format or any kind of encoding, each encoded object is preceded by 4 bytes (an unsigned 32 bit integer) which represent the number of bytes contained in the encoded object.When we need read the messages back in, we read the size, then read the bytes into a separate buffer, then parse from that buffer.
+Length-prefixed means each encoded message is preceded by 4 bytes (a big-endian unsigned 32 bit integer) holding the number of bytes in the message. To read the messages back, read the size, then read that many bytes into a separate buffer and parse from that buffer.
+
+When using an `encoding` extension that produces binary output without compression, set `format: proto` to get length-prefixed framing; otherwise records can't be reliably split back apart.
 
 ## Group by attribute
 
@@ -123,9 +137,30 @@ By specifying `group_by.resource_attribute` in the config, the exporter will det
 
 The final path is guaranteed to start with the prefix part of the `path` config value (the part before the `*` character). For example if `path` is "/data/*.json", and the resource attribute value is "../etc/my_config", then the final path will be sanitized to "/data/etc/my_config.json".
 
-The final path can contain path separators (`/`). The exporter will create missing directories recursively (similarly to `mkdir -p`).
+The final path can contain path separators (`/`). The exporter will create missing directories recursively (similarly to `mkdir -p`), regardless of `create_directory`.
+
+Resources that do not have the attribute, or where its value is not a string, are dropped.
+
+When more than `max_open_files` files are in use, the least recently used file is closed and reopened on its next write. Unless `append: true` or `rotation` is set, reopening truncates the file and its earlier content is lost, so keep `max_open_files` above the number of distinct attribute values or set `append: true`.
 
 Grouping by attribute currently only supports a **single** **resource** attribute. If you would like to use multiple attributes, please use [Transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) create a routing key. If you would like to use a non-resource level (eg: Log/Metric/DataPoint) attribute, please use [Group by Attributes processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/groupbyattrsprocessor) first.
+
+## Known limitations
+
+- `append` and `rotation` cannot be used together.
+- With `rotation` and the `exporter.file.nativeCompression` feature gate disabled:
+  - writes are not buffered and `flush_interval` has no effect;
+  - a single batch larger than `max_megabytes` is rejected with an error. With the feature gate enabled, such a batch is split across multiple zstd frames instead.
+- `group_by` drops resources without the configured attribute (or with a non-string value), logging this only at `debug` level.
+- `group_by` always creates missing directories, whatever the value of `create_directory`.
+- With `group_by`, a file evicted because of `max_open_files` is truncated when reopened, unless `append: true` or `rotation` is set.
+- Without the `exporter.file.nativeCompression` feature gate, `compression_params.level` is ignored and the zstd default level is used.
+- Files are not fsynced. Written data may be lost if the host crashes before the OS flushes it to disk.
+- The exporter does not support `sending_queue`, `retry_on_failure` or `timeout`.
+
+## Telemetry
+
+The exporter does not emit metrics of its own. Use the standard exporter metrics to monitor it, such as `otelcol_exporter_sent_spans`, `otelcol_exporter_sent_metric_points`, `otelcol_exporter_sent_log_records` and their `otelcol_exporter_send_failed_*` counterparts.
 
 ## Example:
 
@@ -152,7 +187,26 @@ exporters:
 
   file/flush_every_5_seconds:
     path: ./foo
-    flush_interval: 5
+    flush_interval: 5s
+
+  # Writes one file per service, e.g. ./data/checkout.json, ./data/cart.json
+  file/group_by_service:
+    path: ./data/*.json
+    group_by:
+      enabled: true
+      resource_attribute: service.name
+      max_open_files: 50
+```
+
+Native file-level compression, readable with `zstd -d` (requires starting the collector with `--feature-gates=exporter.file.nativeCompression`):
+
+```yaml
+exporters:
+  file/native_zstd:
+    path: ./foo.jsonl.zst
+    compression: zstd
+    compression_params:
+      level: 3
 ```
 
 ## Get Started in an existing cluster

@@ -147,8 +147,10 @@ func TestSignVerifyBasic(t *testing.T) {
 	verifyRecord(t, lr, &prov.key.PublicKey)
 }
 
-// TestSignVerifyWithTrace covers trace_id and span_id as part of the signed payload.
-func TestSignVerifyWithTrace(t *testing.T) {
+// TestSignVerifyWithTraceCorrelation covers trace_id and span_id being part of
+// the signed payload. SeverityNumber/SeverityText are intentionally excluded
+// (SHOULD NOT be set on audit records per spec).
+func TestSignVerifyWithTraceCorrelation(t *testing.T) {
 	prov := newTestProvider(t)
 	p := &signingProcessor{
 		config:       &Config{Algorithm: "RS256", CertificateRef: CertificateRefFingerprint},
@@ -161,8 +163,6 @@ func TestSignVerifyWithTrace(t *testing.T) {
 	lr := plog.NewLogRecord()
 	lr.Body().SetStr("database.query")
 	lr.SetTimestamp(pcommon.Timestamp(1714041700000000000))
-	lr.SetSeverityNumber(plog.SeverityNumberWarn)
-	lr.SetSeverityText("WARN")
 	var traceID pcommon.TraceID
 	copy(traceID[:], []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	lr.SetTraceID(traceID)

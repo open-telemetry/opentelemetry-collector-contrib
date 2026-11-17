@@ -1,0 +1,31 @@
+# Example: asserting numeric values that are meaningful but not exact.
+#
+# The request-duration gauge and active-request counter below carry
+# runtime-dependent values, so exact matching would be too strict while
+# ignoring the values entirely would lose useful validation. The /gt, /gte,
+# /lt, /lte operators pin the values to a meaningful range instead.
+version: 1
+signal: metrics
+resources:
+  - attributes:
+      service.name: example
+    scopes:
+      - name: github.com/example/receiver
+        version: v0.1.0
+        metrics:
+          # Double gauge whose value depends on request timing.
+          - name: http.server.request.duration
+            type: gauge
+            unit: s
+            datapoints:
+              - double_value/gt: 0
+                double_value/lt: 60
+          # Int sum whose value depends on in-flight requests.
+          - name: http.server.active_requests
+            type: sum
+            unit: "{requests}"
+            temporality: cumulative
+            monotonic: false
+            datapoints:
+              - int_value/gte: 0
+                int_value/lte: 1000

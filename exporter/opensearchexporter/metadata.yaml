@@ -12,6 +12,9 @@ status:
     emeritus: [Aneurysm9, MitchellGale, MaxKsyunz, YANG-DB]
     seeking_new: true
 
+sending_queue:
+  support: default
+
 tests:
   expect_consumer_error: true
   config:

@@ -19,24 +19,6 @@ properties:
   params:
     description: Params the parameters to the metrics endpoint.
     x-customType: net/url.values
-  tls_config:
-    type: object
-    properties:
-      ca_file:
-        description: Path to the CA cert that has signed the TLS cert.
-        type: string
-      cert_file:
-        description: Path to the client TLS cert to use for TLS required connections.
-        type: string
-      insecure_skip_verify:
-        description: Whether or not to verify the exporter's TLS cert.
-        type: boolean
-      key_file:
-        description: Path to the client TLS key to use for TLS required connections.
-        type: string
-  tls_enabled:
-    description: Whether not TLS is enabled
-    type: boolean
   use_service_account:
     description: Whether or not to use pod service account to authenticate.
     type: boolean

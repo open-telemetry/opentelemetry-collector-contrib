@@ -4,17 +4,22 @@
 package reader
 
 import (
+	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
@@ -363,29 +368,32 @@ func TestFileCacheAdvise(t *testing.T) {
 	sink.ExpectNoCalls(t)
 }
 
-func BenchmarkFileRead(b *testing.B) {
-	tempDir := b.TempDir()
+func BenchmarkFileReadASCII(b *testing.B) {
+	benchmarkFileRead(b, unicode.UTF8, string(filetest.TokenWithLength(999)))
+}
 
-	temp := filetest.OpenTemp(b, tempDir)
-	// Initialize the file to ensure a unique fingerprint
-	_, err := temp.WriteString(temp.Name() + "\n")
-	require.NoError(b, err)
-	// Write half the content before starting the benchmark
-	for range 100 {
-		_, err := temp.WriteString(string(filetest.TokenWithLength(999)) + "\n")
-		require.NoError(b, err)
-	}
+func BenchmarkFileReadUTF8(b *testing.B) {
+	benchmarkFileRead(b, unicode.UTF8, strings.Repeat("hello é✨🌍🚀!", 50))
+}
 
-	// Use a long flush period to ensure it does not expire DURING a ReadToEnd
-	counter := atomic.Int64{}
-	f := newTestFactory(b, func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64, _ []int64) error {
-		counter.Add(int64(len(tokens)))
-		return nil
-	})
+func BenchmarkFileReadInvalidUTF8(b *testing.B) {
+	line := string(filetest.TokenWithLength(998)) + "\xff"
+	require.False(b, utf8.ValidString(line))
+	benchmarkFileRead(b, unicode.UTF8, line)
+}
+
+func BenchmarkFileReadUTF16(b *testing.B) {
+	utf16le := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
+	benchmarkFileRead(b, utf16le, strings.Repeat("hello é✨🌍🚀!", 50))
+}
+
+func benchmarkFileRead(b *testing.B, enc encoding.Encoding, line string) {
+	fileName, f, counter := setupBenchmark(b, enc, line)
 	b.ReportAllocs()
+	b.ResetTimer()
 
 	for i := 0; b.Loop(); i++ {
-		file, err := os.OpenFile(temp.Name(), os.O_CREATE|os.O_RDWR, 0o600)
+		file, err := os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, 0o600)
 		require.NoError(b, err)
 		fp, err := f.NewFingerprint(file)
 		require.NoError(b, err)
@@ -397,8 +405,85 @@ func BenchmarkFileRead(b *testing.B) {
 	}
 }
 
+func BenchmarkReadContentsASCII(b *testing.B) {
+	benchmarkReadContents(b, unicode.UTF8, string(filetest.TokenWithLength(999)))
+}
+
+func BenchmarkReadContentsUTF8(b *testing.B) {
+	benchmarkReadContents(b, unicode.UTF8, strings.Repeat("hello é✨🌍🚀!", 50))
+}
+
+func BenchmarkReadContentsInvalidUTF8(b *testing.B) {
+	line := string(filetest.TokenWithLength(998)) + "\xff"
+	require.False(b, utf8.ValidString(line))
+	benchmarkReadContents(b, unicode.UTF8, line)
+}
+
+func BenchmarkReadContentsUTF16(b *testing.B) {
+	utf16le := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
+	benchmarkReadContents(b, utf16le, strings.Repeat("hello é✨🌍🚀!", 50))
+}
+
+func benchmarkReadContents(b *testing.B, enc encoding.Encoding, line string) {
+	fileName, f, counter := setupBenchmark(b, enc, line)
+
+	file, err := os.OpenFile(fileName, os.O_RDONLY, 0o600)
+	require.NoError(b, err)
+	defer file.Close()
+
+	fp, err := f.NewFingerprint(file)
+	require.NoError(b, err)
+	reader, err := f.NewReader(file, fp)
+	require.NoError(b, err)
+	defer reader.Close()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; b.Loop(); i++ {
+		reader.Offset = 0
+		reader.RecordNum = 0
+		reader.ReadToEnd(b.Context())
+		assert.EqualValues(b, (i+1)*101, counter.Load())
+	}
+}
+
+func setupBenchmark(b *testing.B, enc encoding.Encoding, line string) (string, *Factory, *atomic.Int64) {
+	tempDir := b.TempDir()
+	temp := filetest.OpenTemp(b, tempDir)
+
+	firstLine := temp.Name() + "\n"
+	encodedLine := line + "\n"
+	if enc != unicode.UTF8 {
+		encoder := enc.NewEncoder()
+		var err error
+		firstLine, err = encoder.String(firstLine)
+		require.NoError(b, err)
+		encodedLine, err = encoder.String(encodedLine)
+		require.NoError(b, err)
+	}
+	_, err := temp.WriteString(firstLine)
+	require.NoError(b, err)
+
+	for range 100 {
+		_, err = temp.WriteString(encodedLine)
+		require.NoError(b, err)
+	}
+
+	counter := &atomic.Int64{}
+	f := newTestFactoryWithEncoding(b, enc, func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64, _ []int64) error {
+		counter.Add(int64(len(tokens)))
+		return nil
+	})
+	return temp.Name(), f, counter
+}
+
 func newTestFactory(tb testing.TB, callback emit.Callback) *Factory {
-	splitFunc, err := split.Config{}.Func(unicode.UTF8, false, defaultMaxLogSize)
+	return newTestFactoryWithEncoding(tb, unicode.UTF8, callback)
+}
+
+func newTestFactoryWithEncoding(tb testing.TB, enc encoding.Encoding, callback emit.Callback) *Factory {
+	splitFunc, err := split.Config{}.Func(enc, false, defaultMaxLogSize)
 	require.NoError(tb, err)
 
 	return &Factory{
@@ -407,7 +492,7 @@ func newTestFactory(tb testing.TB, callback emit.Callback) *Factory {
 		FingerprintSize:   fingerprint.DefaultSize,
 		InitialBufferSize: scanner.DefaultBufferSize,
 		MaxLogSize:        defaultMaxLogSize,
-		Encoding:          unicode.UTF8,
+		Encoding:          enc,
 		SplitFunc:         splitFunc,
 		TrimFunc:          trim.Whitespace,
 		FlushTimeout:      defaultFlushPeriod,
@@ -415,5 +500,319 @@ func newTestFactory(tb testing.TB, callback emit.Callback) *Factory {
 		Attributes: attrs.Resolver{
 			IncludeFileName: true,
 		},
+	}
+}
+
+func TestReadContentsCancelledDuringEmit(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name              string
+		content           string
+		maxBatchSize      int
+		cancelOnCall      int
+		expectedOffset    int64
+		expectedRecordNum int64
+	}{
+		{
+			name:              "full_batch",
+			content:           "line1\nline2\nline3\nline4\n",
+			maxBatchSize:      2,
+			cancelOnCall:      2,
+			expectedOffset:    int64(len("line1\nline2\n")),
+			expectedRecordNum: 2,
+		},
+		{
+			name:              "end_of_file",
+			content:           "line1\nline2\n",
+			maxBatchSize:      100,
+			cancelOnCall:      1,
+			expectedOffset:    0,
+			expectedRecordNum: 0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			temp := filetest.OpenTemp(t, t.TempDir())
+			filetest.WriteString(t, temp, tc.content)
+
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+
+			var calls int
+			f := newTestFactory(t, func(ctx context.Context, _ [][]byte, _ map[string]any, _ int64, _ []int64) error {
+				calls++
+				if calls == tc.cancelOnCall {
+					// Simulate Stop() canceling the context while the emit is blocked.
+					cancel()
+					return ctx.Err()
+				}
+				return nil
+			})
+
+			fp, err := f.NewFingerprint(temp)
+			require.NoError(t, err)
+			reader, err := f.NewReader(filetest.OpenFile(t, temp.Name()), fp)
+			require.NoError(t, err)
+			defer reader.Close()
+			reader.maxBatchSize = tc.maxBatchSize
+
+			reader.ReadToEnd(ctx)
+
+			assert.Equal(t, tc.cancelOnCall, calls)
+			assert.Equal(t, tc.expectedOffset, reader.Offset)
+			assert.Equal(t, tc.expectedRecordNum, reader.RecordNum)
+		})
+	}
+}
+
+func TestReadContentsEmitErrorAdvancesOffset(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name          string
+		content       string
+		maxBatchSize  int
+		expectedCalls int
+	}{
+		{
+			name:          "full_batch",
+			content:       "line1\nline2\nline3\nline4\n",
+			maxBatchSize:  2,
+			expectedCalls: 2,
+		},
+		{
+			name:          "end_of_file",
+			content:       "line1\nline2\n",
+			maxBatchSize:  100,
+			expectedCalls: 1,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			temp := filetest.OpenTemp(t, t.TempDir())
+			filetest.WriteString(t, temp, tc.content)
+
+			var calls int
+			f := newTestFactory(t, func(context.Context, [][]byte, map[string]any, int64, []int64) error {
+				calls++
+				return errors.New("emit failed")
+			})
+
+			fp, err := f.NewFingerprint(temp)
+			require.NoError(t, err)
+			reader, err := f.NewReader(filetest.OpenFile(t, temp.Name()), fp)
+			require.NoError(t, err)
+			defer reader.Close()
+			reader.maxBatchSize = tc.maxBatchSize
+
+			reader.ReadToEnd(t.Context())
+
+			// The context is still live, so a failed emit is not retried: the offset moves past the batch.
+			assert.Equal(t, tc.expectedCalls, calls)
+			assert.Equal(t, int64(len(tc.content)), reader.Offset)
+			assert.Equal(t, int64(strings.Count(tc.content, "\n")), reader.RecordNum)
+
+			// A later poll must not emit the failed batches again.
+			reader.ReadToEnd(t.Context())
+			assert.Equal(t, tc.expectedCalls, calls)
+		})
+	}
+}
+
+// errAfterCallsCtx reports cancellation once Err has been called more than n times. It cancels
+// deterministically at a point that has no other hook, e.g. after the last emit has been checked.
+type errAfterCallsCtx struct {
+	context.Context
+	n     int
+	calls int
+}
+
+func (c *errAfterCallsCtx) Err() error {
+	c.calls++
+	if c.calls > c.n {
+		return context.Canceled
+	}
+	return nil
+}
+
+func TestGzipCanceledAfterLastEmit(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "test.log.gz")
+	gzipFile, err := os.Create(path)
+	require.NoError(t, err)
+	gzipWriter := gzip.NewWriter(gzipFile)
+	_, err = gzipWriter.Write([]byte("line1\nline2\nline3\nline4\n"))
+	require.NoError(t, err)
+	require.NoError(t, gzipWriter.Close())
+	require.NoError(t, gzipFile.Close())
+	info, err := os.Stat(path)
+	require.NoError(t, err)
+
+	var calls int
+	f := newTestFactory(t, func(context.Context, [][]byte, map[string]any, int64, []int64) error {
+		calls++
+		return nil
+	})
+	f.Compression = "gzip"
+
+	file, err := os.Open(path)
+	require.NoError(t, err)
+	fp, err := f.NewFingerprint(file)
+	require.NoError(t, err)
+	reader, err := f.NewReader(file, fp)
+	require.NoError(t, err)
+	defer reader.Close()
+	reader.maxBatchSize = 2
+
+	// Each emitted batch checks the context once, so with 2 batches the context is reported as
+	// canceled only after the last batch has been emitted successfully.
+	ctx := &errAfterCallsCtx{Context: t.Context(), n: 2}
+	reader.ReadToEnd(ctx)
+
+	require.Equal(t, 2, calls)
+	require.ErrorIs(t, ctx.Err(), context.Canceled)
+	// Every batch was emitted before the cancellation, so the chunk is checkpointed instead of being
+	// rolled back and read again.
+	assert.Equal(t, info.Size(), reader.Offset)
+	assert.Equal(t, int64(4), reader.RecordNum)
+}
+
+func TestDeleteAtEOFCancelledDuringEmit(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name           string
+		cancel         bool
+		expectDeleted  bool
+		expectedOffset int64
+	}{
+		{
+			name:           "emit_cancelled",
+			cancel:         true,
+			expectDeleted:  false,
+			expectedOffset: 0,
+		},
+		{
+			name:           "emit_succeeded",
+			cancel:         false,
+			expectDeleted:  true,
+			expectedOffset: int64(len("line1\nline2\n")),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			temp := filetest.OpenTemp(t, t.TempDir())
+			filetest.WriteString(t, temp, "line1\nline2\n")
+
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+
+			f := newTestFactory(t, func(ctx context.Context, _ [][]byte, _ map[string]any, _ int64, _ []int64) error {
+				if tc.cancel {
+					// Simulate Stop() canceling the context while the emit is blocked.
+					cancel()
+					return ctx.Err()
+				}
+				return nil
+			})
+			f.DeleteAtEOF = true
+
+			fp, err := f.NewFingerprint(temp)
+			require.NoError(t, err)
+			require.NoError(t, temp.Close())
+			reader, err := f.NewReader(filetest.OpenFile(t, temp.Name()), fp)
+			require.NoError(t, err)
+			defer reader.Close()
+
+			reader.ReadToEnd(ctx)
+
+			assert.Equal(t, tc.expectedOffset, reader.Offset)
+			if tc.expectDeleted {
+				assert.NoFileExists(t, temp.Name())
+			} else {
+				assert.FileExists(t, temp.Name())
+			}
+		})
+	}
+}
+
+func TestGzipCancelledDuringEmit(t *testing.T) {
+	t.Parallel()
+
+	for _, deleteAtEOF := range []bool{false, true} {
+		t.Run(fmt.Sprintf("delete_at_eof_%t", deleteAtEOF), func(t *testing.T) {
+			t.Parallel()
+
+			path := filepath.Join(t.TempDir(), "test.log.gz")
+			gzipFile, err := os.Create(path)
+			require.NoError(t, err)
+			gzipWriter := gzip.NewWriter(gzipFile)
+			_, err = gzipWriter.Write([]byte("line1\nline2\nline3\nline4\n"))
+			require.NoError(t, err)
+			require.NoError(t, gzipWriter.Close())
+			require.NoError(t, gzipFile.Close())
+
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+
+			var calls int
+			f := newTestFactory(t, func(ctx context.Context, _ [][]byte, _ map[string]any, _ int64, _ []int64) error {
+				calls++
+				if calls == 2 {
+					// Simulate Stop() canceling the context while the emit is blocked.
+					cancel()
+					return ctx.Err()
+				}
+				return nil
+			})
+			f.Compression = "gzip"
+			f.DeleteAtEOF = deleteAtEOF
+
+			file, err := os.Open(path)
+			require.NoError(t, err)
+			fp, err := f.NewFingerprint(file)
+			require.NoError(t, err)
+			reader, err := f.NewReader(file, fp)
+			require.NoError(t, err)
+			reader.maxBatchSize = 2
+
+			reader.ReadToEnd(ctx)
+			metadata := reader.Close()
+
+			// The interrupted chunk must not be checkpointed.
+			assert.Equal(t, int64(0), metadata.Offset)
+			assert.Equal(t, int64(0), metadata.RecordNum)
+			assert.FileExists(t, path)
+
+			// After a restart the whole chunk is read again.
+			restarted, sink := testFactory(t, withCompression("gzip"))
+			restarted.DeleteAtEOF = deleteAtEOF
+			file, err = os.Open(path)
+			require.NoError(t, err)
+			reader, err = restarted.NewReaderFromMetadata(file, metadata)
+			require.NoError(t, err)
+
+			reader.ReadToEnd(t.Context())
+			sink.ExpectTokens(t, []byte("line1"), []byte("line2"), []byte("line3"), []byte("line4"))
+			assert.Equal(t, int64(4), reader.RecordNum)
+			reader.Close()
+
+			if deleteAtEOF {
+				assert.NoFileExists(t, path)
+			} else {
+				assert.FileExists(t, path)
+			}
+		})
 	}
 }

@@ -172,12 +172,11 @@ in some cases when they contain more than 16 significant bits.
 
 The proportional mode is generally applicable in trace sampling,
 because it is based on OpenTelemetry and W3C specifications.  This
-mode is selected by default, because it enforces a predictable
-(probabilistic) ratio between incoming items and outgoing items of
-telemetry.  No matter how SDKs and other sources of telemetry have
-been configured with respect to sampling, a collector configured with
-25% proportional sampling will output (an expected value of) 1 item
-for every 4 items input.
+mode enforces a predictable (probabilistic) ratio between incoming
+items and outgoing items of telemetry.  No matter how SDKs and other
+sources of telemetry have been configured with respect to sampling, a
+collector configured with 25% proportional sampling will output (an
+expected value of) 1 item for every 4 items input.
 
 ### Equalizing
 

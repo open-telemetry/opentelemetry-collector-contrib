@@ -4,7 +4,6 @@
 package googlecloudlogentryencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension"
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -38,16 +37,19 @@ func (ex *ext) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	logs := plog.NewLogs()
 
 	// each line corresponds to a log
-	scanner := bufio.NewScanner(bytes.NewReader(buf))
-	for scanner.Scan() {
-		line := scanner.Bytes()
+	for len(buf) > 0 {
+		var line []byte
+		if i := bytes.IndexByte(buf, '\n'); i >= 0 {
+			line, buf = buf[:i], buf[i+1:]
+		} else {
+			line, buf = buf, nil
+		}
+		if n := len(line); n > 0 && line[n-1] == '\r' {
+			line = line[:n-1]
+		}
 		if err := ex.handleLogLine(logs, line); err != nil {
 			return plog.Logs{}, err
 		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return plog.Logs{}, fmt.Errorf("error reading log: %w", err)
 	}
 
 	return logs, nil

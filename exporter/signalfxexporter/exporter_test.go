@@ -49,16 +49,8 @@ import (
 
 func TestNew(t *testing.T) {
 	successClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	successClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	successClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	successClientConfig.ForceAttemptHTTP2 = false
 	successClientConfig.Timeout = 1 * time.Second
 	hostMetadataClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	hostMetadataClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	hostMetadataClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	hostMetadataClientConfig.ForceAttemptHTTP2 = false
 	hostMetadataClientConfig.Timeout = 1 * time.Second
 	tests := []struct {
 		name           string
@@ -198,10 +190,6 @@ func TestConsumeMetrics(t *testing.T) {
 			assert.NoError(t, err)
 
 			clientConfig := confighttp.NewDefaultClientConfig()
-			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-			clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-			clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-			clientConfig.ForceAttemptHTTP2 = false
 			clientConfig.Timeout = 1 * time.Second
 			clientConfig.Headers = configopaque.MapList{
 				{Name: "test_header_", Value: "test"},
@@ -832,10 +820,6 @@ func TestNewEventExporter(t *testing.T) {
 	assert.Nil(t, exp)
 
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Timeout = 1 * time.Second
 	cfg := &Config{
 		AccessToken:  "someToken",
@@ -946,10 +930,6 @@ func TestConsumeEventData(t *testing.T) {
 			assert.NoError(t, err)
 
 			clientConfig := confighttp.NewDefaultClientConfig()
-			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-			clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-			clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-			clientConfig.ForceAttemptHTTP2 = false
 			clientConfig.Timeout = 1 * time.Second
 			clientConfig.Headers = configopaque.MapList{
 				{Name: "test_header_", Value: "test"},
@@ -2065,10 +2045,6 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			assert.NoError(t, err)
 
 			clientConfig := confighttp.NewDefaultClientConfig()
-			// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-			clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-			clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-			clientConfig.ForceAttemptHTTP2 = false
 			clientConfig.Timeout = 1 * time.Second
 			clientConfig.Headers = configopaque.MapList{
 				{Name: "test_header_", Value: "test"},

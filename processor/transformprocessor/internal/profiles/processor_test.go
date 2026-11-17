@@ -6,6 +6,7 @@ package profiles
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -1339,6 +1340,106 @@ func Test_ProcessProfiles_SharedCacheCrossContextAccess(t *testing.T) {
 			_, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
 			require.ErrorContains(t, err, tt.wantErr)
 		})
+	}
+}
+
+func Test_ProcessProfiles_SharedCacheNotCarriedOverBetweenCalls(t *testing.T) {
+	statements := []common.ContextStatements{
+		{
+			Statements:  []string{`set(profile.cache["k"], "seen") where profile.original_payload_format == "operationA"`},
+			SharedCache: true,
+		},
+		{
+			Statements:  []string{`set(profile.original_payload_format, "cache-detected") where profile.cache["k"] != nil`},
+			SharedCache: true,
+		},
+	}
+
+	processor, err := NewProcessor(statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
+	require.NoError(t, err)
+
+	// First call: operationA sets cache["k"]; all profiles in group 2 see it.
+	pd1 := constructProfiles()
+	_, err = processor.ProcessProfiles(t.Context(), pd1)
+	require.NoError(t, err)
+
+	assert.Equal(t, "cache-detected", pd1.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).OriginalPayloadFormat(),
+		"first profile should have original_payload_format changed after first call")
+
+	// Second call: no operationA profile, so cache["k"] should remain nil.
+	r2 := pcommon.NewResource()
+	r2.Attributes().PutStr("host.name", "localhost")
+	pd2 := pprofiletest.Profiles{
+		ResourceProfiles: []pprofiletest.ResourceProfile{
+			{
+				Resource: r2,
+				ScopeProfiles: []pprofiletest.ScopeProfile{
+					{
+						Profiles: []pprofiletest.Profile{
+							{OriginalPayloadFormat: "operationB"},
+						},
+					},
+				},
+			},
+		},
+	}.Transform()
+
+	_, err = processor.ProcessProfiles(t.Context(), pd2)
+	require.NoError(t, err)
+
+	assert.Equal(t, "operationB", pd2.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).OriginalPayloadFormat(),
+		"shared cache should be cleared between ProcessProfiles calls")
+}
+
+func Test_ProcessProfiles_SharedCacheConcurrentCalls(t *testing.T) {
+	const numGoroutines = 10
+
+	statements := []common.ContextStatements{
+		{
+			Context:     common.Profile,
+			Statements:  []string{`set(cache["k"], "cached-value")`},
+			SharedCache: true,
+		},
+		{
+			Context:     common.Profile,
+			Statements:  []string{`set(original_payload_format, cache["k"])`},
+			SharedCache: true,
+		},
+		{
+			Context:     common.Profile,
+			Statements:  []string{`delete_key(cache, "k")`},
+			SharedCache: true,
+		},
+	}
+
+	processor, err := NewProcessor(statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
+	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	profiles := make([]pprofile.Profiles, numGoroutines)
+	errs := make([]error, numGoroutines)
+
+	for i := range numGoroutines {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			pd := constructProfiles()
+			_, callErr := processor.ProcessProfiles(t.Context(), pd)
+			errs[idx] = callErr
+			profiles[idx] = pd
+		}(i)
+	}
+	wg.Wait()
+
+	for i, pd := range profiles {
+		require.NoError(t, errs[i], "goroutine %d returned an error", i)
+		for _, rp := range pd.ResourceProfiles().All() {
+			for _, sp := range rp.ScopeProfiles().All() {
+				for _, p := range sp.Profiles().All() {
+					assert.Equal(t, "cached-value", p.OriginalPayloadFormat(), "goroutine %d: profile original_payload_format mismatch", i)
+				}
+			}
+		}
 	}
 }
 

@@ -11,3 +11,6 @@ status:
   codeowners:
     active: [constanca-m, braydonk]
     seeking_new: true
+
+sending_queue:
+  support: default

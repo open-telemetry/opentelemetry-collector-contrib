@@ -9,8 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 )
 
 func normalizeTimestamps(metrics pmetric.Metrics) {
@@ -88,7 +87,7 @@ type dataPoint interface {
 func normalizeDataPointSlice[T dataPoint](dps dataPointSlice[T]) {
 	attrCache := make(map[[16]byte]bool)
 	for i := 0; i < dps.Len(); i++ {
-		attrHash := pdatautil.MapHash(dps.At(i).Attributes())
+		attrHash := xhash.MapHash(dps.At(i).Attributes())
 		if attrCache[attrHash] {
 			continue
 		}
@@ -96,7 +95,7 @@ func normalizeDataPointSlice[T dataPoint](dps dataPointSlice[T]) {
 
 		// Find any other data points in the time series
 		for j := i + 1; j < dps.Len(); j++ {
-			if pdatautil.MapHash(dps.At(j).Attributes()) != attrHash {
+			if xhash.MapHash(dps.At(j).Attributes()) != attrHash {
 				continue
 			}
 			timeSeries = append(timeSeries, dps.At(j).StartTimestamp(), dps.At(j).Timestamp())
@@ -104,7 +103,7 @@ func normalizeDataPointSlice[T dataPoint](dps dataPointSlice[T]) {
 
 		normalizedTs := normalizeTimeSeries(timeSeries)
 		for k := 0; k < dps.Len(); k++ {
-			if pdatautil.MapHash(dps.At(k).Attributes()) != attrHash {
+			if xhash.MapHash(dps.At(k).Attributes()) != attrHash {
 				continue
 			}
 			dps.At(k).SetTimestamp(normalizedTs[dps.At(k).Timestamp()])

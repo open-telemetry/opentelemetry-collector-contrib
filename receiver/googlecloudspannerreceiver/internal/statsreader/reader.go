@@ -13,6 +13,8 @@ type ReaderConfig struct {
 	TopMetricsQueryMaxRows            int
 	BackfillEnabled                   bool
 	HideTopnLockstatsRowrangestartkey bool
+	HideSplitStatsKeys                bool
+	HideClientIPAddress               bool
 	TruncateText                      bool
 }
 

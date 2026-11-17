@@ -80,7 +80,7 @@ func Test_ConvertAttributesToElementsXML(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			args := &ConvertAttributesToElementsXMLArguments[any]{
+			args := &convertAttributesToElementsXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return tt.document, nil
@@ -109,7 +109,7 @@ func TestCreateConvertAttributesToElementsXMLFunc(t *testing.T) {
 
 	// Invalid XPath should error on function creation
 	exprFunc, err = factory.CreateFunction(
-		fCtx, &ConvertAttributesToElementsXMLArguments[any]{
+		fCtx, &convertAttributesToElementsXMLArguments[any]{
 			XPath: ottl.NewTestingOptional("!"),
 		},
 	)
@@ -118,7 +118,7 @@ func TestCreateConvertAttributesToElementsXMLFunc(t *testing.T) {
 
 	// Invalid XML should error on function execution
 	exprFunc, err = factory.CreateFunction(
-		fCtx, &ConvertAttributesToElementsXMLArguments[any]{
+		fCtx, &convertAttributesToElementsXMLArguments[any]{
 			Target: invalidXMLGetter(),
 		},
 	)
@@ -138,14 +138,14 @@ func Test_ConvertAttributesToElementsXMLFactory(t *testing.T) {
 		factory := NewConvertAttributesToElementsXMLFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &ConvertAttributesToElementsXMLArguments[any]{}, args)
+		assert.IsType(t, &convertAttributesToElementsXMLArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "XPath"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewConvertAttributesToElementsXMLFactory[any]()
 		args := factory.CreateDefaultArguments()
-		convertArgs, ok := args.(*ConvertAttributesToElementsXMLArguments[any])
+		convertArgs, ok := args.(*convertAttributesToElementsXMLArguments[any])
 		require.True(t, ok)
 		convertArgs.Target = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -162,4 +162,20 @@ func Test_ConvertAttributesToElementsXMLFactory(t *testing.T) {
 		_, err := createConvertAttributesToElementsXMLFunction[any](ottl.FunctionContext{}, "invalid args")
 		assert.ErrorContains(t, err, "ConvertAttributesToElementsXML args must be of type *ConvertAttributesToElementsXMLAguments[K]")
 	})
+}
+
+func BenchmarkConvertAttributesToElementsXML(b *testing.B) {
+	target := ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return `<a hello="world" foo="bar"><b href="www.example.com"></b></a>`, nil
+		},
+	}
+	exprFunc := convertAttributesToElementsXML[any](target, "//@*")
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

@@ -12,20 +12,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type ContainsValueArguments[K any] struct {
+type containsValueArguments[K any] struct {
 	Target ottl.PSliceGetter[K]
 	Item   ottl.Getter[K]
 }
 
+// NewContainsValueFactory returns a factory for the ContainsValue OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#containsvalue
 func NewContainsValueFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("ContainsValue", &ContainsValueArguments[K]{}, createContainsValueFunction[K])
+	return ottl.NewFactory("ContainsValue", &containsValueArguments[K]{}, createContainsValueFunction[K])
 }
 
 func createContainsValueFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*ContainsValueArguments[K])
+	args, ok := oArgs.(*containsValueArguments[K])
 
 	if !ok {
-		return nil, errors.New("ContainsValueFactory args must be of type *ContainsValueArguments[K]")
+		return nil, errors.New("ContainsValueFactory args must be of type *containsValueArguments[K]")
 	}
 
 	return containsValue(args.Target, args.Item), nil

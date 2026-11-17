@@ -84,7 +84,7 @@ func Test_truncateAll(t *testing.T) {
 				},
 			}
 
-			exprFunc, err := TruncateAll(target, tt.limit, ottl.Optional[bool]{}, ottl.Optional[string]{}, zap.NewNop())
+			exprFunc, err := truncateAll(target, tt.limit, ottl.Optional[bool]{}, ottl.Optional[string]{}, zap.NewNop())
 			require.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
@@ -156,7 +156,7 @@ func Test_truncateAll_UTF8(t *testing.T) {
 			}
 
 			utf8SafeOpt := ottl.NewTestingOptional(true)
-			exprFunc, err := TruncateAll(target, tt.limit, utf8SafeOpt, ottl.Optional[string]{}, zap.NewNop())
+			exprFunc, err := truncateAll(target, tt.limit, utf8SafeOpt, ottl.Optional[string]{}, zap.NewNop())
 			require.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
@@ -170,17 +170,17 @@ func Test_truncateAll_UTF8(t *testing.T) {
 }
 
 func Test_truncateAll_validation(t *testing.T) {
-	_, err := TruncateAll[any](&ottl.StandardPMapGetSetter[any]{}, -1, ottl.Optional[bool]{}, ottl.Optional[string]{}, zap.NewNop())
+	_, err := truncateAll[any](&ottl.StandardPMapGetSetter[any]{}, -1, ottl.Optional[bool]{}, ottl.Optional[string]{}, zap.NewNop())
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "invalid limit for truncate_all function, -1 cannot be negative")
 
 	truncateMarkerOpt := ottl.NewTestingOptional("long_marker")
-	_, err = TruncateAll[any](&ottl.StandardPMapGetSetter[any]{}, 3, ottl.Optional[bool]{}, truncateMarkerOpt, zap.NewNop())
+	_, err = truncateAll[any](&ottl.StandardPMapGetSetter[any]{}, 3, ottl.Optional[bool]{}, truncateMarkerOpt, zap.NewNop())
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "invalid truncation marker for truncate_all function, length of marker 11 cannot be greater than limit 3")
 
 	truncateUtf8MarkerOpt := ottl.NewTestingOptional("[✄]")
-	_, err = TruncateAll[any](&ottl.StandardPMapGetSetter[any]{}, 3, ottl.Optional[bool]{}, truncateUtf8MarkerOpt, zap.NewNop())
+	_, err = truncateAll[any](&ottl.StandardPMapGetSetter[any]{}, 3, ottl.Optional[bool]{}, truncateUtf8MarkerOpt, zap.NewNop())
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "invalid truncation marker for truncate_all function, length of marker 5 cannot be greater than limit 3")
 }
@@ -196,7 +196,7 @@ func Test_truncateAll_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := TruncateAll[any](target, 1, ottl.Optional[bool]{}, ottl.Optional[string]{}, zap.NewNop())
+	exprFunc, err := truncateAll[any](target, 1, ottl.Optional[bool]{}, ottl.Optional[string]{}, zap.NewNop())
 	require.NoError(t, err)
 
 	_, err = exprFunc(nil, input)
@@ -213,7 +213,7 @@ func Test_truncateAll_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := TruncateAll[any](target, 1, ottl.Optional[bool]{}, ottl.Optional[string]{}, zap.NewNop())
+	exprFunc, err := truncateAll[any](target, 1, ottl.Optional[bool]{}, ottl.Optional[string]{}, zap.NewNop())
 	require.NoError(t, err)
 
 	_, err = exprFunc(nil, nil)
@@ -329,7 +329,7 @@ func Test_truncateAll_truncationMarker(t *testing.T) {
 
 			truncateMarkerOpt := ottl.NewTestingOptional(tt.marker)
 			utf8SafeOpt := ottl.NewTestingOptional(tt.utf8Safe)
-			exprFunc, err := TruncateAll(target, tt.limit, utf8SafeOpt, truncateMarkerOpt, zap.NewNop())
+			exprFunc, err := truncateAll(target, tt.limit, utf8SafeOpt, truncateMarkerOpt, zap.NewNop())
 			require.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
@@ -354,14 +354,14 @@ func Test_TruncateAllFactory(t *testing.T) {
 		factory := NewTruncateAllFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &TruncateAllArguments[any]{}, args)
+		assert.IsType(t, &truncateAllArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target", "Limit", "Utf8Safe", "TruncationMarker"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewTruncateAllFactory[any]()
 		args := factory.CreateDefaultArguments()
-		truncateAllArgs, ok := args.(*TruncateAllArguments[any])
+		truncateAllArgs, ok := args.(*truncateAllArguments[any])
 		require.True(t, ok)
 		truncateAllArgs.Target = &ottl.StandardPMapGetSetter[any]{
 			Getter: func(context.Context, any) (pcommon.Map, error) {
@@ -380,6 +380,26 @@ func Test_TruncateAllFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createTruncateAllFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "TruncateAllFactory args must be of type *TruncateAllArguments[K]")
+		assert.ErrorContains(t, err, "TruncateAllFactory args must be of type *truncateAllArguments[K]")
 	})
+}
+
+func BenchmarkTruncateAll(b *testing.B) {
+	var m pcommon.Map
+	target := ottl.StandardPMapGetSetter[any]{
+		Getter: func(context.Context, any) (pcommon.Map, error) { return m, nil },
+		Setter: func(context.Context, any, any) error { return nil },
+	}
+	exprFunc, err := truncateAll[any](target, 10, ottl.Optional[bool]{}, ottl.Optional[string]{}, zap.NewNop())
+	require.NoError(b, err)
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		m = pcommon.NewMap()
+		m.PutStr("k1", "a value that is longer than the limit")
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

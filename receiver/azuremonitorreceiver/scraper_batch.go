@@ -316,7 +316,9 @@ func (s *azureBatchScraper) loadResourcesAndTypes(ctx context.Context, subscript
 		s.settings.Logger.Debug("Collected Resource list from Azure", logFields...)
 		page++
 
-		for _, resource := range s.processResources(nextResult.Value) {
+		resources := filterResourcesByTags(nextResult.Value, s.cfg.ResourceTags)
+
+		for _, resource := range s.processResources(resources) {
 			if _, ok := s.resources[subscriptionID][*resource.ID]; !ok {
 				resourceGroup := getResourceGroupFromID(*resource.ID)
 				attributes := map[string]*string{
@@ -448,12 +450,9 @@ func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Con
 	// The Azure Monitor MetricDefinitions API only returns custom metric namespace
 	// definitions (e.g. "azure.vm.linux.guestmetrics" published by AMA/MetricsExtension)
 	// when the metricnamespace query parameter is set explicitly. Make additional calls
-	// for each namespace configured in the metrics filter that was not already returned
+	// only for namespaces applicable to this resource that were not already returned
 	// by the default call above.
-	for configNamespace := range s.cfg.Metrics {
-		if _, found := discoveredNamespaces[strings.ToLower(configNamespace)]; found {
-			continue
-		}
+	for _, configNamespace := range dedupAlreadyCollectedNamespaces(s.cfg.Metrics, discoveredNamespaces, resourceType) {
 		opts := &armmonitor.MetricDefinitionsClientListOptions{
 			Metricnamespace: new(configNamespace),
 		}
@@ -509,7 +508,7 @@ func (s *azureBatchScraper) collectMetricDefinitionsByType(
 				continue
 			}
 
-			timeGrain := *v.MetricAvailabilities[0].TimeGrain
+			timeGrain := getMetricTimeGrain(metricNamespace, metricName, s.cfg.TimeGrainOverrides, *v.MetricAvailabilities[0].TimeGrain)
 			dimensions := filterDimensions(v.Dimensions, s.cfg.Dimensions, resourceType, metricName)
 			compositeKey := metricsCompositeKey{
 				namespace:    metricNamespace,
@@ -664,7 +663,7 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 									name := tagPrefix + tagName
 									attributes[name] = value
 								}
-								attributes["timegrain"] = &compositeKey.timeGrain
+								attributes[attributeTimeGrain] = &compositeKey.timeGrain
 
 								var metricName string
 								if metric.Name != nil && metric.Name.Value != nil {
@@ -751,7 +750,7 @@ func (s *azureBatchScraper) processQueryTimeseriesData(
 				resourceID,
 				*metric.Name.Value,
 				aggregation.name,
-				string(*metric.Unit),
+				convertUnitToUCUM(string(*metric.Unit)),
 				attributes,
 				ts,
 				*aggregation.value,

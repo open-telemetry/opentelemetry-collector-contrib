@@ -2,6 +2,7 @@ vcenter:
   endpoint: http://vcsa.host.localnet
   username: otelu
   password: ${env:VCENTER_PASSWORD}
+  proxy_url: socks5://proxy.host.localnet:1080
   collection_interval: 5m
   max_query_metrics: 128
   metrics:

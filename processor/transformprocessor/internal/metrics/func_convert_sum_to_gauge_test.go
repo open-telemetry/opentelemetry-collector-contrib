@@ -98,3 +98,27 @@ func Test_convertSumToGauge(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkConvertSumToGauge(b *testing.B) {
+	template := pmetric.NewMetric()
+	dp1 := template.SetEmptySum().DataPoints().AppendEmpty()
+	dp1.SetIntValue(10)
+	dp2 := template.Sum().DataPoints().AppendEmpty()
+	dp2.SetDoubleValue(14.5)
+
+	exprFunc, err := convertSumToGauge()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	metric := pmetric.NewMetric()
+	transformContext := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+	b.Cleanup(transformContext.Close)
+	b.ReportAllocs()
+	for b.Loop() {
+		template.CopyTo(metric)
+		if _, err = exprFunc(b.Context(), transformContext); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

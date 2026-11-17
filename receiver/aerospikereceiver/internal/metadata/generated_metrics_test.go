@@ -104,36 +104,54 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordAerospikeNamespaceMemoryUsageDataPoint(ts, "1", AttributeNamespaceComponentData)
 			if tt.name == "reaggregate_set" {
 				mb.RecordAerospikeNamespaceMemoryUsageDataPoint(ts, "3", AttributeNamespaceComponentIndex)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordAerospikeNamespaceMemoryUsageDataPoint(ts+1, "3", AttributeNamespaceComponentIndex)
+				assert.Equal(t, 2, mb.metricAerospikeNamespaceMemoryUsage.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceQueryCountDataPoint(ts, "1", AttributeQueryTypeAggregation, AttributeIndexTypePrimary, AttributeQueryResultAbort)
 			if tt.name == "reaggregate_set" {
 				mb.RecordAerospikeNamespaceQueryCountDataPoint(ts, "3", AttributeQueryTypeBasic, AttributeIndexTypeSecondary, AttributeQueryResultComplete)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordAerospikeNamespaceQueryCountDataPoint(ts+1, "3", AttributeQueryTypeBasic, AttributeIndexTypeSecondary, AttributeQueryResultComplete)
+				assert.Equal(t, 2, mb.metricAerospikeNamespaceQueryCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceScanCountDataPoint(ts, "1", AttributeScanTypeAggregation, AttributeScanResultAbort)
 			if tt.name == "reaggregate_set" {
 				mb.RecordAerospikeNamespaceScanCountDataPoint(ts, "3", AttributeScanTypeBasic, AttributeScanResultComplete)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordAerospikeNamespaceScanCountDataPoint(ts+1, "3", AttributeScanTypeBasic, AttributeScanResultComplete)
+				assert.Equal(t, 2, mb.metricAerospikeNamespaceScanCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNamespaceTransactionCountDataPoint(ts, "1", AttributeTransactionTypeDelete, AttributeTransactionResultError)
 			if tt.name == "reaggregate_set" {
 				mb.RecordAerospikeNamespaceTransactionCountDataPoint(ts, "3", AttributeTransactionTypeRead, AttributeTransactionResultFilteredOut)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordAerospikeNamespaceTransactionCountDataPoint(ts+1, "3", AttributeTransactionTypeRead, AttributeTransactionResultFilteredOut)
+				assert.Equal(t, 2, mb.metricAerospikeNamespaceTransactionCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNodeConnectionCountDataPoint(ts, "1", AttributeConnectionTypeClient, AttributeConnectionOpClose)
 			if tt.name == "reaggregate_set" {
 				mb.RecordAerospikeNodeConnectionCountDataPoint(ts, "3", AttributeConnectionTypeFabric, AttributeConnectionOpOpen)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordAerospikeNodeConnectionCountDataPoint(ts+1, "3", AttributeConnectionTypeFabric, AttributeConnectionOpOpen)
+				assert.Equal(t, 2, mb.metricAerospikeNodeConnectionCount.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordAerospikeNodeConnectionOpenDataPoint(ts, "1", AttributeConnectionTypeClient)
 			if tt.name == "reaggregate_set" {
 				mb.RecordAerospikeNodeConnectionOpenDataPoint(ts, "3", AttributeConnectionTypeFabric)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordAerospikeNodeConnectionOpenDataPoint(ts+1, "3", AttributeConnectionTypeFabric)
+				assert.Equal(t, 2, mb.metricAerospikeNodeConnectionOpen.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -283,7 +301,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["aerospike.namespace.memory.usage"], "Found a duplicate in the metrics slice: aerospike.namespace.memory.usage")
 						validatedMetrics["aerospike.namespace.memory.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Memory currently used by each component of the namespace", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -333,7 +353,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["aerospike.namespace.query.count"], "Found a duplicate in the metrics slice: aerospike.namespace.query.count")
 						validatedMetrics["aerospike.namespace.query.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of query operations performed on the namespace", mi.Description())
 						assert.Equal(t, "{queries}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -384,7 +406,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["aerospike.namespace.scan.count"], "Found a duplicate in the metrics slice: aerospike.namespace.scan.count")
 						validatedMetrics["aerospike.namespace.scan.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of scan operations performed on the namespace", mi.Description())
 						assert.Equal(t, "{scans}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -433,7 +457,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["aerospike.namespace.transaction.count"], "Found a duplicate in the metrics slice: aerospike.namespace.transaction.count")
 						validatedMetrics["aerospike.namespace.transaction.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of transactions performed on the namespace", mi.Description())
 						assert.Equal(t, "{transactions}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -482,7 +508,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["aerospike.node.connection.count"], "Found a duplicate in the metrics slice: aerospike.node.connection.count")
 						validatedMetrics["aerospike.node.connection.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of connections opened and closed to the node", mi.Description())
 						assert.Equal(t, "{connections}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -528,7 +556,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["aerospike.node.connection.open"], "Found a duplicate in the metrics slice: aerospike.node.connection.open")
 						validatedMetrics["aerospike.node.connection.open"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Current number of open connections to the node", mi.Description())
 						assert.Equal(t, "{connections}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())

@@ -25,13 +25,16 @@ resourceMetrics:
                     - key: resource_group
                       value:
                         stringValue: rg
+                    - key: timegrain
+                      value:
+                        stringValue: PT1M
                     - key: type
                       value:
                         stringValue: Microsoft.Compute/virtualMachines
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
             name: azure_disk/free_percent_average
-            unit: Percent
+            unit: "%"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver
           version: latest

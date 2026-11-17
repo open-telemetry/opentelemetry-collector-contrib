@@ -85,11 +85,15 @@ func TestExtractKey_ScopedSelectors(t *testing.T) {
 		selector string
 		want     string
 	}{
-		{"resource_only", `resource.attributes["service.name"]`, "api"},
-		{"resource_scope_ignores_span_values", `resource.attributes["http.route"]`, "<missing>"},
-		{"scope_attributes", `scope.attributes["lib.version"]`, "1.2"},
+		{"resource_all", `resource.attributes["service.name"]`, "api"},
+		{"resource_ignores_span_values", `resource.attributes["http.route"]`, "<missing>"},
+		{"scope_all", `scope.attributes["lib.version"]`, "1.2"},
 		{"span_collects_all", `span.attributes["http.route"]`, "/users,/users/id"},
-		{"root_only", `root.attributes["http.route"]`, "/users"},
+		{"root_span", `root.span.attributes["http.route"]`, "/users"},
+		{"root_resource_precise", `root.resource.attributes["service.name"]`, "api"},
+		{"root_span_precise", `root.span.attributes["service.name"]`, "span-level"},
+		{"root_scope", `root.scope.attributes["lib.version"]`, "1.2"},
+		{"root_any_unions", `root.any.attributes["service.name"]`, "api,span-level"},
 		{"any_unions_scopes", `any.attributes["service.name"]`, "api,span-level"},
 	}
 	for _, tt := range tests {
@@ -105,7 +109,7 @@ func TestExtractKey_RootWithoutMatcher(t *testing.T) {
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes().PutStr("k", "v")
 
-	key := ExtractKey(collect(rs), mustSelectors(t, `root.attributes["k"]`), nil)
+	key := ExtractKey(collect(rs), mustSelectors(t, `root.span.attributes["k"]`), nil)
 	assert.Equal(t, "<missing>", key)
 }
 
@@ -117,8 +121,12 @@ func TestParseSelector(t *testing.T) {
 		{in: `resource.attributes["service.name"]`},
 		{in: `scope.attributes["lib"]`},
 		{in: `span.attributes["http.route"]`},
-		{in: `root.attributes["http.status_code"]`},
 		{in: `any.attributes["k"]`},
+		{in: `root.resource.attributes["service.name"]`},
+		{in: `root.scope.attributes["lib"]`},
+		{in: `root.span.attributes["http.status_code"]`},
+		{in: `root.any.attributes["k"]`},
+		{in: `root.attributes["http.status_code"]`, wantErr: "root must name an origin"},
 		{in: `service.name`, wantErr: "not a scoped attribute selector"},
 		{in: `spans.attributes["k"]`, wantErr: "not a scoped attribute selector"},
 		{in: `span.attributes[k]`, wantErr: "must have the form"},

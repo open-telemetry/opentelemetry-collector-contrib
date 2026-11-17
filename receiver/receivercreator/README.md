@@ -10,8 +10,8 @@ This receiver can instantiate other receivers at runtime based on whether observ
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Freceivercreator%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Freceivercreator) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Freceivercreator%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Freceivercreator) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_receivercreator)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_receivercreator&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@ChrsMark](https://www.github.com/ChrsMark) |
-| Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@ChrsMark](https://www.github.com/ChrsMark), [@pjanotti](https://www.github.com/pjanotti), [@jinja2](https://www.github.com/jinja2) |
+| Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick), [@dmitryax](https://www.github.com/dmitryax) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -76,8 +76,11 @@ port but the port needs to be set inside endpoint. You could do:
 
 ```yaml
 config:
-   endpoint: '`endpoint`:8080'
+   endpoint: '`joinHostPort(endpoint, 8080)`'
 ```
+
+`joinHostPort` accepts a bare hostname or IP address and a port as an integer
+or decimal string. It adds brackets when the host is an IPv6 address.
 
 If your target receiver provides an `endpoint` config field and you aren't
 manually setting it like the above example, the observer endpoint target value
@@ -177,7 +180,7 @@ Similar to the per-endpoint type `resource_attributes` described above but for i
 
 ## Rule Expressions
 
-Each rule must start with `type == ("pod"|"port"|"pod.container"|"hostport"|"container"|"k8s.service"|"k8s.node"|"k8s.ingress") &&` such that the rule matches
+Each rule must start with `type == <endpoint_type> &&` such that the rule matches
 only one endpoint type. Depending on the type of endpoint the rule is
 targeting it will have different variables available.
 
@@ -320,7 +323,7 @@ receivers:
         rule: type == "pod" && annotations["prometheus.io/scrape"] == "true"  && labels["app.kubernetes.io/component"] != "opentelemetry-collector
         config:
           metrics_path: '`"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/metrics"`'
-          endpoint: '`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090`'
+          endpoint: '`joinHostPort(endpoint, "prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090)`'
         resource_attributes:
           an.attribute: a.value
           # Dynamic configuration values
@@ -339,7 +342,7 @@ receivers:
         # Set a resource attribute based on endpoint value.
         rule: type == "port" && port == 6379
 
-      sqlserver:
+      sql_server:
         rule: type == "port" && pod.name matches "(?i)mssql"
         config:
           server: '`host`'
@@ -372,7 +375,7 @@ receivers:
         config:
           auth_type: serviceAccount
           collection_interval: 10s
-          endpoint: '`endpoint`:`kubelet_endpoint_port`'
+          endpoint: '`joinHostPort(endpoint, kubelet_endpoint_port)`'
           extra_metadata_labels:
             - container.id
           metric_groups:
@@ -384,7 +387,7 @@ receivers:
         rule: type == "k8s.service" && annotations["prometheus.io/probe"] == "true"
         config:
           targets:
-          - endpoint: 'http://`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090``"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/health"`'
+          - endpoint: 'http://`joinHostPort(endpoint, "prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090)``"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/health"`'
             method: GET
           collection_interval: 10s
   receiver_creator/4:

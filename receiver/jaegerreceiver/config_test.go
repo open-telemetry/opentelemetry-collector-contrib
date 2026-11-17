@@ -28,44 +28,24 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	customnameThriftHTTPServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	customnameThriftHTTPServerConfig.WriteTimeout = 0
-	customnameThriftHTTPServerConfig.ReadHeaderTimeout = 0
-	customnameThriftHTTPServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	customnameThriftHTTPServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	customnameThriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
 		Endpoint:  ":3456",
 		Transport: confignet.TransportTypeTCP,
 	}
 
 	defaultsThriftHTTPServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	defaultsThriftHTTPServerConfig.WriteTimeout = 0
-	defaultsThriftHTTPServerConfig.ReadHeaderTimeout = 0
-	defaultsThriftHTTPServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	defaultsThriftHTTPServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	defaultsThriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
 		Endpoint:  "localhost:14268",
 		Transport: confignet.TransportTypeTCP,
 	}
 
 	mixedThriftHTTPServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	mixedThriftHTTPServerConfig.WriteTimeout = 0
-	mixedThriftHTTPServerConfig.ReadHeaderTimeout = 0
-	mixedThriftHTTPServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	mixedThriftHTTPServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	mixedThriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
 		Endpoint:  defaultHTTPEndpoint,
 		Transport: confignet.TransportTypeTCP,
 	}
 
 	tlsThriftHTTPServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	tlsThriftHTTPServerConfig.WriteTimeout = 0
-	tlsThriftHTTPServerConfig.ReadHeaderTimeout = 0
-	tlsThriftHTTPServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	tlsThriftHTTPServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	tlsThriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
 		Endpoint:  ":3456",
 		Transport: confignet.TransportTypeTCP,
@@ -236,11 +216,6 @@ func TestInvalidConfig(t *testing.T) {
 			desc: "thrift-http-no-port",
 			apply: func(cfg *Config) {
 				thriftHTTPServerConfig := confighttp.NewDefaultServerConfig()
-				// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-				thriftHTTPServerConfig.WriteTimeout = 0
-				thriftHTTPServerConfig.ReadHeaderTimeout = 0
-				thriftHTTPServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-				thriftHTTPServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 				thriftHTTPServerConfig.NetAddr = confignet.AddrConfig{
 					Endpoint:  "localhost:",
 					Transport: confignet.TransportTypeTCP,

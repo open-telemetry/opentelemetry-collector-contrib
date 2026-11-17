@@ -9,7 +9,8 @@
 //
 // For each log record it serializes the full record to RFC 8785 (JCS)
 // canonical JSON and computes a signature using the configured JWA algorithm.
-// The signature is stored as audit.integrity.value on the record.
+// The signature is stored as audit.integrity.value on the record,
+// audit.integrity.signer is set to "collector", and
 // audit.integrity.algorithm and audit.integrity.certificate (for asymmetric
 // algorithms) are set once per ResourceLogs block on the Resource attributes,
 // after all records in the block have been signed successfully.

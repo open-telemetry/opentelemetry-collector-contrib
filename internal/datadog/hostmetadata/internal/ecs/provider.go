@@ -64,8 +64,9 @@ func (p *Provider) Source(ctx context.Context) (source.Source, error) {
 	}
 
 	return source.Source{
-		Kind:       source.AWSECSFargateKind,
-		Identifier: tmdeResp.TaskARN,
+		Kind:             source.AWSECSFargateKind,
+		Identifier:       tmdeResp.TaskARN, //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+		SourceIdentifier: source.SourceIdentifier{Primary: tmdeResp.TaskARN},
 	}, nil
 }
 

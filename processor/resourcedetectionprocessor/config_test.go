@@ -20,6 +20,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/appservice"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/functions"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
@@ -49,6 +51,14 @@ func TestLoadConfig(t *testing.T) {
 		MaxBackoff:         20 * time.Second,
 	}
 
+	envConfig := detectorCreateDefaultConfig()
+	envConfig.EnvConfig = env.Config{
+		Attributes: env.AttributesConfig{
+			Included: []string{"deployment.environment.name", "k8s.*"},
+			Excluded: []string{"k8s.pod.name"},
+		},
+	}
+
 	systemConfig := detectorCreateDefaultConfig()
 	systemConfig.SystemConfig = system.Config{
 		HostnameSources:    []string{"os"},
@@ -59,6 +69,11 @@ func TestLoadConfig(t *testing.T) {
 	azureAppServiceResourceAttributes := appservice.CreateDefaultConfig()
 	azureAppServiceResourceAttributes.ResourceAttributes.AzureAppServiceInstanceID.Enabled = false
 	azureAppServiceConfig.AzureAppServiceConfig = azureAppServiceResourceAttributes
+
+	azureFunctionsConfig := detectorCreateDefaultConfig()
+	azureFunctionsResourceAttributes := functions.CreateDefaultConfig()
+	azureFunctionsResourceAttributes.ResourceAttributes.FaasInstance.Enabled = false
+	azureFunctionsConfig.AzureFunctionsConfig = azureFunctionsResourceAttributes
 
 	resourceAttributesConfig := detectorCreateDefaultConfig()
 	ec2ResourceAttributesConfig := ec2.CreateDefaultConfig()
@@ -106,6 +121,16 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "azurefunctions"),
+			expected: &Config{
+				Detectors:      []string{"env", "azurefunctions"},
+				DetectorConfig: azureFunctionsConfig,
+				ClientConfig:   cfg,
+				Override:       false,
+				Retry:          defaultRetryConfig(),
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "gcp"),
 			expected: &Config{
 				Detectors:      []string{"env", "gcp"},
@@ -130,6 +155,16 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Detectors:      []string{"env", "system"},
 				DetectorConfig: systemConfig,
+				ClientConfig:   cfg,
+				Override:       false,
+				Retry:          defaultRetryConfig(),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "env"),
+			expected: &Config{
+				Detectors:      []string{"env"},
+				DetectorConfig: envConfig,
 				ClientConfig:   cfg,
 				Override:       false,
 				Retry:          defaultRetryConfig(),
@@ -308,6 +343,18 @@ func TestGetConfigFromType(t *testing.T) {
 			inputDetectorConfig: lambdaDetectorConfig,
 			expectedConfig:      lambdaDetectorConfig.LambdaConfig,
 		},
+		{
+			name:         "Get Env Config",
+			detectorType: env.TypeStr,
+			inputDetectorConfig: DetectorConfig{
+				EnvConfig: env.Config{
+					Attributes: env.AttributesConfig{Included: []string{"service.name"}},
+				},
+			},
+			expectedConfig: env.Config{
+				Attributes: env.AttributesConfig{Included: []string{"service.name"}},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -319,7 +366,7 @@ func TestGetConfigFromType(t *testing.T) {
 }
 
 // TestGetConfigFromType_AllDetectors tests GetConfigFromType for all detector types
-// to ensure complete coverage of the switch statement
+// that expose detector-specific config.
 func TestGetConfigFromType_AllDetectors(t *testing.T) {
 	defaultConfig := detectorCreateDefaultConfig()
 
@@ -327,25 +374,35 @@ func TestGetConfigFromType_AllDetectors(t *testing.T) {
 		name         string
 		detectorType internal.DetectorType
 	}{
+		{"EC2", "ec2"},
 		{"ECS", "ecs"},
 		{"EKS", "eks"},
 		{"ElasticBeanstalk", "elastic_beanstalk"},
+		{"Lambda", "lambda"},
 		{"Azure", "azure"},
 		{"AKS", "aks"},
 		{"AzureAppService", "azureappservice"},
 		{"AzureContainerApps", "azurecontainerapps"},
+		{"AzureFunctions", "azurefunctions"},
 		{"Consul", "consul"},
 		{"DigitalOcean", "digitalocean"},
 		{"Docker", "docker"},
+		{"Env", "env"},
 		{"GCP", "gcp"},
+		{"Heroku", "heroku"},
 		{"Hetzner", "hetzner"},
+		{"IBMCloudClassic", "ibmcloud_classic"},
+		{"IBMCloudVPC", "ibmcloud_vpc"},
+		{"System", "system"},
 		{"OpenShift", "openshift"},
 		{"Nova", "nova"},
 		{"OracleCloud", "oraclecloud"},
+		{"K8sAPI", "k8s_api"},
 		{"K8sNode", "k8snode"},
 		{"Kubeadm", "kubeadm"},
 		{"Akamai", "akamai"},
 		{"Scaleway", "scaleway"},
+		{"TencentCVM", "tencent_cvm"},
 		{"Upcloud", "upcloud"},
 		{"Vultr", "vultr"},
 		{"AlibabaECS", "alibaba_ecs"},
@@ -376,17 +433,22 @@ func TestDetectorCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, config.ConsulConfig)
 	assert.NotNil(t, config.DigitalOceanConfig)
 	assert.NotNil(t, config.DockerConfig)
+	assert.NotNil(t, config.EnvConfig)
 	assert.NotNil(t, config.GcpConfig)
 	assert.NotNil(t, config.HerokuConfig)
 	assert.NotNil(t, config.HetznerConfig)
+	assert.NotNil(t, config.IBMCloudClassicConfig)
+	assert.NotNil(t, config.IBMCloudVPCConfig)
 	assert.NotNil(t, config.SystemConfig)
 	assert.NotNil(t, config.OpenShiftConfig)
 	assert.NotNil(t, config.OpenStackNovaConfig)
 	assert.NotNil(t, config.OracleCloudConfig)
+	assert.NotNil(t, config.K8SAPIConfig)
 	assert.NotNil(t, config.K8SNodeConfig)
 	assert.NotNil(t, config.KubeadmConfig)
 	assert.NotNil(t, config.AkamaiConfig)
 	assert.NotNil(t, config.ScalewayConfig)
+	assert.NotNil(t, config.TencentCVMConfig)
 	assert.NotNil(t, config.UpcloudConfig)
 	assert.NotNil(t, config.VultrConfig)
 	assert.NotNil(t, config.AlibabaECSConfig)

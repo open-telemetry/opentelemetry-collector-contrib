@@ -197,3 +197,22 @@ func getTestScalingHistogramMetric(count uint64, sum, minVal, maxVal float64, bo
 	histogramDatapoint.SetTimestamp(timestamp)
 	return metric
 }
+
+func BenchmarkScale(b *testing.B) {
+	expr, err := Scale(ScaleArguments{Multiplier: 10.0})
+	if err != nil {
+		b.Fatal(err)
+	}
+	template := getTestScalingHistogramMetric(1, 4, 1, 3, []float64{1, 10}, []uint64{1, 2}, []float64{1.0}, 1, 1)
+	metric := pmetric.NewMetric()
+	transformContext := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+	b.Cleanup(transformContext.Close)
+	b.ReportAllocs()
+	for b.Loop() {
+		template.CopyTo(metric)
+		_, err = expr(b.Context(), transformContext)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}

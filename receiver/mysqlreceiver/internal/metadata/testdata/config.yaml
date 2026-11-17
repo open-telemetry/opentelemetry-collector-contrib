@@ -143,6 +143,15 @@ all_set:
     mysql.statement_event.wait.time:
       enabled: true
       attributes: ["schema","digest","digest_text"]
+    mysql.table.auto_increment.limit:
+      enabled: true
+      attributes: ["table","schema","mysql.column.name"]
+    mysql.table.auto_increment.usage:
+      enabled: true
+      attributes: ["table","schema","mysql.column.name"]
+    mysql.table.auto_increment.utilization:
+      enabled: true
+      attributes: ["table","schema","mysql.column.name"]
     mysql.table.average_row_length:
       enabled: true
       attributes: ["table","schema"]
@@ -186,6 +195,8 @@ all_set:
     mysql.uptime:
       enabled: true
   events:
+    db.server.query_plan:
+      enabled: true
     db.server.query_sample:
       enabled: true
     db.server.top_query:
@@ -196,6 +207,10 @@ all_set:
     db.system.version:
       enabled: true
     mysql.instance.endpoint:
+      enabled: true
+    server.address:
+      enabled: true
+    server.port:
       enabled: true
     service.instance.id:
       enabled: true
@@ -347,6 +362,15 @@ reaggregate_set:
     mysql.statement_event.wait.time:
       enabled: true
       attributes: []
+    mysql.table.auto_increment.limit:
+      enabled: true
+      attributes: []
+    mysql.table.auto_increment.usage:
+      enabled: true
+      attributes: []
+    mysql.table.auto_increment.utilization:
+      enabled: true
+      attributes: []
     mysql.table.average_row_length:
       enabled: true
       attributes: []
@@ -390,6 +414,8 @@ reaggregate_set:
     mysql.uptime:
       enabled: true
   events:
+    db.server.query_plan:
+      enabled: true
     db.server.query_sample:
       enabled: true
     db.server.top_query:
@@ -400,6 +426,10 @@ reaggregate_set:
     db.system.version:
       enabled: true
     mysql.instance.endpoint:
+      enabled: true
+    server.address:
+      enabled: true
+    server.port:
       enabled: true
     service.instance.id:
       enabled: true
@@ -551,6 +581,15 @@ none_set:
     mysql.statement_event.wait.time:
       enabled: false
       attributes: ["schema","digest","digest_text"]
+    mysql.table.auto_increment.limit:
+      enabled: false
+      attributes: ["table","schema","mysql.column.name"]
+    mysql.table.auto_increment.usage:
+      enabled: false
+      attributes: ["table","schema","mysql.column.name"]
+    mysql.table.auto_increment.utilization:
+      enabled: false
+      attributes: ["table","schema","mysql.column.name"]
     mysql.table.average_row_length:
       enabled: false
       attributes: ["table","schema"]
@@ -594,6 +633,8 @@ none_set:
     mysql.uptime:
       enabled: false
   events:
+    db.server.query_plan:
+      enabled: false
     db.server.query_sample:
       enabled: false
     db.server.top_query:
@@ -604,6 +645,10 @@ none_set:
     db.system.version:
       enabled: false
     mysql.instance.endpoint:
+      enabled: false
+    server.address:
+      enabled: false
+    server.port:
       enabled: false
     service.instance.id:
       enabled: false
@@ -622,6 +667,12 @@ override_set:
     mysql.instance.endpoint:
       enabled: true
       override_value: "override-mysql.instance.endpoint"
+    server.address:
+      enabled: true
+      override_value: "override-server.address"
+    server.port:
+      enabled: true
+      override_value: 123
     service.instance.id:
       enabled: true
       override_value: "override-service.instance.id"
@@ -646,6 +697,18 @@ filter_set_include:
       events_include:
         - regexp: ".*"
     mysql.instance.endpoint:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    server.address:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    server.port:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -689,6 +752,18 @@ filter_set_exclude:
         - strict: "mysql.instance.endpoint-val"
       events_exclude:
         - strict: "mysql.instance.endpoint-val"
+    server.address:
+      enabled: true
+      metrics_exclude:
+        - strict: "server.address-val"
+      events_exclude:
+        - strict: "server.address-val"
+    server.port:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
+      events_exclude:
+        - regexp: ".*"
     service.instance.id:
       enabled: true
       metrics_exclude:

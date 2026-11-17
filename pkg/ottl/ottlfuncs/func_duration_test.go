@@ -149,8 +149,7 @@ func Test_Duration(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Duration(tt.duration)
-			require.NoError(t, err)
+			exprFunc := parseDuration(tt.duration)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -185,9 +184,8 @@ func Test_DurationError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Duration[any](tt.duration)
-			require.NoError(t, err)
-			_, err = exprFunc(t.Context(), nil)
+			exprFunc := parseDuration[any](tt.duration)
+			_, err := exprFunc(t.Context(), nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}
@@ -203,14 +201,14 @@ func Test_DurationFactory(t *testing.T) {
 		factory := NewDurationFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &DurationArguments[any]{}, args)
+		assert.IsType(t, &durationArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Duration"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewDurationFactory[any]()
 		args := factory.CreateDefaultArguments()
-		durationArgs, ok := args.(*DurationArguments[any])
+		durationArgs, ok := args.(*durationArguments[any])
 		require.True(t, ok)
 		durationArgs.Duration = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -225,6 +223,22 @@ func Test_DurationFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createDurationFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "DurationFactory args must be of type *DurationArguments[K]")
+		assert.ErrorContains(t, err, "DurationFactory args must be of type *durationArguments[K]")
 	})
+}
+
+func BenchmarkDuration(b *testing.B) {
+	exprFunc := parseDuration[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "5h23m59s", nil
+		},
+	})
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

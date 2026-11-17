@@ -43,6 +43,9 @@ func (cfg *Config) Validate() error {
 	if len(cfg.Scrapers) == 0 {
 		err = errors.New("must specify at least one scraper when using host_metrics receiver")
 	}
+	if cfg.MetadataCollectionInterval < 0 {
+		err = multierr.Append(err, errors.New("metadata_collection_interval must not be negative"))
+	}
 	return multierr.Append(err, gopsutilenv.ValidateRootPath(cfg.RootPath))
 }
 
@@ -69,7 +72,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	for keyStr := range scrapersSection.ToStringMap() {
 		key, err := component.NewType(keyStr)
 		if err != nil {
-			return fmt.Errorf("invalid scraper key name: %s", key)
+			return fmt.Errorf("invalid scraper key name: %s: %w", keyStr, err)
 		}
 		factory, ok := scraperFactories[key]
 		if !ok {

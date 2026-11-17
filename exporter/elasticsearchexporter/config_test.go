@@ -30,20 +30,11 @@ func TestConfig(t *testing.T) {
 
 	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).Endpoints = []string{"https://elastic.example.com:9200"}
-	defaultCfg.(*Config).Retry.RetryOnDocumentStatus = defaultCfg.(*Config).Retry.RetryOnStatus
 
 	defaultLogstashFormatCfg := createDefaultConfig()
 	defaultLogstashFormatCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
 	defaultLogstashFormatCfg.(*Config).LogstashFormat.Enabled = true
-	defaultLogstashFormatCfg.(*Config).Retry.RetryOnDocumentStatus = defaultLogstashFormatCfg.(*Config).Retry.RetryOnStatus
 
-	defaultRawCfg := createDefaultConfig()
-	defaultRawCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
-	defaultRawCfg.(*Config).Mapping.Mode = "raw"
-	defaultRawCfg.(*Config).Retry.RetryOnDocumentStatus = defaultRawCfg.(*Config).Retry.RetryOnStatus
-
-	defaultMaxIdleConns := 100
-	defaultIdleConnTimeout := 90 * time.Second
 	defaultCompression := configcompression.TypeGzip
 
 	tests := []struct {
@@ -60,31 +51,21 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			id:         component.NewIDWithName(metadata.Type, "trace"),
 			expected: &Config{
-				QueueBatchConfig: configoptional.Some(exporterhelper.QueueBatchConfig{
-					NumConsumers:    10,
-					QueueSize:       10,
-					BlockOnOverflow: true,
-					Sizer:           exporterhelper.RequestSizerTypeRequests,
-					Batch: configoptional.Some(exporterhelper.BatchConfig{
-						FlushTimeout: 10 * time.Second,
-						Sizer:        exporterhelper.RequestSizerTypeBytes,
-						MinSize:      1000000,
-						MaxSize:      5000000,
-					}),
-				}),
+				QueueBatchConfig: configoptional.Some(func() exporterhelper.QueueBatchConfig {
+					qs := exporterhelper.NewDefaultQueueConfig()
+					qs.QueueSize = 10
+					qs.BlockOnOverflow = true
+					batch := qs.Batch.GetOrInsertDefault()
+					batch.FlushTimeout = 10 * time.Second
+					batch.Sizer = exporterhelper.RequestSizerTypeBytes
+					batch.MinSize = 1000000
+					batch.MaxSize = 5000000
+					return qs
+				}()),
 				Endpoints: []string{
 					"https://elastic.example.com:9200",
 				},
-				LogsDynamicIndex: DynamicIndexSetting{
-					Enabled: false,
-				},
-				MetricsDynamicIndex: DynamicIndexSetting{
-					Enabled: false,
-				},
 				TracesIndex: "trace_index",
-				TracesDynamicIndex: DynamicIndexSetting{
-					Enabled: false,
-				},
 				LogsDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
@@ -97,8 +78,6 @@ func TestConfig(t *testing.T) {
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
-					cfg.MaxIdleConns = defaultMaxIdleConns       //nolint:staticcheck // SA1019: MaxIdleConns is deprecated in favor of Keepalive.MaxIdleConns; migration tracked in issue 49316
-					cfg.IdleConnTimeout = defaultIdleConnTimeout //nolint:staticcheck // SA1019: IdleConnTimeout is deprecated in favor of Keepalive.IdleConnTimeout; migration tracked in issue 49316
 					cfg.Headers = configopaque.MapList{
 						{Name: "myheader", Value: "test"},
 					}
@@ -126,10 +105,12 @@ func TestConfig(t *testing.T) {
 					RetryOnDocumentStatus: []int{
 						http.StatusTooManyRequests,
 						http.StatusInternalServerError,
+						http.StatusBadGateway,
+						http.StatusServiceUnavailable,
+						http.StatusGatewayTimeout,
 					},
 				},
 				Mapping: MappingsSettings{
-					Mode: "otel",
 					AllowedModes: []string{
 						"bodymap",
 						"ecs",
@@ -146,35 +127,28 @@ func TestConfig(t *testing.T) {
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,
 				},
+				VersionDetection: VersionDetectionSettings{
+					Enabled: true,
+				},
 			},
 		},
 		{
 			id:         component.NewIDWithName(metadata.Type, "log"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueBatchConfig: configoptional.Some(exporterhelper.QueueBatchConfig{
-					NumConsumers:    10,
-					QueueSize:       10,
-					BlockOnOverflow: true,
-					Sizer:           exporterhelper.RequestSizerTypeRequests,
-					Batch: configoptional.Some(exporterhelper.BatchConfig{
-						FlushTimeout: 10 * time.Second,
-						Sizer:        exporterhelper.RequestSizerTypeBytes,
-						MinSize:      1000000,
-						MaxSize:      5000000,
-					}),
-				}),
+				QueueBatchConfig: configoptional.Some(func() exporterhelper.QueueBatchConfig {
+					qs := exporterhelper.NewDefaultQueueConfig()
+					qs.QueueSize = 10
+					qs.BlockOnOverflow = true
+					batch := qs.Batch.GetOrInsertDefault()
+					batch.FlushTimeout = 10 * time.Second
+					batch.Sizer = exporterhelper.RequestSizerTypeBytes
+					batch.MinSize = 1000000
+					batch.MaxSize = 5000000
+					return qs
+				}()),
 				Endpoints: []string{"http://localhost:9200"},
 				LogsIndex: "my_log_index",
-				LogsDynamicIndex: DynamicIndexSetting{
-					Enabled: false,
-				},
-				MetricsDynamicIndex: DynamicIndexSetting{
-					Enabled: false,
-				},
-				TracesDynamicIndex: DynamicIndexSetting{
-					Enabled: false,
-				},
 				LogsDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
@@ -187,8 +161,6 @@ func TestConfig(t *testing.T) {
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
-					cfg.MaxIdleConns = defaultMaxIdleConns       //nolint:staticcheck // SA1019: MaxIdleConns is deprecated in favor of Keepalive.MaxIdleConns; migration tracked in issue 49316
-					cfg.IdleConnTimeout = defaultIdleConnTimeout //nolint:staticcheck // SA1019: IdleConnTimeout is deprecated in favor of Keepalive.IdleConnTimeout; migration tracked in issue 49316
 					cfg.Headers = configopaque.MapList{
 						{Name: "myheader", Value: "test"},
 					}
@@ -204,15 +176,20 @@ func TestConfig(t *testing.T) {
 					OnStart: true,
 				},
 				Retry: RetrySettings{
-					Enabled:               true,
-					MaxRetries:            5,
-					InitialInterval:       100 * time.Millisecond,
-					MaxInterval:           1 * time.Minute,
-					RetryOnStatus:         []int{http.StatusTooManyRequests, http.StatusInternalServerError},
-					RetryOnDocumentStatus: []int{http.StatusTooManyRequests, http.StatusInternalServerError},
+					Enabled:         true,
+					MaxRetries:      5,
+					InitialInterval: 100 * time.Millisecond,
+					MaxInterval:     1 * time.Minute,
+					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
+					RetryOnDocumentStatus: []int{
+						http.StatusTooManyRequests,
+						http.StatusInternalServerError,
+						http.StatusBadGateway,
+						http.StatusServiceUnavailable,
+						http.StatusGatewayTimeout,
+					},
 				},
 				Mapping: MappingsSettings{
-					Mode:         "otel",
 					AllowedModes: []string{"bodymap", "ecs", "none", "otel", "raw"},
 				},
 				LogstashFormat: LogstashFormatSettings{
@@ -222,6 +199,9 @@ func TestConfig(t *testing.T) {
 				},
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,
+				},
+				VersionDetection: VersionDetectionSettings{
+					Enabled: true,
 				},
 			},
 		},
@@ -229,29 +209,19 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "metric"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueBatchConfig: configoptional.Some(exporterhelper.QueueBatchConfig{
-					NumConsumers:    10,
-					QueueSize:       10,
-					BlockOnOverflow: true,
-					Sizer:           exporterhelper.RequestSizerTypeRequests,
-					Batch: configoptional.Some(exporterhelper.BatchConfig{
-						FlushTimeout: 10 * time.Second,
-						Sizer:        exporterhelper.RequestSizerTypeBytes,
-						MinSize:      1000000,
-						MaxSize:      5000000,
-					}),
-				}),
-				Endpoints: []string{"http://localhost:9200"},
-				LogsDynamicIndex: DynamicIndexSetting{
-					Enabled: false,
-				},
+				QueueBatchConfig: configoptional.Some(func() exporterhelper.QueueBatchConfig {
+					qs := exporterhelper.NewDefaultQueueConfig()
+					qs.QueueSize = 10
+					qs.BlockOnOverflow = true
+					batch := qs.Batch.GetOrInsertDefault()
+					batch.FlushTimeout = 10 * time.Second
+					batch.Sizer = exporterhelper.RequestSizerTypeBytes
+					batch.MinSize = 1000000
+					batch.MaxSize = 5000000
+					return qs
+				}()),
+				Endpoints:    []string{"http://localhost:9200"},
 				MetricsIndex: "my_metric_index",
-				MetricsDynamicIndex: DynamicIndexSetting{
-					Enabled: false,
-				},
-				TracesDynamicIndex: DynamicIndexSetting{
-					Enabled: false,
-				},
 				LogsDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
@@ -264,8 +234,6 @@ func TestConfig(t *testing.T) {
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
-					cfg.MaxIdleConns = defaultMaxIdleConns       //nolint:staticcheck // SA1019: MaxIdleConns is deprecated in favor of Keepalive.MaxIdleConns; migration tracked in issue 49316
-					cfg.IdleConnTimeout = defaultIdleConnTimeout //nolint:staticcheck // SA1019: IdleConnTimeout is deprecated in favor of Keepalive.IdleConnTimeout; migration tracked in issue 49316
 					cfg.Headers = configopaque.MapList{
 						{Name: "myheader", Value: "test"},
 					}
@@ -281,15 +249,20 @@ func TestConfig(t *testing.T) {
 					OnStart: true,
 				},
 				Retry: RetrySettings{
-					Enabled:               true,
-					MaxRetries:            5,
-					InitialInterval:       100 * time.Millisecond,
-					MaxInterval:           1 * time.Minute,
-					RetryOnStatus:         []int{http.StatusTooManyRequests, http.StatusInternalServerError},
-					RetryOnDocumentStatus: []int{http.StatusTooManyRequests, http.StatusInternalServerError},
+					Enabled:         true,
+					MaxRetries:      5,
+					InitialInterval: 100 * time.Millisecond,
+					MaxInterval:     1 * time.Minute,
+					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
+					RetryOnDocumentStatus: []int{
+						http.StatusTooManyRequests,
+						http.StatusInternalServerError,
+						http.StatusBadGateway,
+						http.StatusServiceUnavailable,
+						http.StatusGatewayTimeout,
+					},
 				},
 				Mapping: MappingsSettings{
-					Mode:         "otel",
 					AllowedModes: []string{"bodymap", "ecs", "none", "otel", "raw"},
 				},
 				LogstashFormat: LogstashFormatSettings{
@@ -300,17 +273,15 @@ func TestConfig(t *testing.T) {
 				TelemetrySettings: TelemetrySettings{
 					LogFailedDocsInputRateLimit: time.Second,
 				},
+				VersionDetection: VersionDetectionSettings{
+					Enabled: true,
+				},
 			},
 		},
 		{
 			id:         component.NewIDWithName(metadata.Type, "logstash_format"),
 			configFile: "config.yaml",
 			expected:   defaultLogstashFormatCfg,
-		},
-		{
-			id:         component.NewIDWithName(metadata.Type, "raw"),
-			configFile: "config.yaml",
-			expected:   defaultRawCfg,
 		},
 		{
 			id:         component.NewIDWithName(metadata.Type, "cloudid"),
@@ -378,52 +349,11 @@ func TestConfig(t *testing.T) {
 				cfg.ClientConfig.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.QueueBatchConfig.Get().NumConsumers = 100
-				cfg.QueueBatchConfig.Get().Batch = configoptional.Some(
-					exporterhelper.BatchConfig{
-						Sizer:        exporterhelper.RequestSizerTypeItems,
-						FlushTimeout: time.Second,
-						MinSize:      1000,
-						MaxSize:      5000,
-					},
-				)
-			}),
-		},
-		{
-			id:         component.NewIDWithName(metadata.Type, "backward_compat_for_deprecated_cfgs/new_config_takes_priority"),
-			configFile: "config.yaml",
-			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.ClientConfig.Endpoint = "https://elastic.example.com:9200"
-
-				cfg.NumWorkers = 11
-				cfg.Flush = FlushSettings{
-					Bytes:    1001,
-					Interval: 11 * time.Second,
-				}
-				cfg.QueueBatchConfig.Get().NumConsumers = 111
-				// QueueBatchConfig is set by default
-				qbCfg := cfg.QueueBatchConfig.Get().Batch.Get()
-				qbCfg.FlushTimeout = 111 * time.Second
-				qbCfg.MaxSize = 1_000_001
-				qbCfg.Sizer = exporterhelper.RequestSizerTypeBytes
-			}),
-		},
-		{
-			id:         component.NewIDWithName(metadata.Type, "backward_compat_for_deprecated_cfgs/fallback_to_old_cfg"),
-			configFile: "config.yaml",
-			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.ClientConfig.Endpoint = "https://elastic.example.com:9200"
-
-				cfg.NumWorkers = 11
-				cfg.Flush = FlushSettings{
-					Bytes:    1_000_001,
-					Interval: 11 * time.Second,
-				}
-				cfg.QueueBatchConfig.Get().NumConsumers = 11
-				// QueueBatchConfig is set by default
-				qbCfg := cfg.QueueBatchConfig.Get().Batch.Get()
-				qbCfg.FlushTimeout = 11 * time.Second
-				qbCfg.MaxSize = 1_000_001
-				qbCfg.Sizer = exporterhelper.RequestSizerTypeBytes
+				batch := cfg.QueueBatchConfig.Get().Batch.GetOrInsertDefault()
+				batch.Sizer = exporterhelper.RequestSizerTypeItems
+				batch.FlushTimeout = time.Second
+				batch.MinSize = 1000
+				batch.MaxSize = 5000
 			}),
 		},
 		{
@@ -470,6 +400,32 @@ func TestConfig(t *testing.T) {
 			assert.NoError(t, confmap.Validate(cfg))
 
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestConfigRejectsRemovedBatchSettings(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]map[string]any{
+		"flush": {
+			"flush": map[string]any{
+				"bytes":    1001,
+				"interval": "11s",
+			},
+		},
+		"num_workers": {
+			"num_workers": 11,
+		},
+	}
+
+	for name, input := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cfg := createDefaultConfig()
+			err := confmap.NewFromStringMap(input).Unmarshal(cfg)
+			require.ErrorContains(t, err, "has invalid keys: "+name+", use sending_queue instead")
 		})
 	}
 }
@@ -543,14 +499,6 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.ClientConfig.Compression = configcompression.TypeSnappy
 			}),
 			err: `compression must be one of [none, gzip]`,
-		},
-		"both max_retries and max_requests specified": {
-			config: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoints = []string{"http://test:9200"}
-				cfg.Retry.MaxRetries = 1
-				cfg.Retry.MaxRequests = 1
-			}),
-			err: `must not specify both retry::max_requests and retry::max_retries`,
 		},
 		"duplicate metadata_keys specified": {
 			config: withDefaultConfig(func(cfg *Config) {
@@ -628,7 +576,6 @@ func TestParseCloudID(t *testing.T) {
 
 func withDefaultConfig(fns ...func(*Config)) *Config {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 	for _, fn := range fns {
 		fn(cfg)
 	}

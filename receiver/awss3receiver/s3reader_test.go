@@ -931,9 +931,14 @@ func Test_determineTimestep(t *testing.T) {
 			expectedStep: time.Hour,
 		},
 		{
+			name:         "day partition",
+			format:       "year=%Y/month=%m/day=%d",
+			expectedStep: time.Hour * 24,
+		},
+		{
 			name:           "no change detected",
-			format:         "year=%Y/month=%m/day=%d",
-			expectedErrMsg: "no time step found for partition format year=%Y/month=%m/day=%d",
+			format:         "year=%Y/month=%m",
+			expectedErrMsg: "no time step found for partition format year=%Y/month=%m",
 		},
 	}
 

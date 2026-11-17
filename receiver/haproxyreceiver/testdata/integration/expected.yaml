@@ -39,7 +39,7 @@ resourceMetrics:
                   startTimeUnixNano: "1691479578831831000"
                   timeUnixNano: "1691479579855985000"
             name: haproxy.connections.rate
-            unit: '{connections}'
+            unit: '{connection}'
           - description: Requests denied because of security concerns. Corresponds to HAProxy's `dreq` metric
             name: haproxy.requests.denied
             sum:
@@ -49,7 +49,7 @@ resourceMetrics:
                   startTimeUnixNano: "1691479578831831000"
                   timeUnixNano: "1691479579855985000"
               isMonotonic: true
-            unit: '{requests}'
+            unit: '{request}'
           - description: Cumulative number of request errors. Corresponds to HAProxy's `ereq` metric.
             name: haproxy.requests.errors
             sum:
@@ -59,7 +59,7 @@ resourceMetrics:
                   startTimeUnixNano: "1691479578831831000"
                   timeUnixNano: "1691479579855985000"
               isMonotonic: true
-            unit: '{errors}'
+            unit: '{error}'
           - description: HTTP requests per second over last elapsed second. Corresponds to HAProxy's `req_rate` metric.
             gauge:
               dataPoints:
@@ -67,7 +67,7 @@ resourceMetrics:
                   startTimeUnixNano: "1691479578831831000"
                   timeUnixNano: "1691479579855985000"
             name: haproxy.requests.rate
-            unit: '{requests}'
+            unit: '{request}'
           - description: Total number of HTTP requests received. Corresponds to HAProxy's `req_tot`, `hrsp_1xx`, `hrsp_2xx`, `hrsp_3xx`, `hrsp_4xx`, `hrsp_5xx` and `hrsp_other` metrics.
             name: haproxy.requests.total
             sum:
@@ -116,7 +116,7 @@ resourceMetrics:
                   startTimeUnixNano: "1691479578831831000"
                   timeUnixNano: "1691479579855985000"
               isMonotonic: true
-            unit: '{requests}'
+            unit: '{request}'
           - description: Responses denied because of security concerns. Corresponds to HAProxy's `dresp` metric
             name: haproxy.responses.denied
             sum:
@@ -126,7 +126,7 @@ resourceMetrics:
                   startTimeUnixNano: "1691479578831831000"
                   timeUnixNano: "1691479579855985000"
               isMonotonic: true
-            unit: '{responses}'
+            unit: '{response}'
           - description: Current sessions. Corresponds to HAProxy's `scur` metric.
             gauge:
               dataPoints:
@@ -134,7 +134,7 @@ resourceMetrics:
                   startTimeUnixNano: "1691479578831831000"
                   timeUnixNano: "1691479579855985000"
             name: haproxy.sessions.count
-            unit: '{sessions}'
+            unit: '{session}'
           - description: Number of sessions per second over last elapsed second. Corresponds to HAProxy's `rate` metric.
             gauge:
               dataPoints:
@@ -142,7 +142,7 @@ resourceMetrics:
                   startTimeUnixNano: "1691479578831831000"
                   timeUnixNano: "1691479579855985000"
             name: haproxy.sessions.rate
-            unit: '{sessions}'
+            unit: '{session}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver
           version: latest

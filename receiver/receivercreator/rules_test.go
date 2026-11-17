@@ -4,6 +4,7 @@
 package receivercreator
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -85,4 +86,35 @@ func Test_newRule(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_knownObservers(t *testing.T) {
+	// Ensure removed hard-coded endpoint types still work.
+	tests := []observer.EndpointType{
+		observer.PodType,
+		observer.K8sServiceType,
+		observer.K8sIngressType,
+		observer.PortType,
+		observer.PodContainerType,
+		observer.HostPortType,
+		observer.ContainerType,
+		observer.K8sNodeType,
+	}
+	for _, tt := range tests {
+		t.Run(string(tt), func(t *testing.T) {
+			rule := fmt.Sprintf(`type == %q && some_vara == 1`, tt)
+			got, err := newRule(rule)
+			require.NoError(t, err)
+			require.NotNil(t, got)
+		})
+	}
+}
+
+func TestRuleDoesNotExposeTemplateFunctions(t *testing.T) {
+	rule, err := newRule(`type == "pod" && joinHostPort(endpoint, 8080) == "localhost:8080"`)
+	require.NoError(t, err)
+	env, err := podEndpoint.Env()
+	require.NoError(t, err)
+	_, err = rule.eval(env)
+	require.Error(t, err)
 }

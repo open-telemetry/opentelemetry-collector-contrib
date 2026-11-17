@@ -6,8 +6,6 @@ package serializeprofiles
 import (
 	"bytes"
 	"errors"
-	"fmt"
-	"sort"
 	"testing"
 	"time"
 
@@ -15,21 +13,23 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/ebpf-profiler/libpf"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer"
 )
 
 var (
 	stacktraceIDBase64 = stacktraceIDFormat(0xcafebeef, 0xd00d1eaf)
 
-	buildID, buildIDEncoded, buildIDBase64 = formatFileIDFormat(0x0011223344556677,
+	buildID, buildIDEncoded = formatFileIDFormat(0x0011223344556677,
 		0x8899aabbccddeeff)
-	buildID2, buildID2Encoded, buildID2Base64 = formatFileIDFormat(0x0112233445566778,
+	buildID2, buildID2Encoded = formatFileIDFormat(0x0112233445566778,
 		0x899aabbccddeeffe)
-	buildID3, buildID3Encoded, _ = formatFileIDFormat(0x1122334455667788,
+	buildID3, buildID3Encoded = formatFileIDFormat(0x1122334455667788,
 		0x99aabbccddeeffee)
 
-	frameIDBase64  = newFrameID(buildID, address).String()
-	frameID2Base64 = newFrameID(buildID2, address2).String()
-	frameID3Base64 = newFrameID(buildID3, address3).String()
+	frameIDBase64  = serializer.NewFrameID(buildID, address).String()
+	frameID2Base64 = serializer.NewFrameID(buildID2, address2).String()
+	frameID3Base64 = serializer.NewFrameID(buildID3, address3).String()
 )
 
 const (
@@ -43,19 +43,15 @@ func stacktraceIDFormat(hi, lo uint64) string {
 	return libpf.NewFileID(hi, lo).Base64()
 }
 
-func formatFileIDFormat(hi, lo uint64) (fileID libpf.FileID, fileIDHex, fileIDBase64 string) {
-	// StringNoQuotes() is used in the host agent to encode stacktraceID and buildID.
-	// We should possibly switch to Base64 encoding.
-	fileID = libpf.NewFileID(hi, lo)
-	fileIDHex = fileID.StringNoQuotes()
-	fileIDBase64 = fileID.Base64()
-	return fileID, fileIDHex, fileIDBase64
+func formatFileIDFormat(hi, lo uint64) (libpf.FileID, string) {
+	fileID := libpf.NewFileID(hi, lo)
+	return fileID, fileID.StringNoQuotes()
 }
 
 func TestTransform(t *testing.T) {
-	wantedTraceID := mkStackTraceID(t, []frameID{
-		newFrameID(buildID, address),
-		newFrameID(buildID2, address2),
+	wantedTraceID := mkStackTraceID(t, []serializer.FrameID{
+		serializer.NewFrameID(buildID, address),
+		serializer.NewFrameID(buildID2, address2),
 	})
 	for _, tt := range []struct {
 		name                  string
@@ -222,9 +218,9 @@ func TestTransform(t *testing.T) {
 			wantPayload: []StackPayload{
 				{
 					StackTrace: StackTrace{
-						EcsVersion: EcsVersion{V: EcsVersionString},
-						DocID:      wantedTraceID,
-						FrameIDs:   frameID2Base64 + frameIDBase64,
+						DocID:     wantedTraceID,
+						Timestamp: serializer.NewUnixTime64(42),
+						FrameIDs:  frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.NativeFrame,
 							libpf.NativeFrame,
@@ -232,40 +228,10 @@ func TestTransform(t *testing.T) {
 					},
 					StackFrames: []StackFrame{},
 					Executables: []ExeMetadata{
-						NewExeMetadata(
-							buildIDBase64,
-							GetStartOfWeekFromTime(time.Now()),
-							buildIDBase64,
-							"firefox",
-						),
-						NewExeMetadata(
-							buildID2Base64,
-							GetStartOfWeekFromTime(time.Now()),
-							buildID2Base64,
-							"libc.so",
-						),
-					},
-					UnsymbolizedLeafFrames: []UnsymbolizedLeafFrame{
-						{
-							EcsVersion: EcsVersion{V: EcsVersionString},
-							DocID:      frameIDBase64,
-							FrameID:    []string{frameIDBase64},
-						},
-					},
-					UnsymbolizedExecutables: []UnsymbolizedExecutable{
-						{
-							EcsVersion: EcsVersion{V: EcsVersionString},
-							DocID:      buildIDBase64,
-							FileID:     []string{buildIDBase64},
-						},
-						{
-							EcsVersion: EcsVersion{V: EcsVersionString},
-							DocID:      buildID2Base64,
-							FileID:     []string{buildID2Base64},
-						},
+						{DocID: buildIDEncoded, Timestamp: serializer.GetStartOfWeekFromTime(time.Now()), BuildID: buildIDEncoded, Name: "firefox"},
+						{DocID: buildID2Encoded, Timestamp: serializer.GetStartOfWeekFromTime(time.Now()), BuildID: buildID2Encoded, Name: "libc.so"},
 					},
 					ResourceAttrs: ResourceData{
-						EcsVersion: EcsVersion{V: EcsVersionString},
 						Data: map[string]string{
 							"service.name": "my_service.name",
 						},
@@ -273,13 +239,11 @@ func TestTransform(t *testing.T) {
 				},
 				{
 					StackTraceEvent: StackTraceEvent{
-						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    42000000000,
 						StackTraceID: wantedTraceID,
 						ServiceName:  "my_service.name",
 						Frequency:    20,
 						Count:        1,
-						ProjectID:    2,
 					},
 					ResourceAttrs: ResourceData{},
 				},
@@ -293,9 +257,6 @@ func TestTransform(t *testing.T) {
 			sp := rp.ScopeProfiles().At(0)
 
 			payload, err := Transform(dic, rp.Resource(), sp.Scope(), sp.Profiles().At(0))
-			require.NoError(t, checkAndResetTimes(payload))
-			sortPayloads(payload)
-			sortPayloads(tt.wantPayload)
 			require.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.wantPayload, payload)
 		})
@@ -303,9 +264,9 @@ func TestTransform(t *testing.T) {
 }
 
 func TestStackPayloads(t *testing.T) {
-	wantedTraceID := mkStackTraceID(t, []frameID{
-		newFrameID(buildID, address),
-		newFrameID(buildID2, address2),
+	wantedTraceID := mkStackTraceID(t, []serializer.FrameID{
+		serializer.NewFrameID(buildID, address),
+		serializer.NewFrameID(buildID2, address2),
 	})
 	for name, tt := range map[string]struct {
 		buildDictionary       func() pprofile.ProfilesDictionary
@@ -376,9 +337,9 @@ func TestStackPayloads(t *testing.T) {
 			wantPayload: []StackPayload{
 				{
 					StackTrace: StackTrace{
-						EcsVersion: EcsVersion{V: EcsVersionString},
-						DocID:      wantedTraceID,
-						FrameIDs:   frameID2Base64 + frameIDBase64,
+						DocID:     wantedTraceID,
+						Timestamp: serializer.NewUnixTime64(1),
+						FrameIDs:  frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.FrameType(3),
 							libpf.FrameType(3),
@@ -386,51 +347,19 @@ func TestStackPayloads(t *testing.T) {
 					},
 					StackFrames: []StackFrame{},
 					Executables: []ExeMetadata{
-						NewExeMetadata(
-							buildIDBase64,
-							GetStartOfWeekFromTime(time.Now()),
-							buildIDBase64,
-							"firefox",
-						),
-						NewExeMetadata(
-							buildID2Base64,
-							GetStartOfWeekFromTime(time.Now()),
-							buildID2Base64,
-							"libc.so",
-						),
-					},
-					UnsymbolizedLeafFrames: []UnsymbolizedLeafFrame{
-						{
-							EcsVersion: EcsVersion{V: EcsVersionString},
-							DocID:      frameIDBase64,
-							FrameID:    []string{frameIDBase64},
-						},
-					},
-					UnsymbolizedExecutables: []UnsymbolizedExecutable{
-						{
-							EcsVersion: EcsVersion{V: EcsVersionString},
-							DocID:      buildIDBase64,
-							FileID:     []string{buildIDBase64},
-						},
-						{
-							EcsVersion: EcsVersion{V: EcsVersionString},
-							DocID:      buildID2Base64,
-							FileID:     []string{buildID2Base64},
-						},
+						{DocID: buildIDEncoded, Timestamp: serializer.GetStartOfWeekFromTime(time.Now()), BuildID: buildIDEncoded, Name: "firefox"},
+						{DocID: buildID2Encoded, Timestamp: serializer.GetStartOfWeekFromTime(time.Now()), BuildID: buildID2Encoded, Name: "libc.so"},
 					},
 					ResourceAttrs: ResourceData{
-						EcsVersion: EcsVersion{V: EcsVersionString},
-						Data:       map[string]string{},
+						Data: map[string]string{},
 					},
 				},
 				{
 					StackTraceEvent: StackTraceEvent{
-						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    1000000000,
 						StackTraceID: wantedTraceID,
 						Frequency:    20,
 						Count:        1,
-						ProjectID:    2,
 					},
 					ResourceAttrs: ResourceData{},
 				},
@@ -492,9 +421,9 @@ func TestStackPayloads(t *testing.T) {
 			wantPayload: []StackPayload{
 				{
 					StackTrace: StackTrace{
-						EcsVersion: EcsVersion{V: EcsVersionString},
-						DocID:      wantedTraceID,
-						FrameIDs:   frameID2Base64 + frameIDBase64,
+						DocID:     wantedTraceID,
+						Timestamp: serializer.NewUnixTime64(1),
+						FrameIDs:  frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.FrameType(3),
 							libpf.FrameType(3),
@@ -502,61 +431,27 @@ func TestStackPayloads(t *testing.T) {
 					},
 					StackFrames: []StackFrame{},
 					Executables: []ExeMetadata{
-						NewExeMetadata(
-							buildIDBase64,
-							GetStartOfWeekFromTime(time.Now()),
-							buildIDBase64,
-							"firefox",
-						),
-						NewExeMetadata(
-							buildID2Base64,
-							GetStartOfWeekFromTime(time.Now()),
-							buildID2Base64,
-							"libc.so",
-						),
-					},
-					UnsymbolizedLeafFrames: []UnsymbolizedLeafFrame{
-						{
-							EcsVersion: EcsVersion{V: EcsVersionString},
-							DocID:      frameIDBase64,
-							FrameID:    []string{frameIDBase64},
-						},
-					},
-					UnsymbolizedExecutables: []UnsymbolizedExecutable{
-						{
-							EcsVersion: EcsVersion{V: EcsVersionString},
-							DocID:      buildIDBase64,
-							FileID:     []string{buildIDBase64},
-						},
-						{
-							EcsVersion: EcsVersion{V: EcsVersionString},
-							DocID:      buildID2Base64,
-							FileID:     []string{buildID2Base64},
-						},
+						{DocID: buildIDEncoded, Timestamp: serializer.GetStartOfWeekFromTime(time.Now()), BuildID: buildIDEncoded, Name: "firefox"},
+						{DocID: buildID2Encoded, Timestamp: serializer.GetStartOfWeekFromTime(time.Now()), BuildID: buildID2Encoded, Name: "libc.so"},
 					},
 					ResourceAttrs: ResourceData{
-						EcsVersion: EcsVersion{V: EcsVersionString},
-						Data:       map[string]string{},
+						Data: map[string]string{},
 					},
 				},
 				{
 					StackTraceEvent: StackTraceEvent{
-						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    1000000000,
 						StackTraceID: wantedTraceID,
 						Frequency:    20,
 						Count:        1,
-						ProjectID:    2,
 					},
 				},
 				{
 					StackTraceEvent: StackTraceEvent{
-						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    1000000000,
 						StackTraceID: wantedTraceID,
 						Frequency:    20,
 						Count:        1,
-						ProjectID:    2,
 					},
 				},
 			},
@@ -620,9 +515,9 @@ func TestStackPayloads(t *testing.T) {
 			wantPayload: []StackPayload{
 				{
 					StackTrace: StackTrace{
-						EcsVersion: EcsVersion{V: EcsVersionString},
-						DocID:      wantedTraceID,
-						FrameIDs:   frameID2Base64 + frameIDBase64,
+						DocID:     wantedTraceID,
+						Timestamp: serializer.NewUnixTime64(1),
+						FrameIDs:  frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.FrameType(3),
 							libpf.FrameType(3),
@@ -630,53 +525,20 @@ func TestStackPayloads(t *testing.T) {
 					},
 					StackFrames: []StackFrame{},
 					Executables: []ExeMetadata{
-						NewExeMetadata(
-							buildIDBase64,
-							GetStartOfWeekFromTime(time.Now()),
-							buildIDBase64,
-							"firefox",
-						),
-						NewExeMetadata(
-							buildID2Base64,
-							GetStartOfWeekFromTime(time.Now()),
-							buildID2Base64,
-							"libc.so",
-						),
+						{DocID: buildIDEncoded, Timestamp: serializer.GetStartOfWeekFromTime(time.Now()), BuildID: buildIDEncoded, Name: "firefox"},
+						{DocID: buildID2Encoded, Timestamp: serializer.GetStartOfWeekFromTime(time.Now()), BuildID: buildID2Encoded, Name: "libc.so"},
 						// Note: no ExeMetadata for the third mapping since it has no BuildID
 					},
-					UnsymbolizedLeafFrames: []UnsymbolizedLeafFrame{
-						{
-							EcsVersion: EcsVersion{V: EcsVersionString},
-							DocID:      frameIDBase64,
-							FrameID:    []string{frameIDBase64},
-						},
-					},
-					UnsymbolizedExecutables: []UnsymbolizedExecutable{
-						{
-							EcsVersion: EcsVersion{V: EcsVersionString},
-							DocID:      buildIDBase64,
-							FileID:     []string{buildIDBase64},
-						},
-						{
-							EcsVersion: EcsVersion{V: EcsVersionString},
-							DocID:      buildID2Base64,
-							FileID:     []string{buildID2Base64},
-						},
-						// Note: no unsymbolized executable for the mapping without build ID
-					},
 					ResourceAttrs: ResourceData{
-						EcsVersion: EcsVersion{V: EcsVersionString},
-						Data:       map[string]string{},
+						Data: map[string]string{},
 					},
 				},
 				{
 					StackTraceEvent: StackTraceEvent{
-						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    1000000000,
 						StackTraceID: wantedTraceID,
 						Frequency:    20,
 						Count:        1,
-						ProjectID:    2,
 					},
 				},
 			},
@@ -688,9 +550,6 @@ func TestStackPayloads(t *testing.T) {
 			sp := rp.ScopeProfiles().At(0)
 
 			payloads, err := stackPayloads(dic, rp.Resource(), sp.Scope(), sp.Profiles().At(0))
-			require.NoError(t, checkAndResetTimes(payloads))
-			sortPayloads(payloads)
-			sortPayloads(tt.wantPayload)
 			require.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.wantPayload, payloads)
 		})
@@ -729,11 +588,9 @@ func TestStackTraceEvent(t *testing.T) {
 			},
 
 			wantEvent: StackTraceEvent{
-				EcsVersion:   EcsVersion{V: EcsVersionString},
 				StackTraceID: stacktraceIDBase64,
 				Frequency:    20,
 				Count:        1,
-				ProjectID:    2,
 			},
 		},
 		{
@@ -756,12 +613,10 @@ func TestStackTraceEvent(t *testing.T) {
 			},
 
 			wantEvent: StackTraceEvent{
-				EcsVersion:   EcsVersion{V: EcsVersionString},
 				TimeStamp:    1000000000000000000,
 				StackTraceID: stacktraceIDBase64,
 				Frequency:    20,
 				Count:        1,
-				ProjectID:    2,
 			},
 		},
 		{
@@ -783,11 +638,9 @@ func TestStackTraceEvent(t *testing.T) {
 			},
 
 			wantEvent: StackTraceEvent{
-				EcsVersion:   EcsVersion{V: EcsVersionString},
 				StackTraceID: stacktraceIDBase64,
 				Frequency:    20,
 				Count:        1,
-				ProjectID:    2,
 			},
 		},
 		{
@@ -826,7 +679,6 @@ func TestStackTraceEvent(t *testing.T) {
 			},
 
 			wantEvent: StackTraceEvent{
-				EcsVersion:       EcsVersion{V: EcsVersionString},
 				PodName:          "my_pod",
 				K8sNamespaceName: "my_k8s_namespace_name",
 				ContainerName:    "my_container",
@@ -837,7 +689,6 @@ func TestStackTraceEvent(t *testing.T) {
 				StackTraceID:     stacktraceIDBase64,
 				Frequency:        20,
 				Count:            1,
-				ProjectID:        2,
 			},
 		},
 	} {
@@ -847,10 +698,10 @@ func TestStackTraceEvent(t *testing.T) {
 			p := rp.ScopeProfiles().At(0).Profiles().At(0)
 			s := p.Samples().At(0)
 
-			resourceAttrs, err := populateResourceData(dic, rp.Resource(), rp.ScopeProfiles().At(0).Scope(), p)
+			resourceAttrs, err := serializer.PopulateResourceData(dic, rp.Resource(), rp.ScopeProfiles().At(0).Scope(), p)
 			require.NoError(t, err)
 			event := stackTraceEvent(dic, stacktraceIDBase64, s, 20, resourceAttrs)
-			event.TimeStamp = newUnixTime64(tt.timestamp)
+			event.TimeStamp = serializer.NewUnixTime64(tt.timestamp)
 
 			assert.Equal(t, tt.wantEvent, event)
 		})
@@ -952,8 +803,7 @@ func TestStackTrace(t *testing.T) {
 			},
 
 			wantTrace: StackTrace{
-				EcsVersion: EcsVersion{V: EcsVersionString},
-				FrameIDs:   "5y1yFRb3UCHnLXIVFvdQIQAAAAAAAABj" + frameID3Base64 + frameID2Base64 + frameIDBase64,
+				FrameIDs: "5y1yFRb3UCHnLXIVFvdQIQAAAAAAAABj" + frameID3Base64 + frameID2Base64 + frameIDBase64,
 				Types: frameTypesToString([]libpf.FrameType{
 					libpf.KernelFrame,
 					libpf.DotnetFrame,
@@ -968,10 +818,10 @@ func TestStackTrace(t *testing.T) {
 			p := tt.buildProfile()
 			s := p.Samples().At(0)
 
-			frames, frameTypes, _, err := stackFrames(dic, s)
+			frames, frameTypes, err := serializer.StackFrames(dic, s)
 			require.NoError(t, err)
 
-			stacktrace := stackTrace("", frames, frameTypes)
+			stacktrace := stackTrace("", frames, frameTypes, 0)
 			assert.Equal(t, tt.wantTrace, stacktrace)
 
 			assert.Len(t, frameTypes, len(frames))
@@ -997,7 +847,7 @@ func TestGetLocations(t *testing.T) {
 	stack.LocationIndices().Append(1, 2, 3)
 
 	// Call getLocations and check the result
-	locations := getLocations(dic, stack)
+	locations := serializer.GetLocations(dic, stack)
 	require.Len(t, locations, 3)
 	assert.Equal(t, uint64(0x1000), locations[0].Address())
 	assert.Equal(t, uint64(0x2000), locations[1].Address())
@@ -1005,7 +855,7 @@ func TestGetLocations(t *testing.T) {
 
 	// Test with empty stack
 	emptyStack := dic.StackTable().AppendEmpty()
-	locations = getLocations(dic, emptyStack)
+	locations = serializer.GetLocations(dic, emptyStack)
 	assert.Empty(t, locations)
 }
 
@@ -1016,11 +866,11 @@ func TestGetLocations(t *testing.T) {
 // In libpf/frametype.go you find DotnetFrame with value 10.
 func frameTypesToString(frameTypes []libpf.FrameType) string {
 	buf := bytes.NewBuffer(make([]byte, 0, 32))
-	encodeFrameTypesTo(buf, frameTypes)
+	serializer.EncodeFrameTypesTo(buf, frameTypes)
 	return buf.String()
 }
 
-func mkStackTraceID(t *testing.T, frameIDs []frameID) string {
+func mkStackTraceID(t *testing.T, frameIDs []serializer.FrameID) string {
 	dic := pprofile.NewProfilesDictionary()
 	dic.MappingTable().AppendEmpty()
 
@@ -1057,59 +907,8 @@ func mkStackTraceID(t *testing.T, frameIDs []frameID) string {
 		stack.LocationIndices().Append(int32(dic.LocationTable().Len() - 1))
 	}
 
-	frames, _, _, err := stackFrames(dic, s)
+	frames, _, err := serializer.StackFrames(dic, s)
 	require.NoError(t, err)
 
-	traceID, err := stackTraceID(frames)
-	require.NoError(t, err)
-
-	return traceID
-}
-
-// sortPayloads brings the payloads into a deterministic form to allow comparisons.
-func sortPayloads(payloads []StackPayload) {
-	for idx := range payloads {
-		payload := &payloads[idx]
-		sort.Slice(payload.UnsymbolizedExecutables, func(i, j int) bool {
-			return payload.UnsymbolizedExecutables[i].DocID < payload.UnsymbolizedExecutables[j].DocID
-		})
-	}
-}
-
-func checkAndResetTimes(payloads []StackPayload) error {
-	var errs []error
-	for i := range payloads {
-		payload := &payloads[i]
-		for j := range payload.UnsymbolizedLeafFrames {
-			frame := &payload.UnsymbolizedLeafFrames[j]
-			if !isWithinLastSecond(frame.Created) {
-				errs = append(errs, fmt.Errorf("payload[%d].UnsymbolizedLeafFrames[%d].Created is too old: %v",
-					i, j, frame.Created))
-			}
-			if !isWithinLastSecond(frame.Next) {
-				errs = append(errs, fmt.Errorf("payload[%d].UnsymbolizedLeafFrames[%d].Next is too old: %v",
-					i, j, frame.Next))
-			}
-			frame.Created = time.Time{}
-			frame.Next = time.Time{}
-		}
-		for j := range payload.UnsymbolizedExecutables {
-			executable := &payload.UnsymbolizedExecutables[j]
-			if !isWithinLastSecond(executable.Created) {
-				errs = append(errs, fmt.Errorf("payload[%d].UnsymbolizedExecutables[%d].Created is too old: %v",
-					i, j, executable.Created))
-			}
-			if !isWithinLastSecond(executable.Next) {
-				errs = append(errs, fmt.Errorf("payload[%d].UnsymbolizedExecutables[%d].Next is too old: %v",
-					i, j, executable.Next))
-			}
-			executable.Created = time.Time{}
-			executable.Next = time.Time{}
-		}
-	}
-	return errors.Join(errs...)
-}
-
-func isWithinLastSecond(t time.Time) bool {
-	return time.Since(t) < time.Second
+	return serializer.StackTraceID(frames)
 }

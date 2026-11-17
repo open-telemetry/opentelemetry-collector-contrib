@@ -8,7 +8,7 @@ $defs:
     properties:
       endpoint:
         description: Azure Event Hub endpoint triggering on the `Blob Create` event
-        type: string
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
   logs_config:
     type: object
     properties:
@@ -47,9 +47,12 @@ properties:
   cloud:
     description: Azure Cloud to authenticate against, used with Service Principal authentication
     $ref: cloud_type
+  compression:
+    description: Compression format of blob payloads (default = "", meaning none). Options are "", "gzip", or "auto", which detects gzip per blob from its header.
+    type: string
   connection_string:
     description: Azure Blob Storage connection key, which can be found in the Azure Blob Storage resource on the Azure Portal. (no default)
-    type: string
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
   event_hub:
     description: Configurations of Azure Event Hub triggering on the `Blob Create` event
     $ref: event_hub_config

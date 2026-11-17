@@ -3,6 +3,7 @@
 | Status        |           |
 | ------------- |-----------|
 | Distributions | [contrib], [k8s] |
+| Warnings      | [Statefulness](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aconnector%2Fservicegraph%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aconnector%2Fservicegraph) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aconnector%2Fservicegraph%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aconnector%2Fservicegraph) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=connector_servicegraph)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=connector_servicegraph&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mapno](https://www.github.com/mapno), [@JaredTan95](https://www.github.com/JaredTan95) |
@@ -140,7 +141,7 @@ The following settings can be optionally configured:
 - `store_expiration_loop`: the time to expire old entries from the store periodically.
   - Default: `2s`
 - `virtual_node_peer_attributes`: the list of attributes, ordered by priority, whose presence in a client span will result in the creation of a virtual server node. An empty list disables virtual node creation.
-  - Default: `[peer.service, db.name, db.system]`
+  - Default: `[peer.service.name, peer.service, db.name, db.namespace, db.system, db.system.name]`
 - `virtual_node_extra_label`: adds an extra label `virtual_node` with an optional value of `client` or `server`, indicating which node is the uninstrumented one.
   - Default: `false`
 - `metrics_flush_interval`: the interval at which metrics are flushed to the exporter.
@@ -148,7 +149,7 @@ The following settings can be optionally configured:
 - `metrics_timestamp_offset`: the offset to subtract from metric timestamps. If set to a positive duration, metric timestamps will be set to (current time - offset), effectively shifting metrics to appear as if they were generated in the past.
   - Default: `0`
 - `database_name_attributes`: the list of attribute names used to identify the database name from span attributes. The attributes are tried in order, selecting the first match.
-  - Default: `[db.name]`
+  - Default: `[db.name, db.namespace]`
 
 ## Example configurations
 
@@ -202,7 +203,7 @@ connectors:
       - db.name
       - db.system
       - messaging.system
-      - peer.service
+      - peer.service.name
     virtual_node_extra_label: true
 
 exporters:
@@ -219,3 +220,7 @@ service:
       receivers: [service_graph]
       exporters: [prometheus/servicegraph]
 ```
+
+## Warnings
+
+- [Statefulness](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#statefulness): The `service_graph` connector keeps every span that can be paired up to form a request in an in-memory store, periodically cleaned by `cache_loop`. All spans for a given request must be sent to the same collector instance, or the connector will be unable to pair them and the resulting service graph metrics will be incomplete.

@@ -1,0 +1,10 @@
+display_name: gNMI Receiver
+type: gnmi
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: []
+  codeowners:
+    active: [atoulme]

@@ -111,6 +111,8 @@ type BenchConfig struct {
 }
 type BenchReceiverType struct{}
 
+func (BenchReceiverType) ScopeName() string { return "benchScope" }
+
 func (BenchReceiverType) Type() component.Type {
 	return benchType
 }

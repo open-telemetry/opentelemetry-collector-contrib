@@ -67,12 +67,11 @@ func (e *fileExporter) Start(_ context.Context, host component.Host) error {
 
 	// Optionally ensure the output directory exists.
 	if e.conf.CreateDirectory {
-		dir := filepath.Dir(e.conf.Path)
-		perm := os.FileMode(0o755)
-		if e.conf.directoryPermissionsParsed != 0 {
-			perm = os.FileMode(e.conf.directoryPermissionsParsed)
+		perm, permErr := e.conf.dirPermissions()
+		if permErr != nil {
+			return permErr
 		}
-		if mkdirErr := os.MkdirAll(dir, perm); mkdirErr != nil {
+		if mkdirErr := os.MkdirAll(filepath.Dir(e.conf.Path), perm); mkdirErr != nil {
 			return mkdirErr
 		}
 	}
@@ -81,7 +80,7 @@ func (e *fileExporter) Start(_ context.Context, host component.Host) error {
 		return migrateErr
 	}
 
-	writer, err := newFileWriter(e.conf.Path, e.conf.Append, e.conf.Rotation, e.conf.FlushInterval, export, e.conf.Compression, int(e.conf.CompressionParams.Level))
+	writer, err := newFileWriter(e.conf.Path, e.conf.Append, e.conf.Rotation, e.conf.FlushInterval, export, e.conf.Compression, int(e.conf.CompressionParams.Level), e.logger)
 	if err != nil {
 		return err
 	}
@@ -96,7 +95,5 @@ func (e *fileExporter) Shutdown(context.Context) error {
 	if e.writer == nil {
 		return nil
 	}
-	w := e.writer
-	e.writer = nil
-	return w.shutdown()
+	return e.writer.shutdown()
 }

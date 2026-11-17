@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 )
@@ -36,7 +37,9 @@ const (
 	// Slice/Map values onto the Go call stack. A fatal stack overflow from
 	// deep nesting cannot be caught by recover(); the Go runtime kills the
 	// collector at roughly 700k–800k levels for json.Marshal and somewhat
-	// higher for valueToInterface itself.
+	// higher for valueToInterface itself. 128 is a conservative cap for
+	// operator-supplied data; legitimate attribute nesting rarely exceeds
+	// single digits.
 	jsonMaxDepth = 128
 	// jsonMaxInputBytes caps the serialized JSON size before JCS canonicalization.
 	jsonMaxInputBytes = 1 << 21 // 2 MiB
@@ -46,15 +49,14 @@ type signingProcessor struct {
 	config       *Config
 	logger       *zap.Logger
 	nextLogs     consumer.Logs
+	nextTraces   consumer.Traces
 	provider     KeyMaterialProvider
 	hashFunc     func() hash.Hash
 	jwaAlgorithm string // audit.integrity.algorithm value (e.g. "RS256")
 	certRef      string // audit.integrity.certificate value (fingerprint or full DER)
 }
 
-func newProcessor(cfg *Config, nextLogs consumer.Logs, settings processor.Settings) (*signingProcessor, error) {
-	ctx := context.Background()
-
+func newProcessor(ctx context.Context, cfg *Config, settings processor.Settings) (*signingProcessor, error) {
 	provider, err := newKeyMaterialProvider(ctx, cfg, settings.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize key material provider: %w", err)
@@ -81,7 +83,6 @@ func newProcessor(cfg *Config, nextLogs consumer.Logs, settings processor.Settin
 	return &signingProcessor{
 		config:       cfg,
 		logger:       settings.Logger,
-		nextLogs:     nextLogs,
 		provider:     provider,
 		hashFunc:     hashFunc,
 		jwaAlgorithm: cfg.Algorithm,
@@ -117,10 +118,7 @@ func (p *signingProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error 
 		// this ResourceLogs block have been signed successfully, and only when at
 		// least one record was actually signed.
 		if signed > 0 {
-			resourceLog.Resource().Attributes().PutStr("audit.integrity.algorithm", p.jwaAlgorithm)
-			if p.certRef != "" {
-				resourceLog.Resource().Attributes().PutStr("audit.integrity.certificate", p.certRef)
-			}
+			p.putResourceIntegrity(resourceLog.Resource().Attributes())
 		}
 	}
 
@@ -128,9 +126,15 @@ func (p *signingProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error 
 }
 
 // processLogRecord computes a canonical JSON hash (RFC 8785) of the log record
-// (excluding audit.integrity.* attributes) and signs it with the configured algorithm.
-// It adds one attribute:
-//   - audit.integrity.value: base64-encoded signature
+// and signs it with the configured algorithm. It adds two attributes:
+//   - audit.integrity.value:  base64-encoded signature
+//   - audit.integrity.signer: "collector"
+//
+// Fields excluded from the signed payload (per spec or by design):
+//   - audit.integrity.* attributes (carry the proof itself)
+//   - SeverityNumber / SeverityText (SHOULD NOT be set on audit records per spec)
+//   - Flags (W3C trace-context sampling bit; observability concept, not audit-relevant;
+//     may be modified by intermediaries without breaking audit semantics)
 func (p *signingProcessor) processLogRecord(lr plog.LogRecord) error {
 	logData, err := p.serializeLogRecord(lr)
 	if err != nil {
@@ -143,7 +147,59 @@ func (p *signingProcessor) processLogRecord(lr plog.LogRecord) error {
 	}
 
 	lr.Attributes().PutStr("audit.integrity.value", base64.StdEncoding.EncodeToString(signature))
+	lr.Attributes().PutStr("audit.integrity.signer", "collector")
 	return nil
+}
+
+// ConsumeTraces signs every span the same way ConsumeLogs signs log records.
+func (p *signingProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	resourceSpans := td.ResourceSpans()
+	for i := 0; i < resourceSpans.Len(); i++ {
+		resourceSpan := resourceSpans.At(i)
+
+		signed := 0
+		scopeSpans := resourceSpan.ScopeSpans()
+		for j := 0; j < scopeSpans.Len(); j++ {
+			spans := scopeSpans.At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				if err := p.processSpan(spans.At(k)); err != nil {
+					return fmt.Errorf("failed to process span: %w", err)
+				}
+				signed++
+			}
+		}
+
+		if signed > 0 {
+			p.putResourceIntegrity(resourceSpan.Resource().Attributes())
+		}
+	}
+
+	return p.nextTraces.ConsumeTraces(ctx, td)
+}
+
+func (p *signingProcessor) processSpan(span ptrace.Span) error {
+	spanData, err := p.serializeSpan(span)
+	if err != nil {
+		return fmt.Errorf("failed to serialize span: %w", err)
+	}
+
+	signature, err := p.sign(spanData)
+	if err != nil {
+		return fmt.Errorf("failed to sign span: %w", err)
+	}
+
+	span.Attributes().PutStr("audit.integrity.value", base64.StdEncoding.EncodeToString(signature))
+	span.Attributes().PutStr("audit.integrity.signer", "collector")
+	return nil
+}
+
+// putResourceIntegrity sets the Resource-level audit.integrity.algorithm and
+// audit.integrity.certificate attributes.
+func (p *signingProcessor) putResourceIntegrity(attrs pcommon.Map) {
+	attrs.PutStr("audit.integrity.algorithm", p.jwaAlgorithm)
+	if p.certRef != "" {
+		attrs.PutStr("audit.integrity.certificate", p.certRef)
+	}
 }
 
 // sign produces a signature over payload using the configured JWA algorithm.
@@ -203,13 +259,18 @@ func (p *signingProcessor) sign(payload []byte) ([]byte, error) {
 	}
 }
 
-// serializeLogRecord produces a canonical JSON representation of the full log
-// record. All audit.integrity.* attributes are excluded because they are added
-// after serialization and must not be part of the signed payload.
+// serializeLogRecord produces a canonical JSON representation of the log record
+// for signing. Excluded from the signed payload:
+//   - audit.integrity.* attributes (carry the proof; must not be part of the input)
+//   - SeverityNumber, SeverityText (SHOULD NOT be set on audit records per spec)
+//   - Flags (W3C trace-context sampling bit; not audit-relevant)
 func (p *signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error) {
 	data := make(map[string]any)
 
 	if lr.EventName() != "" {
+		if err := checkUTF8(lr.EventName(), "event name"); err != nil {
+			return nil, err
+		}
 		data["event_name"] = lr.EventName()
 	}
 
@@ -237,26 +298,129 @@ func (p *signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error)
 		data["span_id"] = lr.SpanID().String()
 	}
 
-	attrs := make(map[string]any)
+	if err := p.putAttributes(data, lr.Attributes()); err != nil {
+		return nil, err
+	}
+
+	return p.marshalJCS(data)
+}
+
+// putAttributes sets data["attributes"] to the encoded attrs, leaving out
+// audit.integrity.* keys, and omits the key when nothing is left.
+func (p *signingProcessor) putAttributes(data map[string]any, attrs pcommon.Map) error {
+	out := make(map[string]any)
 	var attrErr error
-	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
+	attrs.Range(func(k string, v pcommon.Value) bool {
 		if strings.HasPrefix(k, "audit.integrity.") {
 			return true
+		}
+		if err := checkUTF8(k, "attribute key"); err != nil {
+			attrErr = err
+			return false
 		}
 		val, err := p.valueToInterface(v, 0)
 		if err != nil {
 			attrErr = err
 			return false
 		}
-		attrs[k] = val
+		out[k] = val
 		return true
 	})
 	if attrErr != nil {
-		return nil, attrErr
+		return attrErr
 	}
-	if len(attrs) > 0 {
-		data["attributes"] = attrs
+	if len(out) > 0 {
+		data["attributes"] = out
 	}
+	return nil
+}
+
+// serializeSpan produces a canonical JSON representation of the span for
+// signing, using the same encoding as serializeLogRecord. Excluded from the
+// signed payload:
+//   - audit.integrity.* attributes, on the span, its events and its links
+//   - TraceState and Flags, on the span and its links (W3C trace-context
+//     sampling data; not audit-relevant, like log record Flags)
+//   - dropped attribute, event and link counts
+func (p *signingProcessor) serializeSpan(span ptrace.Span) ([]byte, error) {
+	data := make(map[string]any)
+
+	if !span.TraceID().IsEmpty() {
+		data["trace_id"] = span.TraceID().String()
+	}
+	if !span.SpanID().IsEmpty() {
+		data["span_id"] = span.SpanID().String()
+	}
+	if !span.ParentSpanID().IsEmpty() {
+		data["parent_span_id"] = span.ParentSpanID().String()
+	}
+	if span.Name() != "" {
+		if err := checkUTF8(span.Name(), "span name"); err != nil {
+			return nil, err
+		}
+		data["name"] = span.Name()
+	}
+	data["kind"] = int32(span.Kind())
+	if span.StartTimestamp() != 0 {
+		data["start_time"] = strconv.FormatInt(span.StartTimestamp().AsTime().UnixNano(), 10)
+	}
+	if span.EndTimestamp() != 0 {
+		data["end_time"] = strconv.FormatInt(span.EndTimestamp().AsTime().UnixNano(), 10)
+	}
+
+	if err := p.putAttributes(data, span.Attributes()); err != nil {
+		return nil, err
+	}
+
+	if span.Events().Len() > 0 {
+		events := make([]any, 0, span.Events().Len())
+		for i := 0; i < span.Events().Len(); i++ {
+			ev := span.Events().At(i)
+			event := make(map[string]any)
+			if ev.Name() != "" {
+				if err := checkUTF8(ev.Name(), "span event name"); err != nil {
+					return nil, err
+				}
+				event["name"] = ev.Name()
+			}
+			if ev.Timestamp() != 0 {
+				event["timestamp"] = strconv.FormatInt(ev.Timestamp().AsTime().UnixNano(), 10)
+			}
+			if err := p.putAttributes(event, ev.Attributes()); err != nil {
+				return nil, fmt.Errorf("span event %d: %w", i, err)
+			}
+			events = append(events, event)
+		}
+		data["events"] = events
+	}
+
+	if span.Links().Len() > 0 {
+		links := make([]any, 0, span.Links().Len())
+		for i := 0; i < span.Links().Len(); i++ {
+			l := span.Links().At(i)
+			link := make(map[string]any)
+			if !l.TraceID().IsEmpty() {
+				link["trace_id"] = l.TraceID().String()
+			}
+			if !l.SpanID().IsEmpty() {
+				link["span_id"] = l.SpanID().String()
+			}
+			if err := p.putAttributes(link, l.Attributes()); err != nil {
+				return nil, fmt.Errorf("span link %d: %w", i, err)
+			}
+			links = append(links, link)
+		}
+		data["links"] = links
+	}
+
+	status := map[string]any{"code": int32(span.Status().Code())}
+	if msg := span.Status().Message(); msg != "" {
+		if err := checkUTF8(msg, "span status message"); err != nil {
+			return nil, err
+		}
+		status["message"] = msg
+	}
+	data["status"] = status
 
 	return p.marshalJCS(data)
 }
@@ -270,7 +434,7 @@ func (*signingProcessor) marshalJCS(v any) ([]byte, error) {
 		return nil, err
 	}
 	if len(raw) > jsonMaxInputBytes {
-		return nil, fmt.Errorf("serialized log record exceeds size limit (%d > %d bytes)", len(raw), jsonMaxInputBytes)
+		return nil, fmt.Errorf("serialized payload exceeds the size limit (%d > %d bytes)", len(raw), jsonMaxInputBytes)
 	}
 	return jcs.Transform(raw)
 }
@@ -282,8 +446,8 @@ func (p *signingProcessor) valueToInterface(v pcommon.Value, depth int) (any, er
 	switch v.Type() {
 	case pcommon.ValueTypeStr:
 		s := v.Str()
-		if !utf8.ValidString(s) {
-			return nil, errors.New("string value contains invalid UTF-8")
+		if err := checkUTF8(s, "string value"); err != nil {
+			return nil, err
 		}
 		return map[string]any{"stringValue": s}, nil
 	case pcommon.ValueTypeInt:
@@ -308,6 +472,10 @@ func (p *signingProcessor) valueToInterface(v pcommon.Value, depth int) (any, er
 		m := make(map[string]any)
 		var mapErr error
 		v.Map().Range(func(k string, val pcommon.Value) bool {
+			if err := checkUTF8(k, "map key"); err != nil {
+				mapErr = err
+				return false
+			}
 			converted, err := p.valueToInterface(val, depth+1) // recursive call!
 			if err != nil {
 				mapErr = err
@@ -323,6 +491,18 @@ func (p *signingProcessor) valueToInterface(v pcommon.Value, depth int) (any, er
 	default:
 		return nil, nil
 	}
+}
+
+// checkUTF8 refuses a string that is not valid UTF-8. json.Marshal replaces
+// each invalid byte with U+FFFD. Then two records that differ only in those
+// bytes share one signature. The check covers the log event name, the span
+// name, the span event name, and the span status message. The check also
+// covers attribute keys, map keys, and string values.
+func checkUTF8(s, what string) error {
+	if !utf8.ValidString(s) {
+		return fmt.Errorf("%s contains invalid UTF-8", what)
+	}
+	return nil
 }
 
 func (*signingProcessor) Start(_ context.Context, _ component.Host) error {

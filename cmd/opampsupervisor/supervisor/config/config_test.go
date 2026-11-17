@@ -42,22 +42,12 @@ func TestValidate(t *testing.T) {
 	// HealthCheck with a valid transport so confmap.Validate doesn't trip on
 	// the empty default before reaching the field under test.
 	defaultHealthCheckServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	defaultHealthCheckServerConfig.WriteTimeout = 0
-	defaultHealthCheckServerConfig.ReadHeaderTimeout = 0
-	defaultHealthCheckServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	defaultHealthCheckServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	defaultHealthCheckServerConfig.NetAddr = confignet.AddrConfig{Transport: confignet.TransportTypeTCP}
 	defaultHealthCheck := HealthCheck{
 		ServerConfig: defaultHealthCheckServerConfig,
 	}
 
 	invalidPortServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	invalidPortServerConfig.WriteTimeout = 0
-	invalidPortServerConfig.ReadHeaderTimeout = 0
-	invalidPortServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	invalidPortServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	invalidPortServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:-1",
@@ -83,6 +73,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval:     5 * time.Second,
 					ConfigApplyTimeout:          2 * time.Second,
 					BootstrapTimeout:            5 * time.Second,
+					StopGracePeriod:             10 * time.Second,
 					CollectorCrashLogSnippetKiB: 0,
 					UseHUPConfigReload:          false,
 				},
@@ -211,6 +202,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -236,6 +228,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -285,6 +278,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval:     5 * time.Second,
 					ConfigApplyTimeout:          2 * time.Second,
 					BootstrapTimeout:            5 * time.Second,
+					StopGracePeriod:             10 * time.Second,
 					CollectorCrashLogSnippetKiB: -1,
 				},
 				Capabilities: Capabilities{
@@ -311,6 +305,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval:     5 * time.Second,
 					ConfigApplyTimeout:          2 * time.Second,
 					BootstrapTimeout:            5 * time.Second,
+					StopGracePeriod:             10 * time.Second,
 					CollectorCrashLogSnippetKiB: 1025,
 				},
 				Capabilities: Capabilities{
@@ -337,6 +332,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -362,6 +358,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -387,6 +384,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        -5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -412,6 +410,7 @@ func TestValidate(t *testing.T) {
 					ConfigApplyTimeout:      2 * time.Second,
 					OpAMPServerPort:         65536,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -437,6 +436,7 @@ func TestValidate(t *testing.T) {
 					ConfigApplyTimeout:      2 * time.Second,
 					OpAMPServerPort:         0,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -462,6 +462,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					OpAMPServerPort:         8080,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -471,6 +472,60 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			expectedErrorFunc: simpleError("agent::config_apply_timeout must be valid duration"),
+		},
+		{
+			name: "Negative stop grace period",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					OpAMPServerPort:         8080,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         -1 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedErrorFunc: simpleError("agent::stop_grace_period must be positive"),
+		},
+		{
+			name: "Zero stop grace period",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					OpAMPServerPort:         8080,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         0,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedErrorFunc: simpleError("agent::stop_grace_period must be positive"),
 		},
 		{
 			name: "HUP config reload not supported on Windows",
@@ -487,6 +542,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 					UseHUPConfigReload:      true,
 				},
 				Capabilities: Capabilities{
@@ -520,6 +576,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -546,6 +603,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -571,6 +629,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 					ConfigFiles: []string{
 						"$DOESNTEXIST",
 					},
@@ -599,6 +658,7 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 					UseHUPConfigReload:      false,
 				},
 				Capabilities: Capabilities{
@@ -614,7 +674,7 @@ func TestValidate(t *testing.T) {
 			expectedErrorFunc: simpleError("healthcheck::endpoint must contain a valid port number, got -1"),
 		},
 		{
-			name: "Package with unsupported verifier type (cosign not yet supported)",
+			name: "Package with unsupported verifier type",
 			config: Supervisor{
 				Server: OpAMPServer{
 					Endpoint: "wss://localhost:9090/opamp",
@@ -625,8 +685,9 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
 					Package: AgentPackage{
-						Verifier: Verifier{Type: "cosign"},
+						Verifier: Verifier{Type: "gpg"},
 					},
 				},
 				Capabilities: Capabilities{AcceptsRemoteConfig: true},
@@ -634,6 +695,92 @@ func TestValidate(t *testing.T) {
 				HealthCheck:  defaultHealthCheck,
 			},
 			expectedErrorFunc: simpleError("unsupported verifier type"),
+		},
+		{
+			name: "Package with cosign identity specifying both subject and subject_regex",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					TLS:      tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
+					Package: AgentPackage{
+						Verifier: Verifier{
+							Type: VerifierTypeCosign,
+							Cosign: CosignSignatureVerifier{
+								Identities: []AgentSignatureIdentity{{
+									Issuer:        "https://token.actions.githubusercontent.com",
+									Subject:       "https://github.com/example/repo/.github/workflows/release.yaml@refs/tags/v1.0.0",
+									SubjectRegExp: "^https://github.com/example/.*$",
+								}},
+							},
+						},
+					},
+				},
+				Capabilities: Capabilities{AcceptsRemoteConfig: true},
+				Storage:      Storage{Directory: "/etc/opamp-supervisor/storage"},
+				HealthCheck:  defaultHealthCheck,
+			},
+			expectedErrorFunc: simpleError("agent::package::verifier::cosign::identities::0: cannot specify both subject and subject_regex"),
+		},
+		{
+			name: "Package with cosign verifier and no identities",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					TLS:      tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
+					Package: AgentPackage{
+						Verifier: Verifier{Type: VerifierTypeCosign},
+					},
+				},
+				Capabilities: Capabilities{AcceptsRemoteConfig: true},
+				Storage:      Storage{Directory: "/etc/opamp-supervisor/storage"},
+				HealthCheck:  defaultHealthCheck,
+			},
+			expectedErrorFunc: simpleError("agent::package::verifier: cosign::identities must not be empty"),
+		},
+		{
+			name: "Package with valid cosign verifier is not yet supported",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					TLS:      tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
+					Package: AgentPackage{
+						Verifier: Verifier{
+							Type: VerifierTypeCosign,
+							Cosign: CosignSignatureVerifier{
+								Identities: []AgentSignatureIdentity{{
+									Issuer:  "https://token.actions.githubusercontent.com",
+									Subject: "https://github.com/example/repo/.github/workflows/release.yaml@refs/tags/v1.0.0",
+								}},
+							},
+						},
+					},
+				},
+				Capabilities: Capabilities{AcceptsRemoteConfig: true},
+				Storage:      Storage{Directory: "/etc/opamp-supervisor/storage"},
+				HealthCheck:  defaultHealthCheck,
+			},
+			expectedErrorFunc: simpleError("agent::package::verifier is not yet supported"),
 		},
 	}
 
@@ -762,11 +909,6 @@ func TestSupervisor_TopLevelValidate(t *testing.T) {
 	// HealthCheck endpoint with an invalid port produces a Validate() error
 	// from the HealthCheck substruct via reflection.
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{Endpoint: "localhost:99999"}
 	cfg.HealthCheck = HealthCheck{
 		ServerConfig: serverConfig,
@@ -975,11 +1117,6 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig,
 		},
 		{
-			name:                      "Deprecated ReportsRemoteConfig has no effect",
-			capabilities:              Capabilities{ReportsRemoteConfig: true},
-			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
-		},
-		{
 			name: "Many capabilities",
 			capabilities: Capabilities{
 				AcceptsRemoteConfig:            true,
@@ -990,7 +1127,6 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				ReportsOwnLogs:                 true,
 				ReportsOwnTraces:               true,
 				ReportsHealth:                  true,
-				ReportsRemoteConfig:            true,
 				ReportsAvailableComponents:     true,
 				ReportsHeartbeat:               true,
 				AcceptsPackages:                true,
@@ -1058,6 +1194,7 @@ agent:
 						OrphanDetectionInterval:     DefaultSupervisor().Agent.OrphanDetectionInterval,
 						ConfigApplyTimeout:          DefaultSupervisor().Agent.ConfigApplyTimeout,
 						BootstrapTimeout:            DefaultSupervisor().Agent.BootstrapTimeout,
+						StopGracePeriod:             DefaultSupervisor().Agent.StopGracePeriod,
 						CollectorCrashLogSnippetKiB: DefaultSupervisor().Agent.CollectorCrashLogSnippetKiB,
 						ValidateConfig:              DefaultSupervisor().Agent.ValidateConfig,
 						Package:                     DefaultSupervisor().Agent.Package,
@@ -1084,7 +1221,6 @@ capabilities:
   reports_own_metrics: false
   reports_health: false
   accepts_remote_config: true
-  reports_remote_config: true
   accepts_restart_command: true
   accepts_opamp_connection_settings: true
   reports_heartbeat: true
@@ -1096,6 +1232,7 @@ agent:
   executable: %s
   description:
     include_resource_attributes: true
+    include_supervisor_instance_id: true
     identifying_attributes:
       "service.name": "io.opentelemetry.collector"
     non_identifying_attributes:
@@ -1103,6 +1240,7 @@ agent:
   orphan_detection_interval: 10s
   config_apply_timeout: 8s
   bootstrap_timeout: 8s
+  stop_grace_period: 20s
   opamp_server_port: 8090
   passthrough_logs: true
   automatic_config_rollback: true
@@ -1133,7 +1271,6 @@ telemetry:
 						ReportsOwnTraces:               false,
 						ReportsHealth:                  false,
 						AcceptsRemoteConfig:            true,
-						ReportsRemoteConfig:            true,
 						AcceptsRestartCommand:          true,
 						AcceptsOpAMPConnectionSettings: true,
 						ReportsHeartbeat:               true,
@@ -1144,7 +1281,8 @@ telemetry:
 					Agent: Agent{
 						Executable: executablePath,
 						Description: AgentDescription{
-							IncludeResourceAttributes: true,
+							IncludeResourceAttributes:   true,
+							IncludeSupervisorInstanceID: true,
 							IdentifyingAttributes: map[string]string{
 								"service.name": "io.opentelemetry.collector",
 							},
@@ -1155,6 +1293,7 @@ telemetry:
 						OrphanDetectionInterval:     10 * time.Second,
 						ConfigApplyTimeout:          8 * time.Second,
 						BootstrapTimeout:            8 * time.Second,
+						StopGracePeriod:             20 * time.Second,
 						OpAMPServerPort:             8090,
 						PassthroughLogs:             true,
 						CollectorCrashLogSnippetKiB: 100,
@@ -1201,6 +1340,7 @@ agent:
 						OrphanDetectionInterval:     DefaultSupervisor().Agent.OrphanDetectionInterval,
 						ConfigApplyTimeout:          DefaultSupervisor().Agent.ConfigApplyTimeout,
 						BootstrapTimeout:            DefaultSupervisor().Agent.BootstrapTimeout,
+						StopGracePeriod:             DefaultSupervisor().Agent.StopGracePeriod,
 						CollectorCrashLogSnippetKiB: DefaultSupervisor().Agent.CollectorCrashLogSnippetKiB,
 						ValidateConfig:              DefaultSupervisor().Agent.ValidateConfig,
 						Package:                     DefaultSupervisor().Agent.Package,
@@ -1220,6 +1360,25 @@ agent:
 			desc: "Empty Config Filepath",
 			testFunc: func(t *testing.T) {
 				runSupervisorConfigLoadTest(t, "", Supervisor{}, errors.New("path to config file cannot be empty"))
+			},
+		},
+		{
+			desc: "Removed reports_remote_config Key",
+			testFunc: func(t *testing.T) {
+				config := `
+server:
+  endpoint: ws://localhost/v1/opamp
+
+capabilities:
+  reports_remote_config: true
+
+agent:
+  executable: %s
+`
+				config = fmt.Sprintf(config, executablePath)
+
+				cfgPath := setupSupervisorConfigFile(t, tmpDir, config)
+				runSupervisorConfigLoadTest(t, cfgPath, Supervisor{}, errors.New("has invalid keys: reports_remote_config"))
 			},
 		},
 		{
