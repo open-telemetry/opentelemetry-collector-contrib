@@ -914,12 +914,12 @@ func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
 
 	// StatusStarting will be sent immediately.
 	for _, id := range traces.InstanceIDs() {
-		o.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusStarting))
+		o.Changed(id, componentstatus.NewEvent(componentstatus.StatusStarting))
 	}
 
 	// StatusOK will be queued until the PipelineWatcher Ready method is called.
 	for _, id := range traces.InstanceIDs() {
-		o.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusOK))
+		o.Changed(id, componentstatus.NewEvent(componentstatus.StatusOK))
 	}
 
 	// verify we have received the StatusStarting events
@@ -955,7 +955,7 @@ func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
 
 	// send another set of events - these should be passed through immediately
 	for _, id := range traces.InstanceIDs() {
-		o.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusStopping))
+		o.Changed(id, componentstatus.NewEvent(componentstatus.StatusStopping))
 	}
 
 	require.Eventually(t, func() bool {

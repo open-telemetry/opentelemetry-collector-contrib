@@ -433,6 +433,86 @@ func TestBulkIndexerLogsStatusCode(t *testing.T) {
 	}
 }
 
+func TestBulkIndexerFailedDocLogFieldsDoNotAccumulate(t *testing.T) {
+	responseBody := `{"errors": true, "items":[
+		{"create":{"_index":"foo-1","status":400,"error":{"type":"error_1","reason":"reason 1"}}},
+		{"create":{"_index":"foo-2","status":400,"error":{"type":"error_2","reason":"reason 2"}}},
+		{"create":{"_index":"foo-3","status":400,"error":{"type":"error_3","reason":"reason 3"}}}
+	]}`
+	bodies := []string{`{"doc":1}`, `{"doc":2}`, `{"doc":3}`}
+
+	cfg := Config{
+		QueueBatchConfig: configoptional.Default(exporterhelper.QueueBatchConfig{
+			NumConsumers: 1,
+		}),
+	}
+	cfg.TelemetrySettings.LogFailedDocsInput = true
+	cfg.TelemetrySettings.LogFailedDocsInputRateLimit = 0 // disable rate limiting
+	esClient, err := elastictransport.New(elastictransport.Config{
+		URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+		Transport: &mockTransport{
+			RoundTripFunc: func(*http.Request) (*http.Response, error) {
+				return &http.Response{
+					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+					Body:       io.NopCloser(strings.NewReader(responseBody)),
+					StatusCode: http.StatusOK,
+				}, nil
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	ct := componenttest.NewTelemetry()
+	tb, err := metadata.NewTelemetryBuilder(
+		metadatatest.NewSettings(ct).TelemetrySettings,
+	)
+	require.NoError(t, err)
+
+	core, observed := observer.New(zap.NewAtomicLevelAt(zapcore.DebugLevel))
+	bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core), nil)
+
+	ctx := t.Context()
+	session := bi.StartSession(ctx)
+	for _, b := range bodies {
+		require.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(b), nil, docappender.ActionCreate))
+	}
+	require.NoError(t, session.Flush(ctx))
+	session.End()
+	assert.NoError(t, bi.Close(ctx))
+
+	countKey := func(entry observer.LoggedEntry, key string) (n int, val any) {
+		for _, f := range entry.Context {
+			if f.Key == key {
+				n++
+				val = f.String
+			}
+		}
+		return n, val
+	}
+
+	errs := observed.FilterMessage("failed to index document").All()
+	require.Len(t, errs, len(bodies), "observed.All()=%v", observed.All())
+	debugs := observed.FilterMessage("failed to index document; input may contain sensitive data").All()
+	require.Len(t, debugs, len(bodies), "observed.All()=%v", observed.All())
+
+	for i, entry := range errs {
+		n, val := countKey(entry, "index")
+		assert.Equal(t, 1, n, "ERROR log %d: index field count", i)
+		assert.Equal(t, fmt.Sprintf("foo-%d", i+1), val, "ERROR log %d: index value", i)
+		n, _ = countKey(entry, "input")
+		assert.Equal(t, 0, n, "ERROR log %d must not contain input", i)
+	}
+	for i, entry := range debugs {
+		n, val := countKey(entry, "index")
+		assert.Equal(t, 1, n, "DEBUG log %d: index field count", i)
+		assert.Equal(t, fmt.Sprintf("foo-%d", i+1), val, "DEBUG log %d: index value", i)
+		n, val = countKey(entry, "input")
+		assert.Equal(t, 1, n, "DEBUG log %d: input field count", i)
+		// input is the action line plus the document body.
+		assert.Equal(t, "{\"create\":{\"_index\":\"foo\"}}\n"+bodies[i]+"\n", val, "DEBUG log %d: input value", i)
+	}
+}
+
 func TestQueryParamsParsedFromEndpoints(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoints = []string{"http://localhost:9200?pipeline=test-pipeline&pretty=false&require_data_stream=true"}

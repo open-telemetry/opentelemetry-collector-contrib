@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/docker_stats
+note: Declare Windows a supported platform and document which metrics are unavailable there.
+issues: [52645]
+subtext:
+change_logs: [user]

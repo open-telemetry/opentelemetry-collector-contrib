@@ -6,7 +6,8 @@ status:
     beta: [metrics]
   distributions: [core, contrib, k8s]
   codeowners:
-    active: [dmitryax, braydonk, rogercoll]
+    active: [braydonk, rogercoll, pjanotti]
+    emeritus: [dmitryax]
 
 sem_conv_version: 1.9.0
 

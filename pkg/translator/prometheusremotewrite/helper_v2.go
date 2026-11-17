@@ -16,7 +16,21 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/multierr"
+
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
+
+type bucketBoundsDataV2 struct {
+	ts    *writev2.TimeSeries
+	bound float64
+}
+
+// byBucketBoundsDataV2 enables the usage of sort.Sort() with a slice of bucket bounds
+type byBucketBoundsDataV2 []bucketBoundsDataV2
+
+func (m byBucketBoundsDataV2) Len() int           { return len(m) }
+func (m byBucketBoundsDataV2) Less(i, j int) bool { return m[i].bound < m[j].bound }
+func (m byBucketBoundsDataV2) Swap(i, j int)      { m[i], m[j] = m[j], m[i] }
 
 // addResourceTargetInfoV2 converts the resource to the target info metric.
 func (c *prometheusConverterV2) addResourceTargetInfoV2(resource pcommon.Resource, settings Settings, timestamp pcommon.Timestamp) error {
@@ -25,21 +39,24 @@ func (c *prometheusConverterV2) addResourceTargetInfoV2(resource pcommon.Resourc
 	}
 
 	attributes := resource.Attributes()
-	identifyingAttrs := []string{
-		string(conventions.ServiceNamespaceKey),
-		string(conventions.ServiceNameKey),
-		string(conventions.ServiceInstanceIDKey),
-	}
-	nonIdentifyingAttrsCount := attributes.Len()
-	for _, a := range identifyingAttrs {
-		_, haveAttr := attributes.Get(a)
-		if haveAttr {
-			nonIdentifyingAttrsCount--
+	var identifyingAttrs []string
+	if !prometheustranslator.KeepIdentifyingResourceAttributesGate.IsEnabled() {
+		identifyingAttrs = []string{
+			string(conventions.ServiceNamespaceKey),
+			string(conventions.ServiceNameKey),
+			string(conventions.ServiceInstanceIDKey),
 		}
-	}
-	if nonIdentifyingAttrsCount == 0 {
-		// If we only have job + instance, then target_info isn't useful, so don't add it.
-		return nil
+		nonIdentifyingAttrsCount := attributes.Len()
+		for _, a := range identifyingAttrs {
+			_, haveAttr := attributes.Get(a)
+			if haveAttr {
+				nonIdentifyingAttrsCount--
+			}
+		}
+		if nonIdentifyingAttrsCount == 0 {
+			// If we only have job + instance, then target_info isn't useful, so don't add it.
+			return nil
+		}
 	}
 
 	name := otlptranslator.TargetInfoMetricName
@@ -48,7 +65,7 @@ func (c *prometheusConverterV2) addResourceTargetInfoV2(resource pcommon.Resourc
 		name = settings.Namespace + "_" + name
 	}
 
-	labels, err := createAttributes(resource, attributes, pcommon.NewInstrumentationScope(), settings.ExternalLabels, identifyingAttrs, false, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, name)
+	labels, err := createAttributes(resource, attributes, pcommon.NewInstrumentationScope(), "", settings.ExternalLabels, identifyingAttrs, false, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, name)
 	if err != nil {
 		return err
 	}
@@ -80,7 +97,7 @@ func (c *prometheusConverterV2) addResourceTargetInfoV2(resource pcommon.Resourc
 // addSampleWithLabels is a helper function to create and add a sample with labels
 func (c *prometheusConverterV2) addSampleWithLabels(sampleValue float64, timestamp, startTimestamp int64, noRecordedValue bool,
 	baseName string, baseLabels []prompb.Label, labelName, labelValue string, metadata metadata,
-) {
+) *writev2.TimeSeries {
 	sample := &writev2.Sample{
 		Value:          sampleValue,
 		Timestamp:      timestamp,
@@ -90,13 +107,12 @@ func (c *prometheusConverterV2) addSampleWithLabels(sampleValue float64, timesta
 		sample.Value = math.Float64frombits(value.StaleNaN)
 	}
 	if labelName != "" && labelValue != "" {
-		c.addSample(sample, createLabels(baseName, baseLabels, labelName, labelValue), metadata)
-	} else {
-		c.addSample(sample, createLabels(baseName, baseLabels), metadata)
+		return c.addSample(sample, createLabels(baseName, baseLabels, labelName, labelValue), metadata)
 	}
+	return c.addSample(sample, createLabels(baseName, baseLabels), metadata)
 }
 
-func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource, scope pcommon.InstrumentationScope,
+func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource, scope pcommon.InstrumentationScope, schemaURL string,
 	settings Settings, baseName string, metadata metadata,
 ) error {
 	var errs error
@@ -104,7 +120,7 @@ func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryD
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
 		startTimestamp := convertTimeStamp(pt.StartTimestamp())
-		baseLabels, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, false, c.labelNamer, settings.DisableScopeInfo)
+		baseLabels, err := createAttributes(resource, pt.Attributes(), scope, schemaURL, settings.ExternalLabels, nil, false, c.labelNamer, settings.DisableScopeInfo)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -126,14 +142,14 @@ func (c *prometheusConverterV2) addSummaryDataPoints(dataPoints pmetric.SummaryD
 }
 
 func (c *prometheusConverterV2) addHistogramDataPoints(dataPoints pmetric.HistogramDataPointSlice,
-	resource pcommon.Resource, scope pcommon.InstrumentationScope, settings Settings, baseName string, metadata metadata,
+	resource pcommon.Resource, scope pcommon.InstrumentationScope, schemaURL string, settings Settings, baseName string, metadata metadata,
 ) error {
 	var errs error
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
 		startTimestamp := convertTimeStamp(pt.StartTimestamp())
-		baseLabels, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, false, c.labelNamer, settings.DisableScopeInfo)
+		baseLabels, err := createAttributes(resource, pt.Attributes(), scope, schemaURL, settings.ExternalLabels, nil, false, c.labelNamer, settings.DisableScopeInfo)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -168,17 +184,22 @@ func (c *prometheusConverterV2) addHistogramDataPoints(dataPoints pmetric.Histog
 		// cumulative count for conversion to cumulative histogram
 		var cumulativeCount uint64
 
+		var bucketBounds []bucketBoundsDataV2
+
 		// process each bound, based on histograms proto definition, # of buckets = # of explicit bounds + 1
 		for i := 0; i < pt.ExplicitBounds().Len() && i < pt.BucketCounts().Len(); i++ {
 			bound := pt.ExplicitBounds().At(i)
 			cumulativeCount += pt.BucketCounts().At(i)
 			boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
-			c.addSampleWithLabels(float64(cumulativeCount), timestamp, startTimestamp, noRecordedValue, baseName+bucketStr, baseLabels, leStr, boundStr, metadata)
+			ts := c.addSampleWithLabels(float64(cumulativeCount), timestamp, startTimestamp, noRecordedValue, baseName+bucketStr, baseLabels, leStr, boundStr, metadata)
+
+			bucketBounds = append(bucketBounds, bucketBoundsDataV2{ts: ts, bound: bound})
 		}
 		// add le=+Inf bucket
-		c.addSampleWithLabels(float64(pt.Count()), timestamp, startTimestamp, noRecordedValue, baseName+bucketStr, baseLabels, leStr, pInfStr, metadata)
+		ts := c.addSampleWithLabels(float64(pt.Count()), timestamp, startTimestamp, noRecordedValue, baseName+bucketStr, baseLabels, leStr, pInfStr, metadata)
 
-		// TODO implement exemplars support
+		bucketBounds = append(bucketBounds, bucketBoundsDataV2{ts: ts, bound: math.Inf(1)})
+		c.addExemplars(pt, bucketBounds)
 	}
 	return errs
 }

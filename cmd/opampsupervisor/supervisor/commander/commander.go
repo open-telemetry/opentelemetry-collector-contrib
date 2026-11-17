@@ -30,6 +30,10 @@ import (
 // sites in sync.
 const AgentStartedLogMsg = "Agent process started"
 
+// passthroughOutputWaitDelay bounds how long Wait keeps copying passthrough
+// output after the agent exits, in case a child process still holds the pipes.
+const passthroughOutputWaitDelay = 5 * time.Second
+
 // Commander can start/stop/restart the Agent executable and also watch for a signal
 // for the Agent process to finish.
 type Commander struct {
@@ -178,15 +182,12 @@ func (c *Commander) startNormal() error {
 }
 
 func (c *Commander) startWithPassthroughLogging() error {
-	// grab cmd pipes
-	stdoutPipe, err := c.cmd.StdoutPipe()
-	if err != nil {
-		return fmt.Errorf("stdoutPipe: %w", err)
-	}
-	stderrPipe, err := c.cmd.StderrPipe()
-	if err != nil {
-		return fmt.Errorf("stderrPipe: %w", err)
-	}
+	// Wait closes StdoutPipe/StderrPipe on exit, which can drop unread output.
+	stdoutPipe, stdoutWriter := io.Pipe()
+	stderrPipe, stderrWriter := io.Pipe()
+	c.cmd.Stdout = stdoutWriter
+	c.cmd.Stderr = stderrWriter
+	c.cmd.WaitDelay = passthroughOutputWaitDelay
 
 	// start agent
 	if err := c.cmd.Start(); err != nil {
@@ -248,12 +249,17 @@ func (c *Commander) startWithPassthroughLogging() error {
 		outputWG.Wait()
 		close(c.outputDoneCh)
 	}()
-	go c.watch()
+	go c.watch(stdoutWriter, stderrWriter)
 	return nil
 }
 
-func (c *Commander) watch() {
+// watch waits for the agent process to exit. outputWriters are closed once Wait
+// returns so the passthrough log readers see EOF after the final line.
+func (c *Commander) watch(outputWriters ...io.Closer) {
 	err := c.cmd.Wait()
+	for _, w := range outputWriters {
+		_ = w.Close()
+	}
 
 	// cmd.Wait returns an exec.ExitError when the Collector exits unsuccessfully or stops
 	// after receiving a signal. The Commander caller will handle these cases, so we filter

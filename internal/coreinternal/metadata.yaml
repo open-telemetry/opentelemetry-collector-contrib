@@ -10,7 +10,7 @@ status:
 
 feature_gates:
   - id: internal.coreinternal.goldendataset.DontEmitV0DatabaseConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, goldendataset no longer generates spans with deprecated
       semconv v1.28.0 attribute db.system.
@@ -49,16 +49,8 @@ feature_gates:
     from_version: v0.147.0
     to_version: v0.166.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45076
-  - id: internal.coreinternal.goldendataset.DontEmitV0RPCConventions
-    stage: stable
-    description: >-
-      When enabled, goldendataset no longer generates spans with deprecated
-      semconv RPC attributes rpc.service and peer.service.
-    from_version: v0.148.0
-    to_version: v0.166.0
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47548
   - id: internal.coreinternal.goldendataset.EmitV1DatabaseConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, goldendataset generates spans with db.system.name
       (semconv v1.40.0) instead of the deprecated db.system (semconv v1.28.0).
@@ -102,12 +94,3 @@ feature_gates:
     from_version: v0.147.0
     to_version: v0.166.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45076
-  - id: internal.coreinternal.goldendataset.EmitV1RPCConventions
-    stage: stable
-    description: >-
-      When enabled, goldendataset generates spans with rpc.method and
-      service.peer.name (semconv v1.40.0) alongside legacy rpc.service and
-      peer.service to support migration.
-    from_version: v0.148.0
-    to_version: v0.166.0
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47548
