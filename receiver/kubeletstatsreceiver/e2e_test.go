@@ -167,6 +167,10 @@ func runSemConvE2E(t *testing.T, name string) {
 		for _, obj := range collectorObjs {
 			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
 		}
+		// Wait until the collector pods are gone, so that late batches from this
+		// collector cannot reach the sink of the next case and satisfy its
+		// assertion before its own collector has sent anything.
+		waitForCollectorPodsDeleted(t, k8sClient, "default", "otelcol-"+testID)
 	}()
 
 	waitForData(t, 3, metricsConsumer)
@@ -185,6 +189,16 @@ func waitForPodDeleted(t *testing.T, c *k8stest.K8sClient, namespace, name strin
 		_, err := c.DynamicClient.Resource(gvr).Namespace(namespace).Get(context.Background(), name, metav1.GetOptions{})
 		return apierrors.IsNotFound(err)
 	}, 2*time.Minute, time.Second, "pod %s/%s was not deleted", namespace, name)
+}
+
+func waitForCollectorPodsDeleted(t *testing.T, c *k8stest.K8sClient, namespace, instance string) {
+	gvr := schema.GroupVersionResource{Version: "v1", Resource: "pods"}
+	assert.Eventuallyf(t, func() bool {
+		pods, err := c.DynamicClient.Resource(gvr).Namespace(namespace).List(context.Background(), metav1.ListOptions{
+			LabelSelector: "app.kubernetes.io/instance=" + instance,
+		})
+		return err == nil && len(pods.Items) == 0
+	}, 2*time.Minute, time.Second, "collector pods of %s were not deleted", instance)
 }
 
 func startUpSink(t *testing.T, mc *consumertest.MetricsSink) func() {
