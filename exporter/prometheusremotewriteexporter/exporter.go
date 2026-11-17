@@ -783,6 +783,13 @@ func (prwe *prwExporter) execute(ctx context.Context, buf []byte) error {
 		if err != nil && ctx.Err() == nil && retryCtx.Err() != nil && lastErr != nil {
 			err = lastErr
 		}
+		// A permanent failure comes back from backoff.Retry wrapped in a *backoff.RetryError
+		// whose cause is the bare backoff.ErrPermanent sentinel. Report the failure itself, so
+		// callers see the original error, such as a payload rejection, without the wrapper.
+		var retryErr *backoff.RetryError
+		if errors.As(err, &retryErr) && errors.Is(retryErr.Cause, backoff.ErrPermanent) && retryErr.LastErr != nil {
+			err = retryErr.LastErr
+		}
 	} else {
 		_, err = executeFunc()
 	}
