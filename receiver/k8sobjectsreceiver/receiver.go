@@ -23,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
@@ -45,7 +44,7 @@ type k8sobjectsreceiver struct {
 	mu              sync.Mutex
 	cancel          context.CancelFunc
 	registry        *informer.FactoryRegistry
-	transform       cache.TransformFunc
+	registryOpts    []informer.Option
 	observerFunc    func(ctx context.Context, reg *informer.FactoryRegistry, object *K8sObjectsConfig) (k8sinventory.Observer, error)
 	wg              sync.WaitGroup
 	stopped         bool
@@ -90,8 +89,9 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 	if config.DropManagedFields {
 		if !metadata.ReceiverK8sobjectsUseInformerObserverFeatureGate.IsEnabled() {
 			params.Logger.Warn("drop_managed_fields has no effect unless receiver.k8sobjects.useInformerObserver is enabled.")
+		} else {
+			kr.registryOpts = append(kr.registryOpts, informer.WithTransform(dropManagedFields))
 		}
-		kr.transform = dropManagedFields
 	}
 
 	kr.observerFunc = getObserverFunc(kr)
@@ -268,7 +268,7 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 				cctx, cancel := context.WithCancel(ctx)
 				var registry *informer.FactoryRegistry
 				if metadata.ReceiverK8sobjectsUseInformerObserverFeatureGate.IsEnabled() {
-					registry = informer.NewFactoryRegistry(kr.client, 0, kr.transform)
+					registry = informer.NewFactoryRegistry(kr.client, 0, kr.registryOpts...)
 				}
 				kr.mu.Lock()
 				if kr.stopped {
@@ -300,7 +300,7 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 		cctx, cancel := context.WithCancel(ctx)
 		var registry *informer.FactoryRegistry
 		if metadata.ReceiverK8sobjectsUseInformerObserverFeatureGate.IsEnabled() {
-			registry = informer.NewFactoryRegistry(kr.client, 0, kr.transform)
+			registry = informer.NewFactoryRegistry(kr.client, 0, kr.registryOpts...)
 		}
 		kr.mu.Lock()
 		kr.cancel = cancel

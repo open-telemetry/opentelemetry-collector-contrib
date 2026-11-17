@@ -122,7 +122,7 @@ func makePod(name string) *unstructured.Unstructured {
 func TestPullModeEmitsSnapshotOnStart(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t, makePod("pod1"))
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 
 	var mu sync.Mutex
@@ -159,7 +159,7 @@ func TestPullModeEmitsSnapshotOnStart(t *testing.T) {
 func TestPullModeEmitsOnInterval(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t, makePod("pod1"))
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 
 	var mu sync.Mutex
@@ -191,7 +191,7 @@ func TestPullModeEmitsOnInterval(t *testing.T) {
 func TestWatchModeIncludeInitialStateTrue(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t, makePod("pod1"))
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 
 	var mu sync.Mutex
@@ -227,7 +227,7 @@ func TestWatchModeIncludeInitialStateTrue(t *testing.T) {
 func TestWatchModeIncludeInitialStateFalse(t *testing.T) {
 	t.Parallel()
 	client, addObj := newFakeClient(t, makePod("existing-pod"))
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 
 	var mu sync.Mutex
@@ -290,7 +290,7 @@ func TestTwoObserversIndependent(t *testing.T) {
 	_, err = client.Resource(configmapsGVR).Namespace("default").Create(t.Context(), cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 
 	var (
@@ -343,7 +343,7 @@ func TestTwoObserversIndependent(t *testing.T) {
 func TestWatchModeExcludeWatchType(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t, makePod("pod1"))
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 
 	var mu sync.Mutex
@@ -382,7 +382,7 @@ func TestWatchModeExcludeWatchType(t *testing.T) {
 func TestStartCacheSyncContextCancelled(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t, makePod("pod1"))
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 	// Keep the cache unsynced: cache.WaitForCacheSync checks HasSynced before
 	// the stop channel, so a fast fake client could otherwise win the race.
@@ -408,7 +408,7 @@ func TestWatchModeModifiedEvent(t *testing.T) {
 	t.Parallel()
 	pod := makePod("pod1")
 	client, updateObj, _ := newFakeClientWithMutations(t, pod)
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 
 	var mu sync.Mutex
@@ -451,7 +451,7 @@ func TestWatchModeDeletedEvent(t *testing.T) {
 	t.Parallel()
 	pod := makePod("pod1")
 	client, _, deleteObj := newFakeClientWithMutations(t, pod)
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 
 	var mu sync.Mutex
@@ -491,7 +491,7 @@ func TestWatchModeDeletedEvent(t *testing.T) {
 func TestWatchModeStopChStopsEventDelivery(t *testing.T) {
 	t.Parallel()
 	client, addObj := newFakeClient(t)
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 
 	var mu sync.Mutex
@@ -534,7 +534,7 @@ func TestWatchModeStopChStopsEventDelivery(t *testing.T) {
 func TestHandleWatchEventTombstone(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t)
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 
 	var mu sync.Mutex
@@ -573,7 +573,7 @@ func TestCheckpointFirstRunEmitsAll(t *testing.T) {
 
 	client, _ := newFakeClient(t, makePodWithRV("pod1", "10"), makePodWithRV("pod2", "20"))
 	storageClient := newTestStorageClient(t)
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 
 	var mu sync.Mutex
@@ -628,7 +628,7 @@ func TestCheckpointRestartSkipsSeenObjects(t *testing.T) {
 	require.NoError(t, chk.SetCheckpoint(t.Context(), "", podsGVR.Resource, "20"))
 	require.NoError(t, chk.Flush(t.Context()))
 
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 
 	var mu sync.Mutex
@@ -674,7 +674,7 @@ func TestCheckpointRestartSkipsSeenObjects(t *testing.T) {
 func TestWatchModeDeduplicatesNamespaces(t *testing.T) {
 	t.Parallel()
 	client, addObj := newFakeClient(t)
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 
 	var mu sync.Mutex
@@ -717,7 +717,7 @@ func TestWatchModeDeduplicatesNamespaces(t *testing.T) {
 func TestWatchModeStartFailureUnregistersHandlers(t *testing.T) {
 	t.Parallel()
 	client, addObj := newFakeClient(t)
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 	// Block the initial List so the sync always times out, instead of relying
 	// on a tiny timeout losing a race with the fake client.
@@ -759,7 +759,7 @@ func TestCheckpointAdvancesAfterHandler(t *testing.T) {
 
 	client, addObj := newFakeClient(t)
 	storageClient := newTestStorageClient(t)
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 
 	// Handler blocks on `release` and signals `entered` when it is invoked.
@@ -830,7 +830,7 @@ func TestSharedFactoryPullStartsBeforeWatch(t *testing.T) {
 	require.NoError(t, chk.SetCheckpoint(t.Context(), "", podsGVR.Resource, "20"))
 	require.NoError(t, chk.Flush(t.Context()))
 
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 
 	pullObs, err := NewPull(reg, PullConfig{
@@ -891,7 +891,7 @@ func TestCheckpointFlushOnCtxCancel(t *testing.T) {
 
 	client, _ := newFakeClient(t, makePodWithRV("pod1", "42"))
 	storageClient := newTestStorageClient(t)
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 
 	obs, err := NewWatch(reg, WatchConfig{
@@ -929,12 +929,12 @@ func TestTransformAppliesToObserversSharingInformer(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, stored.GetManagedFields())
 
-	reg := NewFactoryRegistry(client, 0, func(obj any) (any, error) {
+	reg := NewFactoryRegistry(client, 0, WithTransform(func(obj any) (any, error) {
 		if u, ok := obj.(*unstructured.Unstructured); ok {
 			u.SetManagedFields(nil)
 		}
 		return obj, nil
-	})
+	}))
 	t.Cleanup(reg.Shutdown)
 
 	pulled := make(chan *unstructured.UnstructuredList, 1)

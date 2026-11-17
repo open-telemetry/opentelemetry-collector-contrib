@@ -16,7 +16,7 @@ import (
 func TestRegistryShutdownIdempotent(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t)
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	_, err := reg.Get("default", "", "")
 	require.NoError(t, err)
 
@@ -27,7 +27,7 @@ func TestRegistryShutdownIdempotent(t *testing.T) {
 func TestRegistryShutdownConcurrent(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t)
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 
 	const n = 16
 	var wg sync.WaitGroup
@@ -42,7 +42,7 @@ func TestRegistryShutdownConcurrent(t *testing.T) {
 func TestRegistryStopChClosesOnShutdown(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t)
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 
 	stopCh := reg.StopCh()
 	select {
@@ -63,7 +63,7 @@ func TestRegistryStopChClosesOnShutdown(t *testing.T) {
 func TestRegistryConcurrentGetSameKeyReturnsSameFactory(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t)
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 
 	const n = 32
@@ -86,7 +86,7 @@ func TestRegistryConcurrentGetSameKeyReturnsSameFactory(t *testing.T) {
 func TestRegistryConcurrentGetDifferentKeysProducesDistinctFactories(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t)
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 
 	const n = 16
@@ -112,7 +112,7 @@ func TestRegistryConcurrentGetDifferentKeysProducesDistinctFactories(t *testing.
 func TestRegistryGetAfterShutdownReturnsError(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t)
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	reg.Shutdown()
 
 	f, err := reg.Get("default", "", "")
@@ -123,7 +123,7 @@ func TestRegistryGetAfterShutdownReturnsError(t *testing.T) {
 func TestRegistrySharesFactoryAcrossObservers(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t)
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	t.Cleanup(reg.Shutdown)
 
 	f1, err := reg.Get("default", "app=foo", "")
@@ -144,7 +144,7 @@ func TestRegistrySharesFactoryAcrossObservers(t *testing.T) {
 func TestRegistryInformerTransformOnRunningInformer(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t, makePod("pod1"))
-	reg := NewFactoryRegistry(client, 0, func(obj any) (any, error) { return obj, nil })
+	reg := NewFactoryRegistry(client, 0, WithTransform(func(obj any) (any, error) { return obj, nil }))
 	t.Cleanup(reg.Shutdown)
 
 	f, inf1, err := reg.Informer("default", "", "", podsGVR)
@@ -162,7 +162,7 @@ func TestRegistryInformerTransformOnRunningInformer(t *testing.T) {
 func TestRegistryStartWaitsForInformer(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t)
-	reg := NewFactoryRegistry(client, 0, func(obj any) (any, error) { return obj, nil })
+	reg := NewFactoryRegistry(client, 0, WithTransform(func(obj any) (any, error) { return obj, nil }))
 	t.Cleanup(reg.Shutdown)
 
 	f, err := reg.Get("", "", "")
@@ -192,7 +192,7 @@ func TestRegistryStartWaitsForInformer(t *testing.T) {
 func TestRegistryInformerAfterShutdownReturnsError(t *testing.T) {
 	t.Parallel()
 	client, _ := newFakeClient(t)
-	reg := NewFactoryRegistry(client, 0, nil)
+	reg := NewFactoryRegistry(client, 0)
 	reg.Shutdown()
 
 	f, inf, err := reg.Informer("default", "", "", podsGVR)
