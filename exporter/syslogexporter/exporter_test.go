@@ -6,6 +6,7 @@ package syslogexporter
 import (
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"path/filepath"
@@ -199,6 +200,54 @@ func TestTCPSyslogExportSuccess(t *testing.T) {
 	b, err := io.ReadAll(conn)
 	require.NoError(t, err, "could not read all")
 	assert.Equal(t, expectedForm, string(b))
+}
+
+func TestTCPSyslogExportLineBreakDoesNotStartNewMessage(t *testing.T) {
+	const body = "first line\n<4>1 2003-08-24T05:14:15Z forged-host forged-app - - - forged message"
+	const header = "<165>1 2003-08-24T12:14:15Z 192.0.2.1 myproc 8710 - - "
+	tests := []struct {
+		name          string
+		octetCounting bool
+		expected      string
+	}{
+		{
+			name:     "newline-delimited framing replaces the line break",
+			expected: header + "first line <4>1 2003-08-24T05:14:15Z forged-host forged-app - - - forged message\n",
+		},
+		{
+			name:          "octet counting keeps the line break",
+			octetCounting: true,
+			expected:      fmt.Sprintf("%d %s", len(header+body+"\n"), header+body+"\n"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createTCPTestConfig()
+			cfg.EnableOctetCounting = tt.octetCounting
+			test := prepareTCPExporterTest(t, cfg, false)
+			require.NotNil(t, test.exp)
+			defer test.srv.Close()
+
+			logs := plog.NewLogs()
+			logRecords := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+			for range 2 {
+				logRecord := logRecords.AppendEmpty()
+				exampleLog(t).CopyTo(logRecord)
+				logRecord.Attributes().PutStr("message", body)
+			}
+			require.NoError(t, test.exp.pushLogsData(t.Context(), logs))
+
+			require.NoError(t, test.srv.SetDeadline(time.Now().Add(time.Second*1)))
+			conn, err := test.srv.AcceptTCP()
+			require.NoError(t, err, "could not accept connection")
+			defer conn.Close()
+			b, err := io.ReadAll(conn)
+			require.NoError(t, err, "could not read all")
+
+			// Both log records are sent in one batch: each must be exactly one syslog message.
+			assert.Equal(t, tt.expected+tt.expected, string(b))
+		})
+	}
 }
 
 func TestTCPSyslogExportFail(t *testing.T) {
