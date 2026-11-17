@@ -76,12 +76,6 @@ func newUploadManager(
 		})
 	}
 
-	if endpoint := conf.S3Uploader.Endpoint; endpoint != "" {
-		s3Opts = append(s3Opts, func(o *s3.Options) {
-			o.BaseEndpoint = aws.String(endpoint)
-		})
-	}
-
 	var managerOpts []upload.ManagerOpt
 	if conf.S3Uploader.ACL != "" {
 		managerOpts = append(managerOpts,
