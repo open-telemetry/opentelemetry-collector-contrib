@@ -174,25 +174,43 @@ func (streamTestDecoder) Offset() int64 { return 0 }
 
 func TestReceiveStreamErrors(t *testing.T) {
 	failure := errors.New("stream failure")
+	tests := []struct {
+		name               string
+		input              string
+		createErr          error
+		decodeErr          error
+		readErr            error
+		consumerErr        error
+		cancelBeforeRead   bool
+		cancelAfterConsume bool
+		wantErr            error
+		wantDecoded        int
+		wantConsumed       int
+	}{
+		{name: "success", input: "ab", wantDecoded: 3, wantConsumed: 2},
+		{name: "create", input: "ab", createErr: failure, wantErr: failure},
+		{name: "decode", input: "ab", decodeErr: failure, wantErr: failure, wantDecoded: 2, wantConsumed: 1},
+		{name: "read", input: "a", readErr: failure, wantErr: failure, wantDecoded: 2, wantConsumed: 1},
+		{name: "consumer", input: "ab", consumerErr: failure, wantErr: failure, wantDecoded: 1, wantConsumed: 1},
+		{name: "cancel", input: "ab", cancelAfterConsume: true, wantErr: context.Canceled, wantDecoded: 1, wantConsumed: 1},
+		{name: "cancel_before_read", input: "ab", cancelBeforeRead: true, wantErr: context.Canceled},
+	}
 	for _, signal := range []string{"logs", "metrics"} {
-		for _, stage := range []string{"success", "create", "decode", "read", "consumer", "cancel", "cancel_before_read"} {
-			t.Run(signal+"/"+stage, func(t *testing.T) {
+		for _, tt := range tests {
+			t.Run(signal+"/"+tt.name, func(t *testing.T) {
 				ctx, cancel := context.WithCancel(t.Context())
 				defer cancel()
 				var decoded, consumed int
 				newDecoder := func(reader io.Reader) (streamTestDecoder, error) {
-					if stage == "create" {
-						return streamTestDecoder{}, failure
-					}
 					return streamTestDecoder{decode: func() error {
 						decoded++
-						if stage == "decode" && decoded == 2 {
-							return failure
+						if decoded == 2 && tt.decodeErr != nil {
+							return tt.decodeErr
 						}
 						var buf [1]byte
 						_, err := reader.Read(buf[:])
 						return err
-					}}, nil
+					}}, tt.createErr
 				}
 				ext := streamTestExtension{
 					logs:    func(r io.Reader) (encoding.LogsDecoder, error) { return newDecoder(r) },
@@ -200,13 +218,10 @@ func TestReceiveStreamErrors(t *testing.T) {
 				}
 				consume := func() error {
 					consumed++
-					if stage == "consumer" {
-						return failure
-					}
-					if stage == "cancel" {
+					if tt.cancelAfterConsume {
 						cancel()
 					}
-					return nil
+					return tt.consumerErr
 				}
 				var processor receiverProcessor
 				if signal == "logs" {
@@ -219,31 +234,17 @@ func TestReceiveStreamErrors(t *testing.T) {
 					processor = &metricsReceiver{consumer: c}
 				}
 				r := newStreamTestReceiver(t, processor, ext)
-				var input io.Reader = strings.NewReader("ab")
-				if stage == "read" {
-					input = io.MultiReader(strings.NewReader("a"), errorReader{err: failure})
+				var input io.Reader = strings.NewReader(tt.input)
+				if tt.readErr != nil {
+					input = io.MultiReader(input, errorReader{err: tt.readErr})
 				}
-				if stage == "cancel_before_read" {
+				if tt.cancelBeforeRead {
 					cancel()
 				}
 				err := r.receive(ctx, "object.txt", input)
-				switch stage {
-				case "success":
-					require.NoError(t, err)
-					require.Equal(t, 2, consumed)
-				case "create":
-					require.ErrorIs(t, err, failure)
-					require.Zero(t, consumed)
-				case "cancel_before_read":
-					require.ErrorIs(t, err, context.Canceled)
-					require.Zero(t, decoded)
-				case "cancel":
-					require.ErrorIs(t, err, context.Canceled)
-					require.Equal(t, 1, decoded)
-				default:
-					require.ErrorIs(t, err, failure)
-					require.Equal(t, 1, consumed)
-				}
+				require.ErrorIs(t, err, tt.wantErr)
+				require.Equal(t, tt.wantDecoded, decoded)
+				require.Equal(t, tt.wantConsumed, consumed)
 			})
 		}
 	}
