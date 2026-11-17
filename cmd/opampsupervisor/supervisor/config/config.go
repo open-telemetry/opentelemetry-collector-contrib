@@ -101,22 +101,6 @@ type Capabilities struct {
 	ReportsAvailableComponents     bool `mapstructure:"reports_available_components"`
 	ReportsHeartbeat               bool `mapstructure:"reports_heartbeat"`
 	AcceptsPackages                bool `mapstructure:"accepts_packages"`
-
-	// Deprecated: ReportsRemoteConfig has no effect and setting it to true fails validation.
-	// AcceptsRemoteConfig enables both the AcceptsRemoteConfig and ReportsRemoteConfig OpAMP
-	// capabilities. This field will be removed in v0.165.0.
-	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49763
-	ReportsRemoteConfig bool `mapstructure:"reports_remote_config"`
-}
-
-func (c Capabilities) Validate() error {
-	if c.ReportsRemoteConfig {
-		return errors.New("reports_remote_config is deprecated and has no effect; " +
-			"remote config status is reported whenever accepts_remote_config is enabled. " +
-			"Remove reports_remote_config from the supervisor config; it will be removed in v0.165.0. " +
-			"See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49763")
-	}
-	return nil
 }
 
 func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
@@ -484,7 +468,6 @@ func DefaultSupervisor() Supervisor {
 			ReportsOwnLogs:                 false,
 			ReportsOwnTraces:               false,
 			ReportsHealth:                  true,
-			ReportsRemoteConfig:            false,
 			ReportsAvailableComponents:     false,
 			ReportsHeartbeat:               true,
 			AcceptsPackages:                false,
