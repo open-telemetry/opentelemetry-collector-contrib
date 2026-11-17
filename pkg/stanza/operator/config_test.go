@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 type FakeBuilder struct {
@@ -112,6 +112,6 @@ func TestUnmarshalYAMLErrors(t *testing.T) {
 		Register("operator", func() Builder { return &FakeBuilder{} })
 		var cfg Config
 		err := yaml.Unmarshal([]byte(raw), &cfg)
-		require.ErrorContains(t, err, "cannot unmarshal !!str")
+		require.ErrorContains(t, err, "cannot construct !!str")
 	})
 }

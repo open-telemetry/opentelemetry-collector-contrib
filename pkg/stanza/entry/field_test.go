@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 func TestFieldUnmarshalJSON(t *testing.T) {
@@ -214,7 +214,7 @@ func TestFieldUnmarshalYAMLFailure(t *testing.T) {
 		{
 			"Map",
 			[]byte(`invalid: field`),
-			"cannot unmarshal !!map into string",
+			"cannot construct !!map into string",
 		},
 		{
 			"AttributesRoot",
