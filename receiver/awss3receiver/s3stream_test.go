@@ -175,3 +175,40 @@ func TestS3StreamAcknowledgement(t *testing.T) {
 		}
 	}
 }
+
+func TestProcessS3ObjectErrors(t *testing.T) {
+	processErr := errors.New("processing failed")
+	closeErr := errors.New("closing failed")
+	tests := []struct {
+		name       string
+		processErr error
+		closeErr   error
+	}{
+		{name: "success"},
+		{name: "processing", processErr: processErr},
+		{name: "closing", closeErr: closeErr},
+		{name: "both", processErr: processErr, closeErr: closeErr},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			body := &trackedBody{
+				Reader:   strings.NewReader("data"),
+				closeErr: tt.closeErr,
+			}
+			err := processS3Object(t.Context(), "key", body, func(context.Context, string, io.Reader) error {
+				require.Zero(t, body.closed)
+				return tt.processErr
+			})
+			require.Equal(t, 1, body.closed)
+			if tt.processErr == nil && tt.closeErr == nil {
+				require.NoError(t, err)
+			}
+			if tt.processErr != nil {
+				require.ErrorIs(t, err, tt.processErr)
+			}
+			if tt.closeErr != nil {
+				require.ErrorIs(t, err, tt.closeErr)
+			}
+		})
+	}
+}

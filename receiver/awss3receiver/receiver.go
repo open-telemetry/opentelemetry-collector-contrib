@@ -148,9 +148,7 @@ func (r *awss3Receiver) receive(ctx context.Context, key string, data io.Reader)
 			return err
 		}
 		defer func() {
-			if closeErr := decompressor.Close(); err == nil {
-				err = closeErr
-			}
+			err = errors.Join(err, decompressor.Close())
 		}()
 		data = decompressor
 	}

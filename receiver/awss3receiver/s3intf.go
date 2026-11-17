@@ -5,6 +5,7 @@ package awss3receiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log"
 
@@ -83,9 +84,7 @@ func retrieveS3Object(ctx context.Context, client SingleObjectAPI, bucket, key s
 
 func processS3Object(ctx context.Context, key string, body io.ReadCloser, callback s3ObjectCallback) (err error) {
 	defer func() {
-		if closeErr := body.Close(); err == nil {
-			err = closeErr
-		}
+		err = errors.Join(err, body.Close())
 	}()
 	return callback(ctx, key, body)
 }
