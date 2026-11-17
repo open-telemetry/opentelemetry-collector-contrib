@@ -122,8 +122,12 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (plog.Logs,
 	meta := metaToKeyVal(payload.Meta)
 	rls := logs.ResourceLogs().AppendEmpty()
 	rls.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), payload.Meta.App.Name)
-	rls.Resource().Attributes().PutStr(string(conventions.ServiceVersionKey), payload.Meta.App.Version)
-	rls.Resource().Attributes().PutStr(string(conventions.DeploymentEnvironmentNameKey), payload.Meta.App.Environment)
+	if payload.Meta.App.Version != "" {
+		rls.Resource().Attributes().PutStr(string(conventions.ServiceVersionKey), payload.Meta.App.Version)
+	}
+	if payload.Meta.App.Environment != "" {
+		rls.Resource().Attributes().PutStr(string(conventions.DeploymentEnvironmentNameKey), payload.Meta.App.Environment)
+	}
 	if payload.Meta.App.Namespace != "" {
 		rls.Resource().Attributes().PutStr(string(conventions.ServiceNamespaceKey), payload.Meta.App.Namespace)
 	}

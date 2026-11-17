@@ -300,6 +300,7 @@ receiver/httpcheckreceiver receiver/httpcheck
 receiver/huaweicloudcesreceiver receiver/huaweicloudces
 receiver/icmpcheckreceiver receiver/icmpcheck
 receiver/iisreceiver receiver/iis
+receiver/influxdbreceiver receiver/influxdb
 receiver/jaegerreceiver receiver/jaeger
 receiver/journaldreceiver receiver/journald
 receiver/k8sclusterreceiver receiver/k8scluster
@@ -375,5 +376,4 @@ reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
 exporter/logicmonitorexporter exporter/logicmonitor
 extension/encoding/avrologencodingextension extension/encoding/avrologencoding
-receiver/influxdbreceiver receiver/influxdb
 receiver/riakreceiver receiver/riak

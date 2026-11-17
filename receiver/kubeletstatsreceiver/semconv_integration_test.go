@@ -26,7 +26,7 @@ import (
 )
 
 // semconvRegistry must match sem_conv_version in metadata.yaml.
-const semconvRegistry = "https://github.com/open-telemetry/semantic-conventions.git@v1.44.0[model]"
+const semconvRegistry = "https://github.com/open-telemetry/semantic-conventions.git@v1.45.0[model]"
 
 // semconvCompliantMetrics lists the receiver metrics whose name, type, unit
 // and attributes already match a release_candidate (or stable) definition
@@ -53,6 +53,10 @@ func TestSemconvCompliance(t *testing.T) {
 				receivertest.NewNopSettings(metadata.Type),
 				&scraperOptions{
 					metricGroupsToCollect: map[kubelet.MetricGroup]bool{group: true},
+					// Since semconv 1.45, container.cpu.time is associated with the
+					// container entity, whose identifying attribute container.id is
+					// required. The receiver only populates it when opted in.
+					extraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
 				},
 				metadata.NewDefaultMetricsBuilderConfig(),
 				"worker-42",
