@@ -22,7 +22,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
 
@@ -661,11 +663,20 @@ func explainQueryParamCountTest(pgVersion string) func(*testing.T) {
 }
 
 func TestScrapeLogsFromContainer(t *testing.T) {
+	for _, version := range []string{pre17TestVersion, post17TestVersion} {
+		t.Run(version, func(t *testing.T) {
+			testScrapeLogsFromContainer(t, version)
+		})
+	}
+}
+
+func testScrapeLogsFromContainer(t *testing.T, version string) {
+	t.Helper()
 	ci, err := testcontainers.GenericContainer(
 		t.Context(),
 		testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
-				Image: fmt.Sprintf("postgres:%s", post17TestVersion),
+				Image: fmt.Sprintf("postgres:%s", version),
 				Env: map[string]string{
 					"POSTGRES_USER":     "root",
 					"POSTGRES_PASSWORD": "otel",
@@ -688,9 +699,8 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 					"-c",
 					"shared_preload_libraries=pg_stat_statements",
 				},
-				WaitingFor: wait.ForLog(".*port 5432").
-					AsRegexp().
-					WithOccurrence(1),
+				WaitingFor: wait.ForLog("database system is ready to accept connections").
+					WithOccurrence(2),
 			},
 		},
 	)
@@ -704,6 +714,10 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	connStr := fmt.Sprintf("postgres://root:otel@localhost:%s/otel2?sslmode=disable", p.Port())
 	db, err := sql.Open("postgres", connStr)
 	assert.NoError(t, err)
+
+	var resetAvailable bool
+	require.NoError(t, db.QueryRowContext(t.Context(), statStatementsResetAvailableQuery).Scan(&resetAvailable))
+	assert.Equal(t, version != pre17TestVersion, resetAvailable)
 
 	_, err = db.Exec("Select * from test2 where id = 67")
 	assert.NoError(t, err)
@@ -736,80 +750,142 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zap.Must(zap.NewProduction()),
 		},
-	}, &cfg, clientFactory, newCache(1), newTTLCache[string](1000, time.Second))
+	}, &cfg, clientFactory, newCache(60), newTTLCache[string](1000, time.Second))
 	assert.NoError(t, err)
-	plogs, err := ns.scrapeQuerySamples(t.Context(), 30)
-	assert.NoError(t, err)
-	logRecords := plogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	found := false
-	for _, record := range logRecords.All() {
-		attributes := record.Attributes().AsRaw()
-		queryAttribute, ok := attributes["db.query.text"]
-		query := strings.ToLower(queryAttribute.(string))
-		assert.True(t, ok)
-		if !strings.HasPrefix(query, "select * from test2") {
-			continue
-		}
-		assert.Equal(t, "select * from test2 where id = ?", query)
-		databaseAttribute, ok := attributes["db.namespace"]
-		assert.True(t, ok)
-		assert.Equal(t, "otel2", databaseAttribute.(string))
-		found = true
+	if version == post17TestVersion {
+		t.Run("query samples", func(t *testing.T) {
+			sampleLogs, sampleErr := ns.scrapeQuerySamples(t.Context(), 30)
+			require.NoError(t, sampleErr)
+			require.Positive(t, sampleLogs.LogRecordCount())
+			logRecords := sampleLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+			found := false
+			for _, record := range logRecords.All() {
+				attributes := record.Attributes().AsRaw()
+				queryAttribute, ok := attributes["db.query.text"]
+				query := strings.ToLower(queryAttribute.(string))
+				assert.True(t, ok)
+				if !strings.HasPrefix(query, "select * from test2") {
+					continue
+				}
+				assert.Equal(t, "select * from test2 where id = ?", query)
+				databaseAttribute, ok := attributes["db.namespace"]
+				assert.True(t, ok)
+				assert.Equal(t, "otel2", databaseAttribute.(string))
+				found = true
+			}
+			assert.True(t, found, "Expected to find a log record with the query text")
+			assert.Positive(t, ns.newestQueryTimestamp)
+		})
 	}
-	assert.True(t, found, "Expected to find a log record with the query text")
-	assert.Positive(t, ns.newestQueryTimestamp)
 
-	firstTimeTopQueryPLogs, err := ns.scrapeTopQuery(t.Context(), 30, 30, 30, time.Minute)
-	assert.NoError(t, err)
-	logRecords = firstTimeTopQueryPLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	found = false
-	for _, record := range logRecords.All() {
-		attributes := record.Attributes().AsRaw()
-		queryAttribute, ok := attributes["db.query.text"]
-		query := strings.ToLower(queryAttribute.(string))
-		assert.True(t, ok)
-		if !strings.HasPrefix(query, "select * from test2 where") {
-			continue
-		}
-		assert.Equal(t, "select * from test2 where id = ?", query)
-		databaseAttribute, ok := attributes["db.namespace"]
-		assert.True(t, ok)
-		assert.Equal(t, "otel2", databaseAttribute.(string))
-		calls, ok := attributes["postgresql.calls"]
-		assert.True(t, ok)
-		assert.Equal(t, int64(1), calls.(int64))
-		assert.NotEmpty(t, attributes["postgresql.query_plan"])
-		found = true
+	for _, step := range []struct {
+		name              string
+		calls             int
+		reset             bool
+		restart           bool
+		requiresResetInfo bool
+	}{
+		{name: "startup seeds a baseline"},
+		{name: "only new calls are emitted", calls: 3},
+		{name: "unchanged counters emit nothing"},
+		{name: "reset reports new counters", calls: 1, reset: true},
+		{name: "activity after reset", calls: 2},
+		{name: "reset with statement absent", reset: true},
+		{name: "statement returns after reset", calls: 1},
+		{name: "receiver restart seeds a baseline", restart: true},
+		{name: "activity after receiver restart", calls: 2},
+		{name: "reset followed by fast growth", reset: true, calls: 100, requiresResetInfo: true},
+		{name: "activity after fast growth", calls: 2, requiresResetInfo: true},
+	} {
+		t.Run(step.name, func(t *testing.T) {
+			if step.requiresResetInfo && !resetAvailable {
+				t.Skip("extension has no reset timestamp")
+			}
+			if step.reset {
+				_, resetErr := db.ExecContext(t.Context(), "/* otel-collector-ignore */ SELECT pg_stat_statements_reset()")
+				require.NoError(t, resetErr)
+			}
+			if step.restart {
+				ns, err = newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), &cfg, clientFactory,
+					newCache(60), newTTLCache[string](1000, time.Second))
+				require.NoError(t, err)
+			}
+			for range step.calls {
+				_, execErr := db.ExecContext(t.Context(), "Select * from test2 where id = 67")
+				require.NoError(t, execErr)
+			}
+			logs, scrapeErr := ns.scrapeTopQuery(t.Context(), 30, 30, 30, 0)
+			require.NoError(t, scrapeErr)
+			var matches []plog.LogRecord
+			for _, resource := range logs.ResourceLogs().All() {
+				for _, scope := range resource.ScopeLogs().All() {
+					for _, record := range scope.LogRecords().All() {
+						query, _ := record.Attributes().Get("db.query.text")
+						if strings.HasPrefix(strings.ToLower(query.Str()), "select * from test2 where") {
+							matches = append(matches, record)
+						}
+					}
+				}
+			}
+			if step.calls == 0 {
+				require.Empty(t, matches)
+				return
+			}
+			require.Len(t, matches, 1)
+			record := matches[0]
+			assert.Equal(t, "db.server.top_query", record.EventName())
+			attrs := record.Attributes().AsRaw()
+			assert.Equal(t, "select * from test2 where id = ?", strings.ToLower(attrs["db.query.text"].(string)))
+			assert.Equal(t, "otel2", attrs["db.namespace"])
+			assert.Equal(t, int64(step.calls), attrs["postgresql.calls"])
+			assert.Equal(t, int64(step.calls), attrs["postgresql.rows"])
+			assert.Positive(t, attrs["postgresql.total_exec_time"])
+			assert.NotEmpty(t, attrs["postgresql.query_plan"])
+		})
 	}
-	assert.True(t, found, "Expected to find a log record with the query text from the first time top query")
-
-	_, err = db.Exec("Select * from test2 where id = 67")
-	assert.NoError(t, err)
-
-	collectionInterval := time.Minute
-	ns.lastExecutionTimestamp = ns.lastExecutionTimestamp.Add(-collectionInterval)
-	secondTimeTopQueryPLogs, err := ns.scrapeTopQuery(t.Context(), 30, 30, 30, collectionInterval)
-	assert.NoError(t, err)
-	logRecords = secondTimeTopQueryPLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	found = false
-	for _, record := range logRecords.All() {
-		attributes := record.Attributes().AsRaw()
-		queryAttribute, ok := attributes["db.query.text"]
-		query := strings.ToLower(queryAttribute.(string))
-		assert.True(t, ok)
-		if !strings.HasPrefix(query, "select * from test2 where") {
-			continue
+	t.Run("statement absent from reset collection", func(t *testing.T) {
+		if !resetAvailable {
+			t.Skip("extension has no reset timestamp")
 		}
-		assert.Equal(t, "select * from test2 where id = ?", query)
-		databaseAttribute, ok := attributes["db.namespace"]
-		assert.True(t, ok)
-		assert.Equal(t, "otel2", databaseAttribute.(string))
-		calls, ok := attributes["postgresql.calls"]
-		assert.True(t, ok)
-		assert.Equal(t, int64(2), calls.(int64))
-		found = true
-	}
-	assert.True(t, found, "Expected to find a log record with the query text from the first time top query")
+		// Exclude collector queries so LIMIT 1 selects between only our two statements.
+		cfg.ExcludeDatabases = []string{"postgres"}
+		scraper, scrapeErr := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), &cfg, clientFactory,
+			newCache(60), newTTLCache[string](1, time.Second))
+		require.NoError(t, scrapeErr)
+		reset := func() {
+			_, resetErr := db.ExecContext(t.Context(), "/* otel-collector-ignore */ SELECT pg_stat_statements_reset()")
+			require.NoError(t, resetErr)
+		}
+		execute := func(query string, count int) {
+			for range count {
+				_, execErr := db.ExecContext(t.Context(), query)
+				require.NoError(t, execErr)
+			}
+		}
+		check := func(query string, calls int64) {
+			logs, collectErr := scraper.scrapeTopQuery(t.Context(), 1, 1, 0, 0)
+			require.NoError(t, collectErr)
+			require.Equal(t, 1, logs.LogRecordCount())
+			attrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+			assert.Equal(t, query, strings.ToLower(attrs["db.query.text"].(string)))
+			assert.Equal(t, calls, attrs["postgresql.calls"])
+		}
+		const queryA = "select * from test2 where id = 67"
+		const queryB = "select * from test1 where id = 67"
+		reset()
+		execute(queryA, 1)
+		execute(queryB, 1)
+		baseline, baselineErr := scraper.scrapeTopQuery(t.Context(), 30, 30, 0, 0)
+		require.NoError(t, baselineErr)
+		require.Zero(t, baseline.LogRecordCount())
+
+		reset()
+		execute(queryA, 30)
+		execute(queryB, 20)
+		check("select * from test2 where id = ?", 30)
+		execute(queryB, 20)
+		check("select * from test1 where id = ?", 40)
+	})
 }
 
 // pgvector image published on Docker Hub (same registry as the postgres image used

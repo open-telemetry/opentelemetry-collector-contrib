@@ -190,6 +190,12 @@ We provide functionality to collect the most executed queries from PostgreSQL. I
 ...
 ```
 
+Top-query counters report changes since each statement's previous observation. The first
+observation establishes a baseline and emits no top-query event, including after receiver
+restart or cache eviction. Where available, the receiver uses PostgreSQL's statistics reset
+timestamp to detect resets. Counter decreases also identify resets, including on older
+extensions without reset information.
+
 Along with those attributes, we will also report the query plan we gathered if it is possible. 
 
 By default, top query collection is disabled, also note, to use it, you will need

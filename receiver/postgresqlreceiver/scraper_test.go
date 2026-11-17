@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 	"text/template"
@@ -1274,6 +1275,7 @@ func TestScrapeTopQueriesHonorsExcludeDatabases(t *testing.T) {
 			require.NoError(t, err)
 
 			// The server filters this row out; return it anyway to exercise the EXPLAIN guard.
+			mock.ExpectQuery(regexp.QuoteMeta(statStatementsResetAvailableQuery)).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 			mock.ExpectQuery(`AND datname NOT IN \('rdsadmin'\)`).
 				WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
 					callsColumnName:             "123",
@@ -1353,6 +1355,7 @@ func TestScrapeTopQueryHonorsConnectDatabase(t *testing.T) {
 	scraper, err := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
 	require.NoError(t, err)
 
+	mock.ExpectQuery(regexp.QuoteMeta(statStatementsResetAvailableQuery)).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 	mock.ExpectQuery(".*").WillReturnRows(sqlmock.NewRows(topQueryColumns))
 
 	_, err = scraper.scrapeTopQuery(t.Context(), 30, 5, 5, time.Minute)
@@ -1461,18 +1464,16 @@ func TestScrapeTopQueries(t *testing.T) {
 	queryid := "114514"
 	scraper, scraperErr := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
 	require.NoError(t, scraperErr)
-	cacheKeyPrefix := "postgres\x0016415\x00" + queryid + "\x00"
-	scraper.cache.Add(cacheKeyPrefix+totalExecTimeColumnName, 10)
-	scraper.cache.Add(cacheKeyPrefix+totalPlanTimeColumnName, 11)
-	scraper.cache.Add(cacheKeyPrefix+callsColumnName, 120)
-	scraper.cache.Add(cacheKeyPrefix+rowsColumnName, 20)
+	cacheKey := "postgres\x0016415\x00" + queryid
+	scraper.cache.Add(cacheKey, statementSnapshot{counters: statementCounters{
+		totalExecTimeColumnName: 10, totalPlanTimeColumnName: 11,
+		callsColumnName: 120, rowsColumnName: 20,
+		sharedBlksDirtiedColumnName: 1110, sharedBlksHitColumnName: 1110,
+		sharedBlksReadColumnName: 1110, sharedBlksWrittenColumnName: 1110,
+		tempBlksReadColumnName: 1110, tempBlksWrittenColumnName: 1110,
+	}})
 
-	scraper.cache.Add(cacheKeyPrefix+sharedBlksDirtiedColumnName, 1110)
-	scraper.cache.Add(cacheKeyPrefix+sharedBlksHitColumnName, 1110)
-	scraper.cache.Add(cacheKeyPrefix+sharedBlksReadColumnName, 1110)
-	scraper.cache.Add(cacheKeyPrefix+sharedBlksWrittenColumnName, 1110)
-	scraper.cache.Add(cacheKeyPrefix+tempBlksReadColumnName, 1110)
-	scraper.cache.Add(cacheKeyPrefix+tempBlksWrittenColumnName, 1110)
+	mock.ExpectQuery(statStatementsResetAvailableQuery).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 
 	mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
 		callsColumnName:             "123",
@@ -1507,15 +1508,11 @@ func TestScrapeTopQueries(t *testing.T) {
 
 	// Verify the cache has updated with latest counter
 
-	calls, callsExists := scraper.cache.Get(cacheKeyPrefix + callsColumnName)
-	assert.True(t, callsExists)
-	assert.Equal(t, float64(123), calls)
-	execTime, execTimeExists := scraper.cache.Get(cacheKeyPrefix + totalExecTimeColumnName)
-	assert.True(t, execTimeExists)
-	assert.Equal(t, float64(11), execTime)
-	planTime, planTimeExists := scraper.cache.Get(cacheKeyPrefix + totalPlanTimeColumnName)
-	assert.True(t, planTimeExists)
-	assert.Equal(t, float64(12), planTime)
+	snapshot, exists := scraper.cache.Get(cacheKey)
+	require.True(t, exists)
+	assert.Equal(t, float64(123), snapshot.counters[callsColumnName])
+	assert.Equal(t, float64(11), snapshot.counters[totalExecTimeColumnName])
+	assert.Equal(t, float64(12), snapshot.counters[totalPlanTimeColumnName])
 }
 
 // TestScrapeTopQueriesDbServerQueryPlanEvent covers both sides of the db.server.query_plan switch.
@@ -1537,11 +1534,23 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 
 		scraper, scraperErr := newPostgreSQLScraper(settings, cfg, mockSimpleClientFactory{db: db}, newCache(30), newTTLCache[string](1, time.Second))
 		require.NoError(t, scraperErr)
+		// These tests exercise plan events for statements with an existing baseline.
+		for _, userid := range []string{"16415", "16416"} {
+			scraper.cache.Add("postgres\x00"+userid+"\x00114514", statementSnapshot{counters: statementCounters{
+				callsColumnName: 0, rowsColumnName: 0,
+				sharedBlksDirtiedColumnName: 0, sharedBlksHitColumnName: 0,
+				sharedBlksReadColumnName: 0, sharedBlksWrittenColumnName: 0,
+				tempBlksReadColumnName: 0, tempBlksWrittenColumnName: 0,
+				totalExecTimeColumnName: 0, totalPlanTimeColumnName: 0,
+			}})
+		}
 		return scraper, mock
 	}
 
 	t.Run("disabled keeps the plan on db.server.top_query", func(t *testing.T) {
 		scraper, mock := newScraper(t, true, false)
+
+		mock.ExpectQuery(statStatementsResetAvailableQuery).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 
 		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
 			callsColumnName:             "123",
@@ -1578,6 +1587,8 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 
 	t.Run("enabled moves the plan to db.server.query_plan", func(t *testing.T) {
 		scraper, mock := newScraper(t, true, true)
+
+		mock.ExpectQuery(statStatementsResetAvailableQuery).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 
 		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
 			callsColumnName:             "123",
@@ -1635,6 +1646,8 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 	t.Run("enabled without db.server.top_query collects nothing", func(t *testing.T) {
 		scraper, mock := newScraper(t, false, true)
 
+		mock.ExpectQuery(statStatementsResetAvailableQuery).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+
 		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
 			callsColumnName:             "123",
 			"datname":                   "postgres",
@@ -1672,6 +1685,7 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 				"select * from pg_stat_activity where id = 32", "114514", "16415", "roleA", "30", "11000", "12000").
 			AddRow("100", "postgres", "1111", "1112", "1113", "1114", "1115", "1116",
 				"select * from pg_stat_activity where id = 32", "114514", "16416", "roleB", "30", "22000", "23000")
+		mock.ExpectQuery(statStatementsResetAvailableQuery).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(rows)
 		// Same queryid, different rolname: each role still gets its own EXPLAIN cycle.
 		for range 2 {
@@ -1724,6 +1738,7 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 				"select * from pg_stat_activity where id = 32", "114514", "16415", "", "30", "11000", "12000").
 			AddRow("100", "postgres", "1111", "1112", "1113", "1114", "1115", "1116",
 				"select * from pg_stat_activity where id = 32", "114514", "16416", "", "30", "22000", "23000")
+		mock.ExpectQuery(statStatementsResetAvailableQuery).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(rows)
 		// Different userid, so each still gets its own EXPLAIN cycle.
 		for range 2 {
@@ -1764,6 +1779,7 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 
 		// A non-explainable query (GRANT is not in the EXPLAIN whitelist) so
 		// explainQuery short-circuits to ("", nil) without issuing EXPLAIN.
+		mock.ExpectQuery(statStatementsResetAvailableQuery).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
 			callsColumnName:             "123",
 			"datname":                   "postgres",
@@ -1825,6 +1841,7 @@ func TestScrapeTopQueriesSkipsNilDatabase(t *testing.T) {
 		"123", nil, "1", "1", "1", "1", "1", "1",
 		"select 1", "999", "master", "1", "1", "1",
 	)
+	mock.ExpectQuery(statStatementsResetAvailableQuery).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 	mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(rows)
 
 	actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)
@@ -2350,7 +2367,7 @@ func (*mockClient) explainQuery(context.Context, string, string, *zap.Logger) (s
 }
 
 // getTopQuery implements client.
-func (*mockClient) getTopQuery(context.Context, int64, []string, *zap.Logger) ([]map[string]any, error) {
+func (*mockClient) getTopQuery(context.Context, int64, []string, *zap.Logger) ([]map[string]any, time.Time, error) {
 	panic("unimplemented")
 }
 

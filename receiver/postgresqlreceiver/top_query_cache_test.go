@@ -5,10 +5,12 @@ package postgresqlreceiver
 
 import (
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"regexp"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
@@ -17,6 +19,253 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
+
+func TestTopQueryCounterHistory(t *testing.T) {
+	type observation struct {
+		name       string
+		queryID    string
+		total      string
+		overrides  map[string]string
+		want       map[string]any
+		restart    bool
+		reset      int64
+		queryFails bool
+		resetFails bool
+		resetAfter int64
+		afterFails bool
+	}
+	for _, tt := range []struct {
+		name      string
+		cacheSize int
+		steps     []observation
+	}{
+		{
+			name:      "startup and resets",
+			cacheSize: 20,
+			steps: []observation{
+				{name: "startup seeds lifetime totals", total: "10000"},
+				{name: "unchanged counters", total: "10000"},
+				{
+					name: "activity after startup", total: "10000",
+					overrides: map[string]string{callsColumnName: "10003", rowsColumnName: "10007", totalExecTimeColumnName: "12500", totalPlanTimeColumnName: "10500"},
+					want:      map[string]any{callsColumnName: int64(3), rowsColumnName: int64(7), totalExecTimeColumnName: 2.5, totalPlanTimeColumnName: 0.5},
+				},
+				{
+					// Only calls decreases. All other counters must report their current totals.
+					name: "one counter decrease resets the statement", total: "10000",
+					overrides: map[string]string{callsColumnName: "2", rowsColumnName: "10007", totalExecTimeColumnName: "15000", totalPlanTimeColumnName: "11000"},
+					want: map[string]any{
+						callsColumnName: int64(2), rowsColumnName: int64(10007),
+						sharedBlksDirtiedColumnName: int64(10000), sharedBlksHitColumnName: int64(10000),
+						sharedBlksReadColumnName: int64(10000), sharedBlksWrittenColumnName: int64(10000),
+						tempBlksReadColumnName: int64(10000), tempBlksWrittenColumnName: int64(10000),
+						totalExecTimeColumnName: 15.0, totalPlanTimeColumnName: 11.0,
+					},
+				},
+				{
+					name: "activity after nonzero reset", total: "10000",
+					overrides: map[string]string{callsColumnName: "5", rowsColumnName: "10010", totalExecTimeColumnName: "16000", totalPlanTimeColumnName: "12000"},
+					want:      map[string]any{callsColumnName: int64(3), rowsColumnName: int64(3), totalExecTimeColumnName: 1.0, totalPlanTimeColumnName: 1.0},
+				},
+				{name: "reset to zero", total: "0"},
+				{
+					name: "recovery below old totals", total: "0",
+					overrides: map[string]string{callsColumnName: "3", rowsColumnName: "7", totalExecTimeColumnName: "2500", totalPlanTimeColumnName: "500"},
+					want:      map[string]any{callsColumnName: int64(3), rowsColumnName: int64(7), totalExecTimeColumnName: 2.5, totalPlanTimeColumnName: 0.5},
+				},
+				{
+					name: "unchanged after recovery", total: "0",
+					overrides: map[string]string{callsColumnName: "3", rowsColumnName: "7", totalExecTimeColumnName: "2500", totalPlanTimeColumnName: "500"},
+				},
+				{name: "receiver restart seeds a new baseline", total: "20000", restart: true},
+				{
+					name: "activity after restart", total: "20000",
+					overrides: map[string]string{callsColumnName: "20001", totalExecTimeColumnName: "21000"},
+					want:      map[string]any{callsColumnName: int64(1), totalExecTimeColumnName: 1.0},
+				},
+			},
+		},
+		{
+			name:      "eviction keeps counters together",
+			cacheSize: 1,
+			steps: []observation{
+				{name: "seed first statement", queryID: "1", total: "10000"},
+				{
+					name: "activity fits in one cache entry", queryID: "1", total: "10000",
+					overrides: map[string]string{callsColumnName: "10003", totalExecTimeColumnName: "12500"},
+					want:      map[string]any{callsColumnName: int64(3), totalExecTimeColumnName: 2.5},
+				},
+				{name: "second statement evicts first", queryID: "2", total: "50000"},
+				{name: "returning statement seeds all counters", queryID: "1", total: "20000"},
+				{
+					name: "activity after eviction", queryID: "1", total: "20000",
+					overrides: map[string]string{callsColumnName: "20002", totalExecTimeColumnName: "20500"},
+					want:      map[string]any{callsColumnName: int64(2), totalExecTimeColumnName: 0.5},
+				},
+			},
+		},
+		{
+			name:      "global reset history",
+			cacheSize: 20,
+			steps: []observation{
+				{
+					name: "seed A", queryID: "1", total: "0", reset: 1,
+					overrides: map[string]string{callsColumnName: "100", totalExecTimeColumnName: "1000"},
+				},
+				{
+					name: "seed B", queryID: "2", total: "0", reset: 1,
+					overrides: map[string]string{callsColumnName: "100", totalExecTimeColumnName: "1000"},
+				},
+				{
+					name: "reset followed by growth past old totals", queryID: "1", total: "0", reset: 2,
+					overrides: map[string]string{callsColumnName: "150", totalExecTimeColumnName: "2000"},
+					want:      map[string]any{callsColumnName: int64(150), totalExecTimeColumnName: 2.0},
+				},
+				{
+					name: "B returns after missing reset collection", queryID: "2", total: "0", reset: 2,
+					overrides: map[string]string{callsColumnName: "200", totalExecTimeColumnName: "3000"},
+					want:      map[string]any{callsColumnName: int64(200), totalExecTimeColumnName: 3.0},
+				},
+				{
+					name: "unchanged after reset", queryID: "2", total: "0", reset: 2,
+					overrides: map[string]string{callsColumnName: "200", totalExecTimeColumnName: "3000"},
+				},
+				{name: "statement fetch fails after another reset", reset: 3, queryFails: true},
+				{
+					name: "reset survives failed statement fetch", queryID: "1", total: "0", reset: 3,
+					overrides: map[string]string{callsColumnName: "400", totalExecTimeColumnName: "4000"},
+					want:      map[string]any{callsColumnName: int64(400), totalExecTimeColumnName: 4.0},
+				},
+				{name: "reset timestamp read fails", reset: 4, resetFails: true},
+				{
+					name: "reset survives failed timestamp read", queryID: "2", total: "0", reset: 4,
+					overrides: map[string]string{callsColumnName: "500", totalExecTimeColumnName: "5000"},
+					want:      map[string]any{callsColumnName: int64(500), totalExecTimeColumnName: 5.0},
+				},
+				{
+					name: "subsequent activity uses new baseline", queryID: "2", total: "0", reset: 4,
+					overrides: map[string]string{callsColumnName: "502", totalExecTimeColumnName: "5500"},
+					want:      map[string]any{callsColumnName: int64(2), totalExecTimeColumnName: 0.5},
+				},
+				{
+					name: "reset during statement fetch", queryID: "1", total: "0", reset: 5, resetAfter: 6,
+					overrides: map[string]string{callsColumnName: "700", totalExecTimeColumnName: "7000"},
+				},
+				{
+					name: "next collection observes the completed reset", queryID: "1", total: "0", reset: 6,
+					overrides: map[string]string{callsColumnName: "800", totalExecTimeColumnName: "8000"},
+					want:      map[string]any{callsColumnName: int64(800), totalExecTimeColumnName: 8.0},
+				},
+				{
+					name: "reset verification read fails", queryID: "2", total: "0", reset: 7, afterFails: true,
+					overrides: map[string]string{callsColumnName: "900", totalExecTimeColumnName: "9000"},
+				},
+				{
+					name: "next collection preserves reset after failed verification", queryID: "2", total: "0", reset: 7,
+					overrides: map[string]string{callsColumnName: "1000", totalExecTimeColumnName: "10000"},
+					want:      map[string]any{callsColumnName: int64(1000), totalExecTimeColumnName: 10.0},
+				},
+				{
+					name: "new statement after reset still seeds a baseline", queryID: "3", total: "0", reset: 7,
+					overrides: map[string]string{callsColumnName: "1000", totalExecTimeColumnName: "10000"},
+				},
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			t.Cleanup(func() { assert.NoError(t, db.Close()) })
+			newScraper := func() *postgreSQLScraper {
+				scraper, err := newTopQueryScraper(receivertest.NewNopSettings(metadata.Type), cfg, mockSimpleClientFactory{db: db})
+				require.NoError(t, err)
+				scraper.cache = newCache(tt.cacheSize)
+				return scraper
+			}
+			scraper := newScraper()
+			for _, step := range tt.steps {
+				t.Run(step.name, func(t *testing.T) {
+					if step.restart {
+						scraper = newScraper()
+					}
+					values := map[string]any{
+						"datname": "postgres", "userid": "101", "rolname": "otel",
+						"query": "SELECT 1", queryidColumnName: step.queryID,
+					}
+					for _, column := range topQueryColumns {
+						if _, exists := values[column]; !exists {
+							values[column] = step.total
+						}
+					}
+					for column, value := range step.overrides {
+						values[column] = value
+					}
+					if step.reset == 0 {
+						mock.ExpectQuery(regexp.QuoteMeta(statStatementsResetAvailableQuery)).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+					}
+					if step.reset != 0 {
+						mock.ExpectQuery(regexp.QuoteMeta(statStatementsResetAvailableQuery)).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+						resetQuery := mock.ExpectQuery("SELECT stats_reset FROM pg_stat_statements_info")
+						if step.resetFails {
+							resetQuery.WillReturnError(errors.New("reset timestamp read failed"))
+						} else {
+							resetQuery.WillReturnRows(sqlmock.NewRows([]string{"stats_reset"}).AddRow(time.Unix(step.reset, 0)))
+						}
+					}
+					if !step.resetFails {
+						query := mock.ExpectQuery("LIMIT")
+						if step.queryFails {
+							query.WillReturnError(errors.New("statement fetch failed"))
+						} else {
+							query.WillReturnRows(newSQLMockRows(topQueryColumns, values))
+							if step.reset != 0 {
+								afterQuery := mock.ExpectQuery("SELECT stats_reset FROM pg_stat_statements_info")
+								if step.afterFails {
+									afterQuery.WillReturnError(errors.New("reset verification failed"))
+								} else {
+									after := step.reset
+									if step.resetAfter != 0 {
+										after = step.resetAfter
+									}
+									afterQuery.WillReturnRows(sqlmock.NewRows([]string{"stats_reset"}).AddRow(time.Unix(after, 0)))
+								}
+							}
+						}
+					}
+					logs, err := scraper.scrapeTopQuery(t.Context(), 10, 10, 0, 0)
+					require.NoError(t, err)
+					require.NoError(t, mock.ExpectationsWereMet())
+					if step.want == nil {
+						require.Zero(t, logs.LogRecordCount())
+						return
+					}
+					require.Equal(t, 1, logs.LogRecordCount())
+					record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+					assert.Equal(t, "db.server.top_query", record.EventName())
+					attrs := record.Attributes().AsRaw()
+					assert.Equal(t, step.queryID, attrs[dbAttributePrefix+queryidColumnName])
+					for _, column := range topQueryColumns {
+						var zero any = int64(0)
+						switch column {
+						case totalExecTimeColumnName, totalPlanTimeColumnName:
+							zero = 0.0
+						case "datname", "userid", "rolname", "query", queryidColumnName:
+							continue
+						}
+						want := zero
+						if value, exists := step.want[column]; exists {
+							want = value
+						}
+						assert.Equal(t, want, attrs[dbAttributePrefix+column], column)
+					}
+				})
+			}
+			mock.ExpectClose()
+		})
+	}
+}
 
 func TestTopQueryCacheRetainsFetchedStatements(t *testing.T) {
 	columns := []string{
@@ -55,10 +304,10 @@ func TestTopQueryCacheRetainsFetchedStatements(t *testing.T) {
 		increment     bool
 		expectedCount int
 	}{
-		{name: "first scrape", ids: ids, expectedCount: 50},
+		{name: "first scrape", ids: ids},
 		{name: "unchanged counters", ids: ids},
 		{name: "reordered statements", ids: reversed},
-		{name: "changed statement membership", ids: changed, expectedCount: 50},
+		{name: "changed statement membership", ids: changed},
 		{name: "unchanged after membership change", ids: changed},
 		{name: "one active statement", ids: changed, increment: true, expectedCount: 1},
 	} {
@@ -89,6 +338,7 @@ func TestTopQueryCacheRetainsFetchedStatements(t *testing.T) {
 				}
 				rows.AddRow(row...)
 			}
+			mock.ExpectQuery(regexp.QuoteMeta(statStatementsResetAvailableQuery)).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 			mock.ExpectQuery("LIMIT 500").WillReturnRows(rows)
 			logs, scrapeErr := scraper.scrapeTopQuery(t.Context(), cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopQueryCollection.TopNQuery, cfg.TopQueryCollection.MaxExplainEachInterval, 0)
 			require.NoError(t, scrapeErr)
@@ -129,42 +379,53 @@ func TestTopQueryCacheSeparatesDatabaseAndRole(t *testing.T) {
 	scraper, err := newTopQueryScraper(receivertest.NewNopSettings(metadata.Type), cfg, mockSimpleClientFactory{db: db})
 	require.NoError(t, err)
 
-	rows := sqlmock.NewRows(columns)
-	for _, identity := range []struct {
-		database string
-		role     string
-		userid   string
-	}{
-		// app is the same role cluster-wide, so it carries the same userid in both
-		// databases: database, not userid, is what disambiguates these two rows.
-		{database: "db_a", role: "app", userid: "101"},
-		{database: "db_b", role: "app", userid: "101"},
-		{database: "db_a", role: "reporting", userid: "102"},
-	} {
-		values := map[string]driver.Value{
-			"datname":         identity.database,
-			"query":           "SELECT count(*) FROM pg_class",
-			queryidColumnName: "42",
-			"userid":          identity.userid,
-			"rolname":         identity.role,
+	for scrape := range 2 {
+		rows := sqlmock.NewRows(columns)
+		for _, identity := range []struct {
+			database string
+			role     string
+			userid   string
+		}{
+			// app is the same role cluster-wide, so it carries the same userid in both
+			// databases: database, not userid, is what disambiguates these two rows.
+			{database: "db_a", role: "app", userid: "101"},
+			{database: "db_b", role: "app", userid: "101"},
+			{database: "db_a", role: "reporting", userid: "102"},
+		} {
+			values := map[string]driver.Value{
+				"datname":         identity.database,
+				"query":           "SELECT count(*) FROM pg_class",
+				queryidColumnName: "42",
+				"userid":          identity.userid,
+				"rolname":         identity.role,
+			}
+			for _, column := range columns {
+				if _, exists := values[column]; !exists {
+					values[column] = fmt.Sprint(10000 + scrape*1000)
+				}
+			}
+			row := make([]driver.Value, len(columns))
+			for i, column := range columns {
+				row[i] = values[column]
+			}
+			rows.AddRow(row...)
 		}
-		for _, column := range columns {
-			if _, exists := values[column]; !exists {
-				values[column] = "10000"
+
+		mock.ExpectQuery(regexp.QuoteMeta(statStatementsResetAvailableQuery)).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+
+		mock.ExpectQuery("LIMIT 3").WillReturnRows(rows)
+		logs, err := scraper.scrapeTopQuery(t.Context(), cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopQueryCollection.TopNQuery, cfg.TopQueryCollection.MaxExplainEachInterval, 0)
+		require.NoError(t, err)
+		require.NoError(t, mock.ExpectationsWereMet())
+		if scrape == 0 {
+			require.Zero(t, logs.LogRecordCount())
+		} else {
+			require.Equal(t, 3, logs.LogRecordCount())
+			for _, record := range logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().All() {
+				assert.Equal(t, int64(1000), record.Attributes().AsRaw()[dbAttributePrefix+callsColumnName])
 			}
 		}
-		row := make([]driver.Value, len(columns))
-		for i, column := range columns {
-			row[i] = values[column]
-		}
-		rows.AddRow(row...)
 	}
-
-	mock.ExpectQuery("LIMIT 3").WillReturnRows(rows)
-	logs, err := scraper.scrapeTopQuery(t.Context(), cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopQueryCollection.TopNQuery, cfg.TopQueryCollection.MaxExplainEachInterval, 0)
-	require.NoError(t, err)
-	require.NoError(t, mock.ExpectationsWereMet())
-	require.Equal(t, 3, logs.LogRecordCount())
 	mock.ExpectClose()
 }
 
@@ -217,12 +478,15 @@ func TestTopQueryCacheSeparatesDroppedRoles(t *testing.T) {
 		return rows
 	}
 
+	mock.ExpectQuery(regexp.QuoteMeta(statStatementsResetAvailableQuery)).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+
 	mock.ExpectQuery("LIMIT 3").WillReturnRows(buildRows("100", "5000", "1000", "2000"))
 	_, err = scraper.scrapeTopQuery(t.Context(), cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopQueryCollection.TopNQuery, cfg.TopQueryCollection.MaxExplainEachInterval, 0)
 	require.NoError(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
 
 	// Second scrape: each role's cumulative calls advances by 10.
+	mock.ExpectQuery(regexp.QuoteMeta(statStatementsResetAvailableQuery)).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 	mock.ExpectQuery("LIMIT 3").WillReturnRows(buildRows("110", "5010", "1100", "2200"))
 	logs, err := scraper.scrapeTopQuery(t.Context(), cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopQueryCollection.TopNQuery, cfg.TopQueryCollection.MaxExplainEachInterval, 0)
 	require.NoError(t, err)
@@ -277,11 +541,11 @@ func TestTopQueryPlanCacheSeparatesDatabaseAndRole(t *testing.T) {
 		expectedPlans[[2]string{statement.database, statement.role}] = statement.plan
 	}
 
-	for scrape, name := range []string{"first scrape", "reordered active statements reuse cached plans"} {
+	for scrape, name := range []string{"seed counters", "active statements fetch plans", "reordered active statements reuse cached plans"} {
 		t.Run(name, func(t *testing.T) {
 			factory.requestedDatabases = nil
 			order := []int{0, 1, 2}
-			if scrape > 0 {
+			if scrape > 1 {
 				slices.Reverse(order)
 			}
 			rows := sqlmock.NewRows(topQueryColumns)
@@ -305,13 +569,14 @@ func TestTopQueryPlanCacheSeparatesDatabaseAndRole(t *testing.T) {
 				}
 				rows.AddRow(row...)
 			}
+			mock.ExpectQuery(regexp.QuoteMeta(statStatementsResetAvailableQuery)).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 			mock.ExpectQuery("LIMIT 3").WillReturnRows(rows)
 
 			expectedDatabases := []string{defaultPostgreSQLDatabase}
-			if scrape == 0 {
-				// Distinct execution times make the first scrape's EXPLAIN order
-				// deterministic. The second scrape reverses that priority as well.
-				for _, statement := range statements {
+			if scrape == 1 {
+				// Execution time deltas set the EXPLAIN order.
+				for _, i := range []int{2, 1, 0} {
+					statement := statements[i]
 					expectedDatabases = append(expectedDatabases, statement.database)
 					mock.ExpectQuery(regexp.QuoteMeta("/* otel-collector-ignore */ SET plan_cache_mode = force_generic_plan;PREPARE otel_42 AS SELECT count(*) FROM pg_class;")).
 						WillReturnRows(sqlmock.NewRows([]string{"result"}))
@@ -327,6 +592,11 @@ func TestTopQueryPlanCacheSeparatesDatabaseAndRole(t *testing.T) {
 			logs, scrapeErr := scraper.scrapeTopQuery(t.Context(), cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopQueryCollection.TopNQuery, cfg.TopQueryCollection.MaxExplainEachInterval, 0)
 			require.NoError(t, scrapeErr)
 			assert.Equal(t, expectedDatabases, factory.requestedDatabases)
+			if scrape == 0 {
+				require.Zero(t, logs.LogRecordCount())
+				require.NoError(t, mock.ExpectationsWereMet())
+				return
+			}
 			require.Equal(t, len(statements), logs.LogRecordCount())
 			assert.Equal(t, len(statements), scraper.queryPlanCache.Len())
 
@@ -377,6 +647,13 @@ func TestTopQueryPlanCacheSeparatesDroppedRoles(t *testing.T) {
 	expectedPlans := make(map[string]string, len(statements))
 	for _, statement := range statements {
 		expectedPlans[statement.userid] = statement.plan
+		scraper.cache.Add("postgres\x00"+statement.userid+"\x0042", statementSnapshot{counters: statementCounters{
+			callsColumnName: 0, rowsColumnName: 0,
+			sharedBlksDirtiedColumnName: 0, sharedBlksHitColumnName: 0,
+			sharedBlksReadColumnName: 0, sharedBlksWrittenColumnName: 0,
+			tempBlksReadColumnName: 0, tempBlksWrittenColumnName: 0,
+			totalExecTimeColumnName: 0, totalPlanTimeColumnName: 0,
+		}})
 	}
 
 	rows := sqlmock.NewRows(topQueryColumns)
@@ -399,6 +676,7 @@ func TestTopQueryPlanCacheSeparatesDroppedRoles(t *testing.T) {
 		}
 		rows.AddRow(row...)
 	}
+	mock.ExpectQuery(regexp.QuoteMeta(statStatementsResetAvailableQuery)).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 	mock.ExpectQuery("LIMIT 3").WillReturnRows(rows)
 
 	for _, statement := range statements {

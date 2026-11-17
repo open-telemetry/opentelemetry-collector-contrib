@@ -72,7 +72,7 @@ type postgreSQLScraper struct {
 	// the map answers membership checks. Read these, not config.ExcludeDatabases.
 	excludedDatabases []string
 	excludes          map[string]struct{}
-	cache             *lru.Cache[string, float64]
+	cache             *lru.Cache[string, statementSnapshot]
 	// if enabled, uses a separated attribute for the schema
 	separateSchemaAttr     bool
 	useOTelSemconv         bool
@@ -111,7 +111,7 @@ func newPostgreSQLScraper(
 	settings receiver.Settings,
 	config *Config,
 	clientFactory postgreSQLClientFactory,
-	cache *lru.Cache[string, float64],
+	cache *lru.Cache[string, statementSnapshot],
 	queryPlanCache *expirable.LRU[string, string],
 ) (*postgreSQLScraper, error) {
 	excludedDatabases := config.ExcludeDatabases
@@ -461,7 +461,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 
 	p.ensureDBVersion(ctx, defaultDbClient)
 
-	rows, err := defaultDbClient.getTopQuery(ctx, limit, p.excludedDatabases, logger)
+	rows, statsReset, err := defaultDbClient.getTopQuery(ctx, limit, p.excludedDatabases, logger)
 	if err != nil {
 		logger.Error("failed to get top query", zap.Error(err))
 		mux.addPartial(err)
@@ -529,9 +529,10 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		// used here instead of rolname because rolname is empty once the role is
 		// dropped, which would collide two different dropped roles onto one key.
 		// toplevel is not selected, so this key still doesn't distinguish it.
-		cacheKeyPrefix := database + "\x00" + userid + "\x00" + queryID.(string) + "\x00"
+		cacheKey := database + "\x00" + userid + "\x00" + queryID.(string)
 
-		for columnName, info := range updatedOnly {
+		current := make(statementCounters, len(updatedOnly))
+		for columnName := range updatedOnly {
 			var valInAtts float64
 			_val := row[dbAttributePrefix+columnName]
 			if i, ok := _val.(int64); ok {
@@ -539,17 +540,14 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			} else {
 				valInAtts = _val.(float64)
 			}
-			cacheKey := cacheKeyPrefix + columnName
-			valInCache, exist := p.cache.Get(cacheKey)
-			valDelta := valInAtts
-			if exist {
-				valDelta = valInAtts - valInCache
-			}
-			finalValue := float64(0)
-			if valDelta > 0 {
-				p.cache.Add(cacheKey, valInAtts)
-				finalValue = valDelta
-			}
+			current[columnName] = valInAtts
+		}
+		previous, _ := p.cache.Get(cacheKey)
+		snapshot := statementSnapshot{counters: current, statsReset: statsReset}
+		deltas := statementDelta(previous, snapshot)
+		p.cache.Add(cacheKey, snapshot)
+		for columnName, info := range updatedOnly {
+			finalValue := deltas[columnName]
 			if info.finalConverter != nil {
 				row[dbAttributePrefix+columnName] = info.finalConverter(finalValue)
 			} else {

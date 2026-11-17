@@ -77,7 +77,7 @@ type client interface {
 	listDatabases(ctx context.Context) ([]string, error)
 	getVersion(ctx context.Context) (string, error)
 	getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, float64, error)
-	getTopQuery(ctx context.Context, limit int64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, error)
+	getTopQuery(ctx context.Context, limit int64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, time.Time, error)
 	explainQuery(ctx context.Context, query, queryID string, logger *zap.Logger) (string, error)
 }
 
@@ -1656,8 +1656,31 @@ var topQueryTemplate string
 
 var topQueryTmpl = template.Must(template.New("topQuery").Option("missingkey=error").Parse(topQueryTemplate))
 
+const statStatementsResetAvailableQuery = `/* otel-collector-ignore */ SELECT EXISTS (
+  SELECT 1 FROM pg_catalog.pg_attribute
+  WHERE attrelid = pg_catalog.to_regclass('pg_stat_statements_info')
+    AND attname = 'stats_reset' AND NOT attisdropped
+);`
+
+const statStatementsResetQuery = "/* otel-collector-ignore */ SELECT stats_reset FROM pg_stat_statements_info;"
+
+func (c *postgreSQLClient) getStatStatementsReset(ctx context.Context) (time.Time, error) {
+	var available bool
+	if err := c.client.QueryRowContext(ctx, statStatementsResetAvailableQuery).Scan(&available); err != nil {
+		return time.Time{}, fmt.Errorf("check pg_stat_statements reset support: %w", err)
+	}
+	if !available {
+		return time.Time{}, nil
+	}
+	var reset time.Time
+	if err := c.client.QueryRowContext(ctx, statStatementsResetQuery).Scan(&reset); err != nil {
+		return time.Time{}, fmt.Errorf("get pg_stat_statements reset timestamp: %w", err)
+	}
+	return reset, nil
+}
+
 // getTopQuery implements client.
-func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, error) {
+func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, time.Time, error) {
 	buf := bytes.Buffer{}
 
 	// TODO: Only get query after the oldest query we got from the previous sample query colelction.
@@ -1668,7 +1691,12 @@ func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, exclude
 		"excludedDatabases": quoteDatabaseList(excludedDatabases),
 	}); err != nil {
 		logger.Error("failed to execute template", zap.Error(err))
-		return []map[string]any{}, fmt.Errorf("failed executing template: %w", err)
+		return nil, time.Time{}, fmt.Errorf("failed executing template: %w", err)
+	}
+
+	statsReset, err := c.getStatStatementsReset(ctx)
+	if err != nil {
+		return nil, time.Time{}, err
 	}
 
 	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, buf.String(), logger, sqlquery.TelemetryConfig{})
@@ -1677,10 +1705,22 @@ func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, exclude
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			logger.Error("failed getting log rows", zap.Error(err))
-			return []map[string]any{}, fmt.Errorf("getTopQuery failed getting log rows: %w", err)
+			return nil, time.Time{}, fmt.Errorf("getTopQuery failed getting log rows: %w", err)
 		}
 		// in case the sql returned rows contains null value, we just log a warning and continue
 		logger.Warn("problems encountered getting log rows", zap.Error(err))
+	}
+
+	// Discard rows if a reset ran while they were being fetched.
+	if !statsReset.IsZero() {
+		var resetAfter time.Time
+		resetErr := c.client.QueryRowContext(ctx, statStatementsResetQuery).Scan(&resetAfter)
+		if resetErr != nil {
+			return nil, time.Time{}, fmt.Errorf("verify pg_stat_statements reset timestamp: %w", resetErr)
+		}
+		if !statsReset.Equal(resetAfter) {
+			return nil, time.Time{}, errors.New("pg_stat_statements reset during top query collection")
+		}
 	}
 
 	errs := make([]error, 0)
@@ -1742,5 +1782,5 @@ func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, exclude
 		finalAttributes = append(finalAttributes, currentAttributes)
 	}
 
-	return finalAttributes, errors.Join(errs...)
+	return finalAttributes, statsReset, errors.Join(errs...)
 }
