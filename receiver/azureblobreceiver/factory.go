@@ -125,7 +125,7 @@ func (*blobReceiverFactory) getEventHandler(cfg *Config, logger *zap.Logger) (ev
 
 	switch cfg.Authentication {
 	case ConnectionStringAuth:
-		bc, err = newBlobClientFromConnectionString(cfg.ConnectionString, logger)
+		bc, err = newBlobClientFromConnectionString(string(cfg.ConnectionString), logger)
 		if err != nil {
 			return nil, err
 		}
@@ -155,6 +155,6 @@ func (*blobReceiverFactory) getEventHandler(cfg *Config, logger *zap.Logger) (ev
 	if cfg.EventHub.EndPoint == "" {
 		return newBlobEventHandler(cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, logger), nil
 	}
-	return newEventHubEventHandler(cfg.EventHub.EndPoint, cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, logger),
+	return newEventHubEventHandler(string(cfg.EventHub.EndPoint), cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, logger),
 		nil
 }
