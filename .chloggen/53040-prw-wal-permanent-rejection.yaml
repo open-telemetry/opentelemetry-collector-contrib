@@ -15,10 +15,7 @@ issues: [53040]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe "|" for multiline entries.
-subtext: |
-  With `cenkalti/backoff` v7, a permanent failure is returned as a `*backoff.RetryError` whose cause is the bare
-  `backoff.ErrPermanent` sentinel. The sentinel was counted as a non-rejection error, so a payload rejected with
-  400, 409, 413 or 422 was kept at the head of the write-ahead log and the records queued behind it never drained.
+subtext:
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
