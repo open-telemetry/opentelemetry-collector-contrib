@@ -334,7 +334,8 @@ the APM data stream convention:
 
 - Span events named `exception` with `exception.type` or `exception.message` present are routed
   to `logs-apm.error-<namespace>`.
-- All other span events are routed to `logs-apm.app.<service_name>-<namespace>`.
+- All other span events are routed to `logs-apm.app.<service_name>-<namespace>`, or to
+  `logs-apm.app-<namespace>` when the `service.name` resource attribute is not set.
 
 #### Bodymap mapping mode
 
@@ -422,6 +423,137 @@ The `raw` mapping mode is identical to `none`, except for two differences:
 | Traces    | :white_check_mark: |
 | Metrics   | :no_entry_sign:    |
 | Profiles  | :no_entry_sign:    |
+
+#### Indexed document fields by mapping mode
+
+The tables below summarize the fields the exporter emits for each mapping mode. The
+`none`, `raw`, `ecs` and `bodymap` encoders live in `model.go`, which is the source of
+truth for those modes. The `otel` mode is produced by the serializer under
+`internal/serializer/otelserializer`. Profiles are serialized by the serializer under
+`internal/serializer/ecsserializer` in every mode that supports them.
+
+**Logs, `none` and `raw` mapping modes:**
+
+| Field | Description |
+| ----- | ----------- |
+| `@timestamp` | Log record timestamp, falling back to the observed timestamp when unset |
+| `TraceId`, `SpanId`, `TraceFlags` | Trace correlation fields |
+| `SeverityText`, `SeverityNumber` | Record severity |
+| `Body` | The log record body |
+| `Resource.<name>` | Resource attributes, as flattened `Resource.`-prefixed keys |
+| `Scope.<name>` | Instrumentation scope attributes plus the scope `name` and `version`, as flattened `Scope.`-prefixed keys |
+| `Attributes.<name>` | Record attributes. In `raw` mode, attributes are stored at the top level without the `Attributes.` prefix |
+| `Attributes.data_stream.type` / `.dataset` / `.namespace` | Data stream fields, when routing to a data stream. In `raw` mode they are stored at the top level as `data_stream.*` |
+
+**Spans, `none` and `raw` mapping modes:**
+
+| Field | Description |
+| ----- | ----------- |
+| `@timestamp` | Span start timestamp |
+| `EndTimestamp` | Span end timestamp |
+| `TraceId`, `SpanId`, `ParentSpanId` | Trace correlation fields |
+| `Name`, `Kind` | Span name and kind |
+| `TraceStatus`, `TraceStatusDescription` | Status code and message |
+| `Duration` | Span duration in microseconds |
+| `Link` | Span links, serialized as a JSON string |
+| `Resource.<name>` | Resource attributes, as flattened `Resource.`-prefixed keys |
+| `Scope.<name>` | Instrumentation scope attributes plus the scope `name` and `version`, as flattened `Scope.`-prefixed keys |
+| `Attributes.<name>` | Span attributes. In `raw` mode, attributes are stored at the top level without the `Attributes.` prefix |
+| `Attributes.data_stream.type` / `.dataset` / `.namespace` | Data stream fields, when routing to a data stream. In `raw` mode they are stored at the top level as `data_stream.*` |
+| `Events.<event name>.time`, `Events.<event name>.<attribute>` | Span events, embedded in the span document. In `raw` mode they are stored at the top level without the `Events.` prefix |
+
+Metrics and profiles are not supported in these modes.
+
+**Logs, `ecs` mapping mode:**
+
+| Field | Description |
+| ----- | ----------- |
+| `@timestamp` | Log record timestamp, falling back to the observed timestamp when unset |
+| `message` | The log record body, when the body is a string |
+| `log.level` | Severity text |
+| `event.severity` | Severity number, only when set |
+| `trace.id`, `span.id` | Trace correlation fields |
+| `data_stream.type`, `data_stream.dataset`, `data_stream.namespace` | Data stream fields, when routing to a data stream |
+| ECS-mapped attributes | Resource, scope and record attributes translated to ECS fields where a mapping exists; unmapped attributes are kept under their original names |
+
+**Spans, `ecs` mapping mode:**
+
+| Field | Description |
+| ----- | ----------- |
+| `@timestamp` | Span start timestamp |
+| `span.name`, `span.kind` | Span name and ECS kind (`SERVER`, `CLIENT`, `PRODUCER`, `CONSUMER`, `INTERNAL`) |
+| `trace.id`, `span.id`, `parent.id` | Trace correlation fields |
+| `event.outcome` | `success` or `failure`, derived from the span status code |
+| `span.links` | Span links |
+| `data_stream.type`, `data_stream.dataset`, `data_stream.namespace` | Data stream fields, when routing to a data stream |
+| ECS-mapped attributes | Resource, scope and span attributes translated to ECS fields where a mapping exists |
+
+Span events become separate ECS log documents; see [ECS mapping mode](#ecs-mapping-mode)
+for the routing rules.
+
+**Metrics, `ecs` mapping mode:**
+
+| Field | Description |
+| ----- | ----------- |
+| `@timestamp` | Data point timestamp |
+| `<metric name>` | Metric value, at the metric name as is (eg `system.cpu.usage`); see [metrics dynamic templates](#metrics-dynamic-templates) |
+| `_doc_count` | Document count, when mapping hints indicate it |
+| `data_stream.type`, `data_stream.dataset`, `data_stream.namespace` | Data stream fields, when routing to a data stream |
+| Resource attributes | Translated to ECS fields where a mapping exists |
+| Data point attributes | Kept under their original names, without ECS translation. Scope attributes are not included |
+
+**`bodymap` mapping mode (logs only):**
+
+The indexed document is exactly the log record body, which must be a map. Records with any
+other body type are rejected. The exporter adds no fields of its own. With data stream
+routing, `data_stream.type` can be set from record, scope or resource attributes, see
+[document routing](#elasticsearch-document-routing).
+
+**`otel` mapping mode:**
+
+Log documents are produced by the bundled serializer under
+`internal/serializer/otelserializer` and follow the schema of the Elasticsearch OTLP
+intake.
+
+| Field | Description |
+| ----- | ----------- |
+| `@timestamp`, `observed_timestamp` | Log record timestamp and observed timestamp |
+| `data_stream.type`, `data_stream.dataset`, `data_stream.namespace` | Data stream fields, when routing to a data stream |
+| `severity_text`, `severity_number` | Record severity |
+| `trace_id`, `span_id` | Trace correlation fields |
+| `attributes` | Record attributes, with `event_name` promoted to a field when set |
+| `resource`, `scope` | Resource and scope attributes, with their `dropped_attributes_count` |
+| `body.structured`, `body.text` | The log record body, keyed by its type |
+
+**Spans, `otel` mapping mode:**
+
+| Field | Description |
+| ----- | ----------- |
+| `@timestamp` | Span start timestamp |
+| `data_stream.type`, `data_stream.dataset`, `data_stream.namespace` | Data stream fields, when routing to a data stream |
+| `name`, `kind` | Span name and kind |
+| `duration` | Span duration in nanoseconds |
+| `status.code`, `status.message` | Span status |
+| `trace_id`, `span_id`, `parent_span_id`, `trace_state` | Trace correlation fields, with `trace_state` written when set |
+| `links` | Span links, each with `trace_id`, `span_id`, `trace_state` and `attributes` |
+| `attributes` | Span attributes |
+| `resource`, `scope` | Resource and scope information |
+| `dropped_attributes_count`, `dropped_events_count`, `dropped_links_count` | Dropped counts, written when non-zero |
+
+**Metrics, `otel` mapping mode:**
+
+| Field | Description |
+| ----- | ----------- |
+| `@timestamp`, `start_timestamp` | Data point timestamp and start timestamp, when set |
+| `metrics.<name>` | Metric values under the `metrics` object; see [metrics dynamic templates](#metrics-dynamic-templates) |
+| `unit` | Metric unit |
+| `temporality` | Data point temporality, for the data point types that carry one |
+| `_doc_count` | Document count, when mapping hints indicate it |
+| `_metric_names_hash` | Hash of metric names, for the bulk action dynamic templates |
+| `data_stream.*` | Data stream fields, when routing to a data stream |
+| `resource`, `scope`, `attributes` | Resource, scope and data point attributes |
+
+Profiles follow the schema described in [Exporting profiles](#exporting-profiles).
 
 ### Elasticsearch ingest pipeline
 
@@ -607,10 +739,10 @@ The index template must define dynamic templates whose names match the values se
 | Mapping mode | Field path in document | Template names sent | Notes |
 | ------------ | ---------------------- | -------------------- | ----- |
 | **OTel**     | `metrics.<metric name>` | `histogram`, `exponential_histogram`, `summary`, `gauge_double`, `gauge_long`, `counter_double`, `counter_long` | The OTel data plugin defines more specific templates. `exponential_histogram` requires Elasticsearch 9.4.0 or later. |
-| **ECS**      | `metric.<metric name>`  | `histogram_metrics`, `summary_metrics`, `double_metrics` | Relies on core templates in [metrics@mappings](https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json). Intended to match the [APM metrics ingest pipeline](https://github.com/elastic/elasticsearch/blob/b34960a2b450869aee2866e91c647e0026dd6953/x-pack/plugin/apm-data/src/main/resources/ingest-pipelines/metrics-apm%40pipeline.yaml). |
+| **ECS**      | `<metric name>`         | `histogram_metrics`, `summary_metrics`, `double_metrics` | Relies on core templates in [metrics@mappings](https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json). Intended to match the [APM metrics ingest pipeline](https://github.com/elastic/elasticsearch/blob/b34960a2b450869aee2866e91c647e0026dd6953/x-pack/plugin/apm-data/src/main/resources/ingest-pipelines/metrics-apm%40pipeline.yaml). |
 
 - **OTel**: Each metric is written under the `metrics` object; the bulk action maps full field names (e.g. `metrics.my_metric`) to one of the OTel template names above based on metric type (histogram, summary, gauge, or counter) and value type.
-- **ECS**: Each metric is written as a top-level field `metric.<name>`; the bulk action maps that field name to one of the ECS/APM template names (`histogram_metrics`, `summary_metrics`, or `double_metrics` for gauges and counters).
+- **ECS**: Each metric is written as a top-level field at the metric name as is (eg `system.cpu.usage`); the bulk action maps that field name to one of the ECS/APM template names (`histogram_metrics`, `summary_metrics`, or `double_metrics` for gauges and counters).
 
 ### Bulk Response Filter Path
 
