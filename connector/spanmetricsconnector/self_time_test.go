@@ -67,6 +67,8 @@ func TestSpanMetrics_SelfTime(t *testing.T) {
 			require.NoError(t, err)
 
 			require.NoError(t, c.ConsumeTraces(t.Context(), tt.buildTrace()))
+			// A new cumulative series reports zero on its first flush. Read the second one.
+			c.buildMetrics()
 			got := c.buildMetrics()
 
 			require.Equal(t, 1, got.ResourceMetrics().Len())
@@ -261,6 +263,8 @@ func TestSpanMetrics_SelfTimeWithDurationHistogramDisabled(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, c.ConsumeTraces(t.Context(), buildOverlapSelfTimeTrace()))
+	// A new cumulative series reports zero on its first flush. Read the second one.
+	c.buildMetrics()
 	got := c.buildMetrics()
 
 	metricsSlice := got.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()

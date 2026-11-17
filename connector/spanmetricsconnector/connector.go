@@ -115,8 +115,8 @@ type deltaMetricKey struct {
 type resourceMetrics struct {
 	histograms         metrics.HistogramMetrics
 	selfTimeHistograms metrics.HistogramMetrics
-	sums               metrics.SumMetrics
-	events             metrics.SumMetrics
+	sums               *metrics.SumMetrics
+	events             *metrics.SumMetrics
 	attributes         pcommon.Map
 	// lastSeen captures when the last data points for this resource were recorded.
 	lastSeen time.Time
@@ -539,9 +539,9 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				if p.selfTime.Enabled && selfTimeHistograms != nil {
 					if selfTimeNS, ok := selfTimeBySpanID[span.SpanID()]; ok {
 						selfTime := float64(selfTimeNS) / float64(unitDivider)
-						selfTimeKey := p.buildKey(serviceName, span, p.dimensions, p.durationDimensions, resourceAttr, isAdjusted)
+						selfTimeKey := p.buildKey(serviceName, span, p.dimensions, p.durationDimensions, resourceAttr, nil, isAdjusted)
 						attributesFun = func() pcommon.Map {
-							return p.buildAttributes(serviceName, span, resourceAttr, p.dimensions, p.durationDimensions, ils.Scope(), isAdjusted)
+							return p.buildAttributes(serviceName, span, resourceAttr, nil, p.dimensions, p.durationDimensions, ils.Scope(), isAdjusted)
 						}
 						h, selfTimeLimitReached := selfTimeHistograms.GetOrCreate(selfTimeKey, attributesFun, startTimestamp, lastSeen)
 						if !selfTimeLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {

@@ -17,6 +17,23 @@
                         <name>summary.freeSpace</name>
                         <val xsi:type="xsd:long">51693551508648</val>
                     </propSet>
+                    <propSet>
+                        <name>summary.maintenanceMode</name>
+                        <val xsi:type="xsd:string">normal</val>
+                    </propSet>
+                    <propSet>
+                        <name>triggeredAlarmState</name>
+                        <val xsi:type="ArrayOfAlarmState">
+                            <AlarmState xsi:type="AlarmState">
+                                <key>alarm-12.datastore-1003</key>
+                                <entity type="Datastore">datastore-1003</entity>
+                                <alarm type="Alarm">alarm-12</alarm>
+                                <overallStatus>red</overallStatus>
+                                <time>2026-09-10T08:00:00Z</time>
+                                <acknowledged>false</acknowledged>
+                            </AlarmState>
+                        </val>
+                    </propSet>
                 </objects>
             </returnval>
         </RetrievePropertiesExResponse>
