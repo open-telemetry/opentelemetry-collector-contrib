@@ -201,10 +201,24 @@ func (e *BatchingLogEmitter) makeNewBatch() []*entry.Entry {
 // SynchronousLogEmitter is a stanza operator that emits log entries to the consumer callback function `consumerFunc` synchronously
 type SynchronousLogEmitter struct {
 	OutputOperator
-	consumerFunc func(context.Context, []*entry.Entry)
+	consumerFunc func(context.Context, []*entry.Entry) error
 }
 
+// NewSynchronousLogEmitter creates a SynchronousLogEmitter whose Process and
+// ProcessBatch always return nil, because consumerFunc cannot report an error.
+// Use NewSynchronousLogEmitterWithError to let callers see consumer failures.
 func NewSynchronousLogEmitter(set component.TelemetrySettings, consumerFunc func(context.Context, []*entry.Entry)) *SynchronousLogEmitter {
+	return NewSynchronousLogEmitterWithError(set, func(ctx context.Context, entries []*entry.Entry) error {
+		consumerFunc(ctx, entries)
+		return nil
+	})
+}
+
+// NewSynchronousLogEmitterWithError creates a SynchronousLogEmitter that returns
+// the error from consumerFunc to the caller of Process and ProcessBatch, wrapped
+// in a *ConsumeError. consumerFunc must only return an error when the entries
+// were not accepted by the next consumer.
+func NewSynchronousLogEmitterWithError(set component.TelemetrySettings, consumerFunc func(context.Context, []*entry.Entry) error) *SynchronousLogEmitter {
 	op, _ := NewOutputConfig("synchronous_log_emitter", "synchronous_log_emitter").Build(set)
 	return &SynchronousLogEmitter{
 		OutputOperator: op,
@@ -221,11 +235,9 @@ func (*SynchronousLogEmitter) Stop() error {
 }
 
 func (e *SynchronousLogEmitter) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	e.consumerFunc(ctx, entries)
-	return nil
+	return newConsumeError(e.consumerFunc(ctx, entries))
 }
 
 func (e *SynchronousLogEmitter) Process(ctx context.Context, ent *entry.Entry) error {
-	e.consumerFunc(ctx, []*entry.Entry{ent})
-	return nil
+	return newConsumeError(e.consumerFunc(ctx, []*entry.Entry{ent}))
 }

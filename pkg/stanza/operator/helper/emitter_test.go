@@ -5,6 +5,7 @@ package helper
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -147,6 +148,36 @@ func TestSynchronousLogEmitter(t *testing.T) {
 		return receivedEntries != nil
 	}, time.Second, 10*time.Millisecond)
 	require.Equal(t, in, receivedEntries[0])
+}
+
+func TestSynchronousLogEmitterWithError(t *testing.T) {
+	consumerErr := errors.New("consumer failed")
+	var fail bool
+	emitter := NewSynchronousLogEmitterWithError(
+		componenttest.NewNopTelemetrySettings(),
+		func(context.Context, []*entry.Entry) error {
+			if fail {
+				return consumerErr
+			}
+			return nil
+		},
+	)
+
+	require.NoError(t, emitter.Process(t.Context(), entry.New()))
+	require.NoError(t, emitter.ProcessBatch(t.Context(), []*entry.Entry{entry.New()}))
+
+	fail = true
+	for name, err := range map[string]error{
+		"Process":      emitter.Process(t.Context(), entry.New()),
+		"ProcessBatch": emitter.ProcessBatch(t.Context(), []*entry.Entry{entry.New()}),
+	} {
+		var consumeErr *ConsumeError
+		require.ErrorAs(t, err, &consumeErr, name)
+		require.ErrorIs(t, err, consumerErr, name)
+	}
+
+	// The zero value must not panic.
+	require.Equal(t, "consume logs failed", (&ConsumeError{}).Error())
 }
 
 func complexEntries(count int) []*entry.Entry {
