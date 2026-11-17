@@ -591,7 +591,7 @@ func (f *factory) createLogsExporter(
 		router, err = di.New(set.TelemetrySettings, di.Options{
 			Enabled:  cfg.DynamicInstrumentation.Enabled,
 			Key:      string(cfg.API.Key),
-			Site: cfg.API.Site,
+			Site:     cfg.API.Site,
 			Endpoint: cfg.DynamicInstrumentation.Endpoint,
 			HTTP:     cfg.ClientConfig,
 		}, pusher)
