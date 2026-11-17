@@ -123,11 +123,11 @@ func TestReceiveStreamsBeforeEOF(t *testing.T) {
 				var writer io.WriteCloser = output
 				flush := func() error { return nil }
 				if tt.newWriter != nil {
-					var err error
-					writer, flush, err = tt.newWriter(output)
-					if err != nil {
-						_ = output.CloseWithError(err)
-						producerDone <- err
+					var createErr error
+					writer, flush, createErr = tt.newWriter(output)
+					if createErr != nil {
+						_ = output.CloseWithError(createErr)
+						producerDone <- createErr
 						return
 					}
 				}
