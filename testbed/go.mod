@@ -587,3 +587,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage => ../extension/storage/filestorage
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter => ../exporter/elasticsearchexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/di => ../pkg/datadog/di

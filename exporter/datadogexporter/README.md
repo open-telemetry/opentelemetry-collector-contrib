@@ -102,3 +102,49 @@ processors:
 This is due to a bug with underlying hostname detection blocking the `health_check` extension from responding to liveness/readiness probes on startup. To fix, either set `hostname_detection_timeout` to be less than the pod/daemonset `livenessProbe: failureThreshold * periodSeconds` so that the timeout for hostname detection on startup takes less time than the control plane waits before restarting the pod, or leave `hostname_detection_timeout` at the default `25s` value and double-check the `livenessProbe` and `readinessProbe` settings and ensure that the control plane will in fact wait long enough for startup to complete before restarting the pod.
 
 Hostname detection is currently required to initialize the Datadog Exporter, unless a hostname is specified manually under `hostname`.
+
+## Experimental Dynamic Instrumentation event delivery
+
+Enable `dynamic_instrumentation` to convert named DI LogRecords into the existing
+Datadog debugger upload formats. The standard OTLP receiver still receives logs,
+metrics and traces. The exporter identifies DI by EventName, not instrumentation scope.
+The versioned envelope is experimental and needs SDK and DI team agreement.
+
+```yaml
+exporters:
+  datadog:
+    api:
+      key: ${env:DD_API_KEY}
+      site: datadoghq.com
+    dynamic_instrumentation:
+      enabled: true
+
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [datadog]
+```
+
+The feature defaults to disabled. Reserved `dd.debugger.*` records are rejected
+when disabled or invalid, rather than being sent through ordinary logs mapping.
+Other LogRecords keep their existing path. Metrics and spans use existing exporters.
+
+Each DI record carries integer `datadog.di.schema_version: 1` and a JSON-string
+`datadog.di.payload`. Supported EventNames are `dd.debugger.snapshot`,
+`dd.debugger.log`, `dd.debugger.diagnostic` and `dd.debugger.symbols`.
+Captures and generated messages become JSON batches. Diagnostics use multipart
+events. Symbols carry event metadata and a compressed symbol attachment.
+The native payload is preserved, including large integer values and redaction markers.
+
+The public `pkg/datadog/di` helper owns conversion and request handling so DDOT can
+reuse it. It runs inside the exporter's queue/retry boundary and retains only failed
+records for retry. Permanent rejects are counted as `datadog.di.rejected_records`.
+The exporter uses its own API key, site, proxy and TLS settings; no Datadog extension
+or RC service is required for export. RC is a separate capability.
+
+An optional `dynamic_instrumentation.endpoint` overrides the native debugger URL
+for a trusted test or deployment endpoint. It requires HTTPS with certificate validation.
+Resource identity must agree with native identity. This experiment handles selected
+host/container and environment/version tags; full product and enrichment compatibility
+still needs qualification. Direct DI ingestion through `otlp_http` is future backend work.

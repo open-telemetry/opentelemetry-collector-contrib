@@ -44,6 +44,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/di"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -577,24 +578,53 @@ func (f *factory) createLogsExporter(
 			return nil
 		}
 	default:
-		la, exp, err := newLogsAgentExporter(ctx, set, cfg, hostProvider, f.gatewayUsage)
-		if err != nil {
+		la, exp, createErr := newLogsAgentExporter(ctx, set, cfg, hostProvider, f.gatewayUsage)
+		if createErr != nil {
 			cancel()
-			return nil, err
+			return nil, createErr
 		}
 		logsAgent = la
 		pusher = exp.ConsumeLogs
 	}
+	var router *di.Router
+	if !cfg.OnlyMetadata {
+		router, err = di.New(set.TelemetrySettings, di.Options{
+			Enabled:  cfg.DynamicInstrumentation.Enabled,
+			Key:      string(cfg.API.Key),
+			Site: cfg.API.Site,
+			Endpoint: cfg.DynamicInstrumentation.Endpoint,
+			HTTP:     cfg.ClientConfig,
+		}, pusher)
+		if err != nil {
+			if logsAgent != nil {
+				_ = logsAgent.Stop(ctx)
+			}
+			cancel()
+			return nil, err
+		}
+		pusher = router.ConsumeLogs
+	}
+
 	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
 		pusher,
 		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithStart(func(ctx context.Context, host component.Host) error {
+			if router != nil {
+				return router.Start(ctx, host)
+			}
+			return nil
+		}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0 * time.Second}),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(shutdownCtx context.Context) error {
+			if router != nil {
+				defer func() { _ = router.Shutdown(shutdownCtx) }()
+			}
+
 			// Stop the logs agent before canceling ctx. cancel() pre-cancels
 			// the context that pipeline goroutines were started with, causing
 			// the serial stopper inside logsAgent.Stop() to find them already

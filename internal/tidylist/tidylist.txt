@@ -29,6 +29,7 @@ internal/aws/ecsutil
 internal/k8sconfig
 internal/metadataproviders
 internal/datadog
+pkg/datadog/di
 pkg/sampling
 pkg/datadog
 pkg/resourcetotelemetry

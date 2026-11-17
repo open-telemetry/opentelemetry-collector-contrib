@@ -73,6 +73,8 @@ type TagsConfig struct {
 
 // Config defines configuration for the Datadog exporter.
 type Config struct {
+	// DynamicInstrumentation enables native debugger delivery for named DI events.
+	DynamicInstrumentation    DynamicInstrumentationConfig                             `mapstructure:"dynamic_instrumentation"`
 	ClientConfig              confighttp.ClientConfig                                  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
@@ -149,6 +151,9 @@ var _ component.Config = (*Config)(nil)
 
 // Validate the configuration for errors. This is required by component.Config.
 func (c *Config) Validate() error {
+	if c.DynamicInstrumentation.Enabled && c.OnlyMetadata {
+		return errors.New("dynamic_instrumentation cannot be combined with only_metadata")
+	}
 	if err := validateClientConfig(c.ClientConfig); err != nil {
 		return err
 	}

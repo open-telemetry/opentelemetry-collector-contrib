@@ -1,0 +1,9 @@
+$defs:
+  config:
+    description: Config enables native debugger delivery for named DI LogRecords.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      endpoint:
+        type: string
