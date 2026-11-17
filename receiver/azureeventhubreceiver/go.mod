@@ -84,7 +84,7 @@ require (
 	golang.org/x/exp v0.0.0-20260813180055-c1d0aacb2297 // indirect
 	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/sys v0.50.0 // indirect
-	golang.org/x/text v0.43.0 // indirect
+	golang.org/x/text v0.44.0 // indirect
 	gonum.org/v1/gonum v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260817212433-ac3dfec99bb1 // indirect
 	google.golang.org/grpc v1.85.0 // indirect

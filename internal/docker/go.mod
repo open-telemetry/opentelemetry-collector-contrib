@@ -6,8 +6,8 @@ require (
 	github.com/Microsoft/go-winio v0.6.4
 	github.com/containerd/errdefs v1.0.0
 	github.com/gobwas/glob v0.2.3
-	github.com/moby/moby/api v1.56.1
-	github.com/moby/moby/client v0.6.2
+	github.com/moby/moby/api v1.57.0
+	github.com/moby/moby/client v0.6.3
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/config/configoptional v1.71.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/config/configtls v1.71.1-0.20261112225459-4888f0b280f9
