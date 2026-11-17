@@ -22,7 +22,6 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
@@ -99,34 +98,22 @@ func configureLabelNamer(config *Config) otlptranslator.LabelNamer {
 	}
 }
 
-// getTranslationConfiguration returns the translation configuration based on the strategy or legacy settings
+// getTranslationConfiguration returns the translation configuration based on the strategy
 // Returns (withSuffixes, allowUTF8)
 func getTranslationConfiguration(config *Config) (bool, bool) {
-	// If TranslationStrategy is explicitly set, use it (takes precedence)
-	if config.TranslationStrategy != "" {
-		switch config.TranslationStrategy {
-		case underscoreEscapingWithSuffixes:
-			return true, false
-		case underscoreEscapingWithoutSuffixes:
-			return false, false
-		case noUTF8EscapingWithSuffixes:
-			return true, true
-		case noTranslation:
-			return false, true
-		default:
-			// Fallback to default behavior, suffixes enabled, UTF-8 escaped to underscores.
-			return true, false
-		}
-	}
-
-	// If feature gate is enabled, ignore AddMetricSuffixes (for deprecation)
-	if metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate.IsEnabled() {
-		// Default to UnderscoreEscapingWithSuffixes behavior when AddMetricSuffixes is deprecated
+	switch config.TranslationStrategy {
+	case underscoreEscapingWithSuffixes:
+		return true, false
+	case underscoreEscapingWithoutSuffixes:
+		return false, false
+	case noUTF8EscapingWithSuffixes:
+		return true, true
+	case noTranslation:
+		return false, true
+	default:
+		// Default to UnderscoreEscapingWithSuffixes behavior
 		return true, false
 	}
-
-	// Fall back to legacy AddMetricSuffixes behavior, UTF-8 escaped to underscores.
-	return config.AddMetricSuffixes, false
 }
 
 func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
