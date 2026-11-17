@@ -148,3 +148,5 @@ for a trusted test or deployment endpoint. It requires HTTPS with certificate va
 Resource identity must agree with native identity. This experiment handles selected
 host/container and environment/version tags; full product and enrichment compatibility
 still needs qualification. Direct DI ingestion through `otlp_http` is future backend work.
+
+The transport checks the envelope version, JSON-object shape, size and supported identity fields. Full per-language native product-schema validation is deferred; existing backend validation remains. Python is the core end-to-end POC. Java DI OTLP transport and parity follow after Python is stable.

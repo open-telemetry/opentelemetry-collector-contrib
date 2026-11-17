@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
+// Validate the transport envelope and JSON shape here. Full per-language
+// product schema validation is deferred; preserve native content verbatim.
 func encodeDIEvent(record plog.LogRecord) ([]byte, string, error) {
 	version, ok := record.Attributes().Get("datadog.di.schema_version")
 	if !ok || version.Type() != pcommon.ValueTypeInt || version.Int() != 1 {
