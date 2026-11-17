@@ -11,6 +11,7 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"testing/iotest"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -97,7 +98,7 @@ func TestS3StreamAcknowledgement(t *testing.T) {
 					closeErr: tt.closeErr,
 				}
 				if tt.readErr != nil {
-					body.Reader = io.MultiReader(body.Reader, errorReader{err: tt.readErr})
+					body.Reader = io.MultiReader(body.Reader, iotest.ErrReader(tt.readErr))
 				}
 				var consumed, tagged int
 				c, err := consumer.NewLogs(func(_ context.Context, logs plog.Logs) error {

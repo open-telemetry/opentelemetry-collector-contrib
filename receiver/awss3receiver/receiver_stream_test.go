@@ -11,6 +11,7 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"testing/iotest"
 	"time"
 
 	"github.com/klauspost/compress/zstd"
@@ -236,7 +237,7 @@ func TestReceiveStreamErrors(t *testing.T) {
 				r := newStreamTestReceiver(t, processor, ext)
 				var input io.Reader = strings.NewReader(tt.input)
 				if tt.readErr != nil {
-					input = io.MultiReader(input, errorReader{err: tt.readErr})
+					input = io.MultiReader(input, iotest.ErrReader(tt.readErr))
 				}
 				if tt.cancelBeforeRead {
 					cancel()
@@ -249,10 +250,6 @@ func TestReceiveStreamErrors(t *testing.T) {
 		}
 	}
 }
-
-type errorReader struct{ err error }
-
-func (r errorReader) Read([]byte) (int, error) { return 0, r.err }
 
 func TestReceiveCompressedStreams(t *testing.T) {
 	compressions := []struct {
@@ -331,6 +328,6 @@ func TestReceiveDrainsDecoderRemainder(t *testing.T) {
 		return streamTestDecoder{decode: func() error { return io.EOF }}, nil
 	}}
 	r := newStreamTestReceiver(t, &logsReceiver{}, ext)
-	err := r.receive(t.Context(), "object.txt", errorReader{err: failure})
+	err := r.receive(t.Context(), "object.txt", iotest.ErrReader(failure))
 	require.ErrorIs(t, err, failure)
 }
