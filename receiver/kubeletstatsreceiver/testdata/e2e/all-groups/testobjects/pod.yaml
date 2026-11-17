@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kubeletstats-e2e-workload
+  namespace: default
+spec:
+  hostNetwork: false
+  hostPID: false
+  hostIPC: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65535
+  containers:
+    - name: workload
+      image: registry.k8s.io/pause:3.10
+      securityContext:
+        allowPrivilegeEscalation: false
+        privileged: false
+        runAsNonRoot: true
+        capabilities:
+          drop:
+            - ALL
+      # Requests and limits make the *_limit_utilization and
+      # *_request_utilization metrics emitted for this pod and container.
+      resources:
+        requests:
+          cpu: 50m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+      volumeMounts:
+        - mountPath: /scratch
+          name: scratch
+  volumes:
+    - name: scratch
+      emptyDir: {}

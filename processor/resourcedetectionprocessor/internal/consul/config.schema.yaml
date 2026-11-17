@@ -22,5 +22,5 @@ properties:
     description: Token is used to provide a per-request ACL token which overrides the agent's default (empty) token. Token or Tokenfile are only required if [Consul's ACL System](https://www.consul.io/docs/security/acl/acl-system) is enabled.
     $ref: go.opentelemetry.io/collector/config/configopaque.string
   token_file:
-    description: TokenFile is a file containing the current token to use for this client. If provided it is read once at startup and never again. Token or Tokenfile are only required if [Consul's ACL System](https://www.consul.io/docs/security/acl/acl-system) is enabled.
+    description: TokenFile is a file containing the current token to use for this client. If provided it is read on every detection. Token or Tokenfile are only required if [Consul's ACL System](https://www.consul.io/docs/security/acl/acl-system) is enabled.
     type: string

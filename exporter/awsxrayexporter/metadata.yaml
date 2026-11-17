@@ -27,7 +27,7 @@ feature_gates:
     from_version: v0.147.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46533
   - id: exporter.awsxray.EmitV1DBConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, the AWS X-Ray exporter reads database span attributes
       using semconv v1.38.0 keys (db.namespace, db.system.name,

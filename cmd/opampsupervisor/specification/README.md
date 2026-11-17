@@ -116,12 +116,6 @@ capabilities:
   # The Collector will report Health.
   reports_health: # true if unspecified
 
-  # DEPRECATED: This option has no effect and will be removed in v0.165.0.
-  # Setting it to true causes the Supervisor to fail to start. Remote config
-  # status is reported whenever accepts_remote_config is enabled. See
-  # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49763
-  reports_remote_config: # false if unspecified
-
   # The Supervisor will report available Collector components to the Server.
   reports_available_components: # false if unspecified
 
@@ -184,6 +178,9 @@ agent:
     # Passed to the Supervisor-injected OpAMP extension to copy the collector's 
     # resource attributes into the non-identifying attributes.
     include_resource_attributes: true
+    # Adds the Supervisor's service.instance.id to the Collector's own telemetry
+    # as `supervisor.service.instance.id`. Defaults to false.
+    include_supervisor_instance_id: true
     identifying_attributes:
       client.id: "01HWWSK84BMT7J45663MBJMTPJ"
     non_identifying_attributes:
