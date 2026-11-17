@@ -32,6 +32,7 @@ exporter/awskinesisexporter exporter/awskinesis
 exporter/awss3exporter exporter/awss3
 exporter/awsxrayexporter exporter/awsxray
 exporter/azureblobexporter exporter/azureblob
+exporter/azuredataexplorerexporter exporter/azuredataexplorer
 exporter/azuremonitorexporter exporter/azuremonitor
 exporter/bmchelixexporter exporter/bmchelix
 exporter/cassandraexporter exporter/cassandra
@@ -80,7 +81,6 @@ extension/datadogextension extension/datadog
 extension/dbauth extension/dbauth
 extension/dbauth/awsiamdbauthextension extension/dbauth/awsiamdbauth
 extension/encoding extension/encoding
-extension/encoding/avrologencodingextension extension/encoding/avrologencoding
 extension/encoding/awscloudwatchmetricstreamsencodingextension extension/encoding/awscloudwatchmetricstreams
 extension/encoding/awslogsencodingextension extension/encoding/awslogsencoding
 extension/encoding/azureencodingextension extension/encoding/azureencoding
@@ -158,6 +158,7 @@ pkg/kafka/configkafka pkg/kafka/configkafka
 pkg/kafka/topic pkg/kafka/topic
 pkg/ottl pkg/ottl
 pkg/ottl/contexts/xprofile pkg/ottl/contexts/xprofile
+pkg/ottl/contexts/xspanlink pkg/ottl/contexts/xspanlink
 pkg/ottl/xottl pkg/ottl/xottl
 pkg/pdatatest pkg/pdatatest
 pkg/resourcetotelemetry pkg/resourcetotelemetry
@@ -286,6 +287,7 @@ receiver/hostmetricsreceiver receiver/hostmetrics
 receiver/hostmetricsreceiver/internal/scraper/cpuscraper receiver/hostmetrics/internal/scraper/cpuscraper
 receiver/hostmetricsreceiver/internal/scraper/diskscraper receiver/hostmetrics/internal/scraper/diskscraper
 receiver/hostmetricsreceiver/internal/scraper/filesystemscraper receiver/hostmetrics/internal/scraper/filesystem
+receiver/hostmetricsreceiver/internal/scraper/hardwarescraper receiver/hostmetrics/internal/scraper/hardware
 receiver/hostmetricsreceiver/internal/scraper/loadscraper receiver/hostmetrics/internal/scraper/loadscraper
 receiver/hostmetricsreceiver/internal/scraper/memoryscraper receiver/hostmetrics/internal/scraper/memory
 receiver/hostmetricsreceiver/internal/scraper/networkscraper receiver/hostmetrics/internal/scraper/network
@@ -337,7 +339,6 @@ receiver/receivercreator receiver/receivercreator
 receiver/redfishreceiver receiver/redfish
 receiver/redisreceiver receiver/redis
 receiver/saphanareceiver receiver/saphana
-receiver/signalfxreceiver receiver/signalfx
 receiver/simpleprometheusreceiver receiver/simpleprometheus
 receiver/skywalkingreceiver receiver/skywalking
 receiver/snmpreceiver receiver/snmp
@@ -367,11 +368,12 @@ receiver/zipkinreceiver receiver/zipkin
 receiver/zookeeperreceiver receiver/zookeeper
 scraper/zookeeperscraper scraper/zookeeper
 testbed testbed
+testbed/integrationtests/elasticsearch testbed/integrationtests/elasticsearch
 testbed/mockdatasenders/mockdatadogagentexporter testbed/mockdatasenders/mockdatadogagentexporter
 reports/distributions/core.yaml reports/distributions/core.yaml
 reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
-exporter/azuredataexplorerexporter exporter/azuredataexplorer
 exporter/logicmonitorexporter exporter/logicmonitor
+extension/encoding/avrologencodingextension extension/encoding/avrologencoding
 receiver/riakreceiver receiver/riak

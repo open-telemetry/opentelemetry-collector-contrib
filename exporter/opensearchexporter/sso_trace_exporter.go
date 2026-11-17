@@ -40,7 +40,7 @@ func newSSOTracesExporter(cfg *Config, set exporter.Settings) *ssoTracesExporter
 	dataset := cfg.Dataset
 	namespace := cfg.Namespace
 	if cfg.MappingsSettings.Mode == MappingOTelV1.String() {
-		defaultPrefix = "otel-v1-apm-span"
+		defaultPrefix = otelV1SpanIndexAlias
 		dataset = ""
 		namespace = ""
 	}
@@ -71,8 +71,19 @@ func (s *ssoTracesExporter) Start(ctx context.Context, host component.Host) erro
 	s.client = client
 
 	if s.config.MappingsSettings.ManageIndexTemplate {
-		tm := newTemplateManager(client, s.telemetry.Logger)
+		tm, tmErr := newTemplateManager(client, s.telemetry.Logger, s.config.MappingsSettings.IndexTemplateFile)
+		if tmErr != nil {
+			return tmErr
+		}
 		tm.ensureTemplates(ctx)
+	}
+
+	if s.config.MappingsSettings.ISM.Enabled {
+		im, imErr := newISMManager(s.httpSettings.Endpoint, httpClient.Transport, client, s.config.MappingsSettings.ISM, s.telemetry.Logger)
+		if imErr != nil {
+			return imErr
+		}
+		im.setupISM(ctx, otelV1SpanIndexAlias)
 	}
 
 	return nil

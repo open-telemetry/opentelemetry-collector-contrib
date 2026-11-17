@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"github.com/open-telemetry/opamp-go/server"
 	serverTypes "github.com/open-telemetry/opamp-go/server/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,19 +35,22 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 const configTemplate = `
@@ -148,6 +152,7 @@ func newNopTelemetrySettings() telemetrySettings {
 		TelemetrySettings: component.TelemetrySettings{
 			Logger:         zap.NewNop(),
 			TracerProvider: noop.NewTracerProvider(),
+			Resource:       pcommon.NewResource(),
 		},
 	}
 }
@@ -188,6 +193,278 @@ func Test_NewSupervisorFailedStorageCreation(t *testing.T) {
 	require.Error(t, err)
 	require.ErrorContains(t, err, "error creating storage dir")
 	require.Nil(t, supervisor)
+}
+
+func TestSupervisorStartCompletesInterruptedConfigBeforeCollectorFailure(t *testing.T) {
+	cfg := newTestSupervisorConfig(t)
+	cfg.Capabilities.AcceptsRemoteConfig = true
+	statePath := filepath.Join(cfg.Storage.Directory, persistentStateFileName)
+	state, err := createNewPersistentState(statePath, "", zap.NewNop())
+	require.NoError(t, err)
+	require.NoError(t, state.SetLastRemoteConfigStatus(&protobufs.RemoteConfigStatus{
+		LastRemoteConfigHash: []byte("H1"),
+		Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING,
+	}))
+
+	s, err := NewSupervisor(t.Context(), zap.NewNop(), cfg)
+	require.NoError(t, err)
+	t.Cleanup(s.Shutdown)
+	// The configured executable cannot start, and no effective.yaml exists.
+	require.Error(t, s.Start(t.Context()))
+
+	state, err = loadPersistentState(statePath, zap.NewNop())
+	require.NoError(t, err)
+	status := state.GetLastRemoteConfigStatus()
+	require.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, status.Status)
+	require.Equal(t, []byte("H1"), status.LastRemoteConfigHash)
+	require.Contains(t, status.ErrorMessage, "interrupted")
+}
+
+func TestSupervisorStartRestoresRemoteConfigStatus(t *testing.T) {
+	applying := &protobufs.RemoteConfigStatus{
+		LastRemoteConfigHash: []byte("H1"),
+		Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING,
+	}
+	for _, tt := range []struct {
+		name        string
+		status      *protobufs.RemoteConfigStatus
+		rollback    bool
+		lastWorking bool
+		empty       bool
+		noRemote    bool
+	}{
+		{name: "rollback disabled", status: applying},
+		{name: "rollback disabled with last working", status: applying, lastWorking: true},
+		{name: "rollback enabled without last working", status: applying, rollback: true},
+		{name: "rollback enabled with last working", status: applying, rollback: true, lastWorking: true},
+		{name: "empty config", status: applying, empty: true},
+		{name: "no remote or effective config", status: applying, noRemote: true},
+		{name: "applied", status: &protobufs.RemoteConfigStatus{
+			LastRemoteConfigHash: []byte("H1"),
+			Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
+		}},
+		{name: "failed", status: &protobufs.RemoteConfigStatus{
+			LastRemoteConfigHash: []byte("H1"),
+			Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED,
+			ErrorMessage:         "previous failure",
+		}},
+		{name: "no saved status"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := newTestSupervisorConfig(t)
+			cfg.Capabilities.AcceptsRemoteConfig = true
+			cfg.Agent.Executable = os.Args[0]
+			cfg.Agent.Env = map[string]string{supervisorRestartHelperEnv: "opamp"}
+			cfg.Agent.BootstrapTimeout = 5 * time.Second
+			cfg.Agent.StopGracePeriod = 50 * time.Millisecond
+			cfg.Agent.AutomaticConfigRollback = tt.rollback
+			statePath := filepath.Join(cfg.Storage.Directory, persistentStateFileName)
+			state, err := createNewPersistentState(statePath, "", zap.NewNop())
+			require.NoError(t, err)
+			if tt.status != nil {
+				require.NoError(t, state.SetLastRemoteConfigStatus(tt.status))
+			}
+			remote := &protobufs.AgentRemoteConfig{
+				ConfigHash: []byte("H1"),
+				Config: &protobufs.AgentConfigMap{ConfigMap: map[string]*protobufs.AgentConfigObject{
+					"": {Body: []byte("receivers:\n  nop/H1: {}\n")},
+				}},
+			}
+			if tt.empty {
+				remote.Config = nil
+			}
+			configs := map[string]*protobufs.AgentRemoteConfig{}
+			if !tt.noRemote {
+				configs[lastRecvRemoteConfigFile] = remote
+				require.NoError(t, os.WriteFile(filepath.Join(cfg.Storage.Directory, agentConfigFileName), []byte("receivers:\n  nop/H1: {}\n"), 0o600))
+			}
+			if tt.lastWorking {
+				configs[lastWorkingRemoteConfigFile] = &protobufs.AgentRemoteConfig{
+					ConfigHash: []byte("working"),
+					Config: &protobufs.AgentConfigMap{ConfigMap: map[string]*protobufs.AgentConfigObject{
+						"": {Body: []byte("receivers:\n  nop/working: {}\n")},
+					}},
+				}
+			}
+			for file, remoteConfig := range configs {
+				data, marshalErr := proto.Marshal(remoteConfig)
+				require.NoError(t, marshalErr)
+				require.NoError(t, os.WriteFile(filepath.Join(cfg.Storage.Directory, file), data, 0o600))
+			}
+
+			want := tt.status
+			if tt.status.GetStatus() == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING {
+				want = &protobufs.RemoteConfigStatus{
+					LastRemoteConfigHash: []byte("H1"),
+					Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED,
+				}
+			}
+			for restart := range 2 {
+				endpoint, messages := newConfigStatusTestServer(t)
+				cfg.Server.Endpoint = endpoint
+				s, newErr := NewSupervisor(t.Context(), zap.NewNop(), cfg)
+				require.NoError(t, newErr)
+				var reported *protobufs.RemoteConfigStatus
+				func() {
+					defer s.Shutdown()
+					startErr := s.Start(t.Context())
+					if startErr != nil {
+						logBytes, _ := os.ReadFile(filepath.Join(cfg.Storage.Directory, agentLogFileName))
+						t.Logf("agent log: %s", logBytes)
+					}
+					require.NoError(t, startErr)
+					select {
+					case message := <-messages:
+						status := message.RemoteConfigStatus
+						reported = status
+						if want == nil {
+							require.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_UNSET, status.GetStatus())
+							require.Empty(t, status.GetLastRemoteConfigHash())
+							require.Empty(t, status.GetErrorMessage())
+						} else {
+							require.NotNil(t, status)
+							require.Equal(t, want.Status, status.Status)
+							require.Equal(t, want.LastRemoteConfigHash, status.LastRemoteConfigHash)
+							if tt.status == applying {
+								require.Contains(t, status.ErrorMessage, "interrupted")
+							} else {
+								require.Equal(t, want.ErrorMessage, status.ErrorMessage)
+							}
+						}
+					case <-time.After(5 * time.Second):
+						t.Fatalf("restart %d: no OpAMP status received", restart)
+					}
+
+					if !tt.noRemote && !tt.empty {
+						data, readErr := os.ReadFile(s.agentConfigFilePath())
+						require.NoError(t, readErr)
+						if tt.rollback && tt.lastWorking {
+							require.Contains(t, string(data), "nop/working")
+							require.NotContains(t, string(data), "nop/H1")
+						} else {
+							require.Contains(t, string(data), "nop/H1")
+						}
+					}
+				}()
+				state, err = loadPersistentState(statePath, zap.NewNop())
+				require.NoError(t, err)
+				saved := state.GetLastRemoteConfigStatus()
+				if want == nil {
+					require.Nil(t, saved)
+				} else {
+					require.True(t, proto.Equal(reported, saved), "restart %d: persisted status got %v, want %v", restart, saved, reported)
+				}
+			}
+		})
+	}
+}
+
+func TestSupervisorStartPreservesNewRemoteConfigStatus(t *testing.T) {
+	for _, interrupted := range []bool{true, false} {
+		t.Run(fmt.Sprintf("interrupted=%t", interrupted), func(t *testing.T) {
+			endpoint, messages := newConfigStatusTestServer(t)
+			cfg := newTestSupervisorConfig(t)
+			cfg.Capabilities.AcceptsRemoteConfig = true
+			cfg.Server.Endpoint = endpoint
+			cfg.Agent.Executable = os.Args[0]
+			cfg.Agent.Env = map[string]string{supervisorRestartHelperEnv: "opamp"}
+			cfg.Agent.BootstrapTimeout = 5 * time.Second
+			cfg.Agent.StopGracePeriod = 50 * time.Millisecond
+			cfg.Agent.ConfigApplyTimeout = time.Minute
+			statePath := filepath.Join(cfg.Storage.Directory, persistentStateFileName)
+			state, err := createNewPersistentState(statePath, "", zap.NewNop())
+			require.NoError(t, err)
+			if interrupted {
+				require.NoError(t, state.SetLastRemoteConfigStatus(&protobufs.RemoteConfigStatus{
+					LastRemoteConfigHash: []byte("H1"),
+					Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING,
+				}))
+			}
+			core, logs := observer.New(zap.DebugLevel)
+			s, err := NewSupervisor(t.Context(), zap.New(core), cfg)
+			require.NoError(t, err)
+			// Hold startup after the client connects, before the initial config is loaded.
+			s.configWriteMu.Lock()
+			unlock := sync.OnceFunc(s.configWriteMu.Unlock)
+			started := make(chan struct{})
+			var startErr error
+			go func() {
+				startErr = s.Start(t.Context())
+				close(started)
+			}()
+			t.Cleanup(func() {
+				unlock()
+				<-started
+				s.Shutdown()
+			})
+			select {
+			case message := <-messages:
+				if interrupted {
+					require.Equal(t, []byte("H1"), message.GetRemoteConfigStatus().GetLastRemoteConfigHash())
+					require.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, message.GetRemoteConfigStatus().GetStatus())
+				} else {
+					require.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_UNSET, message.GetRemoteConfigStatus().GetStatus())
+					require.Empty(t, message.GetRemoteConfigStatus().GetLastRemoteConfigHash())
+					require.Empty(t, message.GetRemoteConfigStatus().GetErrorMessage())
+				}
+			case <-time.After(10 * time.Second):
+				t.Fatal("Supervisor did not connect during startup")
+			}
+			// Wait for the internal server to finish initializing the port used in config composition.
+			require.Eventually(t, func() bool {
+				return logs.FilterMessage("OpAMP server started.").Len() > 0
+			}, 5*time.Second, 10*time.Millisecond)
+			s.onMessage(t.Context(), &types.MessageData{RemoteConfig: &protobufs.AgentRemoteConfig{
+				ConfigHash: []byte("H2"),
+				Config: &protobufs.AgentConfigMap{ConfigMap: map[string]*protobufs.AgentConfigObject{
+					"": {Body: []byte("receivers:\n  nop/H2: {}\n")},
+				}},
+			}})
+			unlock()
+			select {
+			case <-started:
+				require.NoError(t, startErr)
+			case <-time.After(10 * time.Second):
+				t.Fatal("Supervisor startup did not complete")
+			}
+			state, err = loadPersistentState(statePath, zap.NewNop())
+			require.NoError(t, err)
+			status := state.GetLastRemoteConfigStatus()
+			require.Equal(t, []byte("H2"), status.LastRemoteConfigHash)
+			require.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, status.Status)
+			require.Empty(t, status.ErrorMessage)
+			require.Eventually(t, func() bool {
+				select {
+				case message := <-messages:
+					return proto.Equal(status, message.RemoteConfigStatus)
+				default:
+					return false
+				}
+			}, 5*time.Second, 10*time.Millisecond, "server did not receive APPLYING for H2")
+		})
+	}
+}
+
+func newConfigStatusTestServer(t *testing.T) (string, <-chan *protobufs.AgentToServer) {
+	t.Helper()
+	messages := make(chan *protobufs.AgentToServer, 32)
+	srv := server.New(newLoggerFromZap(zap.NewNop(), "test-server"))
+	require.NoError(t, srv.Start(flattenedSettings{
+		endpoint: "127.0.0.1:0",
+		onMessage: func(_ serverTypes.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			select {
+			case messages <- message:
+			default:
+			}
+			return &protobufs.ServerToAgent{}
+		},
+	}.toServerSettings()))
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.WithoutCancel(t.Context()), 5*time.Second)
+		defer cancel()
+		require.NoError(t, srv.Stop(ctx))
+	})
+	return "ws://" + srv.Addr().String() + "/v1/opamp", messages
 }
 
 func Test_composeEffectiveConfig(t *testing.T) {
@@ -859,13 +1136,18 @@ service:
 			},
 		})
 
+		supervisorTelemetrySettings := newNopTelemetrySettings()
+		supervisorTelemetrySettings.Resource.Attributes().PutStr("service.instance.id", "supervisor-instance")
 		s := Supervisor{
-			telemetrySettings: newNopTelemetrySettings(),
+			telemetrySettings: supervisorTelemetrySettings,
 			config: config.Supervisor{
 				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
-				Agent: config.Agent{ConfigFiles: []string{
-					string(config.SpecialConfigFileRemoteConfig),
-				}},
+				Agent: config.Agent{
+					ConfigFiles: []string{
+						string(config.SpecialConfigFileRemoteConfig),
+					},
+					Description: config.AgentDescription{IncludeSupervisorInstanceID: true},
+				},
 			},
 			agentDescription: agentDesc,
 			persistentState:  &persistentState{InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")},
@@ -912,6 +1194,7 @@ service:
 		assert.Equal(t, "remote-version", attrValues["service.version"])
 		assert.Equal(t, "remote-env", attrValues["deployment.environment"])
 		assert.Equal(t, "018fee23-4a51-7303-a441-73faed7d9deb", attrValues["service.instance.id"])
+		assert.Equal(t, "supervisor-instance", attrValues["supervisor.service.instance.id"])
 	})
 
 	t.Run("remote legacy attributes override stale agent description attributes", func(t *testing.T) {
@@ -1014,25 +1297,51 @@ func TestComposeExtraTelemetryConfigUsesDeclarativeResourceAttributes(t *testing
 		},
 	})
 
-	s := Supervisor{
-		telemetrySettings: newNopTelemetrySettings(),
-		agentDescription:  agentDesc,
+	for _, tc := range []struct {
+		name                        string
+		includeSupervisorInstanceID bool
+		expected                    []any
+	}{
+		{
+			name: "disabled",
+			expected: []any{
+				map[string]any{"name": "service.name", "value": "otelcol"},
+				map[string]any{"name": "service.version", "value": "0.152.0"},
+			},
+		},
+		{
+			name:                        "enabled",
+			includeSupervisorInstanceID: true,
+			expected: []any{
+				map[string]any{"name": "service.name", "value": "otelcol"},
+				map[string]any{"name": "service.version", "value": "0.152.0"},
+				map[string]any{"name": "supervisor.service.instance.id", "value": "supervisor-instance"},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			supervisorTelemetrySettings := newNopTelemetrySettings()
+			supervisorTelemetrySettings.Resource.Attributes().PutStr("service.instance.id", "supervisor-instance")
+			s := Supervisor{
+				telemetrySettings: supervisorTelemetrySettings,
+				config: config.Supervisor{Agent: config.Agent{
+					Description: config.AgentDescription{IncludeSupervisorInstanceID: tc.includeSupervisorInstanceID},
+				}},
+				agentDescription: agentDesc,
+			}
+			require.NoError(t, s.createTemplates())
+
+			conf, err := config.NewConfFromYAML(s.composeExtraTelemetryConfig())
+			require.NoError(t, err)
+
+			assert.False(t, conf.IsSet("service::telemetry::resource::service.name"))
+			assert.False(t, conf.IsSet("service::telemetry::resource::service.version"))
+
+			attrs, ok := conf.Get("service::telemetry::resource::attributes").([]any)
+			require.True(t, ok)
+			assert.Equal(t, tc.expected, attrs)
+		})
 	}
-	require.NoError(t, s.createTemplates())
-
-	conf, err := config.NewConfFromYAML(s.composeExtraTelemetryConfig())
-	require.NoError(t, err)
-
-	assert.False(t, conf.IsSet("service::telemetry::resource::service.name"))
-	assert.False(t, conf.IsSet("service::telemetry::resource::service.version"))
-
-	attrs, ok := conf.Get("service::telemetry::resource::attributes").([]any)
-	require.True(t, ok)
-	require.Len(t, attrs, 2)
-	assert.Equal(t, []any{
-		map[string]any{"name": "service.name", "value": "otelcol"},
-		map[string]any{"name": "service.version", "value": "0.152.0"},
-	}, attrs)
 }
 
 func TestComposeExtraTelemetryConfigTemplateError(t *testing.T) {
@@ -3621,24 +3930,19 @@ telemetry:
 	supervisor, err := NewSupervisor(t.Context(), zap.NewNop(), cfg)
 	require.NoError(t, err)
 
-	path := filepath.Join(t.TempDir(), "output.txt")
-	backend := testbed.NewOTLPHTTPDataReceiver(4318)
-	mockBackend := testbed.NewMockBackend(path, backend)
-	err = mockBackend.Start()
-	require.NoError(t, err)
+	sink := testutil.StartOTLPSink(t, "127.0.0.1:4318")
 
-	mockBackend.EnableRecording()
 	supervisor.telemetrySettings.Logger.Info("test log")
 
 	require.Eventually(t, func() bool {
-		return len(mockBackend.GetReceivedLogs()) > 0
+		return len(sink.Logs.AllLogs()) > 0
 	}, 5*time.Second, 1*time.Second)
 
-	mockBackend.Stop()
+	sink.Shutdown()
 
-	receivedLogs := mockBackend.GetReceivedLogs()
+	receivedLogs := sink.Logs.AllLogs()
 	require.Len(t, receivedLogs, 1)
-	l := mockBackend.ReceivedLogs[0]
+	l := receivedLogs[0]
 	require.Equal(t, 1, l.ResourceLogs().Len())
 	l.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
 		require.Equal(t, 1, rl.ScopeLogs().Len())
@@ -4154,7 +4458,7 @@ func TestSupervisor_healthSurvivesOpAMPClientReplacement(t *testing.T) {
 
 		oldEndpoint := s.config.Server.Endpoint
 
-		// An invalid CA cert makes LoadTLSConfig fail synchronously, before the
+		// An invalid client certificate makes LoadTLSConfig fail synchronously, before the
 		// replacement client is created, so only the rollback reaches the seeding.
 		// onOpampConnectionSettings restores the previous settings and calls
 		// startOpAMPClient again; requiring no error is what makes this case
@@ -4162,7 +4466,10 @@ func TestSupervisor_healthSurvivesOpAMPClientReplacement(t *testing.T) {
 		// leave the assertions below true without publishing anything.
 		require.NoError(t, s.onOpampConnectionSettings(t.Context(), &protobufs.OpAMPConnectionSettings{
 			DestinationEndpoint: fmt.Sprintf("wss://127.0.0.1:%d", freePort(t)),
-			Certificate:         &protobufs.TLSCertificate{CaCert: []byte("not-a-valid-pem-certificate")},
+			Certificate: &protobufs.TLSCertificate{
+				Cert:       []byte("not-a-valid-pem-certificate"),
+				PrivateKey: []byte("not-a-valid-pem-key"),
+			},
 		}))
 		require.Equal(t, oldEndpoint, s.config.Server.Endpoint, "the rollback must restore the previous endpoint")
 
@@ -4304,7 +4611,7 @@ func TestSupervisor_onOpampConnectionSettings(t *testing.T) {
 
 	t.Run("heartbeat interval reverted when reconnect with new settings fails", func(t *testing.T) {
 		// Old endpoint uses HTTP (Start is async → always returns nil).
-		// New endpoint uses WSS with an invalid CA cert: LoadTLSConfig fails synchronously
+		// New endpoint uses WSS with an invalid client certificate: LoadTLSConfig fails synchronously
 		// before any connection is attempted, giving us a reliable way to trigger the
 		// heartbeat rollback path in onOpampConnectionSettings.
 		oldEndpoint := fmt.Sprintf("http://127.0.0.1:%d", freePort(t))
@@ -4315,7 +4622,8 @@ func TestSupervisor_onOpampConnectionSettings(t *testing.T) {
 			HeartbeatIntervalSeconds: 5,
 			Certificate: &protobufs.TLSCertificate{
 				// Invalid PEM causes LoadTLSConfig to fail synchronously.
-				CaCert: []byte("not-a-valid-pem-certificate"),
+				Cert:       []byte("not-a-valid-pem-certificate"),
+				PrivateKey: []byte("not-a-valid-pem-key"),
 			},
 		})
 		// The error may be nil (fallback succeeded) or non-nil (fallback also failed).
@@ -4324,6 +4632,65 @@ func TestSupervisor_onOpampConnectionSettings(t *testing.T) {
 			t.Logf("fallback also failed (expected in some environments): %v", err)
 		}
 		assert.EqualValues(t, 30, s.heartbeatIntervalSeconds, "interval must be reverted after failed reconnect")
+	})
+
+	t.Run("missing Certificate keeps server verification settings and drops client certificate", func(t *testing.T) {
+		s := newTestSupervisor(t, fmt.Sprintf("http://127.0.0.1:%d", freePort(t)), false)
+		s.config.Server.TLS = configtls.ClientConfig{
+			ServerName: "opamp.example.com",
+			Config: configtls.Config{
+				CAPem:   "ca-pem",
+				CertPem: "cert-pem",
+				KeyPem:  "key-pem",
+			},
+		}
+
+		newEndpoint := fmt.Sprintf("http://127.0.0.1:%d", freePort(t))
+		err := s.onOpampConnectionSettings(t.Context(), &protobufs.OpAMPConnectionSettings{
+			DestinationEndpoint: newEndpoint,
+		})
+		require.NoError(t, err)
+		require.Equal(t, newEndpoint, s.config.Server.Endpoint)
+		assert.False(t, s.config.Server.TLS.InsecureSkipVerify)
+		assert.Equal(t, "ca-pem", string(s.config.Server.TLS.CAPem))
+		assert.Equal(t, "opamp.example.com", s.config.Server.TLS.ServerName)
+		assert.Empty(t, s.config.Server.TLS.CertPem)
+		assert.Empty(t, s.config.Server.TLS.KeyPem)
+	})
+
+	t.Run("Certificate offer keeps server verification settings and replaces client certificate", func(t *testing.T) {
+		s := newTestSupervisor(t, fmt.Sprintf("http://127.0.0.1:%d", freePort(t)), false)
+		s.config.Server.TLS = configtls.ClientConfig{
+			ServerName: "opamp.example.com",
+			Config: configtls.Config{
+				CAPem:      "ca-pem",
+				CertFile:   "cert.pem",
+				KeyFile:    "key.pem",
+				MinVersion: "1.3",
+				TPMConfig:  configtls.TPMConfig{Enabled: true},
+			},
+		}
+
+		newEndpoint := fmt.Sprintf("http://127.0.0.1:%d", freePort(t))
+		err := s.onOpampConnectionSettings(t.Context(), &protobufs.OpAMPConnectionSettings{
+			DestinationEndpoint: newEndpoint,
+			Certificate: &protobufs.TLSCertificate{
+				Cert:       []byte("offered-cert-pem"),
+				PrivateKey: []byte("offered-key-pem"),
+				CaCert:     []byte("offered-ca-pem"),
+			},
+		})
+		require.NoError(t, err)
+		require.Equal(t, newEndpoint, s.config.Server.Endpoint)
+		assert.False(t, s.config.Server.TLS.InsecureSkipVerify)
+		assert.Equal(t, "ca-pem", string(s.config.Server.TLS.CAPem))
+		assert.Equal(t, "opamp.example.com", s.config.Server.TLS.ServerName)
+		assert.Equal(t, "1.3", s.config.Server.TLS.MinVersion)
+		assert.Equal(t, "offered-cert-pem", string(s.config.Server.TLS.CertPem))
+		assert.Equal(t, "offered-key-pem", string(s.config.Server.TLS.KeyPem))
+		assert.Empty(t, s.config.Server.TLS.CertFile)
+		assert.Empty(t, s.config.Server.TLS.KeyFile)
+		assert.False(t, s.config.Server.TLS.TPMConfig.Enabled)
 	})
 }
 

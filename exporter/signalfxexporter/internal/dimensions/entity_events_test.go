@@ -17,7 +17,7 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 		"default_prop": "default_value",
 	}
 
-	transformer := NewEntityEventTransformer(defaultProps)
+	transformer := NewEntityEventTransformer(defaultProps, true)
 
 	tests := []struct {
 		name           string
@@ -69,6 +69,49 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 				"k8s.node.name": new("worker-1"),
 			},
 			wantTags: map[string]bool{},
+		},
+		{
+			name:          "k8s.node strips k8s label prefix",
+			entityType:    "k8s.node",
+			entityIDKey:   "k8s.node.uid",
+			entityIDValue: "node-456",
+			attributes: map[string]any{
+				"k8s.node.name":              "worker-1",
+				"k8s.node.label.nodeName":    "my3",
+				"k8s.node.label.environment": "production",
+			},
+			wantDimKey:   "k8s.node.uid",
+			wantDimValue: "node-456",
+			wantProperties: map[string]*string{
+				"default_prop":  new("default_value"),
+				"k8s.node.name": new("worker-1"),
+				"nodeName":      new("my3"),
+				"environment":   new("production"),
+			},
+			wantTags: map[string]bool{},
+		},
+		{
+			name:          "k8s.pod strips label prefix and renames service tags",
+			entityType:    "k8s.pod",
+			entityIDKey:   "k8s.pod.uid",
+			entityIDValue: "pod-789",
+			attributes: map[string]any{
+				"k8s.pod.name":      "web-0",
+				"k8s.pod.label.app": "web",
+				"k8s.pod.label.topology.kubernetes.io/zone": "us-central1-a",
+				"k8s.service.web": "",
+			},
+			wantDimKey:   "k8s.pod.uid",
+			wantDimValue: "pod-789",
+			wantProperties: map[string]*string{
+				"default_prop":                new("default_value"),
+				"k8s.pod.name":                new("web-0"),
+				"app":                         new("web"),
+				"topology.kubernetes.io/zone": new("us-central1-a"),
+			},
+			wantTags: map[string]bool{
+				"kubernetes_service_web": true,
+			},
 		},
 		{
 			name:          "k8s.namespace",
@@ -371,8 +414,24 @@ func TestEntityEventTransformer_TransformEntityEvent(t *testing.T) {
 	}
 }
 
+func TestEntityEventTransformer_KeepK8sLabelPrefix(t *testing.T) {
+	transformer := NewEntityEventTransformer(nil, false)
+
+	entityEvents := metadata.NewEntityEventsSlice()
+	entityEvent := entityEvents.AppendEmpty()
+	entityEvent.ID().PutStr("k8s.pod.uid", "pod-123")
+	state := entityEvent.SetEntityState()
+	state.SetEntityType("k8s.pod")
+	state.Attributes().PutStr("k8s.pod.label.app", "web")
+
+	dimUpdate, err := transformer.TransformEntityEvent(entityEvent)
+	require.NoError(t, err)
+	require.NotNil(t, dimUpdate)
+	assert.Equal(t, map[string]*string{"k8s.pod.label.app": new("web")}, dimUpdate.Properties)
+}
+
 func TestEntityEventTransformer_DeleteEvent(t *testing.T) {
-	transformer := NewEntityEventTransformer(nil)
+	transformer := NewEntityEventTransformer(nil, true)
 
 	// Create delete event
 	entityEvents := metadata.NewEntityEventsSlice()
@@ -386,7 +445,7 @@ func TestEntityEventTransformer_DeleteEvent(t *testing.T) {
 }
 
 func TestEntityEventTransformer_MissingEntityID(t *testing.T) {
-	transformer := NewEntityEventTransformer(nil)
+	transformer := NewEntityEventTransformer(nil, true)
 
 	// Create entity event without ID
 	entityEvents := metadata.NewEntityEventsSlice()

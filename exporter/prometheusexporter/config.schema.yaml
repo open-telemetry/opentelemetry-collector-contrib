@@ -2,7 +2,7 @@ description: Config defines configuration for Prometheus exporter.
 type: object
 properties:
   add_metric_suffixes:
-    description: 'AddMetricSuffixes controls whether suffixes are added to metric names. Defaults to true. Deprecated: Use TranslationStrategy instead. This setting is ignored when TranslationStrategy is explicitly set.'
+    description: 'AddMetricSuffixes controls whether suffixes are added to metric names. Defaults to true. Deprecated: This setting is ignored and TranslationStrategy is always used.'
     type: boolean
   const_labels:
     description: ConstLabels are values that are applied for every exported metric.
@@ -27,11 +27,11 @@ properties:
     description: SendTimestamps will send the underlying scrape timestamp with the export
     type: boolean
   sending_queue:
-    description: QueueBatchConfig defines the queue configuration.
+    description: 'QueueBatchConfig defines the queue configuration. Deprecated: [v0.166.0] Use of sending_queue is deprecated and will be removed in a future release. The Prometheus exporter is pull-based and does not support queuing.'
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
   translation_strategy:
-    description: TranslationStrategy controls how OTLP metric and attribute names are translated into Prometheus metric and label names. When set, this takes precedence over AddMetricSuffixes.
+    description: TranslationStrategy controls how OTLP metric and attribute names are translated into Prometheus metric and label names.
     type: string
   without_scope_info:
     description: WithoutScopeInfo controls the addition of labels for the instrumentation scope.

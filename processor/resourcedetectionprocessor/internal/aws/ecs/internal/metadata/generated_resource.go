@@ -126,6 +126,34 @@ func (rb *ResourceBuilder) SetCloudRegion(val string) {
 	}
 }
 
+// SetHostID sets provided value as "host.id" attribute.
+func (rb *ResourceBuilder) SetHostID(val string) {
+	if rb.config.HostID.Enabled {
+		rb.res.Attributes().PutStr("host.id", val)
+	}
+}
+
+// SetHostImageID sets provided value as "host.image.id" attribute.
+func (rb *ResourceBuilder) SetHostImageID(val string) {
+	if rb.config.HostImageID.Enabled {
+		rb.res.Attributes().PutStr("host.image.id", val)
+	}
+}
+
+// SetHostName sets provided value as "host.name" attribute.
+func (rb *ResourceBuilder) SetHostName(val string) {
+	if rb.config.HostName.Enabled {
+		rb.res.Attributes().PutStr("host.name", val)
+	}
+}
+
+// SetHostType sets provided value as "host.type" attribute.
+func (rb *ResourceBuilder) SetHostType(val string) {
+	if rb.config.HostType.Enabled {
+		rb.res.Attributes().PutStr("host.type", val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res

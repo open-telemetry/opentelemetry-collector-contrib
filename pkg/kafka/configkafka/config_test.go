@@ -323,6 +323,13 @@ func TestProducerConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
+		"custom_max_inflight_requests_per_broker": {
+			expected: func() ProducerConfig {
+				cfg := NewDefaultProducerConfig()
+				cfg.MaxInflightRequestsPerBroker = 100
+				return cfg
+			}(),
+		},
 		"large_message": {
 			expected: func() ProducerConfig {
 				cfg := NewDefaultProducerConfig()
@@ -356,6 +363,12 @@ func TestProducerConfig(t *testing.T) {
 		},
 		"max_message_bytes_exceeds_broker": {
 			expectedErr: fmt.Sprintf("max_message_bytes (209715200) cannot be greater than max_broker_write_bytes (%d)", franzGoMinBrokerWriteBytes),
+		},
+		"max_inflight_requests_per_broker_zero": {
+			expectedErr: "max_inflight_requests_per_broker (0) must be at least 1",
+		},
+		"max_inflight_requests_per_broker_with_acks_all": {
+			expectedErr: "max_inflight_requests_per_broker (2) must be 1 when required_acks is 'all' (-1)",
 		},
 	})
 }

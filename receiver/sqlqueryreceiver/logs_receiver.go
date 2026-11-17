@@ -22,6 +22,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver/internal/metadata"
 )
 
@@ -40,6 +41,7 @@ type logsReceiver struct {
 	storageClient storage.Client
 	obsrecv       *receiverhelper.ObsReport
 	host          component.Host
+	dbAuth        *dbAuthResolver
 }
 
 func newLogsReceiver(
@@ -67,10 +69,14 @@ func newLogsReceiver(
 		}
 	}
 
+	dbAuth := newDBAuthResolver(config.DBAuth)
 	receiver := &logsReceiver{
 		config:   config,
 		settings: settings,
 		createConnection: func() (*sql.DB, error) {
+			if !config.DBAuth.IsEmpty() {
+				return internal.NewPostgreSQLCredentialDB(config.Config, config.MaxOpenConn, dbAuth.getProvider), nil
+			}
 			return sqlOpenerFunc(config.Config.Driver, dataSource)
 		},
 		createClient:      createClient,
@@ -78,6 +84,7 @@ func newLogsReceiver(
 		shutdownRequested: make(chan struct{}),
 		id:                settings.ID,
 		obsrecv:           obsr,
+		dbAuth:            dbAuth,
 	}
 
 	return receiver, nil
@@ -91,6 +98,9 @@ func (receiver *logsReceiver) Start(ctx context.Context, host component.Host) er
 	receiver.settings.Logger.Debug("starting...")
 	receiver.isStarted = true
 	receiver.host = host
+	if err := receiver.dbAuth.resolve(host); err != nil {
+		return fmt.Errorf("resolve db_auth provider: %w", err)
+	}
 
 	var err error
 	receiver.storageClient, err = adapter.GetStorageClient(ctx, host, receiver.config.Config.StorageID, receiver.settings.ID)
