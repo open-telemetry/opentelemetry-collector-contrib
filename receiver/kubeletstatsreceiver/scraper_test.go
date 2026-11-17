@@ -7,15 +7,18 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -23,6 +26,7 @@ import (
 	clienttesting "k8s.io/client-go/testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
@@ -1115,4 +1119,53 @@ func (f *fakeRestClient) Pods() ([]byte, error) {
 		return nil, errors.New("")
 	}
 	return os.ReadFile("testdata/pods.json")
+}
+
+func TestScraperNodeInfoFollowsNodeUpdates(t *testing.T) {
+	watcherStarted := make(chan struct{})
+	var watcherStartedOnce sync.Once
+	client := fake.NewClientset()
+	client.PrependWatchReactor("*", func(action clienttesting.Action) (handled bool, ret watch.Interface, err error) {
+		w, err := client.Tracker().Watch(action.GetResource(), action.GetNamespace())
+		if err != nil {
+			return false, nil, err
+		}
+		// The informer may re-watch; only signal the first start.
+		watcherStartedOnce.Do(func() { close(watcherStarted) })
+		return true, w, nil
+	})
+
+	const nodeName = "worker-42"
+	ks := &kubeletScraper{
+		logger:       zap.NewNop(),
+		nodeInformer: k8sconfig.NewNodeSharedInformer(client, nodeName, 5*time.Minute),
+		stopCh:       make(chan struct{}),
+		nodeInfo:     &kubelet.NodeInfo{},
+	}
+	require.NoError(t, ks.start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, ks.shutdown(t.Context())) }()
+
+	select {
+	case <-watcherStarted:
+	case <-time.After(10 * time.Second):
+		t.Fatal("node watcher did not start")
+	}
+	node := getNodeWithCPUCapacity(nodeName, 8)
+	_, err := client.CoreV1().Nodes().Create(t.Context(), node, metav1.CreateOptions{})
+	require.NoError(t, err)
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.InDelta(c, 8.0, ks.node().CPUCapacity, 0)
+	}, 10*time.Second, 100*time.Millisecond, "node add not reflected in node info")
+
+	// Simulate a node resize: capacity changes must be picked up by the update handler.
+	updated := node.DeepCopy()
+	updated.Status.Capacity["cpu"] = resource.MustParse("16")
+	updated.Status.Capacity["memory"] = resource.MustParse("32Gi")
+	_, err = client.CoreV1().Nodes().Update(t.Context(), updated, metav1.UpdateOptions{})
+	require.NoError(t, err)
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		n := ks.node()
+		assert.InDelta(c, 16.0, n.CPUCapacity, 0)
+		assert.InDelta(c, float64(32*1024*1024*1024), n.MemoryCapacity, 0)
+	}, 10*time.Second, 100*time.Millisecond, "node update not reflected in node info")
 }

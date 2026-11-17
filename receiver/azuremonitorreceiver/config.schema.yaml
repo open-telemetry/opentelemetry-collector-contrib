@@ -44,7 +44,7 @@ properties:
   client_id:
     type: string
   client_secret:
-    type: string
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
   cloud:
     type: string
   credentials:

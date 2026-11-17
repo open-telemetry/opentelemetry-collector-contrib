@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.26.0
 
 require (
-	github.com/moby/moby/api v1.56.1
-	github.com/moby/moby/client v0.6.2
+	github.com/moby/moby/api v1.57.0
+	github.com/moby/moby/client v0.6.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.165.1
