@@ -132,7 +132,6 @@ func (r *awss3Receiver) receive(ctx context.Context, key string, data io.Reader)
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	data = &contextReader{ctx: ctx, reader: data}
 	algorithm := r.decompression
 	switch {
 	case strings.HasSuffix(key, ".gz"):
@@ -160,7 +159,7 @@ func (r *awss3Receiver) receive(ctx context.Context, key string, data io.Reader)
 	}
 	// A decoder may stop before the end of the object. Read through EOF to
 	// validate the download and compression checksum before acknowledging it.
-	_, err = io.Copy(io.Discard, data)
+	err = copyReader(ctx, io.Discard, data)
 	if err != nil {
 		return err
 	}
@@ -180,18 +179,6 @@ func newDecompressor(algorithm configcompression.Type, data io.Reader) (io.ReadC
 	default:
 		return nil, fmt.Errorf("unsupported decompression type %q", algorithm)
 	}
-}
-
-type contextReader struct {
-	ctx    context.Context
-	reader io.Reader
-}
-
-func (r *contextReader) Read(p []byte) (int, error) {
-	if err := r.ctx.Err(); err != nil {
-		return 0, err
-	}
-	return r.reader.Read(p)
 }
 
 type traceReceiver struct {
@@ -226,7 +213,7 @@ func (r *traceReceiver) processReceivedData(ctx context.Context, rcvr *awss3Rece
 		return nil
 	}
 	rcvr.logger.Debug("Processing trace file", zap.String("key", key), zap.String("format", format))
-	buf, err := io.ReadAll(data)
+	buf, err := readAll(ctx, data)
 	if err != nil {
 		return err
 	}
@@ -279,7 +266,7 @@ func (r *metricsReceiver) processReceivedData(ctx context.Context, rcvr *awss3Re
 		return nil
 	}
 	rcvr.logger.Debug("Processing metric file", zap.String("key", key), zap.String("format", format))
-	buf, err := io.ReadAll(data)
+	buf, err := readAll(ctx, data)
 	if err != nil {
 		return err
 	}
@@ -332,7 +319,7 @@ func (r *logsReceiver) processReceivedData(ctx context.Context, rcvr *awss3Recei
 		return nil
 	}
 	rcvr.logger.Debug("Processing log file", zap.String("key", key), zap.String("format", format))
-	buf, err := io.ReadAll(data)
+	buf, err := readAll(ctx, data)
 	if err != nil {
 		return err
 	}
