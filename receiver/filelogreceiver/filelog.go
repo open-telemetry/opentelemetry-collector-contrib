@@ -4,9 +4,13 @@
 package filelogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
@@ -17,8 +21,19 @@ import (
 
 // NewFactory creates a factory for file_log receiver
 func NewFactory() receiver.Factory {
-	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability,
+	factory := adapter.NewFactory(ReceiverType{}, metadata.LogsStability,
 		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+	)
+	return xreceiver.NewFactory(metadata.Type, factory.CreateDefaultConfig,
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
+		xreceiver.WithLogs(func(ctx context.Context, set receiver.Settings, cfg component.Config, next consumer.Logs) (receiver.Logs, error) {
+			rcvr, err := factory.CreateLogs(ctx, set, cfg, next)
+			if err == nil && set.ID.Type() == metadata.DeprecatedType {
+				set.Logger.Warn("The filelog receiver type is deprecated; use file_log and update the pipeline receiver references, preserving the instance name and storage configuration",
+					zap.String("migration_guide", "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/filelogreceiver/MIGRATION.md#receiver-type-name"))
+			}
+			return rcvr, err
+		}, metadata.LogsStability),
 	)
 }
 

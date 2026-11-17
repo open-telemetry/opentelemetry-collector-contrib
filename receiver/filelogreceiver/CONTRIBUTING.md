@@ -1,5 +1,32 @@
 # Contributing to the File Log Receiver
 
+## Configuration compatibility
+
+Configuration changes must follow the Collector's [component stability requirements](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#configuration-changes).
+This includes changes inherited from `pkg/stanza`, such as file matching, input operators,
+and retry settings, as well as changes in the receiver itself.
+
+* Give new required options sensible defaults so existing configurations continue to work.
+* Deprecate renamed or removed options in release N, retain them in N+1, and do not remove
+  them or their warnings before both N+2 and six months after deprecation. They may be
+  placed behind a feature gate in N+2. An option being removed may become non-operational
+  in the release that deprecates it.
+* Log a WARN message for deprecated configuration with a link to the corresponding
+  section of [MIGRATION.md](MIGRATION.md). Record the first release with that warning
+  and the migration steps there when introducing a deprecation.
+* Test old configuration through the receiver factory, including omitted defaults,
+  explicit values, warning messages, and both states of any compatibility feature gate.
+* Once stable, maintain compatibility between minor versions. Critical security exceptions
+  require a migration path and a reasonable upgrade period.
+  Expiry of a deprecation period alone does not permit a breaking minor-version change:
+  review alias removal and feature-gate default changes against this requirement too.
+
+The receiver's stability level is managed separately from these configuration requirements.
+See the [configuration compatibility review](CONFIGURATION_COMPATIBILITY.md) for the
+audited surface and regression evidence. Preserve the default baseline and existing
+configuration fixtures when introducing new options; changing them requires a compatibility
+review, not just updating expected test values.
+
 ## Testing
 
 ### Benchmarks

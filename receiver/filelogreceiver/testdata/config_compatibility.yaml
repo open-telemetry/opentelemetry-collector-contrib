@@ -1,0 +1,66 @@
+# Exercise non-default settings at the public receiver boundary.
+include: [testdata/*.log]
+exclude: [testdata/excluded*.log]
+exclude_older_than: 48h
+start_at: beginning
+poll_interval: 400ms
+max_concurrent_files: 32
+max_batches: 2
+fingerprint_size: 2kb
+initial_buffer_size: 8KiB
+max_log_size: 2MiB
+max_log_size_behavior: truncate
+encoding: utf-16le
+force_flush_period: 2s
+multiline:
+  line_start_pattern: '^START'
+  omit_pattern: true
+preserve_leading_whitespaces: true
+preserve_trailing_whitespaces: true
+include_file_name: false
+include_file_path: true
+include_file_name_resolved: true
+include_file_path_resolved: true
+include_file_record_number: true
+include_file_record_offset: true
+delete_after_read: true
+acquire_fs_lock: true
+file_cache_advise: true
+skip_unmodified_files: true
+header:
+  pattern: '^#'
+  metadata_operators:
+    - type: regex_parser
+      regex: '^# (?P<source>.*)'
+compression: auto
+polls_to_archive: 8
+on_truncate: read_new
+ordering_criteria:
+  regex: '(?P<date>\d{4}-\d{2}-\d{2})'
+  group_by: '(?P<group>.*)'
+  top_n: 3
+  sort_by:
+    - sort_type: timestamp
+      regex_key: date
+      layout: '%Y-%m-%d'
+      location: UTC
+      ascending: true
+attributes:
+  source: application
+resource:
+  service.name: example
+storage: file_storage/compatibility
+retry_on_failure:
+  enabled: true
+  initial_interval: 2s
+  max_interval: 1m
+  max_elapsed_time: 0s
+operators:
+  - type: regex_parser
+    id: parse
+    regex: '^(?P<message>.*)$'
+    output: move_message
+  - type: move
+    id: move_message
+    from: attributes.message
+    to: body
