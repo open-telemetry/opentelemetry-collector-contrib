@@ -25,7 +25,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
@@ -421,11 +420,5 @@ func newAWSMSKMechanism(t *testing.T, provider aws.CredentialsProvider) sasl.Mec
 		AWSMSK:    configkafka.AWSMSKConfig{Region: "us-west-2"},
 	}, componenttest.NewNopHost(), zap.NewNop())
 	require.NoError(t, err)
-	cl, err := kgo.NewClient(opt)
-	require.NoError(t, err)
-	// Close before returning to stop Kafka background work during fake-time advances.
-	defer cl.Close()
-	mechanisms := cl.OptValue(kgo.SASL).([]sasl.Mechanism)
-	require.Len(t, mechanisms, 1)
-	return mechanisms[0]
+	return saslMechanism(t, opt)
 }

@@ -830,7 +830,9 @@ func saslMechanism(t *testing.T, opt kgo.Opt) sasl.Mechanism {
 	t.Helper()
 	cl, err := kgo.NewClient(opt)
 	require.NoError(t, err)
-	t.Cleanup(cl.Close)
+	// Close before returning: callers only need the mechanism, and synctest
+	// callers must not leave Kafka background work running during fake-time advances.
+	defer cl.Close()
 	mechanisms := cl.OptValue(kgo.SASL).([]sasl.Mechanism)
 	require.Len(t, mechanisms, 1)
 	return mechanisms[0]
