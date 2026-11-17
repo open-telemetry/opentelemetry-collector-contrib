@@ -4,6 +4,7 @@
 package awsemfexporter
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"reflect"
@@ -901,7 +902,7 @@ func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice(t *testing.
 			}(),
 			expectedDatapoint: dataPoint{
 				name:   "foo",
-				value:  &cWMetricHistogram{Values: []float64{6, 3, 1.5, 0, -1.5, -3, -6}, Counts: []float64{3, 2, 1, 4, 1, 2, 3}, Count: 16},
+				value:  &cWMetricHistogram{Values: []float64{6, 3, 1.5, 0, -1.5, -3, -6}, Counts: []float64{3, 2, 1, 4, 1, 2, 3}, Count: 16, Min: -8, Max: 8},
 				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
 			},
 		},
@@ -922,7 +923,7 @@ func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice(t *testing.
 			}(),
 			expectedDatapoint: dataPoint{
 				name:   "foo",
-				value:  &cWMetricHistogram{Values: []float64{10, 2.5, 0.625, 0, -0.625, -2.5, -10}, Counts: []float64{3, 2, 1, 4, 1, 2, 3}, Count: 16},
+				value:  &cWMetricHistogram{Values: []float64{10, 2.5, 0.625, 0, -0.625, -2.5, -10}, Counts: []float64{3, 2, 1, 4, 1, 2, 3}, Count: 16, Min: -16, Max: 16},
 				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1", "label2": "value2"},
 			},
 		},
@@ -1482,6 +1483,101 @@ func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSliceWithSplitDat
 	}
 }
 
+func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice_OverflowAndUnsetMinMax(t *testing.T) {
+	emfCalcs := setupEmfCalculators()
+	defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
+	dmd := generateDeltaMetricMetadata(false, "foo", false)
+
+	t.Run("scale <= -10 does not overflow float64 and marshals cleanly to JSON", func(t *testing.T) {
+		histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+		histogramDP := histogramDPS.AppendEmpty()
+		histogramDP.SetScale(-10)
+		histogramDP.Positive().BucketCounts().FromRaw([]uint64{1, 2})
+		histogramDP.SetZeroCount(1)
+		histogramDP.Negative().BucketCounts().FromRaw([]uint64{1, 2})
+		histogramDP.SetCount(6)
+
+		slice := exponentialHistogramDataPointSlice{dmd, histogramDPS}
+		isStale, _ := slice.IsStaleNaNInf(0)
+		assert.True(t, isStale, "scale < -9 should be identified as stale/dropped before calculation")
+
+		dps, retained := slice.CalculateDeltaDatapoints(0, "cloudwatch-otel", false, emfCalcs)
+		assert.True(t, retained)
+		require.Len(t, dps, 1)
+
+		cwHisto, ok := dps[0].value.(*cWMetricHistogram)
+		require.True(t, ok)
+
+		// Boundaries and values must not contain NaN or Inf
+		assert.False(t, math.IsInf(cwHisto.Min, 0))
+		assert.False(t, math.IsInf(cwHisto.Max, 0))
+		for _, v := range cwHisto.Values {
+			assert.False(t, math.IsInf(v, 0))
+			assert.False(t, math.IsNaN(v))
+		}
+
+		// Ensure JSON serialization succeeds without unsupported Inf values
+		bytes, err := json.Marshal(cwHisto)
+		require.NoError(t, err)
+		assert.NotEmpty(t, bytes)
+	})
+
+	t.Run("preserves calculated bucket boundaries when Min and Max are unset", func(t *testing.T) {
+		histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+		histogramDP := histogramDPS.AppendEmpty()
+		histogramDP.SetScale(0)
+		histogramDP.Positive().BucketCounts().FromRaw([]uint64{1}) // bucket [1, 2]
+		histogramDP.SetCount(1)
+		assert.False(t, histogramDP.HasMin())
+		assert.False(t, histogramDP.HasMax())
+
+		slice := exponentialHistogramDataPointSlice{dmd, histogramDPS}
+		dps, retained := slice.CalculateDeltaDatapoints(0, "cloudwatch-otel", false, emfCalcs)
+		assert.True(t, retained)
+		require.Len(t, dps, 1)
+
+		cwHisto := dps[0].value.(*cWMetricHistogram)
+		assert.Equal(t, 2.0, cwHisto.Max)
+		assert.Equal(t, 1.0, cwHisto.Min)
+	})
+
+	t.Run("explicit Min and Max override calculated boundaries", func(t *testing.T) {
+		histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+		histogramDP := histogramDPS.AppendEmpty()
+		histogramDP.SetScale(0)
+		histogramDP.Positive().BucketCounts().FromRaw([]uint64{1}) // bucket [1, 2]
+		histogramDP.SetCount(1)
+		histogramDP.SetMin(0.5)
+		histogramDP.SetMax(2.5)
+
+		slice := exponentialHistogramDataPointSlice{dmd, histogramDPS}
+		dps, retained := slice.CalculateDeltaDatapoints(0, "cloudwatch-otel", false, emfCalcs)
+		assert.True(t, retained)
+		require.Len(t, dps, 1)
+
+		cwHisto := dps[0].value.(*cWMetricHistogram)
+		assert.Equal(t, 2.5, cwHisto.Max)
+		assert.Equal(t, 0.5, cwHisto.Min)
+	})
+
+	t.Run("non-full split retains calculated Min when metric.HasMin() is false", func(t *testing.T) {
+		histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+		histogramDP := histogramDPS.AppendEmpty()
+		histogramDP.SetScale(0)
+		histogramDP.Positive().BucketCounts().FromRaw([]uint64{1, 2, 3})
+		histogramDP.SetCount(6)
+
+		slice := exponentialHistogramDataPointSlice{dmd, histogramDPS}
+		dps, retained := slice.CalculateDeltaDatapoints(0, "cloudwatch-otel", false, emfCalcs)
+		assert.True(t, retained)
+		require.Len(t, dps, 1)
+
+		cwHisto := dps[0].value.(*cWMetricHistogram)
+		assert.Equal(t, 8.0, cwHisto.Max)
+		assert.Equal(t, 1.0, cwHisto.Min)
+	})
+}
+
 func TestIsStaleNaNInf_ExponentialHistogramDataPointSlice(t *testing.T) {
 	testCases := []struct {
 		name           string
@@ -1660,6 +1756,30 @@ func TestIsStaleNaNInf_ExponentialHistogramDataPointSlice(t *testing.T) {
 				return histogramDPS
 			}(),
 			boolAssertFunc: assert.True,
+		},
+		{
+			name: "Exponential histogram with scale < -9 (overflow)",
+			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
+				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetScale(-10)
+				histogramDP.SetCount(uint64(5))
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			boolAssertFunc: assert.True,
+		},
+		{
+			name: "Exponential histogram with scale = -9 (valid)",
+			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
+				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetScale(-9)
+				histogramDP.SetCount(uint64(5))
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			boolAssertFunc: assert.False,
 		},
 	}
 
