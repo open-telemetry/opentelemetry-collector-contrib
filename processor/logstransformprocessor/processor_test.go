@@ -243,6 +243,33 @@ func (l *laggyOperatorConfig) Build(set component.TelemetrySettings) (operator.O
 	}, nil
 }
 
+func TestProcessorKeepsConvertingAfterStartContextIsCancelled(t *testing.T) {
+	tln := new(consumertest.LogsSink)
+	factory := NewFactory()
+	ltp, err := factory.CreateLogs(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, tln)
+	require.NoError(t, err)
+
+	// The context passed to Start is only valid while Start runs, so it may be
+	// cancelled as soon as Start returns.
+	startCtx, cancel := context.WithCancel(t.Context())
+	require.NoError(t, ltp.Start(startCtx, componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, ltp.Shutdown(t.Context()))
+	}()
+	cancel()
+	// Give the converter loop time to observe the cancellation before logs arrive.
+	time.Sleep(100 * time.Millisecond)
+
+	ld := plog.NewLogs()
+	ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().
+		Body().SetStr("2024-01-01 01:23:45 INFO converter loop still running")
+	require.NoError(t, ltp.ConsumeLogs(t.Context(), ld))
+
+	require.Eventually(t, func() bool {
+		return tln.LogRecordCount() == 1
+	}, 2*time.Second, 10*time.Millisecond)
+}
+
 func TestProcessorShutdownWithSlowOperator(t *testing.T) {
 	operator.Register("laggy", func() operator.Builder { return &laggyOperatorConfig{} })
 
