@@ -1,5 +1,5 @@
 change_type: enhancement
 component: extension/datadog
-note: Add experimental opt-in Agent-protocol Remote Configuration.
+note: Add experimental opt-in Agent-protocol Remote Configuration and SDK telemetry forwarding.
 issues: [53247]
 change_logs: [user, api]

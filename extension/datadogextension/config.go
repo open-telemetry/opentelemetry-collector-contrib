@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
@@ -23,6 +24,9 @@ var _ component.Config = (*Config)(nil)
 
 // Config contains the information necessary for enabling the Datadog Extension.
 type Config struct {
+	SDKEndpoint              string                                      `mapstructure:"sdk_endpoint"`
+	SDKHTTP                  *confighttp.ServerConfig                    `mapstructure:"sdk_http"`
+	InstrumentationTelemetry remoteconfig.InstrumentationTelemetryConfig `mapstructure:"instrumentation_telemetry"`
 	// RemoteConfig serves the existing Datadog SDK RC protocol when enabled.
 	RemoteConfig *remoteconfig.Config    `mapstructure:"remote_config"`
 	ClientConfig confighttp.ClientConfig `mapstructure:",squash"`
@@ -49,6 +53,14 @@ type Config struct {
 	GatewayDestination string `mapstructure:"gateway_destination"`
 }
 
+func (c *Config) Unmarshal(conf *confmap.Conf) error {
+	if c.SDKHTTP == nil && conf.IsSet("sdk_http") {
+		server := remoteconfig.DefaultConfig().ServerConfig
+		c.SDKHTTP = &server
+	}
+	return conf.Unmarshal(c)
+}
+
 // Validate ensures that the configuration is valid.
 func (c *Config) Validate() error {
 	if c.API.Site == "" {
@@ -73,13 +85,11 @@ func (c *Config) Validate() error {
 	if !slices.Contains(validInstallationMethods, c.InstallationMethod) {
 		return fmt.Errorf("installation_method must be one of: %s", strings.Join(validInstallationMethods[1:], ", "))
 	}
-	if c.RemoteConfig != nil && c.RemoteConfig.Enabled {
-		if c.ClientConfig.TLS.Insecure || c.ClientConfig.TLS.InsecureSkipVerify || c.ClientConfig.Auth.HasValue() || len(c.ClientConfig.Headers) > 0 || len(c.ClientConfig.Middlewares) > 0 || c.ClientConfig.Compression.IsCompressed() {
-			return errors.New("remote_config requires API-key authentication and verified TLS without custom headers, middleware or compression")
-		}
-		return remoteconfig.ValidateConfig(c.rcConfig())
-	}
-	return nil
+	return remoteconfig.ValidateSDKConfig(c.sdkConfig())
+}
+
+func (c *Config) sdkConfig() *remoteconfig.SDKConfig {
+	return &remoteconfig.SDKConfig{Endpoint: c.SDKEndpoint, HTTP: c.SDKHTTP, RemoteConfig: c.RemoteConfig, InstrumentationTelemetry: c.InstrumentationTelemetry, API: remoteconfig.APIConfig{Key: c.API.Key, Site: c.API.Site}, Backend: c.ClientConfig}
 }
 
 func (c *Config) rcConfig() *remoteconfig.Config {

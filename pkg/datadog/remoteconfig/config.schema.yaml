@@ -22,3 +22,22 @@ $defs:
         format: duration
     allOf:
       - $ref: go.opentelemetry.io/collector/config/confighttp.server_config
+  instrumentation_telemetry_config:
+    description: InstrumentationTelemetryConfig controls opaque, synchronous SDK forwarding.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      endpoint:
+        type: string
+      max_concurrent_requests:
+        type: integer
+      max_inflight_bytes:
+        type: integer
+        x-customType: int64
+      max_request_bytes:
+        type: integer
+        x-customType: int64
+      timeout:
+        type: string
+        format: duration

@@ -23,43 +23,84 @@ import (
 )
 
 type remoteConfigExtension struct {
-	closeBackend  func()
-	config        *Config
-	settings      extension.Settings
-	newService    func(context.Context, component.Host) (remoteConfigService, error)
-	cancelBackend context.CancelFunc
-	service       remoteConfigService
-	server        *http.Server
-	listener      net.Listener
-	done          chan struct{}
+	telemetry         *instrumentationTelemetry
+	telemetryOnly     bool
+	maxRCRequestBytes int64
+	closeBackend      func()
+	config            *Config
+	settings          extension.Settings
+	newService        func(context.Context, component.Host) (remoteConfigService, error)
+	cancelBackend     context.CancelFunc
+	service           remoteConfigService
+	server            *http.Server
+	listener          net.Listener
+	done              chan struct{}
 }
 
 func (e *remoteConfigExtension) Start(ctx context.Context, host component.Host) error {
-	handler := http.TimeoutHandler(http.HandlerFunc(e.serveHTTP), e.config.RequestTimeout, "Remote Configuration request timed out")
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		timeout := e.config.RequestTimeout
+		if r.URL.Path == telemetryPath && e.telemetry != nil {
+			timeout = e.telemetry.config.Timeout
+		}
+		http.TimeoutHandler(http.HandlerFunc(e.serveHTTP), timeout, "SDK request timed out").ServeHTTP(w, r)
+	})
 	server, err := e.config.ServerConfig.ToServer(ctx, host.GetExtensions(), e.settings.TelemetrySettings, handler)
 	if err != nil {
 		return err
+	}
+	if e.telemetry != nil {
+		// RC retains Collector decoding. Telemetry preserves compressed bytes
+		// under the same TLS, authentication and request-limit policy.
+		opaqueConfig := e.config.ServerConfig
+		opaqueConfig.CompressionAlgorithms = []string{}
+		opaque, opaqueErr := opaqueConfig.ToServer(ctx, host.GetExtensions(), e.settings.TelemetrySettings, handler)
+		if opaqueErr != nil {
+			return opaqueErr
+		}
+		normal := server.Handler
+		server.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == telemetryPath {
+				opaque.Handler.ServeHTTP(w, r)
+				return
+			}
+			normal.ServeHTTP(w, r)
+		})
 	}
 	listener, err := e.config.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return err
 	}
 	backendContext, cancel := context.WithCancel(context.Background())
-	service, err := e.newService(backendContext, host)
-	if err != nil {
+	cleanup := func() {
 		cancel()
+		if e.telemetry != nil {
+			e.telemetry.close()
+		}
 		if e.closeBackend != nil {
 			e.closeBackend()
 		}
 		_ = listener.Close()
-		return err
 	}
-	e.service = service
+	if e.telemetry != nil {
+		if err := e.telemetry.start(backendContext, host, e.settings.TelemetrySettings); err != nil {
+			cleanup()
+			return err
+		}
+	}
+	if !e.telemetryOnly {
+		service, err := e.newService(backendContext, host)
+		if err != nil {
+			cleanup()
+			return err
+		}
+		e.service = service
+		service.Start()
+	}
 	e.cancelBackend = cancel
 	e.server = server
 	e.listener = listener
 	e.done = make(chan struct{})
-	service.Start()
 	go func() {
 		defer close(e.done)
 		if err := server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -79,7 +120,13 @@ func (e *remoteConfigExtension) Shutdown(ctx context.Context) error {
 		_ = e.server.Close()
 	}
 	<-e.done
-	serviceErr := e.service.Stop()
+	var serviceErr error
+	if e.service != nil {
+		serviceErr = e.service.Stop()
+	}
+	if e.telemetry != nil {
+		e.telemetry.close()
+	}
 	if e.closeBackend != nil {
 		e.closeBackend()
 	}
@@ -97,6 +144,16 @@ func (e *remoteConfigExtension) serveHTTP(w http.ResponseWriter, r *http.Request
 	case "/info":
 		method = http.MethodGet
 	case "/v0.7/config":
+		if e.telemetryOnly {
+			http.NotFound(w, r)
+			return
+		}
+		method = http.MethodPost
+	case telemetryPath:
+		if e.telemetry == nil {
+			http.NotFound(w, r)
+			return
+		}
 		method = http.MethodPost
 	default:
 		http.NotFound(w, r)
@@ -108,11 +165,26 @@ func (e *remoteConfigExtension) serveHTTP(w http.ResponseWriter, r *http.Request
 		return
 	}
 	if r.URL.Path == "/info" {
-		writeJSON(w, map[string]any{"version": version.AgentVersion, "endpoints": []string{"/v0.7/config"}})
+		endpoints := []string{}
+		if !e.telemetryOnly {
+			endpoints = append(endpoints, "/v0.7/config")
+		}
+		if e.telemetry != nil {
+			endpoints = append(endpoints, "/telemetry/proxy/")
+		}
+		writeJSON(w, map[string]any{"version": version.AgentVersion, "endpoints": endpoints})
+		return
+	}
+	if r.URL.Path == telemetryPath {
+		e.telemetry.serveHTTP(w, r)
 		return
 	}
 	var request pbgo.ClientGetConfigsRequest
-	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, e.config.ServerConfig.MaxRequestBodySize))
+	limit := e.maxRCRequestBytes
+	if limit == 0 {
+		limit = e.config.ServerConfig.MaxRequestBodySize
+	}
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, limit))
 	if err := decoder.Decode(&request); err != nil {
 		writeDecodeError(w, err)
 		return

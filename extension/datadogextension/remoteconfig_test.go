@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.uber.org/zap"
 )
@@ -69,4 +70,25 @@ func TestExtensionOwnsRCLifecycle(t *testing.T) {
 			require.Equal(t, !fail, rc.stopped)
 		})
 	}
+}
+
+func TestTelemetryIsIndependentOfRC(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	conf := confmap.NewFromStringMap(map[string]any{
+		"api":      map[string]any{"key": "0123456789abcdef0123456789abcdef", "fail_on_invalid_key": false},
+		"hostname": "collector-test", "sdk_endpoint": "127.0.0.1:0",
+		"sdk_http":                  map[string]any{"read_timeout": "15s"},
+		"instrumentation_telemetry": map[string]any{"enabled": true},
+	})
+	require.NoError(t, conf.Unmarshal(cfg))
+	require.NoError(t, cfg.Validate())
+	require.False(t, cfg.RemoteConfig.Enabled)
+	require.Empty(t, cfg.RemoteConfig.CacheDirectory)
+	require.NotNil(t, cfg.SDKHTTP)
+	require.Equal(t, "127.0.0.1:0", cfg.sdkConfig().Endpoint)
+	ext, err := f.Create(t.Context(), extensiontest.NewNopSettings(component.MustNewType("datadog")), cfg)
+	require.NoError(t, err)
+	require.NotNil(t, ext.(*datadogExtension).rc)
+	require.NoError(t, ext.Shutdown(t.Context()))
 }

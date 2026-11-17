@@ -145,3 +145,31 @@ in the SDK. This extension does not deliver DI output or implement OpAMP.
 The experiment pins the Agent RC module from
 [the Agent RC prototype](https://github.com/DataDog/datadog-agent/pull/60194).
 The HTTP-client injection API and its module release need review before this can ship.
+
+## Experimental SDK telemetry forwarding
+
+Python is the core POC. Stabilize its RC, instrumentation telemetry and DI flow before bringing Java to parity. RC and SDK instrumentation telemetry are independent opt-ins on a shared SDK listener. The existing private metadata listener is unchanged.
+
+```yaml
+extensions:
+  datadog:
+    api:
+      key: ${env:DD_API_KEY}
+      site: datadoghq.com
+    sdk_endpoint: 127.0.0.1:8234
+    remote_config:
+      enabled: true
+      cache_directory: /var/lib/otelcol/datadog-remote-config
+    instrumentation_telemetry:
+      enabled: true
+service:
+  extensions: [datadog]
+```
+
+The SDK listener serves `/info`, enabled RC at `/v0.7/config`, and enabled SDK telemetry at `/telemetry/proxy/api/v2/apmtelemetry`. Telemetry also works with RC disabled and no cache directory. `sdk_http` optionally supplies standard Collector server TLS/authentication and timeout settings. If omitted, the listener retains the existing `remote_config` HTTP settings; `sdk_endpoint` overrides its address. The private metadata listener remains under `http`.
+
+The forwarder preserves the request body and content encoding. It uses the Collector's API key, site, proxy and verified TLS settings. Application credentials and hop-by-hop headers are discarded. It forwards synchronously with no extra queue or retries, then returns the intake status and `Retry-After`. Intake 404 and redirects become 502 so SDKs do not disable a configured route or follow a new destination. Response bodies are not relayed.
+
+Experimental defaults are a 5 MiB request limit, 25 MiB of in-flight payload reservations, 20 concurrent requests and a 10-second timeout. Chunked requests reserve the maximum request size. Saturation returns 503 with `Retry-After`. These limits remain subject to SDK qualification.
+
+Next steps before shipping: agree a standalone Collector identity and expose RC backend authorization/polling health; publish a publicly consumable Agent RC API module and replace experimental pins. Keep Java parity and the remaining SDK compatibility matrix as follow-up work.

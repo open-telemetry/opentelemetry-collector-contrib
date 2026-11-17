@@ -83,8 +83,9 @@ func (*factory) createDefaultConfig() component.Config {
 	serverConfig := confighttp.NewDefaultServerConfig()
 	serverConfig.NetAddr = netAddr
 	return &Config{
-		RemoteConfig: remoteconfig.DefaultConfig(),
-		ClientConfig: confighttp.NewDefaultClientConfig(),
+		RemoteConfig:             remoteconfig.DefaultConfig(),
+		InstrumentationTelemetry: remoteconfig.DefaultInstrumentationTelemetryConfig(),
+		ClientConfig:             confighttp.NewDefaultClientConfig(),
 		API: datadogconfig.APIConfig{
 			Site:             datadogconfig.DefaultSite,
 			FailOnInvalidKey: true,

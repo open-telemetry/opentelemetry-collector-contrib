@@ -23,9 +23,16 @@ properties:
   installation_method:
     description: 'InstallationMethod indicates how the collector was installed. Valid values: "", "kubernetes", "bare-metal", "docker", "ecs-fargate", "eks-fargate". Defaults to "" (unset) if not configured.'
     type: string
+  instrumentation_telemetry:
+    $ref: /pkg/datadog/remoteconfig.instrumentation_telemetry_config
   remote_config:
     description: RemoteConfig serves the existing Datadog SDK RC protocol when enabled.
     x-pointer: true
     $ref: /pkg/datadog/remoteconfig.config
+  sdk_endpoint:
+    type: string
+  sdk_http:
+    x-pointer: true
+    $ref: go.opentelemetry.io/collector/config/confighttp.server_config
 allOf:
   - $ref: go.opentelemetry.io/collector/config/confighttp.client_config

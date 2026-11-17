@@ -433,9 +433,9 @@ func newExtension(
 	// Create agent components
 	configComponent := buildAgentConfig(cfg, configOptions...)
 	var rc extension.Extension
-	if cfg.RemoteConfig != nil && cfg.RemoteConfig.Enabled {
+	if cfg.sdkConfig().Enabled() {
 		var err error
-		rc, err = remoteconfig.New(set, cfg.rcConfig(), configComponent)
+		rc, err = remoteconfig.NewSDKServer(set, cfg.sdkConfig(), configComponent)
 		if err != nil {
 			return nil, err
 		}
