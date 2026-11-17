@@ -129,8 +129,8 @@ func (r *awss3Receiver) receive(ctx context.Context, key string, data io.Reader)
 	if data == nil {
 		return nil
 	}
-	if contextErr := ctx.Err(); contextErr != nil {
-		return contextErr
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 	data = &contextReader{ctx: ctx, reader: data}
 	algorithm := r.decompression
@@ -155,8 +155,8 @@ func (r *awss3Receiver) receive(ctx context.Context, key string, data io.Reader)
 		}()
 		data = decompressor
 	}
-	if processErr := r.dataProcessor.processReceivedData(ctx, r, key, data); processErr != nil {
-		return processErr
+	if err := r.dataProcessor.processReceivedData(ctx, r, key, data); err != nil {
+		return err
 	}
 	// A decoder may stop before the end of the object. Read through EOF to
 	// validate the download and compression checksum before acknowledging it.
