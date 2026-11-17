@@ -765,3 +765,84 @@ func TestJobGC(t *testing.T) {
 	// run job 1, round 2 - verify that all job 1 timeseries have been gc'd
 	testhelper.RunScript(t, ma, job1Script2, "0")
 }
+
+func TestExponentialHistogramDownscaleAndZeroThreshold(t *testing.T) {
+	script := []*testhelper.MetricsAdjusterTest{
+		{
+			Description: "Initial point establishes start time",
+			Metrics: testhelper.Metrics(
+				testhelper.ExponentialHistogramMetric(
+					exponentialHistogram1,
+					testhelper.ExponentialHistogramPointWithThreshold(k1v1k2v2, t1, t1, 2, 0, 1, 11, 50, 0, []uint64{1, 2, 3, 2}, -2, []uint64{1, 1}),
+				),
+			),
+			Adjusted: testhelper.Metrics(
+				testhelper.ExponentialHistogramMetric(
+					exponentialHistogram1,
+					testhelper.ExponentialHistogramPointWithThreshold(k1v1k2v2, t1, t1, 2, 0, 1, 11, 50, 0, []uint64{1, 2, 3, 2}, -2, []uint64{1, 1}),
+				),
+			),
+		},
+		{
+			Description: "Downscale from 2 to 1 preserves start time t1",
+			Metrics: testhelper.Metrics(
+				testhelper.ExponentialHistogramMetric(
+					exponentialHistogram1,
+					testhelper.ExponentialHistogramPointWithThreshold(k1v1k2v2, t2, t2, 1, 0, 1, 16, 60, 0, []uint64{3, 7, 1}, -1, []uint64{2, 2}),
+				),
+			),
+			Adjusted: testhelper.Metrics(
+				testhelper.ExponentialHistogramMetric(
+					exponentialHistogram1,
+					testhelper.ExponentialHistogramPointWithThreshold(k1v1k2v2, t1, t2, 1, 0, 1, 16, 60, 0, []uint64{3, 7, 1}, -1, []uint64{2, 2}),
+				),
+			),
+		},
+		{
+			Description: "ZeroThreshold increase from 0 to 2.0 preserves start time t1",
+			Metrics: testhelper.Metrics(
+				testhelper.ExponentialHistogramMetric(
+					exponentialHistogram1,
+					testhelper.ExponentialHistogramPointWithThreshold(k1v1k2v2, t3, t3, 1, 2.0, 15, 18, 65, 2, []uint64{2}, 0, []uint64{}),
+				),
+			),
+			Adjusted: testhelper.Metrics(
+				testhelper.ExponentialHistogramMetric(
+					exponentialHistogram1,
+					testhelper.ExponentialHistogramPointWithThreshold(k1v1k2v2, t1, t3, 1, 2.0, 15, 18, 65, 2, []uint64{2}, 0, []uint64{}),
+				),
+			),
+		},
+		{
+			Description: "ZeroThreshold decrease from 2.0 to 1.0 triggers reset to t3",
+			Metrics: testhelper.Metrics(
+				testhelper.ExponentialHistogramMetric(
+					exponentialHistogram1,
+					testhelper.ExponentialHistogramPointWithThreshold(k1v1k2v2, t4, t4, 1, 1.0, 15, 20, 70, 2, []uint64{3}, 0, []uint64{}),
+				),
+			),
+			Adjusted: testhelper.Metrics(
+				testhelper.ExponentialHistogramMetric(
+					exponentialHistogram1,
+					testhelper.ExponentialHistogramPointWithThreshold(k1v1k2v2, t3, t4, 1, 1.0, 15, 20, 70, 2, []uint64{3}, 0, []uint64{}),
+				),
+			),
+		},
+		{
+			Description: "Scale increase from 1 to 2 triggers reset to t4",
+			Metrics: testhelper.Metrics(
+				testhelper.ExponentialHistogramMetric(
+					exponentialHistogram1,
+					testhelper.ExponentialHistogramPointWithThreshold(k1v1k2v2, t5, t5, 2, 1.0, 15, 22, 75, 4, []uint64{4}, 0, []uint64{}),
+				),
+			),
+			Adjusted: testhelper.Metrics(
+				testhelper.ExponentialHistogramMetric(
+					exponentialHistogram1,
+					testhelper.ExponentialHistogramPointWithThreshold(k1v1k2v2, t4, t5, 2, 1.0, 15, 22, 75, 4, []uint64{4}, 0, []uint64{}),
+				),
+			),
+		},
+	}
+	testhelper.RunScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
+}

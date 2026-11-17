@@ -401,3 +401,108 @@ func TestMultiMetrics(t *testing.T) {
 	}
 	testhelper.RunScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), regexp.MustCompile("^.*_process_start_time_seconds$"), time.Minute), script)
 }
+
+func TestExponentialHistogramDownscaleAndZeroThreshold(t *testing.T) {
+	startTime := tUnknown
+	const startTimeMetricName = "example_process_start_time_seconds"
+	matchedStartTime := pcommon.Timestamp(10 * 1e9)
+	const matchStartTimeSec = float64(10)
+
+	t1 := pcommon.Timestamp(101 * 1e9)
+	t2 := pcommon.Timestamp(102 * 1e9)
+	t3 := pcommon.Timestamp(103 * 1e9)
+	t4 := pcommon.Timestamp(104 * 1e9)
+	t5 := pcommon.Timestamp(105 * 1e9)
+	resetStartTime := pcommon.NewTimestampFromTime(t4.AsTime().Add(-1 * time.Millisecond))
+
+	script := []*testhelper.MetricsAdjusterTest{
+		{
+			Description: "Initial exponential histogram gets process start time",
+			Metrics: testhelper.Metrics(
+				testhelper.SumMetric(startTimeMetricName, testhelper.DoublePoint(nil, matchedStartTime, t1, matchStartTimeSec)),
+				testhelper.ExponentialHistogramMetric(
+					"eh_metric",
+					testhelper.ExponentialHistogramPointWithThreshold(k1v1k2v2, startTime, t1, 2, 0, 1, 11, 50, 0, []uint64{1, 2, 3, 2}, -2, []uint64{1, 1}),
+				),
+			),
+			Adjusted: testhelper.Metrics(
+				testhelper.SumMetric(startTimeMetricName, testhelper.DoublePoint(nil, matchedStartTime, t1, matchStartTimeSec)),
+				testhelper.ExponentialHistogramMetric(
+					"eh_metric",
+					testhelper.ExponentialHistogramPointWithThreshold(k1v1k2v2, matchedStartTime, t1, 2, 0, 1, 11, 50, 0, []uint64{1, 2, 3, 2}, -2, []uint64{1, 1}),
+				),
+			),
+		},
+		{
+			Description: "Downscale from scale 2 to scale 1 does not reset start time",
+			Metrics: testhelper.Metrics(
+				testhelper.SumMetric(startTimeMetricName, testhelper.DoublePoint(nil, matchedStartTime, t2, matchStartTimeSec)),
+				testhelper.ExponentialHistogramMetric(
+					"eh_metric",
+					testhelper.ExponentialHistogramPointWithThreshold(k1v1k2v2, startTime, t2, 1, 0, 1, 16, 60, 0, []uint64{3, 7, 1}, -1, []uint64{2, 2}),
+				),
+			),
+			Adjusted: testhelper.Metrics(
+				testhelper.SumMetric(startTimeMetricName, testhelper.DoublePoint(nil, matchedStartTime, t2, matchStartTimeSec)),
+				testhelper.ExponentialHistogramMetric(
+					"eh_metric",
+					testhelper.ExponentialHistogramPointWithThreshold(k1v1k2v2, matchedStartTime, t2, 1, 0, 1, 16, 60, 0, []uint64{3, 7, 1}, -1, []uint64{2, 2}),
+				),
+			),
+		},
+		{
+			Description: "ZeroThreshold increase at scale 1 does not reset start time",
+			Metrics: testhelper.Metrics(
+				testhelper.SumMetric(startTimeMetricName, testhelper.DoublePoint(nil, matchedStartTime, t3, matchStartTimeSec)),
+				testhelper.ExponentialHistogramMetric(
+					"eh_metric",
+					// At scale 1, ZeroThreshold 2.0 covers buckets <= 1. Positive buckets 0,1 (3+7=10)
+					// and negative buckets -1,0 (2+2=4) move into ZeroCount (1 + 10 + 4 = 15).
+					testhelper.ExponentialHistogramPointWithThreshold(k1v1k2v2, startTime, t3, 1, 2.0, 15, 18, 65, 2, []uint64{2}, 0, []uint64{}),
+				),
+			),
+			Adjusted: testhelper.Metrics(
+				testhelper.SumMetric(startTimeMetricName, testhelper.DoublePoint(nil, matchedStartTime, t3, matchStartTimeSec)),
+				testhelper.ExponentialHistogramMetric(
+					"eh_metric",
+					testhelper.ExponentialHistogramPointWithThreshold(k1v1k2v2, matchedStartTime, t3, 1, 2.0, 15, 18, 65, 2, []uint64{2}, 0, []uint64{}),
+				),
+			),
+		},
+		{
+			Description: "Scale increase from 1 to 2 triggers reset to timestamp",
+			Metrics: testhelper.Metrics(
+				testhelper.SumMetric(startTimeMetricName, testhelper.DoublePoint(nil, matchedStartTime, t4, matchStartTimeSec)),
+				testhelper.ExponentialHistogramMetric(
+					"eh_metric",
+					testhelper.ExponentialHistogramPointWithThreshold(k1v1k2v2, startTime, t4, 2, 2.0, 15, 20, 70, 2, []uint64{4, 1}, 0, []uint64{}),
+				),
+			),
+			Adjusted: testhelper.Metrics(
+				testhelper.SumMetric(startTimeMetricName, testhelper.DoublePoint(nil, matchedStartTime, t4, matchStartTimeSec)),
+				testhelper.ExponentialHistogramMetric(
+					"eh_metric",
+					testhelper.ExponentialHistogramPointWithThreshold(k1v1k2v2, resetStartTime, t4, 2, 2.0, 15, 20, 70, 2, []uint64{4, 1}, 0, []uint64{}),
+				),
+			),
+		},
+		{
+			Description: "Subsequent point at new scale 2 preserves reset start time",
+			Metrics: testhelper.Metrics(
+				testhelper.SumMetric(startTimeMetricName, testhelper.DoublePoint(nil, matchedStartTime, t5, matchStartTimeSec)),
+				testhelper.ExponentialHistogramMetric(
+					"eh_metric",
+					testhelper.ExponentialHistogramPointWithThreshold(k1v1k2v2, startTime, t5, 2, 2.0, 15, 22, 75, 2, []uint64{5, 2}, 0, []uint64{}),
+				),
+			),
+			Adjusted: testhelper.Metrics(
+				testhelper.SumMetric(startTimeMetricName, testhelper.DoublePoint(nil, matchedStartTime, t5, matchStartTimeSec)),
+				testhelper.ExponentialHistogramMetric(
+					"eh_metric",
+					testhelper.ExponentialHistogramPointWithThreshold(k1v1k2v2, resetStartTime, t5, 2, 2.0, 15, 22, 75, 2, []uint64{5, 2}, 0, []uint64{}),
+				),
+			),
+		},
+	}
+	testhelper.RunScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), regexp.MustCompile("^.*_process_start_time_seconds$"), time.Minute), script)
+}

@@ -1,0 +1,21 @@
+# Use one of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: processor/metric_start_time
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Fix false exponential histogram resets and bucket subtraction when scale decreases or zero threshold increases.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if you don't have an issue.
+issues: [53271]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline blocks.
+subtext:
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request with `[norequire]` in the title.
+# Both '[norequire]' and '[noreply]' entries may be omitted from the changelog.
+change_logs: [user]
