@@ -44,7 +44,7 @@ type WebHook struct {
 	HealthPath        string                         `mapstructure:"health_path"`      // path for health check api. Default is /health_check
 	RequiredHeaders   map[string]configopaque.String `mapstructure:"required_headers"` // optional setting to set one or more required headers for all requests to have (except the health check)
 	GitHubHeaders     GitHubHeaders                  `mapstructure:",squash"`          // GitLab headers set by default
-	Secret            string                         `mapstructure:"secret"`           // secret for webhook
+	Secret            configopaque.String            `mapstructure:"secret"`           // secret for webhook
 	ServiceName       string                         `mapstructure:"service_name"`
 	IncludeSpanEvents bool                           `mapstructure:"include_span_events"` // attach raw webhook event JSON as span events
 }
