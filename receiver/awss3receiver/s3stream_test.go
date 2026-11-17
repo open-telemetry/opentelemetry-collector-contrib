@@ -5,6 +5,7 @@ package awss3receiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"io"
@@ -36,32 +37,73 @@ func (b *trackedBody) Close() error {
 }
 
 func TestS3StreamAcknowledgement(t *testing.T) {
+	failure := errors.New("stream failure")
+	content := []byte(strings.Repeat("record\n", 2001))
+	corruptGzip := gzipCompress(content)
+	corruptGzip[len(corruptGzip)-1] ^= 0xff
+	tests := []struct {
+		name        string
+		key         string
+		content     []byte
+		readErr     error
+		consumerErr error
+		closeErr    error
+		wantErr     error
+		wantRecords int
+		wantTagged  int
+		wantDeleted int
+	}{
+		{
+			name:        "success",
+			key:         "logs.txt",
+			content:     content,
+			wantRecords: 2001,
+			wantTagged:  1,
+			wantDeleted: 1,
+		},
+		{
+			name:    "read_error",
+			key:     "logs.txt",
+			content: content,
+			readErr: failure,
+			wantErr: failure,
+		},
+		{
+			name:    "corrupt_gzip",
+			key:     "logs.txt.gz",
+			content: corruptGzip,
+			wantErr: gzip.ErrChecksum,
+		},
+		{
+			name:        "consumer_error",
+			key:         "logs.txt",
+			content:     content,
+			consumerErr: failure,
+			wantErr:     failure,
+		},
+		{
+			name:     "close_error",
+			key:      "logs.txt",
+			content:  content,
+			closeErr: failure,
+			wantErr:  failure,
+		},
+	}
 	for _, mode := range []string{"sqs", "time"} {
-		for _, scenario := range []string{"success", "read_error", "corrupt_gzip", "consumer_error", "close_error"} {
-			t.Run(mode+"/"+scenario, func(t *testing.T) {
-				failure := errors.New("stream failure")
-				content := []byte(strings.Repeat("record\n", 2001))
-				key := "logs.txt"
-				body := &trackedBody{Reader: bytes.NewReader(content)}
-				switch scenario {
-				case "read_error":
-					body.Reader = io.MultiReader(bytes.NewReader(content), errorReader{err: failure})
-				case "corrupt_gzip":
-					content = gzipCompress(content)
-					content[len(content)-1] ^= 0xff
-					body.Reader = bytes.NewReader(content)
-					key += ".gz"
-				case "close_error":
-					body.closeErr = failure
+		for _, tt := range tests {
+			t.Run(mode+"/"+tt.name, func(t *testing.T) {
+				body := &trackedBody{
+					Reader:   bytes.NewReader(tt.content),
+					closeErr: tt.closeErr,
+				}
+				if tt.readErr != nil {
+					body.Reader = io.MultiReader(body.Reader, errorReader{err: tt.readErr})
 				}
 				var consumed, tagged int
 				c, err := consumer.NewLogs(func(_ context.Context, logs plog.Logs) error {
 					require.Zero(t, body.closed)
 					consumed += logs.LogRecordCount()
-					if scenario == "consumer_error" {
-						return failure
-					}
-					return nil
+					return tt.consumerErr
 				})
 				require.NoError(t, err)
 				r := newStreamTestReceiver(t, &logsReceiver{consumer: c}, newTextExtension(t))
@@ -77,19 +119,22 @@ func TestS3StreamAcknowledgement(t *testing.T) {
 				}
 				if mode == "time" {
 					reader := &s3TimeBasedReader{
-						logger: zap.NewNop(), singleObjectClient: client, s3Bucket: "bucket",
-						tagObjectAfterIngestion: true, S3PartitionTimeLocation: time.UTC,
+						logger:                  zap.NewNop(),
+						singleObjectClient:      client,
+						s3Bucket:                "bucket",
+						tagObjectAfterIngestion: true,
+						S3PartitionTimeLocation: time.UTC,
 						listObjectsClient: mockListObjectsAPI(func(*s3.ListObjectsV2Input) ListObjectsV2Pager {
 							return &mockListObjectsV2Pager{Pages: []*s3.ListObjectsV2Output{{
-								Contents: []s3types.Object{{Key: aws.String(key)}},
+								Contents: []s3types.Object{{Key: aws.String(tt.key)}},
 							}}}
 						}),
 					}
 					err = reader.readTelemetryForTime(t.Context(), time.Time{}, "logs", r.receive)
-					if scenario == "success" {
-						require.NoError(t, err)
+					if tt.wantErr != nil {
+						require.ErrorIs(t, err, tt.wantErr)
 					} else {
-						require.Error(t, err)
+						require.NoError(t, err)
 					}
 				} else {
 					ctx, cancel := context.WithCancel(t.Context())
@@ -97,34 +142,34 @@ func TestS3StreamAcknowledgement(t *testing.T) {
 					queue := &mockSQSClient{}
 					queue.On("ReceiveMessage", mock.Anything, mock.Anything).Return(&sqs.ReceiveMessageOutput{
 						Messages: []types.Message{{ReceiptHandle: aws.String("receipt"), Body: aws.String(
-							`{"Records":[{"eventSource":"aws:s3","eventName":"ObjectCreated:Put","s3":{"bucket":{"name":"bucket"},"object":{"key":"` + key + `"}}}]}`,
+							`{"Records":[{"eventSource":"aws:s3","eventName":"ObjectCreated:Put","s3":{"bucket":{"name":"bucket"},"object":{"key":"` + tt.key + `"}}}]}`,
 						)}},
 					}, nil).Once()
 					queue.On("ReceiveMessage", mock.Anything, mock.Anything).Return(&sqs.ReceiveMessageOutput{}, nil).Run(func(mock.Arguments) { cancel() })
-					if scenario == "success" {
+					if tt.wantDeleted > 0 {
 						queue.On("DeleteMessage", mock.Anything, mock.Anything).Return(&sqs.DeleteMessageOutput{}, nil).Run(func(mock.Arguments) {
 							require.Equal(t, 1, body.closed)
-							require.Equal(t, 2001, consumed)
-						}).Once()
+							require.Equal(t, tt.wantRecords, consumed)
+						}).Times(tt.wantDeleted)
 					}
 					reader := &s3SQSNotificationReader{
-						logger: zap.NewNop(), s3Client: client, sqsClient: queue,
-						s3Bucket: "bucket", queueURL: "queue", tagObjectAfterIngestion: true,
+						logger:                  zap.NewNop(),
+						s3Client:                client,
+						sqsClient:               queue,
+						s3Bucket:                "bucket",
+						queueURL:                "queue",
+						tagObjectAfterIngestion: true,
 					}
 					require.ErrorIs(t, reader.readAll(ctx, "logs", r.receive), context.Canceled)
 					queue.AssertExpectations(t)
-					if scenario != "success" {
-						queue.AssertNotCalled(t, "DeleteMessage", mock.Anything, mock.Anything)
-					}
+					queue.AssertNumberOfCalls(t, "DeleteMessage", tt.wantDeleted)
 				}
 				require.Equal(t, 1, body.closed)
 				require.Positive(t, consumed, "the stream should deliver a batch before a later failure")
-				if scenario == "success" {
-					require.Equal(t, 2001, consumed)
-					require.Equal(t, 1, tagged)
-				} else {
-					require.Zero(t, tagged)
+				if tt.wantErr == nil {
+					require.Equal(t, tt.wantRecords, consumed)
 				}
+				require.Equal(t, tt.wantTagged, tagged)
 			})
 		}
 	}

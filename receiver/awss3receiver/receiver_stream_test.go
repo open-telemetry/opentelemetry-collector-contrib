@@ -254,44 +254,73 @@ type errorReader struct{ err error }
 func (r errorReader) Read([]byte) (int, error) { return 0, r.err }
 
 func TestReceiveCompressedStreams(t *testing.T) {
-	for _, compression := range []string{"gzip", "zstd"} {
-		for _, scenario := range []string{"multiple_members", "corrupt_trailer", "truncated", "empty"} {
-			t.Run(compression+"/"+scenario, func(t *testing.T) {
-				compress, suffix := gzipCompress, ".gz"
-				if compression == "zstd" {
-					compress, suffix = zstdCompress, ".zst"
-				}
-				body := compress([]byte("first\n"))
-				switch scenario {
-				case "multiple_members":
-					body = append(body, compress([]byte("last\n"))...)
-				case "corrupt_trailer":
-					body[len(body)-1] ^= 0xff
-				case "truncated":
-					body = body[:len(body)-3]
-				case "empty":
-					body = compress(nil)
-				}
-				var records int
-				c, err := consumer.NewLogs(func(_ context.Context, logs plog.Logs) error {
-					records += logs.LogRecordCount()
-					return nil
-				})
-				require.NoError(t, err)
-				r := newStreamTestReceiver(t, &logsReceiver{consumer: c}, newTextExtension(t))
-				err = r.receive(t.Context(), "object.txt"+suffix, bytes.NewReader(body))
-				if scenario == "corrupt_trailer" || scenario == "truncated" {
-					require.Error(t, err)
-				} else {
+	compressions := []struct {
+		name     string
+		suffix   string
+		compress func([]byte) []byte
+	}{
+		{
+			name:     "gzip",
+			suffix:   ".gz",
+			compress: gzipCompress,
+		},
+		{
+			name:     "zstd",
+			suffix:   ".zst",
+			compress: zstdCompress,
+		},
+	}
+	for _, compression := range compressions {
+		t.Run(compression.name, func(t *testing.T) {
+			body := compression.compress([]byte("first\n"))
+			corruptBody := bytes.Clone(body)
+			corruptBody[len(corruptBody)-1] ^= 0xff
+			tests := []struct {
+				name        string
+				body        []byte
+				wantErr     bool
+				wantRecords int
+			}{
+				{
+					name:        "multiple_members",
+					body:        append(bytes.Clone(body), compression.compress([]byte("last\n"))...),
+					wantRecords: 2,
+				},
+				{
+					name:    "corrupt_trailer",
+					body:    corruptBody,
+					wantErr: true,
+				},
+				{
+					name:    "truncated",
+					body:    body[:len(body)-3],
+					wantErr: true,
+				},
+				{
+					name:        "empty",
+					body:        compression.compress(nil),
+					wantRecords: 0,
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					var records int
+					c, err := consumer.NewLogs(func(_ context.Context, logs plog.Logs) error {
+						records += logs.LogRecordCount()
+						return nil
+					})
 					require.NoError(t, err)
-					if scenario == "empty" {
-						require.Zero(t, records)
-					} else {
-						require.Equal(t, 2, records)
+					r := newStreamTestReceiver(t, &logsReceiver{consumer: c}, newTextExtension(t))
+					err = r.receive(t.Context(), "object.txt"+compression.suffix, bytes.NewReader(tt.body))
+					if tt.wantErr {
+						require.Error(t, err)
+						return
 					}
-				}
-			})
-		}
+					require.NoError(t, err)
+					require.Equal(t, tt.wantRecords, records)
+				})
+			}
+		})
 	}
 }
 
