@@ -34,7 +34,7 @@ require go.uber.org/goleak v1.3.0
 require (
 	4d63.com/gocheckcompilerdirectives v1.4.0 // indirect
 	4d63.com/gochecknoglobals v0.2.2 // indirect
-	actionlint.kjanat.dev v1.17.0 // indirect
+	actionlint.kjanat.dev v1.17.1 // indirect
 	charm.land/lipgloss/v2 v2.0.6 // indirect
 	codeberg.org/chavacava/garif v0.2.0 // indirect
 	codeberg.org/polyfloyd/go-errorlint v1.9.0 // indirect
