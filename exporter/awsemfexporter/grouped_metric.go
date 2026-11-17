@@ -58,6 +58,7 @@ func addToGroupedMetric(
 
 		for i, dp := range dps {
 			labels := dp.labels
+			dpMetadata := metadata
 
 			if metricType, ok := labels["Type"]; ok {
 				if (metricType == "Pod" || metricType == "Container") && config.EKSFargateContainerInsightsEnabled {
@@ -68,11 +69,11 @@ func addToGroupedMetric(
 			// if patterns were found in config file and weren't replaced by resource attributes, replace those patterns with metric labels.
 			// if patterns are provided for a valid key and that key doesn't exist in the resource attributes, it is replaced with `undefined`.
 			if !patternReplaceSucceeded {
-				if strings.Contains(metadata.logGroup, "undefined") {
-					metadata.logGroup, _ = replacePatterns(config.LogGroupName, labels, config.logger)
+				if strings.Contains(dpMetadata.logGroup, "undefined") {
+					dpMetadata.logGroup, _ = replacePatterns(config.LogGroupName, labels, config.logger)
 				}
-				if strings.Contains(metadata.logStream, "undefined") {
-					metadata.logStream, _ = replacePatterns(config.LogStreamName, labels, config.logger)
+				if strings.Contains(dpMetadata.logStream, "undefined") {
+					dpMetadata.logStream, _ = replacePatterns(config.LogStreamName, labels, config.logger)
 				}
 			}
 
@@ -82,12 +83,12 @@ func addToGroupedMetric(
 			}
 
 			if dp.timestampMs > 0 {
-				metadata.timestampMs = dp.timestampMs
+				dpMetadata.timestampMs = dp.timestampMs
 			}
 
 			// Extra params to use when grouping metrics
-			metadata.batchIndex = i
-			groupKey := aws.NewKey(metadata.groupedMetricMetadata, labels)
+			dpMetadata.batchIndex = i
+			groupKey := aws.NewKey(dpMetadata.groupedMetricMetadata, labels)
 			if _, ok := groupedMetrics[groupKey]; ok {
 				// if MetricName already exists in metrics map, print warning log
 				if _, ok := groupedMetrics[groupKey].metrics[dp.name]; ok {
@@ -103,7 +104,7 @@ func addToGroupedMetric(
 				groupedMetrics[groupKey] = &groupedMetric{
 					labels:   labels,
 					metrics:  map[string]*metricInfo{dp.name: metric},
-					metadata: metadata,
+					metadata: dpMetadata,
 				}
 			}
 		}
