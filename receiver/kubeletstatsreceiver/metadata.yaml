@@ -15,7 +15,7 @@ status:
     active: [TylerHelmuth, ChrsMark, dloucasfx, jinja2]
     emeritus: [dmitryax]
 
-sem_conv_version: 1.44.0
+sem_conv_version: 1.45.0
 
 resource_attributes:
   container.id:
