@@ -123,8 +123,8 @@ github.com/golang/protobuf v1.5.4 h1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek
 github.com/golang/protobuf v1.5.4/go.mod h1:lnTiLA8Wa4RWRcIUkrtSVa5nRhsEGBg48fD6rSs7xps=
 github.com/golang/snappy v1.0.0 h1:Oy607GVXHs7RtbggtPBnr2RmDArIsAefDwvrdWvRhGs=
 github.com/golang/snappy v1.0.0/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=
-github.com/google/cadvisor v0.60.6 h1:SKdJYX3tmzF7i7HdzM7GQOUxqSWZx4K5xGTW+xT4POE=
-github.com/google/cadvisor v0.60.6/go.mod h1:ShMYCWitWxCedSLVYLgHnmwA4j8P14bNHg+DpFIYdw0=
+github.com/google/cadvisor v0.61.0 h1:28ZTJOleOqZJn5L/qTItdZjzzrR0pXOWK9+4BStj15Y=
+github.com/google/cadvisor v0.61.0/go.mod h1:m+enI5EJ9sRiyXFY631cdLT9tQhW2nyoUHA40ZipbRc=
 github.com/google/cadvisor/lib v0.61.0 h1:3WJ3atigyUIYnUhjNZVsm4ifUO+ZNV0CL7BI9PuMJ9Q=
 github.com/google/cadvisor/lib v0.61.0/go.mod h1:1JPPc2D6g5jMEOuT0/RfOGcQKyn7rvsB2Lxh1alwniw=
 github.com/google/gnostic-models v0.7.0 h1:qwTtogB15McXDaNqTZdzPJRHvaVJlAl+HVQnLmJEJxo=
