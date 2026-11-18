@@ -164,6 +164,31 @@ attributes:
       - transmitted
       - received
     requirement_level: recommended
+  vcenter.alarm.state:
+    description: The state of the triggered alarm.
+    type: string
+    enum:
+      - "red"
+      - "yellow"
+    requirement_level: recommended
+  vcenter.datastore.maintenance.state:
+    description: The maintenance state of the datastore.
+    type: string
+    enum:
+      - "normal"
+      - "entering_maintenance"
+      - "in_maintenance"
+      - "unknown"
+    requirement_level: recommended
+  vcenter.host.connection.state:
+    description: The connection state of the host.
+    type: string
+    enum:
+      - "connected"
+      - "disconnected"
+      - "not_responding"
+      - "unknown"
+    requirement_level: recommended
   vm_count_power_state:
     name_override: power_state
     description: The current power state of the virtual machine.
@@ -374,6 +399,17 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [entity_status, vm_count_power_state]
+  vcenter.datastore.alarm.count:
+    enabled: false
+    description: The number of triggered alarms on the datastore.
+    stability: development
+    unit: "{alarms}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [vcenter.alarm.state]
+    extended_documentation: Only triggered alarms with a red or yellow status are counted.
   vcenter.datastore.disk.usage:
     enabled: true
     description: The amount of space in the datastore.
@@ -392,6 +428,39 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  vcenter.datastore.maintenance.status:
+    enabled: false
+    description: The current maintenance status of the datastore.
+    stability: development
+    unit: "1"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [vcenter.datastore.maintenance.state]
+    extended_documentation: A data point is reported for every state, with a value of 1 for the current state and 0 for all other states.
+  vcenter.host.alarm.count:
+    enabled: false
+    description: The number of triggered alarms on the host.
+    stability: development
+    unit: "{alarms}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [vcenter.alarm.state]
+    extended_documentation: Only triggered alarms with a red or yellow status are counted.
+  vcenter.host.connection.status:
+    enabled: false
+    description: The current connection status of the host.
+    stability: development
+    unit: "1"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [vcenter.host.connection.state]
+    extended_documentation: A data point is reported for every state, with a value of 1 for the current state and 0 for all other states.
   vcenter.host.cpu.capacity:
     enabled: true
     description: Total CPU capacity of the host system.
@@ -568,6 +637,26 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [object_name]
+  vcenter.host.power.status:
+    enabled: false
+    description: The current power state of the host.
+    stability: development
+    unit: "1"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [host_power_state]
+    extended_documentation: A data point is reported for every state, with a value of 1 for the current state and 0 for all other states.
+  vcenter.host.uptime:
+    enabled: false
+    description: Total time elapsed since last operating system boot-up.
+    stability: development
+    unit: s
+    gauge:
+      value_type: double
+    attributes: []
+    extended_documentation: As reported by the host. Not reported when the host is not powered on.
   vcenter.host.vsan.cache.hit_rate:
     enabled: true
     description: The host's read IOs which could be satisfied by the local client cache.
@@ -878,6 +967,17 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [object_name]
     extended_documentation: As measured over the most recent 20s interval.
+  vcenter.vm.power.status:
+    enabled: false
+    description: The current power state of the virtual machine.
+    stability: development
+    unit: "1"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [vm_count_power_state]
+    extended_documentation: A data point is reported for every state, with a value of 1 for the current state and 0 for all other states.
   vcenter.vm.vsan.latency.avg:
     enabled: true
     description: The virtual machine latency while accessing vSAN storage.

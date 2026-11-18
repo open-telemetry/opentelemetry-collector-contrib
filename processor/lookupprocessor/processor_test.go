@@ -670,3 +670,146 @@ func mockMapSourceFactory(mappings map[string]any) lookupsource.SourceFactory {
 		},
 	)
 }
+
+func TestAnyToString(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    any
+		expected string
+	}{
+		{
+			name:     "string input",
+			input:    "hello",
+			expected: "hello",
+		},
+		{
+			name:     "byte slice input",
+			input:    []byte("world"),
+			expected: "world",
+		},
+		{
+			name:     "int64 input",
+			input:    int64(42),
+			expected: "42",
+		},
+		{
+			name:     "float64 input",
+			input:    3.14159,
+			expected: "3.14159",
+		},
+		{
+			name:     "bool true input",
+			input:    true,
+			expected: "true",
+		},
+		{
+			name:     "bool false input",
+			input:    false,
+			expected: "false",
+		},
+		{
+			name:     "fallback/struct default type",
+			input:    struct{ ID int }{ID: 100},
+			expected: "{100}",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := anyToString(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestExtractValue(t *testing.T) {
+	tests := []struct {
+		name          string
+		result        any
+		found         bool
+		attr          AttributeMapping
+		expectedVal   any
+		expectedWrite bool
+	}{
+		{
+			name:   "not found without default",
+			result: nil,
+			found:  false,
+			attr: AttributeMapping{
+				Default: "",
+			},
+			expectedVal:   nil,
+			expectedWrite: false,
+		},
+		{
+			name:   "not found with default",
+			result: nil,
+			found:  false,
+			attr: AttributeMapping{
+				Default: "fallback_val",
+			},
+			expectedVal:   "fallback_val",
+			expectedWrite: true,
+		},
+		{
+			name:   "scalar lookup without source field",
+			result: "direct_val",
+			found:  true,
+			attr: AttributeMapping{
+				Source: "",
+			},
+			expectedVal:   "direct_val",
+			expectedWrite: true,
+		},
+		{
+			name:   "map extraction when result is not a map",
+			result: "not_a_map_value",
+			found:  true,
+			attr: AttributeMapping{
+				Source: "field_a",
+			},
+			expectedVal:   nil,
+			expectedWrite: false,
+		},
+		{
+			name:   "map extraction with missing key and no default",
+			result: map[string]any{"other_key": "val"},
+			found:  true,
+			attr: AttributeMapping{
+				Source:  "target_key",
+				Default: "",
+			},
+			expectedVal:   nil,
+			expectedWrite: false,
+		},
+		{
+			name:   "map extraction with missing key and default present",
+			result: map[string]any{"other_key": "val"},
+			found:  true,
+			attr: AttributeMapping{
+				Source:  "target_key",
+				Default: "default_map_val",
+			},
+			expectedVal:   "default_map_val",
+			expectedWrite: true,
+		},
+		{
+			name:   "map extraction successful key match",
+			result: map[string]any{"target_key": "success_val"},
+			found:  true,
+			attr: AttributeMapping{
+				Source: "target_key",
+			},
+			expectedVal:   "success_val",
+			expectedWrite: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, ok := extractValue(tt.result, tt.found, &tt.attr)
+			assert.Equal(t, tt.expectedWrite, ok)
+			assert.Equal(t, tt.expectedVal, val)
+		})
+	}
+}

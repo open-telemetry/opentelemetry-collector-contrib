@@ -42,11 +42,21 @@ func (hcs *HTTPClientScraper) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (hcs *HTTPClientScraper) ScrapeProfiles(_ context.Context) (pprofile.Profiles, error) {
-	resp, err := hcs.client.Get(hcs.ClientConfig.Endpoint)
+func (hcs *HTTPClientScraper) ScrapeProfiles(ctx context.Context) (pprofile.Profiles, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, hcs.ClientConfig.Endpoint, http.NoBody)
+	if err != nil {
+		return pprofile.Profiles{}, fmt.Errorf("failed to create profile request: %w", err)
+	}
+
+	resp, err := hcs.client.Do(req)
 	if err != nil {
 		hcs.Settings.Logger.Error("error requesting profile", zap.Error(err), zap.String("endpoint", hcs.ClientConfig.Endpoint))
 		return pprofile.Profiles{}, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return pprofile.Profiles{}, fmt.Errorf("unexpected status %q requesting profile from %s", resp.Status, hcs.ClientConfig.Endpoint)
 	}
 
 	pprofProfile, err := profile.Parse(resp.Body)

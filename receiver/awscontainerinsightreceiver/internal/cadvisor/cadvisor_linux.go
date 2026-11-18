@@ -8,23 +8,22 @@ package cadvisor // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"encoding/json"
 	"errors"
-	"net/http"
 	"os"
 	"time"
 
-	"github.com/google/cadvisor/cache/memory"
-	cadvisormetrics "github.com/google/cadvisor/container"
-	"github.com/google/cadvisor/container/containerd"
-	"github.com/google/cadvisor/container/crio"
 	"github.com/google/cadvisor/container/docker"
-	"github.com/google/cadvisor/container/systemd"
-	// Register filesystem plugins via init() functions
-	_ "github.com/google/cadvisor/fs/overlay/install"
-	_ "github.com/google/cadvisor/fs/tmpfs/install"
-	_ "github.com/google/cadvisor/fs/vfs/install"
 	cInfo "github.com/google/cadvisor/info/v1"
-	"github.com/google/cadvisor/manager"
-	"github.com/google/cadvisor/utils/sysfs"
+	"github.com/google/cadvisor/lib/cache/memory"
+	cadvisormetrics "github.com/google/cadvisor/lib/container"
+	"github.com/google/cadvisor/lib/container/containerd"
+	"github.com/google/cadvisor/lib/container/crio"
+	"github.com/google/cadvisor/lib/container/systemd"
+	// Register filesystem plugins via init() functions
+	_ "github.com/google/cadvisor/lib/fs/overlay/install"
+	_ "github.com/google/cadvisor/lib/fs/tmpfs/install"
+	_ "github.com/google/cadvisor/lib/fs/vfs/install"
+	"github.com/google/cadvisor/lib/manager"
+	"github.com/google/cadvisor/lib/utils/sysfs"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
@@ -55,7 +54,7 @@ type cadvisorManager interface {
 }
 
 // define a function type for creating a cadvisor manager
-type createCadvisorManager func(*memory.InMemoryCache, sysfs.SysFs, manager.HousekeepingConfig, cadvisormetrics.MetricSet, *http.Client,
+type createCadvisorManager func(*memory.InMemoryCache, sysfs.SysFs, manager.HousekeepingConfig, cadvisormetrics.MetricSet,
 	[]string, string) (cadvisorManager, error)
 
 // this is the default function that are used in production code to create a cadvisor manager
@@ -65,10 +64,10 @@ type createCadvisorManager func(*memory.InMemoryCache, sysfs.SysFs, manager.Hous
 // to unit test the code in `initManager(...)`. For now, I will leave code as it is. Hopefully we can find
 // a better way to mock the cadvisor related part in the future.
 var defaultCreateManager = func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, housekeepingConfig manager.HousekeepingConfig,
-	includedMetricsSet cadvisormetrics.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
+	includedMetricsSet cadvisormetrics.MetricSet, rawContainerCgroupPathPrefixWhiteList []string,
 	perfEventsFile string,
 ) (cadvisorManager, error) {
-	return manager.New(memoryCache, sysfs, housekeepingConfig, includedMetricsSet, collectorHTTPClient, rawContainerCgroupPathPrefixWhiteList, []string{}, perfEventsFile, 0)
+	return manager.New(memoryCache, sysfs, housekeepingConfig, includedMetricsSet, rawContainerCgroupPathPrefixWhiteList, []string{}, perfEventsFile, 0)
 }
 
 // Option is a function that can be used to configure Cadvisor struct
@@ -380,7 +379,7 @@ func (c *Cadvisor) initManager(createManager createCadvisorManager) error {
 		AllowDynamic: &allowDynamicHousekeeping,
 	}
 	// Create and start the cAdvisor container manager.
-	m, err := createManager(memory.New(statsCacheDuration, nil), sysFs, houseKeepingConfig, includedMetrics, http.DefaultClient, cgroupRoots, "")
+	m, err := createManager(memory.New(statsCacheDuration, nil), sysFs, houseKeepingConfig, includedMetrics, cgroupRoots, "")
 	if err != nil {
 		c.logger.Error("cadvisor manager allocate failed, ", zap.Error(err))
 		return err

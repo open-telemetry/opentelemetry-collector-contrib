@@ -3,6 +3,14 @@ azure_monitor/valid_subscription_ids:
     - test
   credentials: default_credentials
 
+azure_monitor/valid_time_grain_overrides:
+  subscription_ids:
+    - test
+  credentials: default_credentials
+  time_grain_overrides:
+    "Microsoft.ElasticSan/elasticSans":
+      ElasticSanProvisionedBase: PT30M
+
 azure_monitor/valid_discover_subscription:
   discover_subscriptions: true
   credentials: default_credentials

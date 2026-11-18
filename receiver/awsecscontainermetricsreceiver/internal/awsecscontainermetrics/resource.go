@@ -8,7 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventionsv121 "go.opentelemetry.io/otel/semconv/v1.21.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.42.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
@@ -93,6 +93,13 @@ func getResourceFromARN(arn string) (string, string, string) {
 	taskID := splits[len(splits)-1]
 
 	subSplits := strings.Split(splits[0], ":")
+	// A valid ECS task ARN has at least 5 colon-separated segments:
+	// arn:aws:ecs:region:aws_account_id:... . A malformed ARN (e.g. from
+	// ECS Anywhere or a custom metadata endpoint) may have fewer, so guard
+	// against an index out of range panic.
+	if len(subSplits) < 5 {
+		return "", "", ""
+	}
 	region := subSplits[3]
 	accountID := subSplits[4]
 

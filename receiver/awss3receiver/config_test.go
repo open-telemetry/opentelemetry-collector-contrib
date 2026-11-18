@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
@@ -169,6 +170,25 @@ func TestLoadConfig(t *testing.T) {
 					Endpoint: "http://localhost:4575",
 				},
 			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "6"),
+			expected: &Config{
+				S3Downloader: S3DownloaderConfig{
+					Region:                         "us-east-1",
+					S3Bucket:                       "abucket",
+					S3PartitionFormat:              "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+					FilePrefixIncludeTelemetryType: true,
+					EndpointPartitionID:            "aws",
+					Decompression:                  configcompression.TypeZstd,
+				},
+				StartTime: "2024-01-31 15:00",
+				EndTime:   "2024-02-03",
+			},
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "7"),
+			errorMessage: `unsupported decompression type "snappy", valid values are: gzip, zstd, none`,
 		},
 	}
 

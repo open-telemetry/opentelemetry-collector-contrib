@@ -1,4 +1,4 @@
-stream/770305850f3632c4:
+stream/caa5bd0e97ecaee7:
   resourceMetrics:
     - schemaUrl: https://test-res-schema.com/schema
       resource:
@@ -27,7 +27,7 @@ stream/770305850f3632c4:
                       - key: aaa
                         value:
                           stringValue: bbb
-stream/df3ac8f1f36e5836:
+stream/bfdd97f0d94f9f3:
   resourceMetrics:
     - schemaUrl: https://test-res-schema.com/schema
       resource:
@@ -56,7 +56,7 @@ stream/df3ac8f1f36e5836:
                       - key: bbb
                         value:
                           stringValue: ccc
-stream/10f62caa42f23208:
+stream/79290e84ffda49c1:
   resourceMetrics:
     - schemaUrl: https://test-res-schema.com/schema
       resource:
@@ -85,7 +85,7 @@ stream/10f62caa42f23208:
                       - key: aaa
                         value:
                           stringValue: bbb
-stream/a6cee13bcfa90742:
+stream/71b50b794904482d:
   resourceMetrics:
     - schemaUrl: https://test-res-schema.com/schema
       resource:
@@ -114,7 +114,7 @@ stream/a6cee13bcfa90742:
                       - key: bbb
                         value:
                           stringValue: ccc
-stream/94a1b62d162da7e3:
+stream/24e41af1aabd4603:
   resourceMetrics:
     - schemaUrl: https://test-res-schema.com/schema
       resource:
@@ -149,7 +149,7 @@ stream/94a1b62d162da7e3:
                       - key: aaa
                         value:
                           stringValue: bbb
-stream/33c7b4e4b72e9f19:
+stream/9765a4d8d679e8a5:
   resourceMetrics:
     - schemaUrl: https://test-res-schema.com/schema
       resource:
@@ -178,7 +178,7 @@ stream/33c7b4e4b72e9f19:
                       - key: aaa
                         value:
                           stringValue: bbb
-stream/f1a737c32030b2ff:
+stream/4d43807d3dd07211:
   resourceMetrics:
     - schemaUrl: https://test-res-schema.com/schema
       resource:

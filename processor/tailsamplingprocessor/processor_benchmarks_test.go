@@ -129,12 +129,13 @@ func benchmarkProcessorThroughput(b *testing.B, numShards uint32) {
 	b.ResetTimer()
 	b.SetParallelism(4)
 	b.RunParallel(func(pb *testing.PB) {
-		// ConsumeTraces copies its input before returning (MutatesData is
-		// false), so each goroutine can reuse one batch and only give it new
-		// trace IDs to avoid hitting the cache. Clone per iteration instead
-		// if the processor ever takes ownership of its input.
-		batch := generateBenchBatch(128)
+		// ConsumeTraces moves spans out of its input, so clone a fresh batch
+		// per iteration, as the Collector does when the batch is shared with a
+		// consumer that doesn't mutate data.
+		template := generateBenchBatch(128)
 		for pb.Next() {
+			batch := ptrace.NewTraces()
+			template.CopyTo(batch)
 			setIterTraceIDs(batch, iter.Add(1))
 			err := p.ConsumeTraces(b.Context(), batch)
 			require.NoError(b, err)

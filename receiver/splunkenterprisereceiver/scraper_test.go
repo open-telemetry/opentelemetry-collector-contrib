@@ -4,12 +4,14 @@
 package splunkenterprisereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver"
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -631,6 +633,169 @@ func TestFormatDurationForSplunk(t *testing.T) {
 		t.Run(test.expected, func(t *testing.T) {
 			result := formatDurationForSplunk(test.duration)
 			require.Equal(t, test.expected, result)
+		})
+	}
+}
+
+// capturedTTLRequest is what the mock control endpoint observed, handed back over a channel so
+// the test goroutine owns it exclusively rather than sharing it with the handler.
+type capturedTTLRequest struct {
+	method string
+	path   string
+	body   []byte
+	err    error
+}
+
+// TestSetSearchJobTTLByID verifies that the control request sends the configured timeout
+// as a whole number of seconds, as required by Splunk's setttl action.
+func TestSetSearchJobTTLByID(t *testing.T) {
+	const sid = "test-search-id"
+
+	tests := []struct {
+		desc     string
+		timeout  time.Duration
+		expected string
+	}{
+		{desc: "default timeout", timeout: 60 * time.Second, expected: "60"},
+		{desc: "sub minute timeout", timeout: 11 * time.Second, expected: "11"},
+		{desc: "multi minute timeout", timeout: 2 * time.Minute, expected: "120"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			// Buffered so the handler never blocks, and so a second unexpected request would be
+			// visible as a surplus entry rather than deadlocking the test.
+			captured := make(chan capturedTTLRequest, 1)
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, err := io.ReadAll(r.Body)
+				captured <- capturedTTLRequest{method: r.Method, path: r.URL.Path, body: body, err: err}
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer ts.Close()
+
+			cfg := createConfig(ts, false)
+			cfg.ControllerConfig.Timeout = test.timeout
+
+			host := &mockHost{
+				extensions: map[component.ID]component.Component{
+					component.MustNewIDWithName("basicauth", "client"): extensionauthtest.NewNopClient(),
+				},
+			}
+
+			scraper := newSplunkMetricsScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+			client, err := newSplunkEntClient(t.Context(), cfg, host, componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+			scraper.splunkClient = client
+
+			require.NoError(t, scraper.setSearchJobTTLByID(sid))
+
+			var got capturedTTLRequest
+			require.Eventually(t, func() bool {
+				select {
+				case got = <-captured:
+					return true
+				default:
+					return false
+				}
+			}, time.Second, 10*time.Millisecond, "control endpoint was never called")
+			require.Empty(t, captured, "expected exactly one request to the control endpoint")
+
+			require.NoError(t, got.err)
+			// createAPIRequest builds a GET, which this call has to flip to POST.
+			require.Equal(t, http.MethodPost, got.method)
+			require.Equal(t, "/services/search/jobs/"+sid+"/control", got.path)
+
+			form, err := url.ParseQuery(string(got.body))
+			require.NoError(t, err)
+			require.Equal(t, "setttl", form.Get("action"))
+			require.Equal(t, test.expected, form.Get("ttl"))
+		})
+	}
+}
+
+// closeTrackingBody records whether Close was called and can fail reads.
+type closeTrackingBody struct {
+	io.ReadCloser
+	closed  *atomic.Bool
+	readErr error
+}
+
+func (b *closeTrackingBody) Read(p []byte) (int, error) {
+	if b.readErr != nil {
+		return 0, b.readErr
+	}
+	return b.ReadCloser.Read(p)
+}
+
+func (b *closeTrackingBody) Close() error {
+	b.closed.Store(true)
+	return b.ReadCloser.Close()
+}
+
+// closeTrackingTransport wraps every response body so tests can tell
+// whether the caller closed it.
+type closeTrackingTransport struct {
+	next    http.RoundTripper
+	closed  atomic.Bool
+	readErr error
+}
+
+func (t *closeTrackingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp, err := t.next.RoundTrip(req)
+	if err != nil {
+		return nil, err
+	}
+	resp.Body = &closeTrackingBody{ReadCloser: resp.Body, closed: &t.closed, readErr: t.readErr}
+	return resp, nil
+}
+
+func TestSetSearchJobTTLByIDClosesResponseBody(t *testing.T) {
+	tests := []struct {
+		name    string
+		status  int
+		readErr error
+		wantErr bool
+	}{
+		{name: "success", status: http.StatusOK},
+		{name: "non-200 status", status: http.StatusInternalServerError, wantErr: true},
+		{name: "body read error", status: http.StatusInternalServerError, readErr: errors.New("read failed"), wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(tt.status)
+				_, _ = w.Write([]byte("response body"))
+			}))
+			defer ts.Close()
+
+			cfg := createConfig(ts, false)
+			host := &mockHost{
+				extensions: map[component.ID]component.Component{
+					component.MustNewIDWithName("basicauth", "client"): extensionauthtest.NewNopClient(),
+				},
+			}
+
+			scraper := newSplunkMetricsScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+			client, err := newSplunkEntClient(t.Context(), cfg, host, componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+
+			httpClient := client.clients[typeSh].client
+			next := httpClient.Transport
+			if next == nil {
+				next = http.DefaultTransport
+			}
+			tracker := &closeTrackingTransport{next: next, readErr: tt.readErr}
+			httpClient.Transport = tracker
+			scraper.splunkClient = client
+
+			err = scraper.setSearchJobTTLByID("test-sid")
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			require.True(t, tracker.closed.Load(), "response body must be closed")
 		})
 	}
 }

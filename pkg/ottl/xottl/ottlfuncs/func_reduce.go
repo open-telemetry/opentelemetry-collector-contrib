@@ -11,13 +11,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs/internal/funcutil"
 )
 
 type reduceArguments[K any] struct {
 	Source      ottl.Getter[K]
 	Seed        ottl.Getter[K]
-	Accumulator *ottl.LambdaExpression[K]
+	Accumulator *xottl.LambdaExpression[K]
 }
 
 // NewReduceFactory returns a factory for the Reduce OTTL function.
@@ -36,7 +37,7 @@ func createReduceFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 	return reduce(args.Source, args.Seed, args.Accumulator)
 }
 
-func reduce[K any](source, seed ottl.Getter[K], accumulator *ottl.LambdaExpression[K]) (ottl.ExprFunc[K], error) {
+func reduce[K any](source, seed ottl.Getter[K], accumulator *xottl.LambdaExpression[K]) (ottl.ExprFunc[K], error) {
 	err := accumulator.ValidateArity(3)
 	if err != nil {
 		return nil, err
@@ -70,7 +71,7 @@ func reduce[K any](source, seed ottl.Getter[K], accumulator *ottl.LambdaExpressi
 	}, nil
 }
 
-func reduceMapValues[K any](tCtx K, source pcommon.Map, lb *ottl.LambdaActivation[K], seedVal any) (any, error) {
+func reduceMapValues[K any](tCtx K, source pcommon.Map, lb *xottl.LambdaActivation[K], seedVal any) (any, error) {
 	if source.Len() == 0 {
 		return seedVal, nil
 	}
@@ -84,7 +85,7 @@ func reduceMapValues[K any](tCtx K, source pcommon.Map, lb *ottl.LambdaActivatio
 	return acc, nil
 }
 
-func reduceSliceValues[K any](tCtx K, source pcommon.Slice, lb *ottl.LambdaActivation[K], seedVal any) (any, error) {
+func reduceSliceValues[K any](tCtx K, source pcommon.Slice, lb *xottl.LambdaActivation[K], seedVal any) (any, error) {
 	if source.Len() == 0 {
 		return seedVal, nil
 	}

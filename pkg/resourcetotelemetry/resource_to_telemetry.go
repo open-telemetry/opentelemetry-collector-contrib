@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
 // Settings defines configuration for converting resource attributes to telemetry attributes or constant labels.
@@ -154,6 +154,12 @@ func (wme *wrapperMetricsExporter) ConsumeMetrics(ctx context.Context, md pmetri
 func (*wrapperMetricsExporter) Capabilities() consumer.Capabilities {
 	// Always return true since this wrapper modifies data inplace.
 	return consumer.Capabilities{MutatesData: true}
+}
+
+// ExporterHelperBatchingEnabled reports whether the wrapped exporter batches requests.
+func (wme *wrapperMetricsExporter) ExporterHelperBatchingEnabled() bool {
+	b, ok := wme.Metrics.(interface{ ExporterHelperBatchingEnabled() bool })
+	return ok && b.ExporterHelperBatchingEnabled()
 }
 
 // WrapMetricsExporter wraps a given exporter.Metrics and based on the given settings

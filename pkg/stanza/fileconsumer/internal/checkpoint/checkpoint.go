@@ -11,55 +11,22 @@ import (
 	"fmt"
 	"maps"
 
-	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
 const knownFilesKey = "knownFiles"
 
-// Save syncs the most recent set of files to the database
-// Uses protobuf encoding if the feature gate is enabled, otherwise uses JSON
+// Save syncs the most recent set of files to the database using protobuf encoding
 func Save(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata) error {
 	return SaveKey(ctx, persister, rmds, knownFilesKey)
 }
 
-func SaveKey(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata, key string, ops ...*storage.Operation) error {
-	// Use protobuf if feature gate is enabled
-	if metadata.FilelogProtobufCheckpointEncodingFeatureGate.IsEnabled() {
-		return saveKeyProto(ctx, persister, rmds, key, ops...)
-	}
-
-	// Otherwise use JSON (default)
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
-
-	// Encode the number of known files
-	if err := enc.Encode(len(rmds)); err != nil {
-		return fmt.Errorf("encode num files: %w", err)
-	}
-
-	var errs error
-	// Encode each known file
-	for _, rmd := range rmds {
-		if err := enc.Encode(rmd); err != nil {
-			errs = multierr.Append(errs, fmt.Errorf("encode metadata: %w", err))
-		}
-	}
-	ops = append(ops, storage.SetOperation(key, buf.Bytes()))
-	if err := persister.Batch(ctx, ops...); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("persist known files: %w", err))
-	}
-
-	return errs
-}
-
 // Load loads the most recent set of files from the database
-// Tries protobuf first for backward compatibility, falls back to JSON if protobuf fails
+// Tries protobuf first, falls back to JSON for checkpoints written by older versions
 func Load(ctx context.Context, persister operator.Persister, logger *zap.Logger) ([]*reader.Metadata, error) {
 	return LoadKey(ctx, persister, knownFilesKey, logger)
 }
@@ -74,8 +41,7 @@ func LoadKey(ctx context.Context, persister operator.Persister, key string, logg
 		return []*reader.Metadata{}, nil
 	}
 
-	// Try protobuf first (for backward compatibility with existing protobuf checkpoints)
-	// This allows seamless migration even when the feature gate is disabled
+	// Try protobuf first; JSON checkpoints from older versions fall through below
 	rmds, err := tryLoadProtobuf(encoded)
 	if err == nil {
 		return rmds, nil

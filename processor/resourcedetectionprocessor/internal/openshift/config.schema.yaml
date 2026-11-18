@@ -1,4 +1,4 @@
-description: Config can contain user-specified inputs to overwrite default values. See `openshift.go#NewDetector` for more information.
+description: Config can contain user-specified inputs to overwrite default values. Unset fields are resolved by the SDK detector from the pod environment.
 type: object
 properties:
   address:
@@ -11,4 +11,4 @@ properties:
     $ref: go.opentelemetry.io/collector/config/configtls.client_config
   token:
     description: Token is used to identify against the openshift api server
-    type: string
+    $ref: go.opentelemetry.io/collector/config/configopaque.string

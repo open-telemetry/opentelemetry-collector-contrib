@@ -13,13 +13,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl"
 )
 
 func Test_mapKeys(t *testing.T) {
 	tests := []struct {
 		name      string
 		source    pcommon.Map
-		keyMapper *ottl.LambdaExpression[any]
+		keyMapper *xottl.LambdaExpression[any]
 		want      map[string]any
 	}{
 		{
@@ -30,7 +31,7 @@ func Test_mapKeys(t *testing.T) {
 				m.PutStr("b", "2")
 				return m
 			}(),
-			keyMapper: ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			keyMapper: xottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				k := resolveBinding("k")
 				return "prefix." + k.(string), nil
 			}),
@@ -43,7 +44,7 @@ func Test_mapKeys(t *testing.T) {
 				m.PutInt("count", 10)
 				return m
 			}(),
-			keyMapper: ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			keyMapper: xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				k := resolveBinding("k")
 				v := resolveBinding("v")
 				return k.(string) + strings.Repeat("!", int(v.(int64))), nil
@@ -53,7 +54,7 @@ func Test_mapKeys(t *testing.T) {
 		{
 			name:   "empty map",
 			source: pcommon.NewMap(),
-			keyMapper: ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			keyMapper: xottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return "unused", nil
 			}),
 			want: map[string]any{},
@@ -69,7 +70,7 @@ func Test_mapKeys(t *testing.T) {
 				m.PutBool("value-2", true)
 				return m
 			}(),
-			keyMapper: ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, getBindings func(string) any) (any, error) {
+			keyMapper: xottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, getBindings func(string) any) (any, error) {
 				key := getBindings("k").(string)
 				return strings.Split(key, "-")[0], nil
 			}),
@@ -105,7 +106,7 @@ func Test_mapKeys_lambda_type_error(t *testing.T) {
 			return source, nil
 		},
 	}
-	keyMapper := ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+	keyMapper := xottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 		return 123, nil
 	})
 
@@ -141,7 +142,7 @@ func Test_MapKeysFactory(t *testing.T) {
 				return pcommon.NewMap(), nil
 			},
 		}
-		mapKeysArgs.KeyMapper = ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+		mapKeysArgs.KeyMapper = xottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 			return resolveBinding("k").(string), nil
 		})
 
@@ -166,7 +167,7 @@ func BenchmarkMapKeys(b *testing.B) {
 			return source, nil
 		},
 	}
-	keyMapper := ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+	keyMapper := xottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 		return "prefix." + resolveBinding("k").(string), nil
 	})
 	exprFunc, err := mapKeys(target, keyMapper)

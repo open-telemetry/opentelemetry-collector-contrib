@@ -11,6 +11,9 @@ status:
   codeowners:
     active: [hgaol, MovieStoreGuy]
 
+sending_queue:
+  support: default
+
 tests:
   config:
   expect_consumer_error: true

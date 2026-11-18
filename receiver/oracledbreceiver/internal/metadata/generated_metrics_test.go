@@ -172,36 +172,54 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbAsmDiskErrorsDataPoint(ts, "1", "oracledb.asm.disk_group.name-val", "oracledb.asm.disk.name-val", AttributeDiskIoDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbAsmDiskErrorsDataPoint(ts, "3", "oracledb.asm.disk_group.name-val-2", "oracledb.asm.disk.name-val-2", AttributeDiskIoDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbAsmDiskErrorsDataPoint(ts+1, "3", "oracledb.asm.disk_group.name-val-2", "oracledb.asm.disk.name-val-2", AttributeDiskIoDirectionWrite)
+				assert.Equal(t, 2, mb.metricOracledbAsmDiskErrors.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbAsmDiskGroupCapacityDataPoint(ts, 1, "oracledb.asm.disk_group.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbAsmDiskGroupCapacityDataPoint(ts, 3, "oracledb.asm.disk_group.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbAsmDiskGroupCapacityDataPoint(ts+1, 3, "oracledb.asm.disk_group.name-val-2")
+				assert.Equal(t, 2, mb.metricOracledbAsmDiskGroupCapacity.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbAsmDiskGroupFreeDataPoint(ts, 1, "oracledb.asm.disk_group.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbAsmDiskGroupFreeDataPoint(ts, 3, "oracledb.asm.disk_group.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbAsmDiskGroupFreeDataPoint(ts+1, 3, "oracledb.asm.disk_group.name-val-2")
+				assert.Equal(t, 2, mb.metricOracledbAsmDiskGroupFree.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbAsmDiskGroupOfflineDisksDataPoint(ts, 1, "oracledb.asm.disk_group.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbAsmDiskGroupOfflineDisksDataPoint(ts, 3, "oracledb.asm.disk_group.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbAsmDiskGroupOfflineDisksDataPoint(ts+1, 3, "oracledb.asm.disk_group.name-val-2")
+				assert.Equal(t, 2, mb.metricOracledbAsmDiskGroupOfflineDisks.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbAsmDiskGroupUsableFreeDataPoint(ts, 1, "oracledb.asm.disk_group.name-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbAsmDiskGroupUsableFreeDataPoint(ts, 3, "oracledb.asm.disk_group.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbAsmDiskGroupUsableFreeDataPoint(ts+1, 3, "oracledb.asm.disk_group.name-val-2")
+				assert.Equal(t, 2, mb.metricOracledbAsmDiskGroupUsableFree.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbBufferInspectedDataPoint(ts, "1", AttributeOracledbBufferStateFree)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbBufferInspectedDataPoint(ts, "3", AttributeOracledbBufferStateDirty)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbBufferInspectedDataPoint(ts+1, "3", AttributeOracledbBufferStateDirty)
+				assert.Equal(t, 2, mb.metricOracledbBufferInspected.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -214,6 +232,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbBufferCacheBlockChangesRateDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbBufferCacheBlockChangesRateDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbBufferCacheBlockChangesRateDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbBufferCacheBlockChangesRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -223,12 +244,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbBufferCacheUtilizationDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbBufferCacheUtilizationDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbBufferCacheUtilizationDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbBufferCacheUtilization.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbCallCountDataPoint(ts, "1", AttributeOracledbCallTypeRecursive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbCallCountDataPoint(ts, "3", AttributeOracledbCallTypeUser)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbCallCountDataPoint(ts+1, "3", AttributeOracledbCallTypeUser)
+				assert.Equal(t, 2, mb.metricOracledbCallCount.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -244,18 +271,27 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbConsistentGetsDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbConsistentGetsDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbConsistentGetsDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbConsistentGets.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbCPUUsageRateDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbCPUUsageRateDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbCPUUsageRateDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbCPUUsageRate.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbCPUTimeDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbCPUTimeDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbCPUTimeDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbCPUTime.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -268,6 +304,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbCursorCacheUtilizationDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbCursorCacheUtilizationDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbCursorCacheUtilizationDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbCursorCacheUtilization.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -277,6 +316,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbCursorOpenRateDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbCursorOpenRateDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbCursorOpenRateDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbCursorOpenRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -286,30 +328,45 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbDatabaseCPUUtilizationDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbDatabaseCPUUtilizationDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbDatabaseCPUUtilizationDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbDatabaseCPUUtilization.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbDatabaseWaitUtilizationDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbDatabaseWaitUtilizationDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbDatabaseWaitUtilizationDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbDatabaseWaitUtilization.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbDbTimeDataPoint(ts, 1, AttributeOracledbSessionTypeBackground)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbDbTimeDataPoint(ts, 3, AttributeOracledbSessionTypeForeground)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbDbTimeDataPoint(ts+1, 3, AttributeOracledbSessionTypeForeground)
+				assert.Equal(t, 2, mb.metricOracledbDbTime.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbDbBlockGetsDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbDbBlockGetsDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbDbBlockGetsDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbDbBlockGets.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbDdlStatementsParallelizedDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbDdlStatementsParallelizedDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbDdlStatementsParallelizedDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbDdlStatementsParallelized.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -322,30 +379,45 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbDmlStatementsParallelizedDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbDmlStatementsParallelizedDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbDmlStatementsParallelizedDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbDmlStatementsParallelized.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbEnqueueDeadlocksRateDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbEnqueueDeadlocksRateDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbEnqueueDeadlocksRateDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbEnqueueDeadlocksRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbEnqueueOperationsDataPoint(ts, "1", AttributeOracledbEnqueueTypeConversions)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbEnqueueOperationsDataPoint(ts, "3", AttributeOracledbEnqueueTypeReleases)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbEnqueueOperationsDataPoint(ts+1, "3", AttributeOracledbEnqueueTypeReleases)
+				assert.Equal(t, 2, mb.metricOracledbEnqueueOperations.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbEnqueueTimeoutsRateDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbEnqueueTimeoutsRateDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbEnqueueTimeoutsRateDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbEnqueueTimeoutsRate.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbEnqueueDeadlocksDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbEnqueueDeadlocksDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbEnqueueDeadlocksDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbEnqueueDeadlocks.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -364,42 +436,63 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbExchangeDeadlocksDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbExchangeDeadlocksDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbExchangeDeadlocksDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbExchangeDeadlocks.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbExecutionUtilizationDataPoint(ts, 1, AttributeOracledbParseTypeSoft, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbExecutionUtilizationDataPoint(ts, 3, AttributeOracledbParseTypeSoft, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbExecutionUtilizationDataPoint(ts+1, 3, AttributeOracledbParseTypeSoft, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbExecutionUtilization.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbExecutionsDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbExecutionsDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbExecutionsDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbExecutions.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbExecutionsRateDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbExecutionsRateDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbExecutionsRateDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbExecutionsRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbGcCurrentBlockTimeDataPoint(ts, 1, AttributeNetworkIoDirectionReceive)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbGcCurrentBlockTimeDataPoint(ts, 3, AttributeNetworkIoDirectionTransmit)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbGcCurrentBlockTimeDataPoint(ts+1, 3, AttributeNetworkIoDirectionTransmit)
+				assert.Equal(t, 2, mb.metricOracledbGcCurrentBlockTime.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbHardParsesDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbHardParsesDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbHardParsesDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbHardParses.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbHardParsesRateDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbHardParsesRateDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbHardParsesRateDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbHardParsesRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -409,6 +502,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbHostCPUUtilizationDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbHostCPUUtilizationDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbHostCPUUtilizationDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbHostCPUUtilization.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -433,42 +529,63 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbLibraryCacheUtilizationDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbLibraryCacheUtilizationDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbLibraryCacheUtilizationDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbLibraryCacheUtilization.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbLobOperationsDataPoint(ts, "1", AttributeDiskIoDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbLobOperationsDataPoint(ts, "3", AttributeDiskIoDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbLobOperationsDataPoint(ts+1, "3", AttributeDiskIoDirectionWrite)
+				assert.Equal(t, 2, mb.metricOracledbLobOperations.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbLockTimeDataPoint(ts, 1, "oracle.db.pdb-val", AttributeOracledbSessionTypeBackground)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbLockTimeDataPoint(ts, 3, "oracle.db.pdb-val-2", AttributeOracledbSessionTypeForeground)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbLockTimeDataPoint(ts+1, 3, "oracle.db.pdb-val-2", AttributeOracledbSessionTypeForeground)
+				assert.Equal(t, 2, mb.metricOracledbLockTime.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbLogicalReadsDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbLogicalReadsDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbLogicalReadsDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbLogicalReads.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbLogicalReadsRateDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbLogicalReadsRateDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbLogicalReadsRateDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbLogicalReadsRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbLogonsDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbLogonsDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbLogonsDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbLogons.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbLogonsRateDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbLogonsRateDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbLogonsRateDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbLogonsRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -478,36 +595,54 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbParallelOperationsDowngraded1To25PctDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbParallelOperationsDowngraded1To25PctDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbParallelOperationsDowngraded1To25PctDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbParallelOperationsDowngraded1To25Pct.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbParallelOperationsDowngraded25To50PctDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbParallelOperationsDowngraded25To50PctDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbParallelOperationsDowngraded25To50PctDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbParallelOperationsDowngraded25To50Pct.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbParallelOperationsDowngraded50To75PctDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbParallelOperationsDowngraded50To75PctDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbParallelOperationsDowngraded50To75PctDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbParallelOperationsDowngraded50To75Pct.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbParallelOperationsDowngraded75To99PctDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbParallelOperationsDowngraded75To99PctDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbParallelOperationsDowngraded75To99PctDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbParallelOperationsDowngraded75To99Pct.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbParallelOperationsDowngradedToSerialDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbParallelOperationsDowngradedToSerialDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbParallelOperationsDowngradedToSerialDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbParallelOperationsDowngradedToSerial.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbParallelOperationsNotDowngradedDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbParallelOperationsNotDowngradedDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbParallelOperationsNotDowngradedDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbParallelOperationsNotDowngraded.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -520,18 +655,27 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbParseRateDataPoint(ts, 1, AttributeOracledbParseResultFailure, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbParseRateDataPoint(ts, 3, AttributeOracledbParseResultFailure, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbParseRateDataPoint(ts+1, 3, AttributeOracledbParseResultFailure, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbParseRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbParseUtilizationDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbParseUtilizationDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbParseUtilizationDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbParseUtilization.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbParseCallsDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbParseCallsDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbParseCallsDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbParseCalls.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -541,78 +685,117 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbPgaMemoryDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbPgaMemoryDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbPgaMemoryDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbPgaMemory.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbPhysicalIoCacheWritesDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbPhysicalIoCacheWritesDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbPhysicalIoCacheWritesDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbPhysicalIoCacheWrites.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbPhysicalIoRequestsDataPoint(ts, "1", AttributeDiskIoDirectionRead, AttributeDiskIoBlockSizeAll, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbPhysicalIoRequestsDataPoint(ts, "3", AttributeDiskIoDirectionWrite, AttributeDiskIoBlockSizeMulti, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbPhysicalIoRequestsDataPoint(ts+1, "3", AttributeDiskIoDirectionWrite, AttributeDiskIoBlockSizeMulti, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbPhysicalIoRequests.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbPhysicalIoRequestsRateDataPoint(ts, 1, AttributeDiskIoDirectionRead, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbPhysicalIoRequestsRateDataPoint(ts, 3, AttributeDiskIoDirectionWrite, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbPhysicalIoRequestsRateDataPoint(ts+1, 3, AttributeDiskIoDirectionWrite, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbPhysicalIoRequestsRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbPhysicalIoTransferredDataPoint(ts, "1", AttributeDiskIoDirectionRead, AttributeDiskIoTypeBuffered, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbPhysicalIoTransferredDataPoint(ts, "3", AttributeDiskIoDirectionWrite, AttributeDiskIoTypeTotal, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbPhysicalIoTransferredDataPoint(ts+1, "3", AttributeDiskIoDirectionWrite, AttributeDiskIoTypeTotal, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbPhysicalIoTransferred.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbPhysicalIoTransferredRateDataPoint(ts, 1, AttributeDiskIoDirectionRead, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbPhysicalIoTransferredRateDataPoint(ts, 3, AttributeDiskIoDirectionWrite, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbPhysicalIoTransferredRateDataPoint(ts+1, 3, AttributeDiskIoDirectionWrite, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbPhysicalIoTransferredRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbPhysicalOperationsRateDataPoint(ts, 1, AttributeDiskIoDirectionRead, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbPhysicalOperationsRateDataPoint(ts, 3, AttributeDiskIoDirectionWrite, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbPhysicalOperationsRateDataPoint(ts+1, 3, AttributeDiskIoDirectionWrite, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbPhysicalOperationsRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbPhysicalReadIoRequestsDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbPhysicalReadIoRequestsDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbPhysicalReadIoRequestsDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbPhysicalReadIoRequests.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbPhysicalReadsDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbPhysicalReadsDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbPhysicalReadsDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbPhysicalReads.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbPhysicalReadsDirectDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbPhysicalReadsDirectDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbPhysicalReadsDirectDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbPhysicalReadsDirect.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbPhysicalWriteIoRequestsDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbPhysicalWriteIoRequestsDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbPhysicalWriteIoRequestsDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbPhysicalWriteIoRequests.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbPhysicalWritesDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbPhysicalWritesDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbPhysicalWritesDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbPhysicalWrites.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbPhysicalWritesDirectDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbPhysicalWritesDirectDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbPhysicalWritesDirectDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbPhysicalWritesDirect.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -625,6 +808,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbQueriesParallelizedDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbQueriesParallelizedDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbQueriesParallelizedDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbQueriesParallelized.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -637,24 +823,36 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbRedoBlocksDataPoint(ts, "1", AttributeDiskIoDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbRedoBlocksDataPoint(ts, "3", AttributeDiskIoDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbRedoBlocksDataPoint(ts+1, "3", AttributeDiskIoDirectionWrite)
+				assert.Equal(t, 2, mb.metricOracledbRedoBlocks.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbRedoOperationsDataPoint(ts, "1", AttributeDiskIoDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbRedoOperationsDataPoint(ts, "3", AttributeDiskIoDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbRedoOperationsDataPoint(ts+1, "3", AttributeDiskIoDirectionWrite)
+				assert.Equal(t, 2, mb.metricOracledbRedoOperations.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbRedoRequestsDataPoint(ts, "1", AttributeOracledbRedoRequestTypeLogSpace)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbRedoRequestsDataPoint(ts, "3", AttributeOracledbRedoRequestTypeLogSpace)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbRedoRequestsDataPoint(ts+1, "3", AttributeOracledbRedoRequestTypeLogSpace)
+				assert.Equal(t, 2, mb.metricOracledbRedoRequests.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbRedoRetriesDataPoint(ts, "1", AttributeOracledbRedoRetryTypeBufferAllocation)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbRedoRetriesDataPoint(ts, "3", AttributeOracledbRedoRetryTypeBufferAllocation)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbRedoRetriesDataPoint(ts+1, "3", AttributeOracledbRedoRetryTypeBufferAllocation)
+				assert.Equal(t, 2, mb.metricOracledbRedoRetries.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -664,24 +862,36 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbRedoSizeRateDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbRedoSizeRateDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbRedoSizeRateDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbRedoSizeRate.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbRedoTimeDataPoint(ts, 1, AttributeOracledbRedoTypeWrite)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbRedoTimeDataPoint(ts, 3, AttributeOracledbRedoTypeLogSpaceWait)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbRedoTimeDataPoint(ts+1, 3, AttributeOracledbRedoTypeLogSpaceWait)
+				assert.Equal(t, 2, mb.metricOracledbRedoTime.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbRedoAllocationUtilizationDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbRedoAllocationUtilizationDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbRedoAllocationUtilizationDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbRedoAllocationUtilization.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbScanCountDataPoint(ts, "1", AttributeOracledbScanTypeIndexFastFull, AttributeOracledbScanModeDirectRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbScanCountDataPoint(ts, "3", AttributeOracledbScanTypeTable, AttributeOracledbScanModeFull)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbScanCountDataPoint(ts+1, "3", AttributeOracledbScanTypeTable, AttributeOracledbScanModeFull)
+				assert.Equal(t, 2, mb.metricOracledbScanCount.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -691,24 +901,36 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbSessionAverageDataPoint(ts, 1, "session_status-val", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbSessionAverageDataPoint(ts, 3, "session_status-val-2", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbSessionAverageDataPoint(ts+1, 3, "session_status-val-2", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbSessionAverage.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbSessionStoredProcedureMemoryDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbSessionStoredProcedureMemoryDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbSessionStoredProcedureMemoryDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbSessionStoredProcedureMemory.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbSessionWaitTimeDataPoint(ts, 1, AttributeOracledbSessionWaitStateNonIdle, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbSessionWaitTimeDataPoint(ts, 3, AttributeOracledbSessionWaitStateNonIdle, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbSessionWaitTimeDataPoint(ts+1, 3, AttributeOracledbSessionWaitStateNonIdle, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbSessionWaitTime.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbSessionWaitsDataPoint(ts, "1", AttributeOracledbSessionWaitStateNonIdle, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbSessionWaitsDataPoint(ts, "3", AttributeOracledbSessionWaitStateNonIdle, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbSessionWaitsDataPoint(ts+1, "3", AttributeOracledbSessionWaitStateNonIdle, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbSessionWaits.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -718,6 +940,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbSessionsUsageDataPoint(ts, "1", "session_type-val", "session_status-val", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbSessionsUsageDataPoint(ts, "3", "session_type-val-2", "session_status-val-2", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbSessionsUsageDataPoint(ts+1, "3", "session_type-val-2", "session_status-val-2", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbSessionsUsage.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -727,30 +952,45 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbSgaUsageDataPoint(ts, 1, AttributeOracledbSgaComponentNameBufferCache)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbSgaUsageDataPoint(ts, 3, AttributeOracledbSgaComponentNameDataTransferCache)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbSgaUsageDataPoint(ts+1, 3, AttributeOracledbSgaComponentNameDataTransferCache)
+				assert.Equal(t, 2, mb.metricOracledbSgaUsage.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbSharedPoolUtilizationDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbSharedPoolUtilizationDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbSharedPoolUtilizationDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbSharedPoolUtilization.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbSmonPostsDataPoint(ts, "1", AttributeOracledbSmonTypeInstance)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbSmonPostsDataPoint(ts, "3", AttributeOracledbSmonTypeTransaction)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbSmonPostsDataPoint(ts+1, "3", AttributeOracledbSmonTypeTransaction)
+				assert.Equal(t, 2, mb.metricOracledbSmonPosts.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbSortOperationsDataPoint(ts, "1", AttributeOracledbSortTypeDisk)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbSortOperationsDataPoint(ts, "3", AttributeOracledbSortTypeMemory)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbSortOperationsDataPoint(ts+1, "3", AttributeOracledbSortTypeMemory)
+				assert.Equal(t, 2, mb.metricOracledbSortOperations.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbSortRatioDataPoint(ts, 1, AttributeOracledbSortTypeDisk, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbSortRatioDataPoint(ts, 3, AttributeOracledbSortTypeMemory, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbSortRatioDataPoint(ts+1, 3, AttributeOracledbSortTypeMemory, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbSortRatio.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -760,12 +1000,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbSQLServiceResponseDurationDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbSQLServiceResponseDurationDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbSQLServiceResponseDurationDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbSQLServiceResponseDuration.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbSqlnetIoTransferredDataPoint(ts, "1", AttributeNetworkIoDirectionReceive, AttributeDestinationTypeClient, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbSqlnetIoTransferredDataPoint(ts, "3", AttributeNetworkIoDirectionTransmit, AttributeDestinationTypeDblink, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbSqlnetIoTransferredDataPoint(ts+1, "3", AttributeNetworkIoDirectionTransmit, AttributeDestinationTypeDblink, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbSqlnetIoTransferred.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -787,42 +1033,63 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbTablespaceLimitDataPoint(ts, 1, "tablespace_name-val", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbTablespaceLimitDataPoint(ts, 3, "tablespace_name-val-2", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbTablespaceLimitDataPoint(ts+1, 3, "tablespace_name-val-2", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbTablespaceLimit.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbTablespaceStatusDataPoint(ts, 1, "tablespace_name-val", AttributeOracledbTablespaceStateOnline, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbTablespaceStatusDataPoint(ts, 3, "tablespace_name-val-2", AttributeOracledbTablespaceStateOffline, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbTablespaceStatusDataPoint(ts+1, 3, "tablespace_name-val-2", AttributeOracledbTablespaceStateOffline, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbTablespaceStatus.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbTablespaceUtilizationDataPoint(ts, 1, "tablespace_name-val", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbTablespaceUtilizationDataPoint(ts, 3, "tablespace_name-val-2", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbTablespaceUtilizationDataPoint(ts+1, 3, "tablespace_name-val-2", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbTablespaceUtilization.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, 1, "tablespace_name-val", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, 3, "tablespace_name-val-2", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbTablespaceSizeLimitDataPoint(ts+1, 3, "tablespace_name-val-2", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbTablespaceSizeLimit.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, 1, "tablespace_name-val", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, 3, "tablespace_name-val-2", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbTablespaceSizeUsageDataPoint(ts+1, 3, "tablespace_name-val-2", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbTablespaceSizeUsage.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbTransactionResponseTimeDataPoint(ts, 1, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbTransactionResponseTimeDataPoint(ts, 3, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbTransactionResponseTimeDataPoint(ts+1, 3, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbTransactionResponseTime.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOracledbTransactionRollbacksDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbTransactionRollbacksDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbTransactionRollbacksDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbTransactionRollbacks.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -832,6 +1099,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbTransactionsRateDataPoint(ts, 1, AttributeOracledbTransactionTypeCommit, "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbTransactionsRateDataPoint(ts, 3, AttributeOracledbTransactionTypeRollback, "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbTransactionsRateDataPoint(ts+1, 3, AttributeOracledbTransactionTypeRollback, "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbTransactionsRate.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -841,12 +1111,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbUserCommitsDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbUserCommitsDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbUserCommitsDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbUserCommits.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbUserRollbacksDataPoint(ts, "1", "oracle.db.pdb-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordOracledbUserRollbacksDataPoint(ts, "3", "oracle.db.pdb-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOracledbUserRollbacksDataPoint(ts+1, "3", "oracle.db.pdb-val-2")
+				assert.Equal(t, 2, mb.metricOracledbUserRollbacks.data.Sum().DataPoints().Len())
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -1012,7 +1288,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.asm.disk.errors"], "Found a duplicate in the metrics slice: oracledb.asm.disk.errors")
 						validatedMetrics["oracledb.asm.disk.errors"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Count of I/O errors on an ASM disk.", mi.Description())
 						assert.Equal(t, "{error}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1058,7 +1336,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.asm.disk_group.capacity"], "Found a duplicate in the metrics slice: oracledb.asm.disk_group.capacity")
 						validatedMetrics["oracledb.asm.disk_group.capacity"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total space in an ASM diskgroup.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1098,7 +1378,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.asm.disk_group.free"], "Found a duplicate in the metrics slice: oracledb.asm.disk_group.free")
 						validatedMetrics["oracledb.asm.disk_group.free"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Free space in an ASM diskgroup.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1138,7 +1420,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.asm.disk_group.offline_disks"], "Found a duplicate in the metrics slice: oracledb.asm.disk_group.offline_disks")
 						validatedMetrics["oracledb.asm.disk_group.offline_disks"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Count of disks currently offline within an ASM diskgroup.", mi.Description())
 						assert.Equal(t, "{disk}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1178,7 +1462,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.asm.disk_group.usable_free"], "Found a duplicate in the metrics slice: oracledb.asm.disk_group.usable_free")
 						validatedMetrics["oracledb.asm.disk_group.usable_free"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Free space that can safely be used for files after accounting for ASM redundancy and required mirror recovery capacity.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1220,7 +1506,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.buffer.inspected"], "Found a duplicate in the metrics slice: oracledb.buffer.inspected")
 						validatedMetrics["oracledb.buffer.inspected"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of buffers inspected from the end of the LRU queue while a process searched for a reusable buffer, grouped by buffer state.", mi.Description())
 						assert.Equal(t, "{buffer}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1287,7 +1575,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.buffer_cache.block.changes.rate"], "Found a duplicate in the metrics slice: oracledb.buffer_cache.block.changes.rate")
 						validatedMetrics["oracledb.buffer_cache.block.changes.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rate of changes applied to blocks in the buffer cache.", mi.Description())
 						assert.Equal(t, "{change}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1338,7 +1628,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.buffer_cache.utilization"], "Found a duplicate in the metrics slice: oracledb.buffer_cache.utilization")
 						validatedMetrics["oracledb.buffer_cache.utilization"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Fraction of logical reads served from the buffer cache without physical I/O, as computed by Oracle V$SYSMETRIC (% (LogRead - PhyRead)/LogRead).", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1380,7 +1672,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.call.count"], "Found a duplicate in the metrics slice: oracledb.call.count")
 						validatedMetrics["oracledb.call.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total count of calls issued to the database.", mi.Description())
 						assert.Equal(t, "{call}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1463,7 +1757,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.consistent_gets"], "Found a duplicate in the metrics slice: oracledb.consistent_gets")
 						validatedMetrics["oracledb.consistent_gets"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of times a consistent read was requested for a block from the buffer cache.", mi.Description())
 						assert.Equal(t, "{get}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1502,7 +1798,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.cpu.usage.rate"], "Found a duplicate in the metrics slice: oracledb.cpu.usage.rate")
 						validatedMetrics["oracledb.cpu.usage.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "CPU consumption rate, in CPU-seconds used per second.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1541,7 +1839,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.cpu_time"], "Found a duplicate in the metrics slice: oracledb.cpu_time")
 						validatedMetrics["oracledb.cpu_time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cumulative CPU time, in seconds", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1606,7 +1906,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.cursor.cache.utilization"], "Found a duplicate in the metrics slice: oracledb.cursor.cache.utilization")
 						validatedMetrics["oracledb.cursor.cache.utilization"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Percentage of cursor executions that reused a cursor in the session cursor cache.", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1655,7 +1957,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.cursor.open.rate"], "Found a duplicate in the metrics slice: oracledb.cursor.open.rate")
 						validatedMetrics["oracledb.cursor.open.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rate of cursors opened.", mi.Description())
 						assert.Equal(t, "{cursor}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1704,7 +2008,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.database.cpu.utilization"], "Found a duplicate in the metrics slice: oracledb.database.cpu.utilization")
 						validatedMetrics["oracledb.database.cpu.utilization"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Fraction of total database time spent on CPU, as computed by Oracle V$SYSMETRIC (% Cpu/DB_Time).", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1741,7 +2047,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.database.wait.utilization"], "Found a duplicate in the metrics slice: oracledb.database.wait.utilization")
 						validatedMetrics["oracledb.database.wait.utilization"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Fraction of total database time spent waiting on I/O, locks, or latches, as computed by Oracle V$SYSMETRIC (% Wait/DB_Time).", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -1783,7 +2091,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.db.time"], "Found a duplicate in the metrics slice: oracledb.db.time")
 						validatedMetrics["oracledb.db.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total wall-clock time spent in database calls.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1824,7 +2134,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.db_block_gets"], "Found a duplicate in the metrics slice: oracledb.db_block_gets")
 						validatedMetrics["oracledb.db_block_gets"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of times a current block was requested from the buffer cache.", mi.Description())
 						assert.Equal(t, "{get}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1865,7 +2177,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.ddl_statements_parallelized"], "Found a duplicate in the metrics slice: oracledb.ddl_statements_parallelized")
 						validatedMetrics["oracledb.ddl_statements_parallelized"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of DDL statements that were executed in parallel", mi.Description())
 						assert.Equal(t, "{statement}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1930,7 +2244,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.dml_statements_parallelized"], "Found a duplicate in the metrics slice: oracledb.dml_statements_parallelized")
 						validatedMetrics["oracledb.dml_statements_parallelized"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of DML statements that were executed in parallel", mi.Description())
 						assert.Equal(t, "{statement}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -1969,7 +2285,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.enqueue.deadlocks.rate"], "Found a duplicate in the metrics slice: oracledb.enqueue.deadlocks.rate")
 						validatedMetrics["oracledb.enqueue.deadlocks.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rate of enqueue deadlocks.", mi.Description())
 						assert.Equal(t, "{deadlock}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2011,7 +2329,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.enqueue.operations"], "Found a duplicate in the metrics slice: oracledb.enqueue.operations")
 						validatedMetrics["oracledb.enqueue.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total count of enqueue (lock) operations.", mi.Description())
 						assert.Equal(t, "{operation}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2050,7 +2370,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.enqueue.timeouts.rate"], "Found a duplicate in the metrics slice: oracledb.enqueue.timeouts.rate")
 						validatedMetrics["oracledb.enqueue.timeouts.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rate of enqueue timeouts.", mi.Description())
 						assert.Equal(t, "{timeout}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2089,7 +2411,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.enqueue_deadlocks"], "Found a duplicate in the metrics slice: oracledb.enqueue_deadlocks")
 						validatedMetrics["oracledb.enqueue_deadlocks"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total number of deadlocks between table or row locks in different sessions.", mi.Description())
 						assert.Equal(t, "{deadlock}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2178,7 +2502,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.exchange_deadlocks"], "Found a duplicate in the metrics slice: oracledb.exchange_deadlocks")
 						validatedMetrics["oracledb.exchange_deadlocks"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of times that a process detected a potential deadlock when exchanging two buffers and raised an internal, restartable error. Index scans are the only operations that perform exchanges.", mi.Description())
 						assert.Equal(t, "{deadlock}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2220,7 +2546,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.execution.utilization"], "Found a duplicate in the metrics slice: oracledb.execution.utilization")
 						validatedMetrics["oracledb.execution.utilization"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Fraction of executions that did not require a parse, as computed by Oracle V$SYSMETRIC (% (ExecWOParse/TotalExec)). High values indicate good cursor reuse.", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2261,7 +2589,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.executions"], "Found a duplicate in the metrics slice: oracledb.executions")
 						validatedMetrics["oracledb.executions"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total number of calls (user and recursive) that executed SQL statements", mi.Description())
 						assert.Equal(t, "{execution}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2300,7 +2630,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.executions.rate"], "Found a duplicate in the metrics slice: oracledb.executions.rate")
 						validatedMetrics["oracledb.executions.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rate of SQL statement executions.", mi.Description())
 						assert.Equal(t, "{execution}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2342,7 +2674,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.gc.current_block.time"], "Found a duplicate in the metrics slice: oracledb.gc.current_block.time")
 						validatedMetrics["oracledb.gc.current_block.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cumulative time spent transferring current blocks between instances over RAC cache fusion.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2383,7 +2717,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.hard_parses"], "Found a duplicate in the metrics slice: oracledb.hard_parses")
 						validatedMetrics["oracledb.hard_parses"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of hard parses", mi.Description())
 						assert.Equal(t, "{parse}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2422,7 +2758,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.hard_parses.rate"], "Found a duplicate in the metrics slice: oracledb.hard_parses.rate")
 						validatedMetrics["oracledb.hard_parses.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rate of hard parses.", mi.Description())
 						assert.Equal(t, "{parse}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2471,7 +2809,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.host.cpu.utilization"], "Found a duplicate in the metrics slice: oracledb.host.cpu.utilization")
 						validatedMetrics["oracledb.host.cpu.utilization"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Fraction of host CPU time in use, as computed by Oracle V$SYSMETRIC (% Busy/(Idle+Busy)).", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2580,7 +2920,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.library_cache.utilization"], "Found a duplicate in the metrics slice: oracledb.library_cache.utilization")
 						validatedMetrics["oracledb.library_cache.utilization"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Fraction of library cache pin requests that found the object already cached, as computed by Oracle V$SYSMETRIC (% Hits/Pins).", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2622,7 +2964,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.lob.operations"], "Found a duplicate in the metrics slice: oracledb.lob.operations")
 						validatedMetrics["oracledb.lob.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total count of LOB (large object) I/O operations.", mi.Description())
 						assert.Equal(t, "{operation}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2666,7 +3010,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.lock.time"], "Found a duplicate in the metrics slice: oracledb.lock.time")
 						validatedMetrics["oracledb.lock.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cumulative time spent on transaction lock activity.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2709,7 +3055,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.logical_reads"], "Found a duplicate in the metrics slice: oracledb.logical_reads")
 						validatedMetrics["oracledb.logical_reads"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of logical reads", mi.Description())
 						assert.Equal(t, "{read}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2748,7 +3096,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.logical_reads.rate"], "Found a duplicate in the metrics slice: oracledb.logical_reads.rate")
 						validatedMetrics["oracledb.logical_reads.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rate of logical reads performed by the database.", mi.Description())
 						assert.Equal(t, "{read}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2787,7 +3137,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.logons"], "Found a duplicate in the metrics slice: oracledb.logons")
 						validatedMetrics["oracledb.logons"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of logon operations", mi.Description())
 						assert.Equal(t, "{operation}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2826,7 +3178,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.logons.rate"], "Found a duplicate in the metrics slice: oracledb.logons.rate")
 						validatedMetrics["oracledb.logons.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rate of logon operations.", mi.Description())
 						assert.Equal(t, "{logon}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -2879,7 +3233,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_1_to_25_pct"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_1_to_25_pct")
 						validatedMetrics["oracledb.parallel_operations_downgraded_1_to_25_pct"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of times parallel execution was requested and the degree of parallelism was reduced down to 1-25% because of insufficient parallel execution servers", mi.Description())
 						assert.Equal(t, "{execution}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2920,7 +3276,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_25_to_50_pct"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_25_to_50_pct")
 						validatedMetrics["oracledb.parallel_operations_downgraded_25_to_50_pct"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of times parallel execution was requested and the degree of parallelism was reduced down to 25-50% because of insufficient parallel execution servers", mi.Description())
 						assert.Equal(t, "{execution}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -2961,7 +3319,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_50_to_75_pct"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_50_to_75_pct")
 						validatedMetrics["oracledb.parallel_operations_downgraded_50_to_75_pct"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of times parallel execution was requested and the degree of parallelism was reduced down to 50-75% because of insufficient parallel execution servers", mi.Description())
 						assert.Equal(t, "{execution}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3002,7 +3362,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_75_to_99_pct"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_75_to_99_pct")
 						validatedMetrics["oracledb.parallel_operations_downgraded_75_to_99_pct"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of times parallel execution was requested and the degree of parallelism was reduced down to 75-99% because of insufficient parallel execution servers", mi.Description())
 						assert.Equal(t, "{execution}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3043,7 +3405,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_to_serial"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_to_serial")
 						validatedMetrics["oracledb.parallel_operations_downgraded_to_serial"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of times parallel execution was requested but execution was serial because of insufficient parallel execution servers", mi.Description())
 						assert.Equal(t, "{execution}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3084,7 +3448,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.parallel_operations_not_downgraded"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_not_downgraded")
 						validatedMetrics["oracledb.parallel_operations_not_downgraded"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of times parallel execution was executed at the requested degree of parallelism", mi.Description())
 						assert.Equal(t, "{execution}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3154,7 +3520,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.parse.rate"], "Found a duplicate in the metrics slice: oracledb.parse.rate")
 						validatedMetrics["oracledb.parse.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rate of parse operations per second broken down by result, as computed by Oracle V$SYSMETRIC (e.g., Parse Failure Count Per Sec).", mi.Description())
 						assert.Equal(t, "{parse}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3193,7 +3561,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.parse.utilization"], "Found a duplicate in the metrics slice: oracledb.parse.utilization")
 						validatedMetrics["oracledb.parse.utilization"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Fraction of parse calls that were soft parses, as computed by Oracle V$SYSMETRIC (% SoftParses/TotalParses). High values indicate good cursor reuse.", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3232,7 +3602,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.parse_calls"], "Found a duplicate in the metrics slice: oracledb.parse_calls")
 						validatedMetrics["oracledb.parse_calls"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total number of parse calls.", mi.Description())
 						assert.Equal(t, "{parse}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3285,7 +3657,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.pga_memory"], "Found a duplicate in the metrics slice: oracledb.pga_memory")
 						validatedMetrics["oracledb.pga_memory"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Session PGA (Program Global Area) memory", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3326,7 +3700,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.physical_io.cache_writes"], "Found a duplicate in the metrics slice: oracledb.physical_io.cache_writes")
 						validatedMetrics["oracledb.physical_io.cache_writes"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of physical writes from the buffer cache to disk by DBWR. Sourced from v$sysstat name physical writes from cache.", mi.Description())
 						assert.Equal(t, "{write}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3373,7 +3749,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.physical_io.requests"], "Found a duplicate in the metrics slice: oracledb.physical_io.requests")
 						validatedMetrics["oracledb.physical_io.requests"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of physical I/O requests issued to storage. Sourced from v$sysstat names physical read/write total IO requests (disk.io.block_size=all) and physical read/write total multi block requests (disk.io.block_size=multi).", mi.Description())
 						assert.Equal(t, "{request}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3419,7 +3797,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.physical_io.requests.rate"], "Found a duplicate in the metrics slice: oracledb.physical_io.requests.rate")
 						validatedMetrics["oracledb.physical_io.requests.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rate of physical I/O requests issued to storage.", mi.Description())
 						assert.Equal(t, "{request}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3466,7 +3846,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.physical_io.transferred"], "Found a duplicate in the metrics slice: oracledb.physical_io.transferred")
 						validatedMetrics["oracledb.physical_io.transferred"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total physical I/O bytes transferred between Oracle and storage. Sums across all data files. Sourced from v$sysstat names physical read/write bytes (disk.io.type=buffered) and physical read/write total bytes (disk.io.type=total).", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3512,7 +3894,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.physical_io.transferred.rate"], "Found a duplicate in the metrics slice: oracledb.physical_io.transferred.rate")
 						validatedMetrics["oracledb.physical_io.transferred.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rate of physical I/O bytes transferred between Oracle and storage.", mi.Description())
 						assert.Equal(t, "By/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3554,7 +3938,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.physical_operations.rate"], "Found a duplicate in the metrics slice: oracledb.physical_operations.rate")
 						validatedMetrics["oracledb.physical_operations.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rate of physical read and write operations performed by the database.", mi.Description())
 						assert.Equal(t, "{operation}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -3595,7 +3981,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.physical_read_io_requests"], "Found a duplicate in the metrics slice: oracledb.physical_read_io_requests")
 						validatedMetrics["oracledb.physical_read_io_requests"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of read requests for application activity", mi.Description())
 						assert.Equal(t, "{request}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3636,7 +4024,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.physical_reads"], "Found a duplicate in the metrics slice: oracledb.physical_reads")
 						validatedMetrics["oracledb.physical_reads"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of physical reads", mi.Description())
 						assert.Equal(t, "{read}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3677,7 +4067,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.physical_reads_direct"], "Found a duplicate in the metrics slice: oracledb.physical_reads_direct")
 						validatedMetrics["oracledb.physical_reads_direct"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of reads directly from disk, bypassing the buffer cache", mi.Description())
 						assert.Equal(t, "{read}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3718,7 +4110,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.physical_write_io_requests"], "Found a duplicate in the metrics slice: oracledb.physical_write_io_requests")
 						validatedMetrics["oracledb.physical_write_io_requests"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of write requests for application activity", mi.Description())
 						assert.Equal(t, "{request}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3759,7 +4153,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.physical_writes"], "Found a duplicate in the metrics slice: oracledb.physical_writes")
 						validatedMetrics["oracledb.physical_writes"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of physical writes", mi.Description())
 						assert.Equal(t, "{write}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3800,7 +4196,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.physical_writes_direct"], "Found a duplicate in the metrics slice: oracledb.physical_writes_direct")
 						validatedMetrics["oracledb.physical_writes_direct"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of writes directly to disk, bypassing the buffer cache", mi.Description())
 						assert.Equal(t, "{write}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3865,7 +4263,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.queries_parallelized"], "Found a duplicate in the metrics slice: oracledb.queries_parallelized")
 						validatedMetrics["oracledb.queries_parallelized"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of SELECT statements executed in parallel", mi.Description())
 						assert.Equal(t, "{query}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3935,7 +4335,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.redo.blocks"], "Found a duplicate in the metrics slice: oracledb.redo.blocks")
 						validatedMetrics["oracledb.redo.blocks"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of redo blocks moved between the redo log and storage.", mi.Description())
 						assert.Equal(t, "{block}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -3979,7 +4381,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.redo.operations"], "Found a duplicate in the metrics slice: oracledb.redo.operations")
 						validatedMetrics["oracledb.redo.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of redo I/O operations.", mi.Description())
 						assert.Equal(t, "{operation}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -4023,7 +4427,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.redo.requests"], "Found a duplicate in the metrics slice: oracledb.redo.requests")
 						validatedMetrics["oracledb.redo.requests"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of times a process requested space in the redo log buffer and had to wait.", mi.Description())
 						assert.Equal(t, "{request}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -4067,7 +4473,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.redo.retries"], "Found a duplicate in the metrics slice: oracledb.redo.retries")
 						validatedMetrics["oracledb.redo.retries"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of times a process waited and retried to allocate space in the redo buffer.", mi.Description())
 						assert.Equal(t, "{retry}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -4120,7 +4528,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.redo.size.rate"], "Found a duplicate in the metrics slice: oracledb.redo.size.rate")
 						validatedMetrics["oracledb.redo.size.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rate of redo bytes generated by the database.", mi.Description())
 						assert.Equal(t, "By/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -4162,7 +4572,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.redo.time"], "Found a duplicate in the metrics slice: oracledb.redo.time")
 						validatedMetrics["oracledb.redo.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Time spent in each phase of the redo pipeline.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -4201,7 +4613,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.redo_allocation.utilization"], "Found a duplicate in the metrics slice: oracledb.redo_allocation.utilization")
 						validatedMetrics["oracledb.redo_allocation.utilization"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Fraction of redo allocations that succeeded without space contention, as computed by Oracle V$SYSMETRIC (% (#Redo - RedoSpaceReq)/#Redo).", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -4246,7 +4660,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.scan.count"], "Found a duplicate in the metrics slice: oracledb.scan.count")
 						validatedMetrics["oracledb.scan.count"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total count of scan operations.", mi.Description())
 						assert.Equal(t, "{operation}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -4304,7 +4720,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.session.average"], "Found a duplicate in the metrics slice: oracledb.session.average")
 						validatedMetrics["oracledb.session.average"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average number of sessions over the metric interval.", mi.Description())
 						assert.Equal(t, "{session}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -4343,7 +4761,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.session.stored_procedure.memory"], "Found a duplicate in the metrics slice: oracledb.session.stored_procedure.memory")
 						validatedMetrics["oracledb.session.stored_procedure.memory"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Memory currently allocated for stored procedures in the session.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -4385,7 +4805,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.session.wait.time"], "Found a duplicate in the metrics slice: oracledb.session.wait.time")
 						validatedMetrics["oracledb.session.wait.time"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cumulative time sessions spent in waits.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -4431,7 +4853,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.session.waits"], "Found a duplicate in the metrics slice: oracledb.session.waits")
 						validatedMetrics["oracledb.session.waits"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Cumulative number of waits across sessions.", mi.Description())
 						assert.Equal(t, "{wait}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -4490,7 +4914,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.sessions.usage"], "Found a duplicate in the metrics slice: oracledb.sessions.usage")
 						validatedMetrics["oracledb.sessions.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Count of active sessions.", mi.Description())
 						assert.Equal(t, "{session}", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -4546,7 +4972,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.sga.usage"], "Found a duplicate in the metrics slice: oracledb.sga.usage")
 						validatedMetrics["oracledb.sga.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Size of each component of the System Global Area (SGA).", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -4583,7 +5011,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.shared_pool.utilization"], "Found a duplicate in the metrics slice: oracledb.shared_pool.utilization")
 						validatedMetrics["oracledb.shared_pool.utilization"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Fraction of the shared pool that is currently free, as computed by Oracle V$SYSMETRIC (% Free/Total). Low values indicate shared pool pressure.", mi.Description())
 						assert.Equal(t, "%", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -4625,7 +5055,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.smon.posts"], "Found a duplicate in the metrics slice: oracledb.smon.posts")
 						validatedMetrics["oracledb.smon.posts"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of times SMON was posted to perform recovery.", mi.Description())
 						assert.Equal(t, "{post}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -4669,7 +5101,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.sort.operations"], "Found a duplicate in the metrics slice: oracledb.sort.operations")
 						validatedMetrics["oracledb.sort.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total count of sort operations.", mi.Description())
 						assert.Equal(t, "{operation}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -4711,7 +5145,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.sort.ratio"], "Found a duplicate in the metrics slice: oracledb.sort.ratio")
 						validatedMetrics["oracledb.sort.ratio"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Fraction of sorts performed in memory vs disk, as computed by Oracle V$SYSMETRIC (% MemSort/(MemSort + DiskSort)). Low values indicate PGA memory pressure.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -4764,7 +5200,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.sql_service.response.duration"], "Found a duplicate in the metrics slice: oracledb.sql_service.response.duration")
 						validatedMetrics["oracledb.sql_service.response.duration"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average SQL service response time in seconds, converted from centiseconds as reported by Oracle V$SYSMETRIC (CentiSeconds Per Call).", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -4809,7 +5247,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.sqlnet.io.transferred"], "Found a duplicate in the metrics slice: oracledb.sqlnet.io.transferred")
 						validatedMetrics["oracledb.sqlnet.io.transferred"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Bytes transferred via SQL*Net between Oracle and clients/dblinks. Sourced from v$sysstat names bytes received/sent via SQL*Net from/to client/dblink.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -4915,7 +5355,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.tablespace.limit"], "Found a duplicate in the metrics slice: oracledb.tablespace.limit")
 						validatedMetrics["oracledb.tablespace.limit"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Maximum autoextend size of tablespace in bytes. Returns 0 for temporary tablespaces and tablespaces without autoextend enabled.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -4962,7 +5404,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.tablespace.status"], "Found a duplicate in the metrics slice: oracledb.tablespace.status")
 						validatedMetrics["oracledb.tablespace.status"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Current status of tablespaces, broken down by state. A timeseries is produced for every possible value of oracledb.tablespace.state; the value is 1 for a tablespace's current state, and 0 for all other states.", mi.Description())
 						assert.Equal(t, "{tablespace}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -5008,7 +5452,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.tablespace.utilization"], "Found a duplicate in the metrics slice: oracledb.tablespace.utilization")
 						validatedMetrics["oracledb.tablespace.utilization"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Fraction of tablespace currently in use, expressed as a value between 0 and 1.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -5050,7 +5496,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.tablespace_size.limit"], "Found a duplicate in the metrics slice: oracledb.tablespace_size.limit")
 						validatedMetrics["oracledb.tablespace_size.limit"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Maximum size of tablespace in bytes, -1 if unlimited.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -5092,7 +5540,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.tablespace_size.usage"], "Found a duplicate in the metrics slice: oracledb.tablespace_size.usage")
 						validatedMetrics["oracledb.tablespace_size.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Used tablespace in bytes.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -5131,7 +5581,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.transaction.response.time"], "Found a duplicate in the metrics slice: oracledb.transaction.response.time")
 						validatedMetrics["oracledb.transaction.response.time"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Average response time per transaction.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -5170,7 +5622,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.transaction.rollbacks"], "Found a duplicate in the metrics slice: oracledb.transaction.rollbacks")
 						validatedMetrics["oracledb.transaction.rollbacks"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total number of transactions rolled back.", mi.Description())
 						assert.Equal(t, "{rollback}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -5224,7 +5678,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.transactions.rate"], "Found a duplicate in the metrics slice: oracledb.transactions.rate")
 						validatedMetrics["oracledb.transactions.rate"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Rate of user transactions.", mi.Description())
 						assert.Equal(t, "{transaction}/s", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -5277,7 +5733,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.user_commits"], "Found a duplicate in the metrics slice: oracledb.user_commits")
 						validatedMetrics["oracledb.user_commits"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of user commits. When a user commits a transaction, the redo generated that reflects the changes made to database blocks must be written to disk. Commits often represent the closest thing to a user transaction rate.", mi.Description())
 						assert.Equal(t, "{commit}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -5318,7 +5776,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["oracledb.user_rollbacks"], "Found a duplicate in the metrics slice: oracledb.user_rollbacks")
 						validatedMetrics["oracledb.user_rollbacks"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of times users manually issue the ROLLBACK statement or an error occurs during a user's transactions", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())

@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl"
 )
 
 func Test_when(t *testing.T) {
@@ -27,14 +28,14 @@ func Test_when(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		condition  *ottl.LambdaExpression[any]
+		condition  *xottl.LambdaExpression[any]
 		trueValue  ottl.Getter[any]
 		falseValue ottl.Getter[any]
 		want       any
 	}{
 		{
 			name: "condition true with literal values",
-			condition: ottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			condition: xottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return true, nil
 			}),
 			trueValue:  asLiteralGetter("true"),
@@ -43,7 +44,7 @@ func Test_when(t *testing.T) {
 		},
 		{
 			name: "condition false with literal values",
-			condition: ottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			condition: xottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return false, nil
 			}),
 			trueValue:  asLiteralGetter("true"),
@@ -52,7 +53,7 @@ func Test_when(t *testing.T) {
 		},
 		{
 			name: "condition true with dynamic values",
-			condition: ottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			condition: xottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return true, nil
 			}),
 			trueValue: &ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) {
@@ -65,7 +66,7 @@ func Test_when(t *testing.T) {
 		},
 		{
 			name: "condition false with dynamic values",
-			condition: ottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			condition: xottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return false, nil
 			}),
 			trueValue: &ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) {
@@ -90,7 +91,7 @@ func Test_when(t *testing.T) {
 }
 
 func Test_when_unused_branch(t *testing.T) {
-	condition := ottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+	condition := xottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 		return true, nil
 	})
 	trueValue := &ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) {
@@ -116,7 +117,7 @@ func Test_when_error(t *testing.T) {
 	}}
 
 	t.Run("non-boolean condition", func(t *testing.T) {
-		condition := ottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+		condition := xottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 			return "not a bool", nil
 		})
 
@@ -129,7 +130,7 @@ func Test_when_error(t *testing.T) {
 	})
 
 	t.Run("condition eval error", func(t *testing.T) {
-		condition := ottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+		condition := xottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 			return nil, errors.New("eval failed")
 		})
 
@@ -161,7 +162,7 @@ func Test_WhenFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 		whenArgs, ok := args.(*whenArguments[any])
 		require.True(t, ok)
-		whenArgs.Condition = ottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+		whenArgs.Condition = xottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 			return true, nil
 		})
 		whenArgs.TrueValue = &ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) {
@@ -183,7 +184,7 @@ func Test_WhenFactory(t *testing.T) {
 }
 
 func BenchmarkWhen(b *testing.B) {
-	condition := ottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+	condition := xottl.NewTestingLambdaExpression[any]([]string{}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 		return true, nil
 	})
 	trueValue := &ottl.StandardGetSetter[any]{Getter: func(context.Context, any) (any, error) {

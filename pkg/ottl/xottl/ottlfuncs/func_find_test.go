@@ -14,14 +14,15 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl"
 )
 
 func Test_find(t *testing.T) {
 	tests := []struct {
 		name      string
 		source    ottl.Getter[any]
-		predicate *ottl.LambdaExpression[any]
-		mapper    ottl.Optional[*ottl.LambdaExpression[any]]
+		predicate *xottl.LambdaExpression[any]
+		mapper    ottl.Optional[*xottl.LambdaExpression[any]]
 		want      any
 	}{
 		{
@@ -34,7 +35,7 @@ func Test_find(t *testing.T) {
 					return m, nil
 				},
 			},
-			predicate: ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			predicate: xottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				k := resolveBinding("k")
 				return k.(string) == "target", nil
 			}),
@@ -49,7 +50,7 @@ func Test_find(t *testing.T) {
 					return m, nil
 				},
 			},
-			predicate: ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			predicate: xottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return false, nil
 			}),
 			want: nil,
@@ -65,7 +66,7 @@ func Test_find(t *testing.T) {
 					},
 				}
 			}(),
-			predicate: ottl.NewTestingLambdaExpression[any]([]string{"i", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			predicate: xottl.NewTestingLambdaExpression[any]([]string{"i", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				i := resolveBinding("i")
 				return i.(int64) == 1, nil
 			}),
@@ -82,7 +83,7 @@ func Test_find(t *testing.T) {
 					},
 				}
 			}(),
-			predicate: ottl.NewTestingLambdaExpression[any]([]string{"i", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			predicate: xottl.NewTestingLambdaExpression[any]([]string{"i", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return false, nil
 			}),
 			want: nil,
@@ -94,7 +95,7 @@ func Test_find(t *testing.T) {
 					return pcommon.NewMap(), nil
 				},
 			},
-			predicate: ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			predicate: xottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return true, nil
 			}),
 			want: nil,
@@ -106,7 +107,7 @@ func Test_find(t *testing.T) {
 					return pcommon.NewSlice(), nil
 				},
 			},
-			predicate: ottl.NewTestingLambdaExpression[any]([]string{"i", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			predicate: xottl.NewTestingLambdaExpression[any]([]string{"i", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return true, nil
 			}),
 			want: nil,
@@ -122,7 +123,7 @@ func Test_find(t *testing.T) {
 					},
 				}
 			}(),
-			predicate: ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			predicate: xottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				v := resolveBinding("v")
 				return v.(string) == "match1" || v.(string) == "match2", nil
 			}),
@@ -138,11 +139,11 @@ func Test_find(t *testing.T) {
 					return m, nil
 				},
 			},
-			predicate: ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			predicate: xottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				k := resolveBinding("k")
 				return k.(string) == "target", nil
 			}),
-			mapper: ottl.NewTestingOptional(ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			mapper: ottl.NewTestingOptional(xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				k := resolveBinding("k")
 				v := resolveBinding("v")
 				return k.(string) + ":" + v.(string), nil
@@ -160,11 +161,11 @@ func Test_find(t *testing.T) {
 					},
 				}
 			}(),
-			predicate: ottl.NewTestingLambdaExpression[any]([]string{"i", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			predicate: xottl.NewTestingLambdaExpression[any]([]string{"i", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				i := resolveBinding("i")
 				return i.(int64) == 1, nil
 			}),
-			mapper: ottl.NewTestingOptional(ottl.NewTestingLambdaExpression[any]([]string{"i", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+			mapper: ottl.NewTestingOptional(xottl.NewTestingLambdaExpression[any]([]string{"i", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 				i := resolveBinding("i")
 				v := resolveBinding("v")
 				return fmt.Sprintf("%d:%s", i.(int64), v.(string)), nil
@@ -192,10 +193,10 @@ func Test_find_error(t *testing.T) {
 					return "not a collection", nil
 				},
 			},
-			ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			xottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return true, nil
 			}),
-			&ottl.Optional[*ottl.LambdaExpression[any]]{},
+			&ottl.Optional[*xottl.LambdaExpression[any]]{},
 		)
 		require.NoError(t, err)
 		_, err = exprFunc(t.Context(), nil)
@@ -211,11 +212,11 @@ func Test_find_error(t *testing.T) {
 				return m, nil
 			},
 		}
-		predicate := ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+		predicate := xottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 			return 123, nil
 		})
 
-		exprFunc, err := find(source, predicate, &ottl.Optional[*ottl.LambdaExpression[any]]{})
+		exprFunc, err := find(source, predicate, &ottl.Optional[*xottl.LambdaExpression[any]]{})
 		require.NoError(t, err)
 		_, err = exprFunc(t.Context(), nil)
 		require.Error(t, err)
@@ -231,11 +232,11 @@ func Test_find_error(t *testing.T) {
 				return s, nil
 			},
 		}
-		predicate := ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+		predicate := xottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 			return 123, nil
 		})
 
-		exprFunc, err := find(source, predicate, &ottl.Optional[*ottl.LambdaExpression[any]]{})
+		exprFunc, err := find(source, predicate, &ottl.Optional[*xottl.LambdaExpression[any]]{})
 		require.NoError(t, err)
 		_, err = exprFunc(t.Context(), nil)
 		require.Error(t, err)
@@ -254,10 +255,10 @@ func Test_find_error(t *testing.T) {
 
 		exprFunc, err := find(
 			source,
-			ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			xottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return nil, errors.New("eval failed")
 			}),
-			&ottl.Optional[*ottl.LambdaExpression[any]]{},
+			&ottl.Optional[*xottl.LambdaExpression[any]]{},
 		)
 		require.NoError(t, err)
 		_, err = exprFunc(t.Context(), nil)
@@ -277,10 +278,10 @@ func Test_find_error(t *testing.T) {
 
 		exprFunc, err := find(
 			source,
-			ottl.NewTestingLambdaExpression[any]([]string{"i", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+			xottl.NewTestingLambdaExpression[any]([]string{"i", "_"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 				return nil, errors.New("eval failed")
 			}),
-			&ottl.Optional[*ottl.LambdaExpression[any]]{},
+			&ottl.Optional[*xottl.LambdaExpression[any]]{},
 		)
 		require.NoError(t, err)
 		_, err = exprFunc(t.Context(), nil)
@@ -298,11 +299,11 @@ func Test_find_mapper_error(t *testing.T) {
 			return m, nil
 		},
 	}
-	predicate := ottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+	predicate := xottl.NewTestingLambdaExpression[any]([]string{"k", "_"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 		k := resolveBinding("k")
 		return k.(string) == "target", nil
 	})
-	mapper := ottl.NewTestingOptional(ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+	mapper := ottl.NewTestingOptional(xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 		return nil, errors.New("mapper failed")
 	}))
 
@@ -320,7 +321,7 @@ func Test_FindFactory(t *testing.T) {
 			return pcommon.NewMap(), nil
 		},
 	}
-	predicate := ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+	predicate := xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 		return true, nil
 	})
 
@@ -351,7 +352,7 @@ func Test_FindFactory(t *testing.T) {
 	})
 
 	t.Run("function creation with mapper", func(t *testing.T) {
-		mapper := ottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
+		mapper := xottl.NewTestingLambdaExpression[any]([]string{"k", "v"}, func(_ context.Context, _ any, _ func(string) any) (any, error) {
 			return "mapped", nil
 		})
 		factory := NewFindFactory[any]()
@@ -381,11 +382,11 @@ func BenchmarkFind(b *testing.B) {
 			return s, nil
 		},
 	}
-	predicate := ottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
+	predicate := xottl.NewTestingLambdaExpression[any]([]string{"_", "v"}, func(_ context.Context, _ any, resolveBinding func(string) any) (any, error) {
 		v := resolveBinding("v")
 		return v.(string) == "target", nil
 	})
-	mapper := ottl.Optional[*ottl.LambdaExpression[any]]{}
+	mapper := ottl.Optional[*xottl.LambdaExpression[any]]{}
 
 	exprFunc, err := find(source, predicate, &mapper)
 	require.NoError(b, err)

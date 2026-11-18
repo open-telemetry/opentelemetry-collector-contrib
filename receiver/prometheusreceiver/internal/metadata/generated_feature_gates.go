@@ -6,19 +6,18 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var ReceiverPrometheusUseTargetURLForServerAddressFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.prometheus.UseTargetUrlForServerAddress",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, server.address, server.port, and url.scheme are populated from the scraped target's post-relabeling __address__ and __scheme__ labels instead of parsing the instance label and pre-relabeling service discovery labels."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52565"),
+	featuregate.WithRegisterFromVersion("v0.165.0"),
+)
+
 var ReceiverPrometheusreceiverEnableCreatedTimestampZeroIngestionFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Enables the Prometheus created-timestamps-zero-injection feature. Created timestamps are injected as 0-valued samples when appropriate. This is disabled by default due to worse CPU performance with higher metric volumes."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/40355"),
 	featuregate.WithRegisterFromVersion("v0.113.0"),
-)
-
-var ReceiverPrometheusreceiverIgnoreScopeInfoMetricFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.prometheusreceiver.IgnoreScopeInfoMetric",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, the `otel_scope_info` metric is ignored for scope attribute extraction."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41502"),
-	featuregate.WithRegisterFromVersion("v0.148.0"),
-	featuregate.WithRegisterToVersion("v0.164.0"),
 )

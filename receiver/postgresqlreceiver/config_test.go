@@ -100,6 +100,38 @@ func TestValidate(t *testing.T) {
 			expected: nil,
 		},
 		{
+			desc: "connect_database outside databases is not a config error",
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.ConnectDatabase = "monitoring"
+				cfg.Databases = []string{"mydb"}
+			},
+			expected: nil,
+		},
+		{
+			desc: "empty connect_database is a config error",
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.ConnectDatabase = ""
+			},
+			expected: []error{
+				errors.New(ErrEmptyConnectDatabase),
+			},
+		},
+		{
+			desc: "whitespace-only connect_database is a config error",
+			defaultConfigModifier: func(cfg *Config) {
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.ConnectDatabase = "   "
+			},
+			expected: []error{
+				errors.New(ErrEmptyConnectDatabase),
+			},
+		},
+		{
 			desc: "no error",
 			defaultConfigModifier: func(cfg *Config) {
 				cfg.Username = "otel"
@@ -191,6 +223,7 @@ func TestLoadConfig(t *testing.T) {
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.Databases = []string{"otel"}
 		expected.ExcludeDatabases = []string{"template0"}
+		expected.ConnectDatabase = "monitoring"
 		expected.ControllerConfig.CollectionInterval = 10 * time.Second
 		expected.ClientConfig = configtls.ClientConfig{
 			Insecure:           false,
@@ -214,4 +247,24 @@ func TestLoadConfig(t *testing.T) {
 
 func ptr[T any](value T) *T {
 	return new(value)
+}
+
+func TestTimeoutConfig(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		values map[string]any
+		want   time.Duration
+	}{
+		{name: "default", values: map[string]any{}, want: time.Minute},
+		{name: "shorter", values: map[string]any{"timeout": "5s"}, want: 5 * time.Second},
+		{name: "longer", values: map[string]any{"timeout": "2m"}, want: 2 * time.Minute},
+		{name: "disabled", values: map[string]any{"timeout": "0s"}},
+		{name: "independent interval", values: map[string]any{"collection_interval": "1s"}, want: time.Minute},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			require.NoError(t, confmap.NewFromStringMap(tc.values).Unmarshal(cfg))
+			require.Equal(t, tc.want, cfg.ControllerConfig.Timeout)
+		})
+	}
 }
