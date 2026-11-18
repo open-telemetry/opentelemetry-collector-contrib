@@ -264,9 +264,9 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 			}
 		}
 
-		// With a delay, the window end can be before the start (for example right after
-		// startup). Skip the group this cycle and keep its start time.
-		if endTime.Before(startTime) {
+		// With a delay, the window end can be at or before the start (for example right
+		// after startup). Skip the group this cycle and keep its start time.
+		if !endTime.After(startTime) {
 			l.groupNextStartTimes[groupName] = startTime
 			continue
 		}

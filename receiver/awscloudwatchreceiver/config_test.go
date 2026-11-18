@@ -348,6 +348,23 @@ func TestLoadLogsConfig(t *testing.T) {
 				Metrics: defaultMetrics,
 			},
 		},
+		{
+			name: "logs-delay",
+			expectedConfig: &Config{
+				Region: "us-west-1",
+				Logs: LogsConfig{
+					PollInterval:        time.Minute,
+					MaxEventsPerRequest: defaultEventLimit,
+					Delay:               90 * time.Second,
+					Groups: GroupConfig{
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit: defaultLogGroupLimit,
+						},
+					},
+				},
+				Metrics: defaultMetrics,
+			},
+		},
 	}
 
 	for _, tc := range cases {

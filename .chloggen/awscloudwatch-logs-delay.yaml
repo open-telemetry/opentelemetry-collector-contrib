@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/awscloudwatch
+component: receiver/aws_cloudwatch
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "Add `logs.delay` to end each logs poll window that long before now, so events that CloudWatch Logs makes visible late are not skipped."
