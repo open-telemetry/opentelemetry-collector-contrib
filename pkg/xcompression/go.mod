@@ -4,6 +4,7 @@ go 1.26.0
 
 require (
 	github.com/klauspost/compress v1.20.4
+	github.com/klauspost/pgzip v1.3.0
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/config/configcompression v1.71.1-0.20261112225459-4888f0b280f9

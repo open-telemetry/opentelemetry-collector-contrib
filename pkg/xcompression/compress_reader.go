@@ -6,7 +6,6 @@ package xcompression // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"bytes"
 	"compress/flate"
-	"compress/gzip"
 	"compress/zlib"
 	"errors"
 	"fmt"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/klauspost/compress/snappy"
 	"github.com/klauspost/compress/zstd"
+	gzip "github.com/klauspost/pgzip"
 	"github.com/pierrec/lz4"
 	"go.opentelemetry.io/collector/config/configcompression"
 )
