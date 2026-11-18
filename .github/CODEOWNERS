@@ -116,7 +116,7 @@ extension/googleclientauthextension/                             @open-telemetry
 extension/headerssetterextension/                                @open-telemetry/collector-contrib-approvers @VihasMakwana
 extension/healthcheckextension/                                  @open-telemetry/collector-contrib-approvers @evan-bradley @mwear
 extension/healthcheckv2extension/                                @open-telemetry/collector-contrib-approvers @evan-bradley @mwear
-extension/httpforwarderextension/                                @open-telemetry/collector-contrib-approvers @atoulme
+extension/httpforwarderextension/                                @open-telemetry/collector-contrib-approvers @atoulme @SatoshiKamiyama
 extension/jaegerremotesampling/                                  @open-telemetry/collector-contrib-approvers @yurishkuro @frzifus
 extension/k8sleaderelector/                                      @open-telemetry/collector-contrib-approvers @rakesh-garimella @jinja2
 extension/mcp/                                                   @open-telemetry/collector-contrib-approvers @pavolloffay @codeboten
