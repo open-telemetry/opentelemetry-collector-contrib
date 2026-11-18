@@ -715,9 +715,10 @@ func testScrapeLogsFromContainer(t *testing.T, version string) {
 	db, err := sql.Open("postgres", connStr)
 	assert.NoError(t, err)
 
-	var resetAvailable bool
-	require.NoError(t, db.QueryRowContext(t.Context(), statStatementsResetAvailableQuery).Scan(&resetAvailable))
+	var resetAvailable, toplevelAvailable bool
+	require.NoError(t, db.QueryRowContext(t.Context(), statStatementsCapabilitiesQuery).Scan(&resetAvailable, &toplevelAvailable))
 	assert.Equal(t, version != pre17TestVersion, resetAvailable)
+	assert.Equal(t, version != pre17TestVersion, toplevelAvailable)
 
 	_, err = db.Exec("Select * from test2 where id = 67")
 	assert.NoError(t, err)
@@ -885,6 +886,98 @@ func testScrapeLogsFromContainer(t *testing.T, version string) {
 		check("select * from test2 where id = ?", 30)
 		execute(queryB, 20)
 		check("select * from test1 where id = ?", 40)
+	})
+	t.Run("direct and nested statements", func(t *testing.T) {
+		conn, connErr := db.Conn(t.Context())
+		require.NoError(t, connErr)
+		defer conn.Close()
+		_, connErr = conn.ExecContext(t.Context(), "/* otel-collector-ignore */ SET pg_stat_statements.track = 'all'")
+		require.NoError(t, connErr)
+		_, connErr = conn.ExecContext(t.Context(), `/* otel-collector-ignore */ CREATE FUNCTION otel_nested() RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  EXECUTE 'SELECT id FROM test2 WHERE id = 67';
+END;
+$$`)
+		require.NoError(t, connErr)
+		admin, adminErr := sql.Open("postgres", strings.Replace(connStr, "/otel2?", "/postgres?", 1))
+		require.NoError(t, adminErr)
+		defer admin.Close()
+		nestedCfg := cfg
+		nestedCfg.ExcludeDatabases = []string{"postgres"}
+		factory := newDefaultClientFactory(&nestedCfg)
+		var scraper *postgreSQLScraper
+		run := func(t *testing.T, direct, nested int) {
+			t.Helper()
+			for range direct {
+				_, execErr := conn.ExecContext(t.Context(), "SELECT id FROM test2 WHERE id = 67")
+				require.NoError(t, execErr)
+			}
+			for range nested {
+				_, execErr := conn.ExecContext(t.Context(), "/* otel-collector-ignore */ SELECT otel_nested()")
+				require.NoError(t, execErr)
+			}
+		}
+		collect := func(t *testing.T, limit, calls int64) {
+			t.Helper()
+			logs, collectErr := scraper.scrapeTopQuery(t.Context(), limit, 1, 0, 0)
+			require.NoError(t, collectErr)
+			if calls == 0 {
+				require.Zero(t, logs.LogRecordCount())
+				return
+			}
+			require.Equal(t, 1, logs.LogRecordCount())
+			attrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+			assert.Equal(t, "select id from test2 where id = ?", strings.ToLower(attrs["db.query.text"].(string)))
+			assert.Equal(t, calls, attrs["postgresql.calls"])
+			assert.Equal(t, calls, attrs["postgresql.rows"])
+			assert.Positive(t, attrs["postgresql.total_exec_time"])
+			assert.NotContains(t, attrs, "postgresql.toplevel")
+		}
+		modes := []string{"installed extension"}
+		if version == post17TestVersion {
+			modes = append(modes, "old extension view", "upgraded extension")
+		}
+		for _, mode := range modes {
+			t.Run(mode, func(t *testing.T) {
+				switch mode {
+				case "old extension view":
+					_, ddlErr := admin.ExecContext(t.Context(), "/* otel-collector-ignore */ DROP EXTENSION pg_stat_statements")
+					require.NoError(t, ddlErr)
+					_, ddlErr = admin.ExecContext(t.Context(), "/* otel-collector-ignore */ CREATE EXTENSION pg_stat_statements VERSION '1.8'")
+					require.NoError(t, ddlErr)
+				case "upgraded extension":
+					_, ddlErr := admin.ExecContext(t.Context(), "/* otel-collector-ignore */ ALTER EXTENSION pg_stat_statements UPDATE")
+					require.NoError(t, ddlErr)
+				}
+				legacy := version == pre17TestVersion || mode == "old extension view"
+				limit := int64(10)
+				if legacy {
+					// Both execution contexts must contribute even with LIMIT 1.
+					limit = 1
+				}
+				if mode != "upgraded extension" {
+					_, resetErr := conn.ExecContext(t.Context(), "/* otel-collector-ignore */ SELECT pg_stat_statements_reset()")
+					require.NoError(t, resetErr)
+					var scraperErr error
+					scraper, scraperErr = newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), &nestedCfg, factory,
+						newCache(20), newTTLCache[string](1, time.Second))
+					require.NoError(t, scraperErr)
+					run(t, 100, 20)
+				}
+				var count, identities int
+				require.NoError(t, admin.QueryRowContext(t.Context(), `/* otel-collector-ignore */ SELECT count(*), count(DISTINCT queryid)
+FROM pg_stat_statements WHERE query LIKE 'SELECT id FROM test2 WHERE id = %'`).Scan(&count, &identities))
+				assert.Equal(t, 1, identities)
+				if version == post17TestVersion {
+					assert.Equal(t, 2, count)
+				} else {
+					assert.Equal(t, 1, count)
+				}
+				collect(t, limit, 0)
+				run(t, 5, 2)
+				collect(t, limit, 7)
+			})
+		}
 	})
 }
 

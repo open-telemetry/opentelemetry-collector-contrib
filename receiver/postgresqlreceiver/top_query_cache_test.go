@@ -203,10 +203,10 @@ func TestTopQueryCounterHistory(t *testing.T) {
 						values[column] = value
 					}
 					if step.reset == 0 {
-						mock.ExpectQuery(regexp.QuoteMeta(statStatementsResetAvailableQuery)).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+						mock.ExpectQuery(regexp.QuoteMeta(statStatementsCapabilitiesQuery)).WillReturnRows(sqlmock.NewRows([]string{"reset", "toplevel"}).AddRow(false, false))
 					}
 					if step.reset != 0 {
-						mock.ExpectQuery(regexp.QuoteMeta(statStatementsResetAvailableQuery)).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
+						mock.ExpectQuery(regexp.QuoteMeta(statStatementsCapabilitiesQuery)).WillReturnRows(sqlmock.NewRows([]string{"reset", "toplevel"}).AddRow(true, false))
 						resetQuery := mock.ExpectQuery("SELECT stats_reset FROM pg_stat_statements_info")
 						if step.resetFails {
 							resetQuery.WillReturnError(errors.New("reset timestamp read failed"))
@@ -338,7 +338,7 @@ func TestTopQueryCacheRetainsFetchedStatements(t *testing.T) {
 				}
 				rows.AddRow(row...)
 			}
-			mock.ExpectQuery(regexp.QuoteMeta(statStatementsResetAvailableQuery)).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+			mock.ExpectQuery(regexp.QuoteMeta(statStatementsCapabilitiesQuery)).WillReturnRows(sqlmock.NewRows([]string{"reset", "toplevel"}).AddRow(false, false))
 			mock.ExpectQuery("LIMIT 500").WillReturnRows(rows)
 			logs, scrapeErr := scraper.scrapeTopQuery(t.Context(), cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopQueryCollection.TopNQuery, cfg.TopQueryCollection.MaxExplainEachInterval, 0)
 			require.NoError(t, scrapeErr)
@@ -411,7 +411,7 @@ func TestTopQueryCacheSeparatesDatabaseAndRole(t *testing.T) {
 			rows.AddRow(row...)
 		}
 
-		mock.ExpectQuery(regexp.QuoteMeta(statStatementsResetAvailableQuery)).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+		mock.ExpectQuery(regexp.QuoteMeta(statStatementsCapabilitiesQuery)).WillReturnRows(sqlmock.NewRows([]string{"reset", "toplevel"}).AddRow(false, false))
 
 		mock.ExpectQuery("LIMIT 3").WillReturnRows(rows)
 		logs, err := scraper.scrapeTopQuery(t.Context(), cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopQueryCollection.TopNQuery, cfg.TopQueryCollection.MaxExplainEachInterval, 0)
@@ -478,7 +478,7 @@ func TestTopQueryCacheSeparatesDroppedRoles(t *testing.T) {
 		return rows
 	}
 
-	mock.ExpectQuery(regexp.QuoteMeta(statStatementsResetAvailableQuery)).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+	mock.ExpectQuery(regexp.QuoteMeta(statStatementsCapabilitiesQuery)).WillReturnRows(sqlmock.NewRows([]string{"reset", "toplevel"}).AddRow(false, false))
 
 	mock.ExpectQuery("LIMIT 3").WillReturnRows(buildRows("100", "5000", "1000", "2000"))
 	_, err = scraper.scrapeTopQuery(t.Context(), cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopQueryCollection.TopNQuery, cfg.TopQueryCollection.MaxExplainEachInterval, 0)
@@ -486,7 +486,7 @@ func TestTopQueryCacheSeparatesDroppedRoles(t *testing.T) {
 	require.NoError(t, mock.ExpectationsWereMet())
 
 	// Second scrape: each role's cumulative calls advances by 10.
-	mock.ExpectQuery(regexp.QuoteMeta(statStatementsResetAvailableQuery)).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+	mock.ExpectQuery(regexp.QuoteMeta(statStatementsCapabilitiesQuery)).WillReturnRows(sqlmock.NewRows([]string{"reset", "toplevel"}).AddRow(false, false))
 	mock.ExpectQuery("LIMIT 3").WillReturnRows(buildRows("110", "5010", "1100", "2200"))
 	logs, err := scraper.scrapeTopQuery(t.Context(), cfg.TopQueryCollection.MaxRowsPerQuery, cfg.TopQueryCollection.TopNQuery, cfg.TopQueryCollection.MaxExplainEachInterval, 0)
 	require.NoError(t, err)
@@ -569,7 +569,7 @@ func TestTopQueryPlanCacheSeparatesDatabaseAndRole(t *testing.T) {
 				}
 				rows.AddRow(row...)
 			}
-			mock.ExpectQuery(regexp.QuoteMeta(statStatementsResetAvailableQuery)).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+			mock.ExpectQuery(regexp.QuoteMeta(statStatementsCapabilitiesQuery)).WillReturnRows(sqlmock.NewRows([]string{"reset", "toplevel"}).AddRow(false, false))
 			mock.ExpectQuery("LIMIT 3").WillReturnRows(rows)
 
 			expectedDatabases := []string{defaultPostgreSQLDatabase}
@@ -676,7 +676,7 @@ func TestTopQueryPlanCacheSeparatesDroppedRoles(t *testing.T) {
 		}
 		rows.AddRow(row...)
 	}
-	mock.ExpectQuery(regexp.QuoteMeta(statStatementsResetAvailableQuery)).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+	mock.ExpectQuery(regexp.QuoteMeta(statStatementsCapabilitiesQuery)).WillReturnRows(sqlmock.NewRows([]string{"reset", "toplevel"}).AddRow(false, false))
 	mock.ExpectQuery("LIMIT 3").WillReturnRows(rows)
 
 	for _, statement := range statements {

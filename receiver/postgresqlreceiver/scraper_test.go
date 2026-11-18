@@ -1010,6 +1010,7 @@ func TestTopQueryTemplateRendering(t *testing.T) {
 			buf := bytes.Buffer{}
 			err := tmpl.Execute(&buf, map[string]any{
 				"limit":             int64(10),
+				"toplevel":          false,
 				"excludedDatabases": quoteDatabaseList(tc.excludes),
 			})
 			require.NoError(t, err)
@@ -1275,7 +1276,7 @@ func TestScrapeTopQueriesHonorsExcludeDatabases(t *testing.T) {
 			require.NoError(t, err)
 
 			// The server filters this row out; return it anyway to exercise the EXPLAIN guard.
-			mock.ExpectQuery(regexp.QuoteMeta(statStatementsResetAvailableQuery)).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+			mock.ExpectQuery(regexp.QuoteMeta(statStatementsCapabilitiesQuery)).WillReturnRows(sqlmock.NewRows([]string{"reset", "toplevel"}).AddRow(false, false))
 			mock.ExpectQuery(`AND datname NOT IN \('rdsadmin'\)`).
 				WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
 					callsColumnName:             "123",
@@ -1355,7 +1356,7 @@ func TestScrapeTopQueryHonorsConnectDatabase(t *testing.T) {
 	scraper, err := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
 	require.NoError(t, err)
 
-	mock.ExpectQuery(regexp.QuoteMeta(statStatementsResetAvailableQuery)).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+	mock.ExpectQuery(regexp.QuoteMeta(statStatementsCapabilitiesQuery)).WillReturnRows(sqlmock.NewRows([]string{"reset", "toplevel"}).AddRow(false, false))
 	mock.ExpectQuery(".*").WillReturnRows(sqlmock.NewRows(topQueryColumns))
 
 	_, err = scraper.scrapeTopQuery(t.Context(), 30, 5, 5, time.Minute)
@@ -1473,7 +1474,7 @@ func TestScrapeTopQueries(t *testing.T) {
 		tempBlksReadColumnName: 1110, tempBlksWrittenColumnName: 1110,
 	}})
 
-	mock.ExpectQuery(statStatementsResetAvailableQuery).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+	mock.ExpectQuery(statStatementsCapabilitiesQuery).WillReturnRows(sqlmock.NewRows([]string{"reset", "toplevel"}).AddRow(false, false))
 
 	mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
 		callsColumnName:             "123",
@@ -1550,7 +1551,7 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 	t.Run("disabled keeps the plan on db.server.top_query", func(t *testing.T) {
 		scraper, mock := newScraper(t, true, false)
 
-		mock.ExpectQuery(statStatementsResetAvailableQuery).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+		mock.ExpectQuery(statStatementsCapabilitiesQuery).WillReturnRows(sqlmock.NewRows([]string{"reset", "toplevel"}).AddRow(false, false))
 
 		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
 			callsColumnName:             "123",
@@ -1588,7 +1589,7 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 	t.Run("enabled moves the plan to db.server.query_plan", func(t *testing.T) {
 		scraper, mock := newScraper(t, true, true)
 
-		mock.ExpectQuery(statStatementsResetAvailableQuery).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+		mock.ExpectQuery(statStatementsCapabilitiesQuery).WillReturnRows(sqlmock.NewRows([]string{"reset", "toplevel"}).AddRow(false, false))
 
 		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
 			callsColumnName:             "123",
@@ -1646,7 +1647,7 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 	t.Run("enabled without db.server.top_query collects nothing", func(t *testing.T) {
 		scraper, mock := newScraper(t, false, true)
 
-		mock.ExpectQuery(statStatementsResetAvailableQuery).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+		mock.ExpectQuery(statStatementsCapabilitiesQuery).WillReturnRows(sqlmock.NewRows([]string{"reset", "toplevel"}).AddRow(false, false))
 
 		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
 			callsColumnName:             "123",
@@ -1685,7 +1686,7 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 				"select * from pg_stat_activity where id = 32", "114514", "16415", "roleA", "30", "11000", "12000").
 			AddRow("100", "postgres", "1111", "1112", "1113", "1114", "1115", "1116",
 				"select * from pg_stat_activity where id = 32", "114514", "16416", "roleB", "30", "22000", "23000")
-		mock.ExpectQuery(statStatementsResetAvailableQuery).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+		mock.ExpectQuery(statStatementsCapabilitiesQuery).WillReturnRows(sqlmock.NewRows([]string{"reset", "toplevel"}).AddRow(false, false))
 		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(rows)
 		// Same queryid, different rolname: each role still gets its own EXPLAIN cycle.
 		for range 2 {
@@ -1738,7 +1739,7 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 				"select * from pg_stat_activity where id = 32", "114514", "16415", "", "30", "11000", "12000").
 			AddRow("100", "postgres", "1111", "1112", "1113", "1114", "1115", "1116",
 				"select * from pg_stat_activity where id = 32", "114514", "16416", "", "30", "22000", "23000")
-		mock.ExpectQuery(statStatementsResetAvailableQuery).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+		mock.ExpectQuery(statStatementsCapabilitiesQuery).WillReturnRows(sqlmock.NewRows([]string{"reset", "toplevel"}).AddRow(false, false))
 		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(rows)
 		// Different userid, so each still gets its own EXPLAIN cycle.
 		for range 2 {
@@ -1779,7 +1780,7 @@ func TestScrapeTopQueriesDbServerQueryPlanEvent(t *testing.T) {
 
 		// A non-explainable query (GRANT is not in the EXPLAIN whitelist) so
 		// explainQuery short-circuits to ("", nil) without issuing EXPLAIN.
-		mock.ExpectQuery(statStatementsResetAvailableQuery).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+		mock.ExpectQuery(statStatementsCapabilitiesQuery).WillReturnRows(sqlmock.NewRows([]string{"reset", "toplevel"}).AddRow(false, false))
 		mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(newSQLMockRows(topQueryColumns, map[string]any{
 			callsColumnName:             "123",
 			"datname":                   "postgres",
@@ -1841,7 +1842,7 @@ func TestScrapeTopQueriesSkipsNilDatabase(t *testing.T) {
 		"123", nil, "1", "1", "1", "1", "1", "1",
 		"select 1", "999", "master", "1", "1", "1",
 	)
-	mock.ExpectQuery(statStatementsResetAvailableQuery).WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
+	mock.ExpectQuery(statStatementsCapabilitiesQuery).WillReturnRows(sqlmock.NewRows([]string{"reset", "toplevel"}).AddRow(false, false))
 	mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(rows)
 
 	actualLogs, err := scraper.scrapeTopQuery(t.Context(), 31, 32, 33, time.Minute)

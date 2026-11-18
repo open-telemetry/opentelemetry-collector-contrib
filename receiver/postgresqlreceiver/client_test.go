@@ -899,15 +899,16 @@ func TestGetIndexStatsRowsErr(t *testing.T) {
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestGetStatStatementsReset(t *testing.T) {
+func TestGetStatStatementsState(t *testing.T) {
 	reset := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
 	for _, tt := range []struct {
 		name      string
 		available bool
+		toplevel  bool
 		probeErr  error
 		readErr   error
 	}{
-		{name: "supported", available: true},
+		{name: "supported", available: true, toplevel: true},
 		{name: "older extension without reset information"},
 		{name: "capability query fails", probeErr: errors.New("connection failed")},
 		{name: "reset query fails", available: true, readErr: &pq.Error{Code: "42501"}},
@@ -920,11 +921,15 @@ func TestGetStatStatementsReset(t *testing.T) {
   SELECT 1 FROM pg_catalog.pg_attribute
   WHERE attrelid = pg_catalog.to_regclass('pg_stat_statements_info')
     AND attname = 'stats_reset' AND NOT attisdropped
+), EXISTS (
+  SELECT 1 FROM pg_catalog.pg_attribute
+  WHERE attrelid = pg_catalog.to_regclass('pg_stat_statements')
+    AND attname = 'toplevel' AND NOT attisdropped
 );`)
 			if tt.probeErr != nil {
 				probe.WillReturnError(tt.probeErr)
 			} else {
-				probe.WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(tt.available))
+				probe.WillReturnRows(sqlmock.NewRows([]string{"reset", "toplevel"}).AddRow(tt.available, tt.toplevel))
 			}
 			if tt.available {
 				query := mock.ExpectQuery("/* otel-collector-ignore */ SELECT stats_reset FROM pg_stat_statements_info;")
@@ -935,7 +940,8 @@ func TestGetStatStatementsReset(t *testing.T) {
 				}
 			}
 			client := &postgreSQLClient{client: db}
-			got, err := client.getStatStatementsReset(t.Context())
+			got, toplevel, err := client.getStatStatementsState(t.Context())
+			assert.Equal(t, tt.toplevel, toplevel)
 			switch {
 			case tt.probeErr != nil:
 				require.ErrorIs(t, err, tt.probeErr)

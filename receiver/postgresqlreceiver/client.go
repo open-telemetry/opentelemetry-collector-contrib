@@ -1656,47 +1656,52 @@ var topQueryTemplate string
 
 var topQueryTmpl = template.Must(template.New("topQuery").Option("missingkey=error").Parse(topQueryTemplate))
 
-const statStatementsResetAvailableQuery = `/* otel-collector-ignore */ SELECT EXISTS (
+const statStatementsCapabilitiesQuery = `/* otel-collector-ignore */ SELECT EXISTS (
   SELECT 1 FROM pg_catalog.pg_attribute
   WHERE attrelid = pg_catalog.to_regclass('pg_stat_statements_info')
     AND attname = 'stats_reset' AND NOT attisdropped
+), EXISTS (
+  SELECT 1 FROM pg_catalog.pg_attribute
+  WHERE attrelid = pg_catalog.to_regclass('pg_stat_statements')
+    AND attname = 'toplevel' AND NOT attisdropped
 );`
 
 const statStatementsResetQuery = "/* otel-collector-ignore */ SELECT stats_reset FROM pg_stat_statements_info;"
 
-func (c *postgreSQLClient) getStatStatementsReset(ctx context.Context) (time.Time, error) {
-	var available bool
-	if err := c.client.QueryRowContext(ctx, statStatementsResetAvailableQuery).Scan(&available); err != nil {
-		return time.Time{}, fmt.Errorf("check pg_stat_statements reset support: %w", err)
+func (c *postgreSQLClient) getStatStatementsState(ctx context.Context) (time.Time, bool, error) {
+	var resetAvailable, toplevel bool
+	if err := c.client.QueryRowContext(ctx, statStatementsCapabilitiesQuery).Scan(&resetAvailable, &toplevel); err != nil {
+		return time.Time{}, false, fmt.Errorf("check pg_stat_statements capabilities: %w", err)
 	}
-	if !available {
-		return time.Time{}, nil
+	if !resetAvailable {
+		return time.Time{}, toplevel, nil
 	}
 	var reset time.Time
 	if err := c.client.QueryRowContext(ctx, statStatementsResetQuery).Scan(&reset); err != nil {
-		return time.Time{}, fmt.Errorf("get pg_stat_statements reset timestamp: %w", err)
+		return time.Time{}, false, fmt.Errorf("get pg_stat_statements reset timestamp: %w", err)
 	}
-	return reset, nil
+	return reset, toplevel, nil
 }
 
 // getTopQuery implements client.
 func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, time.Time, error) {
+	statsReset, toplevel, err := c.getStatStatementsState(ctx)
+	if err != nil {
+		return nil, time.Time{}, err
+	}
+
 	buf := bytes.Buffer{}
 
 	// TODO: Only get query after the oldest query we got from the previous sample query colelction.
 	// For instance, if from the last sample query we got queries executed between 8:00 ~ 8:15,
 	// in this query, we should only gather query after 8:15
-	if err := topQueryTmpl.Execute(&buf, map[string]any{
+	if err = topQueryTmpl.Execute(&buf, map[string]any{
 		"limit":             limit,
+		"toplevel":          toplevel,
 		"excludedDatabases": quoteDatabaseList(excludedDatabases),
 	}); err != nil {
 		logger.Error("failed to execute template", zap.Error(err))
 		return nil, time.Time{}, fmt.Errorf("failed executing template: %w", err)
-	}
-
-	statsReset, err := c.getStatStatementsReset(ctx)
-	if err != nil {
-		return nil, time.Time{}, err
 	}
 
 	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, buf.String(), logger, sqlquery.TelemetryConfig{})
