@@ -30,6 +30,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -720,6 +722,35 @@ func BenchmarkTCPInput(b *testing.B) {
 	close(done)
 }
 
+func BenchmarkTCPInputConnection(b *testing.B) {
+	cfg := NewConfigWithID("test_id")
+	cfg.ListenAddress = ":0"
+
+	op, err := cfg.Build(componenttest.NewNopTelemetrySettings())
+	require.NoError(b, err)
+
+	fakeOutput := testutil.NewFakeOutput(b)
+	tcpInput := op.(*Input)
+	tcpInput.OutputOperators = []operator.Operator{fakeOutput}
+
+	require.NoError(b, tcpInput.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(b, tcpInput.Stop())
+	}()
+
+	addr := tcpInput.listener.Addr().String()
+	message := []byte("message\n")
+	b.ReportAllocs()
+	for b.Loop() {
+		conn, dialErr := net.Dial("tcp", addr)
+		require.NoError(b, dialErr)
+		_, writeErr := conn.Write(message)
+		require.NoError(b, writeErr)
+		<-fakeOutput.Received
+		require.NoError(b, conn.Close())
+	}
+}
+
 // TestTCPInput_PartialLineDiscardedOnShutdown verifies that a partial log line
 // that is still in flight when the operator is stopped is discarded rather than
 // emitted as a truncated (but seemingly complete) entry.
@@ -1005,5 +1036,64 @@ func TestTCPInputAuth(t *testing.T) {
 			_, err = bufio.NewReader(conn).ReadByte()
 			require.Error(t, err)
 		})
+	}
+}
+
+func TestTCPInput_MaxLogSize(t *testing.T) {
+	const maxLogSize = 100_000 // > 64 KiB bufio.MaxScanTokenSize, non-power-of-two
+
+	cfg := NewConfigWithID("test_id")
+	cfg.ListenAddress = ":0"
+	cfg.MaxLogSize = maxLogSize
+
+	core, observed := observer.New(zap.ErrorLevel)
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zap.New(core)
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	tcpInput, entryChan := newTCPInput(t, op)
+	require.NoError(t, tcpInput.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, tcpInput.Stop())
+	}()
+
+	conn, err := net.Dial("tcp", tcpInput.listener.Addr().String())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	// Grow lazily past 4 KiB and 64 KiB up to exact MaxLogSize (99,999 + '\n'), then keep scanning.
+	for _, msg := range []string{"small1", strings.Repeat("a", maxLogSize-1), "small2"} {
+		_, err = conn.Write([]byte(msg + "\n"))
+		require.NoError(t, err)
+		select {
+		case e := <-entryChan:
+			require.Equal(t, msg, e.Body)
+		case <-time.After(3 * time.Second):
+			require.FailNow(t, "timed out waiting for message")
+		}
+	}
+
+	// Sending MaxLogSize bytes without '\n' triggers bufio.ErrTooLong with zero unread bytes left.
+	_, err = conn.Write([]byte(strings.Repeat("b", maxLogSize)))
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		for _, rec := range observed.FilterMessage("Scanner error").All() {
+			if errVal, ok := rec.ContextMap()["error"].(string); ok && strings.Contains(errVal, bufio.ErrTooLong.Error()) {
+				return true
+			}
+		}
+		return false
+	}, 3*time.Second, 10*time.Millisecond, "expected Scanner error log containing bufio.ErrTooLong")
+
+	require.Eventually(t, func() bool {
+		return tcpInput.activeConnNum.Load() == 0
+	}, 3*time.Second, 20*time.Millisecond, "expected server to close connection on oversized line")
+
+	select {
+	case e := <-entryChan:
+		t.Fatalf("expected no entry for oversized line, got len=%d", len(e.Body.(string)))
+	default:
 	}
 }

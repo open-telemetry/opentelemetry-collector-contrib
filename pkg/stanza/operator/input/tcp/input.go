@@ -238,10 +238,11 @@ func (i *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 			return
 		}
 
-		buf := make([]byte, 0, i.MaxLogSize)
-
 		scanner := bufio.NewScanner(conn)
-		scanner.Buffer(buf, i.MaxLogSize)
+		// Pass nil so bufio.Scanner starts with its small default buffer (4 KiB)
+		// and grows lazily up to MaxLogSize on demand, avoiding an upfront
+		// MaxLogSize (1 MiB default) allocation for every accepted connection.
+		scanner.Buffer(nil, i.MaxLogSize)
 
 		scanner.Split(i.shutdownAwareSplitFunc(ctx))
 
