@@ -7,56 +7,93 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestReadAdapterDelegatesOperations(t *testing.T) {
+func TestNewReadAdapter(t *testing.T) {
 	t.Parallel()
 
-	resetErr := errors.New("reset failed")
-	closeErr := errors.New("close failed")
-	reader := bytes.NewBufferString("adapter payload")
-	var gotSource io.Reader
-	var gotClosed bool
-	adapter := newReadAdapter(reader,
-		withReadAdapterReset(func(gotReader *bytes.Buffer, src io.Reader) error {
-			assert.Same(t, reader, gotReader)
-			gotSource = src
-			return resetErr
-		}),
-		withReadAdapterClose(func(gotReader *bytes.Buffer) error {
-			assert.Same(t, reader, gotReader)
-			gotClosed = true
-			return closeErr
+	for _, tc := range []struct {
+		name     string
+		opts     []func(*readAdapter[*bytes.Buffer])
+		closeErr string
+		resetErr string
+	}{
+		{
+			name:     "default",
+			opts:     nil,
+			closeErr: "",
+			resetErr: "reset not specified",
+		},
+		{
+			name: "reset method provided",
+			opts: []func(*readAdapter[*bytes.Buffer]){
+				withReadAdapterReset(func(b *bytes.Buffer, r io.Reader) error {
+					return nil
+				}),
+			},
+			closeErr: "",
+			resetErr: "",
+		},
+		{
+			name: "all options provided",
+			opts: []func(*readAdapter[*bytes.Buffer]){
+				withReadAdapterReset(func(b *bytes.Buffer, r io.Reader) error {
+					return nil
+				}),
+				withReadAdapterClose(func(*bytes.Buffer) error {
+					return errors.New("boom")
+				}),
+			},
+			closeErr: "boom",
+			resetErr: "",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			adapt := newReadAdapter(bytes.NewBuffer(nil), tc.opts...)
+
+			if err := adapt.Close(); tc.closeErr != "" {
+				assert.EqualError(t, err, tc.closeErr, "Must match the expected error")
+			} else {
+				assert.NoError(t, err, "Must nto report an error")
+			}
+
+			if err := adapt.Reset(bytes.NewBuffer(nil)); tc.resetErr != "" {
+				assert.EqualError(t, err, tc.resetErr, "Must match the expected error message")
+			} else {
+				assert.NoError(t, err, "Must not report an error when resetting")
+			}
+		})
+	}
+}
+
+func TestReadAdapterRead(t *testing.T) {
+	t.Parallel()
+
+	orig := bytes.NewBufferString("OpenTelemetry!")
+
+	adapter := newReadAdapter(
+		orig,
+		withReadAdapterReset(func(b *bytes.Buffer, r io.Reader) error {
+			b.Reset()
+			_, err := io.Copy(b, r)
+			return err
 		}),
 	)
 
-	got := make([]byte, len("adapter payload"))
-	n, err := adapter.Read(got)
-	require.NoError(t, err)
-	assert.Equal(t, len(got), n)
-	assert.Equal(t, "adapter payload", string(got))
+	actual, err := io.ReadAll(adapter)
+	require.NoError(t, err, "Must not error while reading data")
+	assert.Equal(t, "OpenTelemetry!", string(actual), "Must match the expected content")
 
-	source := bytes.NewReader([]byte("next input"))
-	assert.ErrorIs(t, adapter.Reset(source), resetErr)
-	assert.Same(t, source, gotSource)
+	require.NoError(t, adapter.Reset(strings.NewReader("Welcome!")), "Must not error when resetting adapter")
 
-	assert.ErrorIs(t, adapter.Close(), closeErr)
-	assert.True(t, gotClosed)
-}
-
-func TestReadAdapterDefaultResetAndClose(t *testing.T) {
-	t.Parallel()
-
-	reader := bytes.NewBufferString("adapter payload")
-	adapter := newReadAdapter(reader)
-	assert.NoError(t, adapter.Reset(bytes.NewReader(nil)))
-	assert.NoError(t, adapter.Close())
-
-	got, err := io.ReadAll(adapter)
-	require.NoError(t, err)
-	assert.Equal(t, "adapter payload", string(got))
+	actual, err = io.ReadAll(adapter)
+	require.NoError(t, err, "Must not error while reading data")
+	assert.Equal(t, "Welcome!", string(actual), "Must match the expected content")
 }

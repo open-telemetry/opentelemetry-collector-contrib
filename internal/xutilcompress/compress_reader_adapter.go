@@ -3,8 +3,15 @@
 
 package xutilcompress // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/xutilcompress"
 
-import "io"
+import (
+	"errors"
+	"io"
+)
 
+// readAdapter allows for compression libraries that
+// do not adhere to [resettableReader] to be adapter.
+// There is a performance penalty using the adapter and
+// should only be used if required.
 type readAdapter[R io.Reader] struct {
 	reader R
 	reset  func(R, io.Reader) error
@@ -29,13 +36,12 @@ func withReadAdapterReset[R io.Reader](resetter func(R, io.Reader) error) func(*
 	}
 }
 
-// newReadAdapter wraps a reader and adapts its reset and close behavior to
-// resettableReader. Unspecified reset and close operations are no-ops.
+// newReadAdapter wraps a reader and adapts its reset and close behavior to [resettableReader].
 func newReadAdapter[R io.Reader](concrete R, opts ...func(*readAdapter[R])) *readAdapter[R] {
 	ra := &readAdapter[R]{
 		reader: concrete,
-		reset: func(r1 R, r2 io.Reader) error {
-			return nil
+		reset: func(_ R, _ io.Reader) error {
+			return errors.New("reset not specified")
 		},
 		close: func(_ R) error {
 			return nil
