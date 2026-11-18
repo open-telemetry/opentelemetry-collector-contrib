@@ -11,9 +11,9 @@ import (
 	"io"
 	"sync"
 
+	"github.com/klauspost/compress/gzip"
 	"github.com/klauspost/compress/snappy"
 	"github.com/klauspost/compress/zstd"
-	gzip "github.com/klauspost/pgzip"
 	"github.com/pierrec/lz4"
 	"go.opentelemetry.io/collector/config/configcompression"
 )
