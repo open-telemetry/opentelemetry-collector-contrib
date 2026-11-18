@@ -1,0 +1,4 @@
+prometheus_remote_write:
+prometheus_remote_write/custom:
+  endpoint: 0.0.0.0:9090
+  resource_cache_size: 5000

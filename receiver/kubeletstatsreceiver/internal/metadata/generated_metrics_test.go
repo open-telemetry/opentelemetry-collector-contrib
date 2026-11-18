@@ -90,30 +90,6 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Equal(t, "[WARNING] `k8s.pod.memory.node.utilization` should not be enabled: This metric is deprecated and will be removed in a future release. It uses node capacity as the limit. `k8s.pod.memory.usage / k8s.node.allocatable_memory` is an allocatable-based alternative (not an equivalent calculation) that users could use.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if tt.resAttrsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `aws.volume.id` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if tt.resAttrsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `fs.type` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if tt.resAttrsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `gce.pd.name` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if tt.resAttrsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `glusterfs.endpoints.name` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if tt.resAttrsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `glusterfs.path` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if tt.resAttrsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `partition` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
 			if tt.metricsSet != testDataSetReag {
 				assert.Equal(t, expectedWarnings, observedLogs.Len())
 			}
@@ -353,12 +329,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sVolumeInodesUsedDataPoint(ts, 1)
 
 			rb := mb.NewResourceBuilder()
-			rb.SetAwsVolumeID("aws.volume.id-val")
 			rb.SetContainerID("container.id-val")
-			rb.SetFsType("fs.type-val")
-			rb.SetGcePdName("gce.pd.name-val")
-			rb.SetGlusterfsEndpointsName("glusterfs.endpoints.name-val")
-			rb.SetGlusterfsPath("glusterfs.path-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
 			rb.SetK8sNamespaceName("k8s.namespace.name-val")
 			rb.SetK8sNodeName("k8s.node.name-val")
@@ -368,7 +339,6 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetK8sPodUID("k8s.pod.uid-val")
 			rb.SetK8sVolumeName("k8s.volume.name-val")
 			rb.SetK8sVolumeType("k8s.volume.type-val")
-			rb.SetPartition("partition-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {

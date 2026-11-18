@@ -5,6 +5,7 @@ package remotetapprocessor // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"crypto/fips140"
 	"errors"
 	"fmt"
 	"net"
@@ -54,7 +55,7 @@ func (w *wsprocessor) Start(ctx context.Context, host component.Host) error {
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %s: %w", w.config.ServerConfig.NetAddr.Endpoint, err)
 	}
-	w.server, err = w.config.ServerConfig.ToServer(ctx, host.GetExtensions(), w.telemetrySettings, websocket.Server{Handler: w.handleConn})
+	w.server, err = w.config.ServerConfig.ToServer(ctx, host.GetExtensions(), w.telemetrySettings, http.HandlerFunc(w.serveWebSocket))
 	if err != nil {
 		return err
 	}
@@ -64,6 +65,12 @@ func (w *wsprocessor) Start(ctx context.Context, host component.Host) error {
 		}
 	})
 	return nil
+}
+
+func (w *wsprocessor) serveWebSocket(rw http.ResponseWriter, req *http.Request) {
+	fips140.WithoutEnforcement(func() {
+		websocket.Server{Handler: w.handleConn}.ServeHTTP(rw, req)
+	})
 }
 
 func (w *wsprocessor) handleConn(conn *websocket.Conn) {

@@ -235,6 +235,19 @@ func (s *mongodbScraper) recordLatencyTime(now pcommon.Timestamp, doc bson.M, er
 	}
 }
 
+func (s *mongodbScraper) recordLatencyCount(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	for operationVal, operation := range metadata.MapAttributeOperationLatency {
+		metricPath := []string{"opLatencies", operationVal + "s", "ops"}
+		metricName := "mongodb.operation.latency.count"
+		val, err := collectMetric(doc, metricPath)
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
+			continue
+		}
+		s.mb.RecordMongodbOperationLatencyCountDataPoint(now, val, operation)
+	}
+}
+
 // Admin Stats
 func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	currentCounts := make(map[string]int64)
@@ -313,10 +326,25 @@ func (s *mongodbScraper) recordReplOperationPerSecond(now pcommon.Timestamp, ope
 	}
 }
 
+// checkpointCountPaths lists where serverStatus reports a WiredTiger
+// checkpoint counter, newest layout first.
+var checkpointCountPaths = [][]string{
+	// MongoDB 8.0 and later.
+	{"wiredTiger", "checkpoint", "total succeed number of checkpoints"},
+	// MongoDB 7.0 and earlier. Counts checkpoint requests, not only successful ones.
+	{"wiredTiger", "transaction", "transaction checkpoints"},
+}
+
 func (s *mongodbScraper) recordFlushesPerSecond(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	metricPath := []string{"wiredTiger", "checkpoint", "total succeed number of checkpoints"}
 	metricName := "mongodb.flushes.rate"
-	currentFlushes, err := collectMetric(doc, metricPath)
+	var currentFlushes int64
+	var err error
+	for _, metricPath := range checkpointCountPaths {
+		currentFlushes, err = collectMetric(doc, metricPath)
+		if err == nil {
+			break
+		}
+	}
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
 		return
@@ -1059,6 +1087,20 @@ func (s *mongodbScraper) recordQueryExecutorCollectionScans(now pcommon.Timestam
 		return
 	}
 	s.mb.RecordMongodbQueryExecutorCollectionScanCountDataPoint(now, val)
+}
+
+// recordQueryExecutorNonTailableCollectionScans records the non-tailable subset of
+// collectionScans as the server reports it. It is a separate metric rather than an attribute
+// value of mongodb.query_executor.collection_scan.count because it is a subset of that total,
+// and summing a subset next to its total double counts.
+func (s *mongodbScraper) recordQueryExecutorNonTailableCollectionScans(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricName := "mongodb.query_executor.collection_scan.non_tailable.count"
+	val, err := collectMetric(doc, []string{"metrics", "queryExecutor", "collectionScans", "nonTailable"})
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbQueryExecutorCollectionScanNonTailableCountDataPoint(now, val)
 }
 
 func aggregateOperationTimeValues(document bson.M, collectionPathNames []string, operationMap map[string]metadata.AttributeOperation) (map[string]int64, error) {

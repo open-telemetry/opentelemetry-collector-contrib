@@ -28,7 +28,7 @@ func TestRenderCreateTracesTableSQL(t *testing.T) {
 		require.Contains(t, sql, "`test_db`.`otel_traces`")
 		require.Contains(t, sql, "PRIMARY KEY (ServiceName, SpanName, toDateTime(Timestamp))")
 		require.Contains(t, sql, "ORDER BY (ServiceName, SpanName, toDateTime(Timestamp), Timestamp)")
-		require.Contains(t, sql, "Duration UInt64 CODEC(T64, ZSTD(1))")
+		require.Contains(t, sql, "Duration UInt64 CODEC(T64, ZSTD(3))")
 		require.Contains(t, sql, "ResourceAttributeItems Array(String) ALIAS")
 		require.Contains(t, sql, "SpanAttributeItems Array(String) ALIAS")
 		require.Contains(t, sql, "TYPE minmax")
@@ -113,8 +113,8 @@ func TestRenderCreateTraceIDTsTableSQL(t *testing.T) {
 
 		require.Contains(t, sql, "ENGINE = ReplacingMergeTree()")
 		require.Contains(t, sql, "ORDER BY (TraceId, Start)")
-		require.Contains(t, sql, "Start DateTime CODEC(ZSTD(1))")
-		require.Contains(t, sql, "End DateTime CODEC(ZSTD(1))")
+		require.Contains(t, sql, "Start DateTime CODEC(ZSTD(3))")
+		require.Contains(t, sql, "End DateTime CODEC(ZSTD(3))")
 		require.NotContains(t, sql, "SimpleAggregateFunction")
 	})
 }

@@ -6,6 +6,7 @@
 package k8sattributesprocessor
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -14,6 +15,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"text/template"
 	"time"
 
 	"github.com/google/uuid"
@@ -30,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.uber.org/multierr"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	k8stest "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest"
 )
@@ -123,6 +126,14 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 	for _, info := range telemetryGenObjInfos {
 		k8stest.WaitForTelemetryGenToStart(t, k8sClient, info.Namespace, info.PodLabelSelectors, info.Workload, info.DataType)
 	}
+
+	hpaObjs := createHPATelemetrygenObjects(t, k8sClient, testID, testNs,
+		fmt.Sprintf("otelcol-%s.%s:4317", testID, testNs))
+	defer func() {
+		for _, obj := range hpaObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+		}
+	}()
 
 	wantEntries := 128 // Minimal number of metrics/traces/logs/profiles to wait for.
 	waitForData(t, wantEntries, metricsConsumer, tracesConsumer, logsConsumer, profilesConsumer)
@@ -644,6 +655,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 			},
 		},
 	}
+	tcs = append(tcs, hpaTestCases()...)
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1486,6 +1498,14 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 		k8stest.WaitForTelemetryGenToStart(t, k8sClient, info.Namespace, info.PodLabelSelectors, info.Workload, info.DataType)
 	}
 
+	hpaObjs := createHPATelemetrygenObjects(t, k8sClient, testID, testNs,
+		fmt.Sprintf("otelcol-%s.%s:4317", testID, testNs))
+	defer func() {
+		for _, obj := range hpaObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+		}
+	}()
+
 	// start the collector after the telemetry gen objects
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(testDir, "collector"), map[string]string{}, "")
 	defer func() {
@@ -2014,6 +2034,7 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 			},
 		},
 	}
+	tcs = append(tcs, hpaTestCases()...)
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
@@ -2030,6 +2051,144 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				t.Fatalf("unknown data type %s", tc.dataType)
 			}
 		})
+	}
+}
+
+// hpaObjectTemplate renders the HPA k8s object used in E2E tests. The HPA carries a known annotation
+// so the k8sattributes processor can enrich telemetry that presents k8s.hpa.uid as a resource attribute.
+const hpaObjectTemplate = `apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: telemetrygen-{{.TestID}}-hpa
+  namespace: {{.Namespace}}
+  annotations:
+    workload: hpa-annotation
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: telemetrygen-{{.TestID}}-traces-deployment
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 80
+`
+
+// hpaJobTemplate renders a telemetrygen Job that injects k8s.hpa.uid as an OTLP resource attribute.
+// Because the k8sattributes processor reads k8s.hpa.uid directly from resource attributes (not via pod
+// association), this lets the processor enrich the telemetry with the HPA's own annotations/labels
+// without the pod being owned by the HPA.
+const hpaJobTemplate = `apiVersion: batch/v1
+kind: Job
+metadata:
+  name: telemetrygen-{{.TestID}}-{{.DataType}}-hpa-job
+  namespace: {{.Namespace}}
+spec:
+  template:
+    metadata:
+      labels:
+        app: telemetrygen-{{.TestID}}-{{.DataType}}-hpa-job
+    spec:
+      containers:
+      - command:
+        - /telemetrygen
+        - {{.DataType}}
+        - --otlp-insecure
+        - --otlp-endpoint={{.OTLPEndpoint}}
+        - --rate=1
+        - --duration=36000s
+        - --batch=false
+        - --otlp-attributes=service.name="test-{{.DataType}}-hpa"
+        - --otlp-attributes=k8s.hpa.uid="{{.HPAUID}}"
+        - --allow-export-failures
+        image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
+        name: telemetrygen
+      restartPolicy: OnFailure
+`
+
+// createHPATelemetrygenObjects creates the test HPA object and one telemetrygen Job per signal type
+// that sends telemetry with k8s.hpa.uid set as a resource attribute. It returns all created objects
+// (HPA + jobs) so the caller can clean them up. It also waits for each job's pod to start.
+func createHPATelemetrygenObjects(t *testing.T, k8sClient *k8stest.K8sClient, testID, testNs, otlpEndpoint string) []*unstructured.Unstructured {
+	t.Helper()
+
+	hpaTmpl := template.Must(template.New("hpa").Parse(hpaObjectTemplate))
+	hpaBuf := &bytes.Buffer{}
+	require.NoError(t, hpaTmpl.Execute(hpaBuf, map[string]string{
+		"TestID":    testID,
+		"Namespace": testNs,
+	}))
+	hpaObj, err := k8stest.CreateObject(k8sClient, hpaBuf.Bytes())
+	require.NoError(t, err, "failed to create HPA object")
+
+	hpaUID := string(hpaObj.GetUID())
+
+	objs := []*unstructured.Unstructured{hpaObj}
+
+	jobTmpl := template.Must(template.New("hpajob").Parse(hpaJobTemplate))
+	for _, dataType := range []string{"traces", "metrics", "logs"} {
+		jobBuf := &bytes.Buffer{}
+		require.NoError(t, jobTmpl.Execute(jobBuf, map[string]string{
+			"TestID":       testID,
+			"DataType":     dataType,
+			"Namespace":    testNs,
+			"OTLPEndpoint": otlpEndpoint,
+			"HPAUID":       hpaUID,
+		}))
+		jobObj, err := k8stest.CreateObject(k8sClient, jobBuf.Bytes())
+		require.NoErrorf(t, err, "failed to create HPA telemetrygen job for %s", dataType)
+		objs = append(objs, jobObj)
+
+		k8stest.WaitForTelemetryGenToStart(t, k8sClient, testNs,
+			map[string]any{"app": fmt.Sprintf("telemetrygen-%s-%s-hpa-job", testID, dataType)},
+			"Job", dataType)
+	}
+	return objs
+}
+
+// hpaTestCases returns the expected attribute assertions for telemetrygen jobs that send with
+// k8s.hpa.uid pre-set. The processor should enrich the telemetry with the HPA's annotations.
+func hpaTestCases() []struct {
+	name     string
+	dataType pipeline.Signal
+	service  string
+	attrs    map[string]*expectedValue
+} {
+	return []struct {
+		name     string
+		dataType pipeline.Signal
+		service  string
+		attrs    map[string]*expectedValue
+	}{
+		{
+			name:     "traces-hpa",
+			dataType: pipeline.SignalTraces,
+			service:  "test-traces-hpa",
+			attrs: map[string]*expectedValue{
+				"simple-hpa-workload-annotation": newExpectedValue(equal, "hpa-annotation"),
+			},
+		},
+		{
+			name:     "metrics-hpa",
+			dataType: pipeline.SignalMetrics,
+			service:  "test-metrics-hpa",
+			attrs: map[string]*expectedValue{
+				"simple-hpa-workload-annotation": newExpectedValue(equal, "hpa-annotation"),
+			},
+		},
+		{
+			name:     "logs-hpa",
+			dataType: pipeline.SignalLogs,
+			service:  "test-logs-hpa",
+			attrs: map[string]*expectedValue{
+				"simple-hpa-workload-annotation": newExpectedValue(equal, "hpa-annotation"),
+			},
+		},
 	}
 }
 
@@ -2773,4 +2932,70 @@ func TestE2E_SemConvBothSchema(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestE2E_KubeletPodMetadataSource(t *testing.T) {
+	testDir := filepath.Join("testdata", "e2e", "kubelet")
+
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+	require.NoError(t, err)
+
+	nsFile := filepath.Join(testDir, "namespace.yaml")
+	buf, err := os.ReadFile(nsFile)
+	require.NoErrorf(t, err, "failed to read namespace object file %s", nsFile)
+	nsObj, err := k8stest.CreateObject(k8sClient, buf)
+	require.NoErrorf(t, err, "failed to create k8s namespace from file %s", nsFile)
+
+	testNs := nsObj.GetName()
+	defer func() {
+		require.NoErrorf(t, k8stest.DeleteObject(k8sClient, nsObj), "failed to delete namespace %s", testNs)
+	}()
+
+	metricsConsumer := new(consumertest.MetricsSink)
+	tracesConsumer := new(consumertest.TracesSink)
+	logsConsumer := new(consumertest.LogsSink)
+	profilesConsumer := new(consumertest.ProfilesSink)
+	shutdownSinks := startUpSinks(t, metricsConsumer, tracesConsumer, logsConsumer, profilesConsumer)
+	defer shutdownSinks()
+
+	testID := uuid.NewString()[:8]
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(testDir, "collector"), map[string]string{}, "")
+	defer func() {
+		for _, obj := range collectorObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete collector object %s", obj.GetName())
+		}
+	}()
+
+	createTeleOpts := &k8stest.TelemetrygenCreateOpts{
+		ManifestsDir: filepath.Join(testDir, "telemetrygen"),
+		TestID:       testID,
+		OtlpEndpoint: fmt.Sprintf("otelcol-%s.%s:4317", testID, testNs),
+		DataTypes:    []string{"metrics", "logs", "traces"},
+	}
+	telemetryGenObjs, telemetryGenObjInfos := k8stest.CreateTelemetryGenObjects(t, k8sClient, createTeleOpts)
+	defer func() {
+		for _, obj := range telemetryGenObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete telemetrygen object %s", obj.GetName())
+		}
+	}()
+
+	for _, info := range telemetryGenObjInfos {
+		k8stest.WaitForTelemetryGenToStart(t, k8sClient, info.Namespace, info.PodLabelSelectors, info.Workload, info.DataType)
+	}
+
+	waitForData(t, 10, metricsConsumer, tracesConsumer, logsConsumer, profilesConsumer)
+
+	attrs := map[string]*expectedValue{
+		"k8s.pod.name":        newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment-[a-z0-9]*-[a-z0-9]*"),
+		"k8s.pod.uid":         newExpectedValue(regex, uidRe),
+		"k8s.namespace.name":  newExpectedValue(equal, testNs),
+		"k8s.node.name":       newExpectedValue(exist, ""),
+		"k8s.pod.start_time":  newExpectedValue(exist, ""),
+		"k8s.labels.app":      newExpectedValue(regex, "telemetrygen-"+testID+"-.*-deployment"),
+		"k8s.deployment.name": newExpectedValue(shouldnotexist, ""),
+	}
+
+	scanTracesForAttributes(t, tracesConsumer, "test-traces-deployment", attrs)
+	scanMetricsForAttributes(t, metricsConsumer, "test-metrics-deployment", attrs)
+	scanLogsForAttributes(t, logsConsumer, "test-logs-deployment", attrs)
 }

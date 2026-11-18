@@ -10,8 +10,8 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [dgoscn, chrroberts-pure]
-    emeritus: [jpkrohling]
+    active: [chrroberts-pure]
+    emeritus: [jpkrohling, dgoscn]
 
 tests:
   goleak:

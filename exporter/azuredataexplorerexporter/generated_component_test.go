@@ -27,7 +27,7 @@ import (
 	internalmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter/internal/metadata"
 )
 
-var typ = component.MustNewType("azuredataexplorer")
+var typ = component.MustNewType("azure_data_explorer")
 
 func TestComponentFactoryType(t *testing.T) {
 	require.Equal(t, typ, NewFactory().Type())

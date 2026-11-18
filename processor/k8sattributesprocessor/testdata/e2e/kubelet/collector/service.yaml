@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Name }}
+  namespace: e2ek8sattribute-kubelet
+spec:
+  ports:
+    - name: otlp
+      port: 4317
+      protocol: TCP
+      targetPort: 4317
+  selector:
+    app.kubernetes.io/name: opentelemetry-collector
+    app.kubernetes.io/instance: {{ .Name }}
+

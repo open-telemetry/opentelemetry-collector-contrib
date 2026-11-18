@@ -27,8 +27,8 @@ const (
 func dataPointKey(dp pmetric.NumberDataPoint) uint64 {
 	return xhash.Hash64(
 		xhash.WithMap(dp.Attributes()),
-		xhash.WithValue(pcommon.NewValueInt(int64(dp.StartTimestamp()))),
-		xhash.WithValue(pcommon.NewValueInt(int64(dp.Timestamp()))),
+		xhash.WithUint64(uint64(dp.StartTimestamp())),
+		xhash.WithUint64(uint64(dp.Timestamp())),
 	)
 }
 
@@ -1947,6 +1947,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricFlinkTaskRecordCount:              newMetricFlinkTaskRecordCount(mbc.Metrics.FlinkTaskRecordCount),
 		resourceAttributeIncludeFilter:          make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:          make(map[string]filter.Filter),
+	}
+	if mbc.ResourceAttributes.FlinkJobID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["flink.job.id"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkJobID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.FlinkJobID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["flink.job.id"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkJobID.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.FlinkJobName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["flink.job.name"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkJobName.MetricsInclude)

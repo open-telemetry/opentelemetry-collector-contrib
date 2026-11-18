@@ -104,7 +104,7 @@ func TestDynamicTemplateMode(t *testing.T) {
 	}{
 		{m, datapoints.NewNumber(m, dp)},
 		{m2, datapoints.NewNumber(m2, dp2)},
-		{m3, datapoints.NewHistogram(m3, histDp)},
+		{m3, datapoints.NewHistogram(m3, histDp, datapoints.HistogramMappingRaw)},
 		{m4, datapoints.NewSummary(m4, summaryDp)},
 		{m5, datapoints.NewExponentialHistogram(m5, exphistDp, datapoints.HistogramMappingExponential)},
 	}

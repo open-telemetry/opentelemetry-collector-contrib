@@ -25,8 +25,8 @@ Configuration is specified through a list of metrics. The processor uses metric 
 
 The following settings can be optionally configured:
 
-- `include`: List of metrics names (case-insensitive), patterns or metric types to convert to delta. Valid values for metric types are: `sum`, `histogram`, `exponentialhistogram`.
-- `exclude`: List of metrics names (case-insensitive), patterns or metric types to not convert to delta.  **If a metric name matches both include and exclude, exclude takes precedence.** Valid values for metric types are: `sum`, `histogram`, `exponentialhistogram`.
+- `include`: List of metrics names, patterns or metric types to convert to delta. Valid values for metric types (case-insensitive) are: `sum`, `histogram`, `exponentialhistogram`.
+- `exclude`: List of metrics names, patterns or metric types to not convert to delta.  **If a metric name matches both include and exclude, exclude takes precedence.** Valid values for metric types (case-insensitive) are: `sum`, `histogram`, `exponentialhistogram`.
 - `max_staleness`: The total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely. Default: 1 hour
 - `initial_value`: Handling of the first observed point for a given metric identity.
   When the collector (re)starts, there's no record of how much of a given cumulative counter has already been converted to delta values.
@@ -133,6 +133,12 @@ processors:
         # If include/exclude are not specified
         # convert all cumulative sum or histogram metrics to delta
 ```
+
+## Histogram sums that are NaN
+
+A `NaN` sum on a histogram or exponential histogram data point is treated as a sum that was not recorded. The data
+point keeps its `NaN` sum, and the last sum that was not `NaN` stays as the baseline, so the next data point with a
+sum is diffed against it. The sums of the delta data points therefore add up to the growth of the cumulative sum.
 
 ## Troubleshooting
 

@@ -9,11 +9,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -194,4 +196,36 @@ func TestHecQueueSettings(t *testing.T) {
 		_ = hecQueueSettings(configoptional.Some(orig))
 		assert.Equal(t, origKeys, orig.Batch.Get().Partition.MetadataKeys)
 	})
+}
+
+func TestFactory_ExporterHelperBatchingEnabled(t *testing.T) {
+	factory := NewFactory().(xexporter.Factory)
+	set := exportertest.NewNopSettings(metadata.Type)
+	create := map[string]func(*Config) (component.Component, error){
+		"traces":   func(cfg *Config) (component.Component, error) { return factory.CreateTraces(t.Context(), set, cfg) },
+		"metrics":  func(cfg *Config) (component.Component, error) { return factory.CreateMetrics(t.Context(), set, cfg) },
+		"logs":     func(cfg *Config) (component.Component, error) { return factory.CreateLogs(t.Context(), set, cfg) },
+		"profiles": func(cfg *Config) (component.Component, error) { return factory.CreateProfiles(t.Context(), set, cfg) },
+	}
+
+	for signal, fn := range create {
+		t.Run(signal, func(t *testing.T) {
+			for _, enabled := range []bool{true, false} {
+				cfg := factory.CreateDefaultConfig().(*Config)
+				cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
+				cfg.Token = "1234-1234"
+				if enabled {
+					cfg.QueueSettings.Get().Batch.GetOrInsertDefault()
+				} else {
+					cfg.QueueSettings.Get().Batch = configoptional.None[exporterhelper.BatchConfig]()
+				}
+
+				exp, err := fn(cfg)
+				require.NoError(t, err)
+				b, ok := exp.(interface{ ExporterHelperBatchingEnabled() bool })
+				require.True(t, ok)
+				assert.Equal(t, enabled, b.ExporterHelperBatchingEnabled())
+			}
+		})
+	}
 }

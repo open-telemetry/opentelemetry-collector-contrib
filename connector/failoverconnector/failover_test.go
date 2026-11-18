@@ -3,7 +3,10 @@
 
 package failoverconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector"
 import (
+	"context"
+	"runtime"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -12,10 +15,79 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
 )
+
+func TestTracesReturnToPrimaryAfterImmediateFailure(t *testing.T) {
+	// Multiple processors could let the old worker exit before the next failure.
+	previousProcs := runtime.GOMAXPROCS(1)
+	defer runtime.GOMAXPROCS(previousProcs)
+
+	synctest.Test(t, func(t *testing.T) {
+		const retryInterval = 50 * time.Millisecond
+		var primarySink, backupSink consumertest.TracesSink
+		var failPrimary bool
+		primary, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
+			if failPrimary {
+				return errTracesConsumer
+			}
+			return primarySink.ConsumeTraces(ctx, td)
+		})
+		require.NoError(t, err)
+		conn := newFailoverTracesConnector(t, primary, &backupSink, retryInterval)
+
+		ctx := t.Context()
+		tr := sampleTrace()
+		failPrimary = true
+		require.NoError(t, conn.ConsumeTraces(ctx, tr))
+		require.Equal(t, 1, backupSink.SpanCount())
+		require.Zero(t, primarySink.SpanCount())
+
+		failPrimary = false
+		synctest.Wait()
+		time.Sleep(retryInterval)
+		synctest.Wait()
+		recoveryErr := conn.ConsumeTraces(ctx, tr)
+		failPrimary = true
+		failureErr := conn.ConsumeTraces(ctx, tr)
+		require.NoError(t, recoveryErr)
+		require.NoError(t, failureErr)
+		require.Equal(t, 1, primarySink.SpanCount())
+		require.Equal(t, 2, backupSink.SpanCount())
+
+		failPrimary = false
+		synctest.Wait()
+		time.Sleep(retryInterval)
+		synctest.Wait()
+		require.NoError(t, conn.ConsumeTraces(ctx, tr))
+		require.Equal(t, 2, primarySink.SpanCount(), "traces did not return to primary after the second failure")
+		require.Equal(t, 2, backupSink.SpanCount())
+	})
+}
+
+func newFailoverTracesConnector(t *testing.T, primary, backup consumer.Traces, retryInterval time.Duration) connector.Traces {
+	t.Helper()
+	primaryID := pipeline.NewIDWithName(pipeline.SignalTraces, "primary")
+	backupID := pipeline.NewIDWithName(pipeline.SignalTraces, "backup")
+	cfg := &Config{
+		PipelinePriority: [][]pipeline.ID{{primaryID}, {backupID}},
+		RetryInterval:    retryInterval,
+	}
+	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+		primaryID: primary,
+		backupID:  backup,
+	})
+	conn, err := NewFactory().CreateTracesToTraces(t.Context(),
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, conn.Shutdown(t.Context()))
+	})
+	return conn
+}
 
 func TestFailoverRecovery(t *testing.T) {
 	var sinkFirst, sinkSecond, sinkThird, sinkFourth consumertest.TracesSink

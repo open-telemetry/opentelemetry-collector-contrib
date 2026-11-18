@@ -48,13 +48,13 @@ flowchart LR
 
 Key design decisions:
 
-- **Delta-based detection, not absolute thresholds.** A label with 50K stable values is fine. A label that grew by 100 in the last epoch is a problem. The processor tracks growth rate using dual-epoch HyperLogLog++ sketches, so legitimate high-cardinality metrics aren't penalized.
+- **Delta-based detection, not absolute thresholds.** A label with 50K stable values is fine. A label that grew by 100 in the last epoch is a problem. The processor tracks growth rate with dual-epoch HyperLogLog++ sketches: the delta is the number of values seen this epoch that were absent from the previous one, so a stable high-cardinality set reads as zero growth while a label that keeps producing new values is caught every epoch.
 
 - **256-way sharding.** Each shard has its own `RWMutex`. With 50 concurrent goroutines across 256 shards, average occupancy is ~0.4 per shard. Contention is near zero. Shard selection is `hash & 0xFF` — one CPU cycle.
 
-- **HLL++ with ~2KB per tracker.** Each sketch estimates cardinality regardless of whether 100 or 100M unique values have been observed. 1-2% accuracy. The `axiomhq/hyperloglog` library's `InsertHash(uint64)` path avoids allocation on the hot path.
+- **HLL++ with bounded sketch reuse.** Each tracker retains two p=14 sketches — the per-epoch sketch and the two-epoch window. Sketches start sparse and may grow to dense registers of about 16 KiB each. At rotation the per-epoch sketch becomes the next window, and the retired window is reused only when its distinct count guarantees it stayed sparse; otherwise it is replaced with a fresh sparse one. This avoids repeatedly clearing dense registers and lets dense storage be reclaimed as cardinality falls. The `axiomhq/hyperloglog` library's `InsertHash(uint64)` path avoids allocation on the hot path.
 
-- **Stale eviction.** Trackers that haven't been seen for two epochs are cleaned up. Memory stays bounded.
+- **Stale eviction.** Trackers that haven't been seen for two epochs are evicted and their sketch storage becomes eligible for garbage collection. However, shard-map capacity and storage retained by active trackers can reflect historical peak load. Set `max_tracker_count` to limit the number of concurrently retained trackers; `0` permits unlimited growth.
 
 ## Comparison with existing processors
 
@@ -66,7 +66,6 @@ Key design decisions:
 | Tag-only mode | Yes | No | No |
 | Per-metric overrides | Yes | N/A | N/A |
 | Top-N offender reporting | Yes | No | No |
-| Memory per tracker | ~2KB (HLL++) | N/A | N/A |
 
 `filterprocessor` and `metricstransformprocessor` are configuration-driven: you tell them what to drop. This processor is data-driven: it figures out what to drop based on observed behavior. The use cases are complementary, not competing.
 

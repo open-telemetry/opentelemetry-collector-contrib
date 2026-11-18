@@ -49,7 +49,12 @@ func createLogsProcessor(ctx context.Context, set processor.Settings, cfg compon
 	}
 	// processorhelper only supports one outgoing batch, so the partitioner runs
 	// as its next consumer; the helper still records the processor telemetry.
+	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
 	pp := &partitioningProcessor{
+		telemetry:       tb,
 		nextLogs:        next,
 		logsPartitioner: p,
 		keyNames:        keyNames,
@@ -67,7 +72,12 @@ func createTracesProcessor(ctx context.Context, set processor.Settings, cfg comp
 	if err != nil {
 		return nil, err
 	}
+	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
 	pp := &partitioningProcessor{
+		telemetry:         tb,
 		nextTraces:        next,
 		tracesPartitioner: p,
 		keyNames:          keyNames,
@@ -85,7 +95,12 @@ func createMetricsProcessor(ctx context.Context, set processor.Settings, cfg com
 	if err != nil {
 		return nil, err
 	}
+	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
 	pp := &partitioningProcessor{
+		telemetry:          tb,
 		nextMetrics:        next,
 		metricsPartitioner: p,
 		keyNames:           keyNames,

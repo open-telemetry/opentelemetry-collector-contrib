@@ -49,12 +49,19 @@ This receiver uses the scrape manager and parser implementation from
 Supported scrape protocol and exposition formats are those accepted by the Prometheus scrape configuration:
 
 - `PrometheusProto`
+- `OpenMetricsText2.0.0` (experimental; requires the `receiver.prometheus.EnableOpenMetrics2` feature gate)
 - `OpenMetricsText1.0.0`
 - `OpenMetricsText0.0.1`
 - `PrometheusText1.0.0`
 - `PrometheusText0.0.4`
 
 If `fallback_scrape_protocol` is not set, the receiver defaults it to `PrometheusText0.0.4` for compatibility with targets that do not return a proper content type.
+
+**Note on OpenMetrics 2.0 (`OpenMetricsText2.0.0`)**:
+- `OpenMetricsText2.0.0` is not included in the default `scrape_protocols`. To negotiate and scrape OpenMetrics 2.0, enable `--feature-gates=receiver.prometheus.EnableOpenMetrics2` and explicitly add `OpenMetricsText2.0.0` to `scrape_protocols`.
+- If the feature gate is disabled and `fallback_scrape_protocol` is at its `PrometheusText0.0.4` default, `application/openmetrics-text; version=2.0.0` responses fall back to Prometheus 0.0.4 text parsing (dropping `# UNIT` metadata on scalar metrics and failing on composite histograms/summaries).
+- `fallback_scrape_protocol: OpenMetricsText2.0.0` currently falls back to OpenMetrics 1.0 in the pinned Prometheus scrape library.
+- Inline OpenMetrics 2.0 start timestamps (`st@<timestamp>`) are only populated when `receiver.prometheusreceiver.EnableCreatedTimestampZeroIngestion` is also enabled.
 
 For native histogram details and protocol requirements, see [Prometheus native histograms](#prometheus-native-histograms).
 
@@ -192,7 +199,7 @@ Native histograms are a data type in Prometheus, for more information see the [s
 The Prometheus receiver automatically converts native histograms to OpenTelemetry exponential histograms. To enable scraping and ingestion of native histograms, you need to configure two things in your Prometheus scrape config:
 
 1. **Enable native histogram scraping**: Set `scrape_native_histograms: true` (globally or per-job)
-2. **Use the protobuf scrape protocol**: Include `PrometheusProto` in `scrape_protocols` (required until Prometheus supports native histograms over text formats)
+2. **Use a supported scrape protocol**: Include `PrometheusProto` (or, experimentally with `--feature-gates=receiver.prometheus.EnableOpenMetrics2`, `OpenMetricsText2.0.0`) in `scrape_protocols`
 
 ```yaml
 receivers:

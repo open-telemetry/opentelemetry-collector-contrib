@@ -35,6 +35,7 @@ The following settings can be optionally configured:
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup.
 - `client_id` (default = "otel-collector"): The client ID to configure the Kafka client with. The client ID will be used for all produce requests.
 - `conn_idle_timeout` (default = `9m`): The time after which idle connections to Kafka brokers are not reused and may be closed.
+- `dial_timeout` (default = `10s`): The time allowed to establish a connection to a Kafka broker.
 - `logs`
   - `topic` (default = otlp\_logs): The name of the Kafka topic to which logs will be exported.
   - `encoding` (default = otlp\_proto): The encoding for logs. See [Supported encodings](#supported-encodings).
@@ -75,7 +76,7 @@ The following settings can be optionally configured:
     - `version` (default = 0): The SASL protocol version to use (0 or 1)
     - `aws_msk`
       - `region`: AWS Region in case of AWS_MSK_IAM_OAUTHBEARER mechanism
-    - `oauthbearer_token_source`: The component ID of an authenticator extension that provides OAuth2 tokens (e.g. `oauth2client` or `azure_auth`). Required when `mechanism` is `OAUTHBEARER`; the extension must be listed under `service.extensions`.
+    - `oauthbearer_token_source`: The component ID of an authenticator extension that provides OAuth2 tokens (e.g. `oauth2client`, `azure_auth` or `bearertokenauth`). Required when `mechanism` is `OAUTHBEARER`; the extension must be listed under `service.extensions`.
   - `kerberos`
     - `service_name`: Kerberos service name
     - `realm`: Kerberos realm
@@ -128,7 +129,8 @@ The following settings can be optionally configured:
         Only supports fast level
       - `snappy`
         No compression levels supported yet
-  - `flush_max_messages` (default = 10000) The maximum number of messages the producer will send in a single broker request.
+  - `flush_max_messages` (default = 10000) The maximum number of records the producer buffers across all partitions before `Produce` blocks waiting for broker acknowledgements.
+  - `max_inflight_requests_per_broker` (default = 1) The maximum number of produce requests kept in flight per broker. Only takes effect with `required_acks` `0` or `1`. It mostly helps with `required_acks: 1`, since with `0` a request stops counting as in flight as soon as it has been sent. Must be left at `1` with `required_acks: all`, where idempotent produce manages the limit. With values above `1`, a failed request is retried together with every later in-flight request for the same partitions, including ones the broker already accepted, so records may be reordered and duplicated.
   - `allow_auto_topic_creation` (default = true) whether the broker is allowed to automatically create topics when they are referenced but do not already exist.
   - `linger`: (default = `10ms`) How long individual topic partitions will linger waiting for more records before triggering a request to be built.
 
@@ -244,6 +246,10 @@ service:
 The [`azureauth`](../../extension/azureauthextension/README.md) extension can also be used
 as a token source, which supports managed identity, workload identity, and service principal
 for authenticating against Azure Event Hubs.
+
+The [`bearertokenauth`](../../extension/bearertokenauthextension/README.md) extension can be used
+as a token source when the token is obtained out of band and made available to the collector as a
+file, such as a Kubernetes projected service account token.
 
 ## Destination Topic
 

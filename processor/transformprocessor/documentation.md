@@ -8,6 +8,7 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `processor.transform.enableExperimentalFunctions` | alpha | Allow the transform processor's experimental functions to be used in statements and conditions. When disabled, experimental functions are rejected. | v0.165.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47306) |
 | `transform.flatten.logs` | alpha | Flatten log data prior to transformation so every record has a unique copy of the resource and scope. Regroups logs based on resource and scope after transformations. | v0.103.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32080#issuecomment-2120764953) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
