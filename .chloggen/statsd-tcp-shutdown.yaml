@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: receiver/statsd
+note: Fix collector shutdown hanging when the receiver uses the TCP transport.
+issues: [53232]
+subtext: The TCP server reported its normal stop as a fatal error, which blocks collector shutdown.
+change_logs: [user]

@@ -75,9 +75,9 @@ type huaweiSessionConfig struct {
 	// Number of seconds before timing out a request.
 	NoVerifySSL bool `mapstructure:"no_verify_ssl"`
 	// Upload segments to AWS X-Ray through a proxy.
-	ProxyAddress  string `mapstructure:"proxy_address"`
-	ProxyUser     string `mapstructure:"proxy_user"`
-	ProxyPassword string `mapstructure:"proxy_password"`
+	ProxyAddress  string              `mapstructure:"proxy_address"`
+	ProxyUser     string              `mapstructure:"proxy_user"`
+	ProxyPassword configopaque.String `mapstructure:"proxy_password"`
 }
 
 var _ component.Config = (*Config)(nil)

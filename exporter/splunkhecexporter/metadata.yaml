@@ -21,6 +21,14 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+    exporter_splunkhec_approaching_capacity:
+      enabled: true
+      stability: development
+      description: Number of accepted requests for which Splunk HEC reported its queue or ack channel is approaching capacity (response codes 24 and 25).
+      unit: "{request}"
+      sum:
+        value_type: int
+        monotonic: true
     exporter_splunkhec_heartbeats_failed:
       enabled: true
       stability: development

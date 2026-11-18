@@ -26,7 +26,7 @@ type Config struct {
 	Authentication AuthType `mapstructure:"auth"`
 	// Azure Blob Storage connection key,
 	// which can be found in the Azure Blob Storage resource on the Azure Portal. (no default)
-	ConnectionString string `mapstructure:"connection_string"`
+	ConnectionString configopaque.String `mapstructure:"connection_string"`
 	// Storage Account URL, used with Service Principal authentication
 	StorageAccountURL string `mapstructure:"storage_account_url"`
 	// Configuration for the Service Principal credentials
@@ -48,7 +48,7 @@ type Config struct {
 
 type EventHubConfig struct {
 	// Azure Event Hub endpoint triggering on the `Blob Create` event
-	EndPoint string `mapstructure:"endpoint"`
+	EndPoint configopaque.String `mapstructure:"endpoint"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

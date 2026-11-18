@@ -38,7 +38,7 @@ func configureHTTPProxy(cfg huaweiSessionConfig) (*config.Proxy, error) {
 
 	// Configure the username and password if the proxy requires authentication
 	if cfg.ProxyUser != "" {
-		proxy = proxy.WithUsername(cfg.ProxyUser).WithPassword(cfg.ProxyPassword)
+		proxy = proxy.WithUsername(cfg.ProxyUser).WithPassword(string(cfg.ProxyPassword))
 	}
 	return proxy, nil
 }
