@@ -110,7 +110,8 @@ Telemetry data is compressed according to the `compression` setting.
 > [!NOTE]
 > An alpha feature gate `exporter.file.nativeCompression` is available that switches from
 > per-message compression to native file-level compression, producing standard `.zst` files
-> compatible with tools like `zstd -d`. See [Feature Gates](documentation.md) for details.
+> compatible with tools like `zstd -d`. See [Feature Gates](documentation.md) for details,
+> and [File Format](#file-format) for how records are framed.
 
 Currently, `fileexporter` support the `zstd` compression algorithm, and we will support more compression algorithms in the future.
 
@@ -125,7 +126,8 @@ Telemetry data is encoded according to the `format` (or `encoding`) setting and 
 | any | none | `proto`, with or without `encoding` | Length-prefixed messages |
 | disabled | `zstd` | any | Each batch compressed on its own, then length-prefixed. Not readable by `zstd -d` |
 | enabled | `zstd` | `json`, no `encoding` | Newline-delimited OTLP JSON inside a standard zstd stream |
-| enabled | `zstd` | `proto`, or any `encoding` | Length-prefixed messages inside a standard zstd stream |
+| enabled | `zstd` | `json` + stream-decodable `encoding` (e.g. `text_encoding`) | Encoder output followed by `\n` per batch inside a standard zstd stream |
+| enabled | `zstd` | `proto`, or any other `encoding` | Length-prefixed messages inside a standard zstd stream |
 
 Length-prefixed means each encoded message is preceded by 4 bytes (a big-endian unsigned 32 bit integer) holding the number of bytes in the message. To read the messages back, read the size, then read that many bytes into a separate buffer and parse from that buffer.
 

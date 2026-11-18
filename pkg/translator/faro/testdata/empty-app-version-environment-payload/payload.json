@@ -1,0 +1,60 @@
+{
+  "meta": {
+    "app": {
+      "name": "testapp"
+    }
+  },
+  "logs": [
+    {
+      "message": "opened pricing page",
+      "level": "info",
+      "timestamp": "2021-09-30T10:46:17.680Z"
+    }
+  ],
+  "traces": {
+    "resourceSpans": [
+      {
+        "resource": {
+          "attributes": [
+            {
+              "key": "service.name",
+              "value": {
+                "stringValue": "testapp"
+              }
+            },
+            {
+              "key": "service.version",
+              "value": {
+                "stringValue": "abcdefg"
+              }
+            },
+            {
+              "key": "deployment.environment.name",
+              "value": {
+                "stringValue": "production"
+              }
+            }
+          ]
+        },
+        "scopeSpans": [
+          {
+            "scope": {
+              "name": "@opentelemetry/instrumentation-fetch",
+              "version": "0.48.0"
+            },
+            "spans": [
+              {
+                "traceId": "bac44bf5d6d040fc5fdf9bc22442c6f2",
+                "spanId": "fc0fb7e3a1b1b2d6",
+                "name": "HTTP GET",
+                "kind": 3,
+                "startTimeUnixNano": "1718700770771000000",
+                "endTimeUnixNano": "1718700770800000000"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
