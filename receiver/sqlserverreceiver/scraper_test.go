@@ -2951,7 +2951,7 @@ func TestRecordDatabaseSizeMetrics(t *testing.T) {
 	actualMetrics, err := databaseSizeScraper.ScrapeMetrics(t.Context())
 	assert.NoError(t, err)
 
-	// 2 database files (1 data, 1 log) = 2 data points
+	// 3 database files (1 data, 1 log, 1 filestream) = 3 data points
 	var totalDP int
 	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
 		rm := actualMetrics.ResourceMetrics().At(i)
@@ -2965,7 +2965,7 @@ func TestRecordDatabaseSizeMetrics(t *testing.T) {
 			}
 		}
 	}
-	assert.Equal(t, 2, totalDP)
+	assert.Equal(t, 3, totalDP)
 }
 
 func TestIsTempDBContentionQueryEnabled(t *testing.T) {

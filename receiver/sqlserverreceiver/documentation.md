@@ -425,7 +425,7 @@ Number of execution errors.
 
 Size of database files.
 
-This metric is only available when the receiver is configured to directly connect to SQL Server.
+This metric is only available when the receiver is configured to directly connect to SQL Server. For a FILESTREAM file, SQL Server always reports a size of 0 from sys.master_files; this metric reflects that value as-is rather than falling back to a separate per-database query.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |

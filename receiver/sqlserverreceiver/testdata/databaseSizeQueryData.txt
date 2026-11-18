@@ -12,5 +12,12 @@
     "database_name": "testdb",
     "file_type": "log",
     "size_bytes": "67108864"
+  },
+  {
+    "measurement": "sqlserver_database_file_size",
+    "sql_instance": "testhost",
+    "database_name": "testdb",
+    "file_type": "filestream",
+    "size_bytes": "0"
   }
 ]

@@ -77,6 +77,12 @@ func getSQLServerDatabaseIOQuery() string {
 // sqlServerDatabaseSizeQuery returns one row per (database, file type), summing database file
 // sizes. Azure SQL Database only exposes sys.database_files (single-database scope), so it is
 // queried per-connection rather than instance-wide like sys.master_files.
+//
+// On non-Azure editions, sys.master_files.size is always 0 for FILESTREAM containers - this is a
+// documented SQL Server limitation, not a bug here. sys.database_files.size reports it correctly,
+// but only within that one database's connection, not instance-wide; getting it right for every
+// database on the instance would require a per-database query loop instead of this single
+// instance-wide one.
 const sqlServerDatabaseSizeQuery = `
 SET DEADLOCK_PRIORITY -10;
 IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN /*NOT IN Standard,Enterprise,Express,Azure SQL Database, Azure SQL Managed Instance*/
