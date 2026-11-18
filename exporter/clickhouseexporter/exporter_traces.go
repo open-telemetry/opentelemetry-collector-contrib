@@ -6,6 +6,7 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/column"
@@ -20,8 +21,11 @@ import (
 )
 
 type tracesExporter struct {
-	db        driver.Conn
-	insertSQL string
+	db             driver.Conn
+	insertSQL      string
+	schemaFeatures struct {
+		ScopeAttributes bool
+	}
 
 	logger *zap.Logger
 	cfg    *Config
@@ -29,9 +33,8 @@ type tracesExporter struct {
 
 func newTracesExporter(logger *zap.Logger, cfg *Config) *tracesExporter {
 	return &tracesExporter{
-		insertSQL: renderInsertTracesSQL(cfg),
-		logger:    logger,
-		cfg:       cfg,
+		logger: logger,
+		cfg:    cfg,
 	}
 }
 
@@ -47,12 +50,38 @@ func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
 	}
 
 	if e.cfg.shouldCreateSchema() {
-		if err := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString(), e.cfg.databaseEngineString()); err != nil {
-			return err
+		if createDBErr := internal.CreateDatabase(ctx, e.db, e.cfg.database(), e.cfg.clusterString(), e.cfg.databaseEngineString()); createDBErr != nil {
+			return createDBErr
 		}
 
-		if err := createTraceTables(ctx, e.cfg, e.db); err != nil {
-			return err
+		if createTableErr := createTraceTables(ctx, e.cfg, e.db); createTableErr != nil {
+			return createTableErr
+		}
+	}
+
+	err = e.detectSchemaFeatures(ctx)
+	if err != nil {
+		e.logger.Error("schema detection failed", zap.Error(err))
+	}
+
+	e.renderInsertTracesSQL()
+
+	return nil
+}
+
+const (
+	tracesColumnScopeAttributes = "ScopeAttributes"
+)
+
+func (e *tracesExporter) detectSchemaFeatures(ctx context.Context) error {
+	columnNames, err := internal.GetTableColumns(ctx, e.db, e.cfg.database(), e.cfg.TracesTableName)
+	if err != nil {
+		return err
+	}
+
+	for _, name := range columnNames {
+		if name == tracesColumnScopeAttributes {
+			e.schemaFeatures.ScopeAttributes = true
 		}
 	}
 
@@ -81,6 +110,9 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 	processStart := time.Now()
 
 	var spanCount int
+	// 23 matches the max number of columns in the insert statement.
+	// If you add or remove columns, update this value.
+	columnValues := make([]any, 0, 23)
 	rsSpans := td.ResourceSpans()
 	rsLen := rsSpans.Len()
 	for i := range rsLen {
@@ -98,6 +130,11 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 			scopeVersion := scopeSpanScope.Version()
 			scopeSpans := scopeSpanRoot.Spans()
 
+			var scopeAttrMap column.IterableOrderedMap
+			if e.schemaFeatures.ScopeAttributes {
+				scopeAttrMap = internal.AttributesToMap(scopeSpanScope.Attributes())
+			}
+
 			ssLen := scopeSpans.Len()
 			for k := range ssLen {
 				span := scopeSpans.At(k)
@@ -108,7 +145,8 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 				eventTimes, eventNames, eventAttrs := convertEvents(span.Events())
 				linksTraceIDs, linksSpanIDs, linksTraceStates, linksAttrs := convertLinks(span.Links())
 
-				appendErr := batch.Append(
+				columnValues = columnValues[:0]
+				columnValues = append(columnValues,
 					span.StartTimestamp().AsTime(),
 					traceutil.TraceIDToHexOrEmptyString(span.TraceID()),
 					traceutil.SpanIDToHexOrEmptyString(span.SpanID()),
@@ -132,6 +170,12 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 					linksTraceStates,
 					linksAttrs,
 				)
+
+				if e.schemaFeatures.ScopeAttributes {
+					columnValues = append(columnValues, scopeAttrMap)
+				}
+
+				appendErr := batch.Append(columnValues...)
 				if appendErr != nil {
 					return fmt.Errorf("failed to append trace row: %w", appendErr)
 				}
@@ -196,8 +240,18 @@ func convertLinks(links ptrace.SpanLinkSlice) (traceIDs, spanIDs, states []strin
 	return traceIDs, spanIDs, states, attrs
 }
 
-func renderInsertTracesSQL(cfg *Config) string {
-	return fmt.Sprintf(sqltemplates.TracesInsert, cfg.database(), cfg.TracesTableName)
+func (e *tracesExporter) renderInsertTracesSQL() {
+	var featureColumnNames strings.Builder
+	var featureColumnPositions strings.Builder
+
+	if e.schemaFeatures.ScopeAttributes {
+		featureColumnNames.WriteString(", ")
+		featureColumnNames.WriteString(tracesColumnScopeAttributes)
+
+		featureColumnPositions.WriteString(", ?")
+	}
+
+	e.insertSQL = fmt.Sprintf(sqltemplates.TracesInsert, e.cfg.database(), e.cfg.TracesTableName, featureColumnNames.String(), featureColumnPositions.String())
 }
 
 func renderCreateTracesTableSQL(cfg *Config) string {

@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS %q.%q %s (
     ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(3)),
     ScopeName String CODEC(ZSTD(3)),
     ScopeVersion String CODEC(ZSTD(3)),
+    ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(3)),
     SpanAttributes Map(LowCardinality(String), String) CODEC(ZSTD(3)),
     Duration UInt64 CODEC(ZSTD(3)),
     StatusCode LowCardinality(String) CODEC(ZSTD(3)),

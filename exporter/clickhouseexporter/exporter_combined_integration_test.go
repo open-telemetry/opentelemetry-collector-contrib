@@ -87,7 +87,7 @@ func testTracesCombinedExporter(t *testing.T, endpoint string) {
 	}
 
 	// Create Map-based exporter writing to a dedicated table
-	mapExporter := newTestTracesExporter(t, endpoint, func(config *Config) {
+	mapExporter := newTestTracesExporter(t, endpoint, false, func(config *Config) {
 		config.TracesTableName = "otel_traces_combined_map"
 	})
 

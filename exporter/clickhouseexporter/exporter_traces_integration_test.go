@@ -6,6 +6,7 @@
 package clickhouseexporter
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -16,20 +17,35 @@ import (
 )
 
 func testTracesExporter(t *testing.T, endpoint string) {
-	exporter := newTestTracesExporter(t, endpoint)
-	verifyExportTraces(t, exporter)
+	exporter := newTestTracesExporter(t, endpoint, false)
+	verifyExportTraces(t, exporter, false)
 }
 
-func newTestTracesExporter(t *testing.T, dsn string, fns ...func(*Config)) *tracesExporter {
+func testTracesExporterSchemaFeatures(t *testing.T, endpoint string) {
+	overrideTracesTableName := func(config *Config) {
+		config.TracesTableName = "otel_traces_schema_features"
+	}
+	exporter := newTestTracesExporter(t, endpoint, true, overrideTracesTableName)
+	verifyExportTraces(t, exporter, true)
+}
+
+func newTestTracesExporter(t *testing.T, dsn string, testSchemaFeatures bool, fns ...func(*Config)) *tracesExporter {
 	exporter := newTracesExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 
 	require.NoError(t, exporter.start(t.Context(), nil))
+	require.True(t, exporter.schemaFeatures.ScopeAttributes, "ScopeAttributes column should be detected on a newly created table")
+
+	// Tests the schema feature flags by disabling newer columns. The insert logic should adapt.
+	if testSchemaFeatures {
+		exporter.schemaFeatures.ScopeAttributes = false
+		exporter.renderInsertTracesSQL()
+	}
 
 	t.Cleanup(func() { _ = exporter.shutdown(t.Context()) })
 	return exporter
 }
 
-func verifyExportTraces(t *testing.T, exporter *tracesExporter) {
+func verifyExportTraces(t *testing.T, exporter *tracesExporter, testSchemaFeatures bool) {
 	pushConcurrentlyNoError(t, func() error {
 		return exporter.pushTraceData(t.Context(), simpleTraces(5000))
 	})
@@ -46,6 +62,7 @@ func verifyExportTraces(t *testing.T, exporter *tracesExporter) {
 		ResourceAttributes map[string]string   `ch:"ResourceAttributes"`
 		ScopeName          string              `ch:"ScopeName"`
 		ScopeVersion       string              `ch:"ScopeVersion"`
+		ScopeAttributes    map[string]string   `ch:"ScopeAttributes"`
 		SpanAttributes     map[string]string   `ch:"SpanAttributes"`
 		Duration           uint64              `ch:"Duration"`
 		StatusCode         string              `ch:"StatusCode"`
@@ -73,6 +90,9 @@ func verifyExportTraces(t *testing.T, exporter *tracesExporter) {
 		},
 		ScopeName:    "io.opentelemetry.contrib.clickhouse",
 		ScopeVersion: "1.0.0",
+		ScopeAttributes: map[string]string{
+			"lib": "clickhouse",
+		},
 		SpanAttributes: map[string]string{
 			"service.name": "v",
 		},
@@ -104,7 +124,11 @@ func verifyExportTraces(t *testing.T, exporter *tracesExporter) {
 		},
 	}
 
-	row := exporter.db.QueryRow(t.Context(), "SELECT * FROM otel_int_test.otel_traces")
+	if testSchemaFeatures {
+		expectedTrace.ScopeAttributes = map[string]string{}
+	}
+
+	row := exporter.db.QueryRow(t.Context(), fmt.Sprintf("SELECT * FROM %q.%q", exporter.cfg.database(), exporter.cfg.TracesTableName))
 	require.NoError(t, row.Err())
 
 	var actualTrace trace
