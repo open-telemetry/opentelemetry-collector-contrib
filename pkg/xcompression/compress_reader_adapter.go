@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package xutilcompress // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/xutilcompress"
+package xcompression // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression"
 
 import (
 	"errors"
@@ -18,9 +18,7 @@ type readAdapter[R io.Reader] struct {
 	close  func(R) error
 }
 
-var (
-	_ resettableReader = (*readAdapter[io.Reader])(nil)
-)
+var _ resettableReader = (*readAdapter[io.Reader])(nil)
 
 // withReadAdapterClose sets the close behavior for the wrapped reader.
 func withReadAdapterClose[R io.Reader](closer func(R) error) func(*readAdapter[R]) {

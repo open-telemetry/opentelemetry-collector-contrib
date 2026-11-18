@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package xutilcompress
+package xcompression
 
 import (
 	"bytes"
@@ -24,7 +24,7 @@ func TestNewCompressorWriterPools(t *testing.T) {
 
 	for _, tc := range []struct {
 		name        string
-		constructor NewCompressionWriterFunc
+		constructor WriterConstructionFunc
 		params      configcompression.CompressionParams
 		errVal      string
 	}{
@@ -95,14 +95,14 @@ func TestCompressWriter(t *testing.T) {
 
 	for _, tc := range []struct {
 		name        string
-		constructor NewCompressionWriterFunc
+		constructor WriterConstructionFunc
 		params      configcompression.CompressionParams
 		reader      func(r io.Reader) (io.Reader, error)
 	}{
 		{
 			name: "none",
-			constructor: func(configcompression.CompressionParams) (CompressWriter, error) {
-				return NopCompressWriter{}, nil
+			constructor: func(configcompression.CompressionParams) (Writer, error) {
+				return Nop{}, nil
 			},
 			reader: func(r io.Reader) (io.Reader, error) { return r, nil },
 		},

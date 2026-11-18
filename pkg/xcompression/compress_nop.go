@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package xutilcompress // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/xutilcompress"
+package xcompression // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression"
 
 import "io"
 

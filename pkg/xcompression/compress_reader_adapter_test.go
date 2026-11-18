@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package xutilcompress
+package xcompression
 
 import (
 	"bytes"
@@ -32,7 +32,7 @@ func TestNewReadAdapter(t *testing.T) {
 		{
 			name: "reset method provided",
 			opts: []func(*readAdapter[*bytes.Buffer]){
-				withReadAdapterReset(func(b *bytes.Buffer, r io.Reader) error {
+				withReadAdapterReset(func(_ *bytes.Buffer, _ io.Reader) error {
 					return nil
 				}),
 			},
@@ -42,7 +42,7 @@ func TestNewReadAdapter(t *testing.T) {
 		{
 			name: "all options provided",
 			opts: []func(*readAdapter[*bytes.Buffer]){
-				withReadAdapterReset(func(b *bytes.Buffer, r io.Reader) error {
+				withReadAdapterReset(func(_ *bytes.Buffer, _ io.Reader) error {
 					return nil
 				}),
 				withReadAdapterClose(func(*bytes.Buffer) error {
@@ -61,7 +61,7 @@ func TestNewReadAdapter(t *testing.T) {
 			if err := adapt.Close(); tc.closeErr != "" {
 				assert.EqualError(t, err, tc.closeErr, "Must match the expected error")
 			} else {
-				assert.NoError(t, err, "Must nto report an error")
+				assert.NoError(t, err, "Must not report an error")
 			}
 
 			if err := adapt.Reset(bytes.NewBuffer(nil)); tc.resetErr != "" {
