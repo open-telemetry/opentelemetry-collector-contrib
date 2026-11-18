@@ -4,12 +4,19 @@
 package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
 
 import (
+	"net/http"
 	"reflect"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 )
 
 func TestAzureScraperClientOptions(t *testing.T) {
@@ -29,6 +36,7 @@ func TestAzureScraperClientOptions(t *testing.T) {
 			want: &arm.ClientOptions{
 				ClientOptions: azcore.ClientOptions{
 					Cloud: cloud.AzurePublic,
+					Retry: policy.RetryOptions{StatusCodes: retryStatusCodes()},
 				},
 			},
 		},
@@ -40,6 +48,7 @@ func TestAzureScraperClientOptions(t *testing.T) {
 			want: &arm.ClientOptions{
 				ClientOptions: azcore.ClientOptions{
 					Cloud: cloud.AzureGovernment,
+					Retry: policy.RetryOptions{StatusCodes: retryStatusCodes()},
 				},
 			},
 		},
@@ -51,6 +60,7 @@ func TestAzureScraperClientOptions(t *testing.T) {
 			want: &arm.ClientOptions{
 				ClientOptions: azcore.ClientOptions{
 					Cloud: cloud.AzureChina,
+					Retry: policy.RetryOptions{StatusCodes: retryStatusCodes()},
 				},
 			},
 		},
@@ -112,6 +122,56 @@ func TestAzureBatchAPIEndpointOptions(t *testing.T) {
 			if got := s.GetBatchAPIEndpoint(tt.fields.Region); got != tt.want {
 				t.Errorf("GetBatchAPIEndpoint() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestRetryStatusCodesIncludeDefaultsAnd529(t *testing.T) {
+	codes := retryStatusCodes()
+	for _, code := range []int{
+		http.StatusRequestTimeout,
+		http.StatusTooManyRequests,
+		http.StatusInternalServerError,
+		http.StatusBadGateway,
+		http.StatusServiceUnavailable,
+		http.StatusGatewayTimeout,
+		529,
+	} {
+		assert.Contains(t, codes, code)
+	}
+}
+
+// statusSequenceTransport replies with the given status codes in order, then 200.
+type statusSequenceTransport struct {
+	statuses []int
+	calls    int
+}
+
+func (s *statusSequenceTransport) Do(req *http.Request) (*http.Response, error) {
+	status := http.StatusOK
+	if s.calls < len(s.statuses) {
+		status = s.statuses[s.calls]
+	}
+	s.calls++
+	return &http.Response{StatusCode: status, Body: http.NoBody, Request: req}, nil
+}
+
+func TestClientOptionsRetryOnThrottlingStatus(t *testing.T) {
+	for _, status := range []int{http.StatusTooManyRequests, http.StatusServiceUnavailable, 529} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			transport := &statusSequenceTransport{statuses: []int{status}}
+			opts := newClientOptionsResolver(azureCloud).GetArmMonitorClientOptions()
+			opts.Transport = transport
+			opts.Retry.RetryDelay = time.Millisecond
+
+			pipeline := runtime.NewPipeline("test", "v0.0.0", runtime.PipelineOptions{}, &opts.ClientOptions)
+			req, err := runtime.NewRequest(t.Context(), http.MethodGet, "http://localhost/")
+			require.NoError(t, err)
+
+			resp, err := pipeline.Do(req)
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusOK, resp.StatusCode)
+			assert.Equal(t, 2, transport.calls)
 		})
 	}
 }
