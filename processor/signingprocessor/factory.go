@@ -20,6 +20,7 @@ func NewFactory() processor.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
 	)
 }
 
@@ -29,6 +30,29 @@ func createLogsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
+	proc, err := newConfiguredProcessor(ctx, settings, cfg)
+	if err != nil {
+		return nil, err
+	}
+	proc.nextLogs = nextConsumer
+	return proc, nil
+}
+
+func createTracesProcessor(
+	ctx context.Context,
+	settings processor.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Traces,
+) (processor.Traces, error) {
+	proc, err := newConfiguredProcessor(ctx, settings, cfg)
+	if err != nil {
+		return nil, err
+	}
+	proc.nextTraces = nextConsumer
+	return proc, nil
+}
+
+func newConfiguredProcessor(ctx context.Context, settings processor.Settings, cfg component.Config) (*signingProcessor, error) {
 	processorCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config type: %+v", cfg)
@@ -38,7 +62,7 @@ func createLogsProcessor(
 		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
-	proc, err := newProcessor(ctx, processorCfg, nextConsumer, settings)
+	proc, err := newProcessor(ctx, processorCfg, settings)
 	if err != nil {
 		return nil, fmt.Errorf("error creating processor: %w", err)
 	}

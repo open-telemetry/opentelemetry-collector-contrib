@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 )
 
@@ -16,9 +18,10 @@ import (
 type exportFunc func(e *fileWriter, buf []byte) error
 
 type fileWriter struct {
-	path  string
-	file  io.WriteCloser
-	mutex sync.Mutex
+	path   string
+	file   io.WriteCloser
+	logger *zap.Logger
+	mutex  sync.Mutex
 
 	exporter exportFunc
 
@@ -26,8 +29,9 @@ type fileWriter struct {
 	stopTicker    chan struct{}
 	wg            sync.WaitGroup
 	// Protected by mutex
-	refs    int  // number of active references to this writer
-	evicted bool // true if the writer has been evicted from the LRU
+	refs             int  // number of active references to this writer
+	evicted          bool // true if the writer has been evicted from the LRU
+	flushErrorLogged bool // true once a periodic flush error has been logged
 }
 
 func exportMessageAsLine(w *fileWriter, buf []byte) error {
@@ -88,7 +92,10 @@ func (w *fileWriter) startFlusher() {
 			select {
 			case <-ticker.C:
 				w.mutex.Lock()
-				ff.flush()
+				if err := ff.flush(); err != nil && !w.flushErrorLogged {
+					w.flushErrorLogged = true
+					w.logger.Error("Failed to flush file. Buffered data may be lost and subsequent writes may fail.", zap.String("path", w.path), zap.Error(err))
+				}
 				w.mutex.Unlock()
 			case <-stop:
 				ticker.Stop()
@@ -163,25 +170,20 @@ func (w *fileWriter) shutdown() error {
 	return err
 }
 
-func buildExportFunc(cfg *Config) func(w *fileWriter, buf []byte) error {
-	if metadata.ExporterFileNativeCompressionFeatureGate.IsEnabled() && cfg.Compression != "" {
-		// Native compression: the compression stream handles framing, so
-		// JSON can use newline-delimited output (human-readable after decompression).
-		// Proto still needs length-prefix for message boundary detection.
-		// When a custom encoding extension is set, the actual wire format may be
-		// binary regardless of FormatType, so length-prefix framing is required.
-		if cfg.FormatType == formatTypeJSON && cfg.Encoding == nil {
-			return exportMessageAsLine
-		}
+// buildExportFunc selects the framing used to write encoded telemetry.
+// lineDelimited reports whether the configured encoding extension produces stream-decodable text.
+func buildExportFunc(cfg *Config, lineDelimited bool) exportFunc {
+	if cfg.FormatType != formatTypeJSON {
 		return exportMessageAsBuffer
 	}
-	// Legacy behavior
-	if cfg.FormatType == formatTypeProto {
-		return exportMessageAsBuffer
+	if cfg.Compression == "" {
+		return exportMessageAsLine
 	}
-	// if the data format is JSON and needs to be compressed, telemetry data can't be written to file in JSON format.
-	if cfg.FormatType == formatTypeJSON && cfg.Compression != "" {
-		return exportMessageAsBuffer
+	// Per-message compression (gate off) emits binary, so it needs length prefixes.
+	// Native compression keeps JSON and text encodings readable after decompression.
+	// Other encodings may emit binary regardless of FormatType, so they keep length prefixes. See #49328.
+	if metadata.ExporterFileNativeCompressionFeatureGate.IsEnabled() && (cfg.Encoding == nil || lineDelimited) {
+		return exportMessageAsLine
 	}
-	return exportMessageAsLine
+	return exportMessageAsBuffer
 }
