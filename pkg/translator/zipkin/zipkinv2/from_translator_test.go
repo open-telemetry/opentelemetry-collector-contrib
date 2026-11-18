@@ -288,9 +288,9 @@ func zipkinOneSpan(status ptrace.StatusCode) *zipkinmodel.SpanModel {
 
 	switch status {
 	case ptrace.StatusCodeOk:
-		spanTags["otel.status_code"] = "STATUS_CODE_OK"
+		spanTags["otel.status_code"] = "OK"
 	case ptrace.StatusCodeError:
-		spanTags["otel.status_code"] = "STATUS_CODE_ERROR"
+		spanTags["otel.status_code"] = "ERROR"
 		spanTags["otel.status_description"] = "error message"
 		spanTags[tracetranslator.TagError] = "true"
 		spanErr = errors.New("error message")

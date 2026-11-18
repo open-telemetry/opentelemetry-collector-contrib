@@ -603,4 +603,8 @@ var statusCodeValue = map[string]int32{
 	"Unset": 0,
 	"Ok":    1,
 	"Error": 2,
+	// Per the OTel non-OTLP mapping spec, status codes MUST be "OK" or "ERROR".
+	// Added in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/53288
+	"OK":    1,
+	"ERROR": 2,
 }
