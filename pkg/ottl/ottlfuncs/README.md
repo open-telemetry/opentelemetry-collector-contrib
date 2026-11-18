@@ -1356,9 +1356,6 @@ Examples:
 - `IsBool(false)`
 
 
-- `IsBool(pcommon.NewValueBool(false))`
-
-
 - `IsBool(42)`
 
 
@@ -1539,7 +1536,7 @@ The `Keys` Converter returns a slice containing all the keys from the given map.
 The returned type is `pcommon.Slice`.
 
 Examples:
-- 
+
 - `Keys(resource.attributes)`
 - `Keys({"k1":"v1", "k2": "v2"})`
 
@@ -1581,7 +1578,7 @@ Examples:
 - `Log(span.attributes["duration_ms"])`
 
 
-- `Int(Log(span.attributes["duration_ms"])`
+- `Int(Log(span.attributes["duration_ms"]))`
 
 ### IsValidLuhn
 
@@ -1624,7 +1621,7 @@ MD5 is not a FIPS 140-3 approved algorithm. The converter computes the digest ou
 
 `Microseconds(duration)`
 
-The `Microseconds` Converter returns the duration as an integer millisecond count.
+The `Microseconds` Converter returns the duration as an integer microsecond count.
 
 `duration` is a `time.Duration`. If `duration` is another type an error is returned.
 
@@ -1945,7 +1942,7 @@ An element has "extraneous text content" when it contains both text and element 
 3. Elements which contain child elements are converted into a key/value pair where the value is a map.
    e.g. `<foo> <bar>baz</bar> </foo>` becomes `"foo": { "bar": "baz" }`
 4. Sibling elements that share the same tag will be combined into a slice.
-   e.g. `<a> <b>1</b> <c>2</c> <c>3</c> </foo>` becomes `"a": { "b": "1", "c": [ "2", "3" ] }`.
+   e.g. `<a> <b>1</b> <c>2</c> <c>3</c> </a>` becomes `"a": { "b": "1", "c": [ "2", "3" ] }`.
 5. Empty elements are dropped, but they can determine whether a value should be a slice or map.
    e.g. `<a> <b>1</b> <b/> </a>` becomes `"a": { "b": [ "1" ] }` instead of `"a": { "b": "1" }`
 
@@ -1968,7 +1965,7 @@ Parse a Simplified XML document from the body:
 ```json
 {
   "event": {
-    "id": 1,
+    "id": "1",
     "user": "jane",
     "details": {
       "time": "2021-10-01T12:00:00Z",
@@ -2043,7 +2040,7 @@ If `target` is not a string, nil, or cannot be parsed as XML, `ParseXML` will re
 Unmarshalling XML is done using the following rules:
 1. All character data for an XML element is trimmed, joined, and placed into the `content` field.
 2. The tag for an XML element is trimmed, and placed into the `tag` field.
-3. The attributes for an XML element is placed as a `pcommon.Map` into the `attribute` field.
+3. The attributes for an XML element is placed as a `pcommon.Map` into the `attributes` field.
 4. Processing instructions, directives, and comments are ignored and not represented in the resultant map.
 5. All child elements are parsed as above, and placed in a `pcommon.Slice`, which is then placed into the `children` field.
 
