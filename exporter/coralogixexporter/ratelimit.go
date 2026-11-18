@@ -4,6 +4,7 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"errors"
+	"fmt"
 	"sync/atomic"
 	"time"
 
@@ -14,7 +15,10 @@ type rateError struct {
 	rateLimited   atomic.Bool
 	enabled       bool
 	timestamp     atomic.Pointer[time.Time]
+	resumeAt      atomic.Pointer[time.Time]
 	internalError atomic.Pointer[error]
+	status        atomic.Pointer[string]
+	reason        atomic.Int32
 	errorCount    atomic.Int32
 	threshold     int
 	duration      time.Duration
@@ -37,24 +41,60 @@ func (r *rateError) canDisableRateLimit() bool {
 	return time.Since(*r.timestamp.Load()) > r.duration
 }
 
-func (r *rateError) enableRateLimit() {
+// enableRateLimit increments the consecutive permanent-error counter. When the
+// counter reaches threshold it opens the drop window, stores a reason-specific
+// permanent error, and returns true so the caller can log once.
+func (r *rateError) enableRateLimit(reason dropReason, status string) bool {
 	r.errorCount.Add(1)
 	if r.errorCount.Load() < int32(r.threshold) {
-		return
+		return false
 	}
 
 	now := time.Now()
+	resumeAt := now.Add(r.duration)
 	r.timestamp.Store(&now)
-	r.rateLimited.Store(true)
-	err := consumererror.NewPermanent(errors.New("rate limit exceeded at " + now.Format(time.RFC3339)))
+	r.resumeAt.Store(&resumeAt)
+	r.reason.Store(int32(reason))
+	r.status.Store(&status)
+	opened := !r.rateLimited.Swap(true)
+	err := dropWindowError(reason, resumeAt, r.threshold)
 	r.internalError.Store(&err)
+	return opened
 }
 
-func (r *rateError) disableRateLimit() {
+// disableRateLimit clears the drop window. It returns true when an open window
+// was actually closed so the caller can log once.
+func (r *rateError) disableRateLimit() bool {
+	wasLimited := r.rateLimited.Swap(false)
 	r.errorCount.Store(0)
-	r.rateLimited.Store(false)
+	return wasLimited
 }
 
 func (r *rateError) GetError() error {
 	return *r.internalError.Load()
+}
+
+func (r *rateError) getReason() dropReason {
+	return dropReason(r.reason.Load())
+}
+
+func (r *rateError) getResumeAt() time.Time {
+	if p := r.resumeAt.Load(); p != nil {
+		return *p
+	}
+	return time.Time{}
+}
+
+func dropWindowError(reason dropReason, resumeAt time.Time, threshold int) error {
+	resume := resumeAt.Format(time.RFC3339)
+	var msg string
+	switch reason {
+	case dropReasonAuth:
+		msg = fmt.Sprintf("authentication failed (private key rotated or invalid); dropping data until %s after %d consecutive failures", resume, threshold)
+	case dropReasonQuota:
+		msg = fmt.Sprintf("quota exceeded; dropping data until %s after %d consecutive failures", resume, threshold)
+	default:
+		msg = fmt.Sprintf("rate limit exceeded; dropping data until %s after %d consecutive failures", resume, threshold)
+	}
+	return consumererror.NewPermanent(errors.New(msg))
 }
