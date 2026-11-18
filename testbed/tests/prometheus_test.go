@@ -4,14 +4,19 @@
 package tests
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"path/filepath"
+	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -169,7 +174,11 @@ func scenarioPrometheusExport(
 	resourceSpec testbed.ResourceSpec,
 ) {
 	sender := testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
-	receiver := prometheusdatareceiver.NewPrometheusDataReceiverWithNativeHistograms(testutil.GetAvailablePort(t), payloadCfg.WithNativeHistograms)
+	receiver := newScrapeValidatingReceiver(
+		prometheusdatareceiver.NewPrometheusDataReceiverWithNativeHistograms(testutil.GetAvailablePort(t), payloadCfg.WithNativeHistograms),
+		payloadCfg.SeriesCount,
+		payloadCfg.WithNativeHistograms,
+	)
 
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 	resultDir, err := filepath.Abs(filepath.Join("results", t.Name()))
@@ -224,11 +233,19 @@ func scenarioPrometheusExport(
 
 	tc.StartBackend()
 
-	require.Eventually(t, func() bool { return tc.MockBackend.DataItemsReceived() > 0 },
-		10*time.Second, 100*time.Millisecond, "scraper never received metrics from prometheusexporter")
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		s := receiver.snapshot()
+		assert.Positivef(c, s.completeScrapes,
+			"scraper never completed a successful scrape with %d expected series from prometheusexporter (successful=%d failed=%d short=%d minSeries=%d)",
+			payloadCfg.SeriesCount, s.successfulScrapes, s.failedScrapes, s.shortScrapes, s.minSeriesPerScrape)
+	}, 10*time.Second, 100*time.Millisecond)
 
 	benchDuration := tc.Duration
 	time.Sleep(benchDuration)
+
+	// Snapshot scrape health before stopping the scraper, since canceling
+	// an in-flight scrape during shutdown can emit a final up=0 report.
+	stats := receiver.snapshot()
 
 	// Stop pushing and scraping before taking final counters to avoid races with in-flight pull cycles.
 	stopPushOnce()
@@ -237,10 +254,15 @@ func scenarioPrometheusExport(
 	throughput := float64(received) / benchDuration.Seconds()
 	rc := agentProc.GetTotalConsumption()
 	loadGen.SetDataItemsSent(received)
-	tc.ValidateData()
 
-	t.Logf("Received %d data items in %s (%.0f items/sec). CPU avg/max=%.1f%%/%.1f%%, RAM avg/max=%d/%d MiB",
-		received, benchDuration, throughput, rc.CPUPercentAvg, rc.CPUPercentMax, rc.RAMMiBAvg, rc.RAMMiBMax)
+	require.Zerof(t, stats.failedScrapes, "scrape failures occurred during benchmark (up != 1; successful=%d failed=%d maxScrape=%s)",
+		stats.successfulScrapes, stats.failedScrapes, stats.maxScrapeDuration.Round(time.Millisecond))
+	require.Positive(t, stats.successfulScrapes, "expected at least one successful scrape")
+	require.Zerof(t, stats.shortScrapes, "successful scrape returned fewer than %d expected series (min seen: %d)",
+		payloadCfg.SeriesCount, stats.minSeriesPerScrape)
+
+	t.Logf("Received %d data items (%d successful scrapes before stop, max scrape=%s) in %s (%.0f items/sec). CPU avg/max=%.1f%%/%.1f%%, RAM avg/max=%d/%d MiB",
+		received, stats.successfulScrapes, stats.maxScrapeDuration.Round(time.Millisecond), benchDuration, throughput, rc.CPUPercentAvg, rc.CPUPercentMax, rc.RAMMiBAvg, rc.RAMMiBMax)
 }
 
 func buildPrometheusExportPayload(cfg prometheusstaticdatasender.PrometheusStaticPayloadConfig) pmetric.Metrics {
@@ -399,4 +421,179 @@ func (lg *staticScrapeLoadGenerator) IsReady() bool {
 		return true
 	}
 	return false
+}
+
+type scrapeStats struct {
+	successfulScrapes  uint64
+	completeScrapes    uint64
+	failedScrapes      uint64
+	shortScrapes       uint64
+	minSeriesPerScrape uint64
+	maxScrapeDuration  time.Duration
+}
+
+// scrapeValidatingReceiver wraps a testbed.DataReceiver to inspect scraped metrics on
+// the fly without recording full pmetric.Metrics payloads in memory.
+type scrapeValidatingReceiver struct {
+	testbed.DataReceiver
+	expectedSeries         uint64
+	expectNativeHistograms bool
+
+	mu    sync.Mutex
+	stats scrapeStats
+}
+
+func newScrapeValidatingReceiver(
+	inner testbed.DataReceiver,
+	expectedSeries int,
+	expectNativeHistograms bool,
+) *scrapeValidatingReceiver {
+	return &scrapeValidatingReceiver{
+		DataReceiver:           inner,
+		expectedSeries:         uint64(max(expectedSeries, 0)),
+		expectNativeHistograms: expectNativeHistograms,
+	}
+}
+
+func (r *scrapeValidatingReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error {
+	wrapped, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
+		r.recordBatch(md)
+		return mc.ConsumeMetrics(ctx, md)
+	})
+	if err != nil {
+		return err
+	}
+	return r.DataReceiver.Start(tc, wrapped, lc)
+}
+
+func (r *scrapeValidatingReceiver) snapshot() scrapeStats {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.stats
+}
+
+func (r *scrapeValidatingReceiver) recordBatch(md pmetric.Metrics) {
+	var batchSuccess, batchFailed, batchSeries uint64
+	var batchMaxDur time.Duration
+
+	rms := md.ResourceMetrics()
+	for i := range rms.Len() {
+		sms := rms.At(i).ScopeMetrics()
+		for j := range sms.Len() {
+			ms := sms.At(j).Metrics()
+			for k := range ms.Len() {
+				m := ms.At(k)
+				switch m.Name() {
+				case "up":
+					if m.Type() != pmetric.MetricTypeGauge {
+						continue
+					}
+					dps := m.Gauge().DataPoints()
+					for l := range dps.Len() {
+						dp := dps.At(l)
+						if dp.Flags().NoRecordedValue() {
+							continue
+						}
+						val := dp.DoubleValue()
+						if dp.ValueType() == pmetric.NumberDataPointValueTypeInt {
+							val = float64(dp.IntValue())
+						}
+						if val == 1 {
+							batchSuccess++
+						} else {
+							batchFailed++
+						}
+					}
+				case "scrape_duration_seconds":
+					if m.Type() != pmetric.MetricTypeGauge {
+						continue
+					}
+					dps := m.Gauge().DataPoints()
+					for l := range dps.Len() {
+						dp := dps.At(l)
+						if dp.Flags().NoRecordedValue() {
+							continue
+						}
+						if d := time.Duration(dp.DoubleValue() * float64(time.Second)); d > batchMaxDur {
+							batchMaxDur = d
+						}
+					}
+				default:
+					if strings.HasPrefix(m.Name(), "bench_") {
+						batchSeries += countValidSeries(m, r.expectNativeHistograms)
+					}
+				}
+			}
+		}
+	}
+
+	if batchSuccess == 0 && batchFailed == 0 && batchMaxDur == 0 {
+		return
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if batchMaxDur > r.stats.maxScrapeDuration {
+		r.stats.maxScrapeDuration = batchMaxDur
+	}
+	r.stats.failedScrapes += batchFailed
+	if batchSuccess > 0 {
+		perScrape := batchSeries / batchSuccess
+		if r.stats.successfulScrapes == 0 || perScrape < r.stats.minSeriesPerScrape {
+			r.stats.minSeriesPerScrape = perScrape
+		}
+		r.stats.successfulScrapes += batchSuccess
+		if batchSeries < r.expectedSeries*batchSuccess {
+			r.stats.shortScrapes += batchSuccess
+		} else {
+			r.stats.completeScrapes += batchSuccess
+		}
+	}
+}
+
+func countValidSeries(m pmetric.Metric, expectNativeHistograms bool) uint64 {
+	if expectNativeHistograms && m.Type() != pmetric.MetricTypeExponentialHistogram {
+		return 0
+	}
+	var count uint64
+	switch m.Type() {
+	case pmetric.MetricTypeExponentialHistogram:
+		dps := m.ExponentialHistogram().DataPoints()
+		for i := range dps.Len() {
+			if !dps.At(i).Flags().NoRecordedValue() {
+				count++
+			}
+		}
+	case pmetric.MetricTypeGauge:
+		dps := m.Gauge().DataPoints()
+		for i := range dps.Len() {
+			if !dps.At(i).Flags().NoRecordedValue() {
+				count++
+			}
+		}
+	case pmetric.MetricTypeSum:
+		dps := m.Sum().DataPoints()
+		for i := range dps.Len() {
+			if !dps.At(i).Flags().NoRecordedValue() {
+				count++
+			}
+		}
+	case pmetric.MetricTypeHistogram:
+		dps := m.Histogram().DataPoints()
+		for i := range dps.Len() {
+			if !dps.At(i).Flags().NoRecordedValue() {
+				count++
+			}
+		}
+	case pmetric.MetricTypeSummary:
+		dps := m.Summary().DataPoints()
+		for i := range dps.Len() {
+			if !dps.At(i).Flags().NoRecordedValue() {
+				count++
+			}
+		}
+	case pmetric.MetricTypeEmpty:
+		return 0
+	}
+	return count
 }

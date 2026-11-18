@@ -43,8 +43,8 @@ func (dr *prometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, 
 	addr := fmt.Sprintf("127.0.0.1:%d", dr.Port)
 	sc := &promconfig.ScrapeConfig{
 		JobName:        "testbed-job",
-		ScrapeInterval: model.Duration(500 * time.Millisecond),
-		ScrapeTimeout:  model.Duration(500 * time.Millisecond),
+		ScrapeInterval: model.Duration(time.Second),
+		ScrapeTimeout:  model.Duration(time.Second),
 		ServiceDiscoveryConfigs: discovery.Configs{
 			discovery.StaticConfig{
 				{
