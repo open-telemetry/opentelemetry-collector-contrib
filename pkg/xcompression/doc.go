@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate make mdatagen
+
 // Package xcompression provides a simplified means of handling compression
 // within the collector by providing a concurrency safe [Writer] and [Reader]
 // type that enable a performance gain once used.

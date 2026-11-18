@@ -182,6 +182,7 @@ pkg/translator/skywalking pkg/translator/skywalking
 pkg/translator/splunk pkg/translator/splunk
 pkg/translator/zipkin pkg/translator/zipkin
 pkg/winperfcounters pkg/winperfcounters
+pkg/xcompression pkg/xcompression
 pkg/xk8stest pkg/xk8stest
 pkg/xstreamencoding pkg/xstreamencoding
 processor/adaptivetailsamplingprocessor processor/adaptivetailsampling
