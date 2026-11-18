@@ -198,6 +198,20 @@ func TestDocumentedLogFields(t *testing.T) {
 		}, nil)
 	})
 
+	t.Run("ecs with a non-string body", func(t *testing.T) {
+		encoder, err := newEncoder(MappingECS)
+		require.NoError(t, err)
+		ec, rec := documentationLogFixture()
+		rec.Body().SetEmptyMap()
+		var buf bytes.Buffer
+		require.NoError(t, encoder.encodeLog(ec, rec, idx, &buf))
+		// The body of another type is not indexed as "message".
+		assertDocumentedFields(t, buf.String(), []string{
+			"@timestamp",
+			"log.level",
+		}, []string{"message"})
+	})
+
 	t.Run("otel", func(t *testing.T) {
 		encoder, err := newEncoder(MappingOTel)
 		require.NoError(t, err)
@@ -219,6 +233,28 @@ func TestDocumentedLogFields(t *testing.T) {
 			"scope",
 			"body.text",
 		}, nil)
+	})
+
+	t.Run("otel event name", func(t *testing.T) {
+		encoder, err := newEncoder(MappingOTel)
+		require.NoError(t, err)
+
+		// The record's event name is a top-level field.
+		ec, rec := documentationLogFixture()
+		rec.SetEventName("my.event")
+		var buf bytes.Buffer
+		require.NoError(t, encoder.encodeLog(ec, rec, idx, &buf))
+		assertDocumentedFields(t, buf.String(), []string{
+			"event_name",
+		}, nil)
+		assert.Equal(t, "my.event", gjson.Get(buf.String(), "event_name").String())
+
+		// Without an event name, the event.name attribute is used.
+		ec, rec = documentationLogFixture()
+		rec.Attributes().PutStr("event.name", "from.attribute")
+		buf.Reset()
+		require.NoError(t, encoder.encodeLog(ec, rec, idx, &buf))
+		assert.Equal(t, "from.attribute", gjson.Get(buf.String(), "event_name").String())
 	})
 }
 
@@ -327,6 +363,26 @@ func TestDocumentedSpanFields(t *testing.T) {
 			"dropped_events_count",
 			"dropped_links_count",
 		}, nil)
+	})
+
+	t.Run("otel span event", func(t *testing.T) {
+		encoder, err := newEncoder(MappingOTel)
+		require.NoError(t, err)
+		ec, span := documentationSpanFixture()
+		event := span.Events().At(0)
+		var buf bytes.Buffer
+		_, err = encoder.encodeSpanEvent(ec, span, event, idx, &buf)
+		require.NoError(t, err)
+		// Span events are separate documents, with the event name, the
+		// event.name attribute and the trace correlation fields.
+		assertDocumentedFields(t, buf.String(), []string{
+			"@timestamp",
+			"event_name",
+			`attributes.event\.name`,
+			"trace_id",
+			"span_id",
+		}, nil)
+		assert.Equal(t, "fooEvent", gjson.Get(buf.String(), "event_name").String())
 	})
 }
 

@@ -469,7 +469,7 @@ Metrics and profiles are not supported in these modes.
 | Field | Description |
 | ----- | ----------- |
 | `@timestamp` | Log record timestamp, falling back to the observed timestamp when unset |
-| `message` | The log record body, when the body is a string |
+| `message` | The log record body, when the body is a string. Bodies of other types are not indexed |
 | `log.level` | Severity text |
 | `event.severity` | Severity number, only when set |
 | `trace.id`, `span.id` | Trace correlation fields |
@@ -521,7 +521,8 @@ intake.
 | `data_stream.type`, `data_stream.dataset`, `data_stream.namespace` | Data stream fields, when routing to a data stream |
 | `severity_text`, `severity_number` | Record severity |
 | `trace_id`, `span_id` | Trace correlation fields |
-| `attributes` | Record attributes, with `event_name` promoted to a field when set |
+| `attributes` | Record attributes |
+| `event_name` | The record's event name, or the `event.name` attribute when the event name is unset |
 | `resource`, `scope` | Resource and scope attributes, with their `dropped_attributes_count` |
 | `body.structured`, `body.text` | The log record body, keyed by its type |
 
@@ -540,6 +541,10 @@ intake.
 | `resource`, `scope` | Resource and scope information |
 | `dropped_attributes_count`, `dropped_events_count`, `dropped_links_count` | Dropped counts, written when non-zero |
 
+Span events are written as separate documents with `event_name`, `attributes.event.name`,
+`trace_id` and `span_id`, and are routed to `logs_index` or a `logs` data stream; see
+[document routing](#elasticsearch-document-routing).
+
 **Metrics, `otel` mapping mode:**
 
 | Field | Description |
@@ -549,7 +554,7 @@ intake.
 | `unit` | Metric unit |
 | `temporality` | Data point temporality, for the data point types that carry one |
 | `_doc_count` | Document count, when mapping hints indicate it |
-| `_metric_names_hash` | Hash of metric names, for the bulk action dynamic templates |
+| `_metric_names_hash` | Fingerprint of the metric names in the document, used as a time series dimension so documents with different metrics aren't rejected as duplicates; see [version_conflict_engine_exception](#version_conflict_engine_exception) |
 | `data_stream.*` | Data stream fields, when routing to a data stream |
 | `resource`, `scope`, `attributes` | Resource, scope and data point attributes |
 
