@@ -247,8 +247,8 @@ func TestWriteLeaser(t *testing.T) {
 				return
 			}
 			err = rl.LeaseWriter(func(r ResettableWriter) error {
-				assert.NotNil(t, r, "Must have a valid value provided")
-				return nil
+				require.NotNil(t, r, "Must have a valid value provided")
+				return r.Close()
 			})
 			assert.NoError(t, err, "Must not return an error when checking lease is valid")
 		})
