@@ -49,6 +49,7 @@ type WatchClient struct {
 	daemonsetInformer      cache.SharedInformer
 	jobInformer            cache.SharedInformer
 	cronJobInformer        cache.SharedInformer
+	hpaInformer            cache.SharedInformer
 	replicasetInformer     cache.SharedInformer
 	cronJobRegex           *regexp.Regexp
 	deleteQueue            []deleteRequest
@@ -102,6 +103,10 @@ type WatchClient struct {
 	// A map containing ReplicaSets related data, used to associate them with resources.
 	// Key is replicaset uid
 	ReplicaSets map[string]*ReplicaSet
+
+	// A map containing HorizontalPodAutoscaler related data, used to associate them with resources.
+	// Key is horizontalpodautoscaler uid
+	HPAs map[string]*HPA
 
 	telemetryBuilder *metadata.TelemetryBuilder
 }
@@ -180,6 +185,7 @@ func New(
 	c.DaemonSets = map[string]*DaemonSet{}
 	c.Jobs = map[string]*Job{}
 	c.CronJobs = map[string]*CronJob{}
+	c.HPAs = map[string]*HPA{}
 
 	labelSelector, fieldSelector, err := selectorsFromFilters(c.Filters)
 	if err != nil {
@@ -242,6 +248,7 @@ func New(
 	needDaemonSetInformer := c.extractDaemonSetLabelsAnnotations()
 	needJobInformer := c.extractJobLabelsAnnotations() || rules.CronJobUID || c.extractCronJobLabelsAnnotations()
 	needCronJobInformer := c.extractCronJobLabelsAnnotations()
+	needHPAInformer := c.extractHPALabelsAnnotations()
 	needAPIClient := !kubelet.Enabled ||
 		needNamespaceInformer ||
 		needReplicaSetInformer ||
@@ -250,7 +257,8 @@ func New(
 		needStatefulSetInformer ||
 		needDaemonSetInformer ||
 		needJobInformer ||
-		needCronJobInformer
+		needCronJobInformer ||
+		needHPAInformer
 
 	if needAPIClient {
 		if newClientSet == nil {
@@ -321,6 +329,10 @@ func New(
 
 	if needCronJobInformer {
 		c.cronJobInformer = newCronJobSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
+	}
+
+	if needHPAInformer {
+		c.hpaInformer = newHPASharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 	return c, err
 }
@@ -435,6 +447,24 @@ func (c *WatchClient) Start() error {
 		go c.cronJobInformer.Run(c.stopCh)
 	}
 
+	var hpaSynced cache.InformerSynced
+	if c.hpaInformer != nil {
+		reg, err = c.hpaInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handleHPAAdd,
+			UpdateFunc: c.handleHPAUpdate,
+			DeleteFunc: c.handleHPADelete,
+		})
+		if err != nil {
+			return err
+		}
+		// HPA metadata is looked up by k8s.hpa.uid at processing time and is not
+		// needed to associate pods, so pod handling is not gated on its sync.
+		// This prevents a missing HPA list permission from blocking pod metadata.
+		// It is still waited on below when wait_for_metadata is enabled.
+		hpaSynced = reg.HasSynced
+		go c.hpaInformer.Run(c.stopCh)
+	}
+
 	var podSynced cache.InformerSynced
 	if c.kubelet.Enabled {
 		podSynced = c.startKubeletPolling(synced)
@@ -461,8 +491,13 @@ func (c *WatchClient) Start() error {
 		defer t.Stop()
 		// Wait for the Pod informer to be completed.
 		// The other informers will already be finished at this point, as the pod informer
-		// waits for them be finished before it can run
-		if !cache.WaitForCacheSync(timeoutCh, podSynced) {
+		// waits for them be finished before it can run.
+		// The HPA informer is not a pod dependency, so wait for it explicitly.
+		waitFor := []cache.InformerSynced{podSynced}
+		if hpaSynced != nil {
+			waitFor = append(waitFor, hpaSynced)
+		}
+		if !cache.WaitForCacheSync(timeoutCh, waitFor...) {
 			return errors.New("failed to wait for caches to sync")
 		}
 	}
@@ -982,6 +1017,37 @@ func (c *WatchClient) handleCronJobDelete(obj any) {
 	}
 }
 
+func (c *WatchClient) handleHPAAdd(obj any) {
+	c.telemetryBuilder.K8sWatcherHpaAdded.Add(context.Background(), 1)
+	if hpa, ok := obj.(*meta_v1.PartialObjectMetadata); ok {
+		c.addOrUpdateHPA(hpa)
+	} else {
+		c.logger.Error("object received was not of type PartialObjectMetadata for HorizontalPodAutoscaler", zap.Any("received", obj))
+	}
+}
+
+func (c *WatchClient) handleHPAUpdate(_, newHPA any) {
+	c.telemetryBuilder.K8sWatcherHpaUpdated.Add(context.Background(), 1)
+	if hpa, ok := newHPA.(*meta_v1.PartialObjectMetadata); ok {
+		c.addOrUpdateHPA(hpa)
+	} else {
+		c.logger.Error("object received was not of type PartialObjectMetadata for HorizontalPodAutoscaler", zap.Any("received", newHPA))
+	}
+}
+
+func (c *WatchClient) handleHPADelete(obj any) {
+	c.telemetryBuilder.K8sWatcherHpaDeleted.Add(context.Background(), 1)
+	if hpa, ok := ignoreDeletedFinalStateUnknown(obj).(*meta_v1.PartialObjectMetadata); ok {
+		c.m.Lock()
+		if n, ok := c.HPAs[string(hpa.UID)]; ok {
+			delete(c.HPAs, n.UID)
+		}
+		c.m.Unlock()
+	} else {
+		c.logger.Error("object received was not of type PartialObjectMetadata for HorizontalPodAutoscaler", zap.Any("received", obj))
+	}
+}
+
 func (c *WatchClient) deleteLoop(interval, gracePeriod time.Duration) {
 	// This loop runs after N seconds and deletes pods from cache.
 	// It iterates over the delete queue and deletes all that aren't
@@ -1141,6 +1207,16 @@ func (c *WatchClient) GetCronJob(cronJobUID string) (*CronJob, bool) {
 	c.m.RUnlock()
 	if ok {
 		return cronJob, ok
+	}
+	return nil, false
+}
+
+func (c *WatchClient) GetHPA(hpaUID string) (*HPA, bool) {
+	c.m.RLock()
+	hpa, ok := c.HPAs[hpaUID]
+	c.m.RUnlock()
+	if ok {
+		return hpa, ok
 	}
 	return nil, false
 }
@@ -1709,6 +1785,20 @@ func (c *WatchClient) extractCronJobAttributes(d *meta_v1.PartialObjectMetadata)
 	return tags
 }
 
+func (c *WatchClient) extractHPAAttributes(d *meta_v1.PartialObjectMetadata) map[string]string {
+	tags := map[string]string{}
+
+	for _, r := range c.Rules.Labels {
+		r.extractFromHPAMetadata(d.Labels, tags, K8SHPALabel)
+	}
+
+	for _, r := range c.Rules.Annotations {
+		r.extractFromHPAMetadata(d.Annotations, tags, K8SHPAAnnotation)
+	}
+
+	return tags
+}
+
 func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 	newPod := &Pod{
 		Name:           pod.Name,
@@ -2196,6 +2286,22 @@ func (c *WatchClient) extractCronJobLabelsAnnotations() bool {
 	return false
 }
 
+func (c *WatchClient) extractHPALabelsAnnotations() bool {
+	for _, r := range c.Rules.Labels {
+		if r.From == MetadataFromHPA {
+			return true
+		}
+	}
+
+	for _, r := range c.Rules.Annotations {
+		if r.From == MetadataFromHPA {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (c *WatchClient) extractNodeLabelsAnnotations() bool {
 	for _, r := range c.Rules.Labels {
 		if r.From == MetadataFromNode {
@@ -2306,6 +2412,20 @@ func (c *WatchClient) addOrUpdateCronJob(cronJob *meta_v1.PartialObjectMetadata)
 	c.m.Lock()
 	if cronJob.UID != "" {
 		c.CronJobs[string(cronJob.UID)] = newCronJob
+	}
+	c.m.Unlock()
+}
+
+func (c *WatchClient) addOrUpdateHPA(hpa *meta_v1.PartialObjectMetadata) {
+	newHPA := &HPA{
+		Name: hpa.Name,
+		UID:  string(hpa.UID),
+	}
+	newHPA.Attributes = c.extractHPAAttributes(hpa)
+
+	c.m.Lock()
+	if hpa.UID != "" {
+		c.HPAs[string(hpa.UID)] = newHPA
 	}
 	c.m.Unlock()
 }
