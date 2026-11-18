@@ -1403,9 +1403,8 @@ The deprecated `k8snode` detector alias is compiled by
 `enable_detector_k8s_api`; it has no separate opt-in tag. The
 `elastic_beanstalk` detector uses the `elasticbeanstalk` configuration block.
 
-When `detectors` is not configured, only `env` runs, unless
-[default `host.id` detection](#default-hostid-detection) is enabled. A trimmed build that does
-not include the `env` tag must explicitly configure its compiled detector list. A binary built with only
+The factory default is `detectors: [env]`. A trimmed build that does not include the
+`env` tag must explicitly configure its compiled detector list. A binary built with only
 the removal tag compiles, but the resource detection processor must not be configured
 unless at least one detector is compiled and selected. Per-detector configuration blocks
 still decode and validate even when that detector is not compiled, which allows shared
@@ -1491,25 +1490,57 @@ For the latest benchmark results, see the [GitHub Actions workflow runs](https:/
 
 The processor emits internal telemetry to observe resource detection. For the complete list of metrics and their attributes, see the [Internal Telemetry documentation](./documentation.md#internal-telemetry).
 
-## Default `host.id` detection
+## Detecting `host.id`
 
-When the `processor.resource_detection.DetectHostIDByDefault` feature gate is enabled and `detectors` is not
-configured, the processor detects `host.id` following the [`host.id` semantic conventions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/host.md)
-priority order instead of only running the `env` detector:
-
-* It runs the `eks`, `ec2`, `azure`, `gcp`, `k8s_api` and `env` detectors, in this order, skipping
-  detectors that are not compiled into the binary. The first detector to set an attribute wins.
-* These detectors (except for `env`) only emit `host.id`, `cloud.provider` and `cloud.platform` attributes.
-* The detected attributes override existing ones unless `override: false` is set.
+The [`host.id` semantic convention](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/host.md)
+defines a priority order for its value: cloud instance ID, VM vendor ID, OS machine ID, then a user-provided value.
+To follow this order, use either the default detection or a manual configuration.
 
 > **Note**: `k8s_api` requires the `K8S_NODE_NAME` environment variable and the permissions listed in [K8S API Metadata](#k8s-api-metadata).
+
+> **Note**: Both configurations detect the host the Collector runs on, so do not use them in gateways. In a gateway,
+> telemetry from other hosts that has no `host.id` would get the gateway's own `host.id`.
 
 Known limitations:
 
 * Outside of a cloud, the cloud detectors wait for their metadata endpoints, which can delay startup
   by up to `timeout`.
-* `system` is not included, as it reads the container's machine ID when running in a container. Therefore,
+* The `system` detector is not included, as it reads the container's machine ID when running in a container. Therefore,
   `host.id` is not detected outside of a cloud or Kubernetes.
+
+### Default detection
+
+When the `processor.resource_detection.DetectHostIDByDefault` feature gate is enabled and the processor is not
+configured (`resource_detection:` without any settings), it detects `host.id` following the [`host.id` semantic convention](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/host.md)
+priority order instead of only running the `env` detector:
+
+* It runs the `eks`, `ec2`, `azure`, `gcp`, `k8s_api` and `env` detectors, in this order, skipping
+  detectors that are not compiled into the binary. The first detector to set an attribute wins.
+* These detectors (except for `env`) only emit `host.id`, `cloud.provider` and `cloud.platform` attributes.
+* The detected attributes do not override existing ones, as with `override: false`.
+
+Configuring any setting disables default detection. To customize the processor or the detectors, start from the
+[manual configuration](#manual-configuration) below.
+
+### Manual configuration
+
+Unlike default detection, this configuration also emits the other resource attributes the detectors enable by default.
+
+```yaml
+processors:
+  resource_detection:
+    detectors: [eks, ec2, azure, gcp, k8s_api, env]
+    override: false  # do not overwrite incoming host.id
+    fail_on_missing_metadata: false  # return no attributes instead of failing outside the detector's platform
+    eks:
+      resource_attributes:
+        host.id:
+          enabled: true
+    k8s_api:
+      resource_attributes:
+        host.id:
+          enabled: true
+```
 
 ## Ordering
 

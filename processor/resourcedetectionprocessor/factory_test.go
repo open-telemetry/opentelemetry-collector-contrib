@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -504,10 +505,20 @@ func TestDefaultDetectorRegistry(t *testing.T) {
 	assert.ElementsMatch(t, expectedTypes, actualTypes)
 }
 
-func TestResolveDetectors(t *testing.T) {
-	withDetectors := func(detectors []string) *Config {
+func TestResolveDetection(t *testing.T) {
+	loadConfig := func(raw map[string]any) *Config {
+		cfg := createDefaultConfig().(*Config)
+		require.NoError(t, confmap.NewFromStringMap(raw).Unmarshal(cfg), "the configuration must unmarshal")
+		return cfg
+	}
+	withDefaultHostID := func(detectors ...string) *Config {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Detectors = detectors
+		cfg.Override = false
+		cfg.FailOnMissingMetadata = false
+		for _, detector := range detectors {
+			onlyHostIDAttributes(&cfg.DetectorConfig, detector)
+		}
 		return cfg
 	}
 
@@ -516,48 +527,79 @@ func TestResolveDetectors(t *testing.T) {
 		cfg                   *Config
 		compiled              []string
 		detectHostIDByDefault bool
-		wantDetectors         []string
+		want                  *Config
 	}{
 		{
-			name:          "detectors not configured",
-			cfg:           createDefaultConfig().(*Config),
-			compiled:      []string{"env"},
-			wantDetectors: []string{"env"},
+			name:                  "not configured",
+			cfg:                   loadConfig(map[string]any{}),
+			detectHostIDByDefault: false,
+			want:                  loadConfig(map[string]any{}),
 		},
 		{
 			name:                  "detectors configured",
-			cfg:                   withDetectors([]string{"system", "ec2"}),
-			compiled:              []string{"ec2", "env", "system"},
+			cfg:                   loadConfig(map[string]any{"detectors": []any{"system", "ec2"}}),
 			detectHostIDByDefault: true,
-			wantDetectors:         []string{"system", "ec2"},
+			want:                  loadConfig(map[string]any{"detectors": []any{"system", "ec2"}}),
 		},
 		{
-			name:                  "detectors configured as empty",
-			cfg:                   withDetectors([]string{}),
-			compiled:              []string{"env"},
+			name:                  "another setting configured",
+			cfg:                   loadConfig(map[string]any{"timeout": "10s"}),
 			detectHostIDByDefault: true,
-			wantDetectors:         []string{},
+			want:                  loadConfig(map[string]any{"timeout": "10s"}),
 		},
 		{
-			name:                  "detectors not configured, host.id detected by default",
-			cfg:                   createDefaultConfig().(*Config),
+			name:                  "not configured, host.id detected by default",
+			cfg:                   loadConfig(map[string]any{}),
 			compiled:              []string{"azure", "ec2", "eks", "env", "gcp", "k8s_api", "system"},
 			detectHostIDByDefault: true,
-			wantDetectors:         []string{"eks", "ec2", "azure", "gcp", "k8s_api", "env"},
+			want:                  withDefaultHostID("eks", "ec2", "azure", "gcp", "k8s_api", "env"),
 		},
 		{
-			name:                  "detectors not configured, host.id detected by default with detectors not compiled in",
-			cfg:                   createDefaultConfig().(*Config),
-			compiled:              []string{"ec2", "env", "system"},
+			name:                  "not configured, host.id detected by default with detectors not compiled in",
+			cfg:                   loadConfig(map[string]any{}),
+			compiled:              []string{"ec2", "env"},
 			detectHostIDByDefault: true,
-			wantDetectors:         []string{"ec2", "env"},
+			want:                  withDefaultHostID("ec2", "env"),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			detectors, _ := resolveDetectors(tt.cfg, tt.compiled, tt.detectHostIDByDefault)
+			resolved := resolveDetection(tt.cfg, tt.compiled, tt.detectHostIDByDefault)
 
-			assert.Equal(t, tt.wantDetectors, detectors, "detectors must follow the priority order and skip the ones not compiled in")
+			assert.Equal(t, tt.want, resolved, "the resolved configuration must match the expected one")
 		})
 	}
+}
+
+// onlyHostIDAttributes disables every resource attribute of a default host.id detector except
+// host.id, cloud.provider and cloud.platform.
+func onlyHostIDAttributes(dc *DetectorConfig, detector string) {
+	switch detector {
+	case "eks":
+		a := &dc.EKSConfig.ResourceAttributes
+		zero(a)
+		a.HostID.Enabled, a.CloudProvider.Enabled, a.CloudPlatform.Enabled = true, true, true
+	case "ec2":
+		a := &dc.EC2Config.ResourceAttributes
+		zero(a)
+		a.HostID.Enabled, a.CloudProvider.Enabled, a.CloudPlatform.Enabled = true, true, true
+	case "azure":
+		a := &dc.AzureConfig.ResourceAttributes
+		zero(a)
+		a.HostID.Enabled, a.CloudProvider.Enabled, a.CloudPlatform.Enabled = true, true, true
+	case "gcp":
+		a := &dc.GcpConfig.ResourceAttributes
+		zero(a)
+		a.HostID.Enabled, a.CloudProvider.Enabled, a.CloudPlatform.Enabled = true, true, true
+	case "k8s_api":
+		a := &dc.K8SAPIConfig.ResourceAttributes
+		zero(a)
+		a.HostID.Enabled = true
+	}
+}
+
+// zero sets *p to its zero value.
+func zero[T any](p *T) {
+	var z T
+	*p = z
 }

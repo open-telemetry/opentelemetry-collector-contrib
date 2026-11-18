@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/akamai"
@@ -71,6 +72,21 @@ type Config struct {
 	// Retry controls retry/backoff for each detection attempt. Set Enabled=false
 	// to perform a single attempt per detector with no retries.
 	Retry configretry.BackOffConfig `mapstructure:"retry"`
+
+	// configuredByUser is true when any setting of the processor was configured.
+	configuredByUser bool
+}
+
+// Unmarshal records whether any setting was configured, which the default detection depends on.
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if conf == nil {
+		return nil
+	}
+	if err := conf.Unmarshal(cfg); err != nil {
+		return err
+	}
+	cfg.configuredByUser = len(conf.AllKeys()) > 0
+	return nil
 }
 
 // Validate rejects configurations that would let a hung detector block the

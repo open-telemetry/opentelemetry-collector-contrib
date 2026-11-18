@@ -9,7 +9,7 @@ import (
 var ProcessorResourceDetectionDetectHostIDByDefaultFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"processor.resource_detection.DetectHostIDByDefault",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled and `detectors` is not configured, the processor detects `host.id`, `cloud.provider` and `cloud.platform` following the `host.id` semantic conventions priority order, instead of only running the `env` detector."),
+	featuregate.WithRegisterDescription("When enabled and the processor is not configured, it detects `host.id`, `cloud.provider` and `cloud.platform` following the `host.id` semantic conventions priority order, without overriding existing attributes, instead of only running the `env` detector."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52344"),
 	featuregate.WithRegisterFromVersion("v0.166.0"),
 )

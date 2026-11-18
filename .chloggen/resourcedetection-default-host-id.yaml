@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/resource_detection
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add the `processor.resource_detection.DetectHostIDByDefault` feature gate to detect `host.id` following the semantic conventions when `detectors` is not configured.
+note: Add the `processor.resource_detection.DetectHostIDByDefault` feature gate to detect `host.id` following the semantic conventions when the processor is not configured.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [52344]

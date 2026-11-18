@@ -98,6 +98,7 @@ func (*factory) Type() component.Type {
 
 func createDefaultConfig() component.Config {
 	return &Config{
+		Detectors:       []string{env.TypeStr},
 		ClientConfig:    defaultClientConfig(),
 		Override:        true,
 		DetectorConfig:  detectorCreateDefaultConfig(),
@@ -225,12 +226,12 @@ func (f *factory) getResourceDetectionProcessor(
 
 	warnDeprecatedPerDetectorFlags(params.Logger, oCfg)
 
-	detectors, detectorConfigs := resolveDetectors(oCfg, f.compiledDetectors,
+	oCfg = resolveDetection(oCfg, f.compiledDetectors,
 		metadata.ProcessorResourceDetectionDetectHostIDByDefaultFeatureGate.IsEnabled())
 
 	// The deprecated per-detector fail_on_missing_metadata fields are OR'd with this
 	// top-level flag inside each affected detector, preserving per-detector scope.
-	provider, err := f.getResourceProvider(params, oCfg.Retry, detectors, detectorConfigs, oCfg.FailOnMissingMetadata)
+	provider, err := f.getResourceProvider(params, oCfg.Retry, oCfg.Detectors, oCfg.DetectorConfig, oCfg.FailOnMissingMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -244,26 +245,24 @@ func (f *factory) getResourceDetectionProcessor(
 	}, nil
 }
 
-// resolveDetectors returns the detectors to run and their configuration.
+// resolveDetection returns the configuration the processor runs with.
 //
-// When `detectors` is configured, it is used as is. Otherwise only 'env' runs, unless
-// detectHostIDByDefault is set. Then the detectors follow the host.id semantic conventions
-// priority order.
-func resolveDetectors(cfg *Config, compiledDetectors []string, detectHostIDByDefault bool) ([]string, DetectorConfig) {
-	switch {
-	case cfg.Detectors != nil:
-		return cfg.Detectors, cfg.DetectorConfig
-	case !detectHostIDByDefault:
-		return []string{env.TypeStr}, cfg.DetectorConfig
+// It returns cfg as is, unless detectHostIDByDefault is set and the processor is not configured.
+// Then it returns a copy in which the detectors follow the host.id semantic conventions priority order.
+func resolveDetection(cfg *Config, compiledDetectors []string, detectHostIDByDefault bool) *Config {
+	if cfg.configuredByUser || !detectHostIDByDefault {
+		return cfg
 	}
 
-	detectorConfigs := cfg.DetectorConfig
-	var detectors []string
+	resolved := *cfg
+	resolved.Detectors = nil
+	// Do not overwrite incoming host.id (e.g. gateway Collector setup)
+	resolved.Override = false
 	add := func(detector string, resourceAttributes any) {
 		if !slices.Contains(compiledDetectors, detector) {
 			return
 		}
-		detectors = append(detectors, detector)
+		resolved.Detectors = append(resolved.Detectors, detector)
 		sdkbridge.SetEnabledAttributes(resourceAttributes, func(attribute string) bool {
 			switch attribute {
 			case string(conventions.HostIDKey), string(conventions.CloudProviderKey), string(conventions.CloudPlatformKey):
@@ -273,15 +272,15 @@ func resolveDetectors(cfg *Config, compiledDetectors []string, detectHostIDByDef
 		})
 	}
 
-	add(eks.TypeStr, &detectorConfigs.EKSConfig.ResourceAttributes)
-	add(ec2.TypeStr, &detectorConfigs.EC2Config.ResourceAttributes)
-	add(azure.TypeStr, &detectorConfigs.AzureConfig.ResourceAttributes)
-	add(gcp.TypeStr, &detectorConfigs.GcpConfig.ResourceAttributes)
-	add(k8sapi.TypeStr, &detectorConfigs.K8SAPIConfig.ResourceAttributes)
+	add(eks.TypeStr, &resolved.DetectorConfig.EKSConfig.ResourceAttributes)
+	add(ec2.TypeStr, &resolved.DetectorConfig.EC2Config.ResourceAttributes)
+	add(azure.TypeStr, &resolved.DetectorConfig.AzureConfig.ResourceAttributes)
+	add(gcp.TypeStr, &resolved.DetectorConfig.GcpConfig.ResourceAttributes)
+	add(k8sapi.TypeStr, &resolved.DetectorConfig.K8SAPIConfig.ResourceAttributes)
 	// TODO: include the system detector after making it skip the container's machine ID.
 	add(env.TypeStr, nil)
 
-	return detectors, detectorConfigs
+	return &resolved
 }
 
 // warnDeprecatedPerDetectorFlags emits a deprecation warning if any per-detector

@@ -93,6 +93,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewID(metadata.Type),
 			expected: &Config{
+				Detectors:      []string{"env"},
 				Override:       true,
 				DetectorConfig: detectorCreateDefaultConfig(),
 				ClientConfig:   defaultClientConfig(),

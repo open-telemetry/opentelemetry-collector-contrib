@@ -51,6 +51,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `processor.resource_detection.DetectHostIDByDefault` | alpha | When enabled and `detectors` is not configured, the processor detects `host.id`, `cloud.provider` and `cloud.platform` following the `host.id` semantic conventions priority order, instead of only running the `env` detector. | v0.166.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52344) |
+| `processor.resource_detection.DetectHostIDByDefault` | alpha | When enabled and the processor is not configured, it detects `host.id`, `cloud.provider` and `cloud.platform` following the `host.id` semantic conventions priority order, without overriding existing attributes, instead of only running the `env` detector. | v0.166.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52344) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
