@@ -11,8 +11,8 @@ require (
 	go.opentelemetry.io/collector/pdata v1.71.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/pdata/pprofile v0.165.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/otel v1.47.0
-	go.opentelemetry.io/proto/otlp v1.11.1
-	go.opentelemetry.io/proto/otlp/profiles/v1development v0.4.1
+	go.opentelemetry.io/proto/slim/otlp v1.11.1
+	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.4.1
 	google.golang.org/protobuf v1.36.12
 )
 
@@ -24,6 +24,8 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	go.opentelemetry.io/collector/featuregate v1.71.1-0.20261112225459-4888f0b280f9 // indirect
+	go.opentelemetry.io/proto/otlp v1.11.1 // indirect
+	go.opentelemetry.io/proto/otlp/profiles/v1development v0.4.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/sys v0.48.0 // indirect
