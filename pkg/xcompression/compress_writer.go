@@ -18,9 +18,9 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 )
 
-// resettableWriter is used to create partially configured writer
+// ResettableWriter is used to create partially configured writer
 // that is allowed to reset any internal state with a new output destination.
-type resettableWriter interface {
+type ResettableWriter interface {
 	io.WriteCloser
 
 	Reset(dst io.Writer)
@@ -33,29 +33,43 @@ type Writer interface {
 	CompressBytes(dst io.Writer, b []byte) (int64, error)
 }
 
-var (
-	_ Writer = (*compressWriterPool[resettableWriter])(nil)
+// WriteLeaser provides access to a pooled [ResettableWriter] within a callback.
+// The writer is valid only until the callback returns. Storing it for later use
+// or allowing a goroutine to use it after the callback returns can cause data
+// races and corrupt data when another operation reuses the writer.
+type WriteLeaser interface {
+	// LeaseWriter calls leaser synchronously with an exclusively leased writer.
+	// The callback is responsible for resetting the writer and closing it on
+	// every exit path, including errors and panics. Closing finishes the compressed
+	// stream. LeaseWriter returns the callback's error unchanged and returns the
+	// writer to the pool even if the callback returns an error or panics.
+	LeaseWriter(leaser func(rw ResettableWriter) error) error
+}
 
-	_ resettableWriter = (*gzip.Writer)(nil)
-	_ resettableWriter = (*zlib.Writer)(nil)
-	_ resettableWriter = (*flate.Writer)(nil)
-	_ resettableWriter = (*lz4.Writer)(nil)
-	_ resettableWriter = (*zstd.Encoder)(nil)
-	_ resettableWriter = (*snappy.Writer)(nil)
+var (
+	_ Writer      = (*compressWriterPool[ResettableWriter])(nil)
+	_ WriteLeaser = (*compressWriterPool[ResettableWriter])(nil)
+
+	_ ResettableWriter = (*gzip.Writer)(nil)
+	_ ResettableWriter = (*zlib.Writer)(nil)
+	_ ResettableWriter = (*flate.Writer)(nil)
+	_ ResettableWriter = (*lz4.Writer)(nil)
+	_ ResettableWriter = (*zstd.Encoder)(nil)
+	_ ResettableWriter = (*snappy.Writer)(nil)
 )
 
 // compressWriterPool reuses resettable compression writers across calls.
 // Its zero value is not ready for use; construct it with
 // newcompressWriterPool. The pool may be used concurrently. Like sync.Pool,
 // it may discard cached writers at any time.
-type compressWriterPool[RW resettableWriter] struct {
+type compressWriterPool[RW ResettableWriter] struct {
 	buffers sync.Pool
 	writers sync.Pool
 }
 
 // newcompressWriterPool creates a pool whose supplier creates writers when
 // the pool has no reusable writer. The supplier must return a usable writer.
-func newCompressWriterPool[RW resettableWriter](supplier func() RW) *compressWriterPool[RW] {
+func newCompressWriterPool[RW ResettableWriter](supplier func() RW) *compressWriterPool[RW] {
 	return &compressWriterPool[RW]{
 		buffers: sync.Pool{
 			New: func() any {
@@ -148,4 +162,13 @@ func (pw *compressWriterPool[RW]) CompressBytes(dst io.Writer, b []byte) (int64,
 	r.Reset(b)
 
 	return pw.Compress(dst, r)
+}
+
+// LeaseWriter calls leaser with a writer that is valid only during the callback.
+// See [WriteLeaser] for the callback's responsibilities and lifetime restrictions.
+func (pw *compressWriterPool[RW]) LeaseWriter(leaser func(rw ResettableWriter) error) error {
+	rw := pw.writers.Get().(RW)
+	defer pw.writers.Put(rw)
+
+	return leaser(rw)
 }

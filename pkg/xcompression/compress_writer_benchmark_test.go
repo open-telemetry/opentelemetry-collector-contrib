@@ -30,7 +30,7 @@ func BenchmarkCompressWriterPoolDefaultCompressionLevel(b *testing.B) {
 	for _, typ := range benchmarks {
 		b.Run(string(typ), func(b *testing.B) {
 			b.Run("cached-writer", func(b *testing.B) {
-				writer, err := factory.Get(typ, params)
+				writer, err := factory.NewWriter(typ, params)
 				require.NoError(b, err)
 
 				b.SetBytes(int64(len(payload)))
@@ -49,7 +49,7 @@ func BenchmarkCompressWriterPoolDefaultCompressionLevel(b *testing.B) {
 				b.ReportAllocs()
 				b.ResetTimer()
 				for b.Loop() {
-					writer, err := factory.Get(typ, params)
+					writer, err := factory.NewWriter(typ, params)
 					if err != nil {
 						b.Fatal(err)
 					}

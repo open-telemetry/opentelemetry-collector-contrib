@@ -9,7 +9,7 @@ import (
 )
 
 // readAdapter allows for compression libraries that
-// do not adhere to [resettableReader] to be adapter.
+// do not adhere to [ResettableReader] to be adapter.
 // There is a performance penalty using the adapter and
 // should only be used if required.
 type readAdapter[R io.Reader] struct {
@@ -18,7 +18,7 @@ type readAdapter[R io.Reader] struct {
 	close  func(R) error
 }
 
-var _ resettableReader = (*readAdapter[io.Reader])(nil)
+var _ ResettableReader = (*readAdapter[io.Reader])(nil)
 
 // withReadAdapterClose sets the close behavior for the wrapped reader.
 func withReadAdapterClose[R io.Reader](closer func(R) error) func(*readAdapter[R]) {
@@ -34,7 +34,7 @@ func withReadAdapterReset[R io.Reader](resetter func(R, io.Reader) error) func(*
 	}
 }
 
-// newReadAdapter wraps a reader and adapts its reset and close behavior to [resettableReader].
+// newReadAdapter wraps a reader and adapts its reset and close behavior to [ResettableReader].
 func newReadAdapter[R io.Reader](concrete R, opts ...func(*readAdapter[R])) *readAdapter[R] {
 	ra := &readAdapter[R]{
 		reader: concrete,

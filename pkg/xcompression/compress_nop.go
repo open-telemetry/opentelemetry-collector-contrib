@@ -3,7 +3,9 @@
 
 package xcompression // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression"
 
-import "io"
+import (
+	"io"
+)
 
 // Nop copies input to output without compressing or decompressing it.
 // It implements both Reader and Writer for configurations

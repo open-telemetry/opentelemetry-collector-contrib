@@ -20,11 +20,11 @@ params := configcompression.CompressionParams{
     Level: configcompression.DefaultCompressionLevel,
 }
 
-writer, err := xcompression.NewWriterFactory().Get(configcompression.TypeGzip, params)
+writer, err := xcompression.NewWriterFactory().NewWriter(configcompression.TypeGzip, params)
 if err != nil {
     return err
 }
-reader, err := xcompression.NewReaderFactory().Get(configcompression.TypeGzip, params)
+reader, err := xcompression.NewReaderFactory().NewReader(configcompression.TypeGzip, params)
 if err != nil {
     return err
 }
@@ -44,6 +44,20 @@ and compression configuration as
 `Compress` and `Decompress` also accept input streams through `io.Reader`.
 The returned byte counts describe the uncompressed data. Caller-provided
 streams remain open.
+
+## Leasing
+
+`NewReadLeaser` and `NewWriteLeaser` provide direct access to pooled readers and
+writers through callbacks. Inside the callback, reset the supplied value to the
+desired source or destination and close it when finished. Closing a writer
+finishes its compressed stream. Use deferred cleanup so closing also runs on
+errors and panics. The lease method returns the callback's error
+and returns the value to the pool, including when the callback panics.
+
+The supplied value is valid **only during the callback**. Do not store it for
+later use or let a goroutine use it after the callback returns. Another operation
+may immediately reuse it; accessing it afterward can cause data races and
+corrupt data. The empty compression type and `none` do not support leasing.
 
 ## Benchmarks
 

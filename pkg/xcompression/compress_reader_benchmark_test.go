@@ -29,7 +29,7 @@ func BenchmarkDecompressReaderPoolDefaultCompressionLevel(b *testing.B) {
 	params := configcompression.CompressionParams{Level: configcompression.DefaultCompressionLevel}
 	for _, typ := range benchmarks {
 		b.Run(string(typ), func(b *testing.B) {
-			writer, err := writerFactory.Get(typ, params)
+			writer, err := writerFactory.NewWriter(typ, params)
 			require.NoError(b, err)
 
 			var compressed bytes.Buffer
@@ -38,7 +38,7 @@ func BenchmarkDecompressReaderPoolDefaultCompressionLevel(b *testing.B) {
 			require.Equal(b, int64(len(payload)), written)
 
 			b.Run("cached-reader", func(b *testing.B) {
-				reader, err := readerFactory.Get(typ, params)
+				reader, err := readerFactory.NewReader(typ, params)
 				require.NoError(b, err)
 
 				b.SetBytes(int64(len(payload)))
@@ -57,7 +57,7 @@ func BenchmarkDecompressReaderPoolDefaultCompressionLevel(b *testing.B) {
 				b.ReportAllocs()
 				b.ResetTimer()
 				for b.Loop() {
-					reader, err := readerFactory.Get(typ, params)
+					reader, err := readerFactory.NewReader(typ, params)
 					if err != nil {
 						b.Fatal(err)
 					}

@@ -183,3 +183,74 @@ func TestCompressWriter(t *testing.T) {
 		})
 	}
 }
+
+func TestWriteLeaser(t *testing.T) {
+	t.Parallel()
+
+	f := NewWriterFactory()
+
+	for _, tc := range []struct {
+		name   string
+		typ    configcompression.Type
+		errVal string
+	}{
+		{
+			name:   "default",
+			typ:    "",
+			errVal: `compression "" does not support write leasing`,
+		},
+		{
+			name:   "none",
+			typ:    "none",
+			errVal: `compression "none" does not support write leasing`,
+		},
+		{
+			name: "gzip",
+			typ:  configcompression.TypeGzip,
+		},
+		{
+			name: "zlib",
+			typ:  configcompression.TypeZlib,
+		},
+		{
+			name: "deflate",
+			typ:  configcompression.TypeDeflate,
+		},
+		{
+			name: "lz4",
+			typ:  configcompression.TypeLz4,
+		},
+		{
+			name: "snappy",
+			typ:  configcompression.TypeSnappy,
+		},
+		{
+			name: "snappy-framed",
+			typ:  configcompression.TypeSnappyFramed,
+		},
+		{
+			name: "zstd",
+			typ:  configcompression.TypeZstd,
+		},
+		{
+			name:   "unsupported",
+			typ:    "unsupported",
+			errVal: `no configured compression writer for "unsupported"`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			rl, err := f.NewWriteLeaser(tc.typ, configcompression.CompressionParams{
+				Level: configcompression.DefaultCompressionLevel,
+			})
+			if tc.errVal != "" {
+				assert.EqualError(t, err, tc.errVal, "Must match the expected error value")
+				return
+			}
+			err = rl.LeaseWriter(func(r ResettableWriter) error {
+				assert.NotNil(t, r, "Must have a valid value provided")
+				return nil
+			})
+			assert.NoError(t, err, "Must not return an error when checking lease is valid")
+		})
+	}
+}

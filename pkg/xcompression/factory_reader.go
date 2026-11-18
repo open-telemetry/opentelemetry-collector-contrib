@@ -42,12 +42,26 @@ func NewReaderFactory() *ReaderFactory {
 	}
 }
 
-// Get returns a Reader for typ, configured with params. It returns an error
+// NewReader returns a Reader for typ, configured with params. It returns an error
 // when typ is not supported.
-func (rf *ReaderFactory) Get(typ configcompression.Type, params configcompression.CompressionParams) (Reader, error) {
+func (rf *ReaderFactory) NewReader(typ configcompression.Type, params configcompression.CompressionParams) (Reader, error) {
 	constructor, ok := rf.constructors[typ]
 	if !ok {
 		return nil, fmt.Errorf("no configured compression writer for %q", typ)
 	}
 	return constructor.New(params), nil
+}
+
+// NewReadLeaser returns a [ReadLeaser] for typ, configured with params.
+// It returns an error if typ is unsupported or selects an implementation without
+// leasing support, including an empty type or "none".
+func (rf *ReaderFactory) NewReadLeaser(typ configcompression.Type, params configcompression.CompressionParams) (ReadLeaser, error) {
+	r, err := rf.NewReader(typ, params)
+	if err != nil {
+		return nil, err
+	}
+	if leaser, ok := r.(ReadLeaser); ok {
+		return leaser, nil
+	}
+	return nil, fmt.Errorf("compression %q does not support read leasing", typ)
 }

@@ -43,12 +43,26 @@ func NewWriterFactory() *WriterFactory {
 	}
 }
 
-// Get returns a Writer for typ, configured with params. It returns an error
+// NewWriter returns a Writer for typ, configured with params. It returns an error
 // when typ is not supported or the writer cannot be constructed.
-func (cwf *WriterFactory) Get(typ configcompression.Type, params configcompression.CompressionParams) (Writer, error) {
+func (cwf *WriterFactory) NewWriter(typ configcompression.Type, params configcompression.CompressionParams) (Writer, error) {
 	constructor, ok := cwf.constructors[typ]
 	if !ok {
 		return nil, fmt.Errorf("no configured compression writer for %q", typ)
 	}
 	return constructor.New(params)
+}
+
+// NewWriteLeaser returns a [WriteLeaser] for typ, configured with params.
+// It returns an error if construction fails, typ is unsupported, or typ selects
+// an implementation without leasing support, including an empty type or "none".
+func (cwf *WriterFactory) NewWriteLeaser(typ configcompression.Type, params configcompression.CompressionParams) (WriteLeaser, error) {
+	w, err := cwf.NewWriter(typ, params)
+	if err != nil {
+		return nil, err
+	}
+	if leaser, ok := w.(WriteLeaser); ok {
+		return leaser, nil
+	}
+	return nil, fmt.Errorf("compression %q does not support write leasing", typ)
 }

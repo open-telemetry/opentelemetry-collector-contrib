@@ -19,14 +19,14 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 )
 
-// resettableReader is an io.ReadCloser that can be reset to read from a new source.
-type resettableReader interface {
+// ResettableReader is an io.ReadCloser that can be reset to read from a new source.
+type ResettableReader interface {
 	io.ReadCloser
 
 	Reset(r io.Reader) error
 }
 
-var _ resettableReader = (*gzip.Reader)(nil)
+var _ ResettableReader = (*gzip.Reader)(nil)
 
 // Reader decompresses input data into a destination.
 type Reader interface {
@@ -38,17 +38,35 @@ type Reader interface {
 	DecompressBytes(dst io.Writer, b []byte) (int64, error)
 }
 
+// ReadLeaser provides access to a pooled [ResettableReader] within a callback.
+// The reader is valid only until the callback returns. Storing it for later use
+// or allowing a goroutine to use it after the callback returns can cause data
+// races and corrupt data when another operation reuses the reader.
+type ReadLeaser interface {
+	// LeaseReader calls leaser synchronously with an exclusively leased reader.
+	// The callback is responsible for resetting the reader and closing it on
+	// every exit path, including errors and panics. LeaseReader returns the
+	// callback's error unchanged and returns the reader to the pool even if the
+	// callback returns an error or panics.
+	LeaseReader(leaser func(r ResettableReader) error) error
+}
+
 // compressReaderPool reuses resettable decompression readers across calls.
 // Its zero value is not ready for use; construct it with newCompressReaderPool.
 // The pool may be used concurrently and may discard cached readers at any time.
-type compressReaderPool[RR resettableReader] struct {
+type compressReaderPool[RR ResettableReader] struct {
 	buffers sync.Pool
 	readers sync.Pool
 }
 
+var (
+	_ Reader     = (*compressReaderPool[ResettableReader])(nil)
+	_ ReadLeaser = (*compressReaderPool[ResettableReader])(nil)
+)
+
 // newCompressReaderPool creates a pool whose supplier creates readers when the
 // pool has no reusable reader. The supplier must return a usable reader.
-func newCompressReaderPool[RR resettableReader](supplier func() RR) *compressReaderPool[RR] {
+func newCompressReaderPool[RR ResettableReader](supplier func() RR) *compressReaderPool[RR] {
 	return &compressReaderPool[RR]{
 		buffers: sync.Pool{
 			New: func() any {
@@ -170,4 +188,13 @@ func (crp *compressReaderPool[RR]) DecompressBytes(dst io.Writer, b []byte) (int
 
 	buf.Reset(b)
 	return crp.Decompress(dst, buf)
+}
+
+// LeaseReader calls leaser with a reader that is valid only during the callback.
+// See [ReadLeaser] for the callback's responsibilities and lifetime restrictions.
+func (crp *compressReaderPool[RR]) LeaseReader(leaser func(r ResettableReader) error) error {
+	r := crp.readers.Get().(RR)
+	defer crp.readers.Put(r)
+
+	return leaser(r)
 }
