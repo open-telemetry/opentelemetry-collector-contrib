@@ -4,7 +4,7 @@ go 1.26.9
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.215
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.85.2
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.85.4
 	github.com/DataDog/datadog-agent/pkg/proto v0.85.4
 	github.com/DataDog/datadog-agent/pkg/trace v0.84.0-devel.0.20261030015547-4fcf7d423463
 	github.com/DataDog/datadog-agent/pkg/trace/stats v0.84.0-devel.0.20261030015547-4fcf7d423463
@@ -138,7 +138,7 @@ require (
 	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
-	golang.org/x/text v0.43.0 // indirect
+	golang.org/x/text v0.44.0 // indirect
 	golang.org/x/time v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20261019180522-ce908d29299b // indirect
 	google.golang.org/grpc v1.85.0 // indirect
