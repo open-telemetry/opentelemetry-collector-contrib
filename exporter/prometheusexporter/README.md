@@ -138,3 +138,14 @@ app_ads_ad_requests_total{namespace="my-namespace"}
 
 sum by (namespace) (app_ads_ad_requests_total)
 ```
+
+## Benchmark Results
+
+Current Prometheus exporter benchmark results are published on the [Collector Benchmarks page](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/). The table below links directly to the current Prometheus exporter charts by scenario and metric type.
+
+| Scenario | CPU | Memory |
+| --- | --- | --- |
+| Baseline, 1k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-baseline-1k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-baseline-1k-ram-mib) |
+| Baseline, 10k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-baseline-10k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-baseline-10k-ram-mib) |
+| Native histograms, 10k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-nativehistogram-10k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-nativehistogram-10k-ram-mib) |
+| `target_info` enabled, 10k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-withtargetinfo-10k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-withtargetinfo-10k-ram-mib) |

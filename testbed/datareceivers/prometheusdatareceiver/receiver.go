@@ -22,34 +22,48 @@ import (
 
 type prometheusDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver receiver.Metrics
+	receiver               receiver.Metrics
+	scrapeNativeHistograms bool
 }
 
 func NewPrometheusDataReceiver(port int) testbed.DataReceiver {
-	return &prometheusDataReceiver{DataReceiverBase: testbed.DataReceiverBase{Port: port}}
+	return NewPrometheusDataReceiverWithNativeHistograms(port, false)
+}
+
+func NewPrometheusDataReceiverWithNativeHistograms(port int, scrapeNativeHistograms bool) testbed.DataReceiver {
+	return &prometheusDataReceiver{
+		DataReceiverBase:       testbed.DataReceiverBase{Port: port},
+		scrapeNativeHistograms: scrapeNativeHistograms,
+	}
 }
 
 func (dr *prometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ consumer.Logs) error {
 	factory := prometheusreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*prometheusreceiver.Config)
 	addr := fmt.Sprintf("127.0.0.1:%d", dr.Port)
-	cfg.PrometheusConfig = &prometheusreceiver.PromConfig{
-		ScrapeConfigs: []*promconfig.ScrapeConfig{{
-			JobName:        "testbed-job",
-			ScrapeInterval: model.Duration(100 * time.Millisecond),
-			ScrapeTimeout:  model.Duration(time.Second),
-			ServiceDiscoveryConfigs: discovery.Configs{
-				&discovery.StaticConfig{
-					{
-						Targets: []model.LabelSet{{
-							"__address__":      model.LabelValue(addr),
-							"__scheme__":       "http",
-							"__metrics_path__": "/metrics",
-						}},
-					},
+	sc := &promconfig.ScrapeConfig{
+		JobName:        "testbed-job",
+		ScrapeInterval: model.Duration(time.Second),
+		ScrapeTimeout:  model.Duration(time.Second),
+		ServiceDiscoveryConfigs: discovery.Configs{
+			discovery.StaticConfig{
+				{
+					Targets: []model.LabelSet{{
+						"__address__":      model.LabelValue(addr),
+						"__scheme__":       "http",
+						"__metrics_path__": "/metrics",
+					}},
 				},
 			},
-		}},
+		},
+	}
+	if dr.scrapeNativeHistograms {
+		scrapeNH := true
+		sc.ScrapeNativeHistograms = &scrapeNH
+		sc.ScrapeProtocols = []promconfig.ScrapeProtocol{promconfig.PrometheusProto}
+	}
+	cfg.PrometheusConfig = &prometheusreceiver.PromConfig{
+		ScrapeConfigs: []*promconfig.ScrapeConfig{sc},
 	}
 	var err error
 	set := receivertest.NewNopSettings(factory.Type())
