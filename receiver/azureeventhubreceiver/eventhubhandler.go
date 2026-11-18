@@ -6,11 +6,13 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
@@ -39,6 +41,11 @@ type hubRuntimeInfo struct {
 }
 
 var errNoConfig = errors.New("Configuration error, hub not accessible")
+
+const (
+	minRetryInterval = time.Second
+	maxRetryInterval = time.Minute
+)
 
 type eventhubHandler struct {
 	hub            hubWrapper
@@ -81,28 +88,58 @@ func (h *eventhubHandler) runSingle(ctx context.Context, host component.Host) er
 		h.hub = newHub
 	}
 
-	if h.config.Partition != "" {
-		err := h.setUpOnePartition(ctx, h.config.Partition, true)
-		if err != nil {
-			h.settings.Logger.Debug("Error setting up partition", zap.Error(err))
+	hub := h.hub
+	h.wg.Go(func() {
+		h.setUpPartitionsWithRetry(ctx, host, hub)
+	})
+	return nil
+}
+
+func (h *eventhubHandler) setUpPartitionsWithRetry(ctx context.Context, host component.Host, hub hubWrapper) {
+	delay := minRetryInterval
+	started := map[string]bool{}
+	for {
+		err := h.setUpPartitions(ctx, hub, started)
+		if err == nil {
+			componentstatus.ReportStatus(host, componentstatus.NewEvent(componentstatus.StatusOK))
+			return
 		}
-		return err
+		if ctx.Err() != nil {
+			return
+		}
+		h.settings.Logger.Error("Error setting up Event Hub consumption, retrying", zap.Error(err), zap.Duration("retry_in", delay))
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(delay):
+		}
+		delay = min(delay*2, maxRetryInterval)
+		componentstatus.ReportStatus(host, componentstatus.NewRecoverableErrorEvent(err))
+	}
+}
+
+func (h *eventhubHandler) setUpPartitions(ctx context.Context, hub hubWrapper, started map[string]bool) error {
+	if h.config.Partition != "" {
+		return h.setUpOnePartition(ctx, hub, h.config.Partition, true)
 	}
 
 	// listen to each partition of the Event Hub
-	runtimeInfo, err := h.hub.GetRuntimeInformation(ctx)
+	runtimeInfo, err := hub.GetRuntimeInformation(ctx)
 	if err != nil {
-		h.settings.Logger.Debug("Error getting Runtime Information", zap.Error(err))
 		return err
 	}
 
 	var errs []error
 	for _, partitionID := range runtimeInfo.PartitionIDs {
-		err = h.setUpOnePartition(ctx, partitionID, false)
-		if err != nil {
-			h.settings.Logger.Debug("Error setting up partition", zap.Error(err), zap.String("partition", partitionID))
-			errs = append(errs, err)
+		if started[partitionID] {
+			continue
 		}
+		if err := h.setUpOnePartition(ctx, hub, partitionID, false); err != nil {
+			errs = append(errs, fmt.Errorf("partition %s: %w", partitionID, err))
+			continue
+		}
+		started[partitionID] = true
 	}
 	return errors.Join(errs...)
 }
@@ -141,8 +178,8 @@ func (h *eventhubHandler) runDistributed(ctx context.Context, host component.Hos
 	return nil
 }
 
-func (h *eventhubHandler) setUpOnePartition(ctx context.Context, partitionID string, applyOffset bool) error {
-	handle, err := h.hub.Receive(ctx, partitionID, h.newMessageHandler, applyOffset, h.settings.Logger)
+func (h *eventhubHandler) setUpOnePartition(ctx context.Context, hub hubWrapper, partitionID string, applyOffset bool) error {
+	handle, err := hub.Receive(ctx, partitionID, h.newMessageHandler, applyOffset, h.settings.Logger)
 	if err != nil {
 		return err
 	}
@@ -169,6 +206,11 @@ func (h *eventhubHandler) newMessageHandler(ctx context.Context, event *azureEve
 
 func (h *eventhubHandler) close(ctx context.Context) error {
 	var errs error
+	if h.cancel != nil {
+		h.cancel()
+	}
+	h.wg.Wait()
+
 	if h.storageClient != nil {
 		if err := h.storageClient.Close(ctx); err != nil {
 			errs = errors.Join(errs, err)
@@ -183,13 +225,6 @@ func (h *eventhubHandler) close(ctx context.Context) error {
 		}
 		h.hub = nil
 	}
-	if h.cancel != nil {
-		h.cancel()
-	}
-
-	// Wait for goroutines spawned by runDistributed to finish before closing
-	// the consumer client they depend on.
-	h.wg.Wait()
 
 	if h.consumerClient != nil {
 		if err := h.consumerClient.Close(ctx); err != nil {
