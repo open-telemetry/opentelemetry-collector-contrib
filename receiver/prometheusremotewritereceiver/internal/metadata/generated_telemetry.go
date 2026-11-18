@@ -60,7 +60,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.ReceiverPrometheusremotewriteDroppedSeries, err = builder.meter.Int64Counter(
 		"otelcol_receiver_prometheusremotewrite_dropped_series",
-		metric.WithDescription("Number of classic histogram and summary series dropped because the receiver does not support them. Their samples are still reported as written. [Development]"),
+		metric.WithDescription("Number of unsupported series dropped by design (classic histograms, summaries, and float or gauge histograms). Their samples and histograms are still reported as written. [Development]"),
 		metric.WithUnit("{series}"),
 	)
 	errs = errors.Join(errs, err)

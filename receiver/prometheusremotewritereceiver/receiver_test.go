@@ -1845,7 +1845,8 @@ func TestTranslateV2(t *testing.T) {
 				},
 			},
 			expectedStats: remote.WriteResponseStats{
-				Confirmed: true,
+				Confirmed:  true,
+				Histograms: 1,
 			},
 			expectedMetrics: pmetric.NewMetrics(),
 		},
@@ -1881,7 +1882,8 @@ func TestTranslateV2(t *testing.T) {
 				},
 			},
 			expectedStats: remote.WriteResponseStats{
-				Confirmed: true,
+				Confirmed:  true,
+				Histograms: 1,
 			},
 			expectedMetrics: pmetric.NewMetrics(),
 		},
@@ -1925,10 +1927,11 @@ func TestTranslateV2(t *testing.T) {
 					},
 				},
 			},
-			// The float flavor must be dropped, so nothing is emitted.
+			// The float flavor is dropped by design and counted as written.
 			expectedMetrics: pmetric.NewMetrics(),
 			expectedStats: remote.WriteResponseStats{
-				Confirmed: true,
+				Confirmed:  true,
+				Histograms: 1,
 			},
 		},
 		{
@@ -1974,10 +1977,10 @@ func TestTranslateV2(t *testing.T) {
 			expectedStats: remote.WriteResponseStats{
 				Confirmed:  true,
 				Samples:    0,
-				Histograms: 0,
+				Histograms: 1,
 				Exemplars:  0,
 			},
-			// Rejected before the resource, scope and metric are built, so nothing is emitted.
+			// Dropped before the resource, scope and metric are built, so nothing is emitted.
 			expectedMetrics: pmetric.NewMetrics(),
 		},
 		{
@@ -2022,10 +2025,10 @@ func TestTranslateV2(t *testing.T) {
 			expectedStats: remote.WriteResponseStats{
 				Confirmed:  true,
 				Samples:    0,
-				Histograms: 0,
+				Histograms: 1,
 				Exemplars:  0,
 			},
-			expectedMetrics: pmetric.NewMetrics(), // Reset hint gauge should be dropped completely, no resources should be created
+			expectedMetrics: pmetric.NewMetrics(), // Reset hint gauge is dropped by design and counted as written, no resources should be created
 		},
 		{
 			name: "classic histogram - should be dropped",
@@ -2916,7 +2919,8 @@ func TestTranslateV2(t *testing.T) {
 				},
 			},
 			expectedStats: remote.WriteResponseStats{
-				Confirmed: true,
+				Confirmed:  true,
+				Histograms: 1,
 			},
 			expectedMetrics: pmetric.NewMetrics(),
 		},
@@ -3208,7 +3212,8 @@ func TestTranslateV2(t *testing.T) {
 				},
 			},
 			expectedStats: remote.WriteResponseStats{
-				Confirmed: true,
+				Confirmed:  true,
+				Histograms: 1,
 			},
 			expectedMetrics: pmetric.NewMetrics(),
 		},
@@ -5809,7 +5814,7 @@ func TestFloatFlavorHistogramsAreDropped(t *testing.T) {
 			})
 			require.NoError(t, err)
 			assert.Equal(t, 0, metrics.ResourceMetrics().Len(), "nothing should be emitted")
-			assert.Equal(t, 0, stats.Histograms, "a dropped histogram is not written")
+			assert.Equal(t, 1, stats.Histograms, "a float histogram dropped by design is counted as written")
 		})
 	}
 }
@@ -7260,4 +7265,317 @@ func TestDroppedSeriesAreLoggedAtDebug(t *testing.T) {
 	_, _, err = writeReceiver.translateV2(t.Context(), droppedSeriesRequest(true))
 	require.NoError(t, err)
 	assert.Empty(t, infoObs.All())
+}
+
+func newObservedPRWReceiver(t *testing.T) (*prometheusRemoteWriteReceiver, *componenttest.Telemetry, *consumertest.MetricsSink, *observer.ObservedLogs) {
+	t.Helper()
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.WithoutCancel(t.Context()))) })
+
+	core, obs := observer.New(zapcore.DebugLevel)
+	settings := metadatatest.NewSettings(tel)
+	settings.Logger = zap.New(core)
+
+	sink := &consumertest.MetricsSink{}
+	prw, err := NewFactory().CreateMetrics(t.Context(), settings, createDefaultConfig(), sink)
+	require.NoError(t, err)
+	writeReceiver := prw.(*prometheusRemoteWriteReceiver)
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             component.MustNewID("test"),
+		Transport:              "http",
+		ReceiverCreateSettings: settings,
+	})
+	require.NoError(t, err)
+	writeReceiver.obsrecv = obsrecv
+	t.Cleanup(writeReceiver.rmCache.Purge)
+	return writeReceiver, tel, sink, obs
+}
+
+func assertDroppedSeriesMetric(t *testing.T, tel *componenttest.Telemetry, metricType string) {
+	t.Helper()
+	if metricType == "" {
+		_, err := tel.GetMetric("otelcol_receiver_prometheusremotewrite_dropped_series")
+		assert.Error(t, err)
+		return
+	}
+	metadatatest.AssertEqualReceiverPrometheusremotewriteDroppedSeries(t, tel,
+		[]metricdata.DataPoint[int64]{{
+			Attributes: otelattr.NewSet(otelattr.String("metric_type", metricType)),
+			Value:      1,
+		}},
+		metricdatatest.IgnoreTimestamp())
+}
+
+func TestDroppedFloatAndGaugeHistogramsAreCountedAsWritten(t *testing.T) {
+	labelRefs := []uint32{1, 2, 3, 4, 5, 6}
+	validFloatExp := writev2.Histogram{
+		Schema: 0, Count: &writev2.Histogram_CountFloat{CountFloat: 3}, Sum: 6, Timestamp: 1,
+		PositiveSpans: []writev2.BucketSpan{{Offset: 0, Length: 2}}, PositiveCounts: []float64{1, 2},
+	}
+	validFloatNHCB := writev2.Histogram{
+		Schema: -53, Count: &writev2.Histogram_CountFloat{CountFloat: 3}, Sum: 6, Timestamp: 1,
+		CustomValues: []float64{1.0}, PositiveSpans: []writev2.BucketSpan{{Offset: 0, Length: 2}}, PositiveCounts: []float64{1, 2},
+	}
+	floatGauge := validFloatExp
+	floatGauge.ResetHint = writev2.Histogram_RESET_HINT_GAUGE
+	validIntGauge := exemplarHistogram([]int64{1, 1})[0]
+	validIntGauge.ResetHint = writev2.Histogram_RESET_HINT_GAUGE
+	staleFloat := writev2.Histogram{
+		Schema: -53, Count: &writev2.Histogram_CountFloat{CountFloat: 0}, Sum: math.Float64frombits(value.StaleNaN), Timestamp: 1,
+		CustomValues: []float64{1.0}, PositiveCounts: []float64{1, 2},
+	}
+	staleGauge := writev2.Histogram{
+		Schema: 0, ResetHint: writev2.Histogram_RESET_HINT_GAUGE, Count: &writev2.Histogram_CountInt{CountInt: 0}, Sum: math.Float64frombits(value.StaleNaN), Timestamp: 1,
+		PositiveSpans: []writev2.BucketSpan{{Offset: 0, Length: 1}}, PositiveDeltas: []int64{1},
+	}
+
+	const histType = writev2.Metadata_METRIC_TYPE_HISTOGRAM
+	for _, tc := range []struct {
+		name           string
+		metaType       writev2.Metadata_MetricType
+		histograms     []writev2.Histogram
+		wantHistograms int
+		wantMetricType string
+	}{
+		{"valid float exponential histogram", histType, []writev2.Histogram{validFloatExp}, 1, "float_histogram"},
+		{"valid float NHCB histogram", histType, []writev2.Histogram{validFloatNHCB}, 1, "float_histogram"},
+		{"multiple float histograms dedup to one dropped series", histType, []writev2.Histogram{validFloatExp, validFloatNHCB}, 2, "float_histogram"},
+		{"RESET_HINT_GAUGE with HISTOGRAM metadata", histType, []writev2.Histogram{validIntGauge}, 1, "gauge_histogram"},
+		{"RESET_HINT_GAUGE with UNSPECIFIED metadata", writev2.Metadata_METRIC_TYPE_UNSPECIFIED, []writev2.Histogram{validIntGauge}, 1, "gauge_histogram"},
+		{"float + RESET_HINT_GAUGE takes gauge_histogram precedence", histType, []writev2.Histogram{floatGauge}, 1, "gauge_histogram"},
+		{"multiple gauge histograms dedup to one dropped series", histType, []writev2.Histogram{validIntGauge, floatGauge}, 2, "gauge_histogram"},
+		{"stale float histogram", histType, []writev2.Histogram{staleFloat}, 1, "float_histogram"},
+		{"stale gauge histogram", histType, []writev2.Histogram{staleGauge}, 1, "gauge_histogram"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			writeReceiver, tel, sink, obs := newObservedPRWReceiver(t)
+
+			resp := sendPRW(t, writeReceiver, &writev2.Request{
+				Symbols: exemplarSymbols,
+				Timeseries: []writev2.TimeSeries{{
+					Metadata:   writev2.Metadata{Type: tc.metaType},
+					LabelsRefs: labelRefs,
+					Histograms: tc.histograms,
+					Exemplars:  theExemplar(),
+				}},
+			})
+			defer resp.Body.Close()
+
+			require.Equal(t, http.StatusNoContent, resp.StatusCode)
+			written, err := remote.ParseWriteResponseStats(resp)
+			require.NoError(t, err)
+			assert.Equal(t, remote.WriteResponseStats{Confirmed: true, Histograms: tc.wantHistograms, Exemplars: 1}, written)
+			assert.Empty(t, sink.AllMetrics())
+			assertDroppedSeriesMetric(t, tel, tc.wantMetricType)
+
+			debugEntries := obs.FilterLevelExact(zapcore.DebugLevel).All()
+			require.Len(t, debugEntries, 1)
+			assert.Equal(t, "Dropped series of a type the receiver does not support; its samples and histograms are counted as written", debugEntries[0].Message)
+			assert.Equal(t, tc.wantMetricType, debugEntries[0].ContextMap()["metric_type"])
+		})
+	}
+}
+
+func TestHistogramExemplarSuppressionAcrossMixedSeries(t *testing.T) {
+	labelsRefs := []uint32{1, 2, 3, 4, 5, 6, 7, 8}
+	validFloat := writev2.Histogram{
+		Schema: 0, Count: &writev2.Histogram_CountFloat{CountFloat: 3}, Sum: 6, Timestamp: 1,
+		PositiveSpans: []writev2.BucketSpan{{Offset: 0, Length: 2}}, PositiveCounts: []float64{1, 2},
+	}
+	validInt := exemplarHistogram([]int64{1, 1})[0]
+	pastOverflow := writev2.Histogram{
+		Schema: 0, Count: &writev2.Histogram_CountInt{CountInt: 3}, Sum: 6, Timestamp: 1,
+		PositiveSpans: []writev2.BucketSpan{{Offset: 2000, Length: 2}}, PositiveDeltas: []int64{1, 1},
+	}
+	// Negative bucket population fails both receiver validation and Prometheus structural validation.
+	badInt := writev2.Histogram{
+		Schema: 0, Count: &writev2.Histogram_CountInt{CountInt: 3}, Sum: 1, Timestamp: 2,
+		PositiveSpans: []writev2.BucketSpan{{Offset: 0, Length: 2}}, PositiveDeltas: []int64{2, -5},
+	}
+	unknownSchema := writev2.Histogram{
+		Schema: -10, Count: &writev2.Histogram_CountInt{CountInt: 1}, Sum: 1, Timestamp: 1,
+		PositiveSpans: []writev2.BucketSpan{{Offset: 0, Length: 1}}, PositiveDeltas: []int64{1},
+	}
+	unknownSchemaFloatGauge := writev2.Histogram{
+		Schema: -10, ResetHint: writev2.Histogram_RESET_HINT_GAUGE, Count: &writev2.Histogram_CountFloat{CountFloat: 1}, Sum: 1, Timestamp: 1,
+		PositiveSpans: []writev2.BucketSpan{{Offset: 0, Length: 1}}, PositiveCounts: []float64{1},
+	}
+
+	histTS := func(hists []writev2.Histogram, ex []writev2.Exemplar, samples ...writev2.Sample) writev2.TimeSeries {
+		return writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+			LabelsRefs: labelsRefs,
+			Samples:    samples,
+			Histograms: hists,
+			Exemplars:  ex,
+		}
+	}
+	summaryTS := func(samples ...writev2.Sample) writev2.TimeSeries {
+		return writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_SUMMARY},
+			LabelsRefs: labelsRefs,
+			Samples:    samples,
+		}
+	}
+	sample := writev2.Sample{Value: 1, Timestamp: 1}
+
+	for _, tc := range []struct {
+		name            string
+		series          []writev2.TimeSeries
+		wantStatus      int
+		wantErrContains string
+		wantSamples     int
+		wantHistograms  int
+		wantExemplars   int
+		wantAttached    int
+		wantMetricType  string
+	}{
+		{
+			name:            "refused badInt and valid float in same TimeSeries counts exemplar",
+			series:          []writev2.TimeSeries{histTS([]writev2.Histogram{badInt, validFloat}, theExemplar())},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "negative",
+			wantHistograms:  1,
+			wantExemplars:   1,
+			wantMetricType:  "float_histogram",
+		},
+		{
+			name: "limit-dropped TS followed by valid float TS counts exemplar",
+			series: []writev2.TimeSeries{
+				histTS([]writev2.Histogram{pastOverflow}, theExemplar()),
+				histTS([]writev2.Histogram{validFloat}, nil),
+			},
+			wantStatus:     http.StatusNoContent,
+			wantHistograms: 1,
+			wantExemplars:  1,
+			wantMetricType: "float_histogram",
+		},
+		{
+			name: "valid float TS followed by limit-dropped TS counts exemplar",
+			series: []writev2.TimeSeries{
+				histTS([]writev2.Histogram{validFloat}, theExemplar()),
+				histTS([]writev2.Histogram{pastOverflow}, nil),
+			},
+			wantStatus:     http.StatusNoContent,
+			wantHistograms: 1,
+			wantExemplars:  1,
+			wantMetricType: "float_histogram",
+		},
+		{
+			name: "valid float TS followed by valid integer TS attaches exemplar once without double counting",
+			series: []writev2.TimeSeries{
+				histTS([]writev2.Histogram{validFloat}, theExemplar()),
+				histTS([]writev2.Histogram{validInt}, nil),
+			},
+			wantStatus:     http.StatusNoContent,
+			wantHistograms: 2,
+			wantExemplars:  1,
+			wantAttached:   1,
+			wantMetricType: "float_histogram",
+		},
+		{
+			name: "limit-dropped TS followed by classic histogram TS counts exemplar",
+			series: []writev2.TimeSeries{
+				histTS([]writev2.Histogram{pastOverflow}, theExemplar()),
+				histTS(nil, nil, sample),
+			},
+			wantStatus:     http.StatusNoContent,
+			wantSamples:    1,
+			wantExemplars:  1,
+			wantMetricType: "classic_histogram",
+		},
+		{
+			name: "refused badInt followed by SUMMARY with sample counts exemplar",
+			series: []writev2.TimeSeries{
+				histTS([]writev2.Histogram{badInt}, theExemplar()),
+				summaryTS(sample),
+			},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "negative",
+			wantSamples:     1,
+			wantExemplars:   1,
+			wantMetricType:  "summary",
+		},
+		{
+			name: "refused badInt followed by SUMMARY without sample suppresses exemplar",
+			series: []writev2.TimeSeries{
+				histTS([]writev2.Histogram{badInt}, theExemplar()),
+				summaryTS(),
+			},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "negative",
+			wantMetricType:  "summary",
+		},
+		{
+			name:            "HISTOGRAM with classic sample and badInt fails with 400 and counts exemplar",
+			series:          []writev2.TimeSeries{histTS([]writev2.Histogram{badInt}, theExemplar(), sample)},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "negative",
+			wantSamples:     1,
+			wantExemplars:   1,
+			wantMetricType:  "classic_histogram",
+		},
+		{
+			name:           "HISTOGRAM with classic sample and validInt attaches exemplar once without double counting",
+			series:         []writev2.TimeSeries{histTS([]writev2.Histogram{validInt}, theExemplar(), sample)},
+			wantStatus:     http.StatusNoContent,
+			wantSamples:    1,
+			wantHistograms: 1,
+			wantExemplars:  1,
+			wantAttached:   1,
+			wantMetricType: "classic_histogram",
+		},
+		{
+			name:       "unknown schema only suppresses exemplar",
+			series:     []writev2.TimeSeries{histTS([]writev2.Histogram{unknownSchema}, theExemplar())},
+			wantStatus: http.StatusNoContent,
+		},
+		{
+			name:       "unknown schema float gauge drops before flavor check without dropped_series",
+			series:     []writev2.TimeSeries{histTS([]writev2.Histogram{unknownSchemaFloatGauge}, theExemplar())},
+			wantStatus: http.StatusNoContent,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			writeReceiver, tel, sink, _ := newObservedPRWReceiver(t)
+
+			resp := sendPRW(t, writeReceiver, &writev2.Request{
+				Symbols:    exemplarSymbols,
+				Timeseries: tc.series,
+			})
+			defer resp.Body.Close()
+
+			body, readErr := io.ReadAll(resp.Body)
+			require.NoError(t, readErr)
+			assert.Equal(t, tc.wantStatus, resp.StatusCode)
+			if tc.wantErrContains != "" {
+				assert.Contains(t, string(body), tc.wantErrContains)
+			}
+			written, err := remote.ParseWriteResponseStats(resp)
+			require.NoError(t, err)
+			assert.Equal(t, remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    tc.wantSamples,
+				Histograms: tc.wantHistograms,
+				Exemplars:  tc.wantExemplars,
+			}, written)
+
+			attached := 0
+			for _, md := range sink.AllMetrics() {
+				for _, rm := range md.ResourceMetrics().All() {
+					for _, sm := range rm.ScopeMetrics().All() {
+						for _, m := range sm.Metrics().All() {
+							if m.Type() == pmetric.MetricTypeExponentialHistogram {
+								for _, dp := range m.ExponentialHistogram().DataPoints().All() {
+									attached += dp.Exemplars().Len()
+								}
+							}
+						}
+					}
+				}
+			}
+			assert.Equal(t, tc.wantAttached, attached)
+			assertDroppedSeriesMetric(t, tel, tc.wantMetricType)
+		})
+	}
 }
