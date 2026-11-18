@@ -10,6 +10,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"hash"
+	"math"
 	"strconv"
 	"strings"
 	"testing"
@@ -68,13 +69,13 @@ func newTestSpan(ss ptrace.ScopeSpans) ptrace.Span {
 }
 
 // verifySpan rebuilds the documented span payload independently of
-// serializeSpan, then checks the RSA signature over its JCS form.
+// canonicaljson.SerializeSpan, then checks the RSA signature over its JCS form.
 func verifySpan(t *testing.T, span ptrace.Span, pubKey *rsa.PublicKey) error {
 	t.Helper()
 	sigVal, ok := span.Attributes().Get("audit.integrity.value")
 	require.True(t, ok, "audit.integrity.value missing")
 
-	nanos := func(ts pcommon.Timestamp) string { return strconv.FormatInt(ts.AsTime().UnixNano(), 10) }
+	nanos := func(ts pcommon.Timestamp) string { return strconv.FormatUint(uint64(ts), 10) }
 	attrs := func(m pcommon.Map) map[string]any {
 		out := map[string]any{}
 		m.Range(func(k string, v pcommon.Value) bool {
@@ -125,14 +126,19 @@ func TestConsumeTracesSignsSpans(t *testing.T) {
 
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	newTestSpan(rs.ScopeSpans().AppendEmpty())
+	span := newTestSpan(rs.ScopeSpans().AppendEmpty())
+	// Exclusions must also apply when integrity metadata already exists on
+	// events and links, not just to the proof added to the span after signing.
+	span.Attributes().PutStr("audit.integrity.stale", "old")
+	span.Events().At(0).Attributes().PutStr("audit.integrity.stale", "old")
+	span.Links().At(0).Attributes().PutStr("audit.integrity.stale", "old")
 	td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
 
 	require.NoError(t, p.ConsumeTraces(t.Context(), td))
 	require.Len(t, sink.AllTraces(), 1)
 
 	got := sink.AllTraces()[0].ResourceSpans()
-	span := got.At(0).ScopeSpans().At(0).Spans().At(0)
+	span = got.At(0).ScopeSpans().At(0).Spans().At(0)
 	require.NoError(t, verifySpan(t, span, &prov.key.PublicKey))
 
 	signer, _ := span.Attributes().Get("audit.integrity.signer")
@@ -168,31 +174,57 @@ func TestSignedSpanDetectsTampering(t *testing.T) {
 	}
 }
 
-func TestSerializeSpanExcludedFields(t *testing.T) {
-	p, _, _ := newTestTracesProcessor(t)
-	span := newTestSpan(ptrace.NewScopeSpans())
-	before, err := p.serializeSpan(span)
-	require.NoError(t, err)
+func TestSignedSpanUint64Timestamps(t *testing.T) {
+	for _, timestamp := range []pcommon.Timestamp{math.MaxInt64 + 1, math.MaxUint64} {
+		t.Run(strconv.FormatUint(uint64(timestamp), 10), func(t *testing.T) {
+			p, prov, _ := newTestTracesProcessor(t)
+			span := newTestSpan(ptrace.NewScopeSpans())
+			span.SetStartTimestamp(timestamp)
+			span.SetEndTimestamp(timestamp)
+			span.Events().At(0).SetTimestamp(timestamp)
 
-	span.TraceState().FromRaw("vendor=changed")
-	span.SetFlags(0)
-	span.SetDroppedAttributesCount(9)
-	span.SetDroppedEventsCount(9)
-	span.SetDroppedLinksCount(9)
-	span.Links().At(0).TraceState().FromRaw("vendor=changed")
-	span.Attributes().PutStr("audit.integrity.value", "x")
-	span.Events().At(0).Attributes().PutStr("audit.integrity.value", "x")
-	span.Links().At(0).Attributes().PutStr("audit.integrity.value", "x")
-
-	after, err := p.serializeSpan(span)
-	require.NoError(t, err)
-	assert.Equal(t, string(before), string(after))
+			require.NoError(t, p.processSpan(span))
+			require.NoError(t, verifySpan(t, span, &prov.key.PublicKey))
+		})
+	}
 }
 
-func TestSerializeSpanRejectsInvalidUTF8(t *testing.T) {
-	p, _, _ := newTestTracesProcessor(t)
-	span := ptrace.NewSpan()
-	span.SetName("bad\xff")
-	_, err := p.serializeSpan(span)
-	assert.ErrorContains(t, err, "span name")
+func TestConsumeTracesFailureDoesNotForward(t *testing.T) {
+	tests := []struct {
+		name    string
+		prepare func(*signingProcessor, ptrace.Span)
+		wantErr string
+	}{
+		{
+			name: "serialization failure",
+			prepare: func(_ *signingProcessor, span ptrace.Span) {
+				span.SetName("bad\xff")
+			},
+			wantErr: "failed to serialize span: span name contains invalid UTF-8",
+		},
+		{
+			name: "signing failure",
+			prepare: func(p *signingProcessor, _ ptrace.Span) {
+				p.config.Algorithm = AlgorithmEdDSA
+			},
+			wantErr: "failed to sign span: algorithm EdDSA requires an Ed25519 private key",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, _, sink := newTestTracesProcessor(t)
+			td := ptrace.NewTraces()
+			rs := td.ResourceSpans().AppendEmpty()
+			span := newTestSpan(rs.ScopeSpans().AppendEmpty())
+			tt.prepare(p, span)
+
+			err := p.ConsumeTraces(t.Context(), td)
+			require.ErrorContains(t, err, "failed to process span: "+tt.wantErr)
+			assert.Empty(t, sink.AllTraces())
+			_, signed := span.Attributes().Get("audit.integrity.value")
+			assert.False(t, signed)
+			_, stamped := rs.Resource().Attributes().Get("audit.integrity.algorithm")
+			assert.False(t, stamped)
+		})
+	}
 }
