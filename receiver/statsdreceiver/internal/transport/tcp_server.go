@@ -15,8 +15,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 )
 
-var errTCPServerDone = errors.New("server stopped")
-
 // maxLineSize bounds how many bytes handleTCPConn buffers while waiting for
 // a newline. It matches the max UDP/UDS packet body size the packet-based
 // transports already treat as one message's ceiling (see packet_server.go),
@@ -61,7 +59,7 @@ func (t *tcpServer) ListenAndServe(nextConsumer consumer.Metrics, reporter Repor
 		conn, err := t.listener.Accept()
 		if err != nil {
 			if errors.Is(err, net.ErrClosed) {
-				return errTCPServerDone
+				return err
 			}
 			reporter.OnDebugf("TCP Transport - Accept error: %v", err)
 			continue
