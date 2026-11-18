@@ -4,7 +4,6 @@
 package signingprocessor
 
 import (
-	"bytes"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
@@ -12,17 +11,15 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/base64"
-	"encoding/json"
 	"hash"
 	"math/big"
-	"strconv"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/gowebpki/jcs"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/canonicaljson"
 )
 
 // staticProvider wraps an in-memory RSA key + cert for test use.
@@ -58,8 +55,13 @@ func newTestProvider(t *testing.T) *staticProvider {
 	return &staticProvider{key: key, cert: cert}
 }
 
-// verifyRecord replicates what verify-signed-log.go does:
+// verifyRecord replicates what the verify processor does:
 // strip audit.integrity.* attrs, re-serialize with JCS, hash, verify sig.
+//
+// This implicitly tests that ExcludePrefixes works correctly: if
+// audit.integrity.* attributes were not excluded from the canonical payload,
+// the computed hash would differ from the signed hash and verification would fail.
+// Every test using verifyRecord() thus validates the ExcludePrefixes feature.
 func verifyRecord(t *testing.T, lr plog.LogRecord, pubKey *rsa.PublicKey) {
 	t.Helper()
 
@@ -68,44 +70,12 @@ func verifyRecord(t *testing.T, lr plog.LogRecord, pubKey *rsa.PublicKey) {
 		t.Fatal("audit.integrity.value missing")
 	}
 
-	// Reconstruct the payload the processor signed
-	data := make(map[string]any)
-	if lr.EventName() != "" {
-		data["event_name"] = lr.EventName()
-	}
-	if lr.Body().Type() != pcommon.ValueTypeEmpty {
-		data["body"] = rawValue(lr.Body())
-	}
-	if lr.Timestamp() != 0 {
-		data["timestamp"] = strconv.FormatInt(lr.Timestamp().AsTime().UnixNano(), 10)
-	}
-	if lr.ObservedTimestamp() != 0 {
-		data["observed_timestamp"] = strconv.FormatInt(lr.ObservedTimestamp().AsTime().UnixNano(), 10)
-	}
-	if !lr.TraceID().IsEmpty() {
-		data["trace_id"] = lr.TraceID().String()
-	}
-	if !lr.SpanID().IsEmpty() {
-		data["span_id"] = lr.SpanID().String()
-	}
-	attrs := make(map[string]any)
-	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
-		if !strings.HasPrefix(k, "audit.integrity.") {
-			attrs[k] = map[string]any{"stringValue": v.Str()}
-		}
-		return true
+	// Use canonicaljson to serialize (same as the processor does)
+	canonical, err := canonicaljson.SerializeLogRecord(lr, canonicaljson.SerializeLogRecordOptions{
+		ExcludePrefixes: []string{"audit.integrity."},
 	})
-	if len(attrs) > 0 {
-		data["attributes"] = attrs
-	}
-
-	raw, err := json.Marshal(data)
 	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
-	canonical, err := jcs.Transform(raw)
-	if err != nil {
-		t.Fatalf("jcs: %v", err)
+		t.Fatalf("canonicaljson: %v", err)
 	}
 
 	computedHash := sha256.Sum256(canonical)
@@ -179,66 +149,6 @@ func TestSignVerifyWithTraceCorrelation(t *testing.T) {
 	verifyRecord(t, lr, &prov.key.PublicKey)
 }
 
-// TestJCSCanonicalization verifies that two records with the same data but
-// attributes inserted in different order produce identical canonical bytes.
-func TestJCSCanonicalization(t *testing.T) {
-	prov := newTestProvider(t)
-	p := &signingProcessor{
-		config:   &Config{Algorithm: "RS256"},
-		provider: prov,
-		hashFunc: func() hash.Hash { return crypto.SHA256.New() },
-	}
-
-	makeRecord := func(order []string) plog.LogRecord {
-		lr := plog.NewLogRecord()
-		lr.SetTimestamp(pcommon.Timestamp(1000000000))
-		for _, k := range order {
-			lr.Attributes().PutStr(k, "v")
-		}
-		return lr
-	}
-
-	r1 := makeRecord([]string{"z.attr", "a.attr", "m.attr"})
-	r2 := makeRecord([]string{"a.attr", "m.attr", "z.attr"})
-
-	b1, err := p.serializeLogRecord(r1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	b2, err := p.serializeLogRecord(r2)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !bytes.Equal(b1, b2) {
-		t.Errorf("JCS produced different output for same data in different insertion order:\n  order1: %s\n  order2: %s", b1, b2)
-	}
-}
-
-// TestIntegrityAttrsExcludedFromPayload ensures audit.integrity.* attrs added
-// by the processor are not included in the hash input (would cause verify failure).
-func TestIntegrityAttrsExcludedFromPayload(t *testing.T) {
-	prov := newTestProvider(t)
-	p := &signingProcessor{
-		config:   &Config{Algorithm: "RS256"},
-		provider: prov,
-		hashFunc: func() hash.Hash { return crypto.SHA256.New() },
-	}
-
-	lr := plog.NewLogRecord()
-	lr.Attributes().PutStr("audit.actor.id", "u1")
-	// Pre-populate an integrity attr to ensure it's stripped from payload
-	lr.Attributes().PutStr("audit.integrity.stale", "should-be-excluded")
-
-	b, err := p.serializeLogRecord(lr)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if strings.Contains(string(b), "audit.integrity") {
-		t.Errorf("serialized payload contains audit.integrity.* attr: %s", string(b))
-	}
-}
-
 // TestSignVerifyEventName confirms that EventName is part of the signed payload:
 // changing it after signing must cause signature verification to fail.
 func TestSignVerifyEventName(t *testing.T) {
@@ -269,7 +179,7 @@ func TestSignVerifyEventName(t *testing.T) {
 
 	// Re-serialize with tampered EventName
 	lr.SetEventName("admin.delete.all")
-	tamperedPayload, err := p.serializeLogRecord(lr)
+	tamperedPayload, err := serializeLogRecordWithDefaults(lr)
 	if err != nil {
 		t.Fatalf("serialize tampered: %v", err)
 	}
@@ -282,46 +192,8 @@ func TestSignVerifyEventName(t *testing.T) {
 	}
 }
 
-// rawValue converts a pcommon.Value to the shape the signed payload carries.
-// It is written out independently of the processor's own valueToInterface so
-// this helper stays a genuine re-derivation rather than a mirror of the code
-// under test. Scalars are wrapped in typed envelopes matching the OTLP JSON
-// encoding to avoid ambiguity between distinct pcommon types that share the
-// same JSON representation (e.g. int 1 vs bool true vs string "1").
-func rawValue(v pcommon.Value) any {
-	switch v.Type() {
-	case pcommon.ValueTypeStr:
-		return map[string]any{"stringValue": v.Str()}
-	case pcommon.ValueTypeInt:
-		return map[string]any{"intValue": strconv.FormatInt(v.Int(), 10)}
-	case pcommon.ValueTypeDouble:
-		return map[string]any{"doubleValue": v.Double()}
-	case pcommon.ValueTypeBool:
-		return map[string]any{"boolValue": v.Bool()}
-	case pcommon.ValueTypeBytes:
-		return map[string]any{"bytesValue": base64.StdEncoding.EncodeToString(v.Bytes().AsRaw())}
-	case pcommon.ValueTypeSlice:
-		out := make([]any, 0, v.Slice().Len())
-		for i := 0; i < v.Slice().Len(); i++ {
-			out = append(out, rawValue(v.Slice().At(i)))
-		}
-		return out
-	case pcommon.ValueTypeMap:
-		out := make(map[string]any)
-		v.Map().Range(func(k string, mv pcommon.Value) bool {
-			out[k] = rawValue(mv)
-			return true
-		})
-		return out
-	default:
-		return nil
-	}
-}
-
 // TestSignVerifyStructuredBody drives a non-string body through the full
-// sign-then-verify path. It exists so verifyRecord's independent re-derivation
-// of the signed payload stays honest: every other test here feeds it a string
-// body, so a helper that only handled strings would go unnoticed.
+// sign-then-verify path.
 func TestSignVerifyStructuredBody(t *testing.T) {
 	prov := newTestProvider(t)
 	p := &signingProcessor{

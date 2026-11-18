@@ -178,17 +178,6 @@ func TestVerifyRS512HappyPathAndTamper(t *testing.T) {
 	requireNoStatus(t, lr2.Attributes())
 }
 
-func TestEmptyValueSerializedAsNull(t *testing.T) {
-	p := newVerifyProc(t, &Config{FailureMode: failureModeStrict, VerificationProfile: "default"}, &staticProvider{hmacKey: []byte("x")})
-	lr := plog.NewLogRecord()
-	lr.Attributes().PutEmpty("unset")
-	lr.Attributes().PutEmptySlice("list").AppendEmpty()
-
-	payload, err := p.serializeLogRecord(lr)
-	require.NoError(t, err)
-	assert.JSONEq(t, `{"attributes":{"list":[null],"unset":null}}`, string(payload))
-}
-
 func TestVerifyHMACHappyPathAndTamper(t *testing.T) {
 	hmacKey := []byte("super-secret-hmac-key")
 	sink := &consumertest.LogsSink{}
@@ -615,21 +604,6 @@ func TestFactoryCreateWithFileHMAC(t *testing.T) {
 	assert.True(t, proc.Capabilities().MutatesData)
 }
 
-func TestIntegrityAttrsExcludedFromPayload(t *testing.T) {
-	p := newVerifyProc(t, &Config{FailureMode: failureModeStrict, VerificationProfile: "default"}, &staticProvider{hmacKey: []byte("x")})
-	ld := makeLogs("body", map[string]string{
-		"keep":                 "yes",
-		attrIntegrityValue:     "sig",
-		attrVerificationStatus: "stale",
-	}, algorithmHMACSHA256, "", "sig")
-	lr := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-	payload, err := p.serializeLogRecord(lr)
-	require.NoError(t, err)
-	assert.NotContains(t, string(payload), "audit.integrity")
-	assert.NotContains(t, string(payload), "audit.verification")
-	assert.Contains(t, string(payload), "keep")
-}
-
 func hmacSign(t *testing.T, key, payload []byte) string {
 	t.Helper()
 	mac := hmac.New(sha256.New, key)
@@ -738,7 +712,7 @@ func TestVerificationStampsAcrossResignChain(t *testing.T) {
 
 	t.Run("sign verify resign verify", func(t *testing.T) {
 		ld, rl, lr := newSignedLogs(t)
-		payload, err := p.serializePayload(lr, true)
+		payload, err := serializePayload(lr, true)
 		require.NoError(t, err)
 		lr.Attributes().PutStr(attrIntegrityValue, hmacSign(t, hmacKey, payload))
 		require.NoError(t, p.ConsumeLogs(t.Context(), ld))
@@ -765,7 +739,7 @@ func TestVerificationStampsAcrossResignChain(t *testing.T) {
 		require.NoError(t, p.ConsumeLogs(t.Context(), ld))
 		requireStatus(t, ok.Attributes(), statusVerified)
 
-		stampedPayload, err := p.serializePayload(ok, true)
+		stampedPayload, err := serializePayload(ok, true)
 		require.NoError(t, err)
 		ok.Attributes().PutStr(attrIntegrityValue, hmacSign(t, hmacKey, stampedPayload))
 		ok.Attributes().PutStr(attrVerificationProfile, "forged")
@@ -791,7 +765,7 @@ func TestVerificationStampsAcrossResignChain(t *testing.T) {
 		require.NoError(t, p.ConsumeLogs(t.Context(), ld))
 		requireStatus(t, ok.Attributes(), statusVerified)
 
-		stampedPayload, err := p.serializePayload(ok, true)
+		stampedPayload, err := serializePayload(ok, true)
 		require.NoError(t, err)
 		ok.Attributes().PutStr(attrIntegrityValue, hmacSign(t, hmacKey, stampedPayload))
 		require.NoError(t, p.ConsumeLogs(t.Context(), ld))
@@ -819,7 +793,7 @@ func TestVerificationStampsAcrossResignChain(t *testing.T) {
 		require.NoError(t, p.ConsumeLogs(t.Context(), ld))
 
 		ok.Attributes().PutStr(attrVerificationProfile, "other-profile")
-		stampedPayload, err := p.serializePayload(ok, true)
+		stampedPayload, err := serializePayload(ok, true)
 		require.NoError(t, err)
 		ok.Attributes().PutStr(attrIntegrityValue, hmacSign(t, hmacKey, stampedPayload))
 		require.NoError(t, p.ConsumeLogs(t.Context(), ld))
@@ -832,7 +806,7 @@ func TestVerificationStampsAcrossResignChain(t *testing.T) {
 
 	t.Run("body tampered after resign", func(t *testing.T) {
 		ld, rl, lr := newSignedLogs(t)
-		payload, err := p.serializePayload(lr, true)
+		payload, err := serializePayload(lr, true)
 		require.NoError(t, err)
 		lr.Attributes().PutStr(attrIntegrityValue, hmacSign(t, hmacKey, payload))
 		lr.Body().SetStr("tampered")

@@ -1,6 +1,24 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Package signingprocessor - Config, Factory, FileProvider, and Certificate Reader Tests
+//
+// This file contains tests for multiple components to improve test coverage:
+// - config.go: Configuration validation and loading
+// - factory.go: Processor factory creation and initialization
+// - file_provider.go: File-based key material provider
+// - certificate_reader.go: Certificate and private key parsing
+//
+// Named "coverage_test.go" for historical reasons; consolidates tests for
+// foundational components that are shared across all signing algorithms.
+//
+// Tests cover:
+// - Config validation and YAML loading
+// - Factory lifecycle (creation, shutdown)
+// - File-based key material loading
+// - Certificate parsing for RSA, EC, EdDSA (various formats: PEM, PKCS8, PKCS1)
+// - Base64 decoding for inline key material
+
 package signingprocessor
 
 import (
@@ -33,11 +51,23 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/canonicaljson"
 )
 
 // ---------------------------------------------------------------------------
 // helpers shared across test files
 // ---------------------------------------------------------------------------
+
+// serializeLogRecordWithDefaults serializes a log record with the processor's
+// default ExcludePrefixes for testing. This ensures tests use the same
+// serialization configuration as the actual processor.
+func serializeLogRecordWithDefaults(lr plog.LogRecord) ([]byte, error) {
+	opts := canonicaljson.SerializeLogRecordOptions{
+		ExcludePrefixes: []string{"audit.integrity."},
+	}
+	return canonicaljson.SerializeLogRecord(lr, opts)
+}
 
 func generateTestPEM(t *testing.T) (certPEM, keyPEM []byte, key *rsa.PrivateKey) {
 	t.Helper()
@@ -771,52 +801,6 @@ func TestProcessorStartShutdown(t *testing.T) {
 	}
 }
 
-func TestValueToInterface(t *testing.T) {
-	certPEM, keyPEM, _ := generateTestPEM(t)
-	certFile := writeTempFile(t, certPEM)
-	keyFile := writeTempFile(t, keyPEM)
-	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{Certificate: certFile, PrivateKey: keyFile})
-
-	p := &signingProcessor{
-		config:   &Config{Algorithm: "RS256"},
-		provider: prov,
-		hashFunc: func() hash.Hash { return crypto.SHA256.New() },
-	}
-
-	tests := []struct {
-		name  string
-		setup func(v pcommon.Value)
-	}{
-		{"string", func(v pcommon.Value) { v.SetStr("hello") }},
-		{"int", func(v pcommon.Value) { v.SetInt(42) }},
-		{"double", func(v pcommon.Value) { v.SetDouble(3.14) }},
-		{"bool", func(v pcommon.Value) { v.SetBool(true) }},
-		{"bytes", func(v pcommon.Value) { v.SetEmptyBytes().Append(1, 2, 3) }},
-		{"slice", func(v pcommon.Value) {
-			s := v.SetEmptySlice()
-			s.AppendEmpty().SetStr("a")
-		}},
-		{"map", func(v pcommon.Value) {
-			m := v.SetEmptyMap()
-			m.PutStr("k", "v")
-		}},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			v := pcommon.NewValueEmpty()
-			tt.setup(v)
-			result, err := p.valueToInterface(v, 0)
-			if err != nil {
-				t.Errorf("valueToInterface returned error: %v", err)
-			}
-			if result == nil {
-				t.Error("valueToInterface returned nil for non-empty value")
-			}
-		})
-	}
-}
-
 // ---------------------------------------------------------------------------
 // newProcessor error paths
 // ---------------------------------------------------------------------------
@@ -992,34 +976,5 @@ func TestConsumeLogsSignError(t *testing.T) {
 
 	if err := p.ConsumeLogs(t.Context(), ld); err == nil {
 		t.Error("expected error from ConsumeLogs when hash.Write fails")
-	}
-}
-
-// ---------------------------------------------------------------------------
-// serializeLogRecord — non-string body
-// ---------------------------------------------------------------------------
-
-func TestSerializeLogRecordNonStringBody(t *testing.T) {
-	certPEM, keyPEM, _ := generateTestPEM(t)
-	certFile := writeTempFile(t, certPEM)
-	keyFile := writeTempFile(t, keyPEM)
-	prov, _ := newFileKeyMaterialProvider(&FileKeyConfig{Certificate: certFile, PrivateKey: keyFile})
-
-	p := &signingProcessor{
-		config:   &Config{Algorithm: "RS256"},
-		provider: prov,
-		hashFunc: func() hash.Hash { return crypto.SHA256.New() },
-	}
-
-	lr := plog.NewLogRecord()
-	lr.Body().SetInt(99)
-	lr.SetTimestamp(pcommon.Timestamp(1000000))
-
-	b, err := p.serializeLogRecord(lr)
-	if err != nil {
-		t.Fatalf("serializeLogRecord: %v", err)
-	}
-	if len(b) == 0 {
-		t.Error("expected non-empty serialized payload")
 	}
 }

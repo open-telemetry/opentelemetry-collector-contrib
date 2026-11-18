@@ -141,6 +141,7 @@ body:
       - extension/sumologic
       - extension/tailstorage/pebbletailstorage
       - internal/aws
+      - internal/canonicaljson
       - internal/collectd
       - internal/common
       - internal/core
