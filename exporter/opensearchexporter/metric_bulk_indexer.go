@@ -67,7 +67,9 @@ func (mbi *metricBulkIndexer) onIndexerError(_ context.Context, indexerErr error
 		// timeout, DNS). They are transient, so surface them as a retryable error
 		// and let exporterhelper's retry_on_failure resend the batch instead of
 		// dropping it as permanent.
+		mbi.mu.Lock()
 		mbi.errs = append(mbi.errs, indexerErr)
+		mbi.mu.Unlock()
 	}
 }
 
