@@ -130,7 +130,12 @@ func ToLengthWithTruncate(splitFunc bufio.SplitFunc, maxLength int, skipping *bo
 			// "token too long" if nothing is advanced. Skip all but the last half of maxLength bytes,
 			// which may hold the start of a boundary that spans reads.
 			if dataLen >= maxLength {
-				return dataLen - maxLength/2, nil, nil
+				advance := dataLen - maxLength/2
+				// Keep the next slice on a code unit boundary of UTF-16 and UTF-32 input.
+				if aligned := advance &^ 3; aligned > 0 {
+					advance = aligned
+				}
+				return advance, nil, nil
 			}
 
 			// Request more data, stay in skip mode
