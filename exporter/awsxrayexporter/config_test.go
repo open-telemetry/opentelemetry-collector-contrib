@@ -6,12 +6,14 @@ package awsxrayexporter
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -34,6 +36,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "customname"),
 			expected: &Config{
+				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 20 * time.Second},
 				AWSSessionSettings: awsutil.AWSSessionSettings{
 					NumberOfWorkers:       8,
 					Endpoint:              "",
@@ -65,6 +68,31 @@ func TestLoadConfig(t *testing.T) {
 
 			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestTimeoutValidation(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name    string
+		timeout string
+		want    time.Duration
+		wantErr bool
+	}{
+		{name: "zero disables the deadline", timeout: "0s", want: 0},
+		{name: "negative is rejected", timeout: "-1s", wantErr: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := NewFactory().CreateDefaultConfig().(*Config)
+			require.NoError(t, confmap.NewFromStringMap(map[string]any{"timeout": tt.timeout}).Unmarshal(cfg))
+			if tt.wantErr {
+				assert.Error(t, confmap.Validate(cfg))
+				return
+			}
+			assert.NoError(t, confmap.Validate(cfg))
+			assert.Equal(t, tt.want, cfg.TimeoutSettings.Timeout)
 		})
 	}
 }

@@ -133,6 +133,34 @@ func TestTelemetryEnabled(t *testing.T) {
 	assert.True(t, *got.BackendConnectionErrors.HTTPCode4XXCount == 1 || *got.BackendConnectionErrors.OtherCount == 1)
 }
 
+// deadlineXRayClient records the deadline of the context passed to PutTraceSegments.
+type deadlineXRayClient struct {
+	mockXRayClient
+	deadline    time.Time
+	hasDeadline bool
+}
+
+func (m *deadlineXRayClient) PutTraceSegments(ctx context.Context, _ *xray.PutTraceSegmentsInput, _ ...func(*xray.Options)) (*xray.PutTraceSegmentsOutput, error) {
+	m.deadline, m.hasDeadline = ctx.Deadline()
+	return &xray.PutTraceSegmentsOutput{}, nil
+}
+
+func TestTimeoutAppliesToPutTraceSegments(t *testing.T) {
+	cfg := generateConfig(t)
+	cfg.TimeoutSettings.Timeout = 30 * time.Second
+	client := &deadlineXRayClient{}
+	traceExporter, err := newTracesExporterWithClient(t.Context(), cfg, exportertest.NewNopSettings(metadata.Type), telemetrytest.NewNopRegistry(), aws.Config{}, client)
+	require.NoError(t, err)
+	require.NoError(t, traceExporter.Start(t.Context(), componenttest.NewNopHost()))
+
+	start := time.Now()
+	require.NoError(t, traceExporter.ConsumeTraces(t.Context(), constructSpanData()))
+	require.NoError(t, traceExporter.Shutdown(t.Context()))
+
+	require.True(t, client.hasDeadline)
+	assert.WithinDuration(t, start.Add(cfg.TimeoutSettings.Timeout), client.deadline, 5*time.Second)
+}
+
 func BenchmarkForTracesExporter(b *testing.B) {
 	traceExporter := initializeTracesExporter(b, generateConfig(b), telemetrytest.NewNopRegistry())
 	for b.Loop() {

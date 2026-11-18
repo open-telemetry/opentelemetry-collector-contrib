@@ -4,12 +4,17 @@
 package awsxrayexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
 
 import (
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 )
 
 // Config defines configuration for AWS X-Ray exporter.
 type Config struct {
+	// TimeoutSettings is the deadline for exporting one batch, including every PutTraceSegments
+	// call and its retries.
+	TimeoutSettings exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	// AWSSessionSettings contains the common configuration options
 	// for creating AWS session to communicate with backend
 	AWSSessionSettings awsutil.AWSSessionSettings `mapstructure:",squash"`

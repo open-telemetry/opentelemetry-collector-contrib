@@ -53,9 +53,18 @@ by the Span Resource object. X-Ray uses this data to generate inferred segments 
 The following exporter configuration parameters are supported. They mirror and have the same effect as the
 comparable AWS X-Ray Daemon configuration values.
 
+The `timeout` setting defaults to `5s` and limits an entire trace export,
+including every `PutTraceSegments` request and AWS SDK retries. It is separate from
+`request_timeout_seconds`, which limits an individual HTTP request; the shorter
+deadline takes precedence, so set `timeout` larger than `request_timeout_seconds`
+to give each request its full limit. Set `timeout: 0s` to disable the export timeout
+(caller deadlines and AWS request timeouts still apply). This exporter has no sending
+queue, so a longer `timeout` blocks the pipeline for longer when X-Ray is slow.
+
 | Name                         | Description                                                                                                        | Default |
 |:-----------------------------|:-------------------------------------------------------------------------------------------------------------------| ------- |
 | `num_workers`                | Maximum number of concurrent calls to AWS X-Ray to upload documents.                                               | 8       |
+| `timeout`                    | Time limit for exporting one batch, including every PutTraceSegments call and its retries.                         | 5s      |
 | `endpoint`                   | Optionally override the default X-Ray service endpoint.                                                            |         |
 | `request_timeout_seconds`    | Number of seconds before timing out a request.                                                                     | 30      |
 | `max_retries`                | Maximun number of attempts to post a batch before failing.                                                         | 2       |

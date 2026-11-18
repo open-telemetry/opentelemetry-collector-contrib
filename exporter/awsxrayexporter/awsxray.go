@@ -80,6 +80,7 @@ func newTracesExporterWithClient(ctx context.Context, cfg *Config, set exporter.
 			}
 			return err
 		},
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 		exporterhelper.WithStart(func(_ context.Context, _ component.Host) error {
 			if metadata.ExporterAwsxrayDontEmitV0HTTPNetworkConventionsFeatureGate.IsEnabled() &&
 				!metadata.ExporterAwsxrayEmitV1HTTPNetworkConventionsFeatureGate.IsEnabled() {
