@@ -4,12 +4,35 @@
 package batch_test
 
 import (
+	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/compress"
 )
+
+func TestCompressedRecordSizeError(t *testing.T) {
+	t.Parallel()
+
+	raw := bytes.Repeat([]byte("private record contents"), 1000)
+	compressor, err := compress.NewCompressor("gzip")
+	require.NoError(t, err)
+	encoded, err := compressor(raw)
+	require.NoError(t, err)
+	require.Less(t, len(encoded), len(raw))
+
+	limit := len(encoded) - 1
+	b := batch.New(batch.WithCompressionType("gzip"), batch.WithMaxRecordSize(limit))
+	err = b.AddRecord(raw, "private-partition-key")
+	require.ErrorIs(t, err, batch.ErrRecordLength)
+	assert.True(t, consumererror.IsPermanent(err))
+	assert.EqualError(t, err, fmt.Sprintf("%s: encoded_size=%d bytes, max_record_size=%d bytes", batch.ErrRecordLength, len(encoded), limit))
+}
 
 func TestBatchingMessages(t *testing.T) {
 	t.Parallel()
