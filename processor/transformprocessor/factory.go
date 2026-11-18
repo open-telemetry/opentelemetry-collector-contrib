@@ -23,7 +23,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/factoryoptions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
@@ -147,10 +146,10 @@ func NewFactoryWithOptions(options ...FactoryOption) processor.Factory {
 func (f *transformProcessorFactory) createDefaultConfig() component.Config {
 	return &Config{
 		ErrorMode:          ottl.IgnoreError,
-		TraceStatements:    []common.ContextStatements{},
-		MetricStatements:   []common.ContextStatements{},
-		LogStatements:      []common.ContextStatements{},
-		ProfileStatements:  []common.ContextStatements{},
+		TraceStatements:    []ContextStatements{},
+		MetricStatements:   []ContextStatements{},
+		LogStatements:      []ContextStatements{},
+		ProfileStatements:  []ContextStatements{},
 		dataPointFunctions: f.DataPointFunctions,
 		exemplarFunctions:  f.ExemplarFunctions,
 		logFunctions:       f.LogFunctions,
@@ -171,7 +170,7 @@ func (f *transformProcessorFactory) createLogsProcessor(
 	if f.DefaultLogFunctionsOverridden {
 		set.Logger.Debug("non-default OTTL log functions have been registered in the \"transform\" processor", zap.Bool("log", f.DefaultLogFunctionsOverridden))
 	}
-	proc, err := logs.NewProcessor(oCfg.LogStatements, oCfg.ErrorMode, oCfg.Flatten.Log, set.TelemetrySettings, f.LogFunctions)
+	proc, err := logs.NewProcessor(toCommonContextStatements(oCfg.LogStatements), oCfg.ErrorMode, oCfg.Flatten.Log, set.TelemetrySettings, f.LogFunctions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
@@ -198,7 +197,7 @@ func (f *transformProcessorFactory) createTracesProcessor(
 			zap.Bool("spanevent", f.DefaultSpanEventFunctionsOverridden),
 		)
 	}
-	proc, err := traces.NewProcessor(oCfg.TraceStatements, oCfg.ErrorMode, set.TelemetrySettings, f.SpanFunctions, f.SpanEventFunctions)
+	proc, err := traces.NewProcessor(toCommonContextStatements(oCfg.TraceStatements), oCfg.ErrorMode, set.TelemetrySettings, f.SpanFunctions, f.SpanEventFunctions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
@@ -227,7 +226,7 @@ func (f *transformProcessorFactory) createMetricsProcessor(
 			zap.Bool("metric", f.DefaultMetricFunctionsOverridden),
 		)
 	}
-	proc, err := metrics.NewProcessor(oCfg.MetricStatements, oCfg.ErrorMode, set.TelemetrySettings, f.MetricFunctions, f.DataPointFunctions, f.ExemplarFunctions)
+	proc, err := metrics.NewProcessor(toCommonContextStatements(oCfg.MetricStatements), oCfg.ErrorMode, set.TelemetrySettings, f.MetricFunctions, f.DataPointFunctions, f.ExemplarFunctions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
@@ -256,7 +255,7 @@ func (f *transformProcessorFactory) createProfilesProcessor(
 	if f.DefaultProfileFunctionsOverridden {
 		set.Logger.Debug("non-default OTTL profile functions have been registered in the \"transform\" processor", zap.Bool("profile", f.DefaultProfileFunctionsOverridden))
 	}
-	proc, err := profiles.NewProcessor(oCfg.ProfileStatements, oCfg.ErrorMode, set.TelemetrySettings, f.ProfileFunctions)
+	proc, err := profiles.NewProcessor(toCommonContextStatements(oCfg.ProfileStatements), oCfg.ErrorMode, set.TelemetrySettings, f.ProfileFunctions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}

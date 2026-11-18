@@ -16,7 +16,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
@@ -33,7 +32,7 @@ func createTestFuncFactory[K any](name string) ottl.Factory[K] {
 func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 	type testCase struct {
 		name           string
-		statements     []common.ContextStatements
+		statements     []transformprocessor.ContextStatements
 		factoryOptions []transformprocessor.FactoryOption
 		wantErrorWith  string
 	}
@@ -41,9 +40,9 @@ func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 	tests := []testCase{
 		{
 			name: "with profile functions : statement with added profile func",
-			statements: []common.ContextStatements{
+			statements: []transformprocessor.ContextStatements{
 				{
-					Context:    common.ContextID("profile"),
+					Context:    transformprocessor.Profile,
 					Statements: []string{`set(cache["attr"], TestProfileFunc())`},
 				},
 			},
@@ -54,9 +53,9 @@ func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 		},
 		{
 			name: "with profile functions : statement with missing profile func",
-			statements: []common.ContextStatements{
+			statements: []transformprocessor.ContextStatements{
 				{
-					Context:    common.ContextID("profile"),
+					Context:    transformprocessor.Profile,
 					Statements: []string{`set(cache["attr"], TestProfileFunc())`},
 				},
 			},
@@ -67,9 +66,9 @@ func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 		},
 		{
 			name: "with profile functions : only custom functions",
-			statements: []common.ContextStatements{
+			statements: []transformprocessor.ContextStatements{
 				{
-					Context:    common.ContextID("profile"),
+					Context:    transformprocessor.Profile,
 					Statements: []string{`testProfileFunc()`},
 				},
 			},
@@ -79,9 +78,9 @@ func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 		},
 		{
 			name: "with profile functions : missing default functions",
-			statements: []common.ContextStatements{
+			statements: []transformprocessor.ContextStatements{
 				{
-					Context:    common.ContextID("profile"),
+					Context:    transformprocessor.Profile,
 					Statements: []string{`set(attributes["test"], TestProfileFunc())`},
 				},
 			},
