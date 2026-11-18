@@ -89,7 +89,14 @@ $defs:
             type: boolean
             default: true
       os.build.id:
-        description: ResourceAttributeConfig provides common config for a os.build.id resource attribute.
+        description: ResourceAttributeConfig provides common config for a os.build.id resource attribute. Deprecated, use os.build_id instead.
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      os.build_id:
+        description: ResourceAttributeConfig provides common config for a os.build_id resource attribute.
         type: object
         properties:
           enabled:

@@ -309,11 +309,11 @@ func newCfClient(cfConfig CfConfig) (*client.Client, error) {
 
 	switch cfConfig.Auth.Type {
 	case authTypeUserPass:
-		cfg, err = config.New(cfConfig.Endpoint, config.UserPassword(cfConfig.Auth.Username, cfConfig.Auth.Password))
+		cfg, err = config.New(cfConfig.Endpoint, config.UserPassword(cfConfig.Auth.Username, string(cfConfig.Auth.Password)))
 	case authTypeClientCredentials:
-		cfg, err = config.New(cfConfig.Endpoint, config.ClientCredentials(cfConfig.Auth.ClientID, cfConfig.Auth.ClientSecret))
+		cfg, err = config.New(cfConfig.Endpoint, config.ClientCredentials(cfConfig.Auth.ClientID, string(cfConfig.Auth.ClientSecret)))
 	case authTypeToken:
-		cfg, err = config.New(cfConfig.Endpoint, config.Token(cfConfig.Auth.AccessToken, cfConfig.Auth.RefreshToken))
+		cfg, err = config.New(cfConfig.Endpoint, config.Token(string(cfConfig.Auth.AccessToken), string(cfConfig.Auth.RefreshToken)))
 	}
 
 	if err != nil {

@@ -351,7 +351,7 @@ func TestValidateReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.WebHook.Secret = tt.secret
+			cfg.WebHook.Secret = configopaque.String(tt.secret)
 			if tt.requiredHeaders != nil {
 				cfg.WebHook.RequiredHeaders = tt.requiredHeaders
 			}

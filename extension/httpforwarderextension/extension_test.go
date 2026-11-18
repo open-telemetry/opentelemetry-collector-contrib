@@ -19,6 +19,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 type clientRequestArgs struct {
@@ -322,6 +324,83 @@ func TestExtensionForwardsMultipleResponseHeaders(t *testing.T) {
 	require.Equal(t, http.StatusOK, response.StatusCode)
 	assert.Equal(t, []string{"session=abc; Path=/", "csrf=xyz; Path=/"}, response.Header.Values("Set-Cookie"))
 	assert.Equal(t, []string{"first", "second"}, response.Header.Values("X-Example"))
+}
+
+func TestExtensionResponseBodyWarnings(t *testing.T) {
+	tests := []struct {
+		name       string
+		method     string
+		backend    http.HandlerFunc
+		body       string
+		copyFailed bool
+	}{
+		{
+			name:   "chunked response",
+			method: http.MethodGet,
+			backend: func(w http.ResponseWriter, _ *http.Request) {
+				w.(http.Flusher).Flush()
+				_, _ = io.WriteString(w, "hello")
+			},
+			body: "hello",
+		},
+		{
+			name:   "HEAD response",
+			method: http.MethodHead,
+			backend: func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Length", "5")
+			},
+		},
+		{
+			name:   "truncated response",
+			method: http.MethodGet,
+			backend: func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Length", "10")
+				_, _ = io.WriteString(w, "hello")
+			},
+			body:       "hello",
+			copyFailed: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			backend := httptest.NewServer(tt.backend)
+			defer backend.Close()
+
+			cfg := createDefaultConfig().(*Config)
+			cfg.Ingress.NetAddr.Endpoint = "127.0.0.1:0"
+			cfg.Egress.Endpoint = backend.URL
+
+			settings := componenttest.NewNopTelemetrySettings()
+			core, logs := observer.New(zap.WarnLevel)
+			settings.Logger = zap.New(core)
+
+			hf, err := newHTTPForwarder(cfg, settings)
+			require.NoError(t, err)
+			require.NoError(t, hf.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() { require.NoError(t, hf.Shutdown(t.Context())) }()
+
+			req, err := http.NewRequestWithContext(t.Context(), tt.method, "http://"+hf.(*httpForwarder).server.Addr+"/", http.NoBody)
+			require.NoError(t, err)
+			resp, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+			body, readErr := io.ReadAll(resp.Body)
+
+			assert.Equal(t, http.StatusOK, resp.StatusCode)
+			assert.Equal(t, tt.body, string(body))
+			if tt.copyFailed {
+				assert.ErrorIs(t, readErr, io.ErrUnexpectedEOF)
+				entries := logs.All()
+				require.Len(t, entries, 1)
+				assert.Equal(t, "Error writing HTTP response message", entries[0].Message)
+				assert.Equal(t, io.ErrUnexpectedEOF.Error(), entries[0].ContextMap()["error"])
+			} else {
+				require.NoError(t, readErr)
+				assert.Empty(t, logs.All())
+			}
+		})
+	}
 }
 
 func httpRequest(t *testing.T, args clientRequestArgs) *http.Request {

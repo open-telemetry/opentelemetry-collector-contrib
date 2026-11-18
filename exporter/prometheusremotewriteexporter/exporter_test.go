@@ -5,12 +5,15 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -342,6 +345,185 @@ func Test_export(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
+}
+
+// TestExportReleasesTimeSeriesWhileSending checks that the time series of a request can be reclaimed
+// once the request is encoded, while the endpoint has not answered yet: a slow endpoint must not
+// make every in-flight batch hold its translated time series.
+func TestExportReleasesTimeSeriesWhileSending(t *testing.T) {
+	received := make(chan struct{}, 1)
+	unblock := make(chan struct{})
+	server := newFlakyServer(t, func(_ int64, _ http.ResponseWriter, r *http.Request) {
+		_, _ = io.Copy(io.Discard, r.Body)
+		received <- struct{}{}
+		<-unblock
+	})
+	// The timeouts are longer than the wait below, so that the request is still being sent.
+	prwe := newTestPRWExporter(t, retryTestConfig(server.URL, time.Minute, time.Minute))
+	// Cleanups run last in first out: unblock the handler before the shutdown and the server close.
+	release := sync.OnceFunc(func() { close(unblock) })
+	t.Cleanup(release)
+
+	released := make(chan struct{})
+	tsMap := map[string]*prompb.TimeSeries{}
+	for i := range 100 {
+		labels := []prompb.Label{{Name: "__name__", Value: "metric"}, {Name: "series", Value: strconv.Itoa(i)}}
+		if i == 0 {
+			runtime.AddCleanup(&labels[0], func(ch chan struct{}) { close(ch) }, released)
+		}
+		tsMap[strconv.Itoa(i)] = &prompb.TimeSeries{Labels: labels, Samples: []prompb.Sample{{Value: 1, Timestamp: 1}}}
+	}
+	errCh := make(chan error, 1)
+	go func(tsMap map[string]*prompb.TimeSeries) {
+		errCh <- prwe.handleExport(t.Context(), tsMap, nil)
+	}(tsMap)
+	tsMap = nil //nolint:ineffassign,wastedassign // drop the reference of the test
+
+	select {
+	case <-received:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the request was not sent")
+	}
+	deadline := time.After(10 * time.Second)
+	for waiting := true; waiting; {
+		runtime.GC()
+		select {
+		case <-released:
+			waiting = false
+		case <-deadline:
+			t.Fatal("the time series were not reclaimed while the request was being sent")
+		case <-time.After(10 * time.Millisecond):
+		}
+	}
+
+	release()
+	require.NoError(t, <-errCh)
+}
+
+// TestExportKeepsRequests checks that export leaves the slice of requests as it is: the WAL owns the
+// slice that it exports.
+func TestExportKeepsRequests(t *testing.T) {
+	server := newFlakyServer(t, func(_ int64, w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
+	prwe := newTestPRWExporter(t, retryTestConfig(server.URL, time.Second, time.Second))
+
+	requests := []*prompb.WriteRequest{{}, {}, {}}
+	want := slices.Clone(requests)
+	require.NoError(t, prwe.export(t.Context(), requests))
+	for i := range want {
+		assert.Same(t, want[i], requests[i])
+	}
+	assert.Equal(t, int64(len(want)), server.attempts.Load())
+}
+
+// TestEncodeBuffers checks that an exporter keeps an encoding buffer for every goroutine that can
+// encode a request at the same time, and no more than GOMAXPROCS of them.
+func TestEncodeBuffers(t *testing.T) {
+	procs := runtime.GOMAXPROCS(0)
+	for _, tt := range []struct {
+		name            string
+		multipleWorkers bool
+		queueDisabled   bool
+		wal             bool
+		numConsumers    int
+		parallelism     int
+		want            int
+	}{
+		{name: "one worker", numConsumers: 1, parallelism: 1, want: 1},
+		{name: "GOMAXPROCS workers", numConsumers: 1, parallelism: procs, want: procs},
+		{name: "more workers than GOMAXPROCS", numConsumers: 1, parallelism: procs + 1, want: procs},
+		{name: "single consumer without the feature gate", numConsumers: 4, parallelism: 1, want: 1},
+		{name: "every consumer with the feature gate", multipleWorkers: true, numConsumers: 4, parallelism: 2, want: min(8, procs)},
+		{name: "no queue with the feature gate", multipleWorkers: true, queueDisabled: true, numConsumers: 4, parallelism: 2, want: min(2, procs)},
+		{name: "WAL with the feature gate", multipleWorkers: true, wal: true, numConsumers: 4, parallelism: 2, want: min(2, procs)},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableMultipleWorkersFeatureGate, tt.multipleWorkers)()
+			cfg := createDefaultConfig().(*Config)
+			cfg.RemoteWriteQueue.Enabled = !tt.queueDisabled
+			cfg.RemoteWriteQueue.NumConsumers = tt.numConsumers
+			cfg.MaxBatchRequestParallelism = &tt.parallelism
+			if tt.wal {
+				cfg.WAL = configoptional.Some(WALConfig{Directory: t.TempDir()})
+			}
+			prwe, err := newPRWExporter(cfg, exportertest.NewNopSettings(metadata.Type))
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, cap(prwe.encodeBuffers))
+			assert.Len(t, prwe.encodeBuffers, cap(prwe.encodeBuffers))
+		})
+	}
+}
+
+// TestEncodeRequestWaitsForBuffer checks that encodeRequest gives its buffer back, and that it gives
+// up with the cause of the context when the context ends while every buffer is in use.
+func TestEncodeRequestWaitsForBuffer(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	parallelism := 1
+	cfg.MaxBatchRequestParallelism = &parallelism
+	prwe, err := newPRWExporter(cfg, exportertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+
+	req := &prompb.WriteRequest{Timeseries: []prompb.TimeSeries{{
+		Labels:  []prompb.Label{{Name: "__name__", Value: "test_metric"}},
+		Samples: []prompb.Sample{{Value: 1, Timestamp: 1}},
+	}}}
+	pb, err := proto.Marshal(req)
+	require.NoError(t, err)
+
+	payload, err := prwe.encodeRequest(t.Context(), req)
+	require.NoError(t, err)
+	assert.Equal(t, snappy.Encode(nil, pb), payload)
+	require.Len(t, prwe.encodeBuffers, 1, "the buffer is given back")
+
+	buf := <-prwe.encodeBuffers
+	ctx, cancel := context.WithCancelCause(t.Context())
+	cause := errors.New("stopped")
+	cancel(cause)
+	_, err = prwe.encodeRequest(ctx, req)
+	require.ErrorIs(t, err, cause)
+	assert.False(t, consumererror.IsPermanent(err))
+	prwe.encodeBuffers <- buf
+}
+
+// unmarshalableRequest is a request that fails to serialize.
+type unmarshalableRequest struct{ err error }
+
+func (*unmarshalableRequest) Size() int { return 1 }
+
+func (r *unmarshalableRequest) MarshalToSizedBuffer([]byte) (int, error) { return 0, r.err }
+
+// TestEncodeRequestPermanentError checks that encodeRequest fails with a permanent error for a
+// request that cannot be serialized, and still gives its buffer back.
+func TestEncodeRequestPermanentError(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	parallelism := 1
+	cfg.MaxBatchRequestParallelism = &parallelism
+	prwe, err := newPRWExporter(cfg, exportertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+
+	errMarshal := errors.New("marshal failed")
+	_, err = prwe.encodeRequest(t.Context(), &unmarshalableRequest{err: errMarshal})
+	require.ErrorIs(t, err, errMarshal)
+	assert.True(t, consumererror.IsPermanent(err))
+	require.Len(t, prwe.encodeBuffers, 1, "the buffer is given back")
+}
+
+// TestExportStopsWaitingForBuffer checks that an export that ends while every encoding buffer is in
+// use fails with an error that is not permanent, so that the batch can be retried.
+func TestExportStopsWaitingForBuffer(t *testing.T) {
+	server := newFlakyServer(t, func(_ int64, w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
+	cfg := retryTestConfig(server.URL, time.Second, time.Second)
+	parallelism := 1
+	cfg.MaxBatchRequestParallelism = &parallelism
+	prwe := newTestPRWExporter(t, cfg)
+
+	buf := <-prwe.encodeBuffers
+	defer func() { prwe.encodeBuffers <- buf }()
+	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+	defer cancel()
+	err := prwe.export(ctx, []*prompb.WriteRequest{{}})
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.False(t, consumererror.IsPermanent(err))
+	assert.Zero(t, server.attempts.Load())
 }
 
 func TestNoMetricsNoError(t *testing.T) {
@@ -1362,10 +1544,7 @@ func TestRetries(t *testing.T) {
 				settings:  testTel.NewTelemetrySettings(),
 				telemetry: telemetry,
 			}
-			buf := bufferPool.Get().(*buffer)
-			defer bufferPool.Put(buf)
-
-			reqBuf, errMarshal := buf.MarshalAndEncode(&prompb.WriteRequest{})
+			reqBuf, errMarshal := (&buffer{}).MarshalAndEncode(&prompb.WriteRequest{})
 			if errMarshal != nil {
 				require.NoError(t, errMarshal)
 				return
@@ -1473,8 +1652,7 @@ func benchmarkExecute(b *testing.B, numSample int) {
 	b.ResetTimer()
 
 	for _, req := range reqs {
-		buf := bufferPool.Get().(*buffer)
-		reqBuf, errMarshal := buf.MarshalAndEncode(req)
+		reqBuf, errMarshal := (&buffer{}).MarshalAndEncode(req)
 		if errMarshal != nil {
 			require.NoError(b, errMarshal)
 			return
@@ -1482,7 +1660,6 @@ func benchmarkExecute(b *testing.B, numSample int) {
 		if err = exporter.execute(ctx, reqBuf); err != nil {
 			b.Fatal(err)
 		}
-		bufferPool.Put(buf)
 	}
 }
 

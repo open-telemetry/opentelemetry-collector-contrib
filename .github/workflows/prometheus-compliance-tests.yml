@@ -47,8 +47,13 @@ jobs:
         working-directory: opentelemetry-collector-contrib
       - run: make otelcontribcol
         working-directory: opentelemetry-collector-contrib
-      - name: Run compliance tests
+      - name: Run remote write sender compliance tests
         working-directory: opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/compliance
+        run: |
+          set -o pipefail
+          go test -v -count=1 ./ |& tee ./test-report.txt
+      - name: Run remote write receiver compliance tests
+        working-directory: opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/compliance
         run: |
           set -o pipefail
           go test -v -count=1 ./ |& tee ./test-report.txt
