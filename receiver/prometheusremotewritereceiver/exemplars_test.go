@@ -239,6 +239,30 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 			expectedWarnMsgs:  nil,
 		},
 		{
+			name: "series with gauge histogram metadata type is collected",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "temperature_histogram",
+					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_GAUGEHISTOGRAM,
+						},
+						LabelsRefs: []uint32{1, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1, LabelsRefs: []uint32{3, 4}},
+						},
+					},
+				},
+			},
+			expectedExemplars: 1,
+			expectedGroups:    1,
+			expectedWarnMsgs:  nil,
+		},
+		{
 			name: "series with unsupported metric type is skipped",
 			req: &writev2.Request{
 				Symbols: []string{

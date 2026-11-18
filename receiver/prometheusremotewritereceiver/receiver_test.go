@@ -7261,3 +7261,249 @@ func TestDroppedSeriesAreLoggedAtDebug(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, infoObs.All())
 }
+
+func TestGaugeHistogramMetadataRouting(t *testing.T) {
+	symbols := []string{
+		"", "__name__", "test_gauge_hist", "job", "test_job", "instance", "test_instance",
+		"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736",
+	}
+	labelRefs := []uint32{1, 2, 3, 4, 5, 6}
+	sample := []writev2.Sample{{Value: 1, Timestamp: 1}}
+	exemplar := []writev2.Exemplar{{LabelsRefs: []uint32{7, 8}, Value: 1.5, Timestamp: 1}}
+
+	intExp := func(hint writev2.Histogram_ResetHint) writev2.Histogram {
+		return writev2.Histogram{
+			Schema: 0, ResetHint: hint, Count: &writev2.Histogram_CountInt{CountInt: 3}, Sum: 6, Timestamp: 1,
+			PositiveSpans: []writev2.BucketSpan{{Offset: 0, Length: 2}}, PositiveDeltas: []int64{1, 1},
+		}
+	}
+	intNHCB := writev2.Histogram{
+		Schema: -53, Count: &writev2.Histogram_CountInt{CountInt: 3}, Sum: 6, Timestamp: 1,
+		CustomValues: []float64{1.0}, PositiveSpans: []writev2.BucketSpan{{Offset: 0, Length: 2}}, PositiveDeltas: []int64{1, 1},
+	}
+	floatExp := writev2.Histogram{
+		Schema: 0, Count: &writev2.Histogram_CountFloat{CountFloat: 3}, Sum: 6, Timestamp: 1,
+		PositiveSpans: []writev2.BucketSpan{{Offset: 0, Length: 2}}, PositiveCounts: []float64{1, 2},
+	}
+	staleExp := writev2.Histogram{Schema: 0, Count: &writev2.Histogram_CountInt{CountInt: 0}, Sum: math.Float64frombits(value.StaleNaN), Timestamp: 1}
+	unknownSchema := writev2.Histogram{Schema: -10, Count: &writev2.Histogram_CountInt{CountInt: 1}, Sum: 1, Timestamp: 1}
+
+	const droppedMsg = "Dropped series of a type the receiver does not support; its samples and histograms are counted as written"
+	const expectedSeries = `{__name__="test_gauge_hist", instance="test_instance", job="test_job"}`
+
+	tests := []struct {
+		name              string
+		samples           []writev2.Sample
+		histograms        []writev2.Histogram
+		wantSamples       int
+		wantHistograms    int
+		wantExemplars     int
+		wantDroppedSeries int64
+		wantInvalidSchema int
+	}{
+		{
+			name: "classic samples with exemplar", samples: sample,
+			wantSamples: 1, wantExemplars: 1, wantDroppedSeries: 1,
+		},
+		{
+			name: "native histogram with RESET_HINT_UNSPECIFIED", histograms: []writev2.Histogram{intExp(writev2.Histogram_RESET_HINT_UNSPECIFIED)},
+			wantHistograms: 1, wantExemplars: 1, wantDroppedSeries: 1,
+		},
+		{
+			name: "native histogram with RESET_HINT_YES", histograms: []writev2.Histogram{intExp(writev2.Histogram_RESET_HINT_YES)},
+			wantHistograms: 1, wantExemplars: 1, wantDroppedSeries: 1,
+		},
+		{
+			name: "native histogram with RESET_HINT_NO", histograms: []writev2.Histogram{intExp(writev2.Histogram_RESET_HINT_NO)},
+			wantHistograms: 1, wantExemplars: 1, wantDroppedSeries: 1,
+		},
+		{
+			name: "native histogram with RESET_HINT_GAUGE", histograms: []writev2.Histogram{intExp(writev2.Histogram_RESET_HINT_GAUGE)},
+			wantHistograms: 1, wantExemplars: 1, wantDroppedSeries: 1,
+		},
+		{
+			name: "float native histogram", histograms: []writev2.Histogram{floatExp},
+			wantHistograms: 1, wantExemplars: 1, wantDroppedSeries: 1,
+		},
+		{
+			name: "stale marker native histogram", histograms: []writev2.Histogram{staleExp},
+			wantHistograms: 1, wantExemplars: 1, wantDroppedSeries: 1,
+		},
+		{
+			name: "multiple native histograms in one series", histograms: []writev2.Histogram{intExp(writev2.Histogram_RESET_HINT_GAUGE), intNHCB},
+			wantHistograms: 2, wantExemplars: 1, wantDroppedSeries: 1,
+		},
+		{
+			name: "both classic samples and native histogram", samples: sample, histograms: []writev2.Histogram{intExp(writev2.Histogram_RESET_HINT_GAUGE)},
+			wantSamples: 1, wantHistograms: 1, wantExemplars: 1, wantDroppedSeries: 1,
+		},
+		{
+			name: "exemplar-only series", wantExemplars: 1,
+		},
+		{
+			name: "unknown schema only suppresses exemplar", histograms: []writev2.Histogram{unknownSchema},
+			wantInvalidSchema: 1,
+		},
+		{
+			name: "unknown schema with valid native histogram keeps exemplar", histograms: []writev2.Histogram{unknownSchema, intExp(writev2.Histogram_RESET_HINT_UNSPECIFIED)},
+			wantHistograms: 1, wantExemplars: 1, wantDroppedSeries: 1, wantInvalidSchema: 1,
+		},
+		{
+			name: "classic samples with unknown schema keeps exemplar", samples: sample, histograms: []writev2.Histogram{unknownSchema},
+			wantSamples: 1, wantExemplars: 1, wantDroppedSeries: 1, wantInvalidSchema: 1,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tel := componenttest.NewTelemetry()
+			defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+
+			core, obs := observer.New(zapcore.DebugLevel)
+			settings := metadatatest.NewSettings(tel)
+			settings.Logger = zap.New(core)
+
+			sink := &consumertest.MetricsSink{}
+			prw, err := NewFactory().CreateMetrics(t.Context(), settings, createDefaultConfig(), sink)
+			require.NoError(t, err)
+			writeReceiver := prw.(*prometheusRemoteWriteReceiver)
+			defer writeReceiver.rmCache.Purge()
+
+			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+				ReceiverID: settings.ID, Transport: "http", ReceiverCreateSettings: settings,
+			})
+			require.NoError(t, err)
+			writeReceiver.obsrecv = obsrecv
+
+			resp := sendPRW(t, writeReceiver, &writev2.Request{
+				Symbols: symbols,
+				Timeseries: []writev2.TimeSeries{{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGEHISTOGRAM},
+					LabelsRefs: labelRefs,
+					Samples:    tc.samples,
+					Histograms: tc.histograms,
+					Exemplars:  exemplar,
+				}},
+			})
+			defer resp.Body.Close()
+
+			require.Equal(t, http.StatusNoContent, resp.StatusCode)
+			written, err := remote.ParseWriteResponseStats(resp)
+			require.NoError(t, err)
+			assert.Equal(t, remote.WriteResponseStats{
+				Confirmed: true, Samples: tc.wantSamples, Histograms: tc.wantHistograms, Exemplars: tc.wantExemplars,
+			}, written)
+			assert.Empty(t, sink.AllMetrics())
+
+			if tc.wantDroppedSeries > 0 {
+				metadatatest.AssertEqualReceiverPrometheusremotewriteDroppedSeries(t, tel,
+					[]metricdata.DataPoint[int64]{{Attributes: otelattr.NewSet(otelattr.String("metric_type", "gauge_histogram")), Value: tc.wantDroppedSeries}},
+					metricdatatest.IgnoreTimestamp())
+			} else {
+				_, err = tel.GetMetric("otelcol_receiver_prometheusremotewrite_dropped_series")
+				assert.Error(t, err)
+			}
+
+			var droppedLogs, invalidSchemaLogs int
+			for _, entry := range obs.All() {
+				assert.Equal(t, zapcore.DebugLevel, entry.Level)
+				switch entry.Message {
+				case droppedMsg:
+					droppedLogs++
+					assert.Equal(t, map[string]any{"series": expectedSeries, "metric_type": "gauge_histogram"}, entry.ContextMap())
+				case "Dropping histogram with invalid schema":
+					invalidSchemaLogs++
+				default:
+					t.Errorf("unexpected log message: %q", entry.Message)
+				}
+			}
+			assert.Equal(t, int(tc.wantDroppedSeries), droppedLogs)
+			assert.Equal(t, tc.wantInvalidSchema, invalidSchemaLogs)
+		})
+	}
+
+	// Cross-TimeSeries exemplar acceptance for the same label set (both orderings).
+	t.Run("multi-series exemplar acceptance", func(t *testing.T) {
+		pastOverflow := writev2.Histogram{
+			Schema: 0, Count: &writev2.Histogram_CountInt{CountInt: 3}, Sum: 6, Timestamp: 1,
+			PositiveSpans: []writev2.BucketSpan{{Offset: 2000, Length: 2}}, PositiveDeltas: []int64{1, 1},
+		}
+		validGauge := intExp(writev2.Histogram_RESET_HINT_UNSPECIFIED)
+		mkTS := func(typ writev2.Metadata_MetricType, s []writev2.Sample, h []writev2.Histogram, ex []writev2.Exemplar) writev2.TimeSeries {
+			return writev2.TimeSeries{Metadata: writev2.Metadata{Type: typ}, LabelsRefs: labelRefs, Samples: s, Histograms: h, Exemplars: ex}
+		}
+		const (
+			gh   = writev2.Metadata_METRIC_TYPE_GAUGEHISTOGRAM
+			hist = writev2.Metadata_METRIC_TYPE_HISTOGRAM
+			sum  = writev2.Metadata_METRIC_TYPE_SUMMARY
+		)
+
+		for _, tc := range []struct {
+			name           string
+			series         []writev2.TimeSeries
+			wantSamples    int
+			wantHistograms int
+			wantExemplars  int
+		}{
+			{
+				name:           "unknown schema then valid gauge histogram",
+				series:         []writev2.TimeSeries{mkTS(gh, nil, []writev2.Histogram{unknownSchema}, exemplar), mkTS(gh, nil, []writev2.Histogram{validGauge}, nil)},
+				wantHistograms: 1, wantExemplars: 1,
+			},
+			{
+				name:           "valid gauge histogram then unknown schema",
+				series:         []writev2.TimeSeries{mkTS(gh, nil, []writev2.Histogram{validGauge}, exemplar), mkTS(gh, nil, []writev2.Histogram{unknownSchema}, nil)},
+				wantHistograms: 1, wantExemplars: 1,
+			},
+			{
+				name:        "unknown schema then classic gauge samples",
+				series:      []writev2.TimeSeries{mkTS(gh, nil, []writev2.Histogram{unknownSchema}, exemplar), mkTS(gh, sample, nil, nil)},
+				wantSamples: 1, wantExemplars: 1,
+			},
+			{
+				name:        "classic gauge samples then unknown schema",
+				series:      []writev2.TimeSeries{mkTS(gh, sample, nil, exemplar), mkTS(gh, nil, []writev2.Histogram{unknownSchema}, nil)},
+				wantSamples: 1, wantExemplars: 1,
+			},
+			{
+				name:           "limit-dropped HISTOGRAM then valid GAUGEHISTOGRAM",
+				series:         []writev2.TimeSeries{mkTS(hist, nil, []writev2.Histogram{pastOverflow}, exemplar), mkTS(gh, nil, []writev2.Histogram{validGauge}, nil)},
+				wantHistograms: 1, wantExemplars: 1,
+			},
+			{
+				name:           "valid GAUGEHISTOGRAM then limit-dropped HISTOGRAM",
+				series:         []writev2.TimeSeries{mkTS(gh, nil, []writev2.Histogram{validGauge}, exemplar), mkTS(hist, nil, []writev2.Histogram{pastOverflow}, nil)},
+				wantHistograms: 1, wantExemplars: 1,
+			},
+			{
+				name:        "unknown schema then classic HISTOGRAM samples",
+				series:      []writev2.TimeSeries{mkTS(gh, nil, []writev2.Histogram{unknownSchema}, exemplar), mkTS(hist, sample, nil, nil)},
+				wantSamples: 1, wantExemplars: 1,
+			},
+			{
+				name:        "unknown schema then SUMMARY with sample",
+				series:      []writev2.TimeSeries{mkTS(gh, nil, []writev2.Histogram{unknownSchema}, exemplar), mkTS(sum, sample, nil, nil)},
+				wantSamples: 1, wantExemplars: 1,
+			},
+			{
+				name:          "unknown schema then SUMMARY without sample suppresses exemplar",
+				series:        []writev2.TimeSeries{mkTS(gh, nil, []writev2.Histogram{unknownSchema}, exemplar), mkTS(sum, nil, nil, nil)},
+				wantExemplars: 0,
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				resp := sendPRW(t, setupMetricsReceiverWithConsumer(t, sink), &writev2.Request{Symbols: symbols, Timeseries: tc.series})
+				defer resp.Body.Close()
+
+				require.Equal(t, http.StatusNoContent, resp.StatusCode)
+				written, err := remote.ParseWriteResponseStats(resp)
+				require.NoError(t, err)
+				assert.Equal(t, remote.WriteResponseStats{
+					Confirmed: true, Samples: tc.wantSamples, Histograms: tc.wantHistograms, Exemplars: tc.wantExemplars,
+				}, written)
+				assert.Empty(t, sink.AllMetrics())
+			})
+		}
+	})
+}

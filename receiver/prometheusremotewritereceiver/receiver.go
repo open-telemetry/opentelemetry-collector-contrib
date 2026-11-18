@@ -40,10 +40,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/metadata"
 )
 
-// droppedClassicHistogramAttrs and droppedSummaryAttrs are the precomputed attribute sets of the
-// dropped series counter, one per value of the metric_type enum declared in metadata.yaml.
+// Precomputed attribute sets of the dropped series counter, one per value of the metric_type enum
+// declared in metadata.yaml.
 var (
 	droppedClassicHistogramAttrs = otelmetric.WithAttributeSet(otelattr.NewSet(otelattr.String("metric_type", "classic_histogram")))
+	droppedGaugeHistogramAttrs   = otelmetric.WithAttributeSet(otelattr.NewSet(otelattr.String("metric_type", "gauge_histogram")))
 	droppedSummaryAttrs          = otelmetric.WithAttributeSet(otelattr.NewSet(otelattr.String("metric_type", "summary")))
 )
 
@@ -368,16 +369,22 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 		modifiedResourceMetric = make(map[uint64]pmetric.ResourceMetrics)
 		targetInfoModified     = make(map[uint64]bool)
 
-		droppedHistogramKeys = make(map[exemplarKey]struct{})
+		// histogramSeriesAccepted tracks exemplar keys whose fate may depend on histogram drops:
+		// true means at least one sample (including from a classic histogram, gauge histogram, or
+		// summary series) or native histogram for the series was translated or dropped by design;
+		// false means every native histogram seen so far for the series was refused or dropped due
+		// to schema/representation/budget limits.
+		histogramSeriesAccepted = make(map[exemplarKey]bool)
 		// bucketBudget bounds what every Native Histogram in this request may expand into
 		// together, since all of it stays in memory until the request has been translated.
 		bucketBudget = histogramBucketBudget{remaining: maxExponentialHistogramBucketsPerRequest}
 
 		// Series the receiver drops by design (see "Known Limitations" in the README). They are
 		// accepted rather than rejected, so the specification's definition of "written" covers
-		// them: their samples are counted in the response stats like target_info's, otherwise the
-		// sender would take the difference for a partial write and report failed samples.
+		// them: their samples and histograms are counted in the response stats like target_info's,
+		// otherwise the sender would take the difference for a partial write and report failed data.
 		droppedClassicHistogramSeries int64
+		droppedGaugeHistogramSeries   int64
 		droppedSummarySeries          int64
 	)
 
@@ -444,16 +451,33 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 
 		// Handle histograms separately due to their complex mixed-schema processing
 		if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_HISTOGRAM ||
-			ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_UNSPECIFIED && len(ts.Histograms) > 0 {
-			// A histogram series carrying samples is a classic histogram, which is dropped whole.
+			ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_GAUGEHISTOGRAM ||
+			(ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_UNSPECIFIED && len(ts.Histograms) > 0) {
+			droppedGauge := false
 			if len(ts.Samples) != 0 {
+				if len(exemplarMap) > 0 {
+					key := makeExemplarKey(ls)
+					if _, ok := exemplarMap[key]; ok {
+						histogramSeriesAccepted[key] = true
+					}
+				}
+				if ts.Metadata.Type != writev2.Metadata_METRIC_TYPE_GAUGEHISTOGRAM {
+					// A histogram series carrying samples is a classic histogram, which is dropped whole.
+					stats.Samples += len(ts.Samples)
+					stats.Histograms += len(ts.Histograms)
+					droppedClassicHistogramSeries++
+					prw.logDroppedSeries(ls, "classic_histogram")
+					continue
+				}
 				stats.Samples += len(ts.Samples)
-				stats.Histograms += len(ts.Histograms)
-				droppedClassicHistogramSeries++
-				prw.logDroppedSeries(ls, "classic_histogram")
-				continue
+				droppedGaugeHistogramSeries++
+				prw.logDroppedSeries(ls, "gauge_histogram")
+				droppedGauge = true
+				if len(ts.Histograms) == 0 {
+					continue
+				}
 			}
-			if err := prw.processHistogramTimeSeries(otelMetrics, ls, ts, si, metricName, unit, description, metricCache, scopeCache, &stats, modifiedResourceMetric, exemplarMap, droppedHistogramKeys, &bucketBudget); err != nil {
+			if err := prw.processHistogramTimeSeries(otelMetrics, ls, ts, si, metricName, unit, description, metricCache, scopeCache, &stats, modifiedResourceMetric, exemplarMap, histogramSeriesAccepted, &bucketBudget, &droppedGaugeHistogramSeries, droppedGauge); err != nil {
 				badRequestErrors = errors.Join(badRequestErrors, err)
 			}
 			continue
@@ -530,6 +554,12 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 				stats.Samples += len(ts.Samples)
 				droppedSummarySeries++
 				prw.logDroppedSeries(ls, "summary")
+				if len(ts.Samples) > 0 && len(exemplarMap) > 0 {
+					key := makeExemplarKey(ls)
+					if _, ok := exemplarMap[key]; ok {
+						histogramSeriesAccepted[key] = true
+					}
+				}
 				continue
 			}
 			metricCache[metricKey] = metric
@@ -561,11 +591,12 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 	}
 
 	// Exemplars still in exemplarMap had no data point to attach to (for example when a
-	// TimeSeries carries exemplars without samples, or its series is a classic histogram or
-	// summary dropped by design). Count them as written, unless their series only had dropped
-	// or refused native histograms, so the sender does not report a partial write on a 2xx response.
+	// TimeSeries carries exemplars without samples, or its series is a classic histogram,
+	// gauge histogram, or summary dropped by design). Count them as written, unless their
+	// series only had dropped or refused native histograms, so the sender does not report
+	// a partial write on a 2xx response.
 	for key, ex := range exemplarMap {
-		if _, dropped := droppedHistogramKeys[key]; !dropped {
+		if accepted, seen := histogramSeriesAccepted[key]; !seen || accepted {
 			stats.Exemplars += ex.Len()
 		}
 	}
@@ -578,6 +609,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 	// One Add per kind and request; the Debug log above names every series.
 	if droppedClassicHistogramSeries > 0 {
 		prw.telemetryBuilder.ReceiverPrometheusremotewriteDroppedSeries.Add(ctx, droppedClassicHistogramSeries, droppedClassicHistogramAttrs)
+	}
+	if droppedGaugeHistogramSeries > 0 {
+		prw.telemetryBuilder.ReceiverPrometheusremotewriteDroppedSeries.Add(ctx, droppedGaugeHistogramSeries, droppedGaugeHistogramAttrs)
 	}
 	if droppedSummarySeries > 0 {
 		prw.telemetryBuilder.ReceiverPrometheusremotewriteDroppedSeries.Add(ctx, droppedSummarySeries, droppedSummaryAttrs)
@@ -657,13 +691,14 @@ func validateSeriesLabels(ls labels.Labels) error {
 // series with every request; the dropped series counter is what shows them by default.
 // Logger.Check skips building the fields when Debug is off.
 func (prw *prometheusRemoteWriteReceiver) logDroppedSeries(ls labels.Labels, metricType string) {
-	if ce := prw.settings.Logger.Check(zap.DebugLevel, "Dropped series of a type the receiver does not support; its samples are counted as written"); ce != nil {
+	if ce := prw.settings.Logger.Check(zap.DebugLevel, "Dropped series of a type the receiver does not support; its samples and histograms are counted as written"); ce != nil {
 		ce.Write(zap.String("series", ls.String()), zap.String("metric_type", metricType))
 	}
 }
 
 // processHistogramTimeSeries handles all histogram processing, including validation and mixed schemas.
-// The caller has already set aside classic histogram series, so ts carries native histograms only.
+// The caller has already dropped classic histogram series (and classic gauge histogram samples),
+// so only ts.Histograms are processed here.
 func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	otelMetrics pmetric.Metrics,
 	ls labels.Labels,
@@ -675,11 +710,11 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	stats *promremote.WriteResponseStats,
 	modifiedRM map[uint64]pmetric.ResourceMetrics,
 	exemplarMap map[exemplarKey]pmetric.ExemplarSlice,
-	droppedHistogramKeys map[exemplarKey]struct{},
+	histogramSeriesAccepted map[exemplarKey]bool,
 	bucketBudget *histogramBucketBudget,
+	droppedGaugeHistogramSeries *int64,
+	droppedGauge bool,
 ) error {
-	attrs := extractAttributes(ls)
-
 	// One TimeSeries is one series, so every histogram below shares the key its exemplars were
 	// collected under.
 	var (
@@ -695,16 +730,19 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	}
 
 	var (
+		attrs        pcommon.Map
 		hashedLabels uint64
 		scopeID      identity.Scope
 		scope        pmetric.ScopeMetrics
 		rm           pmetric.ResourceMetrics
 		invalid      error // refusals Prometheus' own validation makes too, which fail the request
+		acceptedAny  bool  // true if at least one histogram was translated or dropped by design
 	)
 
 	for i := range ts.Histograms {
 		histogram := &ts.Histograms[i]
-		if histogram.ResetHint == writev2.Histogram_RESET_HINT_GAUGE {
+		if ts.Metadata.Type != writev2.Metadata_METRIC_TYPE_GAUGEHISTOGRAM &&
+			histogram.ResetHint == writev2.Histogram_RESET_HINT_GAUGE {
 			continue
 		}
 
@@ -727,6 +765,17 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 				zapcore.Field{Key: "instance", Type: zapcore.StringType, String: ls.Get("instance")},
 				zapcore.Field{Key: "timestamp", Type: zapcore.Int64Type, Integer: histogram.Timestamp},
 			)
+			continue
+		}
+
+		if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_GAUGEHISTOGRAM {
+			stats.Histograms++
+			acceptedAny = true
+			if !droppedGauge {
+				*droppedGaugeHistogramSeries++
+				prw.logDroppedSeries(ls, "gauge_histogram")
+				droppedGauge = true
+			}
 			continue
 		}
 
@@ -795,6 +844,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		}
 
 		if hashedLabels == 0 {
+			attrs = extractAttributes(ls)
 			rm, hashedLabels = prw.getOrCreateRM(ls, otelMetrics, modifiedRM)
 			resourceID := identity.OfResource(rm.Resource())
 			is := pcommon.NewInstrumentationScope()
@@ -845,9 +895,9 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			case writev2.Metadata_METRIC_TYPE_UNSPECIFIED:
 				histMetric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "unknown")
 			default:
-				// This default case should not be reached as this function is only called when:
-				// 1. ts.Metadata.Type == METRIC_TYPE_HISTOGRAM, or
-				// 2. ts.Metadata.Type == METRIC_TYPE_UNSPECIFIED && len(ts.Histograms) > 0
+				// This default case cannot be reached: METRIC_TYPE_GAUGEHISTOGRAM histograms are
+				// always dropped above regardless of ResetHint, and only METRIC_TYPE_HISTOGRAM
+				// and METRIC_TYPE_UNSPECIFIED reach metric creation.
 			}
 		} else if len(histMetric.Description()) < len(description) {
 			// When the new description is longer than the existing one, we should update the metric description.
@@ -879,7 +929,11 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 
 		// A dropped histogram has no data point of its own, so attaching here would land on one
 		// built for an earlier series. Its exemplars stay in the map for a later one to claim.
-		if !appended || !haveExemplars {
+		if !appended {
+			continue
+		}
+		acceptedAny = true
+		if !haveExemplars {
 			continue
 		}
 		exemplars.CopyTo(exemplarSlice)
@@ -888,7 +942,11 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		haveExemplars = false
 	}
 	if len(ts.Histograms) > 0 && haveExemplars {
-		droppedHistogramKeys[exemplarsKey] = struct{}{}
+		if acceptedAny {
+			histogramSeriesAccepted[exemplarsKey] = true
+		} else if _, exists := histogramSeriesAccepted[exemplarsKey]; !exists {
+			histogramSeriesAccepted[exemplarsKey] = false
+		}
 	}
 	return invalid
 }
