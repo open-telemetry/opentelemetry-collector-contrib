@@ -34,12 +34,12 @@ func (gtr *githubTracesReceiver) handleWorkflowRun(e *github.WorkflowRunEvent, r
 
 	traceID, err := newTraceID(e.GetWorkflowRun().GetID(), e.GetWorkflowRun().GetRunAttempt())
 	if err != nil {
-		gtr.logger.Sugar().Error("failed to generate trace ID", zap.Error(err))
+		gtr.logger.Error("failed to generate trace ID", zap.Error(err))
 	}
 
 	err = gtr.createRootSpan(r, e, traceID, rawPayload)
 	if err != nil {
-		gtr.logger.Sugar().Error("failed to create root span", zap.Error(err))
+		gtr.logger.Error("failed to create root span", zap.Error(err))
 		return ptrace.Traces{}, errors.New("failed to create root span")
 	}
 	return t, nil
@@ -61,24 +61,24 @@ func (gtr *githubTracesReceiver) handleWorkflowJob(e *github.WorkflowJobEvent, r
 
 	traceID, err := newTraceID(e.GetWorkflowJob().GetRunID(), int(e.GetWorkflowJob().GetRunAttempt()))
 	if err != nil {
-		gtr.logger.Sugar().Error("failed to generate trace ID", zap.Error(err))
+		gtr.logger.Error("failed to generate trace ID", zap.Error(err))
 	}
 
 	parentID, err := gtr.createParentSpan(r, e, traceID, rawPayload)
 	if err != nil {
-		gtr.logger.Sugar().Error("failed to create parent span", zap.Error(err))
+		gtr.logger.Error("failed to create parent span", zap.Error(err))
 		return ptrace.Traces{}, errors.New("failed to create parent span")
 	}
 
 	err = gtr.createJobQueueSpan(r, e, traceID, parentID)
 	if err != nil {
-		gtr.logger.Sugar().Error("failed to create job queue span", zap.Error(err))
+		gtr.logger.Error("failed to create job queue span", zap.Error(err))
 		return ptrace.Traces{}, errors.New("failed to create job queue span")
 	}
 
 	err = gtr.createStepSpans(r, e, traceID, parentID)
 	if err != nil {
-		gtr.logger.Sugar().Error("failed to create step spans", zap.Error(err))
+		gtr.logger.Error("failed to create step spans", zap.Error(err))
 		return ptrace.Traces{}, errors.New("failed to create step spans")
 	}
 
