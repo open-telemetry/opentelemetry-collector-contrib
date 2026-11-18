@@ -10,7 +10,71 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics"
 )
+
+func TestGetAzMetricsClientOptions(t *testing.T) {
+	type fields struct {
+		Cloud string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   *azmetrics.ClientOptions
+	}{
+		{
+			name: "AzureCloud_options",
+			fields: fields{
+				Cloud: azureCloud,
+			},
+			want: &azmetrics.ClientOptions{
+				ClientOptions: azcore.ClientOptions{
+					Cloud: cloud.AzurePublic,
+					Retry: policy.RetryOptions{
+						StatusCodes: []int{408, 429, 500, 502, 503, 504, 529},
+					},
+				},
+			},
+		},
+		{
+			name: "AzureGovernmentCloud_options",
+			fields: fields{
+				Cloud: azureGovernmentCloud,
+			},
+			want: &azmetrics.ClientOptions{
+				ClientOptions: azcore.ClientOptions{
+					Cloud: cloud.AzureGovernment,
+					Retry: policy.RetryOptions{
+						StatusCodes: []int{408, 429, 500, 502, 503, 504, 529},
+					},
+				},
+			},
+		},
+		{
+			name: "AzureChinaCloud_options",
+			fields: fields{
+				Cloud: azureChinaCloud,
+			},
+			want: &azmetrics.ClientOptions{
+				ClientOptions: azcore.ClientOptions{
+					Cloud: cloud.AzureChina,
+					Retry: policy.RetryOptions{
+						StatusCodes: []int{408, 429, 500, 502, 503, 504, 529},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := newClientOptionsResolver(tt.fields.Cloud)
+			if got := s.GetAzMetricsClientOptions(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetAzMetricsClientOptions() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 func TestAzureScraperClientOptions(t *testing.T) {
 	type fields struct {
