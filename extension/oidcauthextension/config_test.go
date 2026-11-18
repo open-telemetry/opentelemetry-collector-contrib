@@ -9,7 +9,11 @@ import (
 	"testing"
 
 	"github.com/go-jose/go-jose/v4/jose-util/generator"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestDuplicateIssuers(t *testing.T) {
@@ -182,4 +186,102 @@ func TestPublicKeysFile(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLegacySingleProviderMapping(t *testing.T) {
+	config := &Config{
+		IssuerURL:      "https://issuer.example.com",
+		Audience:       "test-audience",
+		IgnoreAudience: false,
+		IssuerCAPath:   "/path/to/ca.pem",
+		UsernameClaim:  "preferred_username",
+		GroupsClaim:    "roles",
+	}
+
+	require.NoError(t, config.Validate())
+	require.Len(t, config.Providers, 1)
+	assert.Equal(t, "https://issuer.example.com", config.Providers[0].IssuerURL)
+	assert.Equal(t, "test-audience", config.Providers[0].Audience)
+	assert.False(t, config.Providers[0].IgnoreAudience)
+	assert.Equal(t, "/path/to/ca.pem", config.Providers[0].IssuerCAPath)
+	assert.Equal(t, "preferred_username", config.Providers[0].UsernameClaim)
+	assert.Equal(t, "roles", config.Providers[0].GroupsClaim)
+
+	// Legacy fields on config struct should be cleared after mapping
+	assert.Empty(t, config.IssuerURL)
+	assert.Empty(t, config.Audience)
+	assert.Empty(t, config.IssuerCAPath)
+	assert.Empty(t, config.UsernameClaim)
+	assert.Empty(t, config.GroupsClaim)
+	assert.True(t, config.hasLegacySingleProvider())
+}
+
+func TestLegacySingleProviderUnmarshal(t *testing.T) {
+	raw := map[string]any{
+		"issuer_url":     "https://issuer.example.com",
+		"audience":       "test-audience",
+		"username_claim": "email",
+	}
+	conf := confmap.NewFromStringMap(raw)
+	config := &Config{}
+	require.NoError(t, config.Unmarshal(conf))
+	require.Len(t, config.Providers, 1)
+	assert.Equal(t, "https://issuer.example.com", config.Providers[0].IssuerURL)
+	assert.Equal(t, "test-audience", config.Providers[0].Audience)
+	assert.Equal(t, "email", config.Providers[0].UsernameClaim)
+	assert.True(t, config.hasLegacySingleProvider())
+}
+
+func TestLegacyAndMultipleProvidersMapping(t *testing.T) {
+	config := &Config{
+		IssuerURL: "https://legacy.example.com",
+		Audience:  "legacy-audience",
+		Providers: []ProviderCfg{
+			{
+				IssuerURL: "https://modern.example.com",
+				Audience:  "modern-audience",
+			},
+		},
+	}
+
+	require.NoError(t, config.Validate())
+	require.Len(t, config.Providers, 2)
+	assert.Equal(t, "https://legacy.example.com", config.Providers[0].IssuerURL)
+	assert.Equal(t, "https://modern.example.com", config.Providers[1].IssuerURL)
+}
+
+func TestLegacySingleProviderDeprecationWarning(t *testing.T) {
+	core, logs := observer.New(zap.WarnLevel)
+	logger := zap.New(core)
+
+	config := &Config{
+		IssuerURL: "https://example.com",
+		Audience:  "aud",
+	}
+
+	ext := newExtension(config, logger)
+	require.NotNil(t, ext)
+
+	warns := logs.FilterMessageSnippet("The single-provider OIDC configuration is deprecated and will be removed in a future release")
+	assert.Equal(t, 1, warns.Len())
+}
+
+func TestModernProvidersNoDeprecationWarning(t *testing.T) {
+	core, logs := observer.New(zap.WarnLevel)
+	logger := zap.New(core)
+
+	config := &Config{
+		Providers: []ProviderCfg{
+			{
+				IssuerURL: "https://example.com",
+				Audience:  "aud",
+			},
+		},
+	}
+
+	ext := newExtension(config, logger)
+	require.NotNil(t, ext)
+
+	warns := logs.FilterMessageSnippet("The single-provider OIDC configuration is deprecated")
+	assert.Equal(t, 0, warns.Len())
 }

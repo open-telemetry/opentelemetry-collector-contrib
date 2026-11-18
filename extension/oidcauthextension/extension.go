@@ -117,6 +117,11 @@ func newExtension(cfg *Config, logger *zap.Logger) extension.Extension {
 		cfg.Attribute = defaultAttribute
 	}
 
+	if cfg.hasLegacySingleProvider() && logger != nil {
+		logger.Warn("The single-provider OIDC configuration is deprecated and will be removed in a future release. Use 'providers' instead.")
+	}
+	cfg.mapLegacyFieldsToProviders()
+
 	return &oidcExtension{
 		cfg:                cfg,
 		logger:             logger,

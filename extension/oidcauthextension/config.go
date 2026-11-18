@@ -16,8 +16,11 @@ import (
 	"slices"
 
 	"github.com/go-jose/go-jose/v4"
+	"go.opentelemetry.io/collector/confmap"
 	"go.uber.org/multierr"
 )
+
+var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config has the configuration for the OIDC Authenticator extension.
 type Config struct {
@@ -58,6 +61,18 @@ type Config struct {
 	// Providers allows configuring multiple OIDC providers.
 	// Use the getProviderConfigs() method to get the full list of providers, including the legacy configuration.
 	Providers []ProviderCfg `mapstructure:"providers"`
+
+	hasLegacyConfig bool
+}
+
+func (cfg *Config) hasLegacySingleProvider() bool {
+	return cfg.hasLegacyConfig ||
+		cfg.IssuerURL != "" ||
+		cfg.Audience != "" ||
+		cfg.IgnoreAudience ||
+		cfg.IssuerCAPath != "" ||
+		cfg.UsernameClaim != "" ||
+		cfg.GroupsClaim != ""
 }
 
 func (cfg *Config) getLegacyProviderConfig() *ProviderCfg {
@@ -79,6 +94,28 @@ func (cfg *Config) getLegacyProviderConfig() *ProviderCfg {
 	return nil
 }
 
+func (cfg *Config) mapLegacyFieldsToProviders() {
+	if legacy := cfg.getLegacyProviderConfig(); legacy != nil {
+		cfg.hasLegacyConfig = true
+		cfg.Providers = append([]ProviderCfg{*legacy}, cfg.Providers...)
+		cfg.IssuerURL = ""
+		cfg.Audience = ""
+		cfg.IgnoreAudience = false
+		cfg.IssuerCAPath = ""
+		cfg.UsernameClaim = ""
+		cfg.GroupsClaim = ""
+	}
+}
+
+// Unmarshal a confmap.Conf into the config struct.
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(cfg); err != nil {
+		return err
+	}
+	cfg.mapLegacyFieldsToProviders()
+	return nil
+}
+
 // getProviderConfigs returns a slice of ProviderCfg, including the legacy provider configuration
 // if it exists. The legacy configuration is prepended to the list of providers.
 // Prefer this function over accessing the Providers field directly.
@@ -90,6 +127,7 @@ func (cfg *Config) getProviderConfigs() []ProviderCfg {
 }
 
 func (cfg *Config) Validate() (errs error) {
+	cfg.mapLegacyFieldsToProviders()
 	seenIssuers := make(map[string]struct{})
 	providerConfigs := cfg.getProviderConfigs()
 
