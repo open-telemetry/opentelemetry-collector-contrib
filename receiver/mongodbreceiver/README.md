@@ -108,13 +108,16 @@ When no members are discovered (a standalone server, a `mongos`, or a node that 
 set configuration), query samples come from the configured host.
 
 Metrics and `db.server.top_query` events always come from the configured host. With a replica set
-connection that is the current primary. To collect them from every member, configure one receiver per
+connection, that is the current primary. To collect them from every member, configure one receiver per
 member with `direct_connection: true`.
 
 Members are discovered only at start; restart the collector to pick up members added to or removed from
-the set. Members are scraped concurrently, each within the shorter of `timeout` and `collection_interval`,
-so a member that cannot be reached only delays its own data. The receiver logs a warning when collection
-from a member starts failing and an info message when it recovers.
+the set. If discovery fails at start, for example because no member is reachable, the receiver logs a
+warning and collects query samples from the configured host until it is restarted.
+
+Members are scraped concurrently, each within the shorter of `timeout` and `collection_interval`, so a
+member that cannot be reached only delays its own data. The receiver logs a warning when collection from a
+member starts failing and an info message when it recovers.
 
 Sharded clusters are not discovered: with a `mongos` host, only the configured host is scraped.
 

@@ -1116,8 +1116,8 @@ func (s *mongodbScraper) findMemberHosts(ctx context.Context) ([]string, error) 
 	}
 
 	self, _ := result["me"].(string)
-	primaries, ok := result["hosts"].(bson.A)
-	if self == "" || !ok || len(primaries) == 0 {
+	electable, ok := result["hosts"].(bson.A)
+	if self == "" || !ok || len(electable) == 0 {
 		return nil, errNoReplicaSetConfig
 	}
 
