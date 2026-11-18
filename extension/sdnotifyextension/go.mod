@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
-	github.com/moby/moby/api v1.56.1
+	github.com/moby/moby/api v1.57.0
 	github.com/stretchr/testify v1.12.1
 	github.com/testcontainers/testcontainers-go v0.45.0
 	go.opentelemetry.io/collector/component v1.71.1-0.20261112225459-4888f0b280f9
