@@ -4,7 +4,6 @@
 package tracker
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -95,7 +94,7 @@ func TestDuplicateUnmatchedFileClosesDiscardedHandle(t *testing.T) {
 	_, err = first.ReadAt(make([]byte, 1), 0)
 	require.NoError(t, err, "retained file handle should remain open")
 	_, err = duplicate.ReadAt(make([]byte, 1), 0)
-	require.True(t, errors.Is(err, os.ErrClosed), "discarded file handle remains open: %v", err)
+	require.ErrorIs(t, err, os.ErrClosed, "discarded file handle remains open")
 }
 
 func TestFileTrackerReusesKnownFilesAcrossPolls(t *testing.T) {
