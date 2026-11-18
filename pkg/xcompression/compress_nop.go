@@ -1,38 +1,41 @@
-package xutilcompress
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package xutilcompress // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/xutilcompress"
 
 import "io"
 
-// NopCompress copies input to output without compressing or decompressing it.
-// It implements both CompressReader and CompressWriter for configurations
+// Nop copies input to output without compressing or decompressing it.
+// It implements both Reader and Writer for configurations
 // where no compression is selected.
-type NopCompress struct{}
+type Nop struct{}
 
 var (
-	_ CompressReader = (NopCompress{})
-	_ CompressWriter = (NopCompress{})
+	_ Reader = (Nop{})
+	_ Writer = (Nop{})
 )
 
 // Compress copies src to dst and returns the number of bytes copied.
-func (NopCompress) Compress(dst io.Writer, src io.Reader) (int64, error) {
+func (Nop) Compress(dst io.Writer, src io.Reader) (int64, error) {
 	return io.Copy(dst, src)
 }
 
 // CompressBytes copies b to dst and returns the number of bytes written.
-func (nop NopCompress) CompressBytes(dst io.Writer, b []byte) (int64, error) {
+func (nop Nop) CompressBytes(dst io.Writer, b []byte) (int64, error) {
 	return nop.fromBytes(dst, b)
 }
 
 // Decompress copies src to dst and returns the number of bytes copied.
-func (NopCompress) Decompress(dst io.Writer, src io.Reader) (int64, error) {
+func (Nop) Decompress(dst io.Writer, src io.Reader) (int64, error) {
 	return io.Copy(dst, src)
 }
 
 // DecompressBytes copies b to dst and returns the number of bytes written.
-func (nop NopCompress) DecompressBytes(dst io.Writer, b []byte) (int64, error) {
+func (nop Nop) DecompressBytes(dst io.Writer, b []byte) (int64, error) {
 	return nop.fromBytes(dst, b)
 }
 
-func (NopCompress) fromBytes(dst io.Writer, b []byte) (int64, error) {
+func (Nop) fromBytes(dst io.Writer, b []byte) (int64, error) {
 	if len(b) == 0 {
 		return 0, nil
 	}

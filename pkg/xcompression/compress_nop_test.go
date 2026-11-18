@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package xutilcompress
 
 import (
@@ -11,21 +14,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type nopCompressErrorWriter struct {
+type nopCompressionErrorWriter struct {
 	err error
 }
 
-func (w nopCompressErrorWriter) Write([]byte) (int, error) {
+func (w nopCompressionErrorWriter) Write([]byte) (int, error) {
 	return 0, w.err
 }
 
-type nopCompressShortWriter struct{}
+type nopCompressionShortWriter struct{}
 
-func (nopCompressShortWriter) Write(p []byte) (int, error) {
+func (nopCompressionShortWriter) Write(p []byte) (int, error) {
 	return len(p) - 1, nil
 }
 
-func TestNopCompressCopiesInput(t *testing.T) {
+func TestNopCopiesInput(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -35,25 +38,25 @@ func TestNopCompressCopiesInput(t *testing.T) {
 		{
 			name: "compress reader",
 			copy: func(dst io.Writer, src io.Reader, _ []byte) (int64, error) {
-				return (NopCompress{}).Compress(dst, src)
+				return (Nop{}).Compress(dst, src)
 			},
 		},
 		{
 			name: "compress bytes",
 			copy: func(dst io.Writer, _ io.Reader, b []byte) (int64, error) {
-				return (NopCompress{}).CompressBytes(dst, b)
+				return (Nop{}).CompressBytes(dst, b)
 			},
 		},
 		{
 			name: "decompress reader",
 			copy: func(dst io.Writer, src io.Reader, _ []byte) (int64, error) {
-				return (NopCompress{}).Decompress(dst, src)
+				return (Nop{}).Decompress(dst, src)
 			},
 		},
 		{
 			name: "decompress bytes",
 			copy: func(dst io.Writer, _ io.Reader, b []byte) (int64, error) {
-				return (NopCompress{}).DecompressBytes(dst, b)
+				return (Nop{}).DecompressBytes(dst, b)
 			},
 		},
 	}
@@ -72,7 +75,7 @@ func TestNopCompressCopiesInput(t *testing.T) {
 	}
 }
 
-func TestNopCompressPropagatesDestinationErrors(t *testing.T) {
+func TestNopPropagatesDestinationErrors(t *testing.T) {
 	wantErr := errors.New("destination failed")
 	input := []byte("payload")
 
@@ -83,38 +86,38 @@ func TestNopCompressPropagatesDestinationErrors(t *testing.T) {
 		{
 			name: "compress reader",
 			copy: func(dst io.Writer) (int64, error) {
-				return (NopCompress{}).Compress(dst, bytes.NewReader(input))
+				return (Nop{}).Compress(dst, bytes.NewReader(input))
 			},
 		},
 		{
 			name: "compress bytes",
 			copy: func(dst io.Writer) (int64, error) {
-				return (NopCompress{}).CompressBytes(dst, input)
+				return (Nop{}).CompressBytes(dst, input)
 			},
 		},
 		{
 			name: "decompress reader",
 			copy: func(dst io.Writer) (int64, error) {
-				return (NopCompress{}).Decompress(dst, bytes.NewReader(input))
+				return (Nop{}).Decompress(dst, bytes.NewReader(input))
 			},
 		},
 		{
 			name: "decompress bytes",
 			copy: func(dst io.Writer) (int64, error) {
-				return (NopCompress{}).DecompressBytes(dst, input)
+				return (Nop{}).DecompressBytes(dst, input)
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := test.copy(nopCompressErrorWriter{err: wantErr})
+			_, err := test.copy(nopCompressionErrorWriter{err: wantErr})
 			assert.ErrorIs(t, err, wantErr)
 		})
 	}
 }
 
-func TestNopCompressReturnsShortWriteError(t *testing.T) {
+func TestNopReturnsShortWriteError(t *testing.T) {
 	input := []byte("payload")
 	tests := []struct {
 		name string
@@ -123,39 +126,39 @@ func TestNopCompressReturnsShortWriteError(t *testing.T) {
 		{
 			name: "compress reader",
 			copy: func(dst io.Writer) (int64, error) {
-				return (NopCompress{}).Compress(dst, bytes.NewReader(input))
+				return (Nop{}).Compress(dst, bytes.NewReader(input))
 			},
 		},
 		{
 			name: "compress bytes",
 			copy: func(dst io.Writer) (int64, error) {
-				return (NopCompress{}).CompressBytes(dst, input)
+				return (Nop{}).CompressBytes(dst, input)
 			},
 		},
 		{
 			name: "decompress reader",
 			copy: func(dst io.Writer) (int64, error) {
-				return (NopCompress{}).Decompress(dst, bytes.NewReader(input))
+				return (Nop{}).Decompress(dst, bytes.NewReader(input))
 			},
 		},
 		{
 			name: "decompress bytes",
 			copy: func(dst io.Writer) (int64, error) {
-				return (NopCompress{}).DecompressBytes(dst, input)
+				return (Nop{}).DecompressBytes(dst, input)
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			n, err := test.copy(nopCompressShortWriter{})
+			n, err := test.copy(nopCompressionShortWriter{})
 			assert.Equal(t, int64(len(input)-1), n)
 			assert.ErrorIs(t, err, io.ErrShortWrite)
 		})
 	}
 }
 
-func TestNopCompressPropagatesSourceErrors(t *testing.T) {
+func TestNopPropagatesSourceErrors(t *testing.T) {
 	wantErr := errors.New("source failed")
 	tests := []struct {
 		name string
@@ -164,13 +167,13 @@ func TestNopCompressPropagatesSourceErrors(t *testing.T) {
 		{
 			name: "compress reader",
 			copy: func(src io.Reader) (int64, error) {
-				return (NopCompress{}).Compress(io.Discard, src)
+				return (Nop{}).Compress(io.Discard, src)
 			},
 		},
 		{
 			name: "decompress reader",
 			copy: func(src io.Reader) (int64, error) {
-				return (NopCompress{}).Decompress(io.Discard, src)
+				return (Nop{}).Decompress(io.Discard, src)
 			},
 		},
 	}
