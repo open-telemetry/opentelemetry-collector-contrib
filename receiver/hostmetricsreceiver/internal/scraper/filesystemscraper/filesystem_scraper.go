@@ -5,10 +5,12 @@ package filesystemscraper // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/shirou/gopsutil/v4/common"
@@ -27,6 +29,11 @@ import (
 const (
 	standardMetricsLen = 1
 	metricsLen         = standardMetricsLen + systemSpecificMetricsLen
+
+	// defaultUsageTimeout bounds a single usage call. The scraper context only
+	// has a deadline when the user sets the receiver's "timeout", so this
+	// keeps one hung mount (e.g. a hard NFS mount) from stalling every scrape.
+	defaultUsageTimeout = 10 * time.Second
 )
 
 // filesystemsScraper for FileSystem Metrics
@@ -40,6 +47,12 @@ type filesystemsScraper struct {
 	bootTime   func(context.Context) (uint64, error)
 	partitions func(context.Context, bool) ([]disk.PartitionStat, error)
 	usage      func(context.Context, string) (*disk.UsageStat, error)
+
+	usageTimeout time.Duration
+	// usageInFlight holds mountpoints with a usage call that hasn't returned
+	// yet, so a mount that stays hung doesn't leak a goroutine on every scrape.
+	usageMu       sync.Mutex
+	usageInFlight map[string]struct{}
 }
 
 type deviceUsage struct {
@@ -54,7 +67,7 @@ func newFileSystemScraper(_ context.Context, settings scraper.Settings, cfg *Con
 		return nil, err
 	}
 
-	scraper := &filesystemsScraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, partitions: disk.PartitionsWithContext, usage: disk.UsageWithContext, fsFilter: *fsFilter}
+	scraper := &filesystemsScraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, partitions: disk.PartitionsWithContext, usage: disk.UsageWithContext, fsFilter: *fsFilter, usageTimeout: defaultUsageTimeout, usageInFlight: map[string]struct{}{}}
 	return scraper, nil
 }
 
@@ -115,7 +128,7 @@ func (s *filesystemsScraper) scrape(ctx context.Context) (pmetric.Metrics, error
 			continue
 		}
 		translatedMountpoint := translateMountpoint(ctx, s.config.rootPath, partition.Mountpoint)
-		usage, usageErr := s.usage(ctx, translatedMountpoint)
+		usage, usageErr := s.usageWithTimeout(ctx, translatedMountpoint)
 		if usageErr != nil {
 			errors.AddPartial(0, fmt.Errorf("failed to read usage at %s: %w", translatedMountpoint, usageErr))
 			continue
@@ -135,6 +148,44 @@ func (s *filesystemsScraper) scrape(ctx context.Context) (pmetric.Metrics, error
 	}
 
 	return s.mb.Emit(), err
+}
+
+// usageWithTimeout calls s.usage without letting it block the scrape. statfs
+// can sit in uninterruptible kernel sleep on an unreachable hard NFS mount and
+// ignores the context, so the call runs in a goroutine and we stop waiting
+// when the context or usageTimeout expires. The goroutine itself can only end
+// when the kernel returns.
+func (s *filesystemsScraper) usageWithTimeout(ctx context.Context, mountpoint string) (*disk.UsageStat, error) {
+	s.usageMu.Lock()
+	if _, busy := s.usageInFlight[mountpoint]; busy {
+		s.usageMu.Unlock()
+		return nil, errors.New("previous usage call is still blocked, skipping")
+	}
+	s.usageInFlight[mountpoint] = struct{}{}
+	s.usageMu.Unlock()
+
+	ctx, cancel := context.WithTimeout(ctx, s.usageTimeout)
+	defer cancel()
+
+	type result struct {
+		usage *disk.UsageStat
+		err   error
+	}
+	ch := make(chan result, 1)
+	go func() {
+		u, err := s.usage(ctx, mountpoint)
+		s.usageMu.Lock()
+		delete(s.usageInFlight, mountpoint)
+		s.usageMu.Unlock()
+		ch <- result{u, err}
+	}()
+
+	select {
+	case r := <-ch:
+		return r.usage, r.err
+	case <-ctx.Done():
+		return nil, fmt.Errorf("usage call did not return: %w", ctx.Err())
+	}
 }
 
 func getMountMode(opts []string) string {
