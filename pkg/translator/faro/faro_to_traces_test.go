@@ -34,6 +34,12 @@ func TestTranslateToTraces(t *testing.T) {
 			expectedTracesFile: filepath.Join("testdata", "empty-payload", "ptraces.yaml"),
 			wantErr:            assert.NoError,
 		},
+		{
+			name:               "Payload without app version and environment",
+			faroPayload:        PayloadFromFile(t, "empty-app-version-environment-payload/payload.json"),
+			expectedTracesFile: filepath.Join("testdata", "empty-app-version-environment-payload", "ptraces.yaml"),
+			wantErr:            assert.NoError,
+		},
 	}
 
 	for _, tt := range testcases {

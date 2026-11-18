@@ -30,6 +30,7 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 		req               *writev2.Request
 		expectedExemplars int
 		expectedGroups    int
+		expectedErr       string
 		expectedWarnMsgs  []string
 	}{
 		{
@@ -57,6 +58,7 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 			},
 			expectedExemplars: 0,
 			expectedGroups:    1,
+			expectedErr:       `error converting exemplar label refs for metric "request_duration_ms"`,
 			expectedWarnMsgs: []string{
 				"error converting exemplar label refs",
 			},
@@ -294,6 +296,7 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 			},
 			expectedExemplars: 1,
 			expectedGroups:    1,
+			expectedErr:       `error converting exemplar label refs for metric "request_duration_ms"`,
 			expectedWarnMsgs: []string{
 				"error converting exemplar label refs",
 			},
@@ -310,7 +313,12 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 				},
 			}
 
-			result := collectExemplars(tt.req, settings)
+			result, err := collectExemplars(tt.req, settings)
+			if tt.expectedErr != "" {
+				require.ErrorContains(t, err, tt.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
 
 			gotExemplars := 0
 			for _, slice := range result {
@@ -357,7 +365,8 @@ func TestCollectExemplars_DropsEmptyLabelNames(t *testing.T) {
 			},
 		}
 
-		result := collectExemplars(req, settings)
+		result, err := collectExemplars(req, settings)
+		require.NoError(t, err)
 
 		// The exemplar stays filed under the series it arrived with, and only the empty-named label
 		// is gone: the value, the timestamp and the labels around it are kept.
