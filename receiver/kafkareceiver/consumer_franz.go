@@ -576,6 +576,9 @@ func (c *franzConsumer) triggerShutdown() bool {
 		return true
 	default:
 		close(c.closing)
+		for _, partition := range c.assignments {
+			partition.telemetry.stop()
+		}
 		client := c.client
 		c.mu.Unlock()
 		// Close the client without holding the write mutex, otherwise, the
@@ -624,11 +627,13 @@ func (c *franzConsumer) assigned(ctx context.Context, cl *kgo.Client, assigned m
 			c.assignments[tp] = &partitionConsumer
 			haveAssignmentsChanged = true
 			if c.config.PartitionProcessing.Independent {
+				partitionConsumer.telemetry = newPartitionTelemetry(c.telemetryBuilder, partitionConsumer.attrs)
 				partitionConsumer.mailbox = newPartitionMailbox(
 					partitionConsumer.ctx,
 					c.config.PartitionProcessing.MaxPrefetch.Batches,
 					c.config.PartitionProcessing.MaxPrefetch.Bytes,
 				)
+				partitionConsumer.mailbox.telemetry = partitionConsumer.telemetry
 				if partitionConsumer.add() {
 					go c.runPartitionWorker(&partitionConsumer, tp)
 				}
@@ -776,11 +781,15 @@ func (c *franzConsumer) shouldMarkOnError(pc *pc, err error) bool {
 }
 
 // handleMessage is called on a per-partition basis.
-func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) error {
+func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) (err error) {
+	pc.telemetry.startCall()
+	defer func() {
+		pc.telemetry.finishCall(err)
+	}()
 	backOff := newExponentialBackOff(c.config.ErrorBackOff)
 
 	for {
-		err := c.consumeMessage(pc.ctx, record, pc.attrs)
+		err := c.consumeMessage(pc.ctx, record, pc.attrs, pc.telemetry)
 		if err == nil {
 			return nil // Successfully processed.
 		}

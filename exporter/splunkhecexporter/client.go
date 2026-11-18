@@ -941,12 +941,12 @@ func (c *client) start(ctx context.Context, host component.Host) (err error) {
 		}
 	}
 	url, _ := c.config.getURL()
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo), c.logger}
 	telemetryBuilder, tbErr := metadata.NewTelemetryBuilder(c.telemetrySettings)
 	if tbErr != nil {
 		return tbErr
 	}
 	c.telemetryBuilder = telemetryBuilder
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo), c.logger, c.telemetryBuilder}
 	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c), c.telemetryBuilder, c.meter)
 	if c.config.Heartbeat.Startup {
 		if err := c.heartbeater.sendHeartbeat(c.config, c.buildInfo, getPushLogFn(c)); err != nil {

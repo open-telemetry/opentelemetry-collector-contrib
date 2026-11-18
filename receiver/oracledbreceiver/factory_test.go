@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
@@ -170,16 +171,16 @@ func TestGetDataSource(t *testing.T) {
 		{
 			name: "Default data source",
 			config: &Config{
-				DataSource: defaultDataSource,
+				DataSource: configopaque.String(defaultDataSource),
 			},
 			expected: defaultDataSource,
 		},
 		{
 			name: "Default data source takes priority over other config options",
 			config: &Config{
-				DataSource: defaultDataSource,
+				DataSource: configopaque.String(defaultDataSource),
 				Endpoint:   endpoint,
-				Password:   password,
+				Password:   configopaque.String(password),
 				Service:    service,
 				Username:   username,
 			},
@@ -189,7 +190,7 @@ func TestGetDataSource(t *testing.T) {
 			name: "Individual config options properly render data source",
 			config: &Config{
 				Endpoint: endpoint,
-				Password: password,
+				Password: configopaque.String(password),
 				Service:  service,
 				Username: username,
 			},
