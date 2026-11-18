@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/multierr"
 )
@@ -21,7 +22,7 @@ type Config struct {
 }
 
 type LogsConfig struct {
-	Secret          string                  `mapstructure:"secret"`
+	Secret          configopaque.String     `mapstructure:"secret"`
 	Endpoint        string                  `mapstructure:"endpoint"`
 	TLS             *configtls.ServerConfig `mapstructure:"tls"`
 	Attributes      map[string]string       `mapstructure:"attributes"`
