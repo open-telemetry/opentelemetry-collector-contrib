@@ -12,6 +12,7 @@ import (
 
 	"github.com/prometheus/procfs"
 	"github.com/shirou/gopsutil/v4/common"
+	"github.com/shirou/gopsutil/v4/host"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -26,6 +27,7 @@ type pressureScraper struct {
 	settings scraper.Settings
 	config   *Config
 	mb       *metadata.MetricsBuilder
+	bootTime func(context.Context) (uint64, error)
 	psiStats func(ctx context.Context, resource string) (procfs.PSIStats, error)
 }
 
@@ -33,12 +35,17 @@ func newPressureScraper(settings scraper.Settings, cfg *Config) *pressureScraper
 	return &pressureScraper{
 		settings: settings,
 		config:   cfg,
+		bootTime: host.BootTimeWithContext,
 		psiStats: psiStatsWithContext,
 	}
 }
 
-func (s *pressureScraper) start(context.Context, component.Host) error {
-	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
+func (s *pressureScraper) start(ctx context.Context, _ component.Host) error {
+	bootTime, err := s.bootTime(ctx)
+	if err != nil {
+		return err
+	}
+	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	return nil
 }
 

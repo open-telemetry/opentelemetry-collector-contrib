@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
@@ -95,6 +96,30 @@ func TestScrapeErrors(t *testing.T) {
 			assert.Equal(t, test.expectedFailed, partialErr.Failed)
 		})
 	}
+}
+
+func TestStartTime(t *testing.T) {
+	s := newPressureScraper(scrapertest.NewNopSettings(metadata.Type), createDefaultConfig().(*Config))
+	s.bootTime = func(context.Context) (uint64, error) { return 100, nil }
+	s.psiStats = func(context.Context, string) (procfs.PSIStats, error) {
+		return procfs.PSIStats{Some: &procfs.PSILine{Total: 1}, Full: &procfs.PSILine{Total: 1}}, nil
+	}
+	require.NoError(t, s.start(t.Context(), componenttest.NewNopHost()))
+
+	md, err := s.scrape(t.Context())
+	require.NoError(t, err)
+
+	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	require.Equal(t, 6, metrics.Len())
+	for i := 0; i < metrics.Len(); i++ {
+		assert.Equal(t, pcommon.Timestamp(100*1e9), metrics.At(i).Sum().DataPoints().At(0).StartTimestamp(), metrics.At(i).Name())
+	}
+}
+
+func TestBootTimeError(t *testing.T) {
+	s := newPressureScraper(scrapertest.NewNopSettings(metadata.Type), createDefaultConfig().(*Config))
+	s.bootTime = func(context.Context) (uint64, error) { return 0, errors.New("err1") }
+	assert.EqualError(t, s.start(t.Context(), componenttest.NewNopHost()), "err1")
 }
 
 func sumValues(md pmetric.Metrics) map[string]float64 {

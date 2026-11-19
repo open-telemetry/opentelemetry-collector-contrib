@@ -71,6 +71,7 @@ func TestScrape(t *testing.T) {
 			ctx := withProcDir(t, test.procDir)
 
 			s := newPressureScraper(scrapertest.NewNopSettings(metadata.Type), createDefaultConfig().(*Config))
+			s.bootTime = func(context.Context) (uint64, error) { return 0, nil }
 			require.NoError(t, s.start(ctx, componenttest.NewNopHost()))
 
 			md, err := s.scrape(ctx)
@@ -92,6 +93,7 @@ func TestScrapeInvalidRootPath(t *testing.T) {
 	ctx := withProcDir(t, "does_not_exist")
 
 	s := newPressureScraper(scrapertest.NewNopSettings(metadata.Type), createDefaultConfig().(*Config))
+	s.bootTime = func(context.Context) (uint64, error) { return 0, nil }
 	require.NoError(t, s.start(ctx, componenttest.NewNopHost()))
 
 	_, err := s.scrape(ctx)
