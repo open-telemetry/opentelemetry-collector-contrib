@@ -82,15 +82,11 @@ extensions:
         jwks_url: https://auth.example.com/oauth2/keys
 ```
 
-`issuer_url` remains the expected issuer of incoming tokens; it is not fetched when `jwks_url` is configured. Signature, expiry, issuer, and audience checks remain active, subject to the existing explicit issuer/audience opt-outs. Supported signing algorithms are `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512`, `ES256`, `ES384`, `ES512`, and `EdDSA`.
+`issuer_url` identifies the expected token issuer. `issuer_ca_path` applies to the JWKS endpoint's TLS certificate. `jwks_url` and `public_keys_file` are mutually exclusive.
 
-Keys are fetched on the first verification that needs them and cached in memory. Cached keys are trusted for at most five minutes. Cache hits do not extend this lifetime. If cached keys cannot verify a token, the verifier fetches the current key set and tries again. After the five-minute lifetime, the next verification discards the old key set and fetches fresh keys before authenticating. If that fetch fails, authentication fails without falling back to expired cached keys. A removed signing key therefore cannot continue authenticating indefinitely, even when requests keep using the same key ID.
+Supported signing algorithms are `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512`, `ES256`, `ES384`, `ES512`, and `EdDSA`.
 
-Eviction happens on access: during inactivity, expired keys may remain in memory until the next verification, but that verification replaces them before use.
-
-No periodic refresh, local key file, or separate worker is required. The endpoint must be reachable for the initial fetch and subsequent refreshes. Requests use the existing five-second HTTP timeout, and `issuer_ca_path` applies to the JWKS endpoint's TLS certificate.
-
-`jwks_url` and `public_keys_file` are mutually exclusive. When neither is set, the extension continues to use discovery.
+Keys are fetched on demand and remain trusted for at most five minutes. Authentication fails if expired keys cannot be refreshed.
 
 Optionally, a `public_keys_file` can be configured on a per-provider basis. When configured, discovery is disabled and the provided file will be parsed as a [JWK Set]. The public keys contained in the set will be used to verify JWT signatures:
 ```yaml
