@@ -86,7 +86,9 @@ extensions:
 
 Supported signing algorithms are `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512`, `ES256`, `ES384`, `ES512`, and `EdDSA`.
 
-Keys are fetched on demand and remain trusted for at most five minutes. Authentication fails if expired keys cannot be refreshed.
+Keys are fetched on demand at first and refreshed in the background every four minutes. Failed background refreshes are retried after 15 seconds. Verification can still fetch keys on demand when the cached keys cannot verify a token or have expired.
+
+Keys remain trusted for at most five minutes after a successful fetch. Authentication fails if expired keys cannot be refreshed.
 
 Optionally, a `public_keys_file` can be configured on a per-provider basis. When configured, discovery is disabled and the provided file will be parsed as a [JWK Set]. The public keys contained in the set will be used to verify JWT signatures:
 ```yaml

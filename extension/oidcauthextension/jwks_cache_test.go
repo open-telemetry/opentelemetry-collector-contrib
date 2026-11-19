@@ -13,12 +13,14 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func cacheTestVerifier(t *testing.T, url string, now func() time.Time) *oidc.IDTokenVerifier {
 	t.Helper()
-	keys := newExpiringRemoteKeySet(t.Context(), url)
+	keys := newExpiringRemoteKeySet(t.Context(), url, http.DefaultClient, zap.NewNop())
 	keys.now = now
+	t.Cleanup(keys.stop)
 	return oidc.NewVerifier(url, keys, &oidc.Config{ClientID: "collector", Now: now})
 }
 
