@@ -13,7 +13,7 @@ $defs:
         type: integer
         x-customType: int64
       secret:
-        type: string
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       separator:
         type: string
       timestamp_field:

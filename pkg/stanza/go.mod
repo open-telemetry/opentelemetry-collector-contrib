@@ -6,7 +6,7 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.10.4
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/expr-lang/expr v1.17.8
-	github.com/goccy/go-json v0.10.6
+	github.com/goccy/go-json v0.12.0
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/jpillora/backoff v1.1.0
 	github.com/leodido/go-syslog/v4 v4.6.0
@@ -20,6 +20,7 @@ require (
 	go.opentelemetry.io/collector/component v1.71.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/component/componenttest v0.165.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/config/configauth v1.71.1-0.20261112225459-4888f0b280f9
+	go.opentelemetry.io/collector/config/configopaque v1.71.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/config/configoptional v1.71.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/config/configtls v1.71.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/confmap v1.71.1-0.20261112225459-4888f0b280f9
@@ -112,7 +113,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/stretchr/objx v0.5.3 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.71.1-0.20261112225459-4888f0b280f9 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.165.1-0.20261112225459-4888f0b280f9 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.165.1-0.20261112225459-4888f0b280f9 // indirect
 	go.opentelemetry.io/collector/extension v1.71.1-0.20261112225459-4888f0b280f9 // indirect
