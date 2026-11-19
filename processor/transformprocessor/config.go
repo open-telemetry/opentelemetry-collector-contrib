@@ -29,7 +29,6 @@ import (
 var (
 	errFlatLogsGateDisabled          = errors.New("'flatten.log' requires the 'transform.flatten.logs' feature gate to be enabled")
 	errProfileStatementsGateDisabled = errors.New("'profile_statements' requires the 'processor.transform.enableProfiles' feature gate to be enabled")
-	errProfilesGateDisabled          = errors.New("the profiles signal requires the 'processor.transform.enableProfiles' feature gate to be enabled")
 )
 
 // Config defines the configuration for the processor.

@@ -5,6 +5,7 @@ package transformprocessor // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -31,7 +32,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
-var processorCapabilities = consumer.Capabilities{MutatesData: true}
+var (
+	processorCapabilities   = consumer.Capabilities{MutatesData: true}
+	errProfilesGateDisabled = errors.New("the profiles signal requires the 'processor.transform.enableProfiles' feature gate to be enabled")
+)
 
 type transformProcessorFactory struct {
 	factoryoptions.Options
