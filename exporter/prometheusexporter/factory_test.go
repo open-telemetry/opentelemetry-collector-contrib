@@ -5,6 +5,7 @@ package prometheusexporter
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,6 +24,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+	pCfg, ok := cfg.(*Config)
+	require.True(t, ok)
+	assert.Equal(t, TranslationStrategyUnderscoreEscapingWithSuffixes, pCfg.TranslationStrategy)
+	assert.Equal(t, 5*time.Minute, pCfg.MetricExpiration)
+	assert.NoError(t, pCfg.Validate())
 }
 
 // Regression test for GitHub issue #47173.

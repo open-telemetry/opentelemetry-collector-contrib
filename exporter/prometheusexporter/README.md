@@ -26,7 +26,7 @@ The following settings can be optionally configured:
 - `const_labels` (no default): key/values that are applied for every exported metric.
 - `namespace` (no default): if set, exports metrics under the provided value.
 - `send_timestamps` (default = `false`): if true, sends the timestamp of the underlying metric sample in the response.
-- `metric_expiration` (default = `5m`): defines how long metrics are exposed without updates
+- `metric_expiration` (default = `5m`): defines how long metrics are exposed without updates. Must be greater than `0`.
 - `resource_constant_labels`: Controls which resource attributes are added as constant labels on exported metrics. Takes precedence over `resource_to_telemetry_conversion`.
   - `included`: List of wildcard patterns (e.g., `service*`, `k8s.pod.*`) matching resource attribute keys to include. Note: if `included` is empty and `excluded` is non-empty, all resource attributes except those matched by `excluded` will be included.
   - `excluded`: List of wildcard patterns matching resource attribute keys to exclude, overriding any matches in `included`. If `included` is empty, setting `excluded` implies including all non-excluded attributes.
@@ -37,7 +37,7 @@ The following settings can be optionally configured:
 - `without_scope_info`: (default = `false`): If true, metrics will be exported without scope name, version, schemaURL, and attributes encoded as labels.
 - `sending_queue` **[Deprecated]**: The Prometheus exporter is pull-based and does not use a sending queue. Can be disabled and rejected via the `exporter.prometheus.DisableSendingQueue` feature gate.
 - `add_metric_suffixes`: (default = `true`): **Deprecated and ignored**: The `exporter.prometheusexporter.DisableAddMetricSuffixes` feature gate is now stable, so `add_metric_suffixes` is always ignored and `translation_strategy` is used instead.
-- `translation_strategy`: Controls how OTLP metric and attribute names are translated into Prometheus metric and label names. Available options:
+- `translation_strategy` (default = `UnderscoreEscapingWithSuffixes`): Controls how OTLP metric and attribute names are translated into Prometheus metric and label names. Available options:
   - `UnderscoreEscapingWithSuffixes`: Fully escapes metric names for classic Prometheus metric name compatibility, and includes appending type and unit suffixes.
   - `UnderscoreEscapingWithoutSuffixes`: Metric names will continue to escape special characters to `_`, but suffixes won't be attached.
   - `NoUTF8EscapingWithSuffixes`: Disables changing special characters to `_`. Special suffixes like units and `_total` for counters will be attached.

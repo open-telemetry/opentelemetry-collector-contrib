@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -31,12 +30,12 @@ type Config struct {
 	Namespace string `mapstructure:"namespace"`
 
 	// ConstLabels are values that are applied for every exported metric.
-	ConstLabels prometheus.Labels `mapstructure:"const_labels"`
+	ConstLabels map[string]string `mapstructure:"const_labels"`
 
 	// SendTimestamps will send the underlying scrape timestamp with the export
 	SendTimestamps bool `mapstructure:"send_timestamps"`
 
-	// MetricExpiration defines how long metrics are kept without updates
+	// MetricExpiration defines how long metrics are kept without updates. Must be greater than 0.
 	MetricExpiration time.Duration `mapstructure:"metric_expiration"`
 
 	// ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels.
@@ -59,13 +58,16 @@ type Config struct {
 	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
 
 	// TranslationStrategy controls how OTLP metric and attribute names are translated into Prometheus metric and label names.
-	TranslationStrategy translationStrategy `mapstructure:"translation_strategy"`
+	TranslationStrategy TranslationStrategy `mapstructure:"translation_strategy"`
 }
 
 var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
+	if cfg.MetricExpiration <= 0 {
+		return errors.New("metric_expiration must be greater than 0")
+	}
 	//nolint:staticcheck // check deprecated fields
 	if cfg.ResourceConstantLabels.Enabled || cfg.ResourceConstantLabels.ExcludeServiceAttributes {
 		return errors.New("enabled and exclude_service_attributes are not supported under resource_constant_labels; use included and excluded instead")
@@ -91,7 +93,10 @@ func (cfg *Config) Validate() error {
 	// Validate translation strategy if set
 	if cfg.TranslationStrategy != "" {
 		switch cfg.TranslationStrategy {
-		case underscoreEscapingWithSuffixes, underscoreEscapingWithoutSuffixes, noUTF8EscapingWithSuffixes, noTranslation:
+		case TranslationStrategyUnderscoreEscapingWithSuffixes,
+			TranslationStrategyUnderscoreEscapingWithoutSuffixes,
+			TranslationStrategyNoUTF8EscapingWithSuffixes,
+			TranslationStrategyNoTranslation:
 		default:
 			return fmt.Errorf("invalid translation_strategy: %s", cfg.TranslationStrategy)
 		}
@@ -99,19 +104,21 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
-type translationStrategy string
+// TranslationStrategy controls how OTLP metric and attribute names are translated into Prometheus metric and label names.
+type TranslationStrategy string
 
 const (
-	// underscoreEscapingWithSuffixes fully escapes metric names for classic Prometheus metric name compatibility,
-	// and includes appending type and unit suffixes
-	underscoreEscapingWithSuffixes translationStrategy = "UnderscoreEscapingWithSuffixes"
+	// TranslationStrategyUnderscoreEscapingWithSuffixes fully escapes metric names for classic Prometheus metric name compatibility,
+	// and includes appending type and unit suffixes.
+	TranslationStrategyUnderscoreEscapingWithSuffixes TranslationStrategy = "UnderscoreEscapingWithSuffixes"
 
-	// underscoreEscapingWithoutSuffixes escapes special characters to '_', but suffixes won't be attached
-	underscoreEscapingWithoutSuffixes translationStrategy = "UnderscoreEscapingWithoutSuffixes"
+	// TranslationStrategyUnderscoreEscapingWithoutSuffixes escapes special characters to '_', but suffixes won't be attached.
+	TranslationStrategyUnderscoreEscapingWithoutSuffixes TranslationStrategy = "UnderscoreEscapingWithoutSuffixes"
 
-	// noUTF8EscapingWithSuffixes disables changing special characters to '_'. Special suffixes like units and '_total' for counters will be attached
-	noUTF8EscapingWithSuffixes translationStrategy = "NoUTF8EscapingWithSuffixes"
+	// TranslationStrategyNoUTF8EscapingWithSuffixes disables changing special characters to '_'.
+	// Special suffixes like units and '_total' for counters will be attached.
+	TranslationStrategyNoUTF8EscapingWithSuffixes TranslationStrategy = "NoUTF8EscapingWithSuffixes"
 
-	// noTranslation bypasses all metric and label name translation, passing them through unaltered
-	noTranslation translationStrategy = "NoTranslation"
+	// TranslationStrategyNoTranslation bypasses all metric and label name translation, passing them through unaltered.
+	TranslationStrategyNoTranslation TranslationStrategy = "NoTranslation"
 )

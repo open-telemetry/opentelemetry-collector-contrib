@@ -530,7 +530,7 @@ this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-s
 			name: "TranslationStrategy takes precedence over AddMetricSuffixes",
 			config: &Config{
 				AddMetricSuffixes:   true, // This should be ignored
-				TranslationStrategy: underscoreEscapingWithoutSuffixes,
+				TranslationStrategy: TranslationStrategyUnderscoreEscapingWithoutSuffixes,
 			},
 			want: `# HELP target_info Target metadata
 # TYPE target_info gauge
@@ -544,7 +544,7 @@ this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="
 		{
 			name: "UnderscoreEscapingWithSuffixes",
 			config: &Config{
-				TranslationStrategy: underscoreEscapingWithSuffixes,
+				TranslationStrategy: TranslationStrategyUnderscoreEscapingWithSuffixes,
 			},
 			want: `# HELP target_info Target metadata
 # TYPE target_info gauge
@@ -558,7 +558,7 @@ this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-s
 		{
 			name: "UnderscoreEscapingWithoutSuffixes",
 			config: &Config{
-				TranslationStrategy: underscoreEscapingWithoutSuffixes,
+				TranslationStrategy: TranslationStrategyUnderscoreEscapingWithoutSuffixes,
 			},
 			want: `# HELP target_info Target metadata
 # TYPE target_info gauge
@@ -572,7 +572,7 @@ this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="
 		{
 			name: "NoUTF8EscapingWithSuffixes/escaping=allow-utf-8",
 			config: &Config{
-				TranslationStrategy: noUTF8EscapingWithSuffixes,
+				TranslationStrategy: TranslationStrategyNoUTF8EscapingWithSuffixes,
 			},
 			extraHeaders: map[string]string{
 				"Accept": "application/openmetrics-text;version=1.0.0;escaping=allow-utf-8;q=0.6,application/openmetrics-text;version=0.0.1;q=0.5,text/plain;version=1.0.0;escaping=allow-utf-8;q=0.4,text/plain;version=0.0.4;q=0.3,*/*;q=0.2",
@@ -589,7 +589,7 @@ target_info{instance="test-instance",job="test-service"} 1
 		{
 			name: "NoUTF8EscapingWithSuffixes/escaping=underscores",
 			config: &Config{
-				TranslationStrategy: noUTF8EscapingWithSuffixes,
+				TranslationStrategy: TranslationStrategyNoUTF8EscapingWithSuffixes,
 			},
 			extraHeaders: map[string]string{
 				"Accept": "application/openmetrics-text;version=1.0.0;escaping=underscores;q=0.5,application/openmetrics-text;version=0.0.1;q=0.4,text/plain;version=1.0.0;escaping=underscores;q=0.3,text/plain;version=0.0.4;q=0.2,/;q=0.1",
@@ -606,7 +606,7 @@ this_one_there_where__bytes_total{arch="x86",instance="test-instance",job="test-
 		{
 			name: "NoTranslation/escaping=allow-utf-8",
 			config: &Config{
-				TranslationStrategy: noTranslation,
+				TranslationStrategy: TranslationStrategyNoTranslation,
 			},
 			extraHeaders: map[string]string{
 				"Accept": "application/openmetrics-text;version=1.0.0;escaping=allow-utf-8;q=0.6,application/openmetrics-text;version=0.0.1;q=0.5,text/plain;version=1.0.0;escaping=allow-utf-8;q=0.4,text/plain;version=0.0.4;q=0.3,*/*;q=0.2",
@@ -623,7 +623,7 @@ target_info{instance="test-instance",job="test-service"} 1
 		{
 			name: "NoTranslation/escaping=underscores",
 			config: &Config{
-				TranslationStrategy: noTranslation,
+				TranslationStrategy: TranslationStrategyNoTranslation,
 			},
 			extraHeaders: map[string]string{
 				"Accept": "application/openmetrics-text;version=1.0.0;escaping=underscores;q=0.5,application/openmetrics-text;version=0.0.1;q=0.4,text/plain;version=1.0.0;escaping=underscores;q=0.3,text/plain;version=0.0.4;q=0.2,/;q=0.1",
@@ -726,7 +726,7 @@ func TestPrometheusExporter_ContentNegotiation(t *testing.T) {
 			wantContentType: "text/plain; version=0.0.4; charset=utf-8; escaping=underscores",
 		},
 	}
-	for _, strategy := range []translationStrategy{noUTF8EscapingWithSuffixes, noTranslation} {
+	for _, strategy := range []TranslationStrategy{TranslationStrategyNoUTF8EscapingWithSuffixes, TranslationStrategyNoTranslation} {
 		t.Run(string(strategy), func(t *testing.T) {
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
@@ -763,7 +763,7 @@ func TestPrometheusExporter_ContentNegotiation(t *testing.T) {
 					if tt.wantUTF8 {
 						wantName, wantLabel = "foo.bar", `"my.label"`
 					}
-					if strategy == noUTF8EscapingWithSuffixes {
+					if strategy == TranslationStrategyNoUTF8EscapingWithSuffixes {
 						wantName += "_bytes_total"
 					}
 					wantSamplePrefix := wantName + "{"
