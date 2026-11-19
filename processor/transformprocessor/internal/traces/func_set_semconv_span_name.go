@@ -22,8 +22,8 @@ import (
 var (
 	minKnownSemConvVersion = semver.MustParse("1.37.0")
 	maxKnownSemConvVersion = semver.MustParse("1.43.0")
-	// Semconv 1.39.0 introduced the `{rpc.system.name}` span name when rpc.method is missing or `_OTHER`.
-	rpcSystemNameFallbackSemConvVersion = semver.MustParse("1.39.0")
+	// Semconv 1.39.0 made rpc.method fully-qualified and introduced the `{rpc.system.name}` span name when rpc.method is missing or `_OTHER`.
+	rpcFullyQualifiedMethodSemConvVersion = semver.MustParse("1.39.0")
 )
 
 const otherValue = "_OTHER"
@@ -143,19 +143,24 @@ func rpcSpanName(semconvVersion *semver.Version, span ptrace.Span) string {
 		method, okMethod := attributeValue(span, conventions.RPCMethodKey, "rpc.grpc.method")
 		service, okService := attributeValue(span, "rpc.service", "rpc.grpc.service")
 
-		systemNameFallback := !semconvVersion.LessThan(rpcSystemNameFallbackSemConvVersion)
-
-		if okMethod && method.AsString() == otherValue && systemNameFallback {
-			return system.AsString()
+		if !semconvVersion.LessThan(rpcFullyQualifiedMethodSemConvVersion) {
+			if !okMethod || method.AsString() == otherValue {
+				return system.AsString()
+			}
+			// Deprecated instrumentation may still send a short method alongside the service.
+			if okService && !strings.Contains(method.AsString(), "/") {
+				return service.AsString() + "/" + method.AsString()
+			}
+			return method.AsString()
 		}
-		// A fully-qualified rpc.method (semconv 1.39.0+) already contains the service.
-		if okMethod && okService && !strings.Contains(method.AsString(), "/") {
+
+		if okMethod && okService {
 			return service.AsString() + "/" + method.AsString()
 		}
 		if okMethod {
 			return method.AsString()
 		}
-		if okService && !systemNameFallback {
+		if okService {
 			return service.AsString() + "/*"
 		}
 		return system.AsString()

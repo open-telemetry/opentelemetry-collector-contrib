@@ -782,7 +782,8 @@ func Test_rpcSpanName(t *testing.T) {
 			want: "oteldemo.AdService/a_method",
 		},
 		{
-			name:                   "fully qualified 'rpc.method' and deprecated 'rpc.grpc.service' - does not repeat the service",
+			name:                   "semconv 1.39.0: fully qualified 'rpc.method' and deprecated 'rpc.grpc.service' - does not repeat the service",
+			semconvVersion:         "1.39.0",
 			spanName:               "a span name",
 			instrumentationLibrary: "hand crafted",
 			kind:                   ptrace.SpanKindServer,
@@ -792,6 +793,19 @@ func Test_rpcSpanName(t *testing.T) {
 				attrs.PutStr("rpc.grpc.service", "oteldemo.AdService")
 			},
 			want: "oteldemo.AdService/GetAds",
+		},
+		{
+			name:                   "semconv 1.38.0: 'rpc.method' containing '/' and 'rpc.service' - prefixes the service",
+			semconvVersion:         "1.38.0",
+			spanName:               "a span name",
+			instrumentationLibrary: "hand crafted",
+			kind:                   ptrace.SpanKindServer,
+			addAttributes: func(attrs pcommon.Map) {
+				attrs.PutStr("rpc.system", "grpc")
+				attrs.PutStr("rpc.method", "oteldemo.AdService/GetAds")
+				attrs.PutStr("rpc.service", "oteldemo.AdService")
+			},
+			want: "oteldemo.AdService/oteldemo.AdService/GetAds",
 		},
 		{
 			name:                   "semconv 1.39.0: '_OTHER' 'rpc.method' - uses 'rpc.system.name'",
