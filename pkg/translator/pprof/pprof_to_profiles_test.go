@@ -674,6 +674,21 @@ func TestGetAttributeStringWithPrefix(t *testing.T) {
 		require.Error(t, err)
 	})
 
+	for _, index := range []string{"-1", "1", "2"} {
+		t.Run("out of range index "+index, func(t *testing.T) {
+			dic := pprofile.NewProfiles().Dictionary()
+			dic.StringTable().Append("")
+			dic.StringTable().Append("pprof.profile.comment." + index)
+
+			attr := dic.AttributeTable().AppendEmpty()
+			attr.SetKeyStrindex(1)
+			attr.Value().SetStr("comment")
+
+			_, err := getAttributeStringWithPrefix(dic)
+			require.Error(t, err)
+		})
+	}
+
 	t.Run("not found", func(t *testing.T) {
 		dic := pprofile.NewProfiles().Dictionary()
 		dic.StringTable().Append("")

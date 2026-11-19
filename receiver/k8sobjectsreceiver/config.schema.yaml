@@ -37,6 +37,9 @@ $defs:
         type: string
 type: object
 properties:
+  cache_sync_timeout:
+    type: string
+    format: duration
   error_mode:
     $ref: error_mode
   include_initial_state:

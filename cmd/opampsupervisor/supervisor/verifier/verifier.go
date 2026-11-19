@@ -24,6 +24,8 @@ func NewVerifier(cfg config.Verifier) (Verifier, error) {
 	switch cfg.Type {
 	case config.VerifierTypeNone:
 		return &noneVerifier{}, nil
+	case config.VerifierTypeCosign:
+		return newCosignVerifier(cfg.Cosign)
 	default:
 		return nil, fmt.Errorf("unsupported verifier type: %q", cfg.Type)
 	}

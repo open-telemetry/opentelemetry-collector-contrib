@@ -36,3 +36,4 @@ resourceMetrics:
                   timeUnixNano: "2000000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver
+          version: test

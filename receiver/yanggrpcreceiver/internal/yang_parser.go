@@ -12,6 +12,8 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 // YANGDataType represents the YANG data type information
@@ -42,13 +44,17 @@ type YANGModule struct {
 
 // YANGParser handles parsing of YANG modules to identify keyed elements
 type YANGParser struct {
-	modules map[string]*YANGModule
+	modules       map[string]*YANGModule
+	moduleSources map[string]string
+	logger        *zap.Logger
 }
 
 // NewYANGParser creates a new YANG parser instance
-func NewYANGParser() *YANGParser {
+func NewYANGParser(logger *zap.Logger) *YANGParser {
 	return &YANGParser{
-		modules: make(map[string]*YANGModule),
+		modules:       make(map[string]*YANGModule),
+		moduleSources: make(map[string]string),
+		logger:        logger,
 	}
 }
 
@@ -172,6 +178,11 @@ func (p *YANGParser) LoadBuiltinModules() {
 	p.modules[bgpModule.Name] = bgpModule
 	p.modules[processCPUModule.Name] = processCPUModule
 	p.modules[ospfModule.Name] = ospfModule
+
+	p.moduleSources[interfacesModule.Name] = "<builtin>"
+	p.moduleSources[bgpModule.Name] = "<builtin>"
+	p.moduleSources[processCPUModule.Name] = "<builtin>"
+	p.moduleSources[ospfModule.Name] = "<builtin>"
 
 	log.Printf("Loaded %d builtin YANG modules", len(p.modules))
 }
@@ -438,7 +449,14 @@ func (p *YANGParser) LoadModulesFromFile(filename string) error {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
-	return json.Unmarshal(data, &p.modules)
+	if err := json.Unmarshal(data, &p.modules); err != nil {
+		return fmt.Errorf("failed to unmarshal modules: %w", err)
+	}
+
+	for name := range p.modules {
+		p.moduleSources[name] = filename
+	}
+	return nil
 }
 
 // GetAvailableModules returns a list of loaded module names
@@ -469,7 +487,15 @@ func (p *YANGParser) ExtractYANGFromFiles(yangDir string) error {
 
 		module := p.parseYANGContent(string(content), filepath.Base(path))
 		if module != nil {
+			if prevPath, exists := p.moduleSources[module.Name]; exists {
+				p.logger.Warn("Duplicate YANG module detected; overwriting existing module",
+					zap.String("module", module.Name),
+					zap.String("previous_path", prevPath),
+					zap.String("new_path", path),
+				)
+			}
 			p.modules[module.Name] = module
+			p.moduleSources[module.Name] = path
 		}
 
 		return nil

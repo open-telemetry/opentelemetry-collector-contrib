@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -31,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/sharedpromconfig"
 )
 
@@ -146,6 +148,7 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 
 	// Read GlobalConfig under read lock for validation outside the write lock.
 	globalCfg := m.promCfg.Get().GlobalConfig
+	globalHasOM2 := slices.Contains(globalCfg.ScrapeProtocols, promconfig.OpenMetricsText2_0_0)
 
 	// Build the new scrape configs outside the lock to minimize the critical section.
 	newConfigs := make([]*promconfig.ScrapeConfig, len(m.initialScrapeConfigs))
@@ -188,6 +191,7 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 			m.settings.Logger.Error("Failed to validate the scrape configuration", zap.Error(err))
 			return 0, err
 		}
+		internal.WarnOpenMetrics2ScrapeConfig(m.settings.Logger, scrapeConfig, globalHasOM2, globalCfg.ScrapeProtocols)
 
 		newConfigs = append(newConfigs, scrapeConfig)
 	}

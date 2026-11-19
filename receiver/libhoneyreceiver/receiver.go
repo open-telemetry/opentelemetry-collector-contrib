@@ -186,7 +186,8 @@ func writeLibhoneyError(resp http.ResponseWriter, enc codec.Encoder, errorMsg st
 
 // decompressBody handles decompression based on Content-Encoding header
 // Returns an io.ReadCloser that must be closed by the caller
-func decompressBody(body io.ReadCloser, contentEncoding string) (io.ReadCloser, error) {
+// Added maxSize int64 to the arguments
+func decompressBody(body io.ReadCloser, contentEncoding string, maxSize int64) (io.ReadCloser, error) {
 	switch contentEncoding {
 	case "", "identity":
 		// No compression
@@ -200,11 +201,14 @@ func decompressBody(body io.ReadCloser, contentEncoding string) (io.ReadCloser, 
 	case "deflate":
 		return flate.NewReader(body), nil
 	case "zstd":
-		zstdReader, err := zstd.NewReader(body)
+		// Pass the maxSize to WithDecoderMaxMemory
+		zstdReader, err := zstd.NewReader(body, zstd.WithDecoderMaxMemory(uint64(maxSize)))
 		if err != nil {
 			return nil, fmt.Errorf("failed to create zstd reader: %w", err)
 		}
+
 		return zstdReader.IOReadCloser(), nil
+
 	default:
 		return nil, fmt.Errorf("unsupported content encoding: %s", contentEncoding)
 	}
@@ -263,8 +267,13 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	// Now decompress from the complete buffered data
-	bodyReader, err := decompressBody(io.NopCloser(bytes.NewReader(compressedBody)), contentEncoding)
+	maxDecodedBodySize := r.cfg.HTTP.Get().ServerConfig.MaxRequestBodySize
+	if maxDecodedBodySize == 0 {
+		maxDecodedBodySize = 20 * 1024 * 1024
+	}
+
+	// Now decompress from the complete buffered data.
+	bodyReader, err := decompressBody(io.NopCloser(bytes.NewReader(compressedBody)), contentEncoding, maxDecodedBodySize)
 	if err != nil {
 		r.settings.Logger.Error("Failed to decompress request body",
 			zap.Error(err),
@@ -297,7 +306,13 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 				err = errors.New("failed to decompress: panic during decompression")
 			}
 		}()
-		body, err = io.ReadAll(bodyReader)
+
+		limitedReader := io.LimitReader(bodyReader, maxDecodedBodySize+1)
+		body, err = io.ReadAll(limitedReader)
+
+		if err == nil && int64(len(body)) > maxDecodedBodySize {
+			err = fmt.Errorf("decoded request body exceeds limit of %d bytes", maxDecodedBodySize)
+		}
 	}()
 
 	if err != nil {
@@ -308,7 +323,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 			zap.Int("compressed-size", len(compressedBody)),
 			zap.String("endpoint", req.RequestURI),
 			zap.String("api-key-masked", maskedKey))
-		writeLibhoneyError(resp, enc, "failed to decompress request body")
+		writeLibhoneyError(resp, enc, err.Error())
 		return
 	}
 	func() {

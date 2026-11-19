@@ -7,12 +7,12 @@ import (
 	"errors"
 	"os"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig/k8sconfigtypes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8sapi/internal/metadata"
 )
 
 type Config struct {
-	APIConfig k8sconfig.APIConfig `mapstructure:",squash"`
+	APIConfig k8sconfigtypes.APIConfig `mapstructure:",squash"`
 	// NodeFromEnv can be used to extract the node name from an environment
 	// variable. The value must be the name of the environment variable.
 	// This is useful when the node a Otel agent will run on cannot be
@@ -50,7 +50,7 @@ func (c *Config) UpdateDefaults() error {
 
 func CreateDefaultConfig() Config {
 	return Config{
-		APIConfig:          k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+		APIConfig:          k8sconfigtypes.APIConfig{AuthType: k8sconfigtypes.AuthTypeServiceAccount},
 		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
 	}
 }

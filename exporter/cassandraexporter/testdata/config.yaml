@@ -9,3 +9,60 @@ cassandra:
     replication_factor: 1
   compression:
     algorithm: "LZ4Compressor"
+
+cassandra/custom:
+  dsn: 10.0.0.1
+  port: 9043
+  keyspace: "custom_keyspace"
+  trace_table: "custom_spans"
+  logs_table: "custom_logs"
+  timeout: 5s
+  replication:
+    class: "NetworkTopologyStrategy"
+    replication_factor: 3
+  compression:
+    algorithm: "ZstdCompressor"
+  auth:
+    username: "user"
+    password: "password"
+
+cassandra/invalid_dsn:
+  dsn: ""
+
+cassandra/invalid_port_low:
+  port: 0
+
+cassandra/invalid_port_high:
+  port: 70000
+
+cassandra/invalid_timeout:
+  timeout: -1s
+
+cassandra/invalid_keyspace:
+  keyspace: ""
+
+cassandra/invalid_trace_table:
+  trace_table: ""
+
+cassandra/invalid_logs_table:
+  logs_table: ""
+
+cassandra/invalid_replication_class:
+  replication:
+    class: ""
+
+cassandra/invalid_replication_factor:
+  replication:
+    replication_factor: 0
+
+cassandra/invalid_compression_algorithm:
+  compression:
+    algorithm: ""
+
+cassandra/invalid_auth_missing_username:
+  auth:
+    password: "secret"
+
+cassandra/invalid_auth_missing_password:
+  auth:
+    username: "myuser"

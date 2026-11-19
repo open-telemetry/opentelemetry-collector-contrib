@@ -1,0 +1,22 @@
+[
+  {
+    "database_name": "AdventureWorks",
+    "schema_name": "dbo",
+    "procedure_name": "[dbo].[usp_GetOrderDetails]",
+    "procedure_id": "1234567",
+    "database_id": "5",
+    "execution_count": "1500",
+    "total_worker_time": "45000000",
+    "total_elapsed_time": "90000000",
+    "total_physical_reads": "120",
+    "total_logical_reads": "480000",
+    "total_logical_writes": "600",
+    "total_spills": "24",
+    "min_elapsed_time": "1200",
+    "max_elapsed_time": "8500000",
+    "last_execution_time": "2026-09-08T10:15:30.0000000+00:00",
+    "definition": "",
+    "computer_name": "test-computer",
+    "sql_instance": "test-instance"
+  }
+]

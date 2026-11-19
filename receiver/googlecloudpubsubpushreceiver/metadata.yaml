@@ -9,6 +9,7 @@ status:
   codeowners:
     active: [constanca-m]
     emeritus: [axw]
+    seeking_new: true
 
 telemetry:
   metrics:

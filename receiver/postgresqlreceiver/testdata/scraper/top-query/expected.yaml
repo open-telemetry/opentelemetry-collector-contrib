@@ -49,6 +49,9 @@ resourceLogs:
               - key: postgresql.queryid
                 value:
                   stringValue: "114514"
+              - key: postgresql.userid
+                value:
+                  stringValue: "16415"
               - key: postgresql.rolname
                 value:
                   stringValue: master

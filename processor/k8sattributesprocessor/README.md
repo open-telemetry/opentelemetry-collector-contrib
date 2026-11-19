@@ -7,13 +7,13 @@ The Kubernetes Attributes Processor allows adding k8s metadata to resource attri
 | ------------- |-----------|
 | Stability     | [development]: profiles   |
 |               | [stable]: logs, metrics, traces   |
-| Semantic Conventions Version | 1.42.0 |
+| Semantic Conventions Version | 1.45.0 |
 | Distributions | [contrib], [k8s] |
 | Warnings      | [Memory consumption, Other](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fk8sattributes%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fk8sattributes) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fk8sattributes%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fk8sattributes) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_k8sattributes)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_k8sattributes&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark), [@odubajDT](https://www.github.com/odubajDT) |
-| Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick), [@fatsheep9146](https://www.github.com/fatsheep9146) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark), [@odubajDT](https://www.github.com/odubajDT), [@jinja2](https://www.github.com/jinja2) |
+| Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick), [@fatsheep9146](https://www.github.com/fatsheep9146), [@dmitryax](https://www.github.com/dmitryax) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [stable]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#stable
@@ -241,17 +241,48 @@ After receiving a pod deletion event, the processor can keep the pod's metadata 
 
 - `pod_delete_grace_period` (`default: 120s`): The grace period to wait before deleting a pod's metadata from the lookup cache after a deletion event.
 
+## Kubelet Pod Metadata Source
+
+The processor can experimentally poll the node-local kubelet `https://<node>:10250/pods` endpoint for pod metadata instead of using the Kubernetes API server pod informer. This is disabled by default, gated behind `processor.k8sattributes.EnableKubeletPodSource`, and is intended for daemonset collectors in large clusters where pod watches create excessive API server load.
+
+Kubelet mode lists pods on a timer and applies namespace, node, label, and field filters locally because kubelet `/pods` is not a watch API and does not support server-side selectors. It only returns pods visible to one kubelet. Pod metadata changes may lag by up to `kubelet.poll_interval`; shorter intervals improve freshness but increase kubelet request load. Each `/pods` request is bounded by `kubelet.request_timeout` (default `10s`) so a stalled kubelet connection cannot block polling or collector shutdown. The processor may still use Kubernetes API server informers for namespace, node, and workload metadata when configured extraction rules require them.
+
+Kubelet mode requires `filter.node`, `filter.node_from_env_var`, or `kubelet.endpoint`. The collector service account must be allowed by kubelet authentication and authorization to read `/pods`, and the kubelet serving certificate must be trusted by the configured Kubernetes auth/TLS material. Some managed Kubernetes services restrict direct kubelet access from workload service accounts. For example, GKE documents that secure kubelet `/pods` access requires `nodes/proxy`, which cannot be granted in Autopilot clusters and is not recommended in Standard clusters. In those clusters this mode cannot be used unless kubelet authn/authz allows the collector to read `/pods`. If your cluster does not make the kubelet serving CA available to the collector, `kubelet.insecure_skip_verify` can be used to skip kubelet TLS verification. Plaintext `http` endpoints require `kubelet.allow_insecure_http`.
+
+When `auth_type` is `kubeConfig`, kubelet requests use the Kubernetes API server node proxy instead of direct node-local kubelet access. Use `serviceAccount` or TLS auth with a kubelet endpoint for the API server load-reduction path.
+
+Basic reference numbers:
+
+- Local `kind` control-plane validation using the stable `apiserver_longrunning_requests` metric showed the expected watch reduction: with `5` collector replicas, the API server `pods` `WATCH` count went from `5` to `10` with the normal API-backed pod source, and stayed at `5` with direct kubelet mode.
+- In a local full-Collector comparison using the same `kind` cluster and `34`-pod snapshot, API-backed pod-source mode measured `0.00%/0.04%` CPU avg/max and `9.1/9.1 MiB` RAM avg/max; direct kubelet pod-source mode measured `0.13%/0.22%` CPU avg/max and `8.5/8.5 MiB` RAM avg/max. Each result used `30` one-second Docker resource samples after startup.
+- `BenchmarkKubeletReconcilePods` in `internal/kube` isolates the per-poll reconcile step (local filtering, trimming, comparison with the previous poll, cache update) for a node at the default kubelet `--max-pods` of `110`. On an Apple M4 Pro with Go 1.26, one steady-state reconcile of `110` unchanged pods took about `0.70 ms` with `8.4k` allocations (`~855 KiB`); with `10%` of the pods replaced between polls it took about `0.66 ms` with `7.8k` allocations (`~970 KiB`). The cost grows linearly with pod count (`1000` unchanged pods took about `6.1 ms`). At the default `10s` poll interval this is below `0.01%` of one CPU core per node for the reconcile work itself, excluding the kubelet HTTP request and JSON decoding.
+
+These are small-cluster reference numbers, not capacity guarantees. They show the expected tradeoff: direct kubelet mode removes the Collector's API-server pod watch, but adds periodic node-local polling and reconciliation work. Production results will vary with pod count, poll interval, metadata rules, and telemetry traffic.
+
+```yaml
+processors:
+  k8sattributes:
+    auth_type: serviceAccount
+    filter:
+      node_from_env_var: K8S_NODE_NAME
+    kubelet:
+      enabled: true
+      poll_interval: 10s
+      request_timeout: 10s
+      insecure_skip_verify: false
+      allow_insecure_http: false
+```
 
 ## Extracting attributes from pod labels and annotations
 
-The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods, namespaces, deployments, replicasets, statefulsets, daemonsets, jobs, cronjobs and nodes.
-The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace/Deployment/ReplicaSet/StatefulSet/DaemonSet/Job/CronJob/Node annotations/labels is configured via "annotations"  and "labels" keys.
-This config represents a list of annotations/labels that are extracted from pods/namespaces/deployments/replicasets/statefulsets/daemonsets/jobs/cronjobs/nodes and added to spans, metrics and logs.
+The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods, namespaces, deployments, replicasets, statefulsets, daemonsets, jobs, cronjobs, horizontalpodautoscalers and nodes.
+The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace/Deployment/ReplicaSet/StatefulSet/DaemonSet/Job/CronJob/HorizontalPodAutoscaler/Node annotations/labels is configured via "annotations"  and "labels" keys.
+This config represents a list of annotations/labels that are extracted from pods/namespaces/deployments/replicasets/statefulsets/daemonsets/jobs/cronjobs/horizontalpodautoscalers/nodes and added to spans, metrics and logs.
 Each item is specified as a config of tag_name (representing the tag name to tag the spans with),
 key (representing the key used to extract value) and from (representing the kubernetes object used to extract the value).
-The "from" field has the following possible values: "pod", "namespace", "deployment", "replicaset", "statefulset", "daemonset", "job", "cronjob" and "node" and defaults to "pod" if none is specified.
+The "from" field has the following possible values: "pod", "namespace", "deployment", "replicaset", "statefulset", "daemonset", "job", "cronjob", "horizontalpodautoscaler" and "node" and defaults to "pod" if none is specified.
 
-By default, extracting metadata from `Deployments`, `ReplicaSets`, `StatefulSets`, `DaemonSets`, `Jobs` and `CronJobs` is disabled. Enabling extraction of these metadata comes with an extra memory consumption cost.
+By default, extracting metadata from `Deployments`, `ReplicaSets`, `StatefulSets`, `DaemonSets`, `Jobs`, `CronJobs` and `HorizontalPodAutoscalers` is disabled. Enabling extraction of these metadata comes with an extra memory consumption cost.
 
 A few examples to use this config are as follows:
 
@@ -308,6 +339,8 @@ The Extracted deployment name is: `opentelemetry-collector`.
 Also note that for **CronJob names (`k8s.cronjob.name`)** a similar pattern applies, but it uses the **Job** informer (not ReplicaSet). With only `k8s.cronjob.name` in `extract.metadata`, the processor derives the CronJob name from the Job's name using a heuristic (8-digit time suffix aligned with pod creation time) and does **not** start a Job informer. The Job informer is started when `k8s.cronjob.uid` is enabled, or when labels or annotations are extracted with `from: job` or `from: cronjob`, in which case the CronJob name can be resolved from the API when available. That reduces RBAC needs and memory use when you only need the CronJob name (no `jobs` watch for that attribute alone).
 
 Extracting labels or annotations with `from: cronjob` additionally starts a **CronJob** informer (to read the CronJob's own labels/annotations) on top of the Job informer (needed to associate a Pod's Job with its owning CronJob's UID).
+
+**HorizontalPodAutoscalers (`from: horizontalpodautoscaler`)** are unlike the workload types above: an HPA has no owning Pod, so its labels/annotations enrich telemetry (typically HPA metrics emitted by the `k8sclusterreceiver`) purely by matching the `k8s.hpa.uid` resource attribute already present on that telemetry — no Pod association or owner-reference chain is involved. Extracting labels or annotations with `from: horizontalpodautoscaler` starts a dedicated **HorizontalPodAutoscaler** informer.
 
 Example:
 
@@ -523,6 +556,8 @@ When using `k8s.cronjob.uid`, or when extracting labels or annotations with `fro
 
 When extracting labels or annotations with `from: cronjob`, the processor additionally needs `get`, `watch` and `list` permissions for `cronjobs` resources.
 
+When extracting labels or annotations with `from: horizontalpodautoscaler`, the processor needs `get`, `watch` and `list` permissions for `horizontalpodautoscalers` resources in the `autoscaling` API group.
+
 Here is an example of a `ClusterRole` to give a `ServiceAccount` the necessary permissions for all pods, nodes, and namespaces in the cluster (replace `<OTEL_COL_NAMESPACE>` with a namespace where collector is deployed):
 
 ```yaml
@@ -545,6 +580,9 @@ rules:
   verbs: ["get", "list", "watch"]
 - apiGroups: ["batch"]
   resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
   verbs: ["get", "list", "watch"]
 - apiGroups: ["extensions"]
   resources: ["replicasets"]
@@ -597,6 +635,9 @@ rules:
   verbs: ["get", "list", "watch"]
 - apiGroups: ["batch"]
   resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
   verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -733,6 +774,17 @@ k8s_attributes:
   # Grace period to wait before removing deleted pods from the cache.
   # Default: 120s
   pod_delete_grace_period: 120s
+
+  # Experimental: use direct kubelet HTTPS /pods polling as the pod metadata source.
+  # Requires filter.node, filter.node_from_env_var, or kubelet.endpoint.
+  kubelet:
+    enabled: false
+    poll_interval: 10s
+    # Timeout for each kubelet /pods request. Default: 10s
+    request_timeout: 10s
+    endpoint: ""
+    insecure_skip_verify: false
+    allow_insecure_http: false
   
   # Extract configuration - defines what metadata to extract
   extract:
@@ -778,7 +830,7 @@ k8s_attributes:
     annotations:
       - tag_name: annotation_value  # Resource attribute name
         key: my-annotation           # Annotation key to extract
-        from: pod                     # Source: pod, namespace, deployment, statefulset, daemonset, job, cronjob, or node
+        from: pod                     # Source: pod, namespace, deployment, statefulset, daemonset, job, cronjob, horizontalpodautoscaler, or node
       - tag_name: deployment_annotation
         key: app.version
         from: deployment
@@ -796,7 +848,7 @@ k8s_attributes:
     labels:
       - tag_name: label_value        # Resource attribute name
         key: my-label                # Label key to extract
-        from: pod                     # Source: pod, namespace, deployment, statefulset, daemonset, job, cronjob, or node
+        from: pod                     # Source: pod, namespace, deployment, statefulset, daemonset, job, cronjob, horizontalpodautoscaler, or node
       - tag_name: namespace_label
         key: environment
         from: namespace
@@ -901,6 +953,7 @@ k8s_attributes:
 | `wait_for_metadata_timeout` | duration | `10s` | Max wait time for metadata sync on startup |
 | `watch_sync_period` | duration | `5m` | Resync period for K8s informers (`0s` disables resync completely) |
 | `pod_delete_grace_period` | duration | `120s` | Grace period to wait before deleting pod metadata from the cache on deletion |
+| `kubelet` | KubeletConfig | disabled | Experimental direct kubelet HTTPS `/pods` polling for pod metadata |
 
 #### Extract Options
 
@@ -929,7 +982,7 @@ All fields listed in the "Complete Configuration Options" section above under `e
 | `tag_name` | string | Auto-generated | Resource attribute name (supports regex backreferences with `key_regex`) |
 | `key` | string | `""` | Exact annotation/label key to extract (mutually exclusive with `key_regex`) |
 | `key_regex` | string | `""` | Regex pattern to match annotation/label keys (mutually exclusive with `key`) |
-| `from` | string | `pod` | Source to extract from: `pod`, `namespace`, `deployment`, `statefulset`, `daemonset`, `job`, `cronjob`, or `node` |
+| `from` | string | `pod` | Source to extract from: `pod`, `namespace`, `deployment`, `statefulset`, `daemonset`, `job`, `cronjob`, `horizontalpodautoscaler`, or `node` |
 
 #### Filter Options
 
@@ -1013,7 +1066,7 @@ The processor maintains an in-memory cache of K8s metadata for all pods it monit
 - **Number of pods monitored**: Each pod's metadata (labels, annotations, owner references) is cached
 - **Metadata fields extracted**: More fields = more memory per pod
 - **Label/annotation extraction rules**: Regex patterns and multiple rules increase overhead
-- **Workload metadata**: Extracting deployment/statefulset/daemonset/job/cronjob metadata adds additional caching
+- **Workload metadata**: Extracting deployment/statefulset/daemonset/job/cronjob/horizontalpodautoscaler metadata adds additional caching
 
 **Optimization strategies:**
 1. **Use node filtering** in agent deployments: `filter.node_from_env_var: KUBE_NODE_NAME`

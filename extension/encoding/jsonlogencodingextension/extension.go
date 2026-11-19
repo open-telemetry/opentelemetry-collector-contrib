@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/component"
@@ -31,15 +32,10 @@ func (e *jsonLogExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	var logs []map[string]any
 
 	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
-		rl := rls.At(i)
+	for _, rl := range rls.All() {
 		resourceAttrs := rl.Resource().Attributes().AsRaw()
-		sls := rl.ScopeLogs()
-		for j := 0; j < sls.Len(); j++ {
-			sl := sls.At(j)
-			logSlice := sl.LogRecords()
-			for k := 0; k < logSlice.Len(); k++ {
-				log := logSlice.At(k)
+		for _, sl := range rl.ScopeLogs().All() {
+			for _, log := range sl.LogRecords().All() {
 				if e.config.Mode == JSONEncodingModeBodyWithInlineAttributes {
 					// special handling for inline attributes Mode
 					entry := make(map[string]any)
@@ -98,6 +94,7 @@ func (e *jsonLogExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
 func (e *jsonLogExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	p := plog.NewLogs()
 	sl := p.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	if e.config.ArrayMode {
 		// Default mode to handle arrays having backward compatibility
@@ -109,9 +106,13 @@ func (e *jsonLogExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 		for _, r := range jsonLogs {
 			if e.config.ParseInts {
-				convertNumbers(r)
+				if err := convertNumbers(r); err != nil {
+					return p, err
+				}
 			}
-			if err := sl.LogRecords().AppendEmpty().Body().SetEmptyMap().FromRaw(r); err != nil {
+			lr := sl.LogRecords().AppendEmpty()
+			lr.SetObservedTimestamp(now)
+			if err := lr.Body().SetEmptyMap().FromRaw(r); err != nil {
 				return p, err
 			}
 		}
@@ -124,9 +125,13 @@ func (e *jsonLogExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 			}
 
 			if e.config.ParseInts {
-				convertNumbers(record)
+				if err := convertNumbers(record); err != nil {
+					return plog.Logs{}, err
+				}
 			}
-			if err := sl.LogRecords().AppendEmpty().Body().SetEmptyMap().FromRaw(record); err != nil {
+			lr := sl.LogRecords().AppendEmpty()
+			lr.SetObservedTimestamp(now)
+			if err := lr.Body().SetEmptyMap().FromRaw(record); err != nil {
 				return p, err
 			}
 		}
@@ -163,40 +168,56 @@ func unmarshalJSON(buf []byte, value any, parseInts bool) error {
 	return nil
 }
 
-func convertNumbers(parsedValue map[string]any) {
+func convertNumbers(parsedValue map[string]any) error {
 	for key, value := range parsedValue {
 		switch value := value.(type) {
 		case json.Number:
-			parsedValue[key] = convertNumber(value)
+			converted, err := convertNumber(value)
+			if err != nil {
+				return err
+			}
+			parsedValue[key] = converted
 		case map[string]any:
-			convertNumbers(value)
+			if err := convertNumbers(value); err != nil {
+				return err
+			}
 		case []any:
-			convertNumbersArray(value)
+			if err := convertNumbersArray(value); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
-func convertNumbersArray(values []any) {
+func convertNumbersArray(values []any) error {
 	for i, value := range values {
 		switch value := value.(type) {
 		case json.Number:
-			values[i] = convertNumber(value)
+			converted, err := convertNumber(value)
+			if err != nil {
+				return err
+			}
+			values[i] = converted
 		case map[string]any:
-			convertNumbers(value)
+			if err := convertNumbers(value); err != nil {
+				return err
+			}
 		case []any:
-			convertNumbersArray(value)
+			if err := convertNumbersArray(value); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
-func convertNumber(value json.Number) any {
+// UseNumber only checks syntax, so return Float64's range error to keep out-of-range numbers failing the parse instead of becoming strings.
+func convertNumber(value json.Number) (any, error) {
 	if converted, err := value.Int64(); err == nil {
-		return converted
+		return converted, nil
 	}
-	if converted, err := value.Float64(); err == nil {
-		return converted
-	}
-	return value.String()
+	return value.Float64()
 }
 
 func (*jsonLogExtension) Start(context.Context, component.Host) error {

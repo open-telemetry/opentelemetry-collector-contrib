@@ -5,17 +5,20 @@ package yanggrpcreceiver
 
 import (
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/yanggrpcreceiver/internal"
 )
 
 func TestYANGParser(t *testing.T) {
-	parser := internal.NewYANGParser()
+	parser := internal.NewYANGParser(zap.NewNop())
 	parser.LoadBuiltinModules()
 
 	t.Run("TestBuiltinModulesLoaded", func(t *testing.T) {
@@ -55,7 +58,7 @@ func TestYANGParser(t *testing.T) {
 }
 
 func TestYANGParserIntegration(t *testing.T) {
-	parser := internal.NewYANGParser()
+	parser := internal.NewYANGParser(zap.NewNop())
 	parser.LoadBuiltinModules()
 
 	// Test real telemetry scenarios
@@ -93,7 +96,7 @@ func TestYANGParserIntegration(t *testing.T) {
 }
 
 func TestYANGParserPersistence(t *testing.T) {
-	parser := internal.NewYANGParser()
+	parser := internal.NewYANGParser(zap.NewNop())
 	parser.LoadBuiltinModules()
 
 	// Test saving modules to file
@@ -103,7 +106,7 @@ func TestYANGParserPersistence(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Test loading from file
-		parser2 := internal.NewYANGParser()
+		parser2 := internal.NewYANGParser(zap.NewNop())
 		err = parser2.LoadModulesFromFile(filename)
 		assert.NoError(t, err)
 
@@ -117,7 +120,7 @@ func TestYANGParserPersistence(t *testing.T) {
 // TestYANGEnhancedTelemetryProcessing tests the integration with real telemetry data
 func TestYANGEnhancedTelemetryProcessing(t *testing.T) {
 	// This test would simulate the enhanced telemetry processing with YANG awareness
-	parser := internal.NewYANGParser()
+	parser := internal.NewYANGParser(zap.NewNop())
 	parser.LoadBuiltinModules()
 
 	// Test path analysis for live telemetry
@@ -140,4 +143,61 @@ func TestYANGEnhancedTelemetryProcessing(t *testing.T) {
 	analysisJSON, err := json.MarshalIndent(analysis, "", "  ")
 	require.NoError(t, err)
 	t.Logf("Analysis JSON:\n%s", analysisJSON)
+}
+
+func TestYANGParser_DuplicateModuleDetection(t *testing.T) {
+	core, recorded := observer.New(zap.WarnLevel)
+	logger := zap.New(core)
+	parser := internal.NewYANGParser(logger)
+
+	dir1 := t.TempDir()
+	dir2 := t.TempDir()
+
+	yang1 := `
+module test-dup {
+    namespace "urn:test";
+    prefix "td";
+
+    list item {
+        key "k1";
+        leaf k1 {
+            type string;
+        }
+    }
+}
+`
+	yang2 := `
+module test-dup {
+    namespace "urn:test";
+    prefix "td";
+
+    list item {
+        key "k2";
+        leaf k2 {
+            type string;
+        }
+    }
+}
+`
+
+	f1 := filepath.Join(dir1, "dup.yang")
+	f2 := filepath.Join(dir2, "dup.yang")
+	require.NoError(t, os.WriteFile(f1, []byte(yang1), 0o600))
+	require.NoError(t, os.WriteFile(f2, []byte(yang2), 0o600))
+
+	require.NoError(t, parser.ExtractYANGFromFiles(dir1))
+	assert.Equal(t, 0, recorded.Len())
+	assert.Equal(t, "k1", parser.GetKeyForPath("test-dup", "/item"))
+
+	require.NoError(t, parser.ExtractYANGFromFiles(dir2))
+	require.Equal(t, 1, recorded.Len())
+
+	warn := recorded.All()[0]
+	assert.Equal(t, "Duplicate YANG module detected; overwriting existing module", warn.Message)
+	ctxMap := warn.ContextMap()
+	assert.Equal(t, "test-dup", ctxMap["module"])
+	assert.Equal(t, f1, ctxMap["previous_path"])
+	assert.Equal(t, f2, ctxMap["new_path"])
+
+	assert.Equal(t, "k2", parser.GetKeyForPath("test-dup", "/item"))
 }

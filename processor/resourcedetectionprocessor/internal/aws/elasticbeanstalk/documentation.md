@@ -8,13 +8,13 @@
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| cloud.platform | The cloud.platform | Any Str | true | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-platform) | - |
-| cloud.provider | The cloud.provider | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
+| cloud.platform | The cloud.platform | Any Str | true | [cloud.platform](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-platform) | - |
+| cloud.provider | The cloud.provider | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
 | deployment.environment | The deployment.environment. Deprecated, use deployment.environment.name instead. | Any Str | true | - | - |
-| deployment.environment.name | The name of the deployment environment. | Any Str | true | [deployment.environment.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/deployment.md#deployment-environment-name) | - |
-| deployment.id | The id of the deployment. | Any Str | true | [deployment.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/deployment.md#deployment-id) | - |
-| service.instance.id | The Elastic Beanstalk deployment ID. Superseded by deployment.id. | Any Str | true | [service.instance.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/service.md#service-instance-id) | - |
-| service.version | The service.version | Any Str | true | [service.version](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/service.md#service-version) | - |
+| deployment.environment.name | The name of the deployment environment. | Any Str | true | [deployment.environment.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/deployment.md#deployment-environment-name) | - |
+| deployment.id | The id of the deployment. | Any Str | true | [deployment.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/deployment.md#deployment-id) | - |
+| service.instance.id | The Elastic Beanstalk deployment ID. Superseded by deployment.id. | Any Str | true | [service.instance.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/service.md#service-instance-id) | - |
+| service.version | The service.version | Any Str | true | [service.version](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/service.md#service-version) | - |
 
 ## Feature Gates
 
