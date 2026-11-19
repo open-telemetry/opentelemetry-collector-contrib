@@ -5,7 +5,9 @@ package tracking
 
 import (
 	"context"
+	"fmt"
 	"math"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -782,4 +784,153 @@ func Test_metricTracker_sweeper(t *testing.T) {
 	for range sweepEvent { //nolint:revive
 	}
 	assert.True(t, closed.Load(), "Sweeper did not terminate.")
+}
+
+func TestMetricTracker_ConcurrentConvertAndRemoveStale(t *testing.T) {
+	tr := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueKeep)
+	now := time.Now()
+	staleTS := pcommon.NewTimestampFromTime(now)
+	staleBefore := pcommon.NewTimestampFromTime(now.Add(time.Minute))
+
+	const numSeries = 64
+	sumIDs := make([]MetricIdentity, numSeries)
+	expIDs := make([]MetricIdentity, numSeries)
+	for i := range numSeries {
+		attrs := pcommon.NewMap()
+		attrs.PutInt("series", int64(i))
+		sumIDs[i] = MetricIdentity{
+			Resource:               pcommon.NewResource(),
+			InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+			MetricType:             pmetric.MetricTypeSum,
+			MetricIsMonotonic:      true,
+			MetricName:             fmt.Sprintf("sum_%d", i),
+			Attributes:             attrs,
+			MetricValueType:        pmetric.NumberDataPointValueTypeInt,
+		}
+		expIDs[i] = MetricIdentity{
+			Resource:               pcommon.NewResource(),
+			InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+			MetricType:             pmetric.MetricTypeExponentialHistogram,
+			MetricName:             fmt.Sprintf("exp_%d", i),
+			Attributes:             attrs,
+		}
+	}
+
+	var negSeen atomic.Bool
+	stop := make(chan struct{})
+	var sweeperWG sync.WaitGroup
+	sweeperWG.Go(func() {
+		for {
+			tr.removeStale(staleBefore)
+			if tr.Streams() < 0 {
+				negSeen.Store(true)
+			}
+			select {
+			case <-stop:
+				return
+			default:
+			}
+		}
+	})
+
+	var workerWG sync.WaitGroup
+	for w := range 4 {
+		workerWG.Go(func() {
+			for iter := range 400 {
+				s := (iter + w*7) % numSeries
+				tr.Convert(MetricPoint{
+					Identity: sumIDs[s],
+					Value: ValuePoint{
+						ObservedTimestamp: staleTS,
+						IntValue:          int64(iter + 1),
+					},
+				})
+				// Exercise ExponentialHistogram initial Clone concurrently with
+				// subsequent scale/zero-threshold coarsening on the same key.
+				tr.Convert(MetricPoint{
+					Identity: expIDs[s],
+					Value: ValuePoint{
+						ObservedTimestamp: staleTS,
+						ExponentialHistogramValue: &ExponentialHistogramPoint{
+							Count:         uint64(iter + 1),
+							Sum:           float64(iter + 1),
+							Scale:         int32(2 - (iter % 3)),
+							ZeroThreshold: float64(iter % 3),
+							Positive: ExponentialBuckets{
+								Offset:       0,
+								BucketCounts: []uint64{uint64(iter + 1)},
+							},
+						},
+					},
+				})
+				if tr.Streams() < 0 {
+					negSeen.Store(true)
+				}
+			}
+		})
+	}
+
+	workerWG.Wait()
+	close(stop)
+	sweeperWG.Wait()
+
+	assert.False(t, negSeen.Load(), "Streams() must never go negative under concurrent Convert and removeStale")
+
+	tr.removeStale(pcommon.NewTimestampFromTime(now.Add(time.Hour)))
+	assert.Equal(t, int64(0), tr.Streams())
+
+	remaining := 0
+	tr.states.Range(func(_, _ any) bool {
+		remaining++
+		return true
+	})
+	assert.Equal(t, 0, remaining)
+}
+
+func TestMetricTracker_RemoveStaleConcurrentSweeps(t *testing.T) {
+	tr := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueKeep)
+	now := time.Now()
+	staleTS := pcommon.NewTimestampFromTime(now)
+	freshTS := pcommon.NewTimestampFromTime(now.Add(2 * time.Minute))
+	staleBefore := pcommon.NewTimestampFromTime(now.Add(time.Minute))
+
+	const numStale = 200
+	const numFresh = 50
+	for i := range numStale + numFresh {
+		attrs := pcommon.NewMap()
+		attrs.PutInt("i", int64(i))
+		ts := staleTS
+		if i >= numStale {
+			ts = freshTS
+		}
+		tr.Convert(MetricPoint{
+			Identity: MetricIdentity{
+				Resource:               pcommon.NewResource(),
+				InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+				MetricType:             pmetric.MetricTypeSum,
+				MetricIsMonotonic:      true,
+				MetricName:             "req_total",
+				Attributes:             attrs,
+				MetricValueType:        pmetric.NumberDataPointValueTypeInt,
+			},
+			Value: ValuePoint{
+				ObservedTimestamp: ts,
+				IntValue:          10,
+			},
+		})
+	}
+	require.Equal(t, int64(numStale+numFresh), tr.Streams())
+
+	start := make(chan struct{})
+	var wg sync.WaitGroup
+	for range 4 {
+		wg.Go(func() {
+			<-start
+			tr.removeStale(staleBefore)
+		})
+	}
+	close(start)
+	wg.Wait()
+
+	assert.Equal(t, int64(numFresh), tr.Streams(), "overlapping removeStale sweeps must not double-decrement Streams()")
 }

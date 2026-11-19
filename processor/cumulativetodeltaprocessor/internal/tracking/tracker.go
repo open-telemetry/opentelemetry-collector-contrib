@@ -150,37 +150,48 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 	hashableID := b.String()
 	identityBufferPool.Put(b)
 
-	s, ok := t.states.LoadOrStore(hashableID, &state{
-		prevPoint: metricPoint,
-	})
+	s, ok := t.states.Load(hashableID)
 	if !ok {
-		t.streams.Add(1)
-		switch metricID.MetricType {
-		case pmetric.MetricTypeHistogram:
-			val := metricPoint.HistogramValue.Clone()
-			out.HistogramValue = &val
-		case pmetric.MetricTypeExponentialHistogram:
-			val := metricPoint.ExponentialHistogramValue.Clone()
-			out.ExponentialHistogramPoint = &val
-		case pmetric.MetricTypeSum:
-			out.IntValue = metricPoint.IntValue
-			out.FloatValue = metricPoint.FloatValue
-		case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSummary:
+		newS := &state{
+			prevPoint: metricPoint,
 		}
-		switch t.initialValue {
-		case InitialValueAuto:
-			if metricID.StartTimestamp < t.startTime || metricPoint.ObservedTimestamp == metricID.StartTimestamp {
-				reason = ReasonInitial
-				return out, valid, reason
+		// Lock newS before publishing it to t.states so a concurrent
+		// removeStale sweep cannot evict it and decrement t.streams before
+		// t.streams.Add(1) completes, and so a concurrent Convert cannot
+		// mutate prevPoint before we finish cloning the initial value.
+		newS.Lock()
+		s, ok = t.states.LoadOrStore(hashableID, newS)
+		if !ok {
+			defer newS.Unlock()
+			t.streams.Add(1)
+			switch metricID.MetricType {
+			case pmetric.MetricTypeHistogram:
+				val := metricPoint.HistogramValue.Clone()
+				out.HistogramValue = &val
+			case pmetric.MetricTypeExponentialHistogram:
+				val := metricPoint.ExponentialHistogramValue.Clone()
+				out.ExponentialHistogramPoint = &val
+			case pmetric.MetricTypeSum:
+				out.IntValue = metricPoint.IntValue
+				out.FloatValue = metricPoint.FloatValue
+			case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSummary:
 			}
-			out.StartTimestamp = metricID.StartTimestamp
-			valid = true
-		case InitialValueKeep:
-			valid = true
-		case InitialValueDrop:
-			reason = ReasonInitial
+			switch t.initialValue {
+			case InitialValueAuto:
+				if metricID.StartTimestamp < t.startTime || metricPoint.ObservedTimestamp == metricID.StartTimestamp {
+					reason = ReasonInitial
+					return out, valid, reason
+				}
+				out.StartTimestamp = metricID.StartTimestamp
+				valid = true
+			case InitialValueKeep:
+				valid = true
+			case InitialValueDrop:
+				reason = ReasonInitial
+			}
+			return out, valid, reason
 		}
-		return out, valid, reason
+		newS.Unlock()
 	}
 
 	valid = true
@@ -335,26 +346,26 @@ func (t *MetricTracker) removeStale(staleBefore pcommon.Timestamp) {
 	t.states.Range(func(key, value any) bool {
 		s := value.(*state)
 
-		// There is a known race condition here.
-		// Because the state may be in the process of updating at the
-		// same time as the stale removal, there is a chance that we
-		// will remove a "stale" state that is in the process of
-		// updating. This can only happen when datapoints arrive around
-		// the expiration time.
+		// Hold s.Lock() across the staleness check and CompareAndDelete so:
+		//  * We never evict a state that Convert just refreshed to a newer
+		//    ObservedTimestamp, or a newly inserted state before its
+		//    t.streams.Add(1) completes.
+		//  * t.streams.Add(-1) runs only when CompareAndDelete actually
+		//    removes this exact *state entry, preventing double-decrements.
 		//
-		// In this case, the possible outcomes are:
-		//	* Updating goroutine wins, point will not be stale
-		//	* Stale removal wins, updating goroutine will still see
-		//	  the removed state but the state after the update will
-		//	  not be persisted. The next update will load an entirely
-		//	  new state.
+		// A Convert goroutine that loaded s from t.states before
+		// CompareAndDelete may still acquire s.Lock() after eviction and diff
+		// once against the evicted state; its update to the detached *state is
+		// discarded and the next observation initializes a fresh entry.
+		// Lock ordering is strictly s.Mutex -> sync.Map everywhere.
 		s.Lock()
-		lastObserved := s.prevPoint.ObservedTimestamp
-		s.Unlock()
-		if lastObserved < staleBefore {
-			t.logger.Debug("removing stale state key", zap.String("key", key.(string)))
-			t.states.Delete(key)
+		removed := s.prevPoint.ObservedTimestamp < staleBefore && t.states.CompareAndDelete(key, s)
+		if removed {
 			t.streams.Add(-1)
+		}
+		s.Unlock()
+		if removed {
+			t.logger.Debug("removing stale state key", zap.String("key", key.(string)))
 		}
 		return true
 	})
