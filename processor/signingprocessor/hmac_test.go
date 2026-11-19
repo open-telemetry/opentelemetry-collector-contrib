@@ -27,6 +27,7 @@ import (
 	"hash"
 	"testing"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
@@ -177,7 +178,7 @@ func TestConfigGetHashHMAC(t *testing.T) {
 
 func TestHMACProviderFromEnv(t *testing.T) {
 	secret := []byte("super-secret-key")
-	prov, err := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: base64.StdEncoding.EncodeToString(secret)})
+	prov, err := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: configopaque.String(base64.StdEncoding.EncodeToString(secret))})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -224,7 +225,7 @@ func TestHMACProviderMissingFile(t *testing.T) {
 
 func TestSignVerifyHMACSHA256(t *testing.T) {
 	secret := "test-hmac-secret-32-bytes-padded!"
-	prov, err := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: base64.StdEncoding.EncodeToString([]byte(secret))})
+	prov, err := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: configopaque.String(base64.StdEncoding.EncodeToString([]byte(secret)))})
 	if err != nil {
 		t.Fatalf("create provider: %v", err)
 	}
@@ -273,7 +274,7 @@ func TestSignVerifyHMACSHA256(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestConsumeLogsHMACNoCertAttribute(t *testing.T) {
-	prov, _ := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: base64.StdEncoding.EncodeToString([]byte("secret"))})
+	prov, _ := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: configopaque.String(base64.StdEncoding.EncodeToString([]byte("secret")))})
 	sink := &logSink{}
 
 	p := &signingProcessor{
@@ -311,7 +312,7 @@ func TestConsumeLogsHMACNoCertAttribute(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestHMACTamperedPayloadDetected(t *testing.T) {
-	prov, _ := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: base64.StdEncoding.EncodeToString([]byte("tamper-test-secret"))})
+	prov, _ := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: configopaque.String(base64.StdEncoding.EncodeToString([]byte("tamper-test-secret")))})
 
 	p := &signingProcessor{
 		config:       &Config{Algorithm: AlgorithmHMACSHA256},

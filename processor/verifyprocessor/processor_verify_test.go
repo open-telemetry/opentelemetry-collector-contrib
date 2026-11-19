@@ -27,6 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -547,7 +548,7 @@ func TestFileAndEnvProviders(t *testing.T) {
 	})
 
 	t.Run("env hmac", func(t *testing.T) {
-		prov, err := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: base64.StdEncoding.EncodeToString(rawHMAC)})
+		prov, err := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: configopaque.String(base64.StdEncoding.EncodeToString(rawHMAC))})
 		require.NoError(t, err)
 		assert.Equal(t, rawHMAC, prov.GetHMACKey())
 	})
@@ -563,13 +564,13 @@ func TestFileAndEnvProviders(t *testing.T) {
 
 	t.Run("env hmac raw", func(t *testing.T) {
 		raw := "raw-hmac-secret!"
-		prov, err := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: raw})
+		prov, err := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: configopaque.String(raw)})
 		require.NoError(t, err)
 		assert.Equal(t, []byte(raw), prov.GetHMACKey())
 	})
 
 	t.Run("env hmac padded base64", func(t *testing.T) {
-		prov, err := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: "\n" + base64.StdEncoding.EncodeToString(rawHMAC) + "\n"})
+		prov, err := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: configopaque.String("\n" + base64.StdEncoding.EncodeToString(rawHMAC) + "\n")})
 		require.NoError(t, err)
 		assert.Equal(t, rawHMAC, prov.GetHMACKey())
 	})
