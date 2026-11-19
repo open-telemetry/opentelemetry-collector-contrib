@@ -1,0 +1,7 @@
+change_type: deprecation
+component: exporter/prometheus
+note: Reject configuration when sending_queue.enabled is explicitly set to true.
+issues: [52830]
+subtext: |
+  As the Prometheus exporter is pull-based and does not support queuing, explicitly configuring sending_queue.enabled: true is rejected during configuration validation.
+change_logs: [user]

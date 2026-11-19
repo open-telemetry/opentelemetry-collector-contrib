@@ -118,10 +118,15 @@ func TestConfigValidate_SendingQueue(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	assert.NoError(t, cfg.Validate())
 
-	// Setting sending_queue explicitly should be valid when the feature gate is disabled
+	// Setting sending_queue explicitly should be valid when the feature gate is disabled and enabled is not true
 	queueCfg := exporterhelper.NewDefaultQueueConfig()
 	cfg.QueueBatchConfig = configoptional.Some(queueCfg)
 	assert.NoError(t, cfg.Validate())
+
+	// Setting sending_queue.enabled explicitly must fail validation
+	cfg.sendingQueueEnabled = true
+	assert.ErrorContains(t, cfg.Validate(), "sending_queue.enabled is not supported; the Prometheus exporter is pull-based and does not support queuing")
+	cfg.sendingQueueEnabled = false
 
 	// Setting sending_queue explicitly must fail when the feature gate is enabled
 	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusDisableSendingQueueFeatureGate, true)()
@@ -130,4 +135,43 @@ func TestConfigValidate_SendingQueue(t *testing.T) {
 	// Default config (HasValue() == false) must remain valid even when the feature gate is enabled
 	defaultCfg := createDefaultConfig().(*Config)
 	assert.NoError(t, defaultCfg.Validate())
+}
+
+func TestConfigUnmarshal_SendingQueueEnabled(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		enabled     bool
+		validateErr string
+	}{
+		{
+			name:        "sending_queue enabled true rejected in validate",
+			enabled:     true,
+			validateErr: "sending_queue.enabled is not supported; the Prometheus exporter is pull-based and does not support queuing",
+		},
+		{
+			name:    "sending_queue enabled false accepted when gate disabled",
+			enabled: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			confMap := confmap.NewFromStringMap(map[string]any{
+				"endpoint": "1.2.3.4:1234",
+				"sending_queue": map[string]any{
+					"enabled": tt.enabled,
+				},
+			})
+			require.NoError(t, confMap.Unmarshal(cfg))
+
+			if tt.validateErr != "" {
+				assert.ErrorContains(t, cfg.Validate(), tt.validateErr)
+			} else {
+				assert.NoError(t, cfg.Validate())
+			}
+		})
+	}
 }

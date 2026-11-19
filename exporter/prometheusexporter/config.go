@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
@@ -41,7 +42,7 @@ type Config struct {
 
 	// ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels.
 	//
-	// Deprecated: Use ResourceConstantLabels instead.
+	// Deprecated: [v0.160.0] Use ResourceConstantLabels instead.
 	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
 
 	// ResourceConstantLabels controls which resource attributes are added as constant labels on Prometheus metrics.
@@ -55,14 +56,36 @@ type Config struct {
 
 	// AddMetricSuffixes controls whether suffixes are added to metric names. Defaults to true.
 	//
-	// Deprecated: This setting is ignored and TranslationStrategy is always used.
+	// Deprecated: [v0.132.0] This setting is ignored and TranslationStrategy is always used.
 	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
 
 	// TranslationStrategy controls how OTLP metric and attribute names are translated into Prometheus metric and label names.
 	TranslationStrategy translationStrategy `mapstructure:"translation_strategy"`
+
+	sendingQueueEnabled bool
 }
 
-var _ component.Config = (*Config)(nil)
+var (
+	_ component.Config    = (*Config)(nil)
+	_ confmap.Unmarshaler = (*Config)(nil)
+)
+
+// Unmarshal unmarshals the configuration and checks for deprecated or unsupported fields.
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(cfg); err != nil {
+		return err
+	}
+	if conf.IsSet("sending_queue::enabled") {
+		if val := conf.Get("sending_queue::enabled"); val != nil {
+			if b, ok := val.(bool); ok && b {
+				cfg.sendingQueueEnabled = true
+			} else if s, ok := val.(string); ok && (s == "true" || s == "1") {
+				cfg.sendingQueueEnabled = true
+			}
+		}
+	}
+	return nil
+}
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
@@ -74,6 +97,9 @@ func (cfg *Config) Validate() error {
 		if cfg.QueueBatchConfig.HasValue() {
 			return errors.New("sending_queue is disabled by the exporter.prometheus.DisableSendingQueue feature gate; the Prometheus exporter is pull-based and does not support queuing")
 		}
+	}
+	if cfg.sendingQueueEnabled {
+		return errors.New("sending_queue.enabled is not supported; the Prometheus exporter is pull-based and does not support queuing")
 	}
 	if metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate.IsEnabled() {
 		if !cfg.ResourceToTelemetrySettings.IsEmpty() {
