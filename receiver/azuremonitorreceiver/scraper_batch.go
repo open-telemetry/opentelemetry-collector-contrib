@@ -28,8 +28,11 @@ import (
 )
 
 type azureType struct {
-	name                      *string
-	resourceIDs               []string
+	name        *string
+	resourceIDs []string
+	// resourceIDsByRegion groups the IDs of resourceIDs by location. A regional batch endpoint must only be asked about the
+	// resources of its own region. Resources without a location are not part of it.
+	resourceIDsByRegion       map[string][]string
 	metricsByCompositeKey     map[metricsCompositeKey]*azureResourceMetrics
 	metricsDefinitionsUpdated time.Time
 }
@@ -337,11 +340,13 @@ func (s *azureBatchScraper) loadResourcesAndTypes(ctx context.Context, subscript
 				}
 				if resourceTypes[*resource.Type] == nil {
 					resourceTypes[*resource.Type] = &azureType{
-						name:        resource.Type,
-						resourceIDs: []string{*resource.ID},
+						name:                resource.Type,
+						resourceIDsByRegion: map[string][]string{},
 					}
-				} else {
-					resourceTypes[*resource.Type].resourceIDs = append(resourceTypes[*resource.Type].resourceIDs, *resource.ID)
+				}
+				resourceTypes[*resource.Type].resourceIDs = append(resourceTypes[*resource.Type].resourceIDs, *resource.ID)
+				if resource.Location != nil {
+					resourceTypes[*resource.Type].resourceIDsByRegion[*resource.Location] = append(resourceTypes[*resource.Type].resourceIDsByRegion[*resource.Location], *resource.ID)
 				}
 			}
 			delete(existingResources, *resource.ID)
@@ -579,7 +584,7 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 			// A regional batch endpoint must only be asked about the resources located in its region. Asked about a resource
 			// of another region, it answers anyway, with all values at zero for the metrics without dimensions, and
 			// those zeros are emitted before or after the real values depending on the order the regions are visited.
-			regionResourceIDs := s.resourceIDsInRegion(subscriptionID, resType.resourceIDs, region)
+			regionResourceIDs := resType.resourceIDsByRegion[region]
 			if len(regionResourceIDs) == 0 {
 				continue
 			}
@@ -702,22 +707,6 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 	s.settings.Logger.Info("Loaded the Azure Metrics",
 		zap.String("resource_type", resourceType),
 		zap.String("subscription_id", subscriptionID))
-}
-
-// resourceIDsInRegion returns, in the same order, the resource IDs that are located in the given region.
-// Resources without a location are left out: no regional endpoint can be asked about them.
-func (s *azureBatchScraper) resourceIDsInRegion(subscriptionID string, resourceIDs []string, region string) []string {
-	var ids []string
-	for _, id := range resourceIDs {
-		res := s.resources[subscriptionID][id]
-		if res == nil {
-			continue
-		}
-		if location := res.attributes[attributeLocation]; location != nil && strings.EqualFold(*location, region) {
-			ids = append(ids, id)
-		}
-	}
-	return ids
 }
 
 // newQueryResourcesOptions builds the options to make the QueryResources request.

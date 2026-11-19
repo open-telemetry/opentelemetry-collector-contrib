@@ -110,20 +110,59 @@ func TestAzureScraperBatchScrape_ResourcesAreQueriedInTheirOwnRegionOnly(t *test
 	assert.Equal(t, map[string]float64{idWestEurope: valueWestEurope, idEastUS: valueEastUS}, valueByResource)
 }
 
-func TestResourceIDsInRegion(t *testing.T) {
-	location := func(l string) *string { return &l }
-	s := &azureBatchScraper{resources: map[string]map[string]*azureResource{
-		"sub": {
-			"id-we-1":     {attributes: map[string]*string{attributeLocation: location("westeurope")}},
-			"id-us":       {attributes: map[string]*string{attributeLocation: location("eastus")}},
-			"id-we-2":     {attributes: map[string]*string{attributeLocation: location("WestEurope")}},
-			"id-global":   {attributes: map[string]*string{}}, // no location: no regional endpoint can be asked about it
-			"id-unloaded": nil,
-		},
-	}}
-	all := []string{"id-we-1", "id-us", "id-we-2", "id-global", "id-unloaded", "id-unknown"}
+// TestAzureScraperBatchScrape_ResourcesAreGroupedByRegion checks the grouping built when the resources are loaded.
+// A resource without a location belongs to no region, so it is never part of a regional call.
+func TestAzureScraperBatchScrape_ResourcesAreGroupedByRegion(t *testing.T) {
+	idWestEurope1 := "/subscriptions/subscriptionId1/resourceGroups/group1/resourceIdWestEurope1"
+	idWestEurope2 := "/subscriptions/subscriptionId1/resourceGroups/group1/resourceIdWestEurope2"
+	idEastUS := "/subscriptions/subscriptionId1/resourceGroups/group1/resourceIdEastUS"
+	idNoLocation := "/subscriptions/subscriptionId1/resourceGroups/group1/resourceIdNoLocation"
+	westEurope, eastUS, name1, type1 := "westeurope", "eastus", "name1", "type1"
 
-	assert.Equal(t, []string{"id-we-1", "id-we-2"}, s.resourceIDsInRegion("sub", all, "westeurope"), "order is kept and the region is compared case-insensitively")
-	assert.Equal(t, []string{"id-us"}, s.resourceIDsInRegion("sub", all, "eastus"))
-	assert.Empty(t, s.resourceIDsInRegion("sub", all, "eastasia"))
+	resources := newResourcesMockData(map[string][][]*armresources.GenericResourceExpanded{
+		"subscriptionId1": {
+			{
+				{ID: &idWestEurope1, Location: &westEurope, Name: &name1, Type: &type1},
+				{ID: &idEastUS, Location: &eastUS, Name: &name1, Type: &type1},
+				{ID: &idNoLocation, Name: &name1, Type: &type1},
+				{ID: &idWestEurope2, Location: &westEurope, Name: &name1, Type: &type1},
+			},
+		},
+	})
+
+	cfg := createDefaultTestConfig()
+	cfg.SubscriptionIDs = []string{"subscriptionId1"}
+	settings := receivertest.NewNopSettings(metadata.Type)
+	s := &azureBatchScraper{
+		cfg:   cfg,
+		mbs:   newConcurrentMapImpl[*metadata.MetricsBuilder](),
+		mutex: &sync.Mutex{},
+		time:  getTimeMock(),
+		clientOptionsResolver: newMockClientOptionsResolver(
+			getSubscriptionByIDMockData(),
+			getSubscriptionsMockData(),
+			resources,
+			nil,
+			nil,
+			nil,
+		),
+		receiverSettings:             settings,
+		settings:                     settings.TelemetrySettings,
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
+		subscriptions:                map[string]*azureSubscription{},
+		resources:                    map[string]map[string]*azureResource{},
+		regions:                      map[string]map[string]struct{}{},
+		resourceTypes:                map[string]map[string]*azureType{},
+	}
+
+	s.loadSubscriptions(t.Context())
+	s.loadResourcesAndTypes(t.Context(), "subscriptionId1")
+
+	resType := s.resourceTypes["subscriptionId1"][type1]
+	require.NotNil(t, resType)
+	assert.Equal(t, []string{idWestEurope1, idEastUS, idNoLocation, idWestEurope2}, resType.resourceIDs)
+	assert.Equal(t, map[string][]string{
+		westEurope: {idWestEurope1, idWestEurope2},
+		eastUS:     {idEastUS},
+	}, resType.resourceIDsByRegion, "order is kept and the resource without a location is left out")
 }
