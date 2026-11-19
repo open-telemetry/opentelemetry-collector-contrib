@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift/internal/metadata"
@@ -52,7 +53,7 @@ type Config struct {
 	Address string `mapstructure:"address"`
 
 	// Token is used to identify against the openshift api server
-	Token string `mapstructure:"token"`
+	Token configopaque.String `mapstructure:"token"`
 
 	// TLSs contains TLS configurations that are specific to client
 	// connection used to communicate with the OpenShift API.

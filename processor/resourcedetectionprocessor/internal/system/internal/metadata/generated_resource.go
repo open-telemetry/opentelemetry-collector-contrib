@@ -105,10 +105,10 @@ func (rb *ResourceBuilder) SetHostName(val string) {
 	}
 }
 
-// SetOsBuildID sets provided value as "os.build.id" attribute.
+// SetOsBuildID sets provided value as "os.build_id" attribute.
 func (rb *ResourceBuilder) SetOsBuildID(val string) {
 	if rb.config.OsBuildID.Enabled {
-		rb.res.Attributes().PutStr("os.build.id", val)
+		rb.res.Attributes().PutStr("os.build_id", val)
 	}
 }
 

@@ -331,27 +331,6 @@ func TestExportMarkers_Error(t *testing.T) {
 			responseCode: http.StatusUnauthorized,
 			errorMessage: "marker creation failed with 401",
 		},
-		{
-			name: "continue less than 200",
-			config: Config{
-				APIKey: "test-apikey",
-				Markers: []Marker{
-					{
-						Type:        "test-type",
-						MessageKey:  "message",
-						URLKey:      "https://api.testhost.io",
-						DatasetSlug: "test-dataset",
-						Rules: Rules{
-							LogConditions: []string{
-								`body == "test"`,
-							},
-						},
-					},
-				},
-			},
-			responseCode: http.StatusSwitchingProtocols,
-			errorMessage: "marker creation failed with 101",
-		},
 	}
 
 	for _, tt := range tests {
@@ -376,6 +355,50 @@ func TestExportMarkers_Error(t *testing.T) {
 			assert.ErrorContains(t, err, tt.errorMessage)
 		})
 	}
+}
+
+func TestExportMarkers_SwitchingProtocols(t *testing.T) {
+	config := Config{
+		APIKey: "test-apikey",
+		APIURL: "http://example.com",
+		Markers: []Marker{
+			{
+				Type:        "test-type",
+				MessageKey:  "message",
+				URLKey:      "https://api.testhost.io",
+				DatasetSlug: "test-dataset",
+				Rules: Rules{
+					LogConditions: []string{
+						`body == "test"`,
+					},
+				},
+			},
+		},
+	}
+
+	exp, err := newHoneycombLogsExporter(exportertest.NewNopSettings(metadata.Type), &config)
+	require.NoError(t, err)
+
+	exp.client = &http.Client{
+		Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+			require.NoError(t, req.Body.Close())
+			return &http.Response{
+				StatusCode: http.StatusSwitchingProtocols,
+				Status:     "101 Switching Protocols",
+				Body:       http.NoBody,
+			}, nil
+		}),
+	}
+
+	logs := constructLogs(map[string]string{}, time.Time{}, time.Time{})
+	err = exp.exportMarkers(t.Context(), logs)
+	assert.ErrorContains(t, err, "marker creation failed with 101")
+}
+
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
 }
 
 func TestExportMarkers_NoAPICall(t *testing.T) {

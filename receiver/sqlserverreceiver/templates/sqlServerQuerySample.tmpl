@@ -28,6 +28,11 @@
       THEN CONVERT(NVARCHAR, TODATETIMEOFFSET(DATEADD(MILLISECOND, -r.wait_time, GETDATE()), DATEPART(TZOFFSET, SYSDATETIMEOFFSET())), 126)
     ELSE ''
   END AS blocking_start_time,
+  CASE
+    WHEN r.wait_type IS NOT NULL
+      THEN CONVERT(NVARCHAR, TODATETIMEOFFSET(CAST(DATEADD(MILLISECOND, -r.wait_time, SYSDATETIME()) AS DATETIME2(0)), DATEPART(TZOFFSET, SYSDATETIMEOFFSET())), 126)
+    ELSE ''
+  END AS wait_start_time,
   ISNULL(r.wait_type, '') AS wait_type,
   r.wait_time,
   r.wait_resource,
@@ -66,4 +71,4 @@ OUTER APPLY sys.dm_exec_sql_text(r.plan_handle) AS o
 OUTER APPLY sys.dm_exec_input_buffer(r.session_id, r.request_id) AS ib
 WHERE (o.TEXT IS NULL OR o.TEXT NOT LIKE N'/* otel-collector */%')
 	AND (ib.event_info IS NULL OR ib.event_info NOT LIKE N'/* otel-collector */%')
-	AND r.session_id != @@SPID;
+	AND r.session_id != @@SPID{database_filter AND DB_NAME(r.database_id)};

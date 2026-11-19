@@ -8,17 +8,19 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/xextension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension/internal/metadata"
 )
 
-// NewFactory creates a factory for the static bearer token Authenticator extension.
+// NewFactory creates a factory for the Basic Auth Authenticator extension.
 func NewFactory() extension.Factory {
-	return extension.NewFactory(
+	return xextension.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
 		createExtension,
 		metadata.ExtensionStability,
+		xextension.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 

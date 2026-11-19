@@ -20,7 +20,7 @@
 | host.ip | IP addresses for the host | Any Slice | false | [host.ip](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/host.md#host-ip) | - |
 | host.mac | MAC addresses for the host | Any Slice | false | [host.mac](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/host.md#host-mac) | - |
 | host.name | The host.name | Any Str | true | [host.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/host.md#host-name) | - |
-| os.build.id | The os.build.id | Any Str | false | [os.build.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/os.md#os-build-id) | - |
+| os.build_id | The os.build_id | Any Str | false | [os.build_id](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/os.md#os-build-id) | - |
 | os.description | Human readable OS version information. | Any Str | false | [os.description](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/os.md#os-description) | - |
 | os.name | The os.name | Any Str | false | [os.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/os.md#os-name) | - |
 | os.type | The os.type | Any Str | true | [os.type](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/os.md#os-type) | - |

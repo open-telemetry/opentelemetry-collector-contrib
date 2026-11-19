@@ -22,7 +22,6 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
@@ -99,34 +98,22 @@ func configureLabelNamer(config *Config) otlptranslator.LabelNamer {
 	}
 }
 
-// getTranslationConfiguration returns the translation configuration based on the strategy or legacy settings
+// getTranslationConfiguration returns the translation configuration based on the strategy
 // Returns (withSuffixes, allowUTF8)
 func getTranslationConfiguration(config *Config) (bool, bool) {
-	// If TranslationStrategy is explicitly set, use it (takes precedence)
-	if config.TranslationStrategy != "" {
-		switch config.TranslationStrategy {
-		case underscoreEscapingWithSuffixes:
-			return true, false
-		case underscoreEscapingWithoutSuffixes:
-			return false, false
-		case noUTF8EscapingWithSuffixes:
-			return true, true
-		case noTranslation:
-			return false, true
-		default:
-			// Fallback to default behavior, suffixes enabled, UTF-8 escaped to underscores.
-			return true, false
-		}
-	}
-
-	// If feature gate is enabled, ignore AddMetricSuffixes (for deprecation)
-	if metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate.IsEnabled() {
-		// Default to UnderscoreEscapingWithSuffixes behavior when AddMetricSuffixes is deprecated
+	switch config.TranslationStrategy {
+	case underscoreEscapingWithSuffixes:
+		return true, false
+	case underscoreEscapingWithoutSuffixes:
+		return false, false
+	case noUTF8EscapingWithSuffixes:
+		return true, true
+	case noTranslation:
+		return false, true
+	default:
+		// Default to UnderscoreEscapingWithSuffixes behavior
 		return true, false
 	}
-
-	// Fall back to legacy AddMetricSuffixes behavior, UTF-8 escaped to underscores.
-	return config.AddMetricSuffixes, false
 }
 
 func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
@@ -192,12 +179,7 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 	return nil, errUnknownMetricType
 }
 
-// defaultZeroThreshold matches the remote-write translator's default for native histograms
-// when an explicit zero threshold is not provided in the datapoint.
-const (
-	defaultZeroThreshold = 1e-128
-	cbnhScale            = -53
-)
+const cbnhScale = -53
 
 func bucketsToNativeMap(buckets pmetric.ExponentialHistogramDataPointBuckets, scaleDown int32) map[int]int64 {
 	counts := buckets.BucketCounts()
@@ -247,11 +229,6 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 	pos := bucketsToNativeMap(dp.Positive(), scaleDown)
 	neg := bucketsToNativeMap(dp.Negative(), scaleDown)
 
-	zeroThresh := dp.ZeroThreshold()
-	if zeroThresh == 0 {
-		zeroThresh = defaultZeroThreshold
-	}
-
 	// Use created timestamp if start time is set (> 0), else zero value.
 	created := time.Time{}
 	if dp.StartTimestamp().AsTime().Unix() > 0 {
@@ -266,7 +243,7 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 		neg,
 		dp.ZeroCount(),
 		schema,
-		zeroThresh,
+		dp.ZeroThreshold(),
 		created,
 		attributes...,
 	)
@@ -549,19 +526,20 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 		// map ensures no duplicate label name
 		labels := make(map[string]string, rAttributes.Len()+2) // +2 for job and instance labels.
 
-		// Use resource attributes (other than those used for job+instance) as the
-		// metric labels for the target info metric
+		// Use resource attributes as labels for the target info metric.
 		attributes := pcommon.NewMap()
 		rAttributes.CopyTo(attributes)
-		attributes.RemoveIf(func(k string, _ pcommon.Value) bool {
-			switch k {
-			case string(conventions.ServiceNameKey), string(conventions.ServiceNamespaceKey), string(conventions.ServiceInstanceIDKey):
-				// Remove resource attributes used for job + instance
-				return true
-			default:
-				return false
-			}
-		})
+		if !prometheustranslator.KeepIdentifyingResourceAttributesGate.IsEnabled() {
+			attributes.RemoveIf(func(k string, _ pcommon.Value) bool {
+				switch k {
+				case string(conventions.ServiceNameKey), string(conventions.ServiceNamespaceKey), string(conventions.ServiceInstanceIDKey):
+					// Remove resource attributes used for job + instance
+					return true
+				default:
+					return false
+				}
+			})
+		}
 
 		var multiErrs error
 		for k, v := range attributes.All() {

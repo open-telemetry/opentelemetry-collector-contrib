@@ -40,8 +40,8 @@ func startTestReceiver(t *testing.T, cfg *Config, csmr *metricsCapture) (endpoin
 	return endpoint, func() { assert.NoError(t, rcvr.Shutdown(ctx)) }
 }
 
-func sampleInterfaceTelemetry() InterfaceTelemetry {
-	return InterfaceTelemetry{
+func sampleInterfaceTelemetry() interfaceTelemetry {
+	return interfaceTelemetry{
 		Name:       "GigabitEthernet0/0/0",
 		Statistics: map[string]uint64{"in-octets": 1},
 	}

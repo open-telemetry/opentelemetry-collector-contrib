@@ -127,7 +127,7 @@ func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, err
 			if credential, err = azidentity.NewClientSecretCredential(
 				servicePrincipal.TenantID,
 				servicePrincipal.ClientID,
-				servicePrincipal.ClientSecret,
+				string(servicePrincipal.ClientSecret),
 				nil,
 			); err != nil {
 				return nil, fmt.Errorf("%s service principal with secret: %w", failMsg, err)

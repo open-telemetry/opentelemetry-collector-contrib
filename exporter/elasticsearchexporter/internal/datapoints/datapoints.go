@@ -39,6 +39,7 @@ type DataPoint interface {
 	DocCount() uint64
 	HasMappingHint(elasticsearch.MappingHint) bool
 	Metric() pmetric.Metric
+	Temporality() string
 }
 
 func (hm HistogramMapping) String() string {

@@ -30,6 +30,7 @@ import (
 	_ "github.com/thda/tds" // register Db driver
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
@@ -529,7 +530,7 @@ func createTestLogsReceiver(t *testing.T, driver, dataSource string, receiverCre
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
 	config.Config.Driver = driver
-	config.Config.DataSource = dataSource
+	config.Config.DataSource = configopaque.String(dataSource)
 
 	consumer := &consumertest.LogsSink{}
 	receiverCreateSettings.Logger = zap.NewExample()
@@ -581,7 +582,7 @@ func TestPostgresqlIntegrationMetrics(t *testing.T) {
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.Config.Driver = Postgres.Driver
-				rCfg.Config.DataSource = Postgres.ConnectionString(ci.Host(t), ci.MappedPort(t, Postgres.Port))
+				rCfg.Config.DataSource = configopaque.String(Postgres.ConnectionString(ci.Host(t), ci.MappedPort(t, Postgres.Port)))
 				rCfg.Config.Queries = []sqlquery.Query{
 					{
 						SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre",
@@ -682,7 +683,7 @@ func TestOracleDBIntegrationMetrics(t *testing.T) {
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.Config.Driver = Oracle.Driver
-				rCfg.Config.DataSource = Oracle.ConnectionString(ci.Host(t), ci.MappedPort(t, Oracle.Port))
+				rCfg.Config.DataSource = configopaque.String(Oracle.ConnectionString(ci.Host(t), ci.MappedPort(t, Oracle.Port)))
 				rCfg.Config.Queries = []sqlquery.Query{
 					{
 						SQL: "select genre, count(*) as count, avg(imdb_rating) as avg from movie group by genre",
@@ -724,7 +725,7 @@ func TestMysqlIntegrationMetrics(t *testing.T) {
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.Config.Driver = MySQL.Driver
-				rCfg.Config.DataSource = MySQL.ConnectionString(ci.Host(t), ci.MappedPort(t, MySQL.Port))
+				rCfg.Config.DataSource = configopaque.String(MySQL.ConnectionString(ci.Host(t), ci.MappedPort(t, MySQL.Port)))
 				rCfg.MaxOpenConn = 5
 				rCfg.Config.Queries = []sqlquery.Query{
 					{
@@ -813,7 +814,7 @@ func TestSQLServerIntegrationMetrics(t *testing.T) {
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.Config.Driver = SQLServer.Driver
-				rCfg.Config.DataSource = SQLServer.ConnectionString(ci.Host(t), ci.MappedPort(t, SQLServer.Port))
+				rCfg.Config.DataSource = configopaque.String(SQLServer.ConnectionString(ci.Host(t), ci.MappedPort(t, SQLServer.Port)))
 				rCfg.Config.Queries = []sqlquery.Query{
 					{
 						SQL: "select genre, count(*) as count, avg(imdb_rating) as avg from movie group by genre order by genre",
@@ -856,7 +857,7 @@ func TestSapASEIntegrationMetrics(t *testing.T) {
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.Config.Driver = SapASE.Driver
-				rCfg.Config.DataSource = SapASE.ConnectionString(ci.Host(t), ci.MappedPort(t, SapASE.Port))
+				rCfg.Config.DataSource = configopaque.String(SapASE.ConnectionString(ci.Host(t), ci.MappedPort(t, SapASE.Port)))
 				rCfg.Config.Queries = []sqlquery.Query{
 					{
 						SQL: "SELECT genre, COUNT(*) AS movie_count, AVG(imdb_rating) AS movie_avg FROM movie GROUP BY genre ORDER BY genre",

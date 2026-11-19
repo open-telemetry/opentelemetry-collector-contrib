@@ -16,6 +16,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/mongodb-forks/digest"
 	"go.mongodb.org/atlas/mongodbatlas"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.uber.org/zap"
 
@@ -135,6 +136,7 @@ func NewMongoDBAtlasClient(
 	privateKey string,
 	backoffConfig configretry.BackOffConfig,
 	log *zap.Logger,
+	buildInfo component.BuildInfo,
 ) (*MongoDBAtlasClient, error) {
 	defaultTransporter := http.DefaultTransport.(*http.Transport)
 	t := digest.NewTransportWithHTTPTransport(publicKey, privateKey, defaultTransporter)
@@ -145,7 +147,10 @@ func NewMongoDBAtlasClient(
 		baseURL = mongodbatlas.CloudURL
 	}
 
-	client, err := mongodbatlas.New(tc, mongodbatlas.SetBaseURL(baseURL))
+	client, err := mongodbatlas.New(tc,
+		mongodbatlas.SetBaseURL(baseURL),
+		mongodbatlas.SetUserAgent(fmt.Sprintf("%s/%s", buildInfo.Command, buildInfo.Version)),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create MongoDB Atlas client: %w", err)
 	}
