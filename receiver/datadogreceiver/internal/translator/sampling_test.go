@@ -221,6 +221,78 @@ func TestToTracesSamplingThreshold(t *testing.T) {
 			want: map[uint64]string{1: "ot=rv:80000000000000;th:8"},
 		},
 		{
+			name: "the tracestate of an upstream sampler is used as it arrived",
+			chunks: []*pb.TraceChunk{chunk(keep,
+				&pb.Span{Meta: map[string]string{"tracestate": "ot=rv:123456789abcde;th:e6666666666668"}}, &pb.Span{})},
+			want: map[uint64]string{1: "ot=rv:123456789abcde;th:e6666666666668", 2: "ot=rv:123456789abcde;th:e6666666666668"},
+		},
+		{
+			name: "the threshold of an upstream sampler without randomness, and the other vendors, are kept",
+			chunks: []*pb.TraceChunk{chunk(keep,
+				&pb.Span{Meta: map[string]string{"tracestate": "vendor=x,ot=th:8"}}, &pb.Span{})},
+			want: map[uint64]string{1: "ot=th:8,vendor=x", 2: "ot=th:8,vendor=x"},
+		},
+		{
+			name: "the upstream threshold replaces the Datadog rate, and gets no randomness value of the Knuth hash",
+			chunks: []*pb.TraceChunk{chunk(keep,
+				&pb.Span{Metrics: map[string]float64{"_dd.agent_psr": 0.25}, Meta: map[string]string{"tracestate": "ot=th:8"}}, &pb.Span{})},
+			want: map[uint64]string{1: "ot=th:8", 2: "ot=th:8"},
+		},
+		{
+			name: "the upstream threshold also replaces the rate of a rule",
+			chunks: []*pb.TraceChunk{chunk(int32(ddsampler.PriorityUserKeep),
+				&pb.Span{Metrics: map[string]float64{"_dd.rule_psr": 0.25}, Meta: map[string]string{"_dd.p.dm": "-3", "tracestate": "ot=th:8"}}, &pb.Span{})},
+			want: map[uint64]string{1: "ot=th:8", 2: "ot=th:8"},
+		},
+		{
+			name: "the upstream threshold of a trace that is kept by a manual keep",
+			chunks: []*pb.TraceChunk{chunk(int32(ddsampler.PriorityUserKeep),
+				&pb.Span{Meta: map[string]string{"_dd.p.dm": "-4", "tracestate": "ot=th:8"}}, &pb.Span{})},
+			want: map[uint64]string{1: "ot=th:8", 2: "ot=th:8"},
+		},
+		{
+			name: "the upstream tracestate can be on a span other than the first, or a tag of the chunk",
+			chunks: []*pb.TraceChunk{
+				chunk(keep, &pb.Span{}, &pb.Span{Meta: map[string]string{"tracestate": "ot=th:8"}}),
+				func() *pb.TraceChunk {
+					c := &pb.TraceChunk{Priority: keep, Spans: []*pb.Span{{TraceID: 3, SpanID: 3}}}
+					c.Tags = map[string]string{"tracestate": "ot=th:c"}
+					return c
+				}(),
+			},
+			want: map[uint64]string{1: "ot=th:8", 2: "ot=th:8", 3: "ot=th:c"},
+		},
+		{
+			name: "the Datadog rate is added to an upstream tracestate without a threshold, which keeps its randomness",
+			chunks: []*pb.TraceChunk{chunk(keep,
+				&pb.Span{Metrics: map[string]float64{"_dd.agent_psr": 0.5}, Meta: map[string]string{"tracestate": "ot=rv:123456789abcde;x:y,vendor=x"}}, &pb.Span{})},
+			want: map[uint64]string{1: "ot=rv:123456789abcde;th:8;x:y,vendor=x", 2: "ot=rv:123456789abcde;th:8;x:y,vendor=x"},
+		},
+		{
+			name: "the Datadog rate is added to an upstream tracestate of other vendors",
+			chunks: []*pb.TraceChunk{chunk(keep,
+				&pb.Span{Metrics: map[string]float64{"_dd.agent_psr": 0.5}, Meta: map[string]string{"tracestate": "vendor=x"}}, &pb.Span{})},
+			want: map[uint64]string{1: "ot=rv:" + rvID2 + ";th:8,vendor=x", 2: "ot=rv:" + rvID2 + ";th:8,vendor=x"},
+		},
+		{
+			name: "an upstream tracestate without a threshold is kept when there is no Datadog rate",
+			chunks: []*pb.TraceChunk{chunk(keep,
+				&pb.Span{Meta: map[string]string{"tracestate": "ot=rv:123456789abcde,vendor=x"}}, &pb.Span{})},
+			want: map[uint64]string{1: "ot=rv:123456789abcde,vendor=x", 2: "ot=rv:123456789abcde,vendor=x"},
+		},
+		{
+			name: "an upstream tracestate is kept on a dropped chunk, which gets no Datadog rate",
+			chunks: []*pb.TraceChunk{chunk(int32(ddsampler.PriorityAutoDrop),
+				&pb.Span{Metrics: map[string]float64{"_dd.agent_psr": 0.5}, Meta: map[string]string{"tracestate": "ot=rv:123456789abcde,vendor=x"}}, &pb.Span{})},
+			want: map[uint64]string{1: "ot=rv:123456789abcde,vendor=x", 2: "ot=rv:123456789abcde,vendor=x"},
+		},
+		{
+			name: "an upstream tracestate that is not valid is dropped, and the Datadog rate applies",
+			chunks: []*pb.TraceChunk{chunk(keep,
+				&pb.Span{Metrics: map[string]float64{"_dd.agent_psr": 0.5}, Meta: map[string]string{"tracestate": "vendor=x,ot=th:zz"}}, &pb.Span{})},
+			want: map[uint64]string{1: "ot=rv:" + rvID2 + ";th:8", 2: "ot=rv:" + rvID2 + ";th:8"},
+		},
+		{
 			name: "a dropped chunk, kept for its error, is not decided by a rate",
 			chunks: []*pb.TraceChunk{chunk(int32(ddsampler.PriorityAutoDrop),
 				&pb.Span{Metrics: map[string]float64{"_dd.agent_psr": 0.5}}, &pb.Span{})},

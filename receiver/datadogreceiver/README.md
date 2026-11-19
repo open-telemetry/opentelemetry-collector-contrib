@@ -155,16 +155,21 @@ sampled a trace with as the `th` threshold in the `ot` member of the W3C tracest
 `ot=th:8` for a rate of 0.5. Components such as the `spanmetrics` connector can then extrapolate counts from the spans
 that were kept. This applies to all trace endpoints, including the v1 format.
 
-A chunk gets a threshold when its sampling priority is 1, or when it is 2 and the decision maker (`_dd.p.dm`) is a rate
-or a rule, not a manual keep or AppSec. Dropped chunks and chunks without a priority get none. The rate is the first of
-`_dd.agent_psr` or `_dd.prob_sr`, `_dd.p.ksr`, and `_dd.rule_psr`. The last two are multiplied by `_dd.limit_psr`, the
-rate of the limiter of the rule, when there is one.
+Tracers keep the tracestate that they received from an upstream service in the `tracestate` tag of the first span of a
+chunk. The receiver sets a valid one as the tracestate of the spans of the chunk, including other vendors' members. If
+it has a threshold, an upstream sampler already sampled the trace, and the threshold is the combined probability of all
+sampling stages. It is then used as it arrived, and the Datadog sampling tags are ignored.
+
+Otherwise, a chunk gets a threshold when its sampling priority is 1, or when it is 2 and the decision maker
+(`_dd.p.dm`) is a rate or a rule, not a manual keep or AppSec. Dropped chunks and chunks without a priority get none.
+The rate is the first of `_dd.agent_psr` or `_dd.prob_sr`, `_dd.p.ksr`, and `_dd.rule_psr`. The last two are
+multiplied by `_dd.limit_psr`, the rate of the limiter of the rule, when there is one.
 
 When a Knuth hash of the trace ID made the decision, which is the case for `_dd.agent_psr` and for `_dd.p.ksr`
-without a limiter, the tracestate also has the `rv` randomness value that gives the same decision, as the tracers
-derive it. A downstream sampler then does not treat the kept spans as inconsistent. The probabilistic sampler of the
-Agent (`_dd.p.dm` of `-9`) and a rate that the limiter changed do not follow the Knuth hash, so they have no `rv`. A
-downstream sampler that checks `rv` against `th` may treat those spans as inconsistent.
+without a limiter, the tracestate also gets the `rv` randomness value that gives the same decision, as the tracers
+derive it, unless it has an `rv` already. A downstream sampler then does not treat the kept spans as inconsistent. The
+probabilistic sampler of the Agent (`_dd.p.dm` of `-9`) and a rate that the limiter changed do not follow the Knuth
+hash, so they have no `rv`. A downstream sampler that checks `rv` against `th` may treat those spans as inconsistent.
 
 ### Default Attributes
 

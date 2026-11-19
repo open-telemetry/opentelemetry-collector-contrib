@@ -30,6 +30,8 @@ const (
 	keyRulePSR       = "_dd.rule_psr"
 	keyLimitPSR      = "_dd.limit_psr"
 	keyDecisionMaker = "_dd.p.dm"
+	// The tracestate that the tracer received, which it keeps as a tag of the first span of a chunk.
+	keyTracestate = "tracestate"
 
 	priorityAutoKeep = 1
 	priorityUserKeep = 2
@@ -151,81 +153,113 @@ func parseRate(s string) (float64, bool) {
 	return v, err == nil
 }
 
-// chunkTraceState returns the tracestate for the spans of a legacy format chunk, or "" when it has no sampling rate.
-// The tags are span metrics or meta, or tags of the chunk.
+// inboundTraceState parses the tracestate that the tracer received, which it keeps as a tag. An invalid one is dropped.
+func inboundTraceState(logger *zap.Logger, value string) sampling.W3CTraceState {
+	w3c, err := sampling.NewW3CTraceState(value)
+	if err != nil {
+		logger.Debug("cannot parse the inbound tracestate", zap.Error(err))
+		return sampling.W3CTraceState{}
+	}
+	return w3c
+}
+
+// chunkTraceState returns the tracestate for the spans of a legacy format chunk. It is the tracestate that the tracer
+// received, with the sampling rate of Datadog as the threshold, unless the tracestate has a threshold already. The tags
+// are span metrics or meta, or tags of the chunk.
 func chunkTraceState(logger *zap.Logger, chunk *pb.TraceChunk, priority float64) string {
 	if !metadata.ReceiverDatadogEnableSamplingThresholdFeatureGate.IsEnabled() || len(chunk.GetSpans()) == 0 {
 		return ""
 	}
-	mechanism := chunkMechanism(chunk)
-	if !decidedByRate(priority, mechanism) {
-		return ""
+	inbound := chunk.GetTags()[keyTracestate]
+	for i := 0; inbound == "" && i < len(chunk.GetSpans()); i++ {
+		inbound = chunk.GetSpans()[i].Meta[keyTracestate]
 	}
-	tags := rateTags{}
-	tags.collect(func(key string) (float64, bool) { return parseRate(chunk.GetTags()[key]) })
-	for _, span := range chunk.GetSpans() {
-		tags.collect(func(key string) (float64, bool) {
-			if v, ok := span.Metrics[key]; ok {
-				return v, true
-			}
-			return parseRate(span.Meta[key])
-		})
+	w3c := inboundTraceState(logger, inbound)
+	if mechanism := chunkMechanism(chunk); !hasThreshold(&w3c) && decidedByRate(priority, mechanism) {
+		tags := rateTags{}
+		tags.collect(func(key string) (float64, bool) { return parseRate(chunk.GetTags()[key]) })
+		for _, span := range chunk.GetSpans() {
+			tags.collect(func(key string) (float64, bool) {
+				if v, ok := span.Metrics[key]; ok {
+					return v, true
+				}
+				return parseRate(span.Meta[key])
+			})
+		}
+		setSamplingRate(logger, &w3c, tags, mechanism, chunk.GetSpans()[0].TraceID)
 	}
-	return samplingTraceState(logger, tags, mechanism, chunk.GetSpans()[0].TraceID)
+	return serializeTraceState(logger, &w3c)
 }
 
-// chunkTraceStateV1 returns the tracestate for the spans of a v1 chunk, or "" when it has no sampling rate. The tags
-// are attributes of the chunk or of its spans, as numbers or strings.
+// chunkTraceStateV1 returns the tracestate for the spans of a v1 chunk. It is the tracestate that the tracer received,
+// with the sampling rate of Datadog as the threshold, unless the tracestate has a threshold already. The tags are
+// attributes of the chunk or of its spans, as numbers or strings.
 func chunkTraceStateV1(logger *zap.Logger, chunk *idx.InternalTraceChunk) string {
 	if !metadata.ReceiverDatadogEnableSamplingThresholdFeatureGate.IsEnabled() || len(chunk.Spans) == 0 || len(chunk.TraceID) != 16 {
 		return ""
 	}
-	mechanism := chunkMechanismV1(chunk)
-	if !decidedByRate(float64(chunk.Priority), mechanism) {
-		return ""
+	inbound, _ := chunk.GetAttributeAsString(keyTracestate)
+	for i := 0; inbound == "" && i < len(chunk.Spans); i++ {
+		inbound, _ = chunk.Spans[i].GetAttributeAsString(keyTracestate)
 	}
-	tags := rateTags{}
-	tags.collect(func(key string) (float64, bool) {
-		v, ok := chunk.GetAttributeAsString(key)
-		if !ok {
-			return 0, false
+	w3c := inboundTraceState(logger, inbound)
+	if mechanism := chunkMechanismV1(chunk); !hasThreshold(&w3c) && decidedByRate(float64(chunk.Priority), mechanism) {
+		tags := rateTags{}
+		tags.collect(func(key string) (float64, bool) {
+			v, ok := chunk.GetAttributeAsString(key)
+			if !ok {
+				return 0, false
+			}
+			return parseRate(v)
+		})
+		for _, span := range chunk.Spans {
+			tags.collect(span.GetAttributeAsFloat64)
 		}
-		return parseRate(v)
-	})
-	for _, span := range chunk.Spans {
-		tags.collect(span.GetAttributeAsFloat64)
+		setSamplingRate(logger, &w3c, tags, mechanism, binary.BigEndian.Uint64(chunk.TraceID[8:]))
 	}
-	return samplingTraceState(logger, tags, mechanism, binary.BigEndian.Uint64(chunk.TraceID[8:]))
+	return serializeTraceState(logger, &w3c)
 }
 
-// samplingTraceState returns the tracestate with the `th` threshold of the chunk's rate. When a Knuth hash decided,
-// it also has the `rv` that gives the same decision, so that `rv >= th` for the kept spans.
-func samplingTraceState(logger *zap.Logger, tags rateTags, mechanism samplingMechanism, traceID uint64) string {
+// hasThreshold returns whether an upstream sampler set a threshold, which is the combined probability of all sampling
+// stages, so Datadog's rate does not apply on top of it.
+func hasThreshold(w3c *sampling.W3CTraceState) bool {
+	_, ok := w3c.OTelValue().TValueThreshold()
+	return ok
+}
+
+// setSamplingRate sets the `th` threshold of the chunk's rate. When a Knuth hash decided and the tracestate has no
+// randomness value yet, it also sets the `rv` that gives the same decision, so that `rv >= th` for the kept spans.
+func setSamplingRate(logger *zap.Logger, w3c *sampling.W3CTraceState, tags rateTags, mechanism samplingMechanism, traceID uint64) {
 	rate, knuth, ok := tags.probability(mechanism)
 	if !ok {
-		return ""
+		return
 	}
 	threshold, err := sampling.ProbabilityToThreshold(rate)
 	if err != nil {
 		logger.Debug("cannot convert the sampling rate to a threshold", zap.Float64("rate", rate), zap.Error(err))
-		return ""
+		return
 	}
-	var w3c sampling.W3CTraceState
 	otel := w3c.OTelValue()
-	if err := otel.UpdateTValueWithSampling(threshold); err != nil {
-		logger.Debug("cannot set the sampling threshold", zap.Error(err))
-		return ""
-	}
-	if knuth {
+	var rnd sampling.Randomness
+	setRandomness := knuth && otel.RValue() == ""
+	if setRandomness {
 		// rv is the inverse of the hash h = traceID * knuthFactor, truncated to 56 bits. Truncation and rounded rate
 		// tags can leave it just below th, so it is raised to th.
-		rnd, err := sampling.UnsignedToRandomness(max((^(traceID * knuthFactor))>>8, threshold.Unsigned()))
-		if err != nil {
+		if rnd, err = sampling.UnsignedToRandomness(max((^(traceID * knuthFactor))>>8, threshold.Unsigned())); err != nil {
 			logger.Debug("cannot set the randomness value", zap.Error(err))
-			return ""
+			return
 		}
+	}
+	if err := otel.UpdateTValueWithSampling(threshold); err != nil {
+		logger.Debug("cannot set the sampling threshold", zap.Error(err))
+		return
+	}
+	if setRandomness {
 		otel.SetRValue(rnd)
 	}
+}
+
+func serializeTraceState(logger *zap.Logger, w3c *sampling.W3CTraceState) string {
 	var sb strings.Builder
 	if err := w3c.Serialize(&sb); err != nil {
 		logger.Debug("cannot serialize the tracestate", zap.Error(err))

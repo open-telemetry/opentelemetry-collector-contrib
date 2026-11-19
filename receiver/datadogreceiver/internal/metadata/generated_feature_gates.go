@@ -9,7 +9,7 @@ import (
 var ReceiverDatadogEnableSamplingThresholdFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.datadog.EnableSamplingThreshold",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, records the rate at which Datadog sampled a trace as the OpenTelemetry sampling threshold (`th`) in the tracestate of its spans, and the randomness value (`rv`) when a Knuth hash of the trace ID made the decision."),
+	featuregate.WithRegisterDescription("When enabled, records the rate at which Datadog sampled a trace as the OpenTelemetry sampling threshold (`th`) in the tracestate of its spans, and the randomness value (`rv`) when a Knuth hash of the trace ID made the decision. A tracestate that the tracer received is kept, and a threshold in it replaces the rate."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52284"),
 	featuregate.WithRegisterFromVersion("v0.166.0"),
 )

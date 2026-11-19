@@ -17,7 +17,7 @@ status:
 feature_gates:
   - id: receiver.datadog.EnableSamplingThreshold
     stage: alpha
-    description: When enabled, records the rate at which Datadog sampled a trace as the OpenTelemetry sampling threshold (`th`) in the tracestate of its spans, and the randomness value (`rv`) when a Knuth hash of the trace ID made the decision.
+    description: When enabled, records the rate at which Datadog sampled a trace as the OpenTelemetry sampling threshold (`th`) in the tracestate of its spans, and the randomness value (`rv`) when a Knuth hash of the trace ID made the decision. A tracestate that the tracer received is kept, and a threshold in it replaces the rate.
     from_version: v0.166.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52284
 
