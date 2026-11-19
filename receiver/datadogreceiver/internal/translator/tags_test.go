@@ -159,6 +159,15 @@ func TestTranslateDataDogKeyToOtel(t *testing.T) {
 	assert.Equal(t, "http.response.header.content-type", translateDatadogKeyToOTel("http.response.headers.content-type"))
 }
 
+func TestTranslateTracerErrorKeys(t *testing.T) {
+	// The keys the Datadog tracers set on an error span, per library:
+	// error.message/error.stack/error.type everywhere, error.msg on .NET.
+	assert.Equal(t, "exception.message", translateDatadogKeyToOTel("error.message"))
+	assert.Equal(t, "exception.message", translateDatadogKeyToOTel("error.msg"))
+	assert.Equal(t, "exception.stacktrace", translateDatadogKeyToOTel("error.stack"))
+	assert.Equal(t, "exception.type", translateDatadogKeyToOTel("error.type"))
+}
+
 func TestTranslateKubernetesAppLabels(t *testing.T) {
 	// Datadog kube_app_* tags map to the Kubernetes recommended labels.
 	for ddKey, otelKey := range map[string]string{

@@ -1,0 +1,27 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: receiver/datadog
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Map the `error.message`, `error.stack` and `error.type` tags the Datadog tracers set to `exception.message`, `exception.stacktrace` and `exception.type`
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue is tracked.
+issues: [52712]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  Only `error.msg` (the .NET spelling) and `error.stacktrace` (set by no tracer) were mapped before,
+  so error spans from the other tracers reached consumers with raw Datadog keys and no `exception.*`
+  attributes.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs you want to update. Possible values are 'user', 'api'.
+# ('user' refers to CHANGELOG.md and 'api' to CHANGELOG-API.md; both are updated if no value is specified)
+change_logs: [user]

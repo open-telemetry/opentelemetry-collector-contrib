@@ -91,6 +91,11 @@ var datadogKnownResourceAttributes = map[string]string{
 	"process_id":       string(conventions.ProcessPIDKey),
 	"error.stacktrace": string(conventions.ExceptionStacktraceKey),
 	"error.msg":        string(conventions.ExceptionMessageKey),
+	// The Datadog tracers set these three on an error: every library uses
+	// error.stack and error.type, and all but .NET use error.message.
+	"error.stack":   string(conventions.ExceptionStacktraceKey),
+	"error.message": string(conventions.ExceptionMessageKey),
+	"error.type":    string(conventions.ExceptionTypeKey),
 }
 
 // translateDatadogTagToKeyValuePair translates a Datadog tag to a key value pair
