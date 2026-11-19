@@ -1370,3 +1370,560 @@ func TestConvertExponentialHistogramZeroThreshold(t *testing.T) {
 		})
 	}
 }
+
+func extractMetricLabels(t *testing.T, m prometheus.Metric) map[string]string {
+	t.Helper()
+	pbMetric := &io_prometheus_client.Metric{}
+	require.NoError(t, m.Write(pbMetric))
+	labels := make(map[string]string, len(pbMetric.Label))
+	for _, l := range pbMetric.Label {
+		labels[l.GetName()] = l.GetValue()
+	}
+	return labels
+}
+
+func TestMetricLabelCollisions(t *testing.T) {
+	tests := []struct {
+		name            string
+		cfg             *Config
+		dpAttrs         func(pcommon.Map)
+		resourceAttrs   func(pcommon.Map)
+		scopeName       string
+		scopeVersion    string
+		scopeSchemaURL  string
+		scopeAttrs      func(pcommon.Map)
+		wantLabels      map[string]string
+		wantErrContains string
+	}{
+		{
+			name: "colliding datapoint attributes sorted by original key",
+			cfg:  &Config{WithoutScopeInfo: true},
+			dpAttrs: func(m pcommon.Map) {
+				// Insert in reverse lexicographical order to verify sorting by original key.
+				m.PutStr("a_b", "v2")
+				m.PutStr("a.b", "v1")
+				m.PutStr("a-b", "v0")
+			},
+			wantLabels: map[string]string{
+				"a_b": "v0;v1;v2",
+			},
+		},
+		{
+			name: "colliding datapoint attributes deduplicate equal values",
+			cfg:  &Config{WithoutScopeInfo: true},
+			dpAttrs: func(m pcommon.Map) {
+				m.PutStr("dup_label", "same")
+				m.PutStr("dup.label", "same")
+				m.PutStr("tri_c", "b")
+				m.PutStr("tri.c", "b")
+				m.PutStr("tri-c", "a")
+				m.PutStr("tri2_c", "a")
+				m.PutStr("tri2.c", "b")
+				m.PutStr("tri2-c", "a")
+			},
+			wantLabels: map[string]string{
+				"dup_label": "same",
+				"tri_c":     "a;b",
+				"tri2_c":    "a;b",
+			},
+		},
+		{
+			name: "colliding datapoint values containing semicolons are not falsely deduplicated",
+			cfg:  &Config{WithoutScopeInfo: true},
+			dpAttrs: func(m pcommon.Map) {
+				m.PutStr("semi_k", "y")
+				m.PutStr("semi.k", "x;y")
+			},
+			wantLabels: map[string]string{
+				"semi_k": "x;y;y",
+			},
+		},
+		{
+			name: "colliding leading-digit and key-prefixed attributes",
+			cfg:  &Config{WithoutScopeInfo: true},
+			dpAttrs: func(m pcommon.Map) {
+				m.PutStr("key.123", "second")
+				m.PutStr("123", "first")
+			},
+			wantLabels: map[string]string{
+				"key_123": "first;second",
+			},
+		},
+		{
+			name: "colliding non-string datapoint attributes",
+			cfg:  &Config{WithoutScopeInfo: true},
+			dpAttrs: func(m pcommon.Map) {
+				m.PutInt("num.k", 42)
+				m.PutStr("num_k", "42")
+				m.PutBool("mix_k", true)
+				m.PutInt("mix.k", 1)
+			},
+			wantLabels: map[string]string{
+				"num_k": "42",
+				"mix_k": "1;true",
+			},
+		},
+		{
+			name: "post-normalization reserved scope attributes dropped while keeping empty scope emission",
+			cfg:  &Config{},
+			scopeAttrs: func(m pcommon.Map) {
+				m.PutStr("name", "drop-name")
+				m.PutStr("version", "drop-version")
+				m.PutStr("schema_url", "drop-schema-underscore")
+				m.PutStr("schema.url", "drop-schema-dot")
+				m.PutStr("schema-url", "drop-schema-dash")
+				m.PutStr("schema/url", "drop-schema-slash")
+				m.PutStr("custom", "keep")
+			},
+			wantLabels: map[string]string{
+				"otel_scope_name":       "",
+				"otel_scope_version":    "",
+				"otel_scope_schema_url": "",
+				"otel_scope_custom":     "keep",
+			},
+		},
+		{
+			name: "NoTranslation drops exact reserved scope attributes but keeps schema.url",
+			cfg:  &Config{TranslationStrategy: noTranslation},
+			scopeAttrs: func(m pcommon.Map) {
+				m.PutStr("name", "drop-name")
+				m.PutStr("version", "drop-version")
+				m.PutStr("schema_url", "drop-schema-url")
+				m.PutStr("schema.url", "keep-utf8-schema-dot-url")
+			},
+			scopeName:      "my.scope",
+			scopeVersion:   "2.0.0",
+			scopeSchemaURL: "https://opentelemetry.io/schemas/1.26.0",
+			wantLabels: map[string]string{
+				"otel_scope_name":       "my.scope",
+				"otel_scope_version":    "2.0.0",
+				"otel_scope_schema_url": "https://opentelemetry.io/schemas/1.26.0",
+				"otel_scope_schema.url": "keep-utf8-schema-dot-url",
+			},
+		},
+		{
+			name: "colliding scope attributes concatenated sorted by original key with equal-value dedup",
+			cfg:  &Config{},
+			scopeAttrs: func(m pcommon.Map) {
+				m.PutStr("a_b", "s2")
+				m.PutStr("a.b", "s1")
+				m.PutStr("eq_k", "same")
+				m.PutStr("eq.k", "same")
+				m.PutStr("t_k", "b")
+				m.PutStr("t.k", "b")
+				m.PutStr("t-k", "a")
+			},
+			scopeName: "scope",
+			wantLabels: map[string]string{
+				"otel_scope_name":       "scope",
+				"otel_scope_version":    "",
+				"otel_scope_schema_url": "",
+				"otel_scope_a_b":        "s1;s2",
+				"otel_scope_eq_k":       "same",
+				"otel_scope_t_k":        "a;b",
+			},
+		},
+		{
+			name: "resource job and instance overwrite datapoint job and instance",
+			cfg:  &Config{WithoutScopeInfo: true},
+			dpAttrs: func(m pcommon.Map) {
+				m.PutStr("job", "dp-job")
+				m.PutStr("instance", "dp-inst")
+				m.PutStr("env", "prod")
+			},
+			resourceAttrs: func(m pcommon.Map) {
+				m.PutStr("service.name", "api")
+				m.PutStr("service.namespace", "shop")
+				m.PutStr("service.instance.id", "replica-1")
+			},
+			wantLabels: map[string]string{
+				"job":      "shop/api",
+				"instance": "replica-1",
+				"env":      "prod",
+			},
+		},
+		{
+			name: "datapoint job and instance preserved when resource lacks service attributes",
+			cfg:  &Config{WithoutScopeInfo: true},
+			dpAttrs: func(m pcommon.Map) {
+				m.PutStr("job", "dp-job")
+				m.PutStr("instance", "dp-inst")
+			},
+			wantLabels: map[string]string{
+				"job":      "dp-job",
+				"instance": "dp-inst",
+			},
+		},
+		{
+			name: "scope labels overwrite colliding datapoint attributes without cross-source concatenation",
+			cfg:  &Config{},
+			dpAttrs: func(m pcommon.Map) {
+				m.PutStr("otel_scope_name", "dp-name")
+				m.PutStr("otel.scope.version", "dp-ver")
+				m.PutStr("otel.scope.schema.url", "dp-schema")
+				m.PutStr("otel.scope.custom", "dp-custom")
+				m.PutStr("otel_scope_a_b", "dp-ab")
+				m.PutStr("otel_scope_only_dp", "keep-dp")
+			},
+			scopeName: "real-scope",
+			scopeAttrs: func(m pcommon.Map) {
+				m.PutStr("custom", "sc-custom")
+				m.PutStr("a_b", "s2")
+				m.PutStr("a.b", "s1")
+			},
+			wantLabels: map[string]string{
+				"otel_scope_name":       "real-scope",
+				"otel_scope_version":    "",
+				"otel_scope_schema_url": "",
+				"otel_scope_custom":     "sc-custom",
+				"otel_scope_a_b":        "s1;s2",
+				"otel_scope_only_dp":    "keep-dp",
+			},
+		},
+		{
+			name: "without_scope_info preserves datapoint and const_labels otel_scope labels",
+			cfg: &Config{
+				WithoutScopeInfo: true,
+				ConstLabels: prometheus.Labels{
+					"otel_scope_version": "const-ver",
+				},
+			},
+			dpAttrs: func(m pcommon.Map) {
+				m.PutStr("otel_scope_name", "dp-name")
+			},
+			scopeName:    "ignored-scope",
+			scopeVersion: "ignored-ver",
+			wantLabels: map[string]string{
+				"otel_scope_name":    "dp-name",
+				"otel_scope_version": "const-ver",
+			},
+		},
+		{
+			name: "variable labels take precedence over const_labels",
+			cfg: &Config{
+				ConstLabels: prometheus.Labels{
+					"env":               "const-env",
+					"foo_bar":           "const-fb",
+					"job":               "const-job",
+					"instance":          "const-inst",
+					"otel_scope_name":   "const-scope",
+					"otel_scope_custom": "const-sc",
+					"kept_const":        "kept",
+				},
+			},
+			dpAttrs: func(m pcommon.Map) {
+				m.PutStr("env", "dp-env")
+				m.PutStr("foo.bar", "dp-fb")
+			},
+			resourceAttrs: func(m pcommon.Map) {
+				m.PutStr("service.name", "svc")
+				m.PutStr("service.instance.id", "inst-1")
+			},
+			scopeName: "sc-name",
+			scopeAttrs: func(m pcommon.Map) {
+				m.PutStr("custom", "sc-val")
+			},
+			wantLabels: map[string]string{
+				"env":                   "dp-env",
+				"foo_bar":               "dp-fb",
+				"job":                   "svc",
+				"instance":              "inst-1",
+				"otel_scope_name":       "sc-name",
+				"otel_scope_version":    "",
+				"otel_scope_schema_url": "",
+				"otel_scope_custom":     "sc-val",
+				"kept_const":            "kept",
+			},
+		},
+		{
+			name: "colliding datapoint attributes preserve non-colliding const_labels",
+			cfg: &Config{
+				WithoutScopeInfo: true,
+				ConstLabels: prometheus.Labels{
+					"region": "us-east1",
+				},
+			},
+			dpAttrs: func(m pcommon.Map) {
+				m.PutStr("a_b", "v2")
+				m.PutStr("a.b", "v1")
+			},
+			wantLabels: map[string]string{
+				"a_b":    "v1;v2",
+				"region": "us-east1",
+			},
+		},
+		{
+			name: "all const_labels overridden by variable labels",
+			cfg: &Config{
+				WithoutScopeInfo: true,
+				ConstLabels: prometheus.Labels{
+					"env": "const-env",
+				},
+			},
+			dpAttrs: func(m pcommon.Map) {
+				m.PutStr("env", "dp-env")
+			},
+			wantLabels: map[string]string{
+				"env": "dp-env",
+			},
+		},
+		{
+			name: "invalid datapoint attribute key still returns error",
+			cfg:  &Config{WithoutScopeInfo: true},
+			dpAttrs: func(m pcommon.Map) {
+				m.PutStr("---", "bad")
+			},
+			wantErrContains: "resulted in invalid name",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metric := pmetric.NewMetric()
+			metric.SetName("test_metric")
+			dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+			dp.SetDoubleValue(1)
+			if tt.dpAttrs != nil {
+				tt.dpAttrs(dp.Attributes())
+			}
+
+			rAttrs := pcommon.NewMap()
+			if tt.resourceAttrs != nil {
+				tt.resourceAttrs(rAttrs)
+			}
+
+			sAttrs := pcommon.NewMap()
+			if tt.scopeAttrs != nil {
+				tt.scopeAttrs(sAttrs)
+			}
+
+			c := newCollector(tt.cfg, zap.NewNop())
+			m, err := c.convertMetric(metric, rAttrs, tt.scopeName, tt.scopeVersion, tt.scopeSchemaURL, sAttrs)
+			if tt.wantErrContains != "" {
+				require.ErrorContains(t, err, tt.wantErrContains)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.wantLabels, extractMetricLabels(t, m))
+		})
+	}
+}
+
+func TestConstLabelsNotMutatedOnCollision(t *testing.T) {
+	c := newCollector(&Config{
+		WithoutScopeInfo: true,
+		ConstLabels: prometheus.Labels{
+			"env":    "const-env",
+			"region": "us-west",
+		},
+	}, zap.NewNop())
+
+	m1 := pmetric.NewMetric()
+	m1.SetName("metric_colliding")
+	dp1 := m1.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp1.SetDoubleValue(1)
+	dp1.Attributes().PutStr("env", "dp-env")
+
+	prom1, err := c.convertMetric(m1, pcommon.NewMap(), "", "", "", pcommon.NewMap())
+	require.NoError(t, err)
+	require.Equal(t, map[string]string{
+		"env":    "dp-env",
+		"region": "us-west",
+	}, extractMetricLabels(t, prom1))
+
+	m2 := pmetric.NewMetric()
+	m2.SetName("metric_non_colliding")
+	dp2 := m2.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp2.SetDoubleValue(2)
+
+	prom2, err := c.convertMetric(m2, pcommon.NewMap(), "", "", "", pcommon.NewMap())
+	require.NoError(t, err)
+	require.Equal(t, map[string]string{
+		"env":    "const-env",
+		"region": "us-west",
+	}, extractMetricLabels(t, prom2))
+}
+
+func TestCollectAllMetricTypesWithLabelCollisions(t *testing.T) {
+	populateAttrs := func(m pcommon.Map) {
+		m.PutStr("a_b", "v2")
+		m.PutStr("a.b", "v1")
+		m.PutStr("job", "dp-job")
+		m.PutStr("env", "dp-env")
+		m.PutStr("otel_scope_name", "dp-scope")
+	}
+
+	rm := pmetric.NewResourceMetrics()
+	rm.Resource().Attributes().PutStr("service.name", "svc")
+	rm.Resource().Attributes().PutStr("service.instance.id", "inst-1")
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName("test-scope")
+	sm.Scope().SetVersion("1.0.0")
+	sm.SetSchemaUrl("https://opentelemetry.io/schemas/1.26.0")
+	sm.Scope().Attributes().PutStr("schema.url", "drop-me")
+	sm.Scope().Attributes().PutStr("x_y", "s2")
+	sm.Scope().Attributes().PutStr("x.y", "s1")
+
+	ts := pcommon.NewTimestampFromTime(time.Now())
+
+	g := sm.Metrics().AppendEmpty()
+	g.SetName("test_gauge")
+	gdp := g.SetEmptyGauge().DataPoints().AppendEmpty()
+	gdp.SetDoubleValue(1)
+	gdp.SetTimestamp(ts)
+	populateAttrs(gdp.Attributes())
+
+	s := sm.Metrics().AppendEmpty()
+	s.SetName("test_counter")
+	sum := s.SetEmptySum()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	sdp := sum.DataPoints().AppendEmpty()
+	sdp.SetDoubleValue(2)
+	sdp.SetTimestamp(ts)
+	populateAttrs(sdp.Attributes())
+
+	h := sm.Metrics().AppendEmpty()
+	h.SetName("test_hist")
+	hist := h.SetEmptyHistogram()
+	hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	hdp := hist.DataPoints().AppendEmpty()
+	hdp.SetCount(1)
+	hdp.SetSum(1)
+	hdp.ExplicitBounds().FromRaw([]float64{1})
+	hdp.BucketCounts().FromRaw([]uint64{1, 0})
+	hdp.SetTimestamp(ts)
+	populateAttrs(hdp.Attributes())
+
+	eh := sm.Metrics().AppendEmpty()
+	eh.SetName("test_exp_hist")
+	expHist := eh.SetEmptyExponentialHistogram()
+	expHist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	ehdp := expHist.DataPoints().AppendEmpty()
+	ehdp.SetCount(1)
+	ehdp.SetSum(1)
+	ehdp.SetScale(0)
+	ehdp.SetZeroCount(1)
+	ehdp.SetTimestamp(ts)
+	populateAttrs(ehdp.Attributes())
+
+	sumry := sm.Metrics().AppendEmpty()
+	sumry.SetName("test_summary")
+	sumdp := sumry.SetEmptySummary().DataPoints().AppendEmpty()
+	sumdp.SetCount(1)
+	sumdp.SetSum(1)
+	sumdp.SetTimestamp(ts)
+	populateAttrs(sumdp.Attributes())
+
+	loggerCore := &errorCheckCore{}
+	c := newCollector(&Config{
+		MetricExpiration: time.Minute,
+		ConstLabels: prometheus.Labels{
+			"env":   "const-env",
+			"extra": "const-extra",
+		},
+	}, zap.New(loggerCore))
+	c.accumulator.Accumulate(rm)
+
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(c)
+	families, err := registry.Gather()
+	require.NoError(t, err)
+	require.Empty(t, loggerCore.errorMessages)
+
+	wantLabels := map[string]string{
+		"a_b":                   "v1;v2",
+		"env":                   "dp-env",
+		"extra":                 "const-extra",
+		"job":                   "svc",
+		"instance":              "inst-1",
+		"otel_scope_name":       "test-scope",
+		"otel_scope_version":    "1.0.0",
+		"otel_scope_schema_url": "https://opentelemetry.io/schemas/1.26.0",
+		"otel_scope_x_y":        "s1;s2",
+	}
+
+	gotFamilies := make(map[string]map[string]string, len(families))
+	for _, mf := range families {
+		require.Len(t, mf.GetMetric(), 1)
+		lbls := make(map[string]string, len(mf.GetMetric()[0].GetLabel()))
+		for _, l := range mf.GetMetric()[0].GetLabel() {
+			lbls[l.GetName()] = l.GetValue()
+		}
+		gotFamilies[mf.GetName()] = lbls
+	}
+
+	for _, name := range []string{"test_gauge", "test_counter_total", "test_hist", "test_exp_hist", "test_summary"} {
+		require.Equal(t, wantLabels, gotFamilies[name], "metric %s labels mismatch", name)
+	}
+	require.Equal(t, map[string]string{"job": "svc", "instance": "inst-1"}, gotFamilies["target_info"])
+}
+
+func TestTargetInfoLabelCollisions(t *testing.T) {
+	t.Run("sorted concatenation, equal-value dedup, and job/instance overwrite", func(t *testing.T) {
+		attrs := pcommon.NewMap()
+		attrs.PutStr("service.name", "api")
+		attrs.PutStr("service.namespace", "shop")
+		attrs.PutStr("service.instance.id", "replica-1")
+		attrs.PutStr("job", "attr-job")
+		attrs.PutStr("instance", "attr-inst")
+		// Insert in reverse lexicographical order to verify sorting by original key.
+		attrs.PutStr("k8s_pod_name", "pod-b")
+		attrs.PutStr("k8s.pod.name", "pod-a")
+		attrs.PutStr("env_name", "prod")
+		attrs.PutStr("env.name", "prod")
+		attrs.PutStr("tier_id", "b")
+		attrs.PutStr("tier.id", "b")
+		attrs.PutStr("tier-id", "a")
+
+		original := attrs.AsRaw()
+		c := newCollector(&Config{}, zap.NewNop())
+		metrics, err := c.createTargetInfoMetrics([]pcommon.Map{attrs})
+		require.NoError(t, err)
+		require.Len(t, metrics, 1)
+
+		require.Equal(t, map[string]string{
+			"job":          "shop/api",
+			"instance":     "replica-1",
+			"k8s_pod_name": "pod-a;pod-b",
+			"env_name":     "prod",
+			"tier_id":      "a;b",
+		}, extractMetricLabels(t, metrics[0]))
+		require.Equal(t, original, attrs.AsRaw())
+	})
+
+	t.Run("KeepIdentifyingResourceAttributes gate merges colliding service_name sorted", func(t *testing.T) {
+		defer testutil.SetFeatureGateForTest(t, prometheustranslator.KeepIdentifyingResourceAttributesGate, true)()
+
+		attrs := pcommon.NewMap()
+		attrs.PutStr("service_name", "other")
+		attrs.PutStr("service.name", "api")
+		attrs.PutStr("service.instance.id", "replica-1")
+
+		original := attrs.AsRaw()
+		c := newCollector(&Config{}, zap.NewNop())
+		metrics, err := c.createTargetInfoMetrics([]pcommon.Map{attrs})
+		require.NoError(t, err)
+		require.Len(t, metrics, 1)
+
+		require.Equal(t, map[string]string{
+			"job":                 "api",
+			"instance":            "replica-1",
+			"service_name":        "api;other",
+			"service_instance_id": "replica-1",
+		}, extractMetricLabels(t, metrics[0]))
+		require.Equal(t, original, attrs.AsRaw())
+	})
+
+	t.Run("invalid resource attribute key returns error", func(t *testing.T) {
+		attrs := pcommon.NewMap()
+		attrs.PutStr("service.name", "api")
+		attrs.PutStr("service.instance.id", "replica-1")
+		attrs.PutStr("---", "bad")
+
+		c := newCollector(&Config{}, zap.NewNop())
+		_, err := c.createTargetInfoMetrics([]pcommon.Map{attrs})
+		require.ErrorContains(t, err, "resulted in invalid name")
+	})
+}
