@@ -11,21 +11,6 @@ status:
   codeowners:
     active: [mapno, JaredTan95]
 
-feature_gates:
-  - id: "connector.servicegraph.legacyLatencyMetricNames"
-    description: When enabled, connector uses legacy latency metric names.
-    stage: deprecated
-    from_version: v0.80.0
-    to_version: v0.154.0
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18743
-
-  - id: "connector.servicegraph.legacyLatencyUnitMs"
-    description: When enabled, connector reports latency in milliseconds, instead of seconds.
-    stage: deprecated
-    from_version: v0.89.0
-    to_version: v0.154.0
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27488
-
 tests:
   config:
 

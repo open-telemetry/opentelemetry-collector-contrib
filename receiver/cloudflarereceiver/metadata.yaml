@@ -11,5 +11,5 @@ status:
     alpha: [logs]
   distributions: [contrib]
   codeowners:
-    active: [dehaansa]
+    active: [dehaansa, VinozzZ]
     seeking_new: true

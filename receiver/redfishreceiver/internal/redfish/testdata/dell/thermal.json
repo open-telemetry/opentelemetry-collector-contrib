@@ -138,7 +138,7 @@
       "MinReadingRangeTemp": null,
       "Name": "Inlet Temp",
       "PhysicalContext": "Intake",
-      "ReadingCelsius": 28,
+      "ReadingCelsius": 28.5,
       "RelatedItem": [
         {
           "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"

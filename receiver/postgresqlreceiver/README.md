@@ -156,8 +156,25 @@ for the client connection to a valid [W3C `traceparent`](https://www.w3.org/TR/t
 SET application_name = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01';
 ```
 
-When query sample collection observes a valid `traceparent` in `application_name`, the receiver sets the trace ID and span ID on the emitted
-`db.server.query_sample` log record. This enables correlation between the query sample and the originating trace.
+Alternatively, instrumentation can append a [SQLCommenter](https://google.github.io/sqlcommenter/spec/) comment
+carrying the `traceparent` to each statement, as described in the
+[OpenTelemetry database semantic conventions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/db/database-spans.md#sql-commenter):
+
+```sql
+SELECT * FROM orders /*traceparent='00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'*/
+```
+
+When query sample collection observes a valid `traceparent` in `application_name`, or otherwise in a `/* */` comment of the
+sampled query, the receiver sets the trace ID and span ID on the emitted `db.server.query_sample` log record. This enables
+correlation between the query sample and the originating trace. `application_name` takes precedence. The comment is read
+before the query text is obfuscated; text inside string literals, quoted identifiers and dollar-quoted strings is ignored,
+and a query with more than one `traceparent` value or a nested comment yields no trace context.
+
+`pg_stat_activity` truncates query text at
+[`track_activity_query_size`](https://www.postgresql.org/docs/current/runtime-config-statistics.html#GUC-TRACK-ACTIVITY-QUERY-SIZE)
+(1024 bytes by default). An appended comment is cut off on longer statements, so only shorter queries get trace
+context. Raise `track_activity_query_size` (requires a server restart) or have the instrumentation put the comment at the
+start of the statement.
 
 The following options are available:
 - `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query 

@@ -178,6 +178,7 @@ body:
       - pkg/kafka/topic
       - pkg/ottl
       - pkg/ottl/contexts/xprofile
+      - pkg/ottl/contexts/xspanlink
       - pkg/ottl/xottl
       - pkg/pdatatest
       - pkg/resourcetotelemetry
@@ -201,6 +202,7 @@ body:
       - pkg/translator/splunk
       - pkg/translator/zipkin
       - pkg/winperfcounters
+      - pkg/xcompression
       - pkg/xk8stest
       - pkg/xstreamencoding
       - processor/adaptivetailsampling
@@ -256,6 +258,7 @@ body:
       - processor/telemetrypolicy
       - processor/transform
       - processor/transform/internal/logparsingfuncs
+      - processor/transform/xtransform
       - processor/unroll
       - processor/verify
       - receiver/activedirectoryds
@@ -306,6 +309,7 @@ body:
       - receiver/hostmetrics/internal/scraper/cpuscraper
       - receiver/hostmetrics/internal/scraper/diskscraper
       - receiver/hostmetrics/internal/scraper/filesystemscraper
+      - receiver/hostmetrics/internal/scraper/hardwarescraper
       - receiver/hostmetrics/internal/scraper/loadscraper
       - receiver/hostmetrics/internal/scraper/memoryscraper
       - receiver/hostmetrics/internal/scraper/networkscraper
@@ -358,7 +362,6 @@ body:
       - receiver/redis
       - receiver/riak
       - receiver/saphana
-      - receiver/signalfx
       - receiver/simpleprometheus
       - receiver/skywalking
       - receiver/snmp
@@ -388,6 +391,7 @@ body:
       - receiver/zookeeper
       - scraper/zookeeperscraper
       - testbed
+      - testbed/integrationtests/elasticsearch
       - testbed/mockdatasenders/mockdatadogagentexporter
       # End components list
 

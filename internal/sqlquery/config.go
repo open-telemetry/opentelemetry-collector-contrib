@@ -15,7 +15,7 @@ import (
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	Driver                         string              `mapstructure:"driver"`
-	DataSource                     string              `mapstructure:"datasource"`
+	DataSource                     configopaque.String `mapstructure:"datasource"`
 	Host                           string              `mapstructure:"host"`
 	Port                           int                 `mapstructure:"port"`
 	Database                       string              `mapstructure:"database"`
@@ -62,8 +62,8 @@ func (c Config) Validate() error {
 		if c.Host == "" {
 			return errors.New("'host' or 'datasource' must be specified")
 		}
-		// For sqlserver, port is optional
-		if c.Driver != DriverSQLServer && c.Port == 0 {
+		// For SQL Server drivers, port is optional.
+		if c.Driver != DriverSQLServer && c.Driver != DriverAzureSQL && c.Port == 0 {
 			return errors.New("'port' or 'datasource' must be specified")
 		}
 		if c.Database == "" {

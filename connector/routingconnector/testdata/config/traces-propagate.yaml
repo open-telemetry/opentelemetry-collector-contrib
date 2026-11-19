@@ -1,0 +1,12 @@
+routing:
+  default_pipelines:
+    - traces/otlp-all
+  error_mode: propagate
+  table:
+    - statement: route() where attributes["X-Tenant"] == "acme"
+      pipelines:
+        - traces/jaeger-acme
+        - traces/otlp-acme
+    - statement: route() where attributes["X-Tenant"] == "globex"
+      pipelines:
+        - traces/otlp-globex

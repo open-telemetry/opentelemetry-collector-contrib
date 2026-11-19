@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/statsd
+note: Reduce allocations when parsing metrics
+issues: [53285]
+subtext:
+change_logs: []

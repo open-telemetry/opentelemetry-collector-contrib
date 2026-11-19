@@ -8,12 +8,14 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	"io"
 	"testing"
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -117,7 +119,7 @@ func (e unmarshalExtension) UnmarshalLogs(_ []byte) (plog.Logs, error) {
 	return e.log, nil
 }
 
-func Test_receiveBytes_traces(t *testing.T) {
+func Test_receive_traces(t *testing.T) {
 	testTrace := generateTraceData()
 
 	jsonTrace, err := (&ptrace.JSONMarshaler{}).MarshalTraces(testTrace)
@@ -270,7 +272,7 @@ func Test_receiveBytes_traces(t *testing.T) {
 				t.Helper()
 				traceConsumed = true
 				if !tt.wantTrace {
-					t.Errorf("receiveBytes() received unexpected trace")
+					t.Errorf("receive() received unexpected trace")
 				} else {
 					require.Equal(t, testTrace, td)
 				}
@@ -291,17 +293,146 @@ func Test_receiveBytes_traces(t *testing.T) {
 					consumer: tracesConsumer,
 				},
 			}
-			if err := r.receiveBytes(t.Context(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
-				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
+			var input io.Reader
+			if tt.args.data != nil {
+				input = bytes.NewReader(tt.args.data)
+			}
+			if err := r.receive(t.Context(), tt.args.key, input); (err != nil) != tt.wantErr {
+				t.Errorf("receive() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if tt.wantTrace && !traceConsumed {
-				t.Errorf("receiveBytes() expected trace to be consumed, none received")
+				t.Errorf("receive() expected trace to be consumed, none received")
 			}
 		})
 	}
 }
 
-func Test_receiveBytes_metrics(t *testing.T) {
+func Test_receive_configuredDecompression(t *testing.T) {
+	testTrace := generateTraceData()
+
+	jsonTrace, err := (&ptrace.JSONMarshaler{}).MarshalTraces(testTrace)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name          string
+		decompression configcompression.Type
+		key           string
+		data          []byte
+		wantErr       bool
+		wantTrace     bool
+	}{
+		{
+			name:          "gzip without suffix",
+			decompression: configcompression.TypeGzip,
+			key:           "test.json",
+			data:          gzipCompress(jsonTrace),
+			wantTrace:     true,
+		},
+		{
+			name:          "zstd without suffix",
+			decompression: configcompression.TypeZstd,
+			key:           "test.json",
+			data:          zstdCompress(jsonTrace),
+			wantTrace:     true,
+		},
+		{
+			name:          "gzip without suffix, encoding extension",
+			decompression: configcompression.TypeGzip,
+			key:           "test.test",
+			data:          gzipCompress([]byte("test")),
+			wantTrace:     true,
+		},
+		{
+			name:          "key suffix takes precedence over configured decompression",
+			decompression: configcompression.TypeZstd,
+			key:           "test.json.gz",
+			data:          gzipCompress(jsonTrace),
+			wantTrace:     true,
+		},
+		{
+			name:          "gzip configured, object not compressed",
+			decompression: configcompression.TypeGzip,
+			key:           "test.json",
+			data:          jsonTrace,
+			wantErr:       true,
+		},
+		{
+			name:          "zstd configured, object not compressed",
+			decompression: configcompression.TypeZstd,
+			key:           "test.json",
+			data:          jsonTrace,
+			wantErr:       true,
+		},
+		{
+			name:          "zstd configured, object gzip compressed",
+			decompression: configcompression.TypeZstd,
+			key:           "test.json",
+			data:          gzipCompress(jsonTrace),
+			wantErr:       true,
+		},
+		{
+			name:          "none configured, object not compressed",
+			decompression: configcompression.Type("none"),
+			key:           "test.json",
+			data:          jsonTrace,
+			wantTrace:     true,
+		},
+		{
+			name:      "empty configured, object not compressed",
+			key:       "test.json",
+			data:      jsonTrace,
+			wantTrace: true,
+		},
+		{
+			name:          "none configured, object compressed without suffix",
+			decompression: configcompression.Type("none"),
+			key:           "test.json",
+			data:          gzipCompress(jsonTrace),
+			wantErr:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var traceConsumed bool
+			tracesConsumer, _ := consumer.NewTraces(func(_ context.Context, td ptrace.Traces) error {
+				traceConsumed = true
+				require.Equal(t, testTrace, td)
+				return nil
+			})
+			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
+			require.NoError(t, err)
+			r := &awss3Receiver{
+				logger:  zap.NewNop(),
+				obsrecv: obsrecv,
+				extensions: encodingExtensions{
+					{
+						extension: &unmarshalExtension{trace: testTrace},
+						suffix:    ".test",
+					},
+				},
+				dataProcessor: &traceReceiver{
+					consumer: tracesConsumer,
+				},
+				decompression: tt.decompression,
+			}
+			err = r.receive(t.Context(), tt.key, bytes.NewReader(tt.data))
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.wantTrace, traceConsumed)
+		})
+	}
+}
+
+func Test_decompress_unsupported(t *testing.T) {
+	_, err := newDecompressor(configcompression.TypeSnappy, bytes.NewReader([]byte("test")))
+	assert.ErrorContains(t, err, `unsupported decompression type "snappy"`)
+}
+
+func Test_receive_metrics(t *testing.T) {
 	testMetric := generateMetricData()
 
 	jsonMetric, err := (&pmetric.JSONMarshaler{}).MarshalMetrics(testMetric)
@@ -454,7 +585,7 @@ func Test_receiveBytes_metrics(t *testing.T) {
 				t.Helper()
 				metricConsumed = true
 				if !tt.wantMetric {
-					t.Errorf("receiveBytes() received unexpected metric")
+					t.Errorf("receive() received unexpected metric")
 				} else {
 					require.Equal(t, testMetric, md)
 				}
@@ -475,17 +606,21 @@ func Test_receiveBytes_metrics(t *testing.T) {
 					consumer: tracesConsumer,
 				},
 			}
-			if err := r.receiveBytes(t.Context(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
-				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
+			var input io.Reader
+			if tt.args.data != nil {
+				input = bytes.NewReader(tt.args.data)
+			}
+			if err := r.receive(t.Context(), tt.args.key, input); (err != nil) != tt.wantErr {
+				t.Errorf("receive() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if tt.wantMetric && !metricConsumed {
-				t.Errorf("receiveBytes() expected metric to be consumed, none received")
+				t.Errorf("receive() expected metric to be consumed, none received")
 			}
 		})
 	}
 }
 
-func Test_receiveBytes_logs(t *testing.T) {
+func Test_receive_logs(t *testing.T) {
 	testLog := generateLogData()
 
 	jsonLog, err := (&plog.JSONMarshaler{}).MarshalLogs(testLog)
@@ -638,7 +773,7 @@ func Test_receiveBytes_logs(t *testing.T) {
 				t.Helper()
 				logConsumed = true
 				if !tt.wantMetric {
-					t.Errorf("receiveBytes() received unexpected log")
+					t.Errorf("receive() received unexpected log")
 				} else {
 					require.Equal(t, testLog, ld)
 				}
@@ -659,11 +794,15 @@ func Test_receiveBytes_logs(t *testing.T) {
 					consumer: tracesConsumer,
 				},
 			}
-			if err := r.receiveBytes(t.Context(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
-				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
+			var input io.Reader
+			if tt.args.data != nil {
+				input = bytes.NewReader(tt.args.data)
+			}
+			if err := r.receive(t.Context(), tt.args.key, input); (err != nil) != tt.wantErr {
+				t.Errorf("receive() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if tt.wantMetric && !logConsumed {
-				t.Errorf("receiveBytes() expected log to be consumed, none received")
+				t.Errorf("receive() expected log to be consumed, none received")
 			}
 		})
 	}

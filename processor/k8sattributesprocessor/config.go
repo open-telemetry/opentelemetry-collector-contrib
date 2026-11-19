@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.45.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -113,9 +113,9 @@ func (cfg *Config) Validate() error {
 		}
 
 		switch f.From {
-		case "", kube.MetadataFromPod, kube.MetadataFromNamespace, kube.MetadataFromNode, kube.MetadataFromDeployment, kube.MetadataFromReplicaSet, kube.MetadataFromStatefulSet, kube.MetadataFromDaemonSet, kube.MetadataFromJob, kube.MetadataFromCronJob:
+		case "", kube.MetadataFromPod, kube.MetadataFromNamespace, kube.MetadataFromNode, kube.MetadataFromDeployment, kube.MetadataFromReplicaSet, kube.MetadataFromStatefulSet, kube.MetadataFromDaemonSet, kube.MetadataFromJob, kube.MetadataFromCronJob, kube.MetadataFromHPA:
 		default:
-			return fmt.Errorf("%s is not a valid choice for From. Must be one of: pod, namespace, deployment, replicaset, statefulset, daemonset, job, cronjob, node", f.From)
+			return fmt.Errorf("%s is not a valid choice for From. Must be one of: pod, namespace, deployment, replicaset, statefulset, daemonset, job, cronjob, horizontalpodautoscaler, node", f.From)
 		}
 
 		if f.KeyRegex != "" {
@@ -288,7 +288,7 @@ type FieldExtractConfig struct {
 	KeyRegex string `mapstructure:"key_regex"`
 
 	// From represents the source of the labels/annotations.
-	// Allowed values are "pod", "namespace", "node", "deployment", "replicaset", "statefulset", "daemonset", "job", and "cronjob". The default is pod.
+	// Allowed values are "pod", "namespace", "node", "deployment", "replicaset", "statefulset", "daemonset", "job", "cronjob", and "horizontalpodautoscaler". The default is pod.
 	From string `mapstructure:"from"`
 }
 

@@ -20,7 +20,7 @@ type inlineKeyMaterialProvider struct {
 // In a collector config, use ${env:VAR_NAME} substitution to supply the values.
 func newInlineKeyMaterialProvider(cfg *EnvKeyConfig) (KeyMaterialProvider, error) {
 	if cfg.HMACKey != "" {
-		key, err := base64.StdEncoding.DecodeString(strings.TrimSpace(cfg.HMACKey))
+		key, err := base64.StdEncoding.DecodeString(strings.TrimSpace(string(cfg.HMACKey)))
 		if err != nil {
 			return nil, fmt.Errorf("env.hmac_key: must be standard base64-encoded: %w", err)
 		}
@@ -34,7 +34,7 @@ func newInlineKeyMaterialProvider(cfg *EnvKeyConfig) (KeyMaterialProvider, error
 	if len(certPEM) == 0 {
 		return nil, errors.New("env.certificate: value is empty")
 	}
-	keyPEM := []byte(cfg.PrivateKey)
+	keyPEM := []byte(string(cfg.PrivateKey))
 	if len(keyPEM) == 0 {
 		return nil, errors.New("env.private_key: value is empty")
 	}

@@ -18,6 +18,7 @@ resourceMetrics:
                     - "15"
                     - "11"
                   count: "31"
+                  sum: 0
                   explicitBounds:
                     - 11.1
                     - 22.2
@@ -37,6 +38,7 @@ resourceMetrics:
                     - "16"
                     - "12"
                   count: "34"
+                  sum: 0
                   explicitBounds:
                     - 111.1
                     - 122.2
@@ -56,6 +58,7 @@ resourceMetrics:
                     - "17"
                     - "13"
                   count: "37"
+                  sum: 0
                   explicitBounds:
                     - 211.1
                     - 222.2
