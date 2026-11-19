@@ -203,6 +203,7 @@ body:
       - pkg/translator/splunk
       - pkg/translator/zipkin
       - pkg/winperfcounters
+      - pkg/xcompression
       - pkg/xk8stest
       - pkg/xstreamencoding
       - processor/adaptivetailsampling
