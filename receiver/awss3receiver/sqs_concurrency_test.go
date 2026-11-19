@@ -72,7 +72,7 @@ func TestSQSClientConcurrency(t *testing.T) {
 			}
 			done := make(chan error, 1)
 			go func() {
-				done <- r.readAll(ctx, "logs", func(ctx context.Context, key string, _ []byte) error {
+				done <- r.readAll(ctx, "logs", func(ctx context.Context, key string, _ io.Reader) error {
 					active.Add(1)
 					defer active.Add(-1)
 					started <- key
