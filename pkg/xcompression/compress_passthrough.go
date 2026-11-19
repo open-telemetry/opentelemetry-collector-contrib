@@ -1,4 +1,7 @@
-package xcompression
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package xcompression // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression"
 
 import "io"
 
