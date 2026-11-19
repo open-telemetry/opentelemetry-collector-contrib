@@ -9,9 +9,9 @@ service discovery meta-labels to OpenTelemetry resource attributes.
 | --- | --- | --- |
 | `job` | `service.name` | |
 | `instance` | `service.instance.id` | |
-| `instance` (host) | `server.address` | When the host is present and discernible |
-| `instance` (port) | `server.port` | When the port is present |
-| `__scheme__` | `url.scheme` | |
+| `instance` (host) or post-relabeling `__address__` (host) | `server.address` | When the host is present and discernible; uses post-relabeling `__address__` when `receiver.prometheus.UseTargetUrlForServerAddress` is enabled |
+| `instance` (port) or post-relabeling `__address__` (port) | `server.port` | When the port is present; uses post-relabeling `__address__` when `receiver.prometheus.UseTargetUrlForServerAddress` is enabled |
+| `__scheme__` | `url.scheme` | From service discovery labels by default, or post-relabeling `__scheme__` when `receiver.prometheus.UseTargetUrlForServerAddress` is enabled |
 
 ## Kubernetes service discovery mappings
 

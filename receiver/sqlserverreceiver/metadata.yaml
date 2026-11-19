@@ -352,6 +352,10 @@ attributes:
     description: Status of the request (e.g., running, suspended).
     type: string
     requirement_level: recommended
+  sqlserver.resource_pool.name:
+    description: The name of the SQL Server Resource Governor resource pool.
+    type: string
+    requirement_level: recommended
   sqlserver.row_count:
     description: Number of rows affected or returned by the query.
     type: int
@@ -385,6 +389,11 @@ attributes:
     description: Numeric identifier of the tempdb file.
     type: int
     requirement_level: recommended
+  sqlserver.thread_pool.task.state:
+    description: State of a SQL Server task tracked for thread-pool diagnostics.
+    type: string
+    requirement_level: required
+    enum: [current, waiting_for_threadpool]
   sqlserver.total_elapsed_time:
     description: Total elapsed time for completed executions of this plan, reported in delta seconds.
     type: double
@@ -430,6 +439,10 @@ attributes:
     description: SQL Server type of the locked or waited-on resource, if available.
     type: string
     requirement_level: recommended
+  sqlserver.wait.start_time:
+    description: Timestamp of when the current wait started (ISO 8601 format). Empty if not waiting.
+    type: string
+    requirement_level: recommended
   sqlserver.wait_resource:
     description: The resource for which the session is waiting.
     type: string
@@ -440,6 +453,10 @@ attributes:
     requirement_level: recommended
   sqlserver.wait_type:
     description: Type of wait encountered by the request. Empty if none.
+    type: string
+    requirement_level: recommended
+  sqlserver.workload_group.name:
+    description: The name of the SQL Server Resource Governor workload group.
     type: string
     requirement_level: recommended
   sqlserver.writes:
@@ -561,6 +578,7 @@ events:
       - sqlserver.transaction_id
       - sqlserver.transaction_isolation_level
       - sqlserver.wait_resource
+      - sqlserver.wait.start_time
       - sqlserver.wait_time
       - sqlserver.wait_type
       - sqlserver.writes
@@ -1078,6 +1096,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
       value_type: int
+    attributes: [sqlserver.workload_group.name]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.wait.rate:
     enabled: true
@@ -1167,7 +1186,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
       value_type: double
-    attributes: []
+    attributes: [sqlserver.resource_pool.name]
   sqlserver.os.wait.duration:
     enabled: false
     description: Total wait time for this wait type
@@ -1406,6 +1425,15 @@ metrics:
       value_type: int
       input_type: string
     attributes: [file_type, sqlserver.tempdb.file.id]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.thread_pool.task.count:
+    enabled: false
+    description: Number of SQL Server tasks tracked by schedulers.
+    stability: development
+    unit: "{task}"
+    gauge:
+      value_type: int
+    attributes: [sqlserver.thread_pool.task.state]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.transaction.delay:
     enabled: false

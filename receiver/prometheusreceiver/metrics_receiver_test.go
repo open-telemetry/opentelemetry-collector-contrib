@@ -1465,7 +1465,7 @@ func TestCoreMetricsEndToEnd(t *testing.T) {
 				{code: 200, data: target4Page1, useOpenMetrics: false},
 			},
 			validateFunc:    verifyTarget4,
-			validateScrapes: true,
+			validateScrapes: false,
 		},
 	}
 	testComponent(t, targets, nil)

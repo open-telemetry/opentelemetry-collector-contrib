@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 // Config defines configuration for CF Garden observer.
@@ -36,8 +38,15 @@ type Config struct {
 // Validate overrides the embedded noop validation so that load config can trigger
 // our own validation logic.
 func (config *Config) Validate() error {
+	// The intervals are used as ticker periods, and time.NewTicker panics on a non-positive one.
+	if config.RefreshInterval <= 0 {
+		return fmt.Errorf("refresh_interval must be greater than 0, got %s", config.RefreshInterval)
+	}
 	if !config.IncludeAppLabels {
 		return nil
+	}
+	if config.CacheSyncInterval <= 0 {
+		return fmt.Errorf("cache_sync_interval must be greater than 0 when include_app_labels is set to true, got %s", config.CacheSyncInterval)
 	}
 
 	c := config.CloudFoundry
@@ -105,16 +114,16 @@ type CfAuth struct {
 	Type authType `mapstructure:"type"`
 
 	// Used for user_pass authentication method
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
+	Username string              `mapstructure:"username"`
+	Password configopaque.String `mapstructure:"password"`
 
 	// Used for token authentication method
-	AccessToken  string `mapstructure:"access_token"`
-	RefreshToken string `mapstructure:"refresh_token"`
+	AccessToken  configopaque.String `mapstructure:"access_token"`
+	RefreshToken configopaque.String `mapstructure:"refresh_token"`
 
 	// Used for client_credentials authentication method
-	ClientID     string `mapstructure:"client_id"`
-	ClientSecret string `mapstructure:"client_secret"`
+	ClientID     string              `mapstructure:"client_id"`
+	ClientSecret configopaque.String `mapstructure:"client_secret"`
 }
 
 // authType describes the type of authentication to use for the CloudFoundry API

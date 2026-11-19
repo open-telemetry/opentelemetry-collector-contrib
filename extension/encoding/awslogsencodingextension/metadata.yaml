@@ -32,7 +32,7 @@ feature_gates:
     from_version: v0.138.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43390
   - id: extension.encoding.awslogsencoding.DontEmitV0RPCConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, CloudTrail log unmarshaler no longer emits the deprecated
       semconv v1.38.0 attributes rpc.service and rpc.system.

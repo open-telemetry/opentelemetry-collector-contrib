@@ -66,16 +66,16 @@ func TestToLabelValue(t *testing.T) {
 		expectedValue            any
 		expectedTransformedValue any
 	}{
-		"String label value metadata":             {StringValueType, stringLabelValue{}, stringValue, nil},
-		"Int64 label value metadata":              {IntValueType, int64LabelValue{}, int64Value, nil},
-		"Bool label value metadata":               {BoolValueType, boolLabelValue{}, boolValue, nil},
-		"String slice label value metadata":       {StringSliceValueType, stringSliceLabelValue{}, []string{stringValue, stringValue}, stringValue + "," + stringValue},
-		"Int slice label value metadata":          {IntSliceValueType, intSliceLabelValue{}, []int64{1, 2}, "1,2"},
-		"Byte slice label value metadata":         {ByteSliceValueType, byteSliceLabelValue{}, []byte(stringValue), stringValue},
-		"Lock request slice label value metadata": {LockRequestSliceValueType, lockRequestSliceLabelValue{}, []*lockRequest{{"lockMode", "column", "transactionTag"}}, "{lockMode,column,transactionTag}"},
-		"Timestamp label value metadata":          {TimestampValueType, timestampLabelValue{}, spanner.NullTime{Time: time.Date(2023, 10, 1, 12, 0, 0, 0, time.UTC), Valid: true}, "2023-10-01T12:00:00Z"},
-		"Date label value metadata":               {DateValueType, dateLabelValue{}, spanner.NullDate{Date: civil.Date{Year: 2023, Month: 10, Day: 1}, Valid: true}, "2023-10-01"},
-		"Table ops json label value metadata":     {OperationsByTableJSONValueType, operationsByTableJSONLabelValue{}, `[{"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10}]`, "{table1,1,10}"},
+		"String label value metadata":            {StringValueType, stringLabelValue{}, spanner.NullString{StringVal: stringValue, Valid: true}, stringValue},
+		"Int64 label value metadata":             {IntValueType, int64LabelValue{}, int64Value, nil},
+		"Bool label value metadata":              {BoolValueType, boolLabelValue{}, boolValue, nil},
+		"String slice label value metadata":      {StringSliceValueType, stringSliceLabelValue{}, []string{stringValue, stringValue}, stringValue + "," + stringValue},
+		"Int slice label value metadata":         {IntSliceValueType, intSliceLabelValue{}, []int64{1, 2}, "1,2"},
+		"Byte slice label value metadata":        {ByteSliceValueType, byteSliceLabelValue{}, []byte(stringValue), stringValue},
+		"Lock request json label value metadata": {LockRequestJSONValueType, lockRequestJSONLabelValue{}, spanner.NullString{StringVal: `[{"lock_mode":"lockMode","column":"column","transaction_tag":"transactionTag"}]`, Valid: true}, "{lockMode,column,transactionTag}"},
+		"Timestamp label value metadata":         {TimestampValueType, timestampLabelValue{}, spanner.NullTime{Time: time.Date(2023, 10, 1, 12, 0, 0, 0, time.UTC), Valid: true}, "2023-10-01T12:00:00Z"},
+		"Date label value metadata":              {DateValueType, dateLabelValue{}, spanner.NullDate{Date: civil.Date{Year: 2023, Month: 10, Day: 1}, Valid: true}, "2023-10-01"},
+		"Table ops json label value metadata":    {OperationsByTableJSONValueType, operationsByTableJSONLabelValue{}, spanner.NullString{StringVal: `[{"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10}]`, Valid: true}, "{table1,1,10}"},
 	}
 
 	for name, testCase := range testCases {
@@ -104,7 +104,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 	stringSliceLabelValueMetadata, _ := NewLabelValueMetadata("stringSliceLabelName", "stringSliceLabelColumnName", StringSliceValueType)
 	intSliceLabelValueMetadata, _ := NewLabelValueMetadata("intSliceLabelName", "intSliceLabelColumnName", IntSliceValueType)
 	byteSliceLabelValueMetadata, _ := NewLabelValueMetadata("byteSliceLabelName", "byteSliceLabelColumnName", ByteSliceValueType)
-	lockRequestSliceLabelValueMetadata, _ := NewLabelValueMetadata("lockRequestSliceLabelName", "lockRequestSliceLabelColumnName", LockRequestSliceValueType)
+	lockRequestJSONLabelValueMetadata, _ := NewLabelValueMetadata("lockRequestJSONLabelName", "lockRequestJSONLabelColumnName", LockRequestJSONValueType)
 	timestampLabelValueMetadata, _ := NewLabelValueMetadata("timestampLabelName", "timestampLabelColumnName", TimestampValueType)
 	dateLabelValueMetadata, _ := NewLabelValueMetadata("dateLabelName", "dateLabelColumnName", DateValueType)
 	operationsByTableJSONLabelValueMetadata, _ := NewLabelValueMetadata("operationsByTableJSONLabelName", "operationsByTableJSONLabelColumnName", OperationsByTableJSONValueType)
@@ -115,7 +115,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 		stringSliceLabelValueMetadata,
 		intSliceLabelValueMetadata,
 		byteSliceLabelValueMetadata,
-		lockRequestSliceLabelValueMetadata,
+		lockRequestJSONLabelValueMetadata,
 		timestampLabelValueMetadata,
 		dateLabelValueMetadata,
 		operationsByTableJSONLabelValueMetadata,
@@ -129,7 +129,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 			stringSliceLabelValueMetadata.ColumnName(),
 			intSliceLabelValueMetadata.ColumnName(),
 			byteSliceLabelValueMetadata.ColumnName(),
-			lockRequestSliceLabelValueMetadata.ColumnName(),
+			lockRequestJSONLabelValueMetadata.ColumnName(),
 			timestampLabelValueMetadata.ColumnName(),
 			dateLabelValueMetadata.ColumnName(),
 			operationsByTableJSONLabelValueMetadata.ColumnName(),
@@ -141,10 +141,10 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 			[]string{stringValue, stringValue},
 			[]int64{1, 2},
 			[]byte(stringValue),
-			[]*lockRequest{{}},
+			spanner.NullString{StringVal: `[{"lock_mode":"lockMode","column":"column"}]`, Valid: true},
 			spanner.NullTime{Time: time.Date(2023, 10, 1, 12, 0, 0, 0, time.UTC), Valid: true},
 			spanner.NullDate{Date: civil.Date{Year: 2023, Month: 10, Day: 1}, Valid: true},
-			`[{"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10}]`,
+			spanner.NullString{StringVal: `[{"table_name":"table1","insert_or_update_count":1,"insert_or_update_bytes":10}]`, Valid: true},
 		},
 	)
 
@@ -159,7 +159,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 		stringSliceLabelValue{},
 		intSliceLabelValue{},
 		byteSliceLabelValue{},
-		lockRequestSliceLabelValue{},
+		lockRequestJSONLabelValue{},
 		timestampLabelValue{},
 		dateLabelValue{},
 		operationsByTableJSONLabelValue{},

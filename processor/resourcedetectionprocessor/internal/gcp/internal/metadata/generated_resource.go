@@ -85,9 +85,9 @@ func (rb *ResourceBuilder) SetGcpCloudRunJobExecution(val string) {
 }
 
 // SetGcpCloudRunJobTaskIndex sets provided value as "gcp.cloud_run.job.task_index" attribute.
-func (rb *ResourceBuilder) SetGcpCloudRunJobTaskIndex(val string) {
+func (rb *ResourceBuilder) SetGcpCloudRunJobTaskIndex(val int64) {
 	if rb.config.GcpCloudRunJobTaskIndex.Enabled {
-		rb.res.Attributes().PutStr("gcp.cloud_run.job.task_index", val)
+		rb.res.Attributes().PutInt("gcp.cloud_run.job.task_index", val)
 	}
 }
 
