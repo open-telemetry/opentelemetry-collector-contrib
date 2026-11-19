@@ -6,6 +6,7 @@ package awss3receiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"errors"
+	"io"
 	"sync"
 	"testing"
 	"testing/synctest"
@@ -129,7 +130,10 @@ func TestSQSVisibilityProtectsWaitingMessages(t *testing.T) {
 			})).Return(&sqs.DeleteMessageOutput{}, nil).Once()
 		}
 		var processed []string
-		r.processMessages(t.Context(), []types.Message{visibilityMessage("first"), visibilityMessage("second")}, time.Now(), func(_ context.Context, key string, _ []byte) error {
+		r.processMessages(t.Context(), []types.Message{visibilityMessage("first"), visibilityMessage("second")}, time.Now(), func(_ context.Context, key string, content io.Reader) error {
+			data, err := io.ReadAll(content)
+			require.NoError(t, err)
+			require.Equal(t, key, string(data))
 			processed = append(processed, key)
 			if key == "first" {
 				time.Sleep(14 * time.Second)
@@ -176,7 +180,7 @@ func TestSQSVisibilityFailureDoesNotAcknowledge(t *testing.T) {
 					return failingKey == "first" || aws.ToString(input.Key) == "first"
 				})).Return([]byte("data"), nil)
 				var processed []string
-				r.processMessages(t.Context(), []types.Message{visibilityMessage("first"), visibilityMessage("second")}, time.Now(), func(ctx context.Context, key string, _ []byte) error {
+				r.processMessages(t.Context(), []types.Message{visibilityMessage("first"), visibilityMessage("second")}, time.Now(), func(ctx context.Context, key string, _ io.Reader) error {
 					processed = append(processed, key)
 					if key == "first" {
 						time.Sleep(4 * time.Second)
@@ -204,6 +208,6 @@ func TestSQSReceiveSetsVisibilityTimeout(t *testing.T) {
 		return input.VisibilityTimeout == 300
 	})).Return(&sqs.ReceiveMessageOutput{}, nil).Run(func(mock.Arguments) { cancel() }).Once()
 	r := &s3SQSNotificationReader{logger: zap.NewNop(), sqsClient: queue, visibilityTimeoutSeconds: 300}
-	require.ErrorIs(t, r.readAll(ctx, "logs", func(context.Context, string, []byte) error { return nil }), context.Canceled)
+	require.ErrorIs(t, r.readAll(ctx, "logs", func(context.Context, string, io.Reader) error { return nil }), context.Canceled)
 	queue.AssertExpectations(t)
 }
