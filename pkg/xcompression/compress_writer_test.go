@@ -195,14 +195,12 @@ func TestWriteLeaser(t *testing.T) {
 		errVal string
 	}{
 		{
-			name:   "default",
-			typ:    "",
-			errVal: `compression "" does not support write leasing`,
+			name: "default",
+			typ:  "",
 		},
 		{
-			name:   "none",
-			typ:    "none",
-			errVal: `compression "none" does not support write leasing`,
+			name: "none",
+			typ:  "none",
 		},
 		{
 			name: "gzip",

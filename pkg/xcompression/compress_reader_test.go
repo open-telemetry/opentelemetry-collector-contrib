@@ -72,14 +72,12 @@ func TestLeaseReaders(t *testing.T) {
 		errVal string
 	}{
 		{
-			name:   "default",
-			typ:    "",
-			errVal: `compression "" does not support read leasing`,
+			name: "default",
+			typ:  "",
 		},
 		{
-			name:   "none",
-			typ:    "none",
-			errVal: `compression "none" does not support read leasing`,
+			name: "none",
+			typ:  "none",
 		},
 		{
 			name: "gzip",

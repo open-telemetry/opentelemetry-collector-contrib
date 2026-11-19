@@ -4,6 +4,7 @@
 package xcompression // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression"
 
 import (
+	"bytes"
 	"io"
 )
 
@@ -15,6 +16,9 @@ type Nop struct{}
 var (
 	_ Reader = (Nop{})
 	_ Writer = (Nop{})
+
+	_ ReadLeaser  = (Nop{})
+	_ WriteLeaser = (Nop{})
 )
 
 // Compress copies src to dst and returns the number of bytes copied.
@@ -35,6 +39,16 @@ func (Nop) Decompress(dst io.Writer, src io.Reader) (int64, error) {
 // DecompressBytes copies b to dst and returns the number of bytes written.
 func (nop Nop) DecompressBytes(dst io.Writer, b []byte) (int64, error) {
 	return nop.fromBytes(dst, b)
+}
+
+func (Nop) LeaseReader(leaser func(ResettableReader) error) error {
+	pr := &passthroughReader{Reader: bytes.NewReader(nil)}
+	return leaser(pr)
+}
+
+func (Nop) LeaseWriter(leaser func(ResettableWriter) error) error {
+	pw := &passthroughWriter{Writer: bytes.NewBuffer(nil)}
+	return leaser(pw)
 }
 
 func (Nop) fromBytes(dst io.Writer, b []byte) (int64, error) {
