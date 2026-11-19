@@ -24,7 +24,7 @@ $defs:
         additionalProperties:
           $ref: go.opentelemetry.io/collector/config/configopaque.string
       secret:
-        type: string
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       service_name:
         type: string
     allOf:

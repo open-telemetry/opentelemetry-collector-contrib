@@ -10,6 +10,7 @@ jobs:
     if: ${{ startsWith(github.event.comment.body, '/label') && github.repository_owner == 'open-telemetry' }}
     permissions:
       issues: write
+      pull-requests: write
 
     runs-on: ubuntu-slim
     steps:

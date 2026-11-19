@@ -90,6 +90,7 @@ func TestInitializeReaders(t *testing.T) {
 	readerConfig := ReaderConfig{
 		TopMetricsQueryMaxRows: topMetricsQueryMaxRows,
 		BackfillEnabled:        false,
+		TruncateText:           true,
 	}
 
 	readers := initializeReaders(logger, parsedMetadata, database, readerConfig)
@@ -97,6 +98,8 @@ func TestInitializeReaders(t *testing.T) {
 	assert.Len(t, readers, 2)
 	assert.IsType(t, &currentStatsReader{}, readers[0])
 	assert.IsType(t, &intervalStatsReader{}, readers[1])
+	assert.True(t, readers[0].(*currentStatsReader).truncateText)
+	assert.True(t, readers[1].(*intervalStatsReader).truncateText)
 }
 
 func TestDatabaseReader_Name(t *testing.T) {

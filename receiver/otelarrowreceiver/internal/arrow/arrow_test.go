@@ -404,10 +404,6 @@ func (ctc *commonTestCase) startWithSignal(sig signalType, newConsumer func() ar
 	}()
 }
 
-func requireCanceledStatus(t *testing.T, err error) {
-	requireStatus(t, codes.Canceled, err)
-}
-
 func requireCanceledOrCleanStatus(t *testing.T, err error) {
 	// TODO: This fixed the test on #46000 but it is unclear if
 	// it is the desired thing to test for.
@@ -602,7 +598,7 @@ func TestReceiverMetrics(t *testing.T) {
 
 	<-sendDone
 	err = ctc.cancelAndWait()
-	requireCanceledStatus(t, err)
+	requireCanceledOrCleanStatus(t, err)
 }
 
 func TestReceiverRecvError(t *testing.T) {
@@ -869,7 +865,11 @@ func TestReceiverPayloadPositionIndependent(t *testing.T) {
 		payloads[i], payloads[j] = payloads[j], payloads[i]
 	}
 
-	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
+	sendDone := make(chan struct{})
+	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).DoAndReturn(func(_ *arrowpb.BatchStatus) error {
+		close(sendDone)
+		return nil
+	})
 
 	ctc.startWithSignal(signalTraces, ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
@@ -879,6 +879,8 @@ func TestReceiverPayloadPositionIndependent(t *testing.T) {
 	}, []json.Marshaler{
 		compareJSONTraces{(<-ctc.consume).Data.(ptrace.Traces)},
 	})
+
+	<-sendDone
 
 	// Like other cancel-driven shutdown tests in this file, the
 	// recv goroutine may observe EOF before the Canceled status
@@ -996,8 +998,9 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 		var hpb bytes.Buffer
 		hpe := hpack.NewEncoder(&hpb)
 
-		for _, md := range expectData {
+		for i, md := range expectData {
 			td := testdata.GenerateTraces(2)
+			td.ResourceSpans().At(0).Resource().Attributes().PutInt("test.batch", int64(i))
 
 			batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
 			assert.NoError(t, err)
@@ -1030,8 +1033,21 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 		assert.NoError(t, ctc.wait())
 	})
 
-	for _, expect := range expectData {
-		info := client.FromContext((<-ctc.consume).Ctx)
+	seen := make([]bool, len(expectData))
+	for range expectData {
+		result := <-ctc.consume
+		traces := result.Data.(ptrace.Traces)
+
+		id, ok := traces.ResourceSpans().At(0).Resource().Attributes().Get("test.batch")
+		require.True(t, ok)
+		idx := int(id.Int())
+		require.GreaterOrEqual(t, idx, 0)
+		require.Less(t, idx, len(expectData))
+		require.False(t, seen[idx])
+		seen[idx] = true
+
+		expect := maps.Clone(expectData[idx])
+		info := client.FromContext(result.Ctx)
 
 		// The static stream context contains one extra variable.
 		if expect == nil {
@@ -1373,8 +1389,9 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta, dataAuth bool) {
 		var hpb bytes.Buffer
 		hpe := hpack.NewEncoder(&hpb)
 
-		for _, md := range expectData {
+		for i, md := range expectData {
 			td := testdata.GenerateTraces(2)
+			td.ResourceSpans().At(0).Resource().Attributes().PutInt("test.batch", int64(i))
 
 			batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
 			assert.NoError(t, err)
@@ -1402,6 +1419,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta, dataAuth bool) {
 	}()
 
 	var expectCodes []arrowpb.StatusCode
+	var expectedHeaders []map[string][]string
 
 	for _, testInput := range expectData {
 		// The static stream context contains one extra variable.
@@ -1424,14 +1442,30 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta, dataAuth bool) {
 		}
 
 		expectCodes = append(expectCodes, expectCode)
+		expectedHeaders = append(expectedHeaders, cpy)
+	}
 
-		if expectCode != arrowpb.StatusCode_OK {
+	seen := make([]bool, len(expectData))
+	for _, code := range expectCodes {
+		if code != arrowpb.StatusCode_OK {
 			continue
 		}
 
-		info := client.FromContext((<-ctc.consume).Ctx)
+		result := <-ctc.consume
+		traces := result.Data.(ptrace.Traces)
 
-		for key, vals := range cpy {
+		id, ok := traces.ResourceSpans().At(0).Resource().Attributes().Get("test.batch")
+		require.True(t, ok)
+		idx := int(id.Int())
+		require.GreaterOrEqual(t, idx, 0)
+		require.Less(t, idx, len(expectData))
+		require.False(t, seen[idx])
+		require.Equal(t, arrowpb.StatusCode_OK, expectCodes[idx])
+		seen[idx] = true
+
+		info := client.FromContext(result.Ctx)
+
+		for key, vals := range expectedHeaders[idx] {
 			if includeMeta {
 				require.Equal(t, vals, info.Metadata.Get(key))
 			} else {

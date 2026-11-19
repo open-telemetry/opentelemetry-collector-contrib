@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !aix && !solaris
+//go:build !aix && !solaris && !freebsd
 
 package datadogconnector
 

@@ -68,48 +68,26 @@ func TestMetricsBuilder(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := scrapertest.NewNopSettings(scrapertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
-			if tt.name == "all_set" {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.EmitV1SystemConventions", true))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
-				})
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.EmitV1SystemConventions", true))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
-				})
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.EmitV1SystemConventions", true))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
-				})
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.EmitV1SystemConventions", true))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
-				})
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.EmitV1SystemConventions", true))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
-				})
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.EmitV1SystemConventions", true))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
-				})
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.EmitV1SystemConventions", true))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
-				})
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.EmitV1SystemConventions", true))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
-				})
-			}
+			// Pin migration gates so the warning and metric counts are deterministic. When a gate's
+			// stage forbids the requested state (e.g. once promoted to stable), only the gate-dependent
+			// assertions below are skipped; the rest of the test still runs.
+			migrationGatesPinned := true
+			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["process.context_switches"] = mb.metricProcessContextSwitches.config.AggregationStrategy
@@ -128,8 +106,10 @@ func TestMetricsBuilder(t *testing.T) {
 				expectedWarnings++ // attributes differ
 				expectedWarnings++ // attributes differ
 			}
-			if tt.metricsSet != testDataSetReag {
-				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if migrationGatesPinned {
+				if tt.metricsSet != testDataSetReag {
+					assert.Equal(t, expectedWarnings, observedLogs.Len())
+				}
 			}
 
 			defaultMetricsCount := 0
@@ -159,6 +139,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordProcessDiskOperationsDataPoint(ts, 1, AttributeDirectionRead)
 			if tt.name == "reaggregate_set" {
 				mb.RecordProcessDiskOperationsDataPoint(ts, 3, AttributeDirectionWrite)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordProcessDiskOperationsDataPoint(ts+1, 3, AttributeDirectionWrite)
+				assert.Equal(t, 2, mb.metricProcessDiskOperations.data.Sum().DataPoints().Len())
 			}
 			if tt.name != "all_set" {
 
@@ -234,10 +217,10 @@ func TestMetricsBuilder(t *testing.T) {
 					allMetricsList = append(allMetricsList, ms.At(mi))
 				}
 			}
-			if tt.metricsSet == testDataSetDefault {
+			if tt.metricsSet == testDataSetDefault && migrationGatesPinned {
 				assert.Equal(t, defaultMetricsCount, totalMetricsCount)
 			}
-			if tt.metricsSet == testDataSetAll {
+			if tt.metricsSet == testDataSetAll && migrationGatesPinned {
 				assert.Equal(t, allMetricsCount, totalMetricsCount)
 			}
 			validatedMetrics := make(map[string]bool)
@@ -265,7 +248,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["process.disk.operations"], "Found a duplicate in the metrics slice: process.disk.operations")
 						validatedMetrics["process.disk.operations"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Number of disk operations performed by the process.", mi.Description())
 						assert.Equal(t, "{operations}", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -396,14 +381,13 @@ func TestVersionedMetrics(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.DontEmitV0SystemConventions", tt.disableOld))
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.EmitV1SystemConventions", tt.enableNew))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.process.DontEmitV0SystemConventions", false)
-					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
-				})
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
 
 				start := pcommon.Timestamp(1_000_000_000)
 				ts := pcommon.Timestamp(1_000_001_000)
@@ -430,6 +414,9 @@ func TestVersionedMetrics(t *testing.T) {
 								if tt.expectLegacyAttrs {
 									_, hasContextSwitchType := dp.Attributes().Get("type")
 									assert.True(t, hasContextSwitchType, "expected legacy attr context_switch_type")
+								} else if tt.enableNew && tt.disableOld {
+									_, hasContextSwitchType := dp.Attributes().Get("type")
+									assert.False(t, hasContextSwitchType, "didn't expect legacy attr context_switch_type")
 								}
 							} else {
 								// No v1-specific attribute - this is the legacy metric
@@ -480,14 +467,13 @@ func TestVersionedMetrics(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.DontEmitV0SystemConventions", tt.disableOld))
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.EmitV1SystemConventions", tt.enableNew))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.process.DontEmitV0SystemConventions", false)
-					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
-				})
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
 
 				start := pcommon.Timestamp(1_000_000_000)
 				ts := pcommon.Timestamp(1_000_001_000)
@@ -514,6 +500,9 @@ func TestVersionedMetrics(t *testing.T) {
 								if tt.expectLegacyAttrs {
 									_, hasState := dp.Attributes().Get("state")
 									assert.True(t, hasState, "expected legacy attr state")
+								} else if tt.enableNew && tt.disableOld {
+									_, hasState := dp.Attributes().Get("state")
+									assert.False(t, hasState, "didn't expect legacy attr state")
 								}
 							} else {
 								// No v1-specific attribute - this is the legacy metric
@@ -564,14 +553,13 @@ func TestVersionedMetrics(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.DontEmitV0SystemConventions", tt.disableOld))
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.EmitV1SystemConventions", tt.enableNew))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.process.DontEmitV0SystemConventions", false)
-					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
-				})
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
 
 				start := pcommon.Timestamp(1_000_000_000)
 				ts := pcommon.Timestamp(1_000_001_000)
@@ -598,6 +586,9 @@ func TestVersionedMetrics(t *testing.T) {
 								if tt.expectLegacyAttrs {
 									_, hasState := dp.Attributes().Get("state")
 									assert.True(t, hasState, "expected legacy attr state")
+								} else if tt.enableNew && tt.disableOld {
+									_, hasState := dp.Attributes().Get("state")
+									assert.False(t, hasState, "didn't expect legacy attr state")
 								}
 							} else {
 								// No v1-specific attribute - this is the legacy metric
@@ -648,14 +639,13 @@ func TestVersionedMetrics(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.DontEmitV0SystemConventions", tt.disableOld))
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.EmitV1SystemConventions", tt.enableNew))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.process.DontEmitV0SystemConventions", false)
-					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
-				})
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
 
 				start := pcommon.Timestamp(1_000_000_000)
 				ts := pcommon.Timestamp(1_000_001_000)
@@ -682,6 +672,9 @@ func TestVersionedMetrics(t *testing.T) {
 								if tt.expectLegacyAttrs {
 									_, hasDirection := dp.Attributes().Get("direction")
 									assert.True(t, hasDirection, "expected legacy attr direction")
+								} else if tt.enableNew && tt.disableOld {
+									_, hasDirection := dp.Attributes().Get("direction")
+									assert.False(t, hasDirection, "didn't expect legacy attr direction")
 								}
 							} else {
 								// No v1-specific attribute - this is the legacy metric
@@ -729,14 +722,13 @@ func TestVersionedMetrics(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.DontEmitV0SystemConventions", tt.disableOld))
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.EmitV1SystemConventions", tt.enableNew))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.process.DontEmitV0SystemConventions", false)
-					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
-				})
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
 
 				start := pcommon.Timestamp(1_000_000_000)
 				ts := pcommon.Timestamp(1_000_001_000)
@@ -766,7 +758,7 @@ func TestVersionedMetrics(t *testing.T) {
 				}
 				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
 				assert.Equal(t, tt.expectNewMetric, newFound)
-				// For metrics with different emitted names, no collison warning shoulds be logged
+				// For metrics with different emitted names, no collision warning should be logged
 				// This guards against the regression where same name collision logic was
 				// incorrectly applied to renamed metrics.
 				if tt.enableNew {
@@ -814,14 +806,13 @@ func TestVersionedMetrics(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.DontEmitV0SystemConventions", tt.disableOld))
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.EmitV1SystemConventions", tt.enableNew))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.process.DontEmitV0SystemConventions", false)
-					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
-				})
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
 
 				start := pcommon.Timestamp(1_000_000_000)
 				ts := pcommon.Timestamp(1_000_001_000)
@@ -851,7 +842,7 @@ func TestVersionedMetrics(t *testing.T) {
 				}
 				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
 				assert.Equal(t, tt.expectNewMetric, newFound)
-				// For metrics with different emitted names, no collison warning shoulds be logged
+				// For metrics with different emitted names, no collision warning should be logged
 				// This guards against the regression where same name collision logic was
 				// incorrectly applied to renamed metrics.
 				if tt.enableNew {
@@ -902,14 +893,13 @@ func TestVersionedMetrics(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.DontEmitV0SystemConventions", tt.disableOld))
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.EmitV1SystemConventions", tt.enableNew))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.process.DontEmitV0SystemConventions", false)
-					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
-				})
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
 
 				start := pcommon.Timestamp(1_000_000_000)
 				ts := pcommon.Timestamp(1_000_001_000)
@@ -936,6 +926,9 @@ func TestVersionedMetrics(t *testing.T) {
 								if tt.expectLegacyAttrs {
 									_, hasPagingFaultType := dp.Attributes().Get("type")
 									assert.True(t, hasPagingFaultType, "expected legacy attr paging_fault_type")
+								} else if tt.enableNew && tt.disableOld {
+									_, hasPagingFaultType := dp.Attributes().Get("type")
+									assert.False(t, hasPagingFaultType, "didn't expect legacy attr paging_fault_type")
 								}
 							} else {
 								// No v1-specific attribute - this is the legacy metric
@@ -983,14 +976,13 @@ func TestVersionedMetrics(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.DontEmitV0SystemConventions", tt.disableOld))
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.process.EmitV1SystemConventions", tt.enableNew))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.process.DontEmitV0SystemConventions", false)
-					featuregate.GlobalRegistry().Set("scraper.process.EmitV1SystemConventions", false)
-				})
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
 
 				start := pcommon.Timestamp(1_000_000_000)
 				ts := pcommon.Timestamp(1_000_001_000)
@@ -1020,7 +1012,7 @@ func TestVersionedMetrics(t *testing.T) {
 				}
 				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
 				assert.Equal(t, tt.expectNewMetric, newFound)
-				// For metrics with different emitted names, no collison warning shoulds be logged
+				// For metrics with different emitted names, no collision warning should be logged
 				// This guards against the regression where same name collision logic was
 				// incorrectly applied to renamed metrics.
 				if tt.enableNew {
@@ -1034,4 +1026,24 @@ func TestVersionedMetrics(t *testing.T) {
 			})
 		}
 	})
+}
+
+// setFeatureGateForTest sets the gate for the duration of the test and restores its previous state afterwards.
+// It reports whether the gate reached the requested state. A gate whose stage forbids the requested state
+// (e.g. a stable gate cannot be disabled) is left at its registered default and false is returned, so the
+// caller can decide whether its gate-dependent expectations still apply.
+func setFeatureGateForTest(t *testing.T, gate *featuregate.Gate, enabled bool) bool {
+	t.Helper()
+	if gate.IsEnabled() == enabled {
+		return true
+	}
+	if stage := gate.Stage(); stage == featuregate.StageStable || stage == featuregate.StageDeprecated {
+		return false
+	}
+	prev := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
+	})
+	return true
 }

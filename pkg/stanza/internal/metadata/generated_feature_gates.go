@@ -30,6 +30,14 @@ var ParserURIEcscompliantFeatureGate = featuregate.GlobalRegistry().MustRegister
 	featuregate.WithRegisterFromVersion("v0.103.0"),
 )
 
+var PkgStanzaAddDefaultScopeNameFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"pkg.stanza.addDefaultScopeName",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When enabled, adds a default scope name and version for stanza log entries without scope name"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/51084"),
+	featuregate.WithRegisterFromVersion("v0.162.0"),
+)
+
 var StanzaSynchronousLogEmitterFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"stanza.synchronousLogEmitter",
 	featuregate.StageAlpha,

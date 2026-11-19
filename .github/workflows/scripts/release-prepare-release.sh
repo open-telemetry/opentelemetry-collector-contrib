@@ -93,7 +93,12 @@ git add .
 git commit -m "make multimod-prerelease changes ${CANDIDATE_STABLE}/${CANDIDATE_BETA}" || (echo "no multimod changes to commit")
 
 pushd cmd/otelcontribcol
-go mod tidy
+# go mod tidy reads sum.golang.org directly, which the GOPROXY fallback doesn't cover.
+for i in 1 2 3; do
+    go mod tidy && break
+    [ "$i" -lt 3 ] || exit 1
+    sleep $((i*10))
+done
 popd
 make otelcontribcol
 

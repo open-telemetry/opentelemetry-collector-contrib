@@ -165,8 +165,10 @@ func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *azureE
 	}
 
 	receiver.logger.Debug("Log Records", zap.Any("logs", logs))
+	// Count before handing off: the next consumer may modify the data.
+	numRecords := logs.LogRecordCount()
 	err = receiver.nextLogsConsumer.ConsumeLogs(logsContext, logs)
-	receiver.obsrecv.EndLogsOp(logsContext, metadata.Type.String(), 1, err)
+	receiver.obsrecv.EndLogsOp(logsContext, metadata.Type.String(), numRecords, err)
 
 	return err
 }
@@ -188,9 +190,10 @@ func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *azu
 	}
 
 	receiver.logger.Debug("Metric Records", zap.Any("metrics", metrics))
+	numPoints := metrics.DataPointCount()
 	err = receiver.nextMetricsConsumer.ConsumeMetrics(metricsContext, metrics)
 
-	receiver.obsrecv.EndMetricsOp(metricsContext, metadata.Type.String(), 1, err)
+	receiver.obsrecv.EndMetricsOp(metricsContext, metadata.Type.String(), numPoints, err)
 
 	return err
 }
@@ -212,9 +215,10 @@ func (receiver *eventhubReceiver) consumeTraces(ctx context.Context, event *azur
 	}
 
 	receiver.logger.Debug("traces Records", zap.Any("traces", traces))
+	numSpans := traces.SpanCount()
 	err = receiver.nextTracesConsumer.ConsumeTraces(tracesContext, traces)
 
-	receiver.obsrecv.EndTracesOp(tracesContext, metadata.Type.String(), 1, err)
+	receiver.obsrecv.EndTracesOp(tracesContext, metadata.Type.String(), numSpans, err)
 
 	return err
 }

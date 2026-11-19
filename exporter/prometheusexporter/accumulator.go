@@ -136,7 +136,7 @@ func (a *lastValueAccumulator) accumulateSummary(metric pmetric.Metric, scopeNam
 		signature := timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, ip.Attributes(), resourceAttrs)
 		if ip.Flags().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
-			return 0
+			continue
 		}
 
 		v, ok := a.registeredMetrics.Load(signature)
@@ -165,7 +165,7 @@ func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, scopeName,
 		signature := timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, ip.Attributes(), resourceAttrs)
 		if ip.Flags().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
-			return 0
+			continue
 		}
 
 		v, ok := a.registeredMetrics.Load(signature)
@@ -215,7 +215,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName, s
 		signature := timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, ip.Attributes(), resourceAttrs)
 		if ip.Flags().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
-			return 0
+			continue
 		}
 
 		v, ok := a.registeredMetrics.Load(signature)
@@ -267,7 +267,7 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, scopeN
 		signature := timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, ip.Attributes(), resourceAttrs) // uniquely identify this time series you are accumulating for
 		if ip.Flags().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
-			return 0
+			continue
 		}
 
 		v, ok := a.registeredMetrics.Load(signature) // a accumulates metric values for all times series. Get value for particular time series
@@ -335,7 +335,7 @@ func (a *lastValueAccumulator) accumulateExponentialHistogram(metric pmetric.Met
 		signature := timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, ip.Attributes(), resourceAttrs) // uniquely identify this time series you are accumulating for
 		if ip.Flags().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
-			return 0
+			continue
 		}
 
 		v, ok := a.registeredMetrics.Load(signature) // a accumulates metric values for all times series. Get value for particular time series
@@ -688,16 +688,13 @@ func downscaleBucketSide(offset int32, counts []uint64, fromScale, targetScale i
 	newOffset := floorDivInt32(first, factor)
 	newLast := floorDivInt32(last, factor)
 	newLen := int(newLast - newOffset + 1)
+	out := make([]uint64, newLen)
 	for i := range counts {
 		k := offset + int32(i)
 		nk := floorDivInt32(k, factor)
-		if k%factor == 0 {
-			counts[nk-newOffset] = counts[i]
-		} else {
-			counts[nk-newOffset] += counts[i]
-		}
+		out[nk-newOffset] += counts[i]
 	}
-	return newOffset, counts[:newLen]
+	return newOffset, out
 }
 
 func mergeBuckets(offsetA int32, countsA []uint64, offsetB int32, countsB []uint64) (int32, []uint64) {

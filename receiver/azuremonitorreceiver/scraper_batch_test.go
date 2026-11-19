@@ -11,11 +11,15 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -330,11 +334,14 @@ func TestAzureScraperBatchScrape_ChronologicalAndNoDuplicate(t *testing.T) {
 		},
 	}
 
+	observedCore, observedLogs := observer.New(zapcore.DebugLevel)
 	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(observedCore)
 
+	collectionTime := time.Date(2026, 9, 27, 12, 0, 0, 0, time.UTC)
 	resourceID := "/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1"
-	t1 := time.Now().Add(-2 * time.Minute).Truncate(time.Minute)
-	t2 := time.Now().Add(-1 * time.Minute).Truncate(time.Minute)
+	t1 := collectionTime.Add(-2 * time.Hour)
+	t2 := collectionTime.Add(-70 * time.Minute)
 	value1 := 10.0
 	value2 := 12.0
 
@@ -383,7 +390,7 @@ func TestAzureScraperBatchScrape_ChronologicalAndNoDuplicate(t *testing.T) {
 		cfg:                          cfg,
 		mbs:                          newConcurrentMapImpl[*metadata.MetricsBuilder](),
 		mutex:                        &sync.Mutex{},
-		time:                         getTimeMock(),
+		time:                         &timeMock{time: collectionTime},
 		clientOptionsResolver:        optionsResolver1,
 		receiverSettings:             settings,
 		settings:                     settings.TelemetrySettings,
@@ -411,7 +418,24 @@ func TestAzureScraperBatchScrape_ChronologicalAndNoDuplicate(t *testing.T) {
 	assert.Equal(t, value2, dp2.DoubleValue())
 	assert.Equal(t, pcommon.NewTimestampFromTime(t2), dp2.Timestamp())
 
-	t3 := time.Now().Truncate(time.Minute)
+	emittedLogs := observedLogs.FilterMessage("Emitting Azure Metric data point").All()
+	require.Len(t, emittedLogs, 2)
+	assert.Equal(t, map[string]any{
+		"collection_time":      collectionTime,
+		"data_point_delay":     2 * time.Hour,
+		"data_point_timestamp": t1,
+		"metric_name":          "metric1",
+		"resource_id":          resourceID,
+	}, emittedLogs[0].ContextMap())
+	assert.Equal(t, map[string]any{
+		"collection_time":      collectionTime,
+		"data_point_delay":     70 * time.Minute,
+		"data_point_timestamp": t2,
+		"metric_name":          "metric1",
+		"resource_id":          resourceID,
+	}, emittedLogs[1].ContextMap())
+
+	t3 := collectionTime
 	value3 := 15.0
 	mockQueryResponse2 := []queryResourcesResponseMock{
 		{
@@ -569,4 +593,140 @@ func TestAzureScraperBatchScrapeCustomNamespaceMetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.Positive(t, metrics.DataPointCount(),
 		"batch scraper should collect custom namespace metric (disk/free_percent from azure.vm.linux.guestmetrics)")
+}
+
+func TestAzureScraperBatchDefinitionsDiscoveryAvoidsInvalidProbes(t *testing.T) {
+	fakeSubID := "sub-id-1"
+	redisType := "Microsoft.Cache/redisEnterprise"
+	serviceBusType := "Microsoft.ServiceBus/namespaces"
+	storageType := "Microsoft.Storage/storageAccounts"
+	blobServicesType := "Microsoft.Storage/storageAccounts/blobServices"
+	nicType := "Microsoft.Network/networkInterfaces"
+
+	cfg := createDefaultTestConfig()
+	cfg.SubscriptionIDs = []string{fakeSubID}
+	cfg.Services = []string{redisType, serviceBusType, storageType, blobServicesType, nicType}
+	cfg.Metrics = NestedListAlias{
+		// Case variation: lowercase for redis
+		"microsoft.cache/redisenterprise": {
+			"usedmemory": {"Average"},
+		},
+		serviceBusType: {
+			"ActiveMessages": {"Total"},
+		},
+		storageType: {
+			"UsedCapacity": {"Average"},
+		},
+		blobServicesType: {
+			"BlobCount": {"Average"},
+		},
+	}
+
+	redisID := "/subscriptions/" + fakeSubID + "/resourceGroups/rg/providers/" + redisType + "/my-redis"
+	serviceBusID := "/subscriptions/" + fakeSubID + "/resourceGroups/rg/providers/" + serviceBusType + "/my-sb"
+	storageID := "/subscriptions/" + fakeSubID + "/resourceGroups/rg/providers/" + storageType + "/my-storage"
+	blobServicesID := "/subscriptions/" + fakeSubID + "/resourceGroups/rg/providers/" + storageType + "/my-storage/blobServices/default"
+	nicID := "/subscriptions/" + fakeSubID + "/resourceGroups/rg/providers/" + nicType + "/my-nic"
+
+	location := "eastus"
+	redisName := "my-redis"
+	sbName := "my-sb"
+	storageName := "my-storage"
+	blobName := "default"
+	nicName := "my-nic"
+
+	subscriptionsByIDMockData := newSubscriptionsByIDMockData(map[string]string{
+		fakeSubID: "My Subscription",
+	})
+	resourceMockData := newResourcesMockData(map[string][][]*armresources.GenericResourceExpanded{
+		fakeSubID: {
+			{
+				{ID: &redisID, Location: &location, Name: &redisName, Type: &redisType},
+				{ID: &serviceBusID, Location: &location, Name: &sbName, Type: &serviceBusType},
+				{ID: &storageID, Location: &location, Name: &storageName, Type: &storageType},
+				{ID: &blobServicesID, Location: &location, Name: &blobName, Type: &blobServicesType},
+				{ID: &nicID, Location: &location, Name: &nicName, Type: &nicType},
+			},
+		},
+	})
+
+	timeGrain := "PT1M"
+	metricsDefinitionMockData := newMetricsDefinitionMockData(map[string][]metricsDefinitionMockInput{
+		redisID: {
+			{namespace: redisType, name: "usedmemory", timeGrain: timeGrain},
+		},
+		serviceBusID: {
+			{namespace: serviceBusType, name: "ActiveMessages", timeGrain: timeGrain},
+		},
+		storageID: {
+			{namespace: storageType, name: "UsedCapacity", timeGrain: timeGrain},
+		},
+		blobServicesID: {
+			{namespace: blobServicesType, name: "BlobCount", timeGrain: timeGrain},
+		},
+		nicID: {
+			{namespace: nicType, name: "BytesReceivedRate", timeGrain: timeGrain},
+		},
+	})
+
+	type trackedCall struct {
+		resourceURI string
+		namespace   string
+	}
+	var mu sync.Mutex
+	var probedCalls []trackedCall
+
+	tracker := func(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) {
+		mu.Lock()
+		defer mu.Unlock()
+		if options != nil && options.Metricnamespace != nil {
+			probedCalls = append(probedCalls, trackedCall{
+				resourceURI: resourceURI,
+				namespace:   *options.Metricnamespace,
+			})
+		}
+	}
+
+	optionsResolver := newMockClientOptionsResolverWithTracker(
+		subscriptionsByIDMockData,
+		getSubscriptionsMockData(),
+		resourceMockData,
+		metricsDefinitionMockData,
+		nil,
+		nil,
+		tracker,
+	)
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	s := &azureBatchScraper{
+		cfg:                          cfg,
+		mbs:                          newConcurrentMapImpl[*metadata.MetricsBuilder](),
+		mutex:                        &sync.Mutex{},
+		time:                         getTimeMock(),
+		clientOptionsResolver:        optionsResolver,
+		receiverSettings:             settings,
+		settings:                     settings.TelemetrySettings,
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
+		subscriptions: map[string]*azureSubscription{
+			fakeSubID: {},
+		},
+		resources: map[string]map[string]*azureResource{
+			fakeSubID: {},
+		},
+		regions: map[string]map[string]struct{}{
+			fakeSubID: {},
+		},
+		resourceTypes: map[string]map[string]*azureType{
+			fakeSubID: {},
+		},
+	}
+
+	s.loadResourcesAndTypes(t.Context(), fakeSubID)
+	for resType := range s.resourceTypes[fakeSubID] {
+		s.loadResourceMetricsDefinitionsByType(t.Context(), fakeSubID, resType)
+	}
+
+	// Verify that NO incompatible namespace probes were made across any resource types.
+	// Without the fix, every resource type is probed with all other configured namespaces (16 invalid probes).
+	assert.Empty(t, probedCalls, "expected 0 invalid namespace probes, but got: %+v", probedCalls)
 }

@@ -22,11 +22,13 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                                metric.Meter
-	mu                                   sync.Mutex
-	registrations                        []metric.Registration
-	ExtensionPebbleTailStorageOperations metric.Int64Counter
-	ExtensionPebbleTailStorageReadErrors metric.Int64Counter
+	meter                                             metric.Meter
+	mu                                                sync.Mutex
+	registrations                                     []metric.Registration
+	ExtensionPebbleTailStorageOperations              metric.Int64Counter
+	ExtensionPebbleTailStorageReadErrorPartialReturns metric.Int64Counter
+	ExtensionPebbleTailStorageReadErrorTraceDrops     metric.Int64Counter
+	ExtensionPebbleTailStorageReadErrors              metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -62,6 +64,18 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_extension_pebble_tail_storage_operations",
 		metric.WithDescription("Count of Pebble tail storage operations by operation and outcome [Development]"),
 		metric.WithUnit("{operations}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExtensionPebbleTailStorageReadErrorPartialReturns, err = builder.meter.Int64Counter(
+		"otelcol_extension_pebble_tail_storage_read_error_partial_returns",
+		metric.WithDescription("Count of traces returned with partial data by Take because of a read-path error while on_read_error is return_partial [Development]"),
+		metric.WithUnit("{traces}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExtensionPebbleTailStorageReadErrorTraceDrops, err = builder.meter.Int64Counter(
+		"otelcol_extension_pebble_tail_storage_read_error_trace_drops",
+		metric.WithDescription("Count of traces dropped by Take because of a read-path error while on_read_error is drop_trace [Development]"),
+		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExtensionPebbleTailStorageReadErrors, err = builder.meter.Int64Counter(

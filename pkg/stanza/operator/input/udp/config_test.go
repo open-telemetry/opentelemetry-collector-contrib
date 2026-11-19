@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"go.opentelemetry.io/collector/config/configoptional"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 )
 
@@ -48,6 +50,28 @@ func TestUnmarshal(t *testing.T) {
 						Processors:     2,
 						MaxQueueLength: 100,
 					}
+					return cfg
+				}(),
+			},
+			{
+				Name:               "resolve_names_true",
+				ExpectUnmarshalErr: false,
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.ListenAddress = "10.0.0.1:9000"
+					cfg.AddAttributes = true
+					cfg.ResolveNames = configoptional.Some(true)
+					return cfg
+				}(),
+			},
+			{
+				Name:               "resolve_names_false",
+				ExpectUnmarshalErr: false,
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.ListenAddress = "10.0.0.1:9000"
+					cfg.AddAttributes = true
+					cfg.ResolveNames = configoptional.Some(false)
 					return cfg
 				}(),
 			},

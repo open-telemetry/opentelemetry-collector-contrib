@@ -15,10 +15,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"github.com/tj/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -200,7 +200,6 @@ func TestGetDatabaseTableMetricsIgnoresAccessExclusiveLocks(t *testing.T) {
 	ci, err := testcontainers.GenericContainer(
 		t.Context(),
 		testcontainers.GenericContainerRequest{
-			ProviderType: testcontainers.ProviderPodman,
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: fmt.Sprintf("postgres:%s", pre17TestVersion),
 				Env: map[string]string{
@@ -277,7 +276,6 @@ func TestGetIndexStatsIgnoresAccessExclusiveLocks(t *testing.T) {
 	ci, err := testcontainers.GenericContainer(
 		t.Context(),
 		testcontainers.GenericContainerRequest{
-			ProviderType: testcontainers.ProviderPodman,
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: fmt.Sprintf("postgres:%s", pre17TestVersion),
 				Env: map[string]string{
@@ -356,7 +354,6 @@ func TestLockCollectionIncludesNonRelationTargets(t *testing.T) {
 	ci, err := testcontainers.GenericContainer(
 		t.Context(),
 		testcontainers.GenericContainerRequest{
-			ProviderType: testcontainers.ProviderPodman,
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: fmt.Sprintf("postgres:%s", pre17TestVersion),
 				// Needed for the prepared transaction below.
@@ -540,7 +537,6 @@ func explainQueryParamCountTest(pgVersion string) func(*testing.T) {
 		ci, err := testcontainers.GenericContainer(
 			t.Context(),
 			testcontainers.GenericContainerRequest{
-				ProviderType: testcontainers.ProviderPodman,
 				ContainerRequest: testcontainers.ContainerRequest{
 					Image: fmt.Sprintf("postgres:%s", pgVersion),
 					Env: map[string]string{
@@ -668,7 +664,6 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	ci, err := testcontainers.GenericContainer(
 		t.Context(),
 		testcontainers.GenericContainerRequest{
-			ProviderType: testcontainers.ProviderPodman,
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: fmt.Sprintf("postgres:%s", post17TestVersion),
 				Env: map[string]string{
@@ -715,9 +710,10 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 	defer db.Close()
 
 	cfg := Config{
-		Databases: []string{"postgres"},
-		Username:  "otelu",
-		Password:  "otelp",
+		Databases:       []string{"postgres"},
+		Username:        "otelu",
+		Password:        "otelp",
+		ConnectDatabase: "postgres",
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 1 * time.Second,
 		},
@@ -761,7 +757,7 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 		found = true
 	}
 	assert.True(t, found, "Expected to find a log record with the query text")
-	assert.True(t, ns.newestQueryTimestamp > 0)
+	assert.Positive(t, ns.newestQueryTimestamp)
 
 	firstTimeTopQueryPLogs, err := ns.scrapeTopQuery(t.Context(), 30, 30, 30, time.Minute)
 	assert.NoError(t, err)
@@ -920,7 +916,7 @@ func TestVectorSearchClassificationIntegration(t *testing.T) {
 	// No false negatives: every distance function is detected with a positive count.
 	for _, fn := range []string{"cosine", "l2", "inner_product", "l1", "hamming", "jaccard"} {
 		assert.Contains(t, got, fn, "expected distance function %q to be classified", fn)
-		assert.True(t, got[fn] > 0, "expected positive call count for distance function %q", fn)
+		assert.Positive(t, got[fn], "expected positive call count for distance function %q", fn)
 	}
 	// No false positives: only the six expected classifications are present. Any leaked
 	// trap statement would add an extra row (or an empty-string classification).
@@ -1002,7 +998,7 @@ func TestVectorInsertStatsIntegration(t *testing.T) {
 	// No false negatives and no false positives: exactly the six rows inserted into the
 	// vector table are counted.
 	assert.Equal(t, int64(6), stats[0].rows)
-	assert.True(t, stats[0].totalExecTime > 0, "expected positive cumulative insert duration")
+	assert.Positive(t, stats[0].totalExecTime, "expected positive cumulative insert duration")
 }
 
 // pre17TestVersion/post17TestVersion also straddle the PG14 boundary this test

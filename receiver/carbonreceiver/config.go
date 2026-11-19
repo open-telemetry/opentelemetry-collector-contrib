@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/protocol"
 )
 
 var _ confmap.Validator = (*Config)(nil)

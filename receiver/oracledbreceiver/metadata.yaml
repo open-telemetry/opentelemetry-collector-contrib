@@ -13,12 +13,17 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [dmitryax, crobert-1, atoulme, ebrdarSplunk, XSAM, akshays-19, sv-splunk, splunk-shanu]
+    active: [crobert-1, atoulme, ebrdarSplunk, XSAM, akshays-19, sv-splunk, splunk-shanu]
+    emeritus: [dmitryax]
 
 resource_attributes:
   host.name:
     description: The host name of Oracle Server
     enabled: true
+    type: string
+  oracle.db.edition:
+    description: The edition of the Oracle Database instance (e.g. "EE", "SE2", "XE").
+    enabled: false
     type: string
   oracle.db.hosting_type:
     description: The hosting environment of the Oracle instance. One of "self-managed", "rds", or "oci".
@@ -374,6 +379,9 @@ attributes:
   oracledb.wait.duration:
     description: Total time waited in seconds for the wait event.
     type: double
+  oracledb.wait.start_time:
+    description: Timestamp of when the current wait started (ISO 8601 UTC format). Empty if the session is not currently waiting.
+    type: string
   oracledb.wait.timeouts:
     description: Number of the session's waits on the wait event that timed out.
     type: int
@@ -403,6 +411,7 @@ events:
     enabled: false
     description: The execution plan for a query.
     attributes:
+      - db.system.name
       - oracledb.sql_id
       - oracledb.child_number
       - oracledb.child_address
@@ -438,6 +447,7 @@ events:
       - oracledb.wait_class
       - oracledb.event
       - oracledb.query.wait_time
+      - oracledb.wait.start_time
       - oracledb.procedure_id
       - oracledb.procedure_name
       - oracledb.procedure_type
@@ -460,6 +470,7 @@ events:
     enabled: false
     description: Per-session wait event statistics from v$session_event.
     attributes:
+      - db.system.name
       - oracledb.sid
       - oracledb.serial
       - oracledb.event

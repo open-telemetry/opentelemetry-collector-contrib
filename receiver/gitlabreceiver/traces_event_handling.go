@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
+	gitlab "gitlab.com/gitlab-org/api/client-go/v3"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
 var (
@@ -403,6 +403,7 @@ func (gtr *gitlabTracesReceiver) setResourceAttributes(attrs pcommon.Map, e *git
 	}
 
 	attrs.PutStr(AttributeVCSRepositoryVisibility, string(e.Project.Visibility))
+	attrs.PutInt(AttributeGitLabProjectID, e.Project.ID)
 	attrs.PutStr(AttributeGitLabProjectNamespace, e.Project.Namespace)
 	attrs.PutStr(AttributeVCSRepositoryRefDefault, e.Project.DefaultBranch)
 

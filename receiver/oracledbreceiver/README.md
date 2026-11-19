@@ -10,7 +10,8 @@ This receiver periodically queries an Oracle Database host to collect metrics.
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Foracledb%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Foracledb) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Foracledb%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Foracledb) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_oracledb)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_oracledb&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@crobert-1](https://www.github.com/crobert-1), [@atoulme](https://www.github.com/atoulme), [@ebrdarSplunk](https://www.github.com/ebrdarSplunk), [@XSAM](https://www.github.com/XSAM), [@akshays-19](https://www.github.com/akshays-19), [@sv-splunk](https://www.github.com/sv-splunk), [@splunk-shanu](https://www.github.com/splunk-shanu) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@crobert-1](https://www.github.com/crobert-1), [@atoulme](https://www.github.com/atoulme), [@ebrdarSplunk](https://www.github.com/ebrdarSplunk), [@XSAM](https://www.github.com/XSAM), [@akshays-19](https://www.github.com/akshays-19), [@sv-splunk](https://www.github.com/sv-splunk), [@splunk-shanu](https://www.github.com/splunk-shanu) |
+| Emeritus      | [@dmitryax](https://www.github.com/dmitryax) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -55,6 +56,52 @@ receivers:
     username: otel
 ```
 
+### Kerberos Authentication
+
+By default the receiver authenticates with a username and password. To authenticate using
+Kerberos instead, set `auth_type` to `kerberos` and configure the `kerberos` block. When Kerberos
+is used with the [Secondary Configuration Option](#secondary-configuration-option), `username` and
+`password` are not required (the database user is derived from the Kerberos principal); `endpoint`
+and `service` are still required. Kerberos support is implemented in pure Go and does not require any
+external Oracle client libraries.
+
+- `auth_type` (default = `password`): Authentication method. One of `password` or `kerberos`.
+- `kerberos`: Kerberos configuration block. Required when `auth_type` is `kerberos`.
+  - `credential_type` (required): How the Kerberos client obtains credentials. One of:
+    - `keytab`: read the principal's key from a keytab file (`keytab_file` required). Best for
+      unattended collectors.
+    - `ccache`: reuse an existing ticket from a credential cache (`credential_cache` required).
+      The cache is re-read from disk when a cached ticket can no longer be used, so an external
+      process (for example `kinit` or SSSD) that refreshes the cache keeps the receiver working.
+    - `password`: derive the principal's key from a password (`password` required).
+  - `realm` (required): Kerberos realm of the principal (e.g. `EXAMPLE.COM`).
+  - `principal` (required): Client principal name, without the realm (e.g. `otel`).
+  - `config_file` (required): Path to the `krb5.conf` file.
+  - `keytab_file`: Path to the keytab file. Required when `credential_type` is `keytab`.
+  - `credential_cache`: Path to the credential cache. Required when `credential_type` is `ccache`.
+  - `password`: The principal's password. Required when `credential_type` is `password`.
+  - `disable_fast_negotiation` (default = `false`): Disable PA-FX-FAST pre-authentication. Set to
+    `true` when the KDC does not support FAST.
+
+The database user must be configured for external Kerberos authentication (for example,
+`CREATE USER "OTEL@EXAMPLE.COM" IDENTIFIED EXTERNALLY AS 'otel@EXAMPLE.COM';`) and the Oracle server
+must have Kerberos configured in its `sqlnet.ora`.
+
+Example (keytab):
+```yaml
+receivers:
+  oracledb:
+    endpoint: oracledb.example.com:1521
+    service: FREEPDB1
+    auth_type: kerberos
+    kerberos:
+      credential_type: keytab
+      realm: EXAMPLE.COM
+      principal: otel
+      config_file: /etc/krb5.conf
+      keytab_file: /etc/otel/otel.keytab
+```
+
 ### Optional Configuration Options
 
 - `collection_interval` (default = `10s`): The interval at which metrics should be emitted by this receiver.
@@ -96,8 +143,8 @@ See [documentation.md](./documentation.md) for the full list of resource attribu
 
 ### Instance detection
 
-These grants are required to populate the `oracle.db.version`, `oracle.db.role`,
-`oracle.db.open_mode`, and `oracle.db.pdb` resource attributes.
+These grants are required to populate the `oracle.db.version`, `oracle.db.edition`,
+`oracle.db.role`, `oracle.db.open_mode`, and `oracle.db.pdb` resource attributes.
 Detection is best-effort; failures are logged at warn level and the receiver continues.
 
 ```sql

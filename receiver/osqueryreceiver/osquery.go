@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
-	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/osqueryreceiver/internal/metadata"
@@ -84,7 +84,7 @@ func (or *osQueryReceiver) runQuery(ctx context.Context, ld plog.Logs, query str
 	}
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
-	sl.Scope().Attributes().PutStr(string(semconv.OTelScopeNameKey), metadata.Type.String())
+	sl.Scope().Attributes().PutStr(string(conventions.OTelScopeNameKey), metadata.Type.String())
 	for _, row := range rows {
 		lr := sl.LogRecords().AppendEmpty()
 		lr.SetTimestamp(now)

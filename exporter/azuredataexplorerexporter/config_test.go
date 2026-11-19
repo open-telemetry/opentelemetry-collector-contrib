@@ -26,6 +26,8 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
+	defaultQueueSettings := createDefaultConfig().(*Config).QueueSettings
+
 	tests := []struct {
 		id           component.ID
 		expected     component.Config
@@ -43,6 +45,7 @@ func TestLoadConfig(t *testing.T) {
 				LogTable:       "OTELLogs",
 				TraceTable:     "OTELTraces",
 				IngestionType:  managedIngestType,
+				QueueSettings:  defaultQueueSettings,
 			},
 		},
 		{
@@ -63,6 +66,7 @@ func TestLoadConfig(t *testing.T) {
 				LogTable:          "OTELLogs",
 				TraceTable:        "OTELTraces",
 				IngestionType:     managedIngestType,
+				QueueSettings:     defaultQueueSettings,
 			},
 		},
 		{
@@ -79,6 +83,7 @@ func TestLoadConfig(t *testing.T) {
 				LogTable:          "OTELLogs",
 				TraceTable:        "OTELTraces",
 				IngestionType:     managedIngestType,
+				QueueSettings:     defaultQueueSettings,
 			},
 		},
 		{
@@ -106,10 +111,12 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:     60 * time.Second,
 					MaxElapsedTime:  10 * time.Minute,
 				},
-				QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
-					NumConsumers: 2,
-					QueueSize:    10,
-				}),
+				QueueSettings: func() configoptional.Optional[exporterhelper.QueueBatchConfig] {
+					queue := *createDefaultConfig().(*Config).QueueSettings.GetOrInsertDefault()
+					queue.NumConsumers = 2
+					queue.QueueSize = 10
+					return configoptional.Some(queue)
+				}(),
 			},
 		},
 		{
@@ -122,6 +129,7 @@ func TestLoadConfig(t *testing.T) {
 				TraceTable:    "OTELTraces",
 				UseAzureAuth:  true,
 				IngestionType: queuedIngestTest,
+				QueueSettings: defaultQueueSettings,
 			},
 		},
 	}

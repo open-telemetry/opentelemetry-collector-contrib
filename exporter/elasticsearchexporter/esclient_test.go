@@ -44,7 +44,7 @@ func TestTimeoutInterceptor(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, _ *http.Request) {
+			server := newESTestServerBulkHandlerFunc(t, currentESVersion, func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				if f, ok := w.(http.Flusher); ok {
 					f.Flush()

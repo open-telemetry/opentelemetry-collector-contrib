@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
@@ -25,6 +26,42 @@ func Test_NewLogsReceiver(t *testing.T) {
 	receiver, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), f.CreateDefaultConfig(), consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, receiver)
+}
+
+func Test_NewLogsReceiverInvalidSemconvFeatureGates(t *testing.T) {
+	const (
+		emitV1     = "pkg.translator.azurelogs.EmitV1LogConventions"
+		dontEmitV0 = "pkg.translator.azurelogs.DontEmitV0LogConventions"
+	)
+	featuregate.GlobalRegistry().VisitAll(func(g *featuregate.Gate) {
+		if g.ID() != emitV1 && g.ID() != dontEmitV0 {
+			return
+		}
+		previous := g.IsEnabled()
+		t.Cleanup(func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set(g.ID(), previous))
+		})
+	})
+	require.NoError(t, featuregate.GlobalRegistry().Set(emitV1, false))
+	require.NoError(t, featuregate.GlobalRegistry().Set(dontEmitV0, true))
+
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	receiver, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err, "feature gates only apply when apply_semantic_conventions is enabled")
+	require.NotNil(t, receiver)
+
+	cfg = f.CreateDefaultConfig().(*Config)
+	cfg.ApplySemanticConventions = true
+	receiver, err = f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.ErrorContains(t, err, "pkg.translator.azurelogs.DontEmitV0LogConventions cannot be enabled without enabling pkg.translator.azurelogs.EmitV1LogConventions")
+	require.Nil(t, receiver)
+
+	// The failure must not be cached: once the gates are valid, the same config succeeds.
+	require.NoError(t, featuregate.GlobalRegistry().Set(emitV1, true))
+	receiver, err = f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, receiver)
 }
 
 func Test_NewMetricsReceiver(t *testing.T) {

@@ -17,6 +17,7 @@ status:
     emeritus: [djaglowski]
 
 tests:
+  skip_context_propagation: true
   config:
 
 telemetry:

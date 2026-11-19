@@ -54,7 +54,7 @@ type accessLogsReceiver struct {
 }
 
 func newAccessLogsReceiver(settings rcvr.Settings, cfg *Config, consumer consumer.Logs) (*accessLogsReceiver, error) {
-	client, err := internal.NewMongoDBAtlasClient(cfg.BaseURL, cfg.PublicKey, string(cfg.PrivateKey), cfg.BackOffConfig, settings.Logger)
+	client, err := internal.NewMongoDBAtlasClient(cfg.BaseURL, cfg.PublicKey, string(cfg.PrivateKey), cfg.BackOffConfig, settings.Logger, settings.BuildInfo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create MongoDB Atlas client for access logs receiver: %w", err)
 	}

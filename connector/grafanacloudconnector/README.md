@@ -69,7 +69,7 @@ connectors:
   grafanacloud/connector:
     ## @param host_identifiers List of span attributes used to identify the host running the workloads.
     ## The first matching attribute is used.
-    # host_identifiers: ["host.id", "k8s.node.uid", "k8s.node.name"]
+    # host_identifiers: ["k8s.node.name", "host.id", "k8s.node.uid"]
     ## @param metrics_flush_interval Interval at which host metrics are flushed.
     ## Valid values are between 15s and 5m.
     # metrics_flush_interval: 60s
@@ -80,7 +80,7 @@ connectors:
 ```yaml
 connectors:
   grafana_cloud:
-    host_identifiers: ["mycompany.myHostAttribute", "host.id", "k8s.node.uid", "k8s.node.name"]
+    host_identifiers: ["mycompany.myHostAttribute", "k8s.node.name", "host.id", "k8s.node.uid"]
     metrics_flush_interval: 60s
 ```
 

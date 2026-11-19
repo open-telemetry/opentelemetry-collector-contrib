@@ -19,7 +19,8 @@ type Config struct {
 	// If true, the "Config.Hostname" field (if present) of the docker
 	// container will be used as the discovered host that is used to configure
 	// receivers.  If false or if no hostname is configured, the field
-	// `NetworkSettings.IPAddress` is used instead.
+	// `IPAddress` from the container's network settings is used, with
+	// `GlobalIPv6Address` as a fallback.
 	UseHostnameIfPresent bool `mapstructure:"use_hostname_if_present"`
 
 	// If true, the observer will configure receivers for matching container endpoints

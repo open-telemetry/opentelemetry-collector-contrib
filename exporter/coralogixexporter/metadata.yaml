@@ -11,6 +11,9 @@ status:
     active: [povilasv, iblancasa, douglascamata]
   warnings: ["Authentication issues in v0.127.0"]
 
+sending_queue:
+  support: default
+
 tests:
   config:
     domain: "coralogix.com"

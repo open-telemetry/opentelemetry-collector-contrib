@@ -214,9 +214,11 @@ func (e *Exporter) startArrowStream(ctx context.Context, ws *streamWorkState) {
 }
 
 // runStreamController starts the initial set of streams, then waits for streams to
-// terminate one at a time and restarts them.  If streams come back with a nil
-// client (meaning that OTel-Arrow was not supported by the endpoint), it will
-// not be restarted.
+// terminate one at a time and restarts them.  If a stream comes back marked
+// unsupported (meaning that OTel-Arrow was not supported by the endpoint), it
+// will not be restarted.  All other failures, including connection and
+// handshake errors, are treated as transient and the stream is restarted so
+// that its work state continues to be served.
 func (e *Exporter) runStreamController(exportCtx, downCtx context.Context, downDc doneCancel) {
 	defer e.cancel()
 	defer e.wg.Done()
@@ -226,12 +228,13 @@ func (e *Exporter) runStreamController(exportCtx, downCtx context.Context, downD
 	for {
 		select {
 		case stream := <-e.returning:
-			if stream.client != nil || e.disableDowngrade {
-				// The stream closed or broken.  Restart it.
+			if !stream.arrowUnsupported || e.disableDowngrade {
+				// For general stream errors or when downgrade
+				// is disabled, restart the stream.
 				e.startArrowStream(downCtx, stream.workState)
 				continue
 			}
-			// Otherwise, the stream never got started.  It was
+			// Otherwise, the endpoint does not support Arrow.  It was
 			// downgraded and senders will use the standard OTLP path.
 			running--
 

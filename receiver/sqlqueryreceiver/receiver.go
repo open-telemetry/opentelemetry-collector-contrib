@@ -5,6 +5,7 @@ package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -53,7 +54,13 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 			}
 		}
 		var opts []scraperhelper.ControllerOption
-		pool := internal.NewPool(sqlOpenerFunc, sqlCfg.Config.Driver, dataSource, sqlCfg.MaxOpenConn)
+		var pool interface{ DB() (*sql.DB, error) }
+		resolver := newDBAuthResolver(sqlCfg.DBAuth)
+		if !sqlCfg.DBAuth.IsEmpty() {
+			pool = internal.NewPostgreSQLCredentialPool(sqlCfg.Config, sqlCfg.MaxOpenConn, resolver.getProvider)
+		} else {
+			pool = internal.NewPool(sqlOpenerFunc, sqlCfg.Config.Driver, dataSource, sqlCfg.MaxOpenConn)
+		}
 
 		for i, query := range sqlCfg.Config.Queries {
 			if len(query.Metrics) == 0 {
@@ -67,6 +74,7 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 
 			wrapped := &statusReportingScraper{
 				delegate: mp,
+				dbAuth:   resolver,
 			}
 			opt := scraperhelper.AddMetricsScraper(metadata.Type, wrapped)
 			opts = append(opts, opt)
@@ -83,11 +91,15 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 
 type statusReportingScraper struct {
 	delegate *sqlquery.Scraper
+	dbAuth   *dbAuthResolver
 	host     component.Host
 }
 
 func (s *statusReportingScraper) Start(ctx context.Context, host component.Host) error {
 	s.host = host
+	if err := s.dbAuth.resolve(host); err != nil {
+		return fmt.Errorf("resolve db_auth provider: %w", err)
+	}
 	return s.delegate.Start(ctx, host)
 }
 
