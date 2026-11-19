@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"testing/synctest"
 	"time"
@@ -955,4 +956,40 @@ func TestPrometheusExporterDisableResourceToTelemetryConversion(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPrometheusExporter_OpenMetricsExemplarFilteredAttributes(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:8889"
+	cfg.EnableOpenMetrics = true
+	exp, err := newPrometheusExporter(cfg, exportertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+
+	md := pmetric.NewMetrics()
+	metric := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric.SetName("requests")
+	sum := metric.SetEmptySum()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	dp := sum.DataPoints().AppendEmpty()
+	dp.SetIntValue(5)
+	ex := dp.Exemplars().AppendEmpty()
+	ex.SetIntValue(1)
+	ex.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1700000000, 0)))
+	ex.FilteredAttributes().PutStr("http.status_code", "200")
+	ex.FilteredAttributes().PutStr("..ignored", "bad")
+
+	require.NoError(t, exp.ConsumeMetrics(t.Context(), md))
+
+	req := httptest.NewRequest(http.MethodGet, "/metrics", http.NoBody)
+	req.Header.Set("Accept", "application/openmetrics-text;version=1.0.0")
+	res := httptest.NewRecorder()
+	exp.handler.ServeHTTP(res, req)
+	require.Equal(t, http.StatusOK, res.Code)
+
+	body := res.Body.String()
+	assert.Contains(t, body, `# {http_status_code="200"} 1.0 1.7e+09`)
+	assert.NotContains(t, body, `http.status_code`)
+	assert.NotContains(t, body, `ignored`)
+	assert.True(t, strings.HasSuffix(body, "# EOF\n"))
 }
