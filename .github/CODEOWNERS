@@ -279,7 +279,7 @@ receiver/chronyreceiver/                                         @open-telemetry
 receiver/ciscoosreceiver/                                        @open-telemetry/collector-contrib-approvers @etserend
 receiver/ciscoosreceiver/internal/scraper/interfacesscraper/     @open-telemetry/collector-contrib-approvers @etserend
 receiver/ciscoosreceiver/internal/scraper/systemscraper/         @open-telemetry/collector-contrib-approvers @etserend
-receiver/cloudflarereceiver/                                     @open-telemetry/collector-contrib-approvers @dehaansa
+receiver/cloudflarereceiver/                                     @open-telemetry/collector-contrib-approvers @dehaansa @VinozzZ
 receiver/cloudfoundryreceiver/                                   @open-telemetry/collector-contrib-approvers @crobert-1
 receiver/collectdreceiver/                                       @open-telemetry/collector-contrib-approvers @atoulme
 receiver/couchdbreceiver/                                        @open-telemetry/collector-contrib-approvers @antonblock
