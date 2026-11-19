@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -177,7 +178,16 @@ func TestDatadogServer(t *testing.T) {
 	}
 }
 
+// enableSamplingThreshold turns the alpha feature gate of the sampling threshold on for a test.
+func enableSamplingThreshold(t *testing.T) {
+	t.Helper()
+	id := metadata.ReceiverDatadogEnableSamplingThresholdFeatureGate.ID()
+	require.NoError(t, featuregate.GlobalRegistry().Set(id, true))
+	t.Cleanup(func() { require.NoError(t, featuregate.GlobalRegistry().Set(id, false)) })
+}
+
 func TestDatadogTraces_SamplingThreshold_EndToEnd(t *testing.T) {
+	enableSamplingThreshold(t)
 	// A v0.4 trace that the agent kept by rate: priority 1, with the agent's rate on the root.
 	const body = `[[{"trace_id":7,"span_id":1,"parent_id":0,"name":"n","service":"s","start":1,"duration":1,` +
 		`"metrics":{"_sampling_priority_v1":1,"_dd.agent_psr":0.5}}]]`
@@ -203,15 +213,18 @@ func TestDatadogTraces_SamplingThreshold_EndToEnd(t *testing.T) {
 
 	require.Equal(t, 1, sink.SpanCount())
 	span := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-	assert.Equal(t, "ot=th:8", span.TraceState().AsRaw())
+	assert.Equal(t, "ot=rv:940fc851cda0e3;th:8", span.TraceState().AsRaw())
 }
 
 func TestDatadogTracesV1_SamplingThreshold_EndToEnd(t *testing.T) {
+	enableSamplingThreshold(t)
 	newPayload := func() *idx.InternalTracerPayload {
 		strs := idx.NewStringTable()
 		span := idx.NewInternalSpan(strs, &idx.Span{ServiceRef: strs.Add("checkout"), SpanID: 1})
 		span.SetFloat64Attribute("_dd.agent_psr", 0.5)
-		chunk := idx.NewInternalTraceChunk(strs, 1, "", nil, []*idx.InternalSpan{span}, false, make([]byte, 16), 0)
+		traceID := make([]byte, 16)
+		traceID[15] = 7
+		chunk := idx.NewInternalTraceChunk(strs, 1, "", nil, []*idx.InternalSpan{span}, false, traceID, 0)
 		return &idx.InternalTracerPayload{Strings: strs, Chunks: []*idx.InternalTraceChunk{chunk}}
 	}
 
@@ -253,7 +266,7 @@ func TestDatadogTracesV1_SamplingThreshold_EndToEnd(t *testing.T) {
 
 			require.Equal(t, 1, sink.SpanCount())
 			span := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-			assert.Equal(t, "ot=th:8", span.TraceState().AsRaw())
+			assert.Equal(t, "ot=rv:940fc851cda0e3;th:8", span.TraceState().AsRaw())
 		})
 	}
 }

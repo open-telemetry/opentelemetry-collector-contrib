@@ -278,7 +278,9 @@ func traceChunkSamplingPriority(traceChunk *pb.TraceChunk) (float64, bool) {
 	return 0, false
 }
 
-// The spans of chunks that Datadog kept by rate get that rate as the threshold in their tracestate.
+// ToTraces converts a tracer payload in the v0.x formats to OTel traces, grouping the spans by service. When the
+// receiver.datadog.EnableSamplingThreshold feature gate is enabled, the spans of chunks that Datadog kept by rate get
+// that rate as the sampling threshold in their tracestate.
 func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, traceIDCache *lru.Cache[uint64, pcommon.TraceID]) (ptrace.Traces, error) {
 	sharedAttributes := pcommon.NewMap()
 	for k, v := range map[string]string{
@@ -328,10 +330,9 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 
 	for _, traceChunk := range payload.GetChunks() {
 		samplingPriority, hasSamplingPriority := traceChunkSamplingPriority(traceChunk)
-		var rate float64
-		var hasRate bool
-		if hasSamplingPriority && decidedByRate(samplingPriority, func() (uint32, bool) { return chunkMechanism(traceChunk) }) {
-			rate, hasRate = chunkSamplingRate(traceChunk)
+		var traceState string
+		if hasSamplingPriority {
+			traceState = chunkTraceState(logger, traceChunk, samplingPriority)
 		}
 		for _, span := range traceChunk.GetSpans() {
 			// Restore base service name as the service name.
@@ -427,8 +428,8 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 			// Some spans need specific processing (http, db, grpc...)
 			processSpanByName(legacySpanView(span), &newSpan)
 
-			if hasRate {
-				setSamplingThreshold(logger, newSpan, rate)
+			if traceState != "" {
+				newSpan.TraceState().FromRaw(traceState)
 			}
 		}
 	}

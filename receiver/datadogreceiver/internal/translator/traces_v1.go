@@ -23,6 +23,8 @@ const attributeConvertedV1 = "_dd.convertedv1"
 // ToTracesV1 converts a tracer payload in the v1 format to OTel traces. Attributes keep their native types and the
 // 128-bit trace id is taken from the trace chunk as is. Span links and events that are in JSON tags are parsed, and
 // spans that the agent converted from the v0.x formats get the span kind that the v0.x translation produces for them.
+// When the receiver.datadog.EnableSamplingThreshold feature gate is enabled, the spans of chunks that Datadog kept by
+// rate get that rate as the sampling threshold in their tracestate.
 func ToTracesV1(logger *zap.Logger, payload *idx.InternalTracerPayload, req *http.Request) (traces ptrace.Traces, err error) {
 	// The string references of a payload from /v1.0/traces are checked when it is decoded, but the ones of an agent
 	// payload (protobuf) are not. Strings.Get panics on a reference that is out of range, so convert that panic into
@@ -56,11 +58,7 @@ func ToTracesV1(logger *zap.Logger, payload *idx.InternalTracerPayload, req *htt
 	groupByService := make(map[string]ptrace.SpanSlice)
 	for _, chunk := range payload.Chunks {
 		traceID := chunkTraceID(chunk)
-		var rate float64
-		var hasRate bool
-		if decidedByRate(float64(chunk.Priority), func() (uint32, bool) { return chunk.SamplingMechanism(), true }) {
-			rate, hasRate = chunkSamplingRateV1(chunk)
-		}
+		traceState := chunkTraceStateV1(logger, chunk)
 		for _, span := range chunk.Spans {
 			service := span.Service()
 			// Restore base service name as the service name, like for the older payload formats.
@@ -74,8 +72,8 @@ func ToTracesV1(logger *zap.Logger, payload *idx.InternalTracerPayload, req *htt
 			}
 			newSpan := slice.AppendEmpty()
 			spanToOTelV1(logger, newSpan, span, chunk, traceID, strs)
-			if hasRate {
-				setSamplingThreshold(logger, newSpan, rate)
+			if traceState != "" {
+				newSpan.TraceState().FromRaw(traceState)
 			}
 		}
 	}

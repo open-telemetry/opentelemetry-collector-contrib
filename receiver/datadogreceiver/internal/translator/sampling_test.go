@@ -11,10 +11,29 @@ import (
 	ddsampler "github.com/DataDog/datadog-agent/pkg/trace/sampler"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
+)
+
+// enableSamplingThreshold turns the alpha feature gate of the sampling threshold on for a test.
+func enableSamplingThreshold(t *testing.T) {
+	t.Helper()
+	id := metadata.ReceiverDatadogEnableSamplingThresholdFeatureGate.ID()
+	require.NoError(t, featuregate.GlobalRegistry().Set(id, true))
+	t.Cleanup(func() { require.NoError(t, featuregate.GlobalRegistry().Set(id, false)) })
+}
+
+// The Datadog trace id 2 has this randomness value, which is the inverse of the Knuth hash of the id, 56 bits of it. It
+// is derived independently of the code: 2 * 1111111111111111111 mod 2^64 = 2222222222222222222, its inverse is
+// 2^64-1-2222222222222222222, and the top 56 bits of that are 0xe12914a9a8771c. A trace id of 2 is kept by the Knuth
+// hash at any rate above 0.12, because its hash is 0.12 of the range. The ids 8 and 9 are on both sides of a rate of
+// 0.5: id 8 has the hash 0.48 and is kept, id 9 has 0.54 and is not.
+const (
+	rvID2 = "e12914a9a8771c"
+	rvID8 = "84a452a6a1dc71"
 )
 
 func tracestatesBySpanID(t *testing.T, payload *pb.TracerPayload) map[uint64]string {
@@ -40,11 +59,12 @@ func spanIDToUint64(id [8]byte) (v uint64) {
 }
 
 func TestToTracesSamplingThreshold(t *testing.T) {
+	enableSamplingThreshold(t)
 	keep := int32(ddsampler.PriorityAutoKeep)
 	// A chunk of a deciding root and a child, the way a tracer sends it.
 	chunk := func(priority int32, root, child *pb.Span) *pb.TraceChunk {
-		root.SpanID, root.TraceID = 1, 7
-		child.SpanID, child.TraceID, child.ParentID = 2, 7, 1
+		root.SpanID, root.TraceID = 1, 2
+		child.SpanID, child.TraceID, child.ParentID = 2, 2, 1
 		return &pb.TraceChunk{Priority: priority, Spans: []*pb.Span{child, root}}
 	}
 
@@ -58,21 +78,21 @@ func TestToTracesSamplingThreshold(t *testing.T) {
 			chunks: []*pb.TraceChunk{chunk(keep,
 				&pb.Span{Metrics: map[string]float64{"_dd.agent_psr": 0.5}},
 				&pb.Span{Meta: map[string]string{"_dd.p.ksr": "0.25"}})},
-			want: map[uint64]string{1: "ot=th:8", 2: "ot=th:8"},
+			want: map[uint64]string{1: "ot=rv:" + rvID2 + ";th:8", 2: "ot=rv:" + rvID2 + ";th:8"},
 		},
 		{
 			name: "the Knuth rate on one span applies to the whole chunk",
 			chunks: []*pb.TraceChunk{chunk(keep,
 				&pb.Span{},
 				&pb.Span{Meta: map[string]string{"_dd.p.ksr": "0.25"}})},
-			want: map[uint64]string{1: "ot=th:c", 2: "ot=th:c"},
+			want: map[uint64]string{1: "ot=rv:" + rvID2 + ";th:c", 2: "ot=rv:" + rvID2 + ";th:c"},
 		},
 		{
 			name: "the Knuth rate is preferred over the rule rate",
 			chunks: []*pb.TraceChunk{chunk(keep,
 				&pb.Span{Metrics: map[string]float64{"_dd.rule_psr": 0.5}, Meta: map[string]string{"_dd.p.ksr": "0.25"}},
 				&pb.Span{})},
-			want: map[uint64]string{1: "ot=th:c", 2: "ot=th:c"},
+			want: map[uint64]string{1: "ot=rv:" + rvID2 + ";th:c", 2: "ot=rv:" + rvID2 + ";th:c"},
 		},
 		{
 			name: "the rule rate is multiplied by the limit rate",
@@ -100,27 +120,27 @@ func TestToTracesSamplingThreshold(t *testing.T) {
 			chunks: []*pb.TraceChunk{chunk(int32(ddsampler.PriorityUserKeep),
 				&pb.Span{Metrics: map[string]float64{"_dd.rule_psr": 0.5, "_dd.limit_psr": 100}, Meta: map[string]string{"_dd.p.dm": "-3"}},
 				&pb.Span{Meta: map[string]string{"_dd.p.ksr": "0.5"}})},
-			want: map[uint64]string{1: "ot=th:8", 2: "ot=th:8"},
+			want: map[uint64]string{1: "ot=rv:" + rvID2 + ";th:8", 2: "ot=rv:" + rvID2 + ";th:8"},
 		},
 		{
 			name: "the agent rate is not multiplied by a limiter rate",
 			chunks: []*pb.TraceChunk{chunk(keep,
 				&pb.Span{Metrics: map[string]float64{"_dd.agent_psr": 0.5, "_dd.limit_psr": 0.5}}, &pb.Span{})},
-			want: map[uint64]string{1: "ot=th:8", 2: "ot=th:8"},
+			want: map[uint64]string{1: "ot=rv:" + rvID2 + ";th:8", 2: "ot=rv:" + rvID2 + ";th:8"},
 		},
 		{
 			name: "a rate of 1 keeps everything",
 			chunks: []*pb.TraceChunk{chunk(keep,
 				&pb.Span{Metrics: map[string]float64{"_dd.agent_psr": 1}},
 				&pb.Span{})},
-			want: map[uint64]string{1: "ot=th:0", 2: "ot=th:0"},
+			want: map[uint64]string{1: "ot=rv:" + rvID2 + ";th:0", 2: "ot=rv:" + rvID2 + ";th:0"},
 		},
 		{
 			name: "the priority comes from the spans of the older formats, without a priority on the chunk",
 			chunks: []*pb.TraceChunk{chunk(int32(ddsampler.PriorityNone),
 				&pb.Span{Metrics: map[string]float64{"_sampling_priority_v1": 1, "_dd.agent_psr": 0.5}},
 				&pb.Span{})},
-			want: map[uint64]string{1: "ot=th:8", 2: "ot=th:8"},
+			want: map[uint64]string{1: "ot=rv:" + rvID2 + ";th:8", 2: "ot=rv:" + rvID2 + ";th:8"},
 		},
 		{
 			name: "the rate can be a tag of the chunk",
@@ -129,7 +149,7 @@ func TestToTracesSamplingThreshold(t *testing.T) {
 				c.Tags = map[string]string{"_dd.p.ksr": "0.25"}
 				return c
 			}()},
-			want: map[uint64]string{1: "ot=th:c", 2: "ot=th:c"},
+			want: map[uint64]string{1: "ot=rv:" + rvID2 + ";th:c", 2: "ot=rv:" + rvID2 + ";th:c"},
 		},
 		{
 			name: "a user keep is not decided by a rate",
@@ -177,6 +197,37 @@ func TestToTracesSamplingThreshold(t *testing.T) {
 			want: map[uint64]string{1: "ot=th:c", 2: "ot=th:c"},
 		},
 		{
+			name: "the probabilistic sampler of the Agent overrides the agent rate of the tracer, and has no randomness value",
+			chunks: []*pb.TraceChunk{chunk(keep,
+				&pb.Span{Metrics: map[string]float64{"_dd.agent_psr": 0.5, "_dd.prob_sr": 0.25}, Meta: map[string]string{"_dd.p.dm": "-9"}}, &pb.Span{})},
+			want: map[uint64]string{1: "ot=th:c", 2: "ot=th:c"},
+		},
+		{
+			name: "the probabilistic sampler of the Agent without its rate leaves the rate of the tracer unused",
+			chunks: []*pb.TraceChunk{chunk(keep,
+				&pb.Span{Metrics: map[string]float64{"_dd.agent_psr": 0.5}, Meta: map[string]string{"_dd.p.dm": "-9"}}, &pb.Span{})},
+			want: map[uint64]string{1: "", 2: ""},
+		},
+		{
+			// Trace id 8 is kept by the Knuth hash at a rate of 0.5, and its randomness is just above the threshold.
+			name: "the randomness value follows the Knuth hash of the lower 64 bits of the trace id",
+			chunks: []*pb.TraceChunk{{Priority: keep, Spans: []*pb.Span{{
+				TraceID: 8, SpanID: 1, Metrics: map[string]float64{"_dd.agent_psr": 0.5},
+			}}}},
+			want: map[uint64]string{1: "ot=rv:" + rvID8 + ";th:8"},
+		},
+		{
+			// Trace id 9 is not kept by the Knuth hash at a rate of 0.5, so its randomness would be below the threshold.
+			// That cannot happen for an exact rate, but it can just at the edge for a rounded one (the Knuth rate tag has 6
+			// decimals), and this id stands in for that. The randomness is raised to the threshold, so that a span that
+			// was kept is never inconsistent.
+			name: "the randomness value of a kept chunk is not below the threshold",
+			chunks: []*pb.TraceChunk{{Priority: keep, Spans: []*pb.Span{{
+				TraceID: 9, SpanID: 1, Metrics: map[string]float64{"_dd.agent_psr": 0.5},
+			}}}},
+			want: map[uint64]string{1: "ot=rv:80000000000000;th:8"},
+		},
+		{
 			name: "a dropped chunk, kept for its error, is not decided by a rate",
 			chunks: []*pb.TraceChunk{chunk(int32(ddsampler.PriorityAutoDrop),
 				&pb.Span{Metrics: map[string]float64{"_dd.agent_psr": 0.5}}, &pb.Span{})},
@@ -203,10 +254,10 @@ func TestToTracesSamplingThreshold(t *testing.T) {
 			// The first chunk of a partial flush is the one with the deciding root. Each chunk repeats the Knuth rate.
 			name: "every chunk of a partially flushed trace gets a threshold",
 			chunks: []*pb.TraceChunk{
-				{Priority: keep, Spans: []*pb.Span{{TraceID: 7, SpanID: 1, Metrics: map[string]float64{"_dd.agent_psr": 0.5}}}},
-				{Priority: keep, Spans: []*pb.Span{{TraceID: 7, SpanID: 2, ParentID: 1, Meta: map[string]string{"_dd.p.ksr": "0.5"}}}},
+				{Priority: keep, Spans: []*pb.Span{{TraceID: 2, SpanID: 1, Metrics: map[string]float64{"_dd.agent_psr": 0.5}}}},
+				{Priority: keep, Spans: []*pb.Span{{TraceID: 2, SpanID: 2, ParentID: 1, Meta: map[string]string{"_dd.p.ksr": "0.5"}}}},
 			},
-			want: map[uint64]string{1: "ot=th:8", 2: "ot=th:8"},
+			want: map[uint64]string{1: "ot=rv:" + rvID2 + ";th:8", 2: "ot=rv:" + rvID2 + ";th:8"},
 		},
 	}
 	for _, tt := range tests {
@@ -227,39 +278,13 @@ func TestToTracesSamplingThreshold(t *testing.T) {
 	})
 }
 
-// TestSetSamplingThresholdFollowsTracestateSpec covers a tracestate that already has a threshold, which is the combined
-// probability of the earlier sampling stages. The rate of Datadog is 0.5 in all cases.
-// See https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling/.
-func TestSetSamplingThresholdFollowsTracestateSpec(t *testing.T) {
-	tests := []struct {
-		name, tracestate, want string
-	}{
-		{"empty", "", "ot=th:8"},
-		{"other vendors are kept", "vendor=x,other=y", "ot=th:8,vendor=x,other=y"},
-		{"randomness and other keys of ot are kept", "ot=rv:abcdefabcdefab;x:y,vendor=x", "ot=rv:abcdefabcdefab;th:8;x:y,vendor=x"},
-		// 0.5 * 0.5 = 0.25, which is threshold c, and 0.25 * 0.5 = 0.125, which is threshold e.
-		{"a threshold is multiplied with the rate", "ot=th:8,vendor=x", "ot=th:c,vendor=x"},
-		{"a threshold with randomness is multiplied with the rate", "ot=rv:fedcba98765432;th:c", "ot=rv:fedcba98765432;th:e"},
-		// Randomness is kept when it is equal to the threshold, because a span is kept when randomness >= threshold.
-		{"randomness equal to the threshold is consistent", "ot=rv:80000000000000;th:8", "ot=rv:80000000000000;th:c"},
-		{"randomness below the threshold is inconsistent, so the threshold is erased", "ot=rv:7fffffffffffff;th:8,vendor=x", "ot=rv:7fffffffffffff,vendor=x"},
-		{"a threshold that becomes too small is erased", "ot=th:ffffffffffffff,vendor=x", "vendor=x"},
-		{"an invalid tracestate is not overwritten", "ot==,", "ot==,"},
-		{"an invalid threshold is not overwritten", "ot=th:zz", "ot=th:zz"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			span := ptrace.NewSpan()
-			span.TraceState().FromRaw(tt.tracestate)
-			setSamplingThreshold(zap.NewNop(), span, 0.5)
-			assert.Equal(t, tt.want, span.TraceState().AsRaw())
-		})
-	}
+func TestToTracesSamplingThresholdFeatureGate(t *testing.T) {
+	payload := &pb.TracerPayload{Chunks: []*pb.TraceChunk{{
+		Priority: int32(ddsampler.PriorityAutoKeep),
+		Spans:    []*pb.Span{{TraceID: 2, SpanID: 1, Metrics: map[string]float64{"_dd.agent_psr": 0.5}}},
+	}}}
+	assert.Equal(t, map[uint64]string{1: ""}, tracestatesBySpanID(t, payload), "the feature gate is off by default")
 
-	t.Run("a rate of 1 keeps the exact earlier threshold", func(t *testing.T) {
-		span := ptrace.NewSpan()
-		span.TraceState().FromRaw("ot=th:fdb0a068f801d8")
-		setSamplingThreshold(zap.NewNop(), span, 1)
-		assert.Equal(t, "ot=th:fdb0a068f801d8", span.TraceState().AsRaw())
-	})
+	enableSamplingThreshold(t)
+	assert.Equal(t, map[uint64]string{1: "ot=rv:" + rvID2 + ";th:8"}, tracestatesBySpanID(t, payload))
 }

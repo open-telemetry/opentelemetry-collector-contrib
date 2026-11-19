@@ -150,29 +150,21 @@ If the `receiver.datadogreceiver.EnableMultiTagParsing` feature gate is enabled,
 
 ### Sampling Threshold
 
-For chunks that Datadog kept because of a sampling rate, the receiver records that rate as the `th` threshold in the
-`ot` member of the W3C tracestate of their spans, for example `ot=th:8` for a rate of 0.5. Components such as the
-`spanmetrics` connector can then extrapolate counts from the spans that were kept.
+If the `receiver.datadog.EnableSamplingThreshold` feature gate is enabled, the receiver records the rate that Datadog
+sampled a trace with as the `th` threshold in the `ot` member of the W3C tracestate of its spans, for example
+`ot=th:8` for a rate of 0.5. Components such as the `spanmetrics` connector can then extrapolate counts from the spans
+that were kept. This applies to all trace endpoints, including the v1 format.
 
-A chunk is kept because of a rate when its sampling priority is 1. A tracer also keeps the traces that match one of its
-sampling rules with priority 2, which it also uses for traces that a user forced to be kept. The decision maker
-(`_dd.p.dm`) tells them apart: priority 2 chunks only get a threshold when the decision maker is a rate or a rule, not
-for a manual keep or AppSec. Chunks that were dropped (priority 0 or less, including the ones that the sampler rescued
-because of an error) and chunks without a priority were not decided by a rate, so their spans have no threshold.
+A chunk gets a threshold when its sampling priority is 1, or when it is 2 and the decision maker (`_dd.p.dm`) is a rate
+or a rule, not a manual keep or AppSec. Dropped chunks and chunks without a priority get none. The rate is the first of
+`_dd.agent_psr` or `_dd.prob_sr`, `_dd.p.ksr`, and `_dd.rule_psr`. The last two are multiplied by `_dd.limit_psr`, the
+rate of the limiter of the rule, when there is one.
 
-This applies to all trace endpoints, including the v1 format. The rate is read from the tags that Datadog puts on the
-spans of a chunk (in the v1 format also from the attributes of the chunk), in this order: `_dd.agent_psr` or
-`_dd.prob_sr` (the rate of the probabilistic sampler of the Agent), `_dd.p.ksr`, and `_dd.rule_psr`. The last two are
-the rate of a sampling rule alone, and the rate limiter of the rule also rejects some of the traces that the rule
-sampled, so they are multiplied by the rate of the limiter (`_dd.limit_psr`) when there is one. A `_dd.limit_psr` above
-1 is not a rate, and is ignored. The tags can be on different spans of a chunk, so the rate is built from all of them.
-Every chunk of a trace that is flushed in parts is handled by itself.
-
-If the tracestate of a span already has a threshold, it is the probability of the earlier sampling stages. The rate of
-Datadog is then multiplied with it, as the
-[tracestate probability sampling specification](https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling/)
-describes for a downstream sampler. A threshold that is inconsistent with the explicit randomness (`rv`) of the span
-is erased, because its probability is unknown. The other members of the tracestate are kept.
+When a Knuth hash of the trace ID made the decision, which is the case for `_dd.agent_psr` and for `_dd.p.ksr`
+without a limiter, the tracestate also has the `rv` randomness value that gives the same decision, as the tracers
+derive it. A downstream sampler then does not treat the kept spans as inconsistent. The probabilistic sampler of the
+Agent (`_dd.p.dm` of `-9`) and a rate that the limiter changed do not follow the Knuth hash, so they have no `rv`. A
+downstream sampler that checks `rv` against `th` may treat those spans as inconsistent.
 
 ### Default Attributes
 

@@ -4,17 +4,20 @@
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 
 import (
+	"encoding/binary"
 	"strconv"
 	"strings"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace/idx"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
 )
 
+// The sampling tags below are set by the tracers and the Datadog Agent. For example, dd-trace-go defines them in
+// https://github.com/DataDog/dd-trace-go/blob/3bef7147ab8b5d11317f7ae4a0931b714b57795d/ddtrace/tracer/span.go#L1496-L1541
 const (
 	// The sampling rate of the Datadog Agent's priority sampler. It is exact, and only on the deciding local root.
 	keyAgentPSR = "_dd.agent_psr"
@@ -31,54 +34,81 @@ const (
 
 	priorityAutoKeep = 1
 	priorityUserKeep = 2
+
+	// The factor of the Knuth hash of the lower 64 bits of the trace id, which every tracer uses to decide if it keeps a
+	// trace: keep if the hash is at most the rate times the largest uint64. See sampledByRate in
+	// https://github.com/DataDog/dd-trace-go/blob/3bef7147ab8b5d11317f7ae4a0931b714b57795d/ddtrace/tracer/sampler.go#L95-L120
+	knuthFactor = uint64(1111111111111111111)
+)
+
+// samplingMechanism is the decision maker of a sampling decision, the `_dd.p.dm` tag. It is written as a negative
+// number, like "-3". 0 is no decision maker. The mechanisms that keep a trace with a rate are listed in
+// https://github.com/DataDog/dd-trace-go/blob/3bef7147ab8b5d11317f7ae4a0931b714b57795d/internal/samplernames/samplernames.go#L22-L53.
+// The others, like a manual keep (-4) or AppSec (-5), force a keep.
+type samplingMechanism int32
+
+const (
+	// The rate that the Agent sent to the tracer.
+	mechanismAgentRate samplingMechanism = -1
+	// A remote automatic rate.
+	mechanismRemoteAutoRate samplingMechanism = -2
+	// A local sampling rule or rate.
+	mechanismLocalRule samplingMechanism = -3
+	// A remote user rate.
+	mechanismRemoteUserRate samplingMechanism = -6
+	// The probabilistic sampler of the Agent, which hashes the trace id with a seed (FNV) instead of with the Knuth
+	// factor. See https://github.com/DataDog/datadog-agent/blob/feda1819a7602228b238c9913a88ff6a0cfb1783/pkg/trace/agent/agent.go#L62
+	mechanismAgentProbabilistic samplingMechanism = -9
+	// A remote user rule.
+	mechanismRemoteUserRule samplingMechanism = -11
+	// A remote adaptive rule.
+	mechanismRemoteAdaptiveRule samplingMechanism = -12
 )
 
 // decidedByRate returns whether a rate decided that Datadog kept a chunk, so that the rate is the probability that it
 // was kept with. Priority 1 is the keep by rate. Priority 2 is a keep that a user forced, which is not decided by a
 // rate, except for the sampling rules of a tracer, which also keep with priority 2. The decision maker tells these
 // apart. A drop (0 or less, for example a chunk that was rescued because it has an error) was not decided by a rate.
-func decidedByRate(priority float64, mechanism func() (uint32, bool)) bool {
+func decidedByRate(priority float64, mechanism samplingMechanism) bool {
 	switch priority {
 	case priorityAutoKeep:
 		return true
 	case priorityUserKeep:
-		m, ok := mechanism()
-		return ok && rateMechanisms[m]
+		switch mechanism {
+		case mechanismAgentRate, mechanismRemoteAutoRate, mechanismLocalRule, mechanismRemoteUserRate,
+			mechanismAgentProbabilistic, mechanismRemoteUserRule, mechanismRemoteAdaptiveRule:
+			return true
+		}
 	}
 	return false
 }
 
-// rateMechanisms are the decision makers that keep a trace with a rate: the rate of the Agent, the rules and rates of
-// the tracer and its remote configuration, and the probabilistic sampler of the Agent. The others, like a manual keep
-// or AppSec, force a keep.
-var rateMechanisms = map[uint32]bool{
-	1:  true, // The rate that the Agent sent to the tracer.
-	2:  true, // A remote automatic rate.
-	3:  true, // A local sampling rule or rate.
-	6:  true, // A remote user rate.
-	9:  true, // The probabilistic sampler of the Agent.
-	11: true, // A remote user rule.
-	12: true, // A remote adaptive rule.
-}
-
-// parseMechanism parses a decision maker tag like "-3".
-func parseMechanism(s string) (uint32, bool) {
-	m, err := strconv.ParseUint(strings.TrimPrefix(s, "-"), 10, 32)
-	return uint32(m), err == nil
+// parseMechanism parses a decision maker tag like "-3". It returns 0 when the tag is not a negative number.
+func parseMechanism(s string) samplingMechanism {
+	m, err := strconv.ParseInt(s, 10, 32)
+	if err != nil || m >= 0 {
+		return 0
+	}
+	return samplingMechanism(m)
 }
 
 // chunkMechanism returns the decision maker of a chunk in the legacy formats. It is a tag of the first span of the
 // chunk or, in the v0.7 format, of the chunk.
-func chunkMechanism(chunk *pb.TraceChunk) (uint32, bool) {
-	if m, ok := parseMechanism(chunk.GetTags()[keyDecisionMaker]); ok {
-		return m, true
+func chunkMechanism(chunk *pb.TraceChunk) samplingMechanism {
+	if m := parseMechanism(chunk.GetTags()[keyDecisionMaker]); m != 0 {
+		return m
 	}
 	for _, span := range chunk.GetSpans() {
-		if m, ok := parseMechanism(span.Meta[keyDecisionMaker]); ok {
-			return m, true
+		if m := parseMechanism(span.Meta[keyDecisionMaker]); m != 0 {
+			return m
 		}
 	}
-	return 0, false
+	return 0
+}
+
+// chunkMechanismV1 returns the decision maker of a chunk in the v1 format, which has it without the minus sign.
+func chunkMechanismV1(chunk *idx.InternalTraceChunk) samplingMechanism {
+	return -samplingMechanism(chunk.SamplingMechanism())
 }
 
 // rateLookup returns the numeric value of a Datadog sampling tag.
@@ -103,31 +133,51 @@ func (t rateTags) collect(lookup rateLookup) {
 	}
 }
 
-// probability returns the probability that Datadog kept the chunk with. It prefers the exact `_dd.agent_psr` or
-// `_dd.prob_sr`, then `_dd.p.ksr`, then `_dd.rule_psr`. The Knuth rate and the rule rate are the rate of the rule
-// alone, and the limiter of the rule also rejects a part of the traces that the rule sampled, so they are multiplied
-// by the rate of the limiter (`_dd.limit_psr`) when there is one.
-func (t rateTags) probability() (float64, bool) {
-	for _, key := range [...]string{keyAgentPSR, keyProbabilisticRate} {
-		if p, ok := t[key]; ok {
-			return p, true
-		}
+// probability returns the probability that Datadog kept the chunk with, and whether a Knuth hash of the trace id alone
+// made the decision. It prefers the exact `_dd.agent_psr` or `_dd.prob_sr`, then `_dd.p.ksr`, then `_dd.rule_psr`. The
+// Knuth rate and the rule rate are the rate of the rule alone, and the limiter of the rule also rejects a part of the
+// traces that the rule sampled, so they are multiplied by the rate of the limiter (`_dd.limit_psr`) when there is one.
+// A decision that the limiter influenced is not one of the Knuth hash alone, and neither is the decision of the
+// probabilistic sampler of the Agent, which overrides the one of the tracer.
+func (t rateTags) probability(mechanism samplingMechanism) (probability float64, knuth, ok bool) {
+	if mechanism == mechanismAgentProbabilistic {
+		probability, ok = t[keyProbabilisticRate]
+		return probability, false, ok
 	}
-	limit, ok := t[keyLimitPSR]
-	if !ok {
+	if p, ok := t[keyAgentPSR]; ok {
+		return p, true, true
+	}
+	if p, ok := t[keyProbabilisticRate]; ok {
+		return p, false, true
+	}
+	limit, hasLimit := t[keyLimitPSR]
+	if !hasLimit {
 		limit = 1
 	}
-	for _, key := range [...]string{keyKnuthRate, keyRulePSR} {
-		if p, ok := t[key]; ok {
-			return p * limit, true
-		}
+	if p, ok := t[keyKnuthRate]; ok {
+		return p * limit, limit == 1, true
 	}
-	return 0, false
+	if p, ok := t[keyRulePSR]; ok {
+		return p * limit, false, true
+	}
+	return 0, false, false
 }
 
-// chunkSamplingRate returns the sampling rate of a chunk in the legacy formats, which send the tags as span metrics,
-// span meta or, in the v0.7 format, as tags of the chunk.
-func chunkSamplingRate(chunk *pb.TraceChunk) (float64, bool) {
+func parseRate(s string) (float64, bool) {
+	v, err := strconv.ParseFloat(s, 64)
+	return v, err == nil
+}
+
+// chunkTraceState returns the tracestate for the spans of a chunk in the legacy formats, which send the tags as span
+// metrics, span meta or, in the v0.7 format, as tags of the chunk. It is empty when the chunk has no sampling rate.
+func chunkTraceState(logger *zap.Logger, chunk *pb.TraceChunk, priority float64) string {
+	if !metadata.ReceiverDatadogEnableSamplingThresholdFeatureGate.IsEnabled() || len(chunk.GetSpans()) == 0 {
+		return ""
+	}
+	mechanism := chunkMechanism(chunk)
+	if !decidedByRate(priority, mechanism) {
+		return ""
+	}
 	tags := rateTags{}
 	tags.collect(func(key string) (float64, bool) { return parseRate(chunk.GetTags()[key]) })
 	for _, span := range chunk.GetSpans() {
@@ -138,12 +188,19 @@ func chunkSamplingRate(chunk *pb.TraceChunk) (float64, bool) {
 			return parseRate(span.Meta[key])
 		})
 	}
-	return tags.probability()
+	return samplingTraceState(logger, tags, mechanism, chunk.GetSpans()[0].TraceID)
 }
 
-// chunkSamplingRateV1 returns the sampling rate of a chunk in the v1 format, from the attributes of the chunk and of
-// its spans. An attribute can be a number or a string, like the tags of the legacy formats.
-func chunkSamplingRateV1(chunk *idx.InternalTraceChunk) (float64, bool) {
+// chunkTraceStateV1 returns the tracestate for the spans of a chunk in the v1 format, from the attributes of the chunk
+// and of its spans. An attribute can be a number or a string, like the tags of the legacy formats.
+func chunkTraceStateV1(logger *zap.Logger, chunk *idx.InternalTraceChunk) string {
+	if !metadata.ReceiverDatadogEnableSamplingThresholdFeatureGate.IsEnabled() || len(chunk.Spans) == 0 || len(chunk.TraceID) != 16 {
+		return ""
+	}
+	mechanism := chunkMechanismV1(chunk)
+	if !decidedByRate(float64(chunk.Priority), mechanism) {
+		return ""
+	}
 	tags := rateTags{}
 	tags.collect(func(key string) (float64, bool) {
 		v, ok := chunk.GetAttributeAsString(key)
@@ -155,68 +212,49 @@ func chunkSamplingRateV1(chunk *idx.InternalTraceChunk) (float64, bool) {
 	for _, span := range chunk.Spans {
 		tags.collect(span.GetAttributeAsFloat64)
 	}
-	return tags.probability()
+	return samplingTraceState(logger, tags, mechanism, binary.BigEndian.Uint64(chunk.TraceID[8:]))
 }
 
-func parseRate(s string) (float64, bool) {
-	v, err := strconv.ParseFloat(s, 64)
-	return v, err == nil
-}
-
-// setSamplingThreshold records the rate that Datadog sampled a span with as the threshold of the W3C tracestate of
-// the span, so that components like spanmetrics can extrapolate counts from it. The other members of the tracestate
-// are kept.
+// samplingTraceState returns the tracestate of the spans of a chunk that Datadog kept with the probability of the tags,
+// so that components like spanmetrics can extrapolate counts from the spans. The `th` value of the `ot` member is the
+// probability. Spans do not have a tracestate yet, as Datadog payloads only have one on span links.
 //
-// The threshold of a tracestate is the combined probability of all earlier sampling stages, and a later stage can only
-// raise it. Datadog's sampling is a later stage, so a threshold that is already there is multiplied with the rate, like
-// a proportional downstream sampler does. A threshold that is inconsistent, or that cannot be represented, is erased,
-// because the probability is then unknown. See https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling/.
-func setSamplingThreshold(logger *zap.Logger, span ptrace.Span, rate float64) {
-	w3c, err := sampling.NewW3CTraceState(span.TraceState().AsRaw())
-	if err != nil {
-		logger.Debug("cannot parse the tracestate of the span", zap.Error(err))
-		return
+// When a Knuth hash of the trace id made the decision, the `ot` member also has the `rv` value that gives the same
+// decision, like the tracers derive it for the tracestate that they propagate. So `rv >= th` holds for the spans that
+// were kept, and a downstream sampler does not treat them as inconsistent. Other decisions have no `rv`, because the
+// trace id randomness would not agree with them.
+func samplingTraceState(logger *zap.Logger, tags rateTags, mechanism samplingMechanism, traceID uint64) string {
+	rate, knuth, ok := tags.probability(mechanism)
+	if !ok {
+		return ""
 	}
-	otel := w3c.OTelValue()
-
-	probability := rate
-	existing, hasExisting := otel.TValueThreshold()
-	if hasExisting {
-		// The span was kept, so an explicit randomness has to be at least the threshold.
-		if rnd, ok := otel.RValueRandomness(); ok && !existing.ShouldSample(rnd) {
-			otel.ClearTValue()
-			writeTraceState(logger, span, &w3c)
-			return
-		}
-		if rate == 1 {
-			// Datadog kept every trace, so the exact earlier threshold stays.
-			return
-		}
-		probability = rate * existing.Probability()
-	}
-
-	threshold, err := sampling.ProbabilityToThreshold(probability)
+	threshold, err := sampling.ProbabilityToThreshold(rate)
 	if err != nil {
 		// The probability is below the smallest one that a threshold can represent.
-		logger.Debug("cannot convert the sampling rate to a threshold", zap.Float64("rate", probability), zap.Error(err))
-		if hasExisting {
-			otel.ClearTValue()
-			writeTraceState(logger, span, &w3c)
-		}
-		return
+		logger.Debug("cannot convert the sampling rate to a threshold", zap.Float64("rate", rate), zap.Error(err))
+		return ""
 	}
+	var w3c sampling.W3CTraceState
+	otel := w3c.OTelValue()
 	if err := otel.UpdateTValueWithSampling(threshold); err != nil {
-		// Rounding made the threshold lower than the earlier one, which is more precise, so that one stays.
-		return
+		logger.Debug("cannot set the sampling threshold", zap.Error(err))
+		return ""
 	}
-	writeTraceState(logger, span, &w3c)
-}
-
-func writeTraceState(logger *zap.Logger, span ptrace.Span, w3c *sampling.W3CTraceState) {
+	if knuth {
+		// Datadog keeps a trace when h = traceID * knuthFactor is at most the rate times the largest uint64, and OTel
+		// when rv >= th. So rv is the inverse of h, with its low 8 bits dropped to get 56. The tag of a rate can be
+		// rounded, and the 56 bits are less than the 64 of the hash, so rv is raised to th if it would be below it.
+		rnd, err := sampling.UnsignedToRandomness(max((^(traceID * knuthFactor))>>8, threshold.Unsigned()))
+		if err != nil {
+			logger.Debug("cannot set the randomness value", zap.Error(err))
+			return ""
+		}
+		otel.SetRValue(rnd)
+	}
 	var sb strings.Builder
 	if err := w3c.Serialize(&sb); err != nil {
-		logger.Debug("cannot serialize the tracestate of the span", zap.Error(err))
-		return
+		logger.Debug("cannot serialize the tracestate", zap.Error(err))
+		return ""
 	}
-	span.TraceState().FromRaw(sb.String())
+	return sb.String()
 }
