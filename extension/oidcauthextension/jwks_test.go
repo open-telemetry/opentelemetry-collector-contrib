@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/go-jose/go-jose/v4"
+	"github.com/go-jose/go-jose/v4/jose-util/generator"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
@@ -103,6 +104,69 @@ func startJWKSAuthenticator(t *testing.T, cfg ProviderCfg) extensionauth.Server 
 	auth, ok := ext.(extensionauth.Server)
 	require.True(t, ok)
 	return auth
+}
+
+func TestJWKSURLSupportedAlgorithms(t *testing.T) {
+	t.Parallel()
+	for _, alg := range allSupportedAlgorithms {
+		t.Run(string(alg), func(t *testing.T) {
+			t.Parallel()
+			publicKey, privateKey, err := generator.NewSigningKey(alg, 0)
+			require.NoError(t, err)
+			issuer := "https://issuer.example.com"
+			signer, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: privateKey}, (&jose.SignerOptions{}).WithHeader("kid", "key"))
+			require.NoError(t, err)
+			payload, err := json.Marshal(jwksClaims(issuer))
+			require.NoError(t, err)
+			signed, err := signer.Sign(payload)
+			require.NoError(t, err)
+			token, err := signed.CompactSerialize()
+			require.NoError(t, err)
+
+			for _, keyAlg := range []string{string(alg), ""} {
+				name := "with_alg"
+				if keyAlg == "" {
+					name = "without_alg"
+				}
+				t.Run(name, func(t *testing.T) {
+					body, err := json.Marshal(jose.JSONWebKeySet{Keys: []jose.JSONWebKey{{Key: publicKey, KeyID: "key", Algorithm: keyAlg, Use: "sig"}}})
+					require.NoError(t, err)
+					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write(body) }))
+					t.Cleanup(server.Close)
+					auth := startJWKSAuthenticator(t, ProviderCfg{IssuerURL: issuer, Audience: "collector", JWKSURL: server.URL})
+					_, err = auth.Authenticate(t.Context(), map[string][]string{"authorization": {"Bearer " + token}})
+					require.NoError(t, err)
+				})
+			}
+		})
+	}
+}
+
+func TestJWKSURLRejectsHMACAlgorithms(t *testing.T) {
+	t.Parallel()
+	for _, alg := range []jose.SignatureAlgorithm{jose.HS256, jose.HS384, jose.HS512} {
+		t.Run(string(alg), func(t *testing.T) {
+			t.Parallel()
+			var requests atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				requests.Add(1)
+				w.WriteHeader(http.StatusInternalServerError)
+			}))
+			t.Cleanup(server.Close)
+			auth := startJWKSAuthenticator(t, ProviderCfg{IssuerURL: server.URL, Audience: "collector", JWKSURL: server.URL})
+			signer, err := jose.NewSigner(jose.SigningKey{Algorithm: alg, Key: make([]byte, 64)}, nil)
+			require.NoError(t, err)
+			payload, err := json.Marshal(jwksClaims(server.URL))
+			require.NoError(t, err)
+			signed, err := signer.Sign(payload)
+			require.NoError(t, err)
+			token, err := signed.CompactSerialize()
+			require.NoError(t, err)
+			_, err = auth.Authenticate(t.Context(), map[string][]string{"authorization": {"Bearer " + token}})
+			require.ErrorContains(t, err, "unexpected signature algorithm")
+			assert.Zero(t, requests.Load(), "unsupported algorithms must be rejected before fetching keys")
+		})
+	}
 }
 
 func TestJWKSURLAuthenticationAndRotation(t *testing.T) {

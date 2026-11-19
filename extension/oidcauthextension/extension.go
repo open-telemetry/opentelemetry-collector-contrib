@@ -333,6 +333,9 @@ func (e *oidcExtension) processProviderConfig(ctx context.Context, p ProviderCfg
 	}
 	oidcContext := oidc.ClientContext(ctx, pc.client)
 	if p.JWKSURL != "" {
+		for _, alg := range allSupportedAlgorithms {
+			vCfg.SupportedSigningAlgs = append(vCfg.SupportedSigningAlgs, string(alg))
+		}
 		keySet := newExpiringRemoteKeySet(oidcContext, p.JWKSURL)
 		pc.verifier = oidc.NewVerifier(p.IssuerURL, keySet, vCfg)
 		e.providerContainers[p.IssuerURL] = &pc

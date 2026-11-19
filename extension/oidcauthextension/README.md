@@ -86,8 +86,7 @@ extensions:
 `issuer_url` remains the expected issuer of incoming tokens; it is not fetched
 when `jwks_url` is configured. Signature, expiry, issuer, and audience checks
 remain active, subject to the existing explicit issuer/audience opt-outs.
-Without discovery metadata, this mode accepts RS256 signatures, following the
-`go-oidc` verifier default.
+Supported signing algorithms are `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512`, `ES256`, `ES384`, `ES512`, and `EdDSA`.
 
 Keys are fetched on the first verification that needs them and cached in memory.
 Cached keys are trusted for at most five minutes. Cache hits do not extend this
