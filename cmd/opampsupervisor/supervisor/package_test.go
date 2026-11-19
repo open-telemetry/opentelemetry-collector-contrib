@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"syscall"
 	"testing"
 	"time"
 
@@ -26,8 +27,8 @@ const supervisorRestartHelperEnv = "OTEL_SUPERVISOR_RESTART_HELPER"
 
 func TestMain(m *testing.M) {
 	switch os.Getenv(supervisorRestartHelperEnv) {
-	case "opamp":
-		if err := runOpAMPTestAgent(); err != nil {
+	case "opamp", "opamp-healthy":
+		if err := runOpAMPTestAgent(os.Getenv(supervisorRestartHelperEnv) == "opamp-healthy"); err != nil {
 			_, _ = fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
@@ -49,8 +50,10 @@ func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
 }
 
-// runOpAMPTestAgent supplies bootstrap information without a Collector binary.
-func runOpAMPTestAgent() error {
+// runOpAMPTestAgent supplies bootstrap information without a Collector binary. With
+// reportHealth, it reports healthy periodically and keeps running on SIGHUP, like a
+// Collector that reloads its config.
+func runOpAMPTestAgent(reportHealth bool) error {
 	if os.Args[1] == "featuregate" {
 		return nil
 	}
@@ -85,9 +88,33 @@ func runOpAMPTestAgent() error {
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt)
+	if reportHealth {
+		return reportHealthUntilInterrupted(opampClient, sigCh)
+	}
 	<-sigCh
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	return opampClient.Stop(ctx)
+}
+
+// reportHealthUntilInterrupted reports healthy every 100ms until interrupted, and keeps
+// running on SIGHUP. It returns without stopping the client, so that the process exits
+// well within the Supervisor's stop grace period when the Supervisor restarts it.
+func reportHealthUntilInterrupted(opampClient client.OpAMPClient, sigCh chan os.Signal) error {
+	signal.Notify(sigCh, syscall.SIGHUP)
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		if err := opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: true}); err != nil {
+			return err
+		}
+		select {
+		case sig := <-sigCh:
+			if sig == os.Interrupt {
+				return nil
+			}
+		case <-ticker.C:
+		}
+	}
 }

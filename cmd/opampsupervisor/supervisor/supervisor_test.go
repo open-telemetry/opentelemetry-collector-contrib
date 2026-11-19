@@ -445,6 +445,113 @@ func TestSupervisorStartPreservesNewRemoteConfigStatus(t *testing.T) {
 	}
 }
 
+func TestSupervisorAppliesRemoteConfigAfterFailedWrite(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Relies on SIGHUP and on file permissions to make writing the config fail")
+	}
+	if os.Geteuid() == 0 {
+		t.Skip("File permissions do not stop root from writing the config")
+	}
+
+	newRemoteConfig := func(hash, receiver string) *protobufs.AgentRemoteConfig {
+		return &protobufs.AgentRemoteConfig{
+			ConfigHash: []byte(hash),
+			Config: &protobufs.AgentConfigMap{ConfigMap: map[string]*protobufs.AgentConfigObject{
+				"": {Body: []byte("receivers:\n  " + receiver + ": {}\n")},
+			}},
+		}
+	}
+
+	for _, hupReload := range []bool{true, false} {
+		for _, retry := range []struct {
+			name     string
+			hash     string
+			receiver string
+		}{
+			{name: "same config", hash: "H2", receiver: "nop/b"},
+			{name: "previous config", hash: "H3", receiver: "nop/a"},
+		} {
+			t.Run(fmt.Sprintf("hup_reload=%t/%s", hupReload, retry.name), func(t *testing.T) {
+				endpoint, messages := newConfigStatusTestServer(t)
+				cfg := newTestSupervisorConfig(t)
+				cfg.Capabilities.AcceptsRemoteConfig = true
+				cfg.Server.Endpoint = endpoint
+				cfg.Agent.Executable = os.Args[0]
+				cfg.Agent.Env = map[string]string{
+					supervisorRestartHelperEnv: "opamp-healthy",
+					// The race detector delays the exit of the agent process by a second by
+					// default, which outlasts the stop grace period when it is restarted.
+					"GORACE": "atexit_sleep_ms=0",
+				}
+				cfg.Agent.BootstrapTimeout = 5 * time.Second
+				cfg.Agent.UseHUPConfigReload = hupReload
+
+				var mu sync.Mutex
+				var statuses []*protobufs.RemoteConfigStatus
+				done := make(chan struct{})
+				var wg sync.WaitGroup
+				wg.Go(func() {
+					for {
+						select {
+						case message := <-messages:
+							if status := message.GetRemoteConfigStatus(); status != nil {
+								mu.Lock()
+								statuses = append(statuses, status)
+								mu.Unlock()
+							}
+						case <-done:
+							return
+						}
+					}
+				})
+				t.Cleanup(func() {
+					close(done)
+					wg.Wait()
+				})
+				reported := func(hash string, status protobufs.RemoteConfigStatuses) func() bool {
+					return func() bool {
+						mu.Lock()
+						defer mu.Unlock()
+						for _, rcs := range statuses {
+							if string(rcs.GetLastRemoteConfigHash()) == hash && rcs.GetStatus() == status {
+								return true
+							}
+						}
+						return false
+					}
+				}
+
+				s, err := NewSupervisor(t.Context(), zap.NewNop(), cfg)
+				require.NoError(t, err)
+				require.NoError(t, s.Start(t.Context()))
+				t.Cleanup(s.Shutdown)
+				agentConfigContains := func(receiver string) bool {
+					data, readErr := os.ReadFile(s.agentConfigFilePath())
+					require.NoError(t, readErr)
+					return strings.Contains(string(data), receiver)
+				}
+
+				s.onMessage(t.Context(), &types.MessageData{RemoteConfig: newRemoteConfig("HA", "nop/a")})
+				require.Eventually(t, reported("HA", protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED), 10*time.Second, 20*time.Millisecond)
+
+				// Writing config B fails, so the agent keeps running config A.
+				require.NoError(t, os.Chmod(s.agentConfigFilePath(), 0o400))
+				s.onMessage(t.Context(), &types.MessageData{RemoteConfig: newRemoteConfig("H1", "nop/b")})
+				require.Eventually(t, reported("H1", protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED), 10*time.Second, 20*time.Millisecond)
+
+				// Health from the agent running config A must not report config B as applied.
+				require.Never(t, reported("H1", protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED), 2*cfg.Agent.ConfigApplyTimeout, 50*time.Millisecond)
+				require.True(t, agentConfigContains("nop/a"))
+
+				require.NoError(t, os.Chmod(s.agentConfigFilePath(), 0o600))
+				s.onMessage(t.Context(), &types.MessageData{RemoteConfig: newRemoteConfig(retry.hash, retry.receiver)})
+				require.Eventually(t, reported(retry.hash, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED), 10*time.Second, 20*time.Millisecond)
+				require.True(t, agentConfigContains(retry.receiver))
+			})
+		}
+	}
+}
+
 func newConfigStatusTestServer(t *testing.T) (string, <-chan *protobufs.AgentToServer) {
 	t.Helper()
 	messages := make(chan *protobufs.AgentToServer, 32)
@@ -2020,6 +2127,83 @@ service:
 		require.NoError(t, err)
 		assert.Contains(t, string(fileContent), remoteConfigMessage)
 		assert.Equal(t, mergedConfig, s.cfgState.Load().(*configState).mergedConfig)
+	})
+
+	t.Run("RemoteConfig - Apply an unchanged config again until it is applied", func(t *testing.T) {
+		var statuses []*protobufs.RemoteConfigStatus
+		mc := &mockOpAMPClient{
+			setRemoteConfigStatusFunc: func(rcs *protobufs.RemoteConfigStatus) error {
+				statuses = append(statuses, rcs)
+				return nil
+			},
+			updateEffectiveConfigFunc: func(context.Context) error {
+				return nil
+			},
+		}
+
+		s := Supervisor{
+			telemetrySettings: newNopTelemetrySettings(),
+			pidProvider:       staticPIDProvider(88888),
+			config: config.Supervisor{
+				Capabilities: config.Capabilities{AcceptsRemoteConfig: true},
+				Storage: config.Storage{
+					Directory: t.TempDir(),
+				},
+			},
+			hasNewConfig:                   make(chan struct{}, 1),
+			persistentState:                &persistentState{InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")},
+			agentConfigOwnTelemetrySection: &atomic.Value{},
+			effectiveConfig:                &atomic.Value{},
+			opampClient:                    mc,
+			agentDescription:               &atomic.Value{},
+			cfgState:                       &atomic.Value{},
+			customMessageToServer:          make(chan *protobufs.CustomMessage, 10),
+			doneChan:                       make(chan struct{}),
+		}
+		require.NoError(t, s.createTemplates())
+		s.agentDescription.Store(&protobufs.AgentDescription{
+			IdentifyingAttributes:    []*protobufs.KeyValue{},
+			NonIdentifyingAttributes: []*protobufs.KeyValue{},
+		})
+
+		// sendConfig sends the same config with the given hash, and returns the reported
+		// status and whether the config is to be applied.
+		sendConfig := func(hash string) (protobufs.RemoteConfigStatuses, bool) {
+			s.onMessage(t.Context(), &types.MessageData{
+				RemoteConfig: &protobufs.AgentRemoteConfig{
+					Config: &protobufs.AgentConfigMap{
+						ConfigMap: map[string]*protobufs.AgentConfigObject{
+							"": {Body: []byte("receivers:\n  debug:\n")},
+						},
+					},
+					ConfigHash: []byte(hash),
+				},
+			})
+			last := statuses[len(statuses)-1]
+			require.Equal(t, []byte(hash), last.LastRemoteConfigHash)
+			select {
+			case <-s.hasNewConfig:
+				return last.Status, true
+			default:
+				return last.Status, false
+			}
+		}
+
+		status, applyRequested := sendConfig("H1")
+		assert.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, status)
+		assert.True(t, applyRequested)
+
+		// The first attempt has not been applied, for example because writing the config
+		// failed, so the same config with a new hash is applied again.
+		status, applyRequested = sendConfig("H2")
+		assert.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, status)
+		assert.True(t, applyRequested)
+
+		// Once the config is applied, the same config with a new hash is reported as applied.
+		s.configApplyPending.Store(false)
+		status, applyRequested = sendConfig("H3")
+		assert.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, status)
+		assert.False(t, applyRequested)
 	})
 
 	t.Run("RemoteConfig - do nothing if not capable of accepting remote config", func(t *testing.T) {
