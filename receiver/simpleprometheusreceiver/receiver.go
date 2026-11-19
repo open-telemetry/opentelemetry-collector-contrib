@@ -236,7 +236,7 @@ func unsupportedHTTPSettings(cc confighttp.ClientConfig) []string {
 	if cc.Auth.HasValue() {
 		keys = append(keys, "auth")
 	}
-	if cc.Compression != "" {
+	if cc.Compression.IsCompressed() {
 		keys = append(keys, "compression")
 	}
 	if cc.CompressionParams != defaults.CompressionParams {

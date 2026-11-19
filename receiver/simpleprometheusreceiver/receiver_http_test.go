@@ -51,6 +51,19 @@ func TestStartWarnsUnsupportedHTTPSettings(t *testing.T) {
 			},
 		},
 		{
+			name: "compression empty",
+			conf: map[string]any{"compression": ""},
+		},
+		{
+			name: "compression none",
+			conf: map[string]any{"compression": "none"},
+		},
+		{
+			name:     "compression gzip",
+			conf:     map[string]any{"compression": "gzip"},
+			wantKeys: []any{"compression"},
+		},
+		{
 			name:     "auth with an undefined authenticator",
 			conf:     map[string]any{"auth": map[string]any{"authenticator": "does_not_exist"}},
 			wantKeys: []any{"auth"},
