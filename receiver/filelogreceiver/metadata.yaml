@@ -10,6 +10,7 @@ status:
   stability:
     beta: [logs]
   distributions: [core, contrib, k8s]
+  warnings: [Statefulness]
   codeowners:
     active: [andrzej-stencel, paulojmdias, VihasMakwana, braydonk]
     emeritus: [djaglowski]
