@@ -441,6 +441,15 @@ func TestStartWarnsTLSSettingsOverHTTP(t *testing.T) {
 			},
 		},
 		{
+			name: "disabled tpm is not named",
+			tls: map[string]any{
+				"insecure_skip_verify": true,
+				"tpm":                  map[string]any{"enabled": false, "path": "/dev/tpmrm0"},
+			},
+			wantScheme: "http",
+			wantKeys:   []any{"insecure_skip_verify"},
+		},
+		{
 			name:       "insecure false with insecure_skip_verify",
 			tls:        map[string]any{"insecure": false, "insecure_skip_verify": true},
 			wantScheme: "https",
@@ -545,13 +554,15 @@ func setNonDefault(t *testing.T, v reflect.Value) {
 	case reflect.Slice:
 		v.Set(reflect.Append(v, reflect.New(v.Type().Elem()).Elem()))
 	case reflect.Struct:
+		// Set every exported field, so a block such as tpm is also enabled.
+		set := false
 		for i := range v.NumField() {
 			if v.Type().Field(i).IsExported() {
 				setNonDefault(t, v.Field(i))
-				return
+				set = true
 			}
 		}
-		t.Fatalf("struct %s has no exported field", v.Type())
+		require.Truef(t, set, "struct %s has no exported field", v.Type())
 	default:
 		t.Fatalf("setNonDefault does not handle kind %s; extend it", v.Kind())
 	}

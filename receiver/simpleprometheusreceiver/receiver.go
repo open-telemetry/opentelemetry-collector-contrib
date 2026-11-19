@@ -221,6 +221,11 @@ func unsupportedTLSSettings(tls configtls.ClientConfig) []string {
 // their defaults. It is used when the target is scraped over http, where no
 // tls setting is used. insecure is not returned because it selects the scheme.
 func ignoredHTTPTLSSettings(tls configtls.ClientConfig) []string {
+	// A disabled tpm block has no effect, so it is not reported, as in
+	// unsupportedTLSSettings.
+	if !tls.TPMConfig.Enabled {
+		tls.TPMConfig = configtls.NewDefaultClientConfig().TPMConfig
+	}
 	return changedSettings(reflect.ValueOf(tls), reflect.ValueOf(configtls.NewDefaultClientConfig()), "insecure")
 }
 
