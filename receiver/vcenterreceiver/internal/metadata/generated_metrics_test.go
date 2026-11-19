@@ -67,6 +67,8 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["vcenter.cluster.ha.failover_capacity.current"] = mb.metricVcenterClusterHaFailoverCapacityCurrent.config.AggregationStrategy
+			aggMap["vcenter.cluster.ha.failover_capacity.reserved"] = mb.metricVcenterClusterHaFailoverCapacityReserved.config.AggregationStrategy
 			aggMap["vcenter.cluster.host.count"] = mb.metricVcenterClusterHostCount.config.AggregationStrategy
 			aggMap["vcenter.cluster.vm.count"] = mb.metricVcenterClusterVMCount.config.AggregationStrategy
 			aggMap["vcenter.cluster.vsan.latency.avg"] = mb.metricVcenterClusterVsanLatencyAvg.config.AggregationStrategy
@@ -125,6 +127,24 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterCPULimitDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordVcenterClusterHaFailoverCapacityCurrentDataPoint(ts, 1, AttributeFailoverResourceTypeCPU)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterClusterHaFailoverCapacityCurrentDataPoint(ts, 3, AttributeFailoverResourceTypeMemory)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterClusterHaFailoverCapacityCurrentDataPoint(ts+1, 3, AttributeFailoverResourceTypeMemory)
+				assert.Equal(t, 2, mb.metricVcenterClusterHaFailoverCapacityCurrent.data.Gauge().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordVcenterClusterHaFailoverCapacityReservedDataPoint(ts, 1, AttributeFailoverResourceTypeCPU)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterClusterHaFailoverCapacityReservedDataPoint(ts, 3, AttributeFailoverResourceTypeMemory)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterClusterHaFailoverCapacityReservedDataPoint(ts+1, 3, AttributeFailoverResourceTypeMemory)
+				assert.Equal(t, 2, mb.metricVcenterClusterHaFailoverCapacityReserved.data.Gauge().DataPoints().Len())
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterHostCountDataPoint(ts, 1, true)
@@ -643,6 +663,8 @@ func TestMetricsBuilder(t *testing.T) {
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricVcenterClusterHaFailoverCapacityCurrent.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterClusterHaFailoverCapacityReserved.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterClusterHostCount.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterClusterVMCount.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterClusterVsanLatencyAvg.aggDataPoints)
@@ -742,6 +764,90 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.cluster.ha.failover_capacity.current":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.cluster.ha.failover_capacity.current"], "Found a duplicate in the metrics slice: vcenter.cluster.ha.failover_capacity.current")
+						validatedMetrics["vcenter.cluster.ha.failover_capacity.current"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The percentage of the cluster's resources currently available for vSphere HA failover.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						failoverResourceTypeAttrVal, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "cpu", failoverResourceTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.cluster.ha.failover_capacity.current"], "Found a duplicate in the metrics slice: vcenter.cluster.ha.failover_capacity.current")
+						validatedMetrics["vcenter.cluster.ha.failover_capacity.current"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "The percentage of the cluster's resources currently available for vSphere HA failover.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.cluster.ha.failover_capacity.current"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("type")
+						assert.False(t, ok)
+					}
+				case "vcenter.cluster.ha.failover_capacity.reserved":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.cluster.ha.failover_capacity.reserved"], "Found a duplicate in the metrics slice: vcenter.cluster.ha.failover_capacity.reserved")
+						validatedMetrics["vcenter.cluster.ha.failover_capacity.reserved"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The percentage of the cluster's resources that vSphere HA admission control reserves for failover.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						failoverResourceTypeAttrVal, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "cpu", failoverResourceTypeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.cluster.ha.failover_capacity.reserved"], "Found a duplicate in the metrics slice: vcenter.cluster.ha.failover_capacity.reserved")
+						validatedMetrics["vcenter.cluster.ha.failover_capacity.reserved"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "The percentage of the cluster's resources that vSphere HA admission control reserves for failover.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.cluster.ha.failover_capacity.reserved"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("type")
+						assert.False(t, ok)
+					}
 				case "vcenter.cluster.host.count":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["vcenter.cluster.host.count"], "Found a duplicate in the metrics slice: vcenter.cluster.host.count")

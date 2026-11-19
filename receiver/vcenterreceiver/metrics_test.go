@@ -621,3 +621,104 @@ func metricDataPoints(metrics pmetric.Metrics, name string) map[string]float64 {
 	}
 	return values
 }
+
+func TestRecordClusterHAFailoverCapacity(t *testing.T) {
+	enabled := true
+	disabled := false
+	percentagePolicy := &types.ClusterFailoverResourcesAdmissionControlPolicy{
+		CpuFailoverResourcesPercent:    33,
+		MemoryFailoverResourcesPercent: 25,
+	}
+	percentageInfo := &types.ClusterFailoverResourcesAdmissionControlInfo{
+		CurrentCpuFailoverResourcesPercent:    92,
+		CurrentMemoryFailoverResourcesPercent: 91,
+	}
+	newCluster := func(haEnabled, acEnabled *bool, policy types.BaseClusterDasAdmissionControlPolicy, info types.BaseClusterDasAdmissionControlInfo) *mo.ComputeResource {
+		return &mo.ComputeResource{
+			Summary: &types.ClusterComputeResourceSummary{
+				AdmissionControlInfo: info,
+			},
+			ConfigurationEx: &types.ClusterConfigInfoEx{
+				DasConfig: types.ClusterDasConfigInfo{
+					Enabled:                 haEnabled,
+					AdmissionControlEnabled: acEnabled,
+					AdmissionControlPolicy:  policy,
+				},
+			},
+		}
+	}
+
+	noData := map[string]float64{}
+
+	testCases := []struct {
+		name         string
+		cr           *mo.ComputeResource
+		wantCurrent  map[string]float64
+		wantReserved map[string]float64
+	}{
+		{
+			name:         "percentage policy",
+			cr:           newCluster(&enabled, &enabled, percentagePolicy, percentageInfo),
+			wantCurrent:  map[string]float64{"type=cpu": 92, "type=memory": 91},
+			wantReserved: map[string]float64{"type=cpu": 33, "type=memory": 25},
+		},
+		{
+			name:         "HA disabled",
+			cr:           newCluster(&disabled, &enabled, percentagePolicy, percentageInfo),
+			wantCurrent:  noData,
+			wantReserved: noData,
+		},
+		{
+			name:         "HA enabled unset",
+			cr:           newCluster(nil, &enabled, percentagePolicy, percentageInfo),
+			wantCurrent:  noData,
+			wantReserved: noData,
+		},
+		{
+			name:         "admission control disabled",
+			cr:           newCluster(&enabled, &disabled, percentagePolicy, percentageInfo),
+			wantCurrent:  noData,
+			wantReserved: noData,
+		},
+		{
+			name: "slot policy",
+			cr: newCluster(&enabled, &enabled,
+				&types.ClusterFailoverLevelAdmissionControlPolicy{FailoverLevel: 1},
+				&types.ClusterFailoverLevelAdmissionControlInfo{CurrentFailoverLevel: 1}),
+			wantCurrent:  noData,
+			wantReserved: noData,
+		},
+		{
+			name:         "missing admission control info",
+			cr:           newCluster(&enabled, &enabled, percentagePolicy, nil),
+			wantCurrent:  noData,
+			wantReserved: noData,
+		},
+		{
+			name: "standalone host compute resource",
+			cr: &mo.ComputeResource{
+				Summary:         &types.ComputeResourceSummary{},
+				ConfigurationEx: &types.ComputeResourceConfigInfo{},
+			},
+			wantCurrent:  noData,
+			wantReserved: noData,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mbc := metadata.NewDefaultMetricsBuilderConfig()
+			mbc.Metrics.VcenterClusterHaFailoverCapacityCurrent.Enabled = true
+			mbc.Metrics.VcenterClusterHaFailoverCapacityReserved.Enabled = true
+			scraper := &vcenterMetricScraper{
+				mb: metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type)),
+			}
+
+			scraper.recordClusterHAFailoverCapacity(pcommon.NewTimestampFromTime(time.Now()), tc.cr)
+
+			metrics := scraper.mb.Emit()
+			require.Equal(t, tc.wantCurrent, metricDataPoints(metrics, "vcenter.cluster.ha.failover_capacity.current"))
+			require.Equal(t, tc.wantReserved, metricDataPoints(metrics, "vcenter.cluster.ha.failover_capacity.reserved"))
+		})
+	}
+}
