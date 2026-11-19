@@ -360,6 +360,93 @@ func CreateCases(basicConfig func() *syslog.Config) ([]Case, error) {
 			true,
 		},
 		{
+			"RFC3164RFC3339Timestamp",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.RFC3164
+				cfg.Location = location["utc"].String()
+				cfg.AllowRFC3339Timestamp = true
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: "<34>2015-08-05T21:58:59.693+02:00 1.2.3.4 apache_server: test message",
+			},
+			&entry.Entry{
+				Timestamp:    time.Date(2015, 8, 5, 21, 58, 59, 693000000, time.FixedZone("", 2*60*60)),
+				Severity:     entry.Error2,
+				SeverityText: "crit",
+				Attributes: map[string]any{
+					"appname":       "apache_server",
+					"facility":      4,
+					"facility_text": "auth",
+					"hostname":      "1.2.3.4",
+					"message":       "test message",
+					"priority":      34,
+				},
+				Body: "<34>2015-08-05T21:58:59.693+02:00 1.2.3.4 apache_server: test message",
+			},
+			true,
+			true,
+		},
+		{
+			"RFC3164SecondFractions",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.RFC3164
+				cfg.Location = location["utc"].String()
+				cfg.AllowSecondFractions = true
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: fmt.Sprintf("<34>%s.123 1.2.3.4 apache_server: test message", ts.Format("Jan _2 15:04:05")),
+			},
+			&entry.Entry{
+				Timestamp:    time.Date(ts.Year(), ts.Month(), ts.Day(), ts.Hour(), ts.Minute(), ts.Second(), 123000000, location["utc"]),
+				Severity:     entry.Error2,
+				SeverityText: "crit",
+				Attributes: map[string]any{
+					"appname":       "apache_server",
+					"facility":      4,
+					"facility_text": "auth",
+					"hostname":      "1.2.3.4",
+					"message":       "test message",
+					"priority":      34,
+				},
+				Body: fmt.Sprintf("<34>%s.123 1.2.3.4 apache_server: test message", ts.Format("Jan _2 15:04:05")),
+			},
+			true,
+			true,
+		},
+		{
+			"RFC3164OctetCountingRFC3339Timestamp",
+			func() *syslog.Config {
+				cfg := basicConfig()
+				cfg.Protocol = syslog.RFC3164
+				cfg.EnableOctetCounting = true
+				cfg.AllowRFC3339Timestamp = true
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: "64 <34>2015-08-05T21:58:59.693Z 1.2.3.4 apache_server: test message",
+			},
+			&entry.Entry{
+				Timestamp:    time.Date(2015, 8, 5, 21, 58, 59, 693000000, time.UTC),
+				Severity:     entry.Error2,
+				SeverityText: "crit",
+				Attributes: map[string]any{
+					"appname":       "apache_server",
+					"facility":      4,
+					"facility_text": "auth",
+					"hostname":      "1.2.3.4",
+					"message":       "test message",
+					"priority":      34,
+				},
+				Body: "64 <34>2015-08-05T21:58:59.693Z 1.2.3.4 apache_server: test message",
+			},
+			true,
+			false,
+		},
+		{
 			"RFC5424",
 			func() *syslog.Config {
 				cfg := basicConfig()

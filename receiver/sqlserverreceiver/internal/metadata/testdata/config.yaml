@@ -121,6 +121,7 @@ all_set:
       enabled: true
     sqlserver.lock.wait.count:
       enabled: true
+      attributes: ["sqlserver.workload_group.name"]
     sqlserver.lock.wait.rate:
       enabled: true
     sqlserver.lock.wait_time.avg:
@@ -144,6 +145,7 @@ all_set:
       attributes: ["page.pool"]
     sqlserver.memory.usage:
       enabled: true
+      attributes: ["sqlserver.resource_pool.name"]
     sqlserver.os.wait.duration:
       enabled: true
       attributes: ["wait.category","wait.type"]
@@ -204,6 +206,14 @@ all_set:
     sqlserver.task.rate:
       enabled: true
       attributes: ["task.result"]
+    sqlserver.tempdb.allocation.waiters.count:
+      enabled: true
+      attributes: ["sqlserver.tempdb.allocation.page_type"]
+    sqlserver.tempdb.file.size:
+      enabled: true
+      attributes: ["file_type","sqlserver.tempdb.file.id"]
+    sqlserver.thread_pool.task.count:
+      enabled: true
     sqlserver.transaction.delay:
       enabled: true
     sqlserver.transaction.mirror_write.rate:
@@ -235,6 +245,8 @@ all_set:
     sqlserver.worktable.cache.hit_ratio:
       enabled: true
   events:
+    db.server.procedure_definition:
+      enabled: true
     db.server.query_plan:
       enabled: true
     db.server.query_sample:
@@ -261,6 +273,8 @@ all_set:
     sqlserver.computer.name:
       enabled: true
     sqlserver.database.name:
+      enabled: true
+    sqlserver.db.edition:
       enabled: true
     sqlserver.instance.name:
       enabled: true
@@ -386,6 +400,7 @@ reaggregate_set:
       enabled: true
     sqlserver.lock.wait.count:
       enabled: true
+      attributes: []
     sqlserver.lock.wait.rate:
       enabled: true
     sqlserver.lock.wait_time.avg:
@@ -409,6 +424,7 @@ reaggregate_set:
       attributes: []
     sqlserver.memory.usage:
       enabled: true
+      attributes: []
     sqlserver.os.wait.duration:
       enabled: true
       attributes: []
@@ -469,6 +485,14 @@ reaggregate_set:
     sqlserver.task.rate:
       enabled: true
       attributes: []
+    sqlserver.tempdb.allocation.waiters.count:
+      enabled: true
+      attributes: []
+    sqlserver.tempdb.file.size:
+      enabled: true
+      attributes: []
+    sqlserver.thread_pool.task.count:
+      enabled: true
     sqlserver.transaction.delay:
       enabled: true
     sqlserver.transaction.mirror_write.rate:
@@ -500,6 +524,8 @@ reaggregate_set:
     sqlserver.worktable.cache.hit_ratio:
       enabled: true
   events:
+    db.server.procedure_definition:
+      enabled: true
     db.server.query_plan:
       enabled: true
     db.server.query_sample:
@@ -526,6 +552,8 @@ reaggregate_set:
     sqlserver.computer.name:
       enabled: true
     sqlserver.database.name:
+      enabled: true
+    sqlserver.db.edition:
       enabled: true
     sqlserver.instance.name:
       enabled: true
@@ -651,6 +679,7 @@ none_set:
       enabled: false
     sqlserver.lock.wait.count:
       enabled: false
+      attributes: ["sqlserver.workload_group.name"]
     sqlserver.lock.wait.rate:
       enabled: false
     sqlserver.lock.wait_time.avg:
@@ -674,6 +703,7 @@ none_set:
       attributes: ["page.pool"]
     sqlserver.memory.usage:
       enabled: false
+      attributes: ["sqlserver.resource_pool.name"]
     sqlserver.os.wait.duration:
       enabled: false
       attributes: ["wait.category","wait.type"]
@@ -734,6 +764,14 @@ none_set:
     sqlserver.task.rate:
       enabled: false
       attributes: ["task.result"]
+    sqlserver.tempdb.allocation.waiters.count:
+      enabled: false
+      attributes: ["sqlserver.tempdb.allocation.page_type"]
+    sqlserver.tempdb.file.size:
+      enabled: false
+      attributes: ["file_type","sqlserver.tempdb.file.id"]
+    sqlserver.thread_pool.task.count:
+      enabled: false
     sqlserver.transaction.delay:
       enabled: false
     sqlserver.transaction.mirror_write.rate:
@@ -765,6 +803,8 @@ none_set:
     sqlserver.worktable.cache.hit_ratio:
       enabled: false
   events:
+    db.server.procedure_definition:
+      enabled: false
     db.server.query_plan:
       enabled: false
     db.server.query_sample:
@@ -791,6 +831,8 @@ none_set:
     sqlserver.computer.name:
       enabled: false
     sqlserver.database.name:
+      enabled: false
+    sqlserver.db.edition:
       enabled: false
     sqlserver.instance.name:
       enabled: false
@@ -823,6 +865,9 @@ override_set:
     sqlserver.database.name:
       enabled: true
       override_value: "override-sqlserver.database.name"
+    sqlserver.db.edition:
+      enabled: true
+      override_value: "standard"
     sqlserver.instance.name:
       enabled: true
       override_value: "override-sqlserver.instance.name"
@@ -877,6 +922,12 @@ filter_set_include:
       events_include:
         - regexp: ".*"
     sqlserver.database.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    sqlserver.db.edition:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -944,6 +995,12 @@ filter_set_exclude:
         - strict: "sqlserver.database.name-val"
       events_exclude:
         - strict: "sqlserver.database.name-val"
+    sqlserver.db.edition:
+      enabled: true
+      metrics_exclude:
+        - strict: "standard"
+      events_exclude:
+        - strict: "standard"
     sqlserver.instance.name:
       enabled: true
       metrics_exclude:

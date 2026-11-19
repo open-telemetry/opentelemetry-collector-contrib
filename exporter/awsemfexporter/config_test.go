@@ -148,6 +148,27 @@ func TestConfigValidate(t *testing.T) {
 	}, cfg.MetricDescriptors)
 }
 
+func TestConfigValidateDropsDeclarationWithInvalidSelector(t *testing.T) {
+	cfg := &Config{
+		AWSSessionSettings: awsutil.AWSSessionSettings{
+			RequestTimeoutSeconds: 30,
+			MaxRetries:            1,
+		},
+		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+		MetricDeclarations: []*MetricDeclaration{
+			{MetricNameSelectors: []string{"[unclosed"}},
+			{MetricNameSelectors: []string{"^valid$"}},
+		},
+		logger: zap.NewNop(),
+	}
+
+	assert.NoError(t, confmap.Validate(cfg))
+
+	// The declaration with the invalid selector is dropped, the valid one is kept.
+	require.Len(t, cfg.MetricDeclarations, 1)
+	assert.Equal(t, []string{"^valid$"}, cfg.MetricDeclarations[0].MetricNameSelectors)
+}
+
 func TestRetentionValidateCorrect(t *testing.T) {
 	cfg := &Config{
 		AWSSessionSettings: awsutil.AWSSessionSettings{

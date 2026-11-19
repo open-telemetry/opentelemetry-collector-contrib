@@ -11,6 +11,9 @@ status:
     active: [dao-jun]
     emeritus: [dmitryax]
 
+sending_queue:
+  support: default
+
 tests:
   goleak:
     ignore:

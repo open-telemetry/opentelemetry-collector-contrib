@@ -130,6 +130,21 @@ func (w *dynsamplerWrapper) GetMetrics(prefix string) map[string]int64 {
 	return w.inner.GetMetrics(prefix)
 }
 
+// ThroughputGoalSetter is implemented by samplers whose throughput goal can
+// be adjusted at runtime. Updating the goal never resets learned per-key
+// state. No-op for samplers without a throughput goal.
+type ThroughputGoalSetter interface {
+	SetGoalThroughputPerSec(goalPerSec int)
+}
+
+// SetGoalThroughputPerSec implements ThroughputGoalSetter. A no-op for
+// samplers without a throughput goal (e.g. adaptive_percentage).
+func (w *dynsamplerWrapper) SetGoalThroughputPerSec(goalPerSec int) {
+	if s, ok := w.inner.(interface{ SetGoalThroughputPerSec(int) }); ok {
+		s.SetGoalThroughputPerSec(goalPerSec)
+	}
+}
+
 // EMAPercentageConfig configures the EMA percentage (per-key) sampler.
 type EMAPercentageConfig struct {
 	GoalSamplingPercentage float64

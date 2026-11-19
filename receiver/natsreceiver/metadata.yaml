@@ -1,0 +1,13 @@
+type: nats
+display_name: NATS Receiver
+
+status:
+  class: receiver
+  stability:
+    development: [traces, metrics, logs]
+  distributions: []
+  codeowners:
+    active: [suckatrash, kalebpace, ChrsMark]
+
+tests:
+  skip_lifecycle: true

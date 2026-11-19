@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
@@ -499,7 +499,8 @@ func parseMessageToMetric(line string, enableMetricType, enableSimpleTags bool) 
 		return result, fmt.Errorf("unsupported metric type: %s", inType)
 	}
 
-	var kvs []attribute.KeyValue
+	var kvsBuf [16]attribute.KeyValue
+	kvs := kvsBuf[:0]
 
 	var part string
 	part, additionalParts, _ = strings.Cut(additionalParts, "|")

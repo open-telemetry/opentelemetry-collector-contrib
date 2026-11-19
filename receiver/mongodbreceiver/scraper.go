@@ -5,6 +5,7 @@ package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"crypto/fips140"
 	"errors"
 	"fmt"
 	"net"
@@ -75,7 +76,14 @@ const (
 // generateInstanceID generates a deterministic UUID v5 from server address and port.
 func generateInstanceID(serverAddress string, serverPort int64) string {
 	name := fmt.Sprintf("%s:%d", serverAddress, serverPort)
-	return uuid.NewSHA1(otelNamespaceUUID, []byte(name)).String()
+	// UUID v5 is defined over SHA-1, which FIPS 140-3 does not approve for new uses.
+	// The hash only derives a stable identifier and is not a security function, so it
+	// runs outside strict enforcement (GODEBUG=fips140=only) instead of panicking there.
+	var id uuid.UUID
+	fips140.WithoutEnforcement(func() {
+		id = uuid.NewSHA1(otelNamespaceUUID, []byte(name))
+	})
+	return id.String()
 }
 
 type mongodbScraper struct {
@@ -626,9 +634,20 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timest
 	s.recordNormalServerStats(now, serverStatus, databaseName, errs)
 }
 
+// bsonObjectTooLargeCode is the MongoDB error code for a reply bigger than 16 MB.
+const bsonObjectTooLargeCode = 10334
+
 func (s *mongodbScraper) collectTopStats(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	if !s.config.MetricsBuilderConfig.Metrics.MongodbOperationTime.Enabled {
+		return
+	}
 	topStats, err := s.client.TopStats(ctx)
 	if err != nil {
+		var srvErr mongo.ServerError
+		if errors.As(err, &srvErr) && srvErr.HasErrorCode(bsonObjectTooLargeCode) {
+			s.logger.Warn("top response is larger than 16MB so mongodb.operation.time cannot be collected, disable the mongodb.operation.time metric to stop this warning", zap.Error(err))
+			return
+		}
 		errs.AddPartial(1, fmt.Errorf("failed to fetch top stats metrics: %w", err))
 		return
 	}
@@ -872,6 +891,18 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 		s.recordGlobalLockTime(now, document, errs)
 	}
 
+	if s.config.MetricsBuilderConfig.Metrics.MongodbAssertCount.Enabled {
+		s.recordAsserts(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbGlobalLockQueueCount.Enabled {
+		s.recordGlobalLockQueue(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbWriteConcernWaitTime.Enabled {
+		s.recordWriteConcernWaitTime(now, document, errs)
+	}
+
 	if s.config.MetricsBuilderConfig.Metrics.MongodbNetworkRequestCount.Enabled {
 		s.recordNetworkCount(now, document, errs)
 	}
@@ -886,6 +917,10 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 
 	if s.config.MetricsBuilderConfig.Metrics.MongodbOperationLatencyTime.Enabled {
 		s.recordLatencyTime(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbOperationLatencyCount.Enabled {
+		s.recordLatencyCount(now, document, errs)
 	}
 
 	if s.config.MetricsBuilderConfig.Metrics.MongodbUptime.Enabled {
@@ -930,6 +965,22 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 
 	if s.config.MetricsBuilderConfig.Metrics.MongodbWtConcurrentTransactionTicketInUse.Enabled {
 		s.recordWTConcurrentTransactionsOut(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbQueryExecutorIndexKeyScannedCount.Enabled {
+		s.recordQueryExecutorIndexKeysScanned(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbQueryExecutorDocumentScannedCount.Enabled {
+		s.recordQueryExecutorDocumentsScanned(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbQueryExecutorCollectionScanCount.Enabled {
+		s.recordQueryExecutorCollectionScans(now, document, errs)
+	}
+
+	if s.config.MetricsBuilderConfig.Metrics.MongodbQueryExecutorCollectionScanNonTailableCount.Enabled {
+		s.recordQueryExecutorNonTailableCollectionScans(now, document, errs)
 	}
 
 	if s.config.MetricsBuilderConfig.Metrics.MongodbPageFaults.Enabled {

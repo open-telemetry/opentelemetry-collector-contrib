@@ -5,6 +5,7 @@ package reader // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"context"
 	"errors"
@@ -12,10 +13,12 @@ import (
 	"os"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
+	"golang.org/x/text/encoding/unicode"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
@@ -62,6 +65,7 @@ type Reader struct {
 	maxLogSize             int
 	headerSplitFunc        bufio.SplitFunc
 	contentSplitFunc       bufio.SplitFunc
+	encoding               encoding.Encoding
 	decoder                *encoding.Decoder
 	headerReader           *header.Reader
 	emitFunc               emit.Callback
@@ -87,32 +91,26 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		defer r.unlockFile()
 	}
 
-	switch r.compression {
-	case "gzip":
+	// completed is false when reading was interrupted by a canceled context before the end of the file.
+	completed := true
+	if r.compression == "gzip" || (r.compression == "auto" && r.FileType == gzipExtension) {
+		// createGzipReader resets decompressedBytesToSkip, so capture the state before calling it.
+		startOffset, startRecordNum, startSkip := r.Offset, r.RecordNum, r.decompressedBytesToSkip
 		currentEOF, err := r.createGzipReader()
 		if err != nil {
 			return
 		}
 		// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
-		// we need to set the offset to the end of the file.
+		// we need to set the offset to the end of the file. A gzip stream cannot be resumed mid-stream, so
+		// if reading was interrupted by shutdown, roll back to re-read the whole chunk instead of skipping it.
 		defer func() {
-			r.Offset = currentEOF
-		}()
-	case "auto":
-		if r.FileType == gzipExtension {
-			currentEOF, err := r.createGzipReader()
-			if err != nil {
+			if !completed {
+				r.Offset, r.RecordNum, r.decompressedBytesToSkip = startOffset, startRecordNum, startSkip
 				return
 			}
-			// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
-			// we need to set the offset to the end of the file.
-			defer func() {
-				r.Offset = currentEOF
-			}()
-		} else {
-			r.reader = r.file
-		}
-	default:
+			r.Offset = currentEOF
+		}()
+	} else {
 		r.reader = r.file
 	}
 
@@ -133,11 +131,12 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 	if r.headerReader != nil {
 		if r.readHeader(ctx) {
+			completed = ctx.Err() == nil
 			return
 		}
 	}
 
-	r.readContents(ctx)
+	completed = r.readContents(ctx)
 }
 
 // createGzipReader creates gzip reader and returns the file offset
@@ -209,7 +208,7 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 			return true
 		}
 
-		token, err := textutils.DecodeAsString(r.decoder, s.Bytes())
+		token, err := textutils.DecodeAsString(r.getDecoder(), s.Bytes())
 		if err != nil {
 			r.set.Logger.Error("failed to decode header token", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
@@ -244,7 +243,9 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 	return false
 }
 
-func (r *Reader) readContents(ctx context.Context) {
+// readContents reads and emits tokens until the end of the file. It returns false if reading was
+// interrupted because the context was canceled, either before the end of the file or during an emit.
+func (r *Reader) readContents(ctx context.Context) (completed bool) {
 	var buf []byte
 	if r.TokenLenState.MinimumLength <= r.initialBufferSize {
 		bufPtr := r.getBufPtrFromPool()
@@ -261,36 +262,52 @@ func (r *Reader) readContents(ctx context.Context) {
 	tokenBodies := make([][]byte, r.maxBatchSize)
 	tokenOffsets := make([]int64, r.maxBatchSize+1)
 
+	isNopEncoding := r.encoding == encoding.Nop || r.encoding == textutils.UTF8Raw
+	isUTF8Encoding := r.encoding == unicode.UTF8 || r.encoding == nil
+
 	numTokensBatched := 0
 	tokenOffsets[0] = r.Offset
 	// Iterate over the contents of the file.
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return false
 		default:
 		}
 
 		ok := s.Scan()
 		if !ok {
-			if err := s.Error(); err != nil {
-				r.set.Logger.Error("failed during scan", zap.Error(err))
-			} else if r.deleteAtEOF {
-				r.delete()
+			scanErr := s.Error()
+			if scanErr != nil {
+				r.set.Logger.Error("failed during scan", zap.Error(scanErr))
 			}
 
 			if numTokensBatched > 0 {
-				err := r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum, tokenOffsets)
-				if err != nil {
-					r.set.Logger.Error("failed to emit token", zap.Error(err))
+				if !r.emitBatch(ctx, tokenBodies[:numTokensBatched], tokenOffsets) {
+					return false
 				}
+				r.RecordNum += int64(numTokensBatched)
 				r.Offset = s.Pos()
 			}
-			return
+
+			if scanErr == nil && r.deleteAtEOF {
+				r.delete()
+			}
+
+			return true
 		}
 
+		raw := s.Bytes()
 		var err error
-		tokenBodies[numTokensBatched], err = r.decoder.Bytes(s.Bytes())
+		if isNopEncoding || (isUTF8Encoding && utf8.Valid(raw)) {
+			if raw == nil {
+				tokenBodies[numTokensBatched] = []byte{}
+			} else {
+				tokenBodies[numTokensBatched] = bytes.Clone(raw)
+			}
+		} else {
+			tokenBodies[numTokensBatched], err = r.getDecoder().Bytes(raw)
+		}
 		tokenOffsets[numTokensBatched+1] = s.Pos()
 		if err != nil {
 			r.set.Logger.Error("failed to decode token", zap.Error(err))
@@ -299,15 +316,27 @@ func (r *Reader) readContents(ctx context.Context) {
 		}
 		numTokensBatched++
 
-		r.RecordNum++
 		if r.maxBatchSize > 0 && numTokensBatched >= r.maxBatchSize {
-			if err = r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum, tokenOffsets); err != nil {
-				r.set.Logger.Error("failed to emit token", zap.Error(err))
+			if !r.emitBatch(ctx, tokenBodies[:numTokensBatched], tokenOffsets) {
+				return false
 			}
+			// We can only advance the offset and record number if the batch was successfully emitted.
+			// If the context was cancelled during the emit, the batch may not have been consumed, so we don't want to checkpoint it.
+			r.RecordNum += int64(numTokensBatched)
 			numTokensBatched = 0
 			r.Offset, tokenOffsets[0] = s.Pos(), s.Pos()
 		}
 	}
+}
+
+// emitBatch emits the batched tokens and reports whether the offset and record number may be
+// advanced past them. If the context was cancelled during the emit, the batch may not have been
+// consumed, so false is returned to keep the batch from being checkpointed.
+func (r *Reader) emitBatch(ctx context.Context, tokens [][]byte, offsets []int64) bool {
+	if err := r.emitFunc(ctx, tokens, r.FileAttributes, r.RecordNum+int64(len(tokens)), offsets); err != nil {
+		r.set.Logger.Error("failed to emit token", zap.Error(err))
+	}
+	return ctx.Err() == nil
 }
 
 // Delete will close and delete the file
@@ -400,4 +429,15 @@ func (r *Reader) getBufPtrFromPool() *[]byte {
 		return &buf
 	}
 	return bufP.(*[]byte)
+}
+
+func (r *Reader) getDecoder() *encoding.Decoder {
+	if r.decoder == nil {
+		if r.encoding == nil {
+			r.decoder = unicode.UTF8.NewDecoder()
+		} else {
+			r.decoder = r.encoding.NewDecoder()
+		}
+	}
+	return r.decoder
 }

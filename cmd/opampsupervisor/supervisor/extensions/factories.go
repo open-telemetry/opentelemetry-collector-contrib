@@ -27,6 +27,11 @@ func Factories() map[component.Type]extension.Factory {
 	result := make(map[component.Type]extension.Factory, len(fs))
 	for _, f := range fs {
 		result[f.Type()] = f
+		if aliased, ok := f.(interface{ DeprecatedAlias() component.Type }); ok {
+			if alias := aliased.DeprecatedAlias(); alias != (component.Type{}) {
+				result[alias] = f
+			}
+		}
 	}
 	return result
 }

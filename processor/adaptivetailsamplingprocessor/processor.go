@@ -108,12 +108,12 @@ func triggerAttr(source triggerSource) metric.MeasurementOption {
 // pendingTrace holds spans accumulated for a single trace plus its arrival
 // metadata. Access is guarded by adaptiveTailSamplingProcessor.mu.
 type pendingTrace struct {
-	traceID     pcommon.TraceID
-	spans       []ptrace.ResourceSpans
-	spanCount   int
-	firstSeen   time.Time
-	hasRootSpan bool
-	triggered   bool
+	traceID                  pcommon.TraceID
+	spans                    []ptrace.ResourceSpans
+	spanCount                int
+	firstSeen                time.Time
+	rootSpanConditionMatches int
+	triggered                bool
 	// triggerReason records which event moved the trace out of buffering,
 	// stamped on kept spans and mirrored by the decision-triggers metric.
 	triggerReason triggerSource
@@ -147,6 +147,10 @@ type adaptiveTailSamplingProcessor struct {
 	// default IsRootSpan(), letting the per-span check skip OTTL entirely.
 	rootSpanFastPath bool
 
+	// fleet groups all fleet_tracker runtime state and the member count
+	// callback; see fleetState in fleettracker.go.
+	fleet fleetState
+
 	wg sync.WaitGroup
 }
 
@@ -177,6 +181,20 @@ func newProcessor(set processor.Settings, cfg *Config, next consumer.Traces) (*a
 		return nil, err
 	}
 
+	hasThroughputRules := false
+	for _, r := range rules {
+		if r.goalThroughput > 0 {
+			hasThroughputRules = true
+			break
+		}
+	}
+	if cfg.FleetTrackerID != nil && !hasThroughputRules {
+		set.Logger.Warn(
+			"fleet_tracker is set but no rule uses adaptive_throughput; it has no effect",
+			zap.String("fleet_tracker", cfg.FleetTrackerID.String()),
+		)
+	}
+
 	p := &adaptiveTailSamplingProcessor{
 		logger:               set.Logger,
 		telemetry:            tb,
@@ -190,6 +208,13 @@ func newProcessor(set processor.Settings, cfg *Config, next consumer.Traces) (*a
 		rootSpanCondEvalErrs: tb.ProcessorAdaptiveTailSamplingOttlEvalErrors,
 		rootSpanCondAttrSet:  metric.WithAttributes(attribute.String("rule", rootSpanConditionRuleLabel)),
 		rootSpanFastPath:     cfg.effectiveRootSpanCondition() == defaultRootSpanCondition,
+		fleet: fleetState{
+			logger:             set.Logger,
+			telemetry:          tb,
+			rules:              rules,
+			size:               1,
+			hasThroughputRules: hasThroughputRules,
+		},
 	}
 
 	if err := registerSamplerMetricsCallbacks(tb, p.rules); err != nil {
@@ -365,13 +390,51 @@ func (*adaptiveTailSamplingProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
-// Start initializes the embedded samplers.
-func (p *adaptiveTailSamplingProcessor) Start(context.Context, component.Host) error {
+// Start initializes the embedded samplers and, when fleet_tracker is
+// configured, subscribes to the fleet's live member count.
+func (p *adaptiveTailSamplingProcessor) Start(_ context.Context, host component.Host) error {
 	for _, r := range p.rules {
 		if err := r.sampler.Start(); err != nil {
 			return fmt.Errorf("rule %q sampler start: %w", r.name, err)
 		}
 	}
+
+	if p.cfg.FleetTrackerID == nil {
+		return nil
+	}
+	if !p.fleet.hasThroughputRules {
+		// Already warned in newProcessor; nothing to subscribe to.
+		return nil
+	}
+
+	ft, err := resolveFleetTracker(host, *p.cfg.FleetTrackerID)
+	if err != nil {
+		return err
+	}
+	// Warn once at startup for any throughput rule whose sampler cannot
+	// receive fleet-divided goals, so the per-callback loop's !ok continue
+	// can stay silent (an expected, already-warned condition) instead of
+	// spamming a warning on every callback.
+	for _, r := range p.rules {
+		if r.goalThroughput <= 0 {
+			continue
+		}
+		if _, ok := r.sampler.(sampler.ThroughputGoalSetter); !ok {
+			p.logger.Warn(
+				"adaptive_throughput rule's sampler does not implement ThroughputGoalSetter; fleet_tracker will not adjust its goal",
+				zap.String("rule", r.name),
+			)
+		}
+	}
+	// Subscribing after samplers start is required, since the callback calls
+	// setters on live samplers. The contract's immediate first delivery may
+	// fire synchronously before fleet.cancel is assigned below, which is safe
+	// because the callback never reads fleet.cancel.
+	cancel, err := ft.SubscribeMemberCount(p.fleet.onMemberCount)
+	if err != nil {
+		return fmt.Errorf("fleet_tracker %q: subscribe: %w", *p.cfg.FleetTrackerID, err)
+	}
+	p.fleet.cancel = cancel
 	return nil
 }
 
@@ -406,6 +469,11 @@ func (p *adaptiveTailSamplingProcessor) Shutdown(ctx context.Context) error {
 	}
 	p.arrival = nil
 	p.mu.Unlock()
+
+	if p.fleet.cancel != nil {
+		p.fleet.cancel()
+		p.fleet.cancel = nil
+	}
 
 	p.wg.Wait()
 
@@ -509,10 +577,8 @@ func (p *adaptiveTailSamplingProcessor) ConsumeTraces(ctx context.Context, td pt
 					newTraces = append(newTraces, id)
 				}
 				pt.spanCount++
-				// hasRootSpan only matters until the trace triggers, so skip
-				// the condition for spans arriving during decision_delay.
-				if !pt.hasRootSpan && !pt.triggered && p.evalRootSpanCondition(ctx, rs, ss, span) {
-					pt.hasRootSpan = true
+				if p.evalRootSpanCondition(ctx, rs, ss, span) {
+					pt.rootSpanConditionMatches++
 				}
 				b, ok := pendingBuckets[id]
 				if !ok {
@@ -535,7 +601,7 @@ func (p *adaptiveTailSamplingProcessor) ConsumeTraces(ctx context.Context, td pt
 						triggered[id] = struct{}{}
 					}
 				}
-				if pt.hasRootSpan && !pt.triggered {
+				if pt.rootSpanConditionMatches > 0 && !pt.triggered {
 					if p.trigger(id, triggerRootSpan) {
 						triggered[id] = struct{}{}
 					}
@@ -623,9 +689,10 @@ func (p *adaptiveTailSamplingProcessor) ConsumeTraces(ctx context.Context, td pt
 	}
 
 	// Decide evicted traces outside the lock. Bounded work: at most one
-	// eviction per new trace in the batch.
+	// eviction per new trace in the batch. No ctx is passed: an evicted trace
+	// belongs to earlier requests, not this one, so decideEvicted detaches.
 	for _, pt := range evicted {
-		p.decideEvicted(ctx, pt)
+		p.decideEvicted(pt)
 	}
 
 	for _, lf := range lateForwards {
@@ -827,10 +894,20 @@ func (p *adaptiveTailSamplingProcessor) decide(id pcommon.TraceID) {
 	p.decideTrace(ctx, pt)
 }
 
+func (p *adaptiveTailSamplingProcessor) recordRootSpanConditionMatches(ctx context.Context, pt *pendingTrace) {
+	if pt.rootSpanConditionMatches > 1 {
+		p.telemetry.ProcessorAdaptiveTailSamplingRootSpanConditionMultipleMatches.Record(
+			ctx,
+			int64(pt.rootSpanConditionMatches),
+		)
+	}
+}
+
 // decideTrace evaluates rules for an already-popped pending trace and either
 // forwards or drops its spans. Shared by the timer-driven decide path and the
 // evaluate eviction policy.
 func (p *adaptiveTailSamplingProcessor) decideTrace(ctx context.Context, pt *pendingTrace) {
+	p.recordRootSpanConditionMatches(ctx, pt)
 	matchedRule, rate, key := p.evaluate(ctx, pt)
 	if matchedRule == nil {
 		// No matching rule and no catch-all: drop the trace.
@@ -903,7 +980,14 @@ func (p *adaptiveTailSamplingProcessor) finishDecision(ctx context.Context, pt *
 // decideEvicted decides a trace displaced by buffer pressure, per the
 // configured eviction policy. The trace may be incomplete; decision_delay is
 // deliberately skipped because there is no room to wait.
-func (p *adaptiveTailSamplingProcessor) decideEvicted(ctx context.Context, pt *pendingTrace) {
+func (p *adaptiveTailSamplingProcessor) decideEvicted(pt *pendingTrace) {
+	// Detached deliberately, the same as a timer-driven decision in decide.
+	// Eviction is triggered by whichever request happened to need the buffer
+	// slot, and the evicted trace's spans arrived on earlier requests. Using
+	// the triggering request's context would attribute those spans to an
+	// unrelated client for anything reading client.Info downstream, and would
+	// tie the forward to that request's deadline and cancellation.
+	ctx := context.Background()
 	// Same rule as the shutdown drain: a trace already in its decision_delay
 	// window was counted when its trigger fired, so eviction of a mid-delay
 	// trace must not count the decision twice. The trigger attribute is
@@ -941,6 +1025,7 @@ func (p *adaptiveTailSamplingProcessor) decideEvictedProbabilistic(ctx context.C
 	}
 	// Probabilistic eviction bypasses rule evaluation, so there is no
 	// fingerprint to record.
+	p.recordRootSpanConditionMatches(ctx, pt)
 	p.finishDecision(ctx, pt, evictionRuleLabel, evAttr, effectiveTh, randomness, "")
 }
 

@@ -67,7 +67,11 @@ func (s *SliceGetter[K, V]) setReflectValue(val reflect.Value) error {
 	case []V:
 		s.typedValues = v
 	case runtimeSliceSource[K]:
-		if typedValues, ok := getRuntimeSliceLiterals[K, V](&v); ok {
+		typedValues, ok, err := getRuntimeSliceLiterals[K, V](&v)
+		if err != nil {
+			return err
+		}
+		if ok {
 			s.typedValues = typedValues
 		} else {
 			s.runtimeSlice = &v
@@ -81,20 +85,21 @@ func (s *SliceGetter[K, V]) setReflectValue(val reflect.Value) error {
 // getRuntimeSliceLiterals extracts slice literals from a runtimeSliceSource. It returns the
 // slice and a boolean indicating if the extraction was successful. The returned values can be
 // either scalar or typed getters, which might not hold literal values. In this context, literals
-// mean items can be retrieved from the slice without evaluating it.
-func getRuntimeSliceLiterals[K, V any](slice *runtimeSliceSource[K]) ([]V, bool) {
+// mean items can be retrieved from the slice without evaluating it. A literal source that does
+// not evaluate to a slice returns an error, since evaluating it at runtime would always fail.
+func getRuntimeSliceLiterals[K, V any](slice *runtimeSliceSource[K]) ([]V, bool, error) {
 	if !slice.isLiteral {
-		return nil, false
+		return nil, false, nil
 	}
 	sliceValues, err := slice.Get(context.Background(), *new(K))
 	if err != nil {
-		return nil, false
+		return nil, false, err
 	}
 	if sliceValues == nil {
-		return nil, true
+		return nil, true, nil
 	}
 	if typedValues, ok := sliceValues.([]V); ok {
-		return typedValues, true
+		return typedValues, true, nil
 	}
 
 	var result []V
@@ -111,19 +116,21 @@ func getRuntimeSliceLiterals[K, V any](slice *runtimeSliceSource[K]) ([]V, bool)
 		return false
 	})
 	if err != nil {
-		return nil, false
+		return nil, false, err
 	}
 	if !nonNil {
-		return nil, true
+		return nil, true, nil
 	}
 	if !complete {
-		return nil, false
+		return nil, false, nil
 	}
-	return result, complete
+	return result, true, nil
 }
 
 // GetScalarLiteralValues retrieves the literal values from the given slice of scalars.
 // If the values cannot be retrieved, it returns the zero value of []V and false.
+// A nil slice returns a nil result and true, while an empty slice returns an empty
+// non-nil result and true.
 // [V] must be a scalar type supported by OTTL slice arguments.
 func GetScalarLiteralValues[
 	K any,
@@ -133,7 +140,7 @@ func GetScalarLiteralValues[
 		return nil, false
 	}
 	var result []V
-	_, err := slice.Range(
+	nonNil, err := slice.Range(
 		context.Background(),
 		*new(K),
 		func(value V) bool {
@@ -144,19 +151,25 @@ func GetScalarLiteralValues[
 	if err != nil {
 		return nil, false
 	}
+	// An empty non-nil slice must not collapse to nil.
+	if nonNil && result == nil {
+		return []V{}, true
+	}
 	return result, true
 }
 
 // GetLiteralValues retrieves the literal values from the given slice of getters, using
 // literalValue to read each item. If an item is not a literal, it returns the zero value
 // of []V and false.
+// A nil slice returns a nil result and true, while an empty slice returns an empty
+// non-nil result and true.
 func GetLiteralValues[K, V, G any](slice *SliceGetter[K, G], literalValue func(G) (V, bool)) ([]V, bool) {
 	if slice.runtimeSlice != nil {
 		return nil, false
 	}
 	var result []V
 	allLiterals := true
-	_, err := slice.Range(context.Background(), *new(K), func(value G) bool {
+	nonNil, err := slice.Range(context.Background(), *new(K), func(value G) bool {
 		val, ok := literalValue(value)
 		if !ok {
 			allLiterals = false
@@ -170,6 +183,10 @@ func GetLiteralValues[K, V, G any](slice *SliceGetter[K, G], literalValue func(G
 	}
 	if !allLiterals {
 		return nil, false
+	}
+	// An empty non-nil slice must not collapse to nil.
+	if nonNil && result == nil {
+		return []V{}, true
 	}
 	return result, true
 }

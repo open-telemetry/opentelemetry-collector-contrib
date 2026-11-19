@@ -20,7 +20,7 @@
     "Hostname": "a359c0fc87c5",
     "Image": "ubuntu",
     "Labels": {
-      "container.label": "container-label"
+      "team": "container-label"
     },
     "OnBuild": null,
     "OpenStdin": true,

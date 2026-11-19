@@ -20,7 +20,7 @@ $defs:
       client_id:
         type: string
       client_secret:
-        type: string
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       tenant_id:
         type: string
   workload_identity:

@@ -9,6 +9,9 @@ status:
   codeowners:
     active: [sokoide, mcube8]
 
+sending_queue:
+  support: default
+
 tests:
   config:
     endpoint: http://localhost:0

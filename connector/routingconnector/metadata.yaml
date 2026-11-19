@@ -9,11 +9,12 @@ status:
   codeowners:
     active: [TylerHelmuth, evan-bradley, edmocosta, bogdandrutu, mwear]
     emeritus: [jpkrohling]
-    seeking_new: true
+    seeking_new: false
 
 feature_gates:
   - id: connector.routing.defaultErrorModeIgnore
     description: When enabled, the default error_mode is `ignore` instead of `propagate`.
-    stage: beta
+    stage: stable
     from_version: v0.155.0
+    to_version: v0.166.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48418

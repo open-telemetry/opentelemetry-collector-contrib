@@ -87,6 +87,9 @@ telemetry:
         value_type: int
         monotonic: true
 
+sending_queue:
+  support: default
+
 tests:
   config:
     routing_key: "service"

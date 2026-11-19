@@ -561,6 +561,7 @@ func Test_e2e_editors(t *testing.T) {
 }
 
 func Test_e2e_converters(t *testing.T) {
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlEnableDynamicMapKeysFeatureGate, true))
 	tests := []struct {
 		statement string
 		want      func(tCtx *ottllog.TransformContext)
@@ -1561,6 +1562,20 @@ func Test_e2e_converters(t *testing.T) {
 			errMsg:    "provided object does not contain the path",
 		},
 		{
+			statement: `set(attributes["test"], {ToUpperCase("key"): "value", attributes["http.method"]: 1})`,
+			want: func(tCtx *ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("KEY", "value")
+				m.PutInt("get", 1)
+			},
+		},
+		{
+			statement: `set(attributes["test"], {attributes["int_value"]: 1})`,
+			wantErr:   true,
+			want:      func(*ottllog.TransformContext) {},
+			errMsg:    "map key must evaluate to a string",
+		},
+		{
 			statement: `set(attributes["test"], {"list":[{"foo":"bar"}]})`,
 			want: func(tCtx *ottllog.TransformContext) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
@@ -2153,6 +2168,18 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
 				m.PutStr("foo", "bar")
 				m.PutStr("list.0.test", "hello")
+			},
+		},
+		{
+			name: "keep keys from cache slice",
+			statements: []string{
+				`set(cache["x"], ["flags"])`,
+				`keep_keys(attributes, cache["x"])`,
+			},
+			want: func(tCtx *ottllog.TransformContext) {
+				attributes := tCtx.GetLogRecord().Attributes()
+				attributes.Clear()
+				attributes.PutStr("flags", "A|B|C")
 			},
 		},
 	}
@@ -3181,4 +3208,62 @@ func Test_e2e_dynamic_slice_arguments_feature_gate(t *testing.T) {
 	got, ok := tCtx.GetLogRecord().Attributes().Get("test")
 	require.True(t, ok)
 	assert.Equal(t, "A:A|B|C", got.Str())
+}
+
+func Test_e2e_slice_arguments_reject_non_slice_literals(t *testing.T) {
+	t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlFunctionsEnableDynamicSliceArgumentsFeatureGate, true))
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	tests := []struct {
+		statement string
+		wantErr   string
+	}{
+		{
+			statement: `keep_keys(attributes, "http.method")`,
+			wantErr:   `call to "keep_keys": invalid argument at position 1: expected a slice, got string`,
+		},
+		{
+			statement: `set(attributes["test"], Concat("a", "-"))`,
+			wantErr:   `call to "Concat": invalid argument at position 0: expected a slice, got string`,
+		},
+		{
+			statement: `set(attributes["test"], Concat(1, "-"))`,
+			wantErr:   `call to "Concat": invalid argument at position 0: expected a slice, got int64`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			_, err := parser.ParseStatement(tt.statement)
+			require.ErrorContains(t, err, tt.wantErr)
+		})
+	}
+}
+
+func Test_e2e_dynamic_map_keys_feature_gate(t *testing.T) {
+	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	t.Run("disabled", func(t *testing.T) {
+		t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlEnableDynamicMapKeysFeatureGate, false))
+		for _, statement := range []string{
+			`set(attributes["test"], {ToUpperCase("key"): "value"})`,
+			`set(attributes["test"], {attributes["http.method"]: "value"})`,
+		} {
+			_, err := parser.ParseStatement(statement)
+			require.ErrorContains(t, err, metadata.PkgOttlEnableDynamicMapKeysFeatureGate.ID())
+		}
+	})
+
+	t.Run("string literal keys are always allowed", func(t *testing.T) {
+		t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlEnableDynamicMapKeysFeatureGate, false))
+		_, err := parser.ParseStatement(`set(attributes["test"], {"key": "value"})`)
+		require.NoError(t, err)
+	})
+
+	t.Run("enabled", func(t *testing.T) {
+		t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PkgOttlEnableDynamicMapKeysFeatureGate, true))
+		_, err := parser.ParseStatement(`set(attributes["test"], {ToUpperCase("key"): "value"})`)
+		require.NoError(t, err)
+	})
 }
