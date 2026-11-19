@@ -26,9 +26,9 @@ const (
 	// KiloByteUnit is the decimal multiplier for kilobytes.
 	KiloByteUnit = 1000
 	// MegaByteUnit is the decimal multiplier for megabytes.
-	MegaByteUnit = KiloByteUnit * KiloByteUnit
+	MegaByteUnit = 1000 * KiloByteUnit
 	// GigaByteUnit is the decimal multiplier for gigabytes.
-	GigaByteUnit = MegaByteUnit * KiloByteUnit
+	GigaByteUnit = 1000 * MegaByteUnit
 )
 
 var (
