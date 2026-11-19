@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: processor/transform, processor/metricstransform
+note: Fix misplaced exponential histogram buckets when aggregating data points with different offsets.
+issues: [52196]

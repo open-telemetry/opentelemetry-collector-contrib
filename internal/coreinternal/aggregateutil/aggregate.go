@@ -346,19 +346,16 @@ func mergeExponentialHistogramBuckets(tgt, src pcommon.UInt64Slice, tgtOff, srcO
 		return
 	}
 
-	// Source offset is less than target offset - source data point covers lower values
+	// Start with the lower-offset buckets so the same index calculation works in either order.
 	if srcOff < tgtOff {
-		for b := src.Len() - 1; b >= 0; b-- {
-			count := src.At(b)
-			if count > 0 {
-				tgt.Append(0)
-				for i := tgt.Len() - 1; i > 0; i-- {
-					tgt.SetAt(i, tgt.At(i-1))
-				}
-				tgt.SetAt(0, count)
-			}
+		if src.Len() == 0 {
+			return
 		}
-		return
+		higher := pcommon.NewUInt64Slice()
+		tgt.MoveTo(higher)
+		src.CopyTo(tgt)
+		src = higher
+		tgtOff, srcOff = srcOff, tgtOff
 	}
 
 	// Source offset is greater than target offset - source data point covers higher values
