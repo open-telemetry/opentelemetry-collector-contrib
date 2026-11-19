@@ -8,7 +8,7 @@ package sumologicextension // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v7"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension"
