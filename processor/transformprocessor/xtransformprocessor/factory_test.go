@@ -42,7 +42,7 @@ func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 			name: "with profile functions : statement with added profile func",
 			statements: []transformprocessor.ContextStatements{
 				{
-					Context:    transformprocessor.Profile,
+					Context:    transformprocessor.ContextIDProfile,
 					Statements: []string{`set(cache["attr"], TestProfileFunc())`},
 				},
 			},
@@ -55,7 +55,7 @@ func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 			name: "with profile functions : statement with missing profile func",
 			statements: []transformprocessor.ContextStatements{
 				{
-					Context:    transformprocessor.Profile,
+					Context:    transformprocessor.ContextIDProfile,
 					Statements: []string{`set(cache["attr"], TestProfileFunc())`},
 				},
 			},
@@ -68,7 +68,7 @@ func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 			name: "with profile functions : only custom functions",
 			statements: []transformprocessor.ContextStatements{
 				{
-					Context:    transformprocessor.Profile,
+					Context:    transformprocessor.ContextIDProfile,
 					Statements: []string{`testProfileFunc()`},
 				},
 			},
@@ -80,7 +80,7 @@ func Test_FactoryWithFunctions_CreateProfiles(t *testing.T) {
 			name: "with profile functions : missing default functions",
 			statements: []transformprocessor.ContextStatements{
 				{
-					Context:    transformprocessor.Profile,
+					Context:    transformprocessor.ContextIDProfile,
 					Statements: []string{`set(attributes["test"], TestProfileFunc())`},
 				},
 			},

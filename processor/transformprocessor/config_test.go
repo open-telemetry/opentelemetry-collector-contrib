@@ -517,7 +517,7 @@ func Test_Validate_ProfileStatementsGateDisabledSkipsParsing(t *testing.T) {
 }
 
 func TestContextID_UnmarshalText(t *testing.T) {
-	valid := []ContextID{Resource, Scope, Span, SpanEvent, Metric, DataPoint, Exemplar, Log, Profile}
+	valid := []ContextID{ContextIDResource, ContextIDScope, ContextIDSpan, ContextIDSpanEvent, ContextIDMetric, ContextIDDataPoint, ContextIDExemplar, ContextIDLog, ContextIDProfile}
 	for _, want := range valid {
 		t.Run(string(want), func(t *testing.T) {
 			var got ContextID
@@ -529,7 +529,7 @@ func TestContextID_UnmarshalText(t *testing.T) {
 	t.Run("normalizes case", func(t *testing.T) {
 		var got ContextID
 		require.NoError(t, got.UnmarshalText([]byte("SPAN")))
-		assert.Equal(t, Span, got)
+		assert.Equal(t, ContextIDSpan, got)
 	})
 
 	t.Run("rejects unknown context", func(t *testing.T) {
@@ -557,7 +557,7 @@ func TestContextStatements_MatchesCommon(t *testing.T) {
 
 func TestContextStatements_toCommon(t *testing.T) {
 	cs := ContextStatements{
-		Context:     Span,
+		Context:     ContextIDSpan,
 		Conditions:  []string{"c"},
 		Statements:  []string{"s"},
 		ErrorMode:   ottl.PropagateError,
