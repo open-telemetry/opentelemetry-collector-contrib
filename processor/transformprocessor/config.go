@@ -71,22 +71,22 @@ var _ ottl.StatementsGetter = (*ContextStatements)(nil)
 type ContextID string
 
 const (
-	Resource  ContextID = "resource"
-	Scope     ContextID = "scope"
-	Span      ContextID = "span"
-	SpanEvent ContextID = "spanevent"
-	Metric    ContextID = "metric"
-	DataPoint ContextID = "datapoint"
-	Exemplar  ContextID = "exemplar"
-	Log       ContextID = "log"
-	Profile   ContextID = "profile"
+	ContextIDResource  ContextID = "resource"
+	ContextIDScope     ContextID = "scope"
+	ContextIDSpan      ContextID = "span"
+	ContextIDSpanEvent ContextID = "spanevent"
+	ContextIDMetric    ContextID = "metric"
+	ContextIDDataPoint ContextID = "datapoint"
+	ContextIDExemplar  ContextID = "exemplar"
+	ContextIDLog       ContextID = "log"
+	ContextIDProfile   ContextID = "profile"
 )
 
 // UnmarshalText sets the ContextID from its case-insensitive name and rejects unknown contexts.
 func (c *ContextID) UnmarshalText(text []byte) error {
 	str := ContextID(strings.ToLower(string(text)))
 	switch str {
-	case Resource, Scope, Span, SpanEvent, Metric, DataPoint, Exemplar, Log, Profile:
+	case ContextIDResource, ContextIDScope, ContextIDSpan, ContextIDSpanEvent, ContextIDMetric, ContextIDDataPoint, ContextIDExemplar, ContextIDLog, ContextIDProfile:
 		*c = str
 		return nil
 	default:
