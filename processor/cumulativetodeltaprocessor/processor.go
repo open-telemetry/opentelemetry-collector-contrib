@@ -246,9 +246,10 @@ func (ctdp *cumulativeToDeltaProcessor) recordDropped(ctx context.Context, id tr
 }
 
 // trackedSum returns the sum of a histogram data point as the tracker should see it. A point without
-// a sum reads as 0 in pdata, which would be diffed as a real sum, so it is reported as NaN instead.
-func trackedSum(hasSum bool, sum float64) float64 {
-	if !hasSum {
+// a sum reads as 0 in pdata, which would be diffed as a real sum, so it is reported as NaN instead,
+// unless it has no observations: OTLP requires the sum to be 0 when the count is 0, so it is known.
+func trackedSum(hasSum bool, sum float64, count uint64) float64 {
+	if !hasSum && count > 0 {
 		return math.NaN()
 	}
 	return sum
@@ -314,7 +315,7 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(ctx context.C
 			ObservedTimestamp: dp.Timestamp(),
 			HistogramValue: &tracking.HistogramPoint{
 				Count:        dp.Count(),
-				Sum:          trackedSum(dp.HasSum(), dp.Sum()),
+				Sum:          trackedSum(dp.HasSum(), dp.Sum(), dp.Count()),
 				BucketBounds: dp.ExplicitBounds().AsRaw(),
 				BucketCounts: dp.BucketCounts().AsRaw(),
 			},
@@ -361,7 +362,7 @@ func (ctdp *cumulativeToDeltaProcessor) convertExponentialHistogramDataPoints(ct
 			ObservedTimestamp: dp.Timestamp(),
 			ExponentialHistogramValue: &tracking.ExponentialHistogramPoint{
 				Count:         dp.Count(),
-				Sum:           trackedSum(dp.HasSum(), dp.Sum()),
+				Sum:           trackedSum(dp.HasSum(), dp.Sum(), dp.Count()),
 				Scale:         dp.Scale(),
 				ZeroCount:     dp.ZeroCount(),
 				ZeroThreshold: dp.ZeroThreshold(),

@@ -138,8 +138,12 @@ processors:
 
 A `NaN` sum on a histogram or exponential histogram data point, and a data point without a sum, are treated as a sum
 that was not recorded. The data point keeps its `NaN` or unset sum, and the last sum that was recorded stays as the
-baseline, so the next data point with a sum is diffed against it. The sums of the delta data points therefore add up to
-the growth of the cumulative sum.
+baseline, so the next data point with a sum is diffed against it. Once a sum has been recorded, the sums of the delta
+data points therefore add up to the growth of the cumulative sum.
+
+A data point without a sum and without observations (`count` of 0) has a sum of 0, as OTLP requires, so it counts as a
+recorded sum. If a stream starts, or restarts after a reset, with a data point that has observations but no sum, there
+is no recorded sum to diff against, and the delta sum of the next data point with a sum is 0.
 
 ## Troubleshooting
 
