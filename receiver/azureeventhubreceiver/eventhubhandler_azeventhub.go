@@ -106,7 +106,7 @@ func createConsumerClient(
 		)
 	}
 	return azeventhubs.NewConsumerClientFromConnectionString(
-		config.Connection,
+		string(config.Connection),
 		"",
 		consumerGroup,
 		&azeventhubs.ConsumerClientOptions{},
@@ -348,7 +348,7 @@ func (h *hubWrapperAzeventhubImpl) namespace() (string, error) {
 	if h.config.Auth != nil {
 		return h.config.EventHub.Namespace, nil
 	}
-	parsed, err := azeventhubs.ParseConnectionString(h.config.Connection)
+	parsed, err := azeventhubs.ParseConnectionString(string(h.config.Connection))
 	if err != nil {
 		return "", err
 	}
@@ -392,7 +392,7 @@ func createBlobCheckpointStore(config *Config, host component.Host, logger *zap.
 	switch {
 	case blobCfg.Connection != "":
 		var err error
-		containerClient, err = container.NewClientFromConnectionString(blobCfg.Connection, blobCfg.ContainerName, nil)
+		containerClient, err = container.NewClientFromConnectionString(string(blobCfg.Connection), blobCfg.ContainerName, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create blob container client from connection string: %w", err)
 		}

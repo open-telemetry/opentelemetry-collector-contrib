@@ -5,6 +5,8 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -438,4 +440,45 @@ func TestEventhubHandler_closeWithStorageClient(t *testing.T) {
 	assert.NoError(t, ehHandler.close(t.Context()))
 	require.Nil(t, ehHandler.storageClient)
 	require.Nil(t, mockClient.cache)
+}
+
+type flakyHubWrapper struct {
+	mockHubWrapper
+	mu       sync.Mutex
+	failures int
+	calls    int
+}
+
+func (f *flakyHubWrapper) GetRuntimeInformation(ctx context.Context) (*hubRuntimeInfo, error) {
+	f.mu.Lock()
+	f.calls++
+	failed := f.calls <= f.failures
+	f.mu.Unlock()
+	if failed {
+		return nil, errors.New("status code 401 and description: Attempted to perform an unauthorized operation")
+	}
+	return f.mockHubWrapper.GetRuntimeInformation(ctx)
+}
+
+func (f *flakyHubWrapper) callCount() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.calls
+}
+
+func TestEventhubHandler_startDoesNotFailOnInaccessibleHub(t *testing.T) {
+	config := createDefaultConfig()
+	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
+
+	hub := &flakyHubWrapper{failures: 1}
+	ehHandler := &eventhubHandler{
+		settings:     receivertest.NewNopSettings(metadata.Type),
+		dataConsumer: &mockDataConsumer{},
+		config:       config.(*Config),
+		hub:          hub,
+	}
+
+	require.NoError(t, ehHandler.run(t.Context(), componenttest.NewNopHost()))
+	require.Eventually(t, func() bool { return hub.callCount() > 1 }, 10*time.Second, 10*time.Millisecond)
+	assert.NoError(t, ehHandler.close(t.Context()))
 }

@@ -6,6 +6,7 @@ package transformprocessor
 import (
 	"errors"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				ErrorMode: ottl.IgnoreError,
-				TraceStatements: []common.ContextStatements{
+				TraceStatements: []ContextStatements{
 					{
 						Context: "span",
 						Statements: []string{
@@ -47,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				MetricStatements: []common.ContextStatements{
+				MetricStatements: []ContextStatements{
 					{
 						Context: "datapoint",
 						Statements: []string{
@@ -62,7 +63,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				LogStatements: []common.ContextStatements{
+				LogStatements: []ContextStatements{
 					{
 						Context: "log",
 						Statements: []string{
@@ -77,7 +78,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				ProfileStatements: []common.ContextStatements{
+				ProfileStatements: []ContextStatements{
 					{
 						Context: "profile",
 						Statements: []string{
@@ -97,7 +98,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "with_conditions"),
 			expected: &Config{
 				ErrorMode: ottl.IgnoreError,
-				TraceStatements: []common.ContextStatements{
+				TraceStatements: []ContextStatements{
 					{
 						Context:    "span",
 						Conditions: []string{`attributes["http.path"] == "/animal"`},
@@ -106,7 +107,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				MetricStatements: []common.ContextStatements{
+				MetricStatements: []ContextStatements{
 					{
 						Context:    "datapoint",
 						Conditions: []string{`attributes["http.path"] == "/animal"`},
@@ -115,7 +116,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				LogStatements: []common.ContextStatements{
+				LogStatements: []ContextStatements{
 					{
 						Context:    "log",
 						Conditions: []string{`attributes["http.path"] == "/animal"`},
@@ -124,7 +125,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				ProfileStatements: []common.ContextStatements{
+				ProfileStatements: []ContextStatements{
 					{
 						Context:    "profile",
 						Conditions: []string{`original_payload_format == "/animal"`},
@@ -139,7 +140,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "ignore_errors"),
 			expected: &Config{
 				ErrorMode: ottl.IgnoreError,
-				TraceStatements: []common.ContextStatements{
+				TraceStatements: []ContextStatements{
 					{
 						Context: "resource",
 						Statements: []string{
@@ -147,9 +148,9 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				MetricStatements:  []common.ContextStatements{},
-				LogStatements:     []common.ContextStatements{},
-				ProfileStatements: []common.ContextStatements{},
+				MetricStatements:  []ContextStatements{},
+				LogStatements:     []ContextStatements{},
+				ProfileStatements: []ContextStatements{},
 			},
 		},
 		{
@@ -188,25 +189,25 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "structured_configuration_with_path_context"),
 			expected: &Config{
 				ErrorMode: ottl.IgnoreError,
-				TraceStatements: []common.ContextStatements{
+				TraceStatements: []ContextStatements{
 					{
 						Context:    "span",
 						Statements: []string{`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`},
 					},
 				},
-				MetricStatements: []common.ContextStatements{
+				MetricStatements: []ContextStatements{
 					{
 						Context:    "metric",
 						Statements: []string{`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`},
 					},
 				},
-				LogStatements: []common.ContextStatements{
+				LogStatements: []ContextStatements{
 					{
 						Context:    "log",
 						Statements: []string{`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`},
 					},
 				},
-				ProfileStatements: []common.ContextStatements{
+				ProfileStatements: []ContextStatements{
 					{
 						Context:    "profile",
 						Statements: []string{`set(profile.original_payload_format, "bear") where profile.original_payload_format == "/animal"`},
@@ -218,7 +219,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "structured_configuration_with_inferred_context"),
 			expected: &Config{
 				ErrorMode: ottl.IgnoreError,
-				TraceStatements: []common.ContextStatements{
+				TraceStatements: []ContextStatements{
 					{
 						Statements: []string{
 							`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`,
@@ -226,7 +227,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				MetricStatements: []common.ContextStatements{
+				MetricStatements: []ContextStatements{
 					{
 						Statements: []string{
 							`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`,
@@ -234,7 +235,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				LogStatements: []common.ContextStatements{
+				LogStatements: []ContextStatements{
 					{
 						Statements: []string{
 							`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`,
@@ -242,7 +243,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				ProfileStatements: []common.ContextStatements{
+				ProfileStatements: []ContextStatements{
 					{
 						Statements: []string{
 							`set(profile.original_payload_format, "bear") where profile.original_payload_format == "/animal"`,
@@ -256,7 +257,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "flat_configuration"),
 			expected: &Config{
 				ErrorMode: ottl.IgnoreError,
-				TraceStatements: []common.ContextStatements{
+				TraceStatements: []ContextStatements{
 					{
 						Statements: []string{
 							`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`,
@@ -264,7 +265,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				MetricStatements: []common.ContextStatements{
+				MetricStatements: []ContextStatements{
 					{
 						Statements: []string{
 							`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`,
@@ -272,7 +273,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				LogStatements: []common.ContextStatements{
+				LogStatements: []ContextStatements{
 					{
 						Statements: []string{
 							`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`,
@@ -280,7 +281,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				ProfileStatements: []common.ContextStatements{
+				ProfileStatements: []ContextStatements{
 					{
 						Statements: []string{
 							`set(profile.original_payload_format, "bear") where profile.original_payload_format == "/animal"`,
@@ -294,7 +295,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "context_statements_error_mode"),
 			expected: &Config{
 				ErrorMode: ottl.IgnoreError,
-				TraceStatements: []common.ContextStatements{
+				TraceStatements: []ContextStatements{
 					{
 						Statements: []string{`set(resource.attributes["name"], "propagate")`},
 						ErrorMode:  ottl.PropagateError,
@@ -304,7 +305,7 @@ func TestLoadConfig(t *testing.T) {
 						ErrorMode:  "",
 					},
 				},
-				MetricStatements: []common.ContextStatements{
+				MetricStatements: []ContextStatements{
 					{
 						Statements: []string{`set(resource.attributes["name"], "silent")`},
 						ErrorMode:  ottl.SilentError,
@@ -314,7 +315,7 @@ func TestLoadConfig(t *testing.T) {
 						ErrorMode:  "",
 					},
 				},
-				LogStatements: []common.ContextStatements{
+				LogStatements: []ContextStatements{
 					{
 						Statements: []string{`set(resource.attributes["name"], "propagate")`},
 						ErrorMode:  ottl.PropagateError,
@@ -324,7 +325,7 @@ func TestLoadConfig(t *testing.T) {
 						ErrorMode:  "",
 					},
 				},
-				ProfileStatements: []common.ContextStatements{
+				ProfileStatements: []ContextStatements{
 					{
 						Statements: []string{`set(resource.attributes["name"], "propagate")`},
 						ErrorMode:  ottl.PropagateError,
@@ -340,7 +341,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "shared_cache"),
 			expected: &Config{
 				ErrorMode: ottl.IgnoreError,
-				TraceStatements: []common.ContextStatements{
+				TraceStatements: []ContextStatements{
 					{
 						SharedCache: true,
 						Statements:  []string{`set(resource.attributes["name"], "bear")`},
@@ -350,19 +351,19 @@ func TestLoadConfig(t *testing.T) {
 						Statements:  []string{`set(resource.attributes["copy"], resource.attributes["name"])`},
 					},
 				},
-				MetricStatements: []common.ContextStatements{
+				MetricStatements: []ContextStatements{
 					{
 						SharedCache: true,
 						Statements:  []string{`set(resource.attributes["name"], "bear")`},
 					},
 				},
-				LogStatements: []common.ContextStatements{
+				LogStatements: []ContextStatements{
 					{
 						SharedCache: true,
 						Statements:  []string{`set(resource.attributes["name"], "bear")`},
 					},
 				},
-				ProfileStatements: []common.ContextStatements{},
+				ProfileStatements: []ContextStatements{},
 			},
 		},
 	}
@@ -479,4 +480,62 @@ func Test_LoadConfig_FlattenLog(t *testing.T) {
 	require.NoError(t, confmap.Validate(cfg))
 
 	assert.True(t, cfg.(*Config).Flatten.Log)
+}
+
+func TestContextID_UnmarshalText(t *testing.T) {
+	valid := []ContextID{Resource, Scope, Span, SpanEvent, Metric, DataPoint, Exemplar, Log, Profile}
+	for _, want := range valid {
+		t.Run(string(want), func(t *testing.T) {
+			var got ContextID
+			require.NoError(t, got.UnmarshalText([]byte(want)))
+			assert.Equal(t, want, got)
+		})
+	}
+
+	t.Run("normalizes case", func(t *testing.T) {
+		var got ContextID
+		require.NoError(t, got.UnmarshalText([]byte("SPAN")))
+		assert.Equal(t, Span, got)
+	})
+
+	t.Run("rejects unknown context", func(t *testing.T) {
+		var got ContextID
+		err := got.UnmarshalText([]byte("nonsense"))
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "unknown context")
+	})
+}
+
+func TestContextStatements_GetStatements(t *testing.T) {
+	cs := ContextStatements{Statements: []string{"a", "b"}}
+	assert.Equal(t, []string{"a", "b"}, cs.GetStatements())
+}
+
+func TestContextStatements_MatchesCommon(t *testing.T) {
+	public := reflect.TypeFor[ContextStatements]()
+	internal := reflect.TypeFor[common.ContextStatements]()
+	require.Equal(t, internal.NumField(), public.NumField())
+	for i := range public.NumField() {
+		assert.Equal(t, internal.Field(i).Name, public.Field(i).Name)
+		assert.Equal(t, internal.Field(i).Tag, public.Field(i).Tag)
+	}
+}
+
+func TestContextStatements_toCommon(t *testing.T) {
+	cs := ContextStatements{
+		Context:     Span,
+		Conditions:  []string{"c"},
+		Statements:  []string{"s"},
+		ErrorMode:   ottl.PropagateError,
+		SharedCache: true,
+	}
+	expected := common.ContextStatements{
+		Context:     common.Span,
+		Conditions:  []string{"c"},
+		Statements:  []string{"s"},
+		ErrorMode:   ottl.PropagateError,
+		SharedCache: true,
+	}
+	assert.Equal(t, expected, cs.toCommon())
+	assert.Equal(t, []common.ContextStatements{expected}, toCommonContextStatements([]ContextStatements{cs}))
 }
