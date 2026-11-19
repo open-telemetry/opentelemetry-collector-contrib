@@ -7,7 +7,7 @@ change_type: bug_fix
 component: processor/cardinality_guardian
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Keep a label's baseline across an epoch in which it sent no data, and document that `epoch_duration_seconds` should be at least the longest interval at which labels report
+note: Keep a label's baseline across an epoch in which it sent no data, and document that `epoch_duration_seconds` should be longer than the longest interval at which labels report
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [53384]

@@ -156,7 +156,7 @@ func (t *tracker) delta() uint64 {
 // baseline before adding to it. Returns true when the tracker received no
 // inserts in the epoch that just ended; such an epoch does not rotate, so the
 // baseline survives it.
-func (t *tracker) rotate() (idle bool) {
+func (t *tracker) rotate() bool {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 

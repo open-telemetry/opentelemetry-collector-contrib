@@ -257,7 +257,7 @@ func TestCardinalityProcessor_RepeatsThenGrowthEnforced(t *testing.T) {
 }
 
 // TestTracker_IdleEpochKeepsBaseline: an epoch with no inserts keeps the
-// baseline, and growth after it is still caught.
+// baseline, so growth after it is measured against the last epoch with data.
 func TestTracker_IdleEpochKeepsBaseline(t *testing.T) {
 	const stableValues, limit = 100, 10
 	tracker := newTracker()
@@ -276,16 +276,23 @@ func TestTracker_IdleEpochKeepsBaseline(t *testing.T) {
 	require.Zero(t, dropped, "the same values after an idle epoch are not growth")
 	require.InDelta(t, stableValues, tracker.cachedPrevEpoch, 2)
 
-	// Growth after an idle epoch is still detected.
+	// Growth after an idle epoch counts only the new values: 50 new against a
+	// limit of 10. Without the kept baseline all 150 values would look new.
+	const newValues = 50
 	require.False(t, tracker.rotate())
 	require.True(t, tracker.rotate(), "idle epoch")
 	dropped = 0
 	for v := range stableValues {
+		if tracker.insert(rotationBenchmarkHash(0, v), limit) {
+			dropped++
+		}
+	}
+	for v := range newValues {
 		if tracker.insert(rotationBenchmarkHash(1, v), limit) {
 			dropped++
 		}
 	}
-	require.Equal(t, stableValues-limit, dropped)
+	require.Equal(t, newValues-limit, dropped)
 }
 
 // TestCardinalityProcessor_EmptyEpochKeepsBaseline: a stable label with an
@@ -302,16 +309,16 @@ func TestCardinalityProcessor_EmptyEpochKeepsBaseline(t *testing.T) {
 
 	const stableValues = 100
 	for epoch := range 6 {
-		dropped := 0
 		if epoch%2 == 0 {
+			dropped := 0
 			for i := range stableValues {
 				if p.shouldDrop("api.request", "pod", pcommon.NewValueStr(fmt.Sprintf("pod-%d", i))) {
 					dropped++
 				}
 			}
-		}
-		if epoch > 0 {
-			assert.Zero(t, dropped, "epoch %d: a stable set scraped every other epoch must not be enforced", epoch)
+			if epoch > 0 {
+				assert.Zero(t, dropped, "epoch %d: a stable set after an empty epoch must not be flagged", epoch)
+			}
 		}
 		p.rotate()
 	}

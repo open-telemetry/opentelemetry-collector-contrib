@@ -48,7 +48,7 @@ flowchart LR
 
 Key design decisions:
 
-- **Delta-based detection, not absolute thresholds.** A label with 50K stable values is fine. A label that grew by 100 in the last epoch is a problem. The processor tracks growth rate with dual-epoch HyperLogLog++ sketches: the delta is the number of values seen this epoch that were absent from the previous one, so a stable high-cardinality set reads as zero growth while a label that keeps producing new values is caught every epoch.
+- **Delta-based detection, not absolute thresholds.** A label with 50K stable values is fine. A label that grew by 100 in the last epoch is a problem. The processor tracks growth rate with dual-epoch HyperLogLog++ sketches: the delta is the number of values seen this epoch that were absent from the previous epoch that had data, so a stable high-cardinality set reads as zero growth while a label that keeps producing new values is caught every epoch.
 
 - **256-way sharding.** Each shard has its own `RWMutex`. With 50 concurrent goroutines across 256 shards, average occupancy is ~0.4 per shard. Contention is near zero. Shard selection is `hash & 0xFF` — one CPU cycle.
 
@@ -81,7 +81,8 @@ processors:
     # Max new unique values per (metric, attribute) per epoch
     max_cardinality_delta_per_epoch: 100
 
-    # Epoch rotation interval (seconds, minimum 10)
+    # Epoch rotation interval (seconds, minimum 10). Set it longer than the
+    # slowest interval at which any label reports.
     epoch_duration_seconds: 300
 
     # Enforcement mode: tag_only | overflow_attribute | strip_and_reaggregate
