@@ -31,6 +31,10 @@ $defs:
         type: string
       file_prefix_include_telemetry_type:
         type: boolean
+      max_unmarshal_size:
+        description: MaxUnmarshalSize limits the decompressed bytes buffered by non-streaming decoders. Zero uses the default of 256 MiB. Streaming decoders are not subject to this limit.
+        type: integer
+        x-customType: int64
       region:
         type: string
       s3_bucket:
