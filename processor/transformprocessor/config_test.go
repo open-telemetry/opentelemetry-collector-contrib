@@ -459,6 +459,28 @@ func Test_EmptyStatementListItem(t *testing.T) {
 	}
 }
 
+func Test_NonArrayStatements(t *testing.T) {
+	t.Parallel()
+
+	for _, fieldName := range []string{
+		"trace_statements",
+		"metric_statements",
+		"log_statements",
+		"profile_statements",
+	} {
+		t.Run(fieldName, func(t *testing.T) {
+			t.Parallel()
+
+			cfg := NewFactory().CreateDefaultConfig()
+			conf := confmap.NewFromStringMap(map[string]any{
+				fieldName: "set(attributes[\"key\"], \"value\")",
+			})
+
+			require.ErrorContains(t, conf.Unmarshal(cfg), "invalid "+fieldName+" type, expected: array, got: string")
+		})
+	}
+}
+
 func setFlattenLogsFeatureGate(t *testing.T, enabled bool) {
 	original := metadata.TransformFlattenLogsFeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TransformFlattenLogsFeatureGate.ID(), enabled))
