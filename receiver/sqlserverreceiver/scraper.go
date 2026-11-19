@@ -502,7 +502,7 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	hostName := s.config.Server
 
 	if s.config.DataSource != "" {
-		config, err := parseDataSource(s.config.DataSource)
+		config, err := parseDataSource(string(s.config.DataSource))
 		if err != nil {
 			s.logger.Warn("Failed to parse datasource for host.name attribute, using fallback", zap.Error(err))
 		} else {
