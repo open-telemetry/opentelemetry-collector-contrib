@@ -499,7 +499,8 @@ func parseMessageToMetric(line string, enableMetricType, enableSimpleTags bool) 
 		return result, fmt.Errorf("unsupported metric type: %s", inType)
 	}
 
-	var kvs []attribute.KeyValue
+	var kvsBuf [16]attribute.KeyValue
+	kvs := kvsBuf[:0]
 
 	var part string
 	part, additionalParts, _ = strings.Cut(additionalParts, "|")

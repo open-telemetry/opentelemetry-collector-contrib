@@ -119,6 +119,10 @@ func (h *OTelDataPointHasher) UpdateDataPoint(dp datapoints.DataPoint) {
 
 	_, _ = h.hasher.WriteString(dp.Metric().Unit())
 
+	if dpt := dp.Temporality(); dpt != "" {
+		_, _ = h.hasher.WriteString(dpt)
+	}
+
 	// There is special handling to merge geo attributes during serialization,
 	// but we can hash them as if they are separate now.
 	h.kvs = mapHashSortedExcludeReservedAttrs(&h.hasher, h.kvs, dp.Attributes(), elasticsearch.MappingHintsAttrKey)

@@ -61,14 +61,16 @@ func BenchmarkSampling(b *testing.B) {
 // BenchmarkProcessorThroughput measures concurrent ingest while the decision
 // loop ticks as fast as it can, for one and several shards.
 func BenchmarkProcessorThroughput(b *testing.B) {
-	for _, numShards := range []uint32{1, 4} {
-		b.Run(fmt.Sprintf("shards=%d", numShards), func(b *testing.B) {
-			benchmarkProcessorThroughput(b, numShards)
-		})
+	for _, shape := range benchShapes {
+		for _, numShards := range []uint32{1, 4} {
+			b.Run(fmt.Sprintf("shape=%s/shards=%d", shape.name, numShards), func(b *testing.B) {
+				benchmarkProcessorThroughput(b, shape, numShards)
+			})
+		}
 	}
 }
 
-func benchmarkProcessorThroughput(b *testing.B, numShards uint32) {
+func benchmarkProcessorThroughput(b *testing.B, shape benchShape, numShards uint32) {
 	cfg := Config{
 		SamplingStrategy: samplingStrategyTraceComplete,
 		DecisionWait:     defaultTestDecisionWait,
@@ -122,7 +124,7 @@ func benchmarkProcessorThroughput(b *testing.B, numShards uint32) {
 	}()
 
 	m := &ptrace.ProtoMarshaler{}
-	b.SetBytes(int64(m.TracesSize(generateBenchBatch(128))))
+	b.SetBytes(int64(m.TracesSize(shape.generate())))
 
 	var iter atomic.Uint64
 	b.ReportAllocs()
@@ -132,7 +134,7 @@ func benchmarkProcessorThroughput(b *testing.B, numShards uint32) {
 		// ConsumeTraces moves spans out of its input, so clone a fresh batch
 		// per iteration, as the Collector does when the batch is shared with a
 		// consumer that doesn't mutate data.
-		template := generateBenchBatch(128)
+		template := shape.generate()
 		for pb.Next() {
 			batch := ptrace.NewTraces()
 			template.CopyTo(batch)
@@ -149,10 +151,18 @@ func benchmarkProcessorThroughput(b *testing.B, numShards uint32) {
 // a decision, which limits the processor in production. Only the retained-*
 // metrics are meaningful: the time and allocations include setup and GC.
 func BenchmarkProcessorMemory(b *testing.B) {
+	for _, shape := range benchShapes {
+		b.Run("shape="+shape.name, func(b *testing.B) {
+			benchmarkProcessorMemory(b, shape)
+		})
+	}
+}
+
+func benchmarkProcessorMemory(b *testing.B, shape benchShape) {
 	// One batch per tick for DecisionWait ticks fills the processor to its
 	// steady state just before the first decision.
-	const numBatches, tracesPerBatch = 30, 128
-	template := generateBenchBatch(tracesPerBatch)
+	const numBatches, tracesPerBatch = 30, benchTracesPerBatch
+	template := shape.generate()
 	var retained int64
 	for b.Loop() {
 		controller := newTestTSPController()
@@ -193,18 +203,63 @@ func withIDBatcher() Option {
 	return func(tsp *tailSamplingSpanProcessor) { tsp.decisionBatcher = nil }
 }
 
-// benchTraceSizes are the span counts of the traces in generateBenchBatch.
+// benchTraceSizes are the span counts of the traces in a bench batch.
 var benchTraceSizes = []int{1, 2, 4, 8, 16, 48}
 
-// generateBenchBatch creates a batch shaped like real traffic: a few services
+// benchTracesPerBatch is the number of traces in a bench batch.
+const benchTracesPerBatch = 128
+
+// benchShape describes how the traces of a bench batch are spread over
+// ResourceSpans, which decides how much of the resource and scope the
+// processor can move instead of copy when it splits the batch by trace.
+type benchShape struct {
+	name string
+	// numResources returns the number of ResourceSpans for numTraces traces.
+	numResources func(numTraces int) int
+	// resourceFor returns the ResourceSpans that holds span number span of
+	// trace number trace.
+	resourceFor func(trace, span int) int
+}
+
+// generate returns a batch of benchTracesPerBatch traces.
+func (s benchShape) generate() ptrace.Traces {
+	return generateBenchBatchShaped(benchTracesPerBatch, s.numResources(benchTracesPerBatch), s.resourceFor)
+}
+
+var benchShapes = []benchShape{
+	{
+		// The spans of every trace are spread over all resources.
+		name:         "mixed",
+		numResources: func(int) int { return 4 },
+		resourceFor:  func(trace, span int) int { return (trace + span) % 4 },
+	},
+	{
+		name:         "resource-per-trace",
+		numResources: func(numTraces int) int { return numTraces },
+		resourceFor:  func(trace, _ int) int { return trace },
+	},
+	{
+		name:         "few-traces-per-resource",
+		numResources: func(numTraces int) int { return (numTraces + 3) / 4 },
+		resourceFor:  func(trace, _ int) int { return trace / 4 },
+	},
+	{
+		// An SDK batch: one resource, many traces.
+		name:         "sdk",
+		numResources: func(int) int { return 1 },
+		resourceFor:  func(int, int) int { return 0 },
+	},
+}
+
+// generateBenchBatchShaped creates a batch shaped like real traffic: services
 // with k8s resource attributes, two scopes each, spans with attributes and
-// traces of mixed sizes spread over the services. About 10% of the traces
-// match each of the latency and ottl policies and 5% have an error.
-func generateBenchBatch(numTraces int) ptrace.Traces {
-	const numServices = 4
+// traces of mixed sizes. resourceFor chooses the ResourceSpans of each span;
+// spans alternate between the two scopes of their resource. About 10% of the
+// traces match each of the latency and ottl policies and 5% have an error.
+func generateBenchBatchShaped(numTraces, numResources int, resourceFor func(trace, span int) int) ptrace.Traces {
 	traces := ptrace.NewTraces()
-	var spans [numServices][2]ptrace.SpanSlice
-	for s := range numServices {
+	spans := make([][2]ptrace.SpanSlice, numResources)
+	for s := range numResources {
 		rs := traces.ResourceSpans().AppendEmpty()
 		attrs := rs.Resource().Attributes()
 		attrs.PutStr("service.name", fmt.Sprintf("service-%d", s))
@@ -241,7 +296,7 @@ func generateBenchBatch(numTraces int) ptrace.Traces {
 		rootID := spanID + 1
 		for j := range size {
 			spanID++
-			span := spans[(i+j)%numServices][j%2].AppendEmpty()
+			span := spans[resourceFor(i, j)][j%2].AppendEmpty()
 			span.SetTraceID(traceID)
 			span.SetSpanID(uInt64ToSpanID(spanID))
 			if j > 0 {
@@ -312,4 +367,25 @@ func (s *countingSink) ConsumeTraces(_ context.Context, td ptrace.Traces) error 
 	s.spans.Add(int64(td.SpanCount()))
 	s.calls.Add(1)
 	return nil
+}
+
+// BenchmarkSplitResourceSpansByTrace measures the split of a batch into one
+// ResourceSpans per trace, for several distributions of traces over resources.
+func BenchmarkSplitResourceSpansByTrace(b *testing.B) {
+	for _, shape := range benchShapes {
+		b.Run("shape="+shape.name, func(b *testing.B) {
+			template := shape.generate()
+			b.ReportAllocs()
+			for b.Loop() {
+				// The split consumes its input, so copy outside of the timer.
+				b.StopTimer()
+				batch := ptrace.NewTraces()
+				template.CopyTo(batch)
+				b.StartTimer()
+				for _, rss := range batch.ResourceSpans().All() {
+					_ = splitResourceSpansByTrace(rss)
+				}
+			}
+		})
+	}
 }

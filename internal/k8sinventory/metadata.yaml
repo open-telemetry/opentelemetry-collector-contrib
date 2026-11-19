@@ -1,4 +1,4 @@
 status:
   codeowners:
-    active: [dmitryax, TylerHelmuth, ChrsMark, krisztianfekete]
-    emeritus: [hvaghani221]
+    active: [TylerHelmuth, ChrsMark, krisztianfekete, jinja2]
+    emeritus: [hvaghani221, dmitryax]

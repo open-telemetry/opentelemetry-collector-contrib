@@ -4,8 +4,8 @@ status:
   disable_codecov_badge: true
   class: pkg
   codeowners:
-    active: [dmitryax]
-    emeritus: [rmfitzpatrick]
+    active: [jinja2]
+    emeritus: [rmfitzpatrick, dmitryax]
 
 feature_gates:
   - id: pkg.experimentalmetricmetadata.useEntityEventsSpecification

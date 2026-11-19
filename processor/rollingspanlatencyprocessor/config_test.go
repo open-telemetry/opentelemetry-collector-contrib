@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func validConfig() *Config {
@@ -97,6 +99,21 @@ func TestConfig_Validate(t *testing.T) {
 			modify:      func(c *Config) { c.WarmupCount = 0 },
 			expectedErr: "warmup_count must be greater than 0",
 		},
+		{
+			name:        "unrecognized span_kinds value",
+			modify:      func(c *Config) { c.SpanKinds = []string{"SERVER", "bogus"} },
+			expectedErr: `span_kinds: "bogus" is not a recognized span kind`,
+		},
+		{
+			name:        "span_kinds accepts mixed case",
+			modify:      func(c *Config) { c.SpanKinds = []string{"server", "Consumer"} },
+			expectedErr: "",
+		},
+		{
+			name:        "always_include_root_spans alone is valid",
+			modify:      func(c *Config) { c.AlwaysIncludeRootSpans = true },
+			expectedErr: "",
+		},
 	}
 
 	for _, tt := range tests {
@@ -112,4 +129,20 @@ func TestConfig_Validate(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestConfig_UnmarshalFilteringKeys pins the span_kinds / always_include_root_spans
+// YAML keys, so a future field rename shows up as a test failure rather than a
+// silently ignored (and therefore defaulted) config key.
+func TestConfig_UnmarshalFilteringKeys(t *testing.T) {
+	cm := confmap.NewFromStringMap(map[string]any{
+		"span_kinds":                []any{"SERVER"},
+		"always_include_root_spans": true,
+	})
+
+	cfg := createDefaultConfig().(*Config)
+	require.NoError(t, cm.Unmarshal(cfg))
+
+	assert.Equal(t, []string{"SERVER"}, cfg.SpanKinds)
+	assert.True(t, cfg.AlwaysIncludeRootSpans)
 }
