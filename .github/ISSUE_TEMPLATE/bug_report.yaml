@@ -259,6 +259,7 @@ body:
       - processor/telemetrypolicy
       - processor/transform
       - processor/transform/internal/logparsingfuncs
+      - processor/transform/xtransform
       - processor/unroll
       - processor/verify
       - receiver/activedirectoryds

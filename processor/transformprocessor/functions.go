@@ -45,11 +45,6 @@ func DefaultSpanEventFunctions() []ottl.Factory[*ottlspanevent.TransformContext]
 	return slices.Collect(maps.Values(defaultSpanEventFunctionsMap()))
 }
 
-// DefaultProfileFunctions returns the default OTTL functions available in the profile context.
-func DefaultProfileFunctions() []ottl.Factory[*ottlprofile.TransformContext] {
-	return slices.Collect(maps.Values(defaultProfileFunctionsMap()))
-}
-
 func defaultLogFunctionsMap() map[string]ottl.Factory[*ottllog.TransformContext] {
 	return logs.LogFunctions()
 }
@@ -76,11 +71,4 @@ func defaultSpanEventFunctionsMap() map[string]ottl.Factory[*ottlspanevent.Trans
 
 func defaultProfileFunctionsMap() map[string]ottl.Factory[*ottlprofile.TransformContext] {
 	return profiles.ProfileFunctions()
-}
-
-func mergeFunctionsToMap[K any](functionMap map[string]ottl.Factory[K], functions []ottl.Factory[K]) map[string]ottl.Factory[K] {
-	for _, f := range functions {
-		functionMap[f.Name()] = f
-	}
-	return functionMap
 }

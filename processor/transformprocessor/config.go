@@ -26,7 +26,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
-var errFlatLogsGateDisabled = errors.New("'flatten.log' requires the 'transform.flatten.logs' feature gate to be enabled")
+var (
+	errFlatLogsGateDisabled          = errors.New("'flatten.log' requires the 'transform.flatten.logs' feature gate to be enabled")
+	errProfileStatementsGateDisabled = errors.New("'profile_statements' requires the 'processor.transform.enableProfiles' feature gate to be enabled")
+)
 
 // Config defines the configuration for the processor.
 type Config struct {
@@ -256,14 +259,18 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.ProfileStatements) > 0 {
-		pc, err := common.NewProfileParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithProfileParser(c.profileFunctions))
-		if err != nil {
-			return err
-		}
-		for _, cs := range c.ProfileStatements {
-			_, err = pc.ParseContextStatements(cs.toCommon())
+		if !metadata.ProcessorTransformEnableProfilesFeatureGate.IsEnabled() {
+			errors = multierr.Append(errors, errProfileStatementsGateDisabled)
+		} else {
+			pc, err := common.NewProfileParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithProfileParser(c.profileFunctions))
 			if err != nil {
-				errors = multierr.Append(errors, err)
+				return err
+			}
+			for _, cs := range c.ProfileStatements {
+				_, err = pc.ParseContextStatements(cs.toCommon())
+				if err != nil {
+					errors = multierr.Append(errors, err)
+				}
 			}
 		}
 	}
