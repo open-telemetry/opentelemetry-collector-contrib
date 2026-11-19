@@ -1,10 +1,9 @@
 change_type: deprecation
 component: extension/oidc
-note: "Deprecate single-provider configuration fields in favor of `providers`."
+note: "Log a deprecation warning at startup when legacy single-provider configuration fields are used."
 issues: [40854]
 subtext: |
   The single-provider configuration options (`issuer_url`, `audience`, `ignore_audience`,
-  `issuer_ca_path`, `username_claim`, `groups_claim`) are deprecated and will be removed
-  in a future release. Users should migrate to `providers`. A deprecation warning is now logged
-  when legacy fields are used.
+  `issuer_ca_path`, `username_claim`, `groups_claim`) are deprecated. A deprecation warning is now logged
+  at startup when these fields are used.
 change_logs: [user]
