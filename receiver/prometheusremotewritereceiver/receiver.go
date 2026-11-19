@@ -380,9 +380,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 		// sender would take the difference for a partial write and report failed samples.
 		droppedClassicHistogramSeries int64
 		droppedSummarySeries          int64
+		symbolValidator               symbolUTF8Validator
 	)
 
-	var symbolValidator symbolUTF8Validator
 	if len(req.Timeseries) > 0 {
 		symbolValidator = newSymbolUTF8Validator(req.Symbols)
 	}
