@@ -178,7 +178,7 @@ func TestDatadogServer(t *testing.T) {
 	}
 }
 
-// enableSamplingThreshold turns the alpha feature gate of the sampling threshold on for a test.
+// enableSamplingThreshold enables the sampling threshold feature gate for the test.
 func enableSamplingThreshold(t *testing.T) {
 	t.Helper()
 	id := metadata.ReceiverDatadogEnableSamplingThresholdFeatureGate.ID()
@@ -188,7 +188,7 @@ func enableSamplingThreshold(t *testing.T) {
 
 func TestDatadogTraces_SamplingThreshold_EndToEnd(t *testing.T) {
 	enableSamplingThreshold(t)
-	// A v0.4 trace that the agent kept by rate: priority 1, with the agent's rate on the root.
+	// A v0.4 trace kept by the Agent rate, with priority 1.
 	const body = `[[{"trace_id":7,"span_id":1,"parent_id":0,"name":"n","service":"s","start":1,"duration":1,` +
 		`"metrics":{"_sampling_priority_v1":1,"_dd.agent_psr":0.5}}]]`
 

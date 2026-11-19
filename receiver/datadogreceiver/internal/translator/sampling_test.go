@@ -18,7 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
 )
 
-// enableSamplingThreshold turns the alpha feature gate of the sampling threshold on for a test.
+// enableSamplingThreshold enables the sampling threshold feature gate for the test.
 func enableSamplingThreshold(t *testing.T) {
 	t.Helper()
 	id := metadata.ReceiverDatadogEnableSamplingThresholdFeatureGate.ID()
@@ -26,11 +26,8 @@ func enableSamplingThreshold(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, featuregate.GlobalRegistry().Set(id, false)) })
 }
 
-// The Datadog trace id 2 has this randomness value, which is the inverse of the Knuth hash of the id, 56 bits of it. It
-// is derived independently of the code: 2 * 1111111111111111111 mod 2^64 = 2222222222222222222, its inverse is
-// 2^64-1-2222222222222222222, and the top 56 bits of that are 0xe12914a9a8771c. A trace id of 2 is kept by the Knuth
-// hash at any rate above 0.12, because its hash is 0.12 of the range. The ids 8 and 9 are on both sides of a rate of
-// 0.5: id 8 has the hash 0.48 and is kept, id 9 has 0.54 and is not.
+// The expected randomness of trace ids 2 and 8: (2^64-1 - id*1111111111111111111 mod 2^64) >> 8, computed outside
+// the code. The Knuth hash is 0.12 of the range for id 2, 0.48 for id 8 and 0.54 for id 9.
 const (
 	rvID2 = "e12914a9a8771c"
 	rvID8 = "84a452a6a1dc71"
@@ -61,7 +58,6 @@ func spanIDToUint64(id [8]byte) (v uint64) {
 func TestToTracesSamplingThreshold(t *testing.T) {
 	enableSamplingThreshold(t)
 	keep := int32(ddsampler.PriorityAutoKeep)
-	// A chunk of a deciding root and a child, the way a tracer sends it.
 	chunk := func(priority int32, root, child *pb.Span) *pb.TraceChunk {
 		root.SpanID, root.TraceID = 1, 2
 		child.SpanID, child.TraceID, child.ParentID = 2, 2, 1
@@ -209,7 +205,7 @@ func TestToTracesSamplingThreshold(t *testing.T) {
 			want: map[uint64]string{1: "", 2: ""},
 		},
 		{
-			// Trace id 8 is kept by the Knuth hash at a rate of 0.5, and its randomness is just above the threshold.
+			// Id 8 is kept at a rate of 0.5.
 			name: "the randomness value follows the Knuth hash of the lower 64 bits of the trace id",
 			chunks: []*pb.TraceChunk{{Priority: keep, Spans: []*pb.Span{{
 				TraceID: 8, SpanID: 1, Metrics: map[string]float64{"_dd.agent_psr": 0.5},
@@ -217,10 +213,7 @@ func TestToTracesSamplingThreshold(t *testing.T) {
 			want: map[uint64]string{1: "ot=rv:" + rvID8 + ";th:8"},
 		},
 		{
-			// Trace id 9 is not kept by the Knuth hash at a rate of 0.5, so its randomness would be below the threshold.
-			// That cannot happen for an exact rate, but it can just at the edge for a rounded one (the Knuth rate tag has 6
-			// decimals), and this id stands in for that. The randomness is raised to the threshold, so that a span that
-			// was kept is never inconsistent.
+			// Id 9 is not kept at a rate of 0.5, as can happen with a rounded rate. Its rv is raised to th.
 			name: "the randomness value of a kept chunk is not below the threshold",
 			chunks: []*pb.TraceChunk{{Priority: keep, Spans: []*pb.Span{{
 				TraceID: 9, SpanID: 1, Metrics: map[string]float64{"_dd.agent_psr": 0.5},
@@ -251,7 +244,7 @@ func TestToTracesSamplingThreshold(t *testing.T) {
 			want: map[uint64]string{1: "", 2: ""},
 		},
 		{
-			// The first chunk of a partial flush is the one with the deciding root. Each chunk repeats the Knuth rate.
+			// Each chunk of a partially flushed trace repeats the Knuth rate.
 			name: "every chunk of a partially flushed trace gets a threshold",
 			chunks: []*pb.TraceChunk{
 				{Priority: keep, Spans: []*pb.Span{{TraceID: 2, SpanID: 1, Metrics: map[string]float64{"_dd.agent_psr": 0.5}}}},
@@ -267,7 +260,7 @@ func TestToTracesSamplingThreshold(t *testing.T) {
 	}
 
 	t.Run("the threshold decodes to the Datadog rate", func(t *testing.T) {
-		// The Knuth rate of a real Java tracer has 6 decimals, like th:fdb0a068f801d8 in the same trace.
+		// The Knuth rate has 6 decimals.
 		const rate = 0.009024
 		payload := &pb.TracerPayload{Chunks: []*pb.TraceChunk{chunk(keep, &pb.Span{Meta: map[string]string{"_dd.p.ksr": "0.009024"}}, &pb.Span{})}}
 		w3c, err := sampling.NewW3CTraceState(tracestatesBySpanID(t, payload)[1])

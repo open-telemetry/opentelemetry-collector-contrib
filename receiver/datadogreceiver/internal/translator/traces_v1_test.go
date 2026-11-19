@@ -265,7 +265,7 @@ func TestToTracesV1SamplingThreshold(t *testing.T) {
 		numbers map[string]float64
 		strings map[string]string
 	}
-	// A chunk of a deciding root (span 1) and a child (span 2), like TestToTracesSamplingThreshold.
+	// Each chunk has a root (span 1) and a child (span 2).
 	tests := []struct {
 		name      string
 		priority  int32
@@ -433,7 +433,7 @@ func TestToTracesV1SamplingThreshold(t *testing.T) {
 }
 
 // traceIDWithLowBits returns a 128-bit trace id with the given lower 64 bits and a nonzero upper half, which the
-// Knuth hash of the sampling decision must not use.
+// sampling decision ignores.
 func traceIDWithLowBits(low uint64) []byte {
 	id := make([]byte, 16)
 	binary.BigEndian.PutUint64(id[:8], 0x1122334455667788)
