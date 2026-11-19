@@ -217,6 +217,83 @@ separately. This could lead some resources usage and limit this will reduce the 
 This defines the cache's size for query plan.
 - `query_plan_cache_ttl`: (optional, default=1h). How long before the query plan cache got expired. Example values: `1m`, `1h`. 
 - `collection_interval`: (optional, default=60s). This receiver can collect top_query metrics on an interval. If not provided then the global collection_interval takes effect. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `explain_function_name`: (optional, default=empty). A DBA-provisioned `[schema.]function_name` used to collect query plans with the function owner's privileges. Empty uses direct EXPLAIN. See [helper function setup](#query-plans-for-write-and-locking-statements).
+- `explain_function_cache_ttl`: (optional, default=5m). How long to cache each database's helper availability. Must be positive when `explain_function_name` is set.
+
+#### Query plans for write and locking statements
+
+PostgreSQL checks table privileges when planning statements. Direct EXPLAIN of
+`INSERT`, `UPDATE`, `DELETE`, `MERGE`, and locking reads such as `SELECT ... FOR UPDATE`
+can fail even though EXPLAIN does not execute the statement. `pg_monitor` does not
+grant these table privileges.
+
+To collect these plans without giving the monitoring user write access, a DBA can
+install [explain.sql](./explain.sql) in each monitored database. The function uses
+`SECURITY DEFINER` to plan statements with its owner's privileges. It uses a generic
+plan with NULL arguments for the `$1`, `$2`, ... placeholders from `pg_stat_statements`.
+This requires PostgreSQL 12 or later.
+
+Use a dedicated non-superuser owner. Grant it only the table privileges needed to
+plan the captured queries. For example, replace `example_table` and `monitoring_user`
+below with your table and monitoring role:
+
+```sql
+CREATE ROLE otel_explain_owner NOLOGIN;
+CREATE SCHEMA otel AUTHORIZATION otel_explain_owner;
+GRANT USAGE ON SCHEMA public TO otel_explain_owner;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.example_table TO otel_explain_owner;
+```
+
+In `explain.sql`, replace `public` in the function's fixed `search_path` with the
+trusted application schemas used by unqualified table names in captured queries.
+Keep `pg_catalog` first and `pg_temp` last. Untrusted roles must not have CREATE
+access to the helper schema or any application schema on this path.
+On databases that grant CREATE on `public` to PUBLIC, remove that grant or use a
+separate trusted schema. Removing a PUBLIC grant affects all roles that inherit it.
+
+Then install the function through `psql` as a DBA that can assume the owner role:
+
+```sql
+SET ROLE otel_explain_owner;
+\i explain.sql
+RESET ROLE;
+GRANT USAGE ON SCHEMA otel TO monitoring_user;
+GRANT EXECUTE ON FUNCTION otel.explain_statement(text) TO monitoring_user;
+```
+
+The script revokes public execute access. It sets the transaction read-only and
+uses EXPLAIN without ANALYZE. These measures do not make arbitrary SQL safe:
+PostgreSQL can evaluate functions during planning. Only use trusted application
+queries captured from `pg_stat_statements`. Do not expose the helper to user/API
+input or give its owner superuser privileges. Its execution grant is a privileged
+capability, even though the monitoring role has no direct table write grants.
+Plans reflect the helper owner's permissions and row security policies, which can
+differ from those of the application role.
+
+The helper accepts one statement and an optional final semicolon. It rejects all
+other semicolons, including those inside literals or comments, to prevent additional
+commands from executing through dynamic SQL.
+
+```yaml
+receivers:
+  postgresql:
+    events:
+      db.server.top_query:
+        enabled: true
+    top_query_collection:
+      explain_function_name: otel.explain_statement
+      explain_function_cache_ttl: 5m
+```
+
+The receiver probes the helper with `SELECT 1` before using it. Missing or failed
+probes cause a warning and a fallback to direct EXPLAIN. Both outcomes are cached
+per database for `explain_function_cache_ttl`. A successful probe does not prove
+that the owner can plan every application query. A failure for an individual query
+still follows normal plan-cache behavior.
+
+The availability cache and plan cache expire independently. After installing or
+repairing the function, a cached empty plan can remain until `query_plan_cache_ttl`
+expires. The default is one hour.
 
 #### `db.server.query_plan`
 

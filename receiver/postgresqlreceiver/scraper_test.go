@@ -2102,7 +2102,7 @@ func TestExplainQuery(t *testing.T) {
 			mock.ExpectExec(fmt.Sprintf("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_%s", tc.normalizedQueryID)).
 				WillReturnResult(sqlmock.NewResult(0, 0))
 
-			plan, err := client.explainQuery(t.Context(), tc.query, tc.queryID, logger)
+			plan, err := client.explainQuery(t.Context(), tc.query, tc.queryID, "", logger)
 			require.NoError(t, err)
 			assert.Equal(t, tc.mockPlanResult, plan)
 			require.NoError(t, mock.ExpectationsWereMet())
@@ -2169,7 +2169,7 @@ func TestExplainQueryLogsRepair(t *testing.T) {
 			mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_40001").
 				WillReturnResult(sqlmock.NewResult(0, 0))
 
-			_, err = client.explainQuery(t.Context(), tc.query, "40001", zap.New(core))
+			_, err = client.explainQuery(t.Context(), tc.query, "40001", "", zap.New(core))
 			require.NoError(t, err)
 			require.NoError(t, mock.ExpectationsWereMet())
 
@@ -2209,7 +2209,7 @@ func TestExplainQueryErrorStillCleansUp(t *testing.T) {
 	mock.ExpectExec("/* otel-collector-ignore */ DEALLOCATE PREPARE otel_12345").
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
-	_, err = client.explainQuery(t.Context(), "SELECT * FROM users", "12345", logger)
+	_, err = client.explainQuery(t.Context(), "SELECT * FROM users", "12345", "", logger)
 	require.Error(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
@@ -2238,7 +2238,7 @@ func TestExplainQueryUsesContext(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Millisecond)
 	defer cancel()
 
-	_, err = client.explainQuery(ctx, "SELECT * FROM users", "12345", logger)
+	_, err = client.explainQuery(ctx, "SELECT * FROM users", "12345", "", logger)
 	require.Error(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
@@ -2345,8 +2345,12 @@ type (
 )
 
 // explainQuery implements client.
-func (*mockClient) explainQuery(context.Context, string, string, *zap.Logger) (string, error) {
+func (*mockClient) explainQuery(context.Context, string, string, string, *zap.Logger) (string, error) {
 	panic("unimplemented")
+}
+
+func (*mockClient) probeExplainFunction(context.Context, string) error {
+	return nil
 }
 
 // getTopQuery implements client.
