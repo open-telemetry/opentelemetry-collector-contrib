@@ -75,12 +75,22 @@ When enabled, this setting produces the following node-level metrics (one per se
 | allocatable type | metric name                      | unit     | type  | value type |
 | ---------------- | -------------------------------- | -------- | ----- | ---------- |
 | cpu              | k8s.node.allocatable_cpu         | {cpu}    | Gauge | Double     |
-| memory           | k8s.node.allocatable_memory      | By       | Gauge | Double     |
-| ephemeral-storage| k8s.node.allocatable_ephemeral_storage | By | Gauge | Double     |
+| memory           | k8s.node.allocatable_memory      | By       | Gauge | Int        |
+| ephemeral-storage| k8s.node.allocatable_ephemeral_storage | By | Gauge | Int        |
 | pods             | k8s.node.allocatable_pods        | {pod}    | Gauge | Int        |
+
+For any other allocatable resource, the metric name is `k8s.node.allocatable_` followed by the resource name in snake_case, the unit is the resource name in curly braces, and the value type is Int.
+For example, `hugepages-2Mi` produces `k8s.node.allocatable_hugepages_2_mi` with unit `{hugepages-2Mi}`.
 
 - `metrics`: Allows to enable/disable metrics.
 - `resource_attributes`: Allows to enable/disable resource attributes.
+- `collect_sidecar_container_metrics` (default = `false`): When enabled, `k8s.container` metrics and
+entities are collected for sidecar containers (init containers with `restartPolicy: Always`, which
+run for the pod's lifetime).
+- `collect_all_init_container_metrics` (default = `false`): When enabled, `k8s.container` metrics and
+entities are collected for all init containers (regular and sidecar).
+- `collect_ephemeral_container_metrics` (default = `false`): When enabled, `k8s.container` metrics and
+entities are collected for ephemeral (debug) containers.
 - `namespace` (deprecated, use `namespaces` instead): Allows to observe resources for a particular namespace only. If this option is set to a non-empty string, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed.
 - `namespaces`: Allows to observe resources for a list of given namespaces. If this option is set, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed, as those are cluster-scoped resources.
 

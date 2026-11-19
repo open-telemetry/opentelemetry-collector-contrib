@@ -92,6 +92,12 @@ func bulkIndexerConfig(client elastictransport.Interface, config *Config, requir
 			maxDocRetries = config.Retry.MaxRetries
 		}
 	}
+	// go-docappender treats an empty RetryOnDocumentStatus as [429] and retries
+	// while MaxDocumentRetries is greater than zero. An empty list disables
+	// document retries.
+	if len(config.Retry.RetryOnDocumentStatus) == 0 {
+		maxDocRetries = 0
+	}
 	var compressionLevel int
 	if config.ClientConfig.Compression == configcompression.TypeGzip {
 		compressionLevel = int(config.ClientConfig.CompressionParams.Level)

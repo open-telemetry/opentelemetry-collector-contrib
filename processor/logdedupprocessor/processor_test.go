@@ -524,6 +524,32 @@ func TestMetadataKeysCardinalityLimit(t *testing.T) {
 	require.NoError(t, p.Shutdown(t.Context()))
 }
 
+func TestMetadataKeysCardinalityLimitAfterFlush(t *testing.T) {
+	sink := &contextCapturingLogsSink{}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Interval = 20 * time.Millisecond
+	cfg.MetadataKeys = []string{"x-scope-orgid"}
+	cfg.MetadataCardinalityLimit = 1
+
+	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+
+	// First tenant is accepted.
+	require.NoError(t, p.ConsumeLogs(metadataContext(t, "tenant-a"), newSimpleLog()))
+
+	// Wait for tenant-a to be exported.
+	require.Eventually(t, func() bool {
+		return sink.logRecordCount() == 1
+	}, 1*time.Second, 10*time.Millisecond)
+
+	// Second tenant should now be accepted because tenant-a was flushed and has no pending logs.
+	err = p.ConsumeLogs(metadataContext(t, "tenant-b"), newSimpleLog())
+	require.NoError(t, err, "tenant-b should be accepted after tenant-a has been flushed")
+
+	require.NoError(t, p.Shutdown(t.Context()))
+}
+
 func TestMetadataKeysUnboundedCardinalityLogsWarning(t *testing.T) {
 	core, logs := observer.New(zapcore.WarnLevel)
 	settings := processortest.NewNopSettings(metadata.Type)
@@ -735,4 +761,58 @@ func TestStartContextCancelDoesNotStopProcessor(t *testing.T) {
 	require.NoError(t, p.Shutdown(t.Context()))
 
 	require.Equal(t, 1, sink.count())
+}
+
+func TestShutdownFlushUsesShutdownContext(t *testing.T) {
+	sink := &contextCapturingLogsSink{}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Interval = time.Hour
+
+	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, p.ConsumeLogs(t.Context(), newSimpleLog()))
+
+	shutdownCtx, cancel := context.WithTimeout(t.Context(), time.Minute)
+	defer cancel()
+	require.NoError(t, p.Shutdown(shutdownCtx))
+
+	require.Equal(t, 1, sink.logRecordCount())
+	ctxs := sink.capturedContexts()
+	require.Len(t, ctxs, 1)
+
+	expected, ok := shutdownCtx.Deadline()
+	require.True(t, ok)
+	actual, ok := ctxs[0].Deadline()
+	require.True(t, ok, "the shutdown flush should inherit the deadline from the Shutdown context")
+	require.Equal(t, expected, actual)
+}
+
+func TestShutdownFlushUsesShutdownContextWithMetadataKeys(t *testing.T) {
+	sink := &contextCapturingLogsSink{}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Interval = time.Hour
+	cfg.MetadataKeys = []string{"x-scope-orgid"}
+
+	p, err := createLogsProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, p.ConsumeLogs(metadataContext(t, "tenant-a"), newSimpleLog()))
+
+	shutdownCtx, cancel := context.WithTimeout(t.Context(), time.Minute)
+	defer cancel()
+	require.NoError(t, p.Shutdown(shutdownCtx))
+
+	require.Equal(t, 1, sink.logRecordCount())
+	ctxs := sink.capturedContexts()
+	require.Len(t, ctxs, 1)
+
+	// The shard context must carry the tenant metadata as well as the deadline.
+	require.Equal(t, []string{"tenant-a"}, client.FromContext(ctxs[0]).Metadata.Get("x-scope-orgid"))
+
+	expected, ok := shutdownCtx.Deadline()
+	require.True(t, ok)
+	actual, ok := ctxs[0].Deadline()
+	require.True(t, ok, "the shutdown flush should inherit the deadline from the Shutdown context")
+	require.Equal(t, expected, actual)
 }
