@@ -192,7 +192,7 @@ func TestSerializeLogRecord_Defaults(t *testing.T) {
 	// Create nested structure close to default limit (128) to verify defaults are actually applied
 	attrs := lr.Attributes()
 	current := attrs.PutEmptyMap("nested")
-	for i := 0; i < 100; i++ { // Well under default MaxDepth of 128
+	for range 100 { // Well under default MaxDepth of 128
 		current = current.PutEmptyMap("level")
 	}
 	current.PutStr("deep", "value")
@@ -218,7 +218,7 @@ func TestSerializeLogRecord_ExceedsDepthLimit(t *testing.T) {
 	// Create deeply nested structure
 	bodyMap := lr.Body().SetEmptyMap()
 	current := bodyMap
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		current = current.PutEmptyMap("level")
 	}
 	current.PutStr("deep", "value")
@@ -512,7 +512,7 @@ func TestSerializeLogRecord_BodyNestingDepthCapped(t *testing.T) {
 
 	// Create body nested beyond default limit
 	m := lr.Body().SetEmptyMap()
-	for i := 0; i < DefaultMaxDepth+1; i++ {
+	for range DefaultMaxDepth + 1 {
 		m = m.PutEmptyMap("n")
 	}
 
@@ -787,9 +787,10 @@ func TestSerializeSpanExcludePrefixes(t *testing.T) {
 			got, err = SerializeSpan(s, SerializeSpanOptions{ExcludePrefixes: []string{""}})
 			require.NoError(t, err)
 			want := `{"kind":0,"status":{"code":0}}`
-			if level.name == "event" {
+			switch level.name {
+			case "event":
 				want = `{"events":[{}],"kind":0,"status":{"code":0}}`
-			} else if level.name == "link" {
+			case "link":
 				want = `{"kind":0,"links":[{}],"status":{"code":0}}`
 			}
 			assert.Equal(t, want, string(got))

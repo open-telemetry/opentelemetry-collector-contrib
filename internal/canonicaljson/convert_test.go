@@ -171,7 +171,7 @@ func TestValueToInterface(t *testing.T) {
 				v := pcommon.NewValueMap()
 				current := v.Map()
 				// Create nested maps deeper than limit
-				for i := 0; i < 5; i++ {
+				for i := range 5 {
 					next := current.PutEmptyMap("level" + strconv.Itoa(i))
 					current = next
 				}
@@ -548,7 +548,7 @@ func TestValueToInterface_SliceErrorPropagation(t *testing.T) {
 	// Second element: deeply nested map that will exceed depth limit
 	deepMap := slice.Slice().AppendEmpty().SetEmptyMap()
 	current := deepMap
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		current = current.PutEmptyMap("level")
 	}
 	current.PutStr("deep", "value")
@@ -575,7 +575,7 @@ func TestValueToInterface_MapErrorPropagation(t *testing.T) {
 	// Add deeply nested structure as another value
 	deepMap := m.Map().PutEmptyMap("deep_key")
 	current := deepMap
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		current = current.PutEmptyMap("level")
 	}
 	current.PutStr("deep", "value")
