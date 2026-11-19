@@ -14,10 +14,12 @@ import (
 	"math"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -39,12 +41,16 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
@@ -1665,7 +1671,7 @@ func Test_pushLogData_LogsPermanentErrorsWhenPostFails(t *testing.T) {
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, true
 	httpClient, _ := newTestClient(http.StatusServiceUnavailable, "NOK")
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	logs := plog.NewLogs()
 	logRecords := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
@@ -1727,7 +1733,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 
 	// An HTTP client that returns status code 400 and response body responseBody.
 	httpClient, _ := newTestClient(400, responseBody)
-	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 	// Sending logs using the client.
 	err := splunkClient.pushLogData(t.Context(), logs)
 	require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
@@ -1736,13 +1742,218 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 
 	// An HTTP client that returns some other status code other than 400 and response body responseBody.
 	httpClient, _ = newTestClient(500, responseBody)
-	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 	// Sending logs using the client.
 	err = splunkClient.pushLogData(t.Context(), logs)
 	require.False(t, consumererror.IsPermanent(err), "Expecting non-permanent error")
 	require.EqualError(t, err, "HTTP \"/v1/endpoint\" 500 \"Internal Server Error\"")
 	// The returned error should not contain the response body responseBody.
 	assert.NotContains(t, err.Error(), responseBody)
+}
+
+func Test_pushLogData_RecordsSplunkApproachingCapacity(t *testing.T) {
+	for _, code := range []int{splunkCodeApproachingQueueCapacity, splunkCodeApproachingAckCapacity} {
+		t.Run(strconv.Itoa(code), func(t *testing.T) {
+			config := NewFactory().CreateDefaultConfig().(*Config)
+			url := &url.URL{Scheme: "http", Host: "splunk", Path: "/v1/endpoint"}
+			splunkClient := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
+
+			tt := componenttest.NewTelemetry()
+			defer func() { require.NoError(t, tt.Shutdown(t.Context())) }()
+			tb, err := metadata.NewTelemetryBuilder(tt.NewTelemetrySettings())
+			require.NoError(t, err)
+			defer tb.Shutdown()
+
+			core, observed := observer.New(zap.DebugLevel)
+
+			// 200 with code 24/25: accepted, so no error, but counted and logged at Debug.
+			httpClient, _ := newTestClient(200, fmt.Sprintf(`{"text":"approaching its capacity limit","code":%d}`, code))
+			splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.New(core), tb}
+
+			require.NoError(t, splunkClient.pushLogData(t.Context(), createLogData(1, 1, 1)))
+
+			metadatatest.AssertEqualExporterSplunkhecApproachingCapacity(t, tt,
+				[]metricdata.DataPoint[int64]{{
+					Value:      1,
+					Attributes: attribute.NewSet(attribute.Int("splunk_response_code", code)),
+				}},
+				metricdatatest.IgnoreTimestamp())
+			entries := observed.FilterMessageSnippet("approaching capacity").All()
+			require.Len(t, entries, 1)
+			assert.Equal(t, zapcore.DebugLevel, entries[0].Level)
+		})
+	}
+}
+
+func Test_pushLogData_DrainsLargeSuccessBodyForConnReuse(t *testing.T) {
+	// Body exceeds the 8KB the worker reads for the code; the undrained remainder would
+	// block connection reuse, forcing the second request onto a fresh connection.
+	largeBody := `{"text":"Success","code":0,"padding":"` + strings.Repeat("x", 16*1024) + `"}`
+
+	var mu sync.Mutex
+	conns := make(map[net.Conn]struct{})
+
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(w, largeBody)
+	}))
+	server.Config.ConnState = func(c net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			mu.Lock()
+			conns[c] = struct{}{}
+			mu.Unlock()
+		}
+	}
+	server.Start()
+	defer server.Close()
+
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
+
+	splunkClient := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
+	splunkClient.hecWorker = &defaultHecWorker{serverURL, server.Client(), buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
+
+	require.NoError(t, splunkClient.pushLogData(t.Context(), createLogData(1, 1, 1)))
+	require.NoError(t, splunkClient.pushLogData(t.Context(), createLogData(1, 1, 1)))
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Len(t, conns, 1, "expected the connection to be reused; the large success body was not fully drained")
+}
+
+// logRecordNames returns each record's DefaultNameLabel in iteration order.
+// createLogData stamps a unique "<resource>_<scope>_<record>" name, so the
+// sequence identifies which records are present and their order.
+func logRecordNames(ld plog.Logs) []string {
+	var names []string
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		sls := rls.At(i).ScopeLogs()
+		for j := 0; j < sls.Len(); j++ {
+			lrs := sls.At(j).LogRecords()
+			for k := 0; k < lrs.Len(); k++ {
+				v, _ := lrs.At(k).Attributes().Get(splunk.DefaultNameLabel)
+				names = append(names, v.Str())
+			}
+		}
+	}
+	return names
+}
+
+func Test_splitLogs(t *testing.T) {
+	logs := createLogData(2, 2, 3) // 2 resources x 2 scopes x 3 records = 12 records
+	require.Equal(t, 12, logs.LogRecordCount())
+
+	// Split at 5 lands mid-second-scope, so head crosses a scope boundary.
+	head, tail := splitLogs(logs, 5)
+	assert.Equal(t, 5, head.LogRecordCount())
+	assert.Equal(t, 7, tail.LogRecordCount())
+	assert.Equal(t, []string{"0_0_0", "0_0_1", "0_0_2", "0_1_0", "0_1_1"}, logRecordNames(head),
+		"head must be the first n records in order, spanning the scope boundary")
+	assert.Equal(t, []string{"0_1_2", "1_0_0", "1_0_1", "1_0_2", "1_1_0", "1_1_1", "1_1_2"}, logRecordNames(tail),
+		"tail must be the remaining records in order")
+
+	// Boundaries: n==0 -> empty head, whole tail; n>=total -> whole head, empty tail.
+	for _, tc := range []struct{ n, wantHead, wantTail int }{
+		{0, 0, 12},
+		{12, 12, 0},
+		{100, 12, 0},
+	} {
+		head, tail := splitLogs(logs, tc.n)
+		assert.Equal(t, tc.wantHead, head.LogRecordCount(), "n=%d: head record count", tc.n)
+		assert.Equal(t, tc.wantTail, tail.LogRecordCount(), "n=%d: tail record count", tc.n)
+	}
+}
+
+func Test_pushLogData_SplitsOversizedBatchOn413(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.DisableCompression = true
+	url := &url.URL{Scheme: "http", Host: "splunk", Path: "/v1/endpoint"}
+	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
+	logs := createLogData(1, 1, 2) // two records in a single batch
+
+	// Full batch -> 413; each single-record half -> 200.
+	httpClient, _ := newTestClientWithPresetResponses([]int{413, 200, 200}, []string{"", "", ""}, func(_ []byte) {})
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
+
+	err := c.pushLogData(t.Context(), logs)
+	require.NoError(t, err, "oversized batch should be split and resent successfully")
+}
+
+// One half dropped permanently, the other retryable: the retryable half's records
+// must survive for retry rather than be dropped with the permanent half.
+func Test_pushLogData_SplitOn413_RetriesRetryableHalfWhenOtherHalfPermanent(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.DisableCompression = true
+	url := &url.URL{Scheme: "http", Host: "splunk", Path: "/v1/endpoint"}
+	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
+	logs := createLogData(1, 1, 2) // two records; split into two single-record halves
+
+	// Full batch -> 413; head -> 413 (permanent drop); tail -> 500 (retryable).
+	httpClient, _ := newTestClientWithPresetResponses([]int{413, 413, 500}, []string{"", "", ""}, func(_ []byte) {})
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
+
+	err := c.pushLogData(t.Context(), logs)
+	require.Error(t, err)
+	require.False(t, consumererror.IsPermanent(err),
+		"the retryable half must not be dropped just because the other half failed permanently")
+	var logsErr consumererror.Logs
+	require.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, 1, logsErr.Data().LogRecordCount(), "the retryable half's record must be preserved for retry")
+}
+
+// Both halves retryable: records from both must survive, not just the first half's.
+func Test_pushLogData_SplitOn413_RetriesAllRecordsWhenBothHalvesRetryable(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.DisableCompression = true
+	url := &url.URL{Scheme: "http", Host: "splunk", Path: "/v1/endpoint"}
+	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
+	logs := createLogData(1, 1, 2)
+
+	// Full batch -> 413; both single-record halves -> 500 (retryable).
+	httpClient, _ := newTestClientWithPresetResponses([]int{413, 500, 500}, []string{"", "", ""}, func(_ []byte) {})
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
+
+	err := c.pushLogData(t.Context(), logs)
+	require.Error(t, err)
+	require.False(t, consumererror.IsPermanent(err))
+	var logsErr consumererror.Logs
+	require.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, 2, logsErr.Data().LogRecordCount(),
+		"records from both retryable halves must be preserved, not just the first half's")
+}
+
+// A throttled half must keep its ThrottleRetry so the retry sender honors Retry-After.
+func Test_combineSplitResults_PreservesThrottleRetry(t *testing.T) {
+	throttle := exporterhelper.NewThrottleRetry(errors.New("HTTP 503"), 30*time.Second)
+	head := consumererror.NewLogs(throttle, createLogData(1, 1, 1))
+	tail := consumererror.NewLogs(errors.New("HTTP 500"), createLogData(1, 1, 1))
+
+	err := combineSplitResults(head, tail)
+	require.ErrorIs(t, err, throttle, "the throttled half's Retry-After must survive the combine")
+	var logsErr consumererror.Logs
+	require.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, 2, logsErr.Data().LogRecordCount())
+}
+
+func Test_pushLogData_DropsUnsplittableRecordOn413(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.DisableCompression = true
+	url := &url.URL{Scheme: "http", Host: "splunk", Path: "/v1/endpoint"}
+	core, observed := observer.New(zap.WarnLevel)
+	set := exportertest.NewNopSettings(metadata.Type)
+	set.Logger = zap.New(core)
+	c := newLogsClient(set, config)
+	logs := createLogData(1, 1, 1) // a single record
+
+	httpClient, _ := newTestClient(413, "") // always rejects as too large
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
+
+	err := c.pushLogData(t.Context(), logs)
+	require.Error(t, err)
+	require.True(t, consumererror.IsPermanent(err), "an unsplittable oversized record must be dropped, not retried")
+	assert.Positive(t, observed.FilterMessageSnippet("too large").Len(), "expected a warning about dropping the oversized record")
 }
 
 func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
@@ -1759,7 +1970,7 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 
 	// The first record is to be sent successfully, the second one should not
 	httpClient, _ := newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"}, func(_ []byte) {})
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	err := c.pushLogData(t.Context(), logs)
 	require.Error(t, err)
@@ -1785,7 +1996,7 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 
 	httpClient, headers := newTestClient(200, "OK")
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	err := c.pushLogData(t.Context(), logs)
 	require.NoError(t, err)
@@ -1846,7 +2057,7 @@ func TestProfileData(t *testing.T) {
 	s.Values().Append(42)
 
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	err := c.pushProfilesData(t.Context(), profiles)
 	require.NoError(t, err)
@@ -2033,7 +2244,7 @@ func TestProfileDataUnsupportedProfilesAreDroppedAndCounted(t *testing.T) {
 		}
 	})
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	profiles := pprofile.NewProfiles()
 	dict := profiles.Dictionary()
@@ -2073,7 +2284,7 @@ func TestProfileDataTransientSendErrorRemainsRetryableWithUnsupportedProfiles(t 
 
 	httpClient, _ := newTestClient(http.StatusServiceUnavailable, "NOK")
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	profiles := pprofile.NewProfiles()
 	dict := profiles.Dictionary()
@@ -2116,7 +2327,7 @@ func TestProfileDataUnsupportedProfileCountIsNotRepeatedOnRetry(t *testing.T) {
 		[]int{http.StatusServiceUnavailable, http.StatusOK}, []string{"NOK", "OK"}, func(_ []byte) {},
 	)
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	profiles := pprofile.NewProfiles()
 	dict := profiles.Dictionary()
@@ -2166,7 +2377,7 @@ func TestProfileDataRetryPreservesResourceAttributes(t *testing.T) {
 		}
 	})
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	profiles := pprofile.NewProfiles()
 	profiles.Dictionary().StackTable().AppendEmpty()
@@ -2215,7 +2426,7 @@ func TestProfileDataPartialSuccessRetriesOnlyUnsentProfiles(t *testing.T) {
 		},
 	)
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	profiles := pprofile.NewProfiles()
 	profiles.Dictionary().StackTable().AppendEmpty()
@@ -2385,7 +2596,7 @@ func TestProfileDataMultipleResources(t *testing.T) {
 	p2.Samples().AppendEmpty().Values().Append(2)
 
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	require.NoError(t, c.pushProfilesData(t.Context(), profiles))
 
@@ -2462,7 +2673,7 @@ func TestProfileDataTotalFrameCount(t *testing.T) {
 	// Total frames = 3 + 1 = 4; sample count = 2 (wrong value without the fix)
 
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	require.NoError(t, c.pushProfilesData(t.Context(), profiles))
 
@@ -2520,7 +2731,7 @@ func TestProfileDataTranslationErrorIsPerProfile(t *testing.T) {
 	badSample.Values().Append(1)
 
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	err := c.pushProfilesData(t.Context(), profiles)
 
@@ -2793,7 +3004,7 @@ func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 		config.DisableCompression = disable
 
 		c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
-		c.hecWorker = &defaultHecWorker{&url.URL{Scheme: "http", Host: "splunk"}, http.DefaultClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+		c.hecWorker = &defaultHecWorker{&url.URL{Scheme: "http", Host: "splunk"}, http.DefaultClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 		err := c.pushLogData(t.Context(), logs)
 		require.Error(t, err)
@@ -2905,7 +3116,7 @@ func TestPushLogsPartialSuccess(t *testing.T) {
 	// The first request succeeds, the second fails.
 	httpClient, _ := newTestClientWithPresetResponses([]int{200, 503}, []string{"OK", "NOK"}, func(_ []byte) {})
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(cfg, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(cfg, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	logs := plog.NewLogs()
 	logRecords := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
@@ -2926,7 +3137,7 @@ func TestPushLogsRetryableFailureMultipleResources(t *testing.T) {
 
 	httpClient, _ := newTestClientWithPresetResponses([]int{503}, []string{"NOK"}, func(_ []byte) {})
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, component.NewDefaultBuildInfo()), zap.NewNop(), nil}
 
 	logs := plog.NewLogs()
 	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")

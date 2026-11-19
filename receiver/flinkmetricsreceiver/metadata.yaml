@@ -12,7 +12,8 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [JonathanWamsley, Abhimanyu9988]
+    active: [Abhimanyu9988]
+    emeritus: [JonathanWamsley]
     seeking_new: true
 
 resource_attributes:

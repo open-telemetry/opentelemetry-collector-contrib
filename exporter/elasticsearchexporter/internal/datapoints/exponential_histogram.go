@@ -4,6 +4,8 @@
 package datapoints // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -25,6 +27,14 @@ func NewExponentialHistogram(metric pmetric.Metric, dp pmetric.ExponentialHistog
 		metric:                        metric,
 		histogramMapping:              hm,
 	}
+}
+
+func (dp ExponentialHistogram) Validate() error {
+	if dp.metric.ExponentialHistogram().AggregationTemporality() == pmetric.AggregationTemporalityCumulative &&
+		dp.resolvedMapping() != HistogramMappingExponential {
+		return fmt.Errorf("cumulative temporality exponential histogram %q is only supported when stored as exponential_histogram", dp.metric.Name())
+	}
+	return nil
 }
 
 func (dp ExponentialHistogram) Value() (pcommon.Value, error) {
@@ -59,6 +69,17 @@ func (dp ExponentialHistogram) Value() (pcommon.Value, error) {
 	}
 
 	return vm, nil
+}
+
+func (dp ExponentialHistogram) Temporality() string {
+	switch dp.Metric().ExponentialHistogram().AggregationTemporality() {
+	case pmetric.AggregationTemporalityCumulative:
+		return "cumulative"
+	case pmetric.AggregationTemporalityDelta:
+		return "delta"
+	default:
+		return ""
+	}
 }
 
 func (dp ExponentialHistogram) DynamicTemplate(_ pmetric.Metric, mode DynamicTemplateMode) string {

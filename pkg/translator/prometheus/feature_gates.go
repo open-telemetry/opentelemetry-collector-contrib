@@ -9,3 +9,7 @@ import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 //
 // Deprecated: Permissive label sanitization is permanently enabled.
 var DropSanitizationGate = metadata.PkgTranslatorPrometheusPermissiveLabelSanitizationFeatureGate
+
+// KeepIdentifyingResourceAttributesGate controls whether identifying service resource
+// attributes are preserved as labels on target_info in addition to job and instance.
+var KeepIdentifyingResourceAttributesGate = metadata.PkgPrometheusKeepIdentifyingResourceAttributesFeatureGate

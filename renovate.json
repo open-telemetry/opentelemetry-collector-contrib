@@ -287,6 +287,12 @@
     },
     {
       "matchPackageNames": [
+        "github.com/hashicorp/consul/api"
+      ],
+      "allowedVersions": "<2.0.0"
+    },
+    {
+      "matchPackageNames": [
         "github.com/vmware/govmomi"
       ],
       "allowedVersions": "!/v0.51.0$/"

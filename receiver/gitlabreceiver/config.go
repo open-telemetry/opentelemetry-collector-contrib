@@ -60,7 +60,7 @@ type WebHook struct {
 	RequiredHeaders map[string]configopaque.String `mapstructure:"required_headers"` // optional setting to set one or more required headers for all requests to have (except the health check)
 	GitlabHeaders   GitlabHeaders                  `mapstructure:",squash"`          // GitLab headers set by default
 
-	Secret string `mapstructure:"secret"` // secret for webhook
+	Secret configopaque.String `mapstructure:"secret"` // secret for webhook
 
 	// IncludeUserAttributes controls whether user information (commit author, pipeline actor) is included
 	// Default: false (user information is excluded by default for privacy)
