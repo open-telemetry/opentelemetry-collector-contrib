@@ -101,6 +101,21 @@ func (e *metricsExporter) shutdown(_ context.Context) error {
 }
 
 func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
+	metricsMap, skippedCount := e.processMetrics(md)
+
+	if skippedCount > 0 {
+		e.logger.Debug(
+			"Skipped metrics during export",
+			zap.Int("skipped_count", skippedCount),
+		)
+	}
+
+	return metrics.InsertMetrics(ctx, e.db, metricsMap)
+}
+
+// processMetrics iterates through metrics and builds the metrics map, skipping invalid metrics.
+// Returns the metrics map and the count of skipped metrics.
+func (e *metricsExporter) processMetrics(md pmetric.Metrics) (map[pmetric.MetricType]metrics.MetricsModel, int) {
 	metricsMap := metrics.NewMetricsModel(e.tablesConfig, e.cfg.database())
 	var skippedCount int
 
@@ -137,12 +152,5 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 		}
 	}
 
-	if skippedCount > 0 {
-		e.logger.Debug(
-			"Skipped metrics during export",
-			zap.Int("skipped_count", skippedCount),
-		)
-	}
-
-	return metrics.InsertMetrics(ctx, e.db, metricsMap)
+	return metricsMap, skippedCount
 }

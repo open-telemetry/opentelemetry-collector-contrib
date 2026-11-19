@@ -6,8 +6,12 @@ package clickhouseexporter
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metrics"
 )
@@ -32,16 +36,85 @@ func Test_generateMetricMetricTableNames(t *testing.T) {
 	}, generateMetricTablesConfigMapper(&cfg))
 }
 
-// TestMetricsModel_WithEmptyMetricType verifies that when processing metrics with
-// MetricTypeEmpty, the valid metrics are still added to the model while empty metrics are skipped.
-// This tests the core logic without requiring a database connection.
-func TestMetricsModel_WithEmptyMetricType(t *testing.T) {
-	cfg := &Config{
-		MetricsTables: MetricTablesConfig{
-			Gauge: metrics.MetricTypeConfig{Name: "otel_metrics_gauge"},
+func TestMetricsExporterConnectionPoolSize(t *testing.T) {
+	tests := []struct {
+		name             string
+		endpoint         string
+		connectionParams map[string]string
+		queue            configoptional.Optional[exporterhelper.QueueBatchConfig]
+		expectedMaxOpen  int
+		expectedMaxIdle  int
+	}{
+		{
+			name:            "default queue",
+			endpoint:        defaultEndpoint,
+			queue:           configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+			expectedMaxOpen: 50,
+			expectedMaxIdle: 50,
+		},
+		{
+			// Falls back to the driver defaults.
+			name:            "queue disabled",
+			endpoint:        defaultEndpoint,
+			queue:           configoptional.None[exporterhelper.QueueBatchConfig](),
+			expectedMaxOpen: 10,
+			expectedMaxIdle: 5,
+		},
+		{
+			name:            "endpoint overrides max open",
+			endpoint:        defaultEndpoint + "?max_open_conns=3",
+			queue:           configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+			expectedMaxOpen: 3,
+			expectedMaxIdle: 3,
+		},
+		{
+			name:            "endpoint overrides max idle",
+			endpoint:        defaultEndpoint + "?max_idle_conns=2",
+			queue:           configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+			expectedMaxOpen: 50,
+			expectedMaxIdle: 2,
+		},
+		{
+			name:             "connection params override",
+			endpoint:         defaultEndpoint,
+			connectionParams: map[string]string{"max_open_conns": "7"},
+			queue:            configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+			expectedMaxOpen:  7,
+			expectedMaxIdle:  7,
 		},
 	}
-	metricsMap := metrics.NewMetricsModel(generateMetricTablesConfigMapper(cfg), cfg.database())
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Endpoint = tt.endpoint
+			cfg.QueueSettings = tt.queue
+			if tt.connectionParams != nil {
+				cfg.ConnectionParams = tt.connectionParams
+			}
+			// Skip schema creation so start doesn't need a ClickHouse server.
+			cfg.CreateSchema = false
+
+			exporter := newMetricsExporter(zap.NewNop(), cfg)
+			require.NoError(t, exporter.start(t.Context(), nil))
+			defer func() {
+				require.NoError(t, exporter.shutdown(t.Context()))
+			}()
+
+			stats := exporter.db.Stats()
+			assert.Equal(t, tt.expectedMaxOpen, stats.MaxOpenConns)
+			assert.Equal(t, tt.expectedMaxIdle, stats.MaxIdleConns)
+		})
+	}
+}
+
+// TestProcessMetrics_WithEmptyMetricType verifies that when processing metrics with
+// MetricTypeEmpty, the valid metrics are still added to the model while empty metrics are skipped.
+func TestProcessMetrics_WithEmptyMetricType(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsTables.Gauge = metrics.MetricTypeConfig{Name: "otel_metrics_gauge"}
+
+	exporter := newMetricsExporter(zap.NewNop(), cfg)
 
 	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
@@ -58,29 +131,7 @@ func TestMetricsModel_WithEmptyMetricType(t *testing.T) {
 	m2 := sm.Metrics().AppendEmpty()
 	m2.SetName("empty_metric")
 
-	var skippedCount int
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		rm := md.ResourceMetrics().At(i)
-		resAttr := rm.Resource().Attributes()
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
-			rs := rm.ScopeMetrics().At(j).Metrics()
-			scopeInstr := rm.ScopeMetrics().At(j).Scope()
-			scopeURL := rm.ScopeMetrics().At(j).SchemaUrl()
-			for k := 0; k < rs.Len(); k++ {
-				r := rs.At(k)
-				if r.Type() == pmetric.MetricTypeEmpty {
-					skippedCount++
-					continue
-				}
-				m, ok := metricsMap[r.Type()]
-				if !ok {
-					skippedCount++
-					continue
-				}
-				m.Add(resAttr, rm.SchemaUrl(), scopeInstr, scopeURL, r)
-			}
-		}
-	}
+	metricsMap, skippedCount := exporter.processMetrics(md)
 
 	// Verify the empty metric was skipped
 	require.Equal(t, 1, skippedCount, "Should have skipped 1 empty metric")
@@ -90,15 +141,13 @@ func TestMetricsModel_WithEmptyMetricType(t *testing.T) {
 	require.True(t, ok, "Gauge should be in the metrics map after processing")
 }
 
-// TestMetricsModel_WithMixedValidAndEmptyMetrics verifies that valid metrics in the same scope
+// TestProcessMetrics_WithMixedValidAndEmptyMetrics verifies that valid metrics in the same scope
 // as empty metrics are still processed.
-func TestMetricsModel_WithMixedValidAndEmptyMetrics(t *testing.T) {
-	cfg := &Config{
-		MetricsTables: MetricTablesConfig{
-			Gauge: metrics.MetricTypeConfig{Name: "otel_metrics_gauge"},
-		},
-	}
-	metricsMap := metrics.NewMetricsModel(generateMetricTablesConfigMapper(cfg), cfg.database())
+func TestProcessMetrics_WithMixedValidAndEmptyMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsTables.Gauge = metrics.MetricTypeConfig{Name: "otel_metrics_gauge"}
+
+	exporter := newMetricsExporter(zap.NewNop(), cfg)
 
 	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
@@ -115,44 +164,20 @@ func TestMetricsModel_WithMixedValidAndEmptyMetrics(t *testing.T) {
 	m2 := sm.Metrics().AppendEmpty()
 	m2.SetName("empty_metric")
 
-	var skippedCount int
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		rm := md.ResourceMetrics().At(i)
-		resAttr := rm.Resource().Attributes()
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
-			rs := rm.ScopeMetrics().At(j).Metrics()
-			scopeInstr := rm.ScopeMetrics().At(j).Scope()
-			scopeURL := rm.ScopeMetrics().At(j).SchemaUrl()
-			for k := 0; k < rs.Len(); k++ {
-				r := rs.At(k)
-				if r.Type() == pmetric.MetricTypeEmpty {
-					skippedCount++
-					continue
-				}
-				m, ok := metricsMap[r.Type()]
-				if !ok {
-					skippedCount++
-					continue
-				}
-				m.Add(resAttr, rm.SchemaUrl(), scopeInstr, scopeURL, r)
-			}
-		}
-	}
+	metricsMap, skippedCount := exporter.processMetrics(md)
 
 	require.Equal(t, 1, skippedCount, "Should have skipped 1 empty metric")
 	_, ok := metricsMap[pmetric.MetricTypeGauge]
 	require.True(t, ok, "Gauge should be in the metrics map")
 }
 
-// TestMetricsModel_WithEmptyMetricInSeparateResource verifies that a valid metric in one
+// TestProcessMetrics_WithEmptyMetricInSeparateResource verifies that a valid metric in one
 // resource is not affected by an empty metric in another resource.
-func TestMetricsModel_WithEmptyMetricInSeparateResource(t *testing.T) {
-	cfg := &Config{
-		MetricsTables: MetricTablesConfig{
-			Gauge: metrics.MetricTypeConfig{Name: "otel_metrics_gauge"},
-		},
-	}
-	metricsMap := metrics.NewMetricsModel(generateMetricTablesConfigMapper(cfg), cfg.database())
+func TestProcessMetrics_WithEmptyMetricInSeparateResource(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsTables.Gauge = metrics.MetricTypeConfig{Name: "otel_metrics_gauge"}
+
+	exporter := newMetricsExporter(zap.NewNop(), cfg)
 
 	md := pmetric.NewMetrics()
 
@@ -173,43 +198,19 @@ func TestMetricsModel_WithEmptyMetricInSeparateResource(t *testing.T) {
 	m2 := sm2.Metrics().AppendEmpty()
 	m2.SetName("empty_metric")
 
-	var skippedCount int
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		rm := md.ResourceMetrics().At(i)
-		resAttr := rm.Resource().Attributes()
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
-			rs := rm.ScopeMetrics().At(j).Metrics()
-			scopeInstr := rm.ScopeMetrics().At(j).Scope()
-			scopeURL := rm.ScopeMetrics().At(j).SchemaUrl()
-			for k := 0; k < rs.Len(); k++ {
-				r := rs.At(k)
-				if r.Type() == pmetric.MetricTypeEmpty {
-					skippedCount++
-					continue
-				}
-				m, ok := metricsMap[r.Type()]
-				if !ok {
-					skippedCount++
-					continue
-				}
-				m.Add(resAttr, rm.SchemaUrl(), scopeInstr, scopeURL, r)
-			}
-		}
-	}
+	metricsMap, skippedCount := exporter.processMetrics(md)
 
 	require.Equal(t, 1, skippedCount, "Should have skipped 1 empty metric")
 	_, ok := metricsMap[pmetric.MetricTypeGauge]
 	require.True(t, ok, "Gauge from resource A should be in the metrics map")
 }
 
-// TestMetricsModel_WithOnlyEmptyMetrics verifies behavior when all metrics are invalid.
-func TestMetricsModel_WithOnlyEmptyMetrics(t *testing.T) {
-	cfg := &Config{
-		MetricsTables: MetricTablesConfig{
-			Gauge: metrics.MetricTypeConfig{Name: "otel_metrics_gauge"},
-		},
-	}
-	metricsMap := metrics.NewMetricsModel(generateMetricTablesConfigMapper(cfg), cfg.database())
+// TestProcessMetrics_WithOnlyEmptyMetrics verifies behavior when all metrics are invalid.
+func TestProcessMetrics_WithOnlyEmptyMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsTables.Gauge = metrics.MetricTypeConfig{Name: "otel_metrics_gauge"}
+
+	exporter := newMetricsExporter(zap.NewNop(), cfg)
 
 	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
@@ -224,44 +225,20 @@ func TestMetricsModel_WithOnlyEmptyMetrics(t *testing.T) {
 	m2 := sm.Metrics().AppendEmpty()
 	m2.SetName("empty_metric_2")
 
-	var skippedCount int
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		rm := md.ResourceMetrics().At(i)
-		resAttr := rm.Resource().Attributes()
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
-			rs := rm.ScopeMetrics().At(j).Metrics()
-			scopeInstr := rm.ScopeMetrics().At(j).Scope()
-			scopeURL := rm.ScopeMetrics().At(j).SchemaUrl()
-			for k := 0; k < rs.Len(); k++ {
-				r := rs.At(k)
-				if r.Type() == pmetric.MetricTypeEmpty {
-					skippedCount++
-					continue
-				}
-				m, ok := metricsMap[r.Type()]
-				if !ok {
-					skippedCount++
-					continue
-				}
-				m.Add(resAttr, rm.SchemaUrl(), scopeInstr, scopeURL, r)
-			}
-		}
-	}
+	_, skippedCount := exporter.processMetrics(md)
 
 	require.Equal(t, 2, skippedCount, "Should have skipped 2 empty metrics")
 	// The metricsMap still has the model instances created, but no data was added to them
 	// This is correct behavior - the map structure exists but is empty of actual metric data
 }
 
-// TestMetricsModel_WithMultipleResourcesAndScopes verifies that invalid metrics in one
+// TestProcessMetrics_WithMultipleResourcesAndScopes verifies that invalid metrics in one
 // resource/scope don't affect valid metrics in other resources/scopes.
-func TestMetricsModel_WithMultipleResourcesAndScopes(t *testing.T) {
-	cfg := &Config{
-		MetricsTables: MetricTablesConfig{
-			Gauge: metrics.MetricTypeConfig{Name: "otel_metrics_gauge"},
-		},
-	}
-	metricsMap := metrics.NewMetricsModel(generateMetricTablesConfigMapper(cfg), cfg.database())
+func TestProcessMetrics_WithMultipleResourcesAndScopes(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsTables.Gauge = metrics.MetricTypeConfig{Name: "otel_metrics_gauge"}
+
+	exporter := newMetricsExporter(zap.NewNop(), cfg)
 
 	md := pmetric.NewMetrics()
 
@@ -289,45 +266,21 @@ func TestMetricsModel_WithMultipleResourcesAndScopes(t *testing.T) {
 	m3.SetName("gauge_2")
 	m3.SetEmptyGauge().DataPoints().AppendEmpty().SetDoubleValue(2.0)
 
-	var skippedCount int
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		rm := md.ResourceMetrics().At(i)
-		resAttr := rm.Resource().Attributes()
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
-			rs := rm.ScopeMetrics().At(j).Metrics()
-			scopeInstr := rm.ScopeMetrics().At(j).Scope()
-			scopeURL := rm.ScopeMetrics().At(j).SchemaUrl()
-			for k := 0; k < rs.Len(); k++ {
-				r := rs.At(k)
-				if r.Type() == pmetric.MetricTypeEmpty {
-					skippedCount++
-					continue
-				}
-				m, ok := metricsMap[r.Type()]
-				if !ok {
-					skippedCount++
-					continue
-				}
-				m.Add(resAttr, rm.SchemaUrl(), scopeInstr, scopeURL, r)
-			}
-		}
-	}
+	metricsMap, skippedCount := exporter.processMetrics(md)
 
 	require.Equal(t, 1, skippedCount, "Should have skipped 1 empty metric")
 	_, ok := metricsMap[pmetric.MetricTypeGauge]
 	require.True(t, ok, "Gauges from multiple resources should be in the metrics map")
 }
 
-// TestMetricsModel_WithValidOnlyBehaviorUnchanged verifies that entirely valid metric
+// TestProcessMetrics_WithValidOnlyBehaviorUnchanged verifies that entirely valid metric
 // batches continue to work as before.
-func TestMetricsModel_WithValidOnlyBehaviorUnchanged(t *testing.T) {
-	cfg := &Config{
-		MetricsTables: MetricTablesConfig{
-			Gauge: metrics.MetricTypeConfig{Name: "otel_metrics_gauge"},
-			Sum:   metrics.MetricTypeConfig{Name: "otel_metrics_sum"},
-		},
-	}
-	metricsMap := metrics.NewMetricsModel(generateMetricTablesConfigMapper(cfg), cfg.database())
+func TestProcessMetrics_WithValidOnlyBehaviorUnchanged(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsTables.Gauge = metrics.MetricTypeConfig{Name: "otel_metrics_gauge"}
+	cfg.MetricsTables.Sum = metrics.MetricTypeConfig{Name: "otel_metrics_sum"}
+
+	exporter := newMetricsExporter(zap.NewNop(), cfg)
 
 	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
@@ -340,29 +293,7 @@ func TestMetricsModel_WithValidOnlyBehaviorUnchanged(t *testing.T) {
 	m1.SetName("valid_gauge")
 	m1.SetEmptyGauge().DataPoints().AppendEmpty().SetDoubleValue(1.0)
 
-	var skippedCount int
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		rm := md.ResourceMetrics().At(i)
-		resAttr := rm.Resource().Attributes()
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
-			rs := rm.ScopeMetrics().At(j).Metrics()
-			scopeInstr := rm.ScopeMetrics().At(j).Scope()
-			scopeURL := rm.ScopeMetrics().At(j).SchemaUrl()
-			for k := 0; k < rs.Len(); k++ {
-				r := rs.At(k)
-				if r.Type() == pmetric.MetricTypeEmpty {
-					skippedCount++
-					continue
-				}
-				m, ok := metricsMap[r.Type()]
-				if !ok {
-					skippedCount++
-					continue
-				}
-				m.Add(resAttr, rm.SchemaUrl(), scopeInstr, scopeURL, r)
-			}
-		}
-	}
+	metricsMap, skippedCount := exporter.processMetrics(md)
 
 	require.Equal(t, 0, skippedCount, "Should not skip any valid metrics")
 	_, gaugeOk := metricsMap[pmetric.MetricTypeGauge]
