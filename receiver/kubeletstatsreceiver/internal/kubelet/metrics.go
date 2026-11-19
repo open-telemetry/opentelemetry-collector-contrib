@@ -32,6 +32,7 @@ func MetricsData(
 		time:                  time.Now(),
 		mbs:                   mbs,
 		cpuUsageCalculator:    cpuUsageCalculator,
+		nodeName:              summary.Node.NodeName,
 	}
 	acc.nodeStats(summary.Node)
 	for i := range summary.Pods {
@@ -47,6 +48,7 @@ func MetricsData(
 			volumeStats := &pod.VolumeStats[j]
 			// propagate the pod resource down to the container
 			acc.volumeStats(pod, volumeStats)
+			acc.pvcStats(volumeStats)
 		}
 	}
 	return acc.m

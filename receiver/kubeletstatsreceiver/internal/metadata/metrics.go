@@ -173,6 +173,15 @@ var K8sVolumeMetrics = VolumeMetrics{
 	InodesUsed: (*MetricsBuilder).RecordK8sVolumeInodesUsedDataPoint,
 }
 
+var K8sPersistentVolumeClaimVolumeMetrics = VolumeMetrics{
+	Available:  (*MetricsBuilder).RecordK8sPersistentvolumeclaimVolumeAvailableDataPoint,
+	Capacity:   (*MetricsBuilder).RecordK8sPersistentvolumeclaimVolumeCapacityDataPoint,
+	Used:       (*MetricsBuilder).RecordK8sPersistentvolumeclaimVolumeUsageDataPoint,
+	Inodes:     (*MetricsBuilder).RecordK8sPersistentvolumeclaimVolumeInodeCountDataPoint,
+	InodesFree: (*MetricsBuilder).RecordK8sPersistentvolumeclaimVolumeInodeFreeDataPoint,
+	InodesUsed: (*MetricsBuilder).RecordK8sPersistentvolumeclaimVolumeInodeUsedDataPoint,
+}
+
 type UptimeMetrics struct {
 	Uptime RecordIntDataPointFunc
 }
