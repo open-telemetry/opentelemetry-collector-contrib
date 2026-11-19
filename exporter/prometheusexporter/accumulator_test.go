@@ -5,6 +5,7 @@ package prometheusexporter
 
 import (
 	"log"
+	"math"
 	"slices"
 	"strings"
 	"testing"
@@ -1402,4 +1403,534 @@ func firstPoint(m pmetric.Metric) (pcommon.Map, time.Time) {
 		return dp.Attributes(), dp.Timestamp().AsTime()
 	}
 	panic("unexpected metric type " + m.Type().String())
+}
+
+func testTraceID(b byte) pcommon.TraceID {
+	var id pcommon.TraceID
+	id[15] = b
+	return id
+}
+
+func testSpanID(b byte) pcommon.SpanID {
+	var id pcommon.SpanID
+	id[7] = b
+	return id
+}
+
+func appendDoubleExemplar(slice pmetric.ExemplarSlice, ts time.Time, val float64, id byte, attrVal string) {
+	ex := slice.AppendEmpty()
+	ex.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+	ex.SetDoubleValue(val)
+	ex.SetTraceID(testTraceID(id))
+	ex.SetSpanID(testSpanID(id))
+	if attrVal != "" {
+		ex.FilteredAttributes().PutStr("k", attrVal)
+	}
+}
+
+func appendIntExemplar(slice pmetric.ExemplarSlice, ts time.Time, val int64, id byte, attrVal string) {
+	ex := slice.AppendEmpty()
+	ex.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+	ex.SetIntValue(val)
+	ex.SetTraceID(testTraceID(id))
+	ex.SetSpanID(testSpanID(id))
+	if attrVal != "" {
+		ex.FilteredAttributes().PutStr("k", attrVal)
+	}
+}
+
+func TestAccumulateDeltaToCumulativeHistogramExemplars(t *testing.T) {
+	newDeltaHistogram := func(startTs, ts time.Time, bounds []float64, counts []uint64, metrics pmetric.MetricSlice) pmetric.HistogramDataPoint {
+		metric := metrics.AppendEmpty()
+		metric.SetName("test_hist_exemplars")
+		metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		dp := metric.Histogram().DataPoints().AppendEmpty()
+		dp.ExplicitBounds().FromRaw(bounds)
+		dp.BucketCounts().FromRaw(counts)
+		var total uint64
+		for _, c := range counts {
+			total += c
+		}
+		dp.SetCount(total)
+		dp.SetSum(10.0)
+		dp.Attributes().PutStr("label_1", "1")
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTs))
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+		return dp
+	}
+
+	t.Run("AlignedMergeRetainsLatestPerBucket", func(t *testing.T) {
+		base := time.Now().Add(-10 * time.Second).Truncate(time.Millisecond)
+		t0 := base
+		t1 := base.Add(time.Second)
+		t2 := base.Add(2 * time.Second)
+		bounds := []float64{0.1, 0.5, 1.0, 10.0}
+
+		rm := pmetric.NewResourceMetrics()
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+
+		dp1 := newDeltaHistogram(t0, t1, bounds, []uint64{1, 1, 1, 0, 0}, ilm.Metrics())
+		// Bucket 0 (<=0.1): will be replaced by newer exemplar in dp2
+		appendDoubleExemplar(dp1.Exemplars(), t0.Add(100*time.Millisecond), 0.05, 1, "b0-old")
+		// Bucket 1 ((0.1, 0.5]): inclusive upper bound 0.5, preserved because dp2 has none in bucket 1
+		appendDoubleExemplar(dp1.Exemplars(), t0.Add(200*time.Millisecond), 0.5, 2, "b1-kept")
+		// Bucket 2 ((0.5, 1.0]): int exemplar, preserved because dp2 has none in bucket 2
+		appendIntExemplar(dp1.Exemplars(), t0.Add(300*time.Millisecond), 1, 3, "b2-int")
+
+		dp2 := newDeltaHistogram(t1, t2, bounds, []uint64{1, 0, 0, 0, 1}, ilm.Metrics())
+		// Bucket 0 (<=0.1): later timestamp replaces dp1's bucket 0 exemplar
+		appendDoubleExemplar(dp2.Exemplars(), t1.Add(100*time.Millisecond), 0.08, 4, "b0-new")
+		// +Inf bucket (>10.0): added from dp2
+		appendDoubleExemplar(dp2.Exemplars(), t1.Add(200*time.Millisecond), 15.0, 5, "inf-new")
+
+		a := newAccumulator(zap.NewNop(), time.Hour).(*lastValueAccumulator)
+		require.Equal(t, 2, a.Accumulate(rm))
+
+		sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), dp2.Attributes(), pcommon.NewMap())
+		raw, ok := a.registeredMetrics.Load(sig)
+		require.True(t, ok)
+		got := raw.(*accumulatedValue).value.Histogram().DataPoints().At(0)
+
+		require.Equal(t, 4, got.Exemplars().Len())
+
+		// Bucket 0: dp2's exemplar replaced dp1's
+		ex0 := got.Exemplars().At(0)
+		require.Equal(t, pmetric.ExemplarValueTypeDouble, ex0.ValueType())
+		require.Equal(t, 0.08, ex0.DoubleValue())
+		require.Equal(t, testTraceID(4), ex0.TraceID())
+		require.Equal(t, testSpanID(4), ex0.SpanID())
+		require.Equal(t, pcommon.NewTimestampFromTime(t1.Add(100*time.Millisecond)), ex0.Timestamp())
+		attr0, ok := ex0.FilteredAttributes().Get("k")
+		require.True(t, ok)
+		require.Equal(t, "b0-new", attr0.Str())
+
+		// Bucket 1: dp1's exemplar preserved on inclusive upper bound
+		ex1 := got.Exemplars().At(1)
+		require.Equal(t, 0.5, ex1.DoubleValue())
+		require.Equal(t, testTraceID(2), ex1.TraceID())
+		attr1, ok := ex1.FilteredAttributes().Get("k")
+		require.True(t, ok)
+		require.Equal(t, "b1-kept", attr1.Str())
+
+		// Bucket 2: dp1's int exemplar preserved with IntValue type
+		ex2 := got.Exemplars().At(2)
+		require.Equal(t, pmetric.ExemplarValueTypeInt, ex2.ValueType())
+		require.Equal(t, int64(1), ex2.IntValue())
+		require.Equal(t, testTraceID(3), ex2.TraceID())
+
+		// +Inf bucket: dp2's exemplar
+		ex3 := got.Exemplars().At(3)
+		require.Equal(t, 15.0, ex3.DoubleValue())
+		require.Equal(t, testTraceID(5), ex3.TraceID())
+
+		// Input datapoints must remain untouched
+		require.Equal(t, 3, dp1.Exemplars().Len())
+		require.Equal(t, 2, dp2.Exemplars().Len())
+	})
+
+	t.Run("AlignedMergeRespectsExemplarTimestampOrderAndTies", func(t *testing.T) {
+		base := time.Now().Add(-10 * time.Second).Truncate(time.Millisecond)
+		t0, t1, t2 := base, base.Add(time.Second), base.Add(2*time.Second)
+		bounds := []float64{1.0, 5.0}
+
+		rm := pmetric.NewResourceMetrics()
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+
+		dp1 := newDeltaHistogram(t0, t1, bounds, []uint64{1, 1, 0}, ilm.Metrics())
+		// Bucket 0: dp1 has a LATER exemplar timestamp than dp2
+		appendDoubleExemplar(dp1.Exemplars(), t1.Add(500*time.Millisecond), 0.2, 1, "later-from-dp1")
+		// Bucket 1: equal timestamp with dp2 -> dp2 (newer) should win
+		tieTs := t1.Add(200 * time.Millisecond)
+		appendDoubleExemplar(dp1.Exemplars(), tieTs, 2.0, 2, "tie-from-dp1")
+
+		dp2 := newDeltaHistogram(t1, t2, bounds, []uint64{1, 1, 0}, ilm.Metrics())
+		appendDoubleExemplar(dp2.Exemplars(), t1.Add(100*time.Millisecond), 0.3, 3, "earlier-from-dp2")
+		appendDoubleExemplar(dp2.Exemplars(), tieTs, 3.0, 4, "tie-from-dp2")
+
+		a := newAccumulator(zap.NewNop(), time.Hour).(*lastValueAccumulator)
+		require.Equal(t, 2, a.Accumulate(rm))
+
+		sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), dp2.Attributes(), pcommon.NewMap())
+		raw, ok := a.registeredMetrics.Load(sig)
+		require.True(t, ok)
+		got := raw.(*accumulatedValue).value.Histogram().DataPoints().At(0)
+
+		require.Equal(t, 2, got.Exemplars().Len())
+		require.Equal(t, testTraceID(1), got.Exemplars().At(0).TraceID())
+		require.Equal(t, testTraceID(4), got.Exemplars().At(1).TraceID())
+	})
+
+	t.Run("AlignedMergePreservesOlderWhenNewerHasNoExemplars", func(t *testing.T) {
+		base := time.Now().Add(-10 * time.Second).Truncate(time.Millisecond)
+		t0, t1, t2 := base, base.Add(time.Second), base.Add(2*time.Second)
+		bounds := []float64{1.0, 5.0}
+
+		rm := pmetric.NewResourceMetrics()
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+
+		dp1 := newDeltaHistogram(t0, t1, bounds, []uint64{1, 0, 1}, ilm.Metrics())
+		appendDoubleExemplar(dp1.Exemplars(), t0.Add(100*time.Millisecond), 0.5, 1, "")
+		appendDoubleExemplar(dp1.Exemplars(), t0.Add(200*time.Millisecond), 9.0, 2, "")
+
+		dp2 := newDeltaHistogram(t1, t2, bounds, []uint64{1, 0, 0}, ilm.Metrics())
+
+		a := newAccumulator(zap.NewNop(), time.Hour).(*lastValueAccumulator)
+		require.Equal(t, 2, a.Accumulate(rm))
+
+		sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), dp2.Attributes(), pcommon.NewMap())
+		raw, ok := a.registeredMetrics.Load(sig)
+		require.True(t, ok)
+		got := raw.(*accumulatedValue).value.Histogram().DataPoints().At(0)
+
+		require.Equal(t, 2, got.Exemplars().Len())
+		require.Equal(t, testTraceID(1), got.Exemplars().At(0).TraceID())
+		require.Equal(t, testTraceID(2), got.Exemplars().At(1).TraceID())
+	})
+
+	t.Run("AlignedMergeBoundedAcrossManyMerges", func(t *testing.T) {
+		base := time.Now().Add(-time.Minute).Truncate(time.Millisecond)
+		bounds := []float64{0.1, 0.5, 1.0, 10.0}
+		vals := []float64{0.05, 0.3, 0.8, 5.0, 20.0}
+
+		rm := pmetric.NewResourceMetrics()
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+
+		const merges = 25
+		var lastDP pmetric.HistogramDataPoint
+		for i := range merges {
+			start := base.Add(time.Duration(i) * time.Second)
+			end := start.Add(time.Second)
+			dp := newDeltaHistogram(start, end, bounds, []uint64{1, 1, 1, 1, 1}, ilm.Metrics())
+			for j, v := range vals {
+				appendDoubleExemplar(dp.Exemplars(), start.Add(time.Duration(j+1)*time.Millisecond), v, byte(i+1), "")
+			}
+			lastDP = dp
+		}
+
+		a := newAccumulator(zap.NewNop(), time.Hour).(*lastValueAccumulator)
+		require.Equal(t, merges, a.Accumulate(rm))
+
+		sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), lastDP.Attributes(), pcommon.NewMap())
+		raw, ok := a.registeredMetrics.Load(sig)
+		require.True(t, ok)
+		got := raw.(*accumulatedValue).value.Histogram().DataPoints().At(0)
+
+		require.Equal(t, len(bounds)+1, got.Exemplars().Len())
+		for i := range len(bounds) + 1 {
+			require.Equal(t, testTraceID(merges), got.Exemplars().At(i).TraceID())
+		}
+	})
+
+	t.Run("AlignedMergeEmptyExplicitBounds", func(t *testing.T) {
+		base := time.Now().Add(-10 * time.Second).Truncate(time.Millisecond)
+		t0, t1, t2 := base, base.Add(time.Second), base.Add(2*time.Second)
+
+		rm := pmetric.NewResourceMetrics()
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+
+		dp1 := newDeltaHistogram(t0, t1, nil, []uint64{1}, ilm.Metrics())
+		appendDoubleExemplar(dp1.Exemplars(), t0.Add(100*time.Millisecond), 3.0, 1, "")
+		dp2 := newDeltaHistogram(t1, t2, nil, []uint64{1}, ilm.Metrics())
+		appendDoubleExemplar(dp2.Exemplars(), t1.Add(100*time.Millisecond), 7.0, 2, "")
+
+		a := newAccumulator(zap.NewNop(), time.Hour).(*lastValueAccumulator)
+		require.Equal(t, 2, a.Accumulate(rm))
+
+		sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), dp2.Attributes(), pcommon.NewMap())
+		raw, ok := a.registeredMetrics.Load(sig)
+		require.True(t, ok)
+		got := raw.(*accumulatedValue).value.Histogram().DataPoints().At(0)
+
+		require.Equal(t, 1, got.Exemplars().Len())
+		require.Equal(t, 7.0, got.Exemplars().At(0).DoubleValue())
+		require.Equal(t, testTraceID(2), got.Exemplars().At(0).TraceID())
+	})
+
+	t.Run("AlignedMergeUnsortedExplicitBoundsDoesNotMutateInput", func(t *testing.T) {
+		base := time.Now().Add(-10 * time.Second).Truncate(time.Millisecond)
+		t0, t1, t2 := base, base.Add(time.Second), base.Add(2*time.Second)
+		unsorted := []float64{10.0, 0.5, 1.0}
+
+		rm := pmetric.NewResourceMetrics()
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+
+		dp1 := newDeltaHistogram(t0, t1, slices.Clone(unsorted), []uint64{1, 1, 1, 0}, ilm.Metrics())
+		appendDoubleExemplar(dp1.Exemplars(), t0.Add(100*time.Millisecond), 0.2, 1, "")
+		appendDoubleExemplar(dp1.Exemplars(), t0.Add(200*time.Millisecond), 0.8, 2, "")
+
+		dp2 := newDeltaHistogram(t1, t2, slices.Clone(unsorted), []uint64{1, 0, 0, 0}, ilm.Metrics())
+		appendDoubleExemplar(dp2.Exemplars(), t1.Add(100*time.Millisecond), 0.4, 3, "")
+
+		a := newAccumulator(zap.NewNop(), time.Hour).(*lastValueAccumulator)
+		require.Equal(t, 2, a.Accumulate(rm))
+
+		// Must not mutate input explicit bounds order
+		require.Equal(t, unsorted, dp2.ExplicitBounds().AsRaw())
+
+		sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), dp2.Attributes(), pcommon.NewMap())
+		raw, ok := a.registeredMetrics.Load(sig)
+		require.True(t, ok)
+		got := raw.(*accumulatedValue).value.Histogram().DataPoints().At(0)
+
+		require.Equal(t, 2, got.Exemplars().Len())
+		require.Equal(t, testTraceID(3), got.Exemplars().At(0).TraceID())
+		require.Equal(t, testTraceID(2), got.Exemplars().At(1).TraceID())
+	})
+
+	t.Run("AlignedMergeBoundsChangedCopiesOnlyNewer", func(t *testing.T) {
+		base := time.Now().Add(-10 * time.Second).Truncate(time.Millisecond)
+		t0, t1, t2 := base, base.Add(time.Second), base.Add(2*time.Second)
+
+		rm := pmetric.NewResourceMetrics()
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+
+		dp1 := newDeltaHistogram(t0, t1, []float64{0.1, 0.5, 1.0}, []uint64{1, 1, 0, 0}, ilm.Metrics())
+		appendDoubleExemplar(dp1.Exemplars(), t0.Add(100*time.Millisecond), 0.05, 1, "")
+		appendDoubleExemplar(dp1.Exemplars(), t0.Add(200*time.Millisecond), 0.4, 2, "")
+
+		dp2 := newDeltaHistogram(t1, t2, []float64{0.1, 0.2, 1.0}, []uint64{1, 0, 0, 0}, ilm.Metrics())
+		appendDoubleExemplar(dp2.Exemplars(), t1.Add(100*time.Millisecond), 0.15, 3, "new-bounds")
+
+		a := newAccumulator(zap.NewNop(), time.Hour).(*lastValueAccumulator)
+		require.Equal(t, 2, a.Accumulate(rm))
+
+		sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), dp2.Attributes(), pcommon.NewMap())
+		raw, ok := a.registeredMetrics.Load(sig)
+		require.True(t, ok)
+		got := raw.(*accumulatedValue).value.Histogram().DataPoints().At(0)
+
+		require.Equal(t, 1, got.Exemplars().Len())
+		require.Equal(t, 0.15, got.Exemplars().At(0).DoubleValue())
+		require.Equal(t, testTraceID(3), got.Exemplars().At(0).TraceID())
+	})
+
+	t.Run("AlignedMergeBoundsChangedDiscardsOlderWhenNewerEmpty", func(t *testing.T) {
+		base := time.Now().Add(-10 * time.Second).Truncate(time.Millisecond)
+		t0, t1, t2 := base, base.Add(time.Second), base.Add(2*time.Second)
+
+		rm := pmetric.NewResourceMetrics()
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+
+		dp1 := newDeltaHistogram(t0, t1, []float64{0.1, 0.5}, []uint64{1, 0, 0}, ilm.Metrics())
+		appendDoubleExemplar(dp1.Exemplars(), t0.Add(100*time.Millisecond), 0.05, 1, "")
+
+		dp2 := newDeltaHistogram(t1, t2, []float64{0.1, 0.2}, []uint64{1, 0, 0}, ilm.Metrics())
+
+		a := newAccumulator(zap.NewNop(), time.Hour).(*lastValueAccumulator)
+		require.Equal(t, 2, a.Accumulate(rm))
+
+		sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), dp2.Attributes(), pcommon.NewMap())
+		raw, ok := a.registeredMetrics.Load(sig)
+		require.True(t, ok)
+		got := raw.(*accumulatedValue).value.Histogram().DataPoints().At(0)
+
+		require.Equal(t, 0, got.Exemplars().Len())
+	})
+
+	t.Run("AlignedMergeSkipsNaNExemplars", func(t *testing.T) {
+		base := time.Now().Add(-10 * time.Second).Truncate(time.Millisecond)
+		t0, t1, t2 := base, base.Add(time.Second), base.Add(2*time.Second)
+		bounds := []float64{1.0, 5.0}
+
+		rm := pmetric.NewResourceMetrics()
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+
+		dp1 := newDeltaHistogram(t0, t1, bounds, []uint64{0, 0, 1}, ilm.Metrics())
+		appendDoubleExemplar(dp1.Exemplars(), t0.Add(100*time.Millisecond), 10.0, 1, "valid-inf")
+
+		dp2 := newDeltaHistogram(t1, t2, bounds, []uint64{1, 0, 0}, ilm.Metrics())
+		appendDoubleExemplar(dp2.Exemplars(), t1.Add(100*time.Millisecond), math.NaN(), 2, "nan-exemplar")
+
+		a := newAccumulator(zap.NewNop(), time.Hour).(*lastValueAccumulator)
+		require.Equal(t, 2, a.Accumulate(rm))
+
+		sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), dp2.Attributes(), pcommon.NewMap())
+		raw, ok := a.registeredMetrics.Load(sig)
+		require.True(t, ok)
+		got := raw.(*accumulatedValue).value.Histogram().DataPoints().At(0)
+
+		require.Equal(t, 1, got.Exemplars().Len())
+		require.Equal(t, 10.0, got.Exemplars().At(0).DoubleValue())
+		require.Equal(t, testTraceID(1), got.Exemplars().At(0).TraceID())
+	})
+}
+
+func TestAccumulateDeltaToCumulativeExponentialHistogramExemplars(t *testing.T) {
+	newDeltaExpHistogram := func(startTs, ts time.Time, scale int32, metrics pmetric.MetricSlice) pmetric.ExponentialHistogramDataPoint {
+		metric := metrics.AppendEmpty()
+		metric.SetName("test_exp_hist_exemplars")
+		metric.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		dp := metric.ExponentialHistogram().DataPoints().AppendEmpty()
+		dp.SetScale(scale)
+		dp.Positive().SetOffset(0)
+		dp.Positive().BucketCounts().FromRaw([]uint64{1})
+		dp.SetCount(1)
+		dp.SetSum(1.5)
+		dp.Attributes().PutStr("label_1", "1")
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTs))
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+		return dp
+	}
+
+	t.Run("AlignedMergePreservesBothUnderCap", func(t *testing.T) {
+		base := time.Now().Add(-10 * time.Second).Truncate(time.Millisecond)
+		t0, t1, t2 := base, base.Add(time.Second), base.Add(2*time.Second)
+
+		rm := pmetric.NewResourceMetrics()
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+
+		dp1 := newDeltaExpHistogram(t0, t1, 2, ilm.Metrics())
+		appendDoubleExemplar(dp1.Exemplars(), t0.Add(100*time.Millisecond), 1.5, 1, "e1")
+		appendIntExemplar(dp1.Exemplars(), t0.Add(200*time.Millisecond), 2, 2, "e2")
+
+		dp2 := newDeltaExpHistogram(t1, t2, 1, ilm.Metrics())
+		appendDoubleExemplar(dp2.Exemplars(), t1.Add(100*time.Millisecond), 3.5, 3, "e3")
+
+		a := newAccumulator(zap.NewNop(), time.Hour).(*lastValueAccumulator)
+		require.Equal(t, 2, a.Accumulate(rm))
+
+		sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), dp2.Attributes(), pcommon.NewMap())
+		raw, ok := a.registeredMetrics.Load(sig)
+		require.True(t, ok)
+		got := raw.(*accumulatedValue).value.ExponentialHistogram().DataPoints().At(0)
+
+		require.Equal(t, 3, got.Exemplars().Len())
+		require.Equal(t, testTraceID(1), got.Exemplars().At(0).TraceID())
+		require.Equal(t, pmetric.ExemplarValueTypeInt, got.Exemplars().At(1).ValueType())
+		require.Equal(t, int64(2), got.Exemplars().At(1).IntValue())
+		require.Equal(t, testTraceID(3), got.Exemplars().At(2).TraceID())
+		attr2, ok := got.Exemplars().At(2).FilteredAttributes().Get("k")
+		require.True(t, ok)
+		require.Equal(t, "e3", attr2.Str())
+	})
+
+	t.Run("AlignedMergePreservesOneSidedExemplars", func(t *testing.T) {
+		for _, tc := range []struct {
+			name        string
+			onFirst     bool
+			onSecond    bool
+			wantTraceID byte
+		}{
+			{name: "OlderOnly", onFirst: true, onSecond: false, wantTraceID: 1},
+			{name: "NewerOnly", onFirst: false, onSecond: true, wantTraceID: 2},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				base := time.Now().Add(-10 * time.Second).Truncate(time.Millisecond)
+				t0, t1, t2 := base, base.Add(time.Second), base.Add(2*time.Second)
+
+				rm := pmetric.NewResourceMetrics()
+				ilm := rm.ScopeMetrics().AppendEmpty()
+				ilm.Scope().SetName("test")
+
+				dp1 := newDeltaExpHistogram(t0, t1, 1, ilm.Metrics())
+				if tc.onFirst {
+					appendDoubleExemplar(dp1.Exemplars(), t0.Add(100*time.Millisecond), 1.2, 1, "")
+				}
+				dp2 := newDeltaExpHistogram(t1, t2, 1, ilm.Metrics())
+				if tc.onSecond {
+					appendDoubleExemplar(dp2.Exemplars(), t1.Add(100*time.Millisecond), 2.4, 2, "")
+				}
+
+				a := newAccumulator(zap.NewNop(), time.Hour).(*lastValueAccumulator)
+				require.Equal(t, 2, a.Accumulate(rm))
+
+				sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), dp2.Attributes(), pcommon.NewMap())
+				raw, ok := a.registeredMetrics.Load(sig)
+				require.True(t, ok)
+				got := raw.(*accumulatedValue).value.ExponentialHistogram().DataPoints().At(0)
+
+				require.Equal(t, 1, got.Exemplars().Len())
+				require.Equal(t, testTraceID(tc.wantTraceID), got.Exemplars().At(0).TraceID())
+			})
+		}
+	})
+
+	t.Run("AlignedMergeCapsAtMaxKeepingLatest", func(t *testing.T) {
+		base := time.Now().Add(-time.Minute).Truncate(time.Millisecond)
+
+		rm := pmetric.NewResourceMetrics()
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+
+		const (
+			merges    = 6
+			perMerge  = 4
+			totalSent = merges * perMerge
+		)
+		var lastDP pmetric.ExponentialHistogramDataPoint
+		seq := byte(0)
+		for i := range merges {
+			start := base.Add(time.Duration(i) * time.Second)
+			end := start.Add(time.Second)
+			dp := newDeltaExpHistogram(start, end, 1, ilm.Metrics())
+			for j := range perMerge {
+				seq++
+				appendDoubleExemplar(dp.Exemplars(), start.Add(time.Duration(j+1)*100*time.Millisecond), float64(seq), seq, "")
+			}
+			lastDP = dp
+		}
+
+		a := newAccumulator(zap.NewNop(), time.Hour).(*lastValueAccumulator)
+		require.Equal(t, merges, a.Accumulate(rm))
+
+		sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), lastDP.Attributes(), pcommon.NewMap())
+		raw, ok := a.registeredMetrics.Load(sig)
+		require.True(t, ok)
+		got := raw.(*accumulatedValue).value.ExponentialHistogram().DataPoints().At(0)
+
+		require.Equal(t, maxExponentialHistogramExemplars, got.Exemplars().Len())
+		firstKept := byte(totalSent - maxExponentialHistogramExemplars + 1)
+		for i := range maxExponentialHistogramExemplars {
+			require.Equal(t, testTraceID(firstKept+byte(i)), got.Exemplars().At(i).TraceID())
+		}
+	})
+
+	t.Run("AlignedMergeCapPrefersNewerOnTiedAndOutOfOrderTimestamps", func(t *testing.T) {
+		base := time.Now().Add(-10 * time.Second).Truncate(time.Millisecond)
+		t0, t1, t2 := base, base.Add(time.Second), base.Add(2*time.Second)
+
+		rm := pmetric.NewResourceMetrics()
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+
+		tieTs := t1.Add(50 * time.Millisecond)
+		dp1 := newDeltaExpHistogram(t0, t1, 1, ilm.Metrics())
+		// 1 very late exemplar from dp1 (must survive) + 7 at tieTs
+		appendDoubleExemplar(dp1.Exemplars(), t2.Add(500*time.Millisecond), 99.0, 100, "")
+		for i := range 7 {
+			appendDoubleExemplar(dp1.Exemplars(), tieTs, float64(i+1), byte(i+1), "")
+		}
+
+		dp2 := newDeltaExpHistogram(t1, t2, 1, ilm.Metrics())
+		// 5 exemplars at tieTs from dp2 (newer -> must beat earlier dp1 ties)
+		for i := range 5 {
+			appendDoubleExemplar(dp2.Exemplars(), tieTs, float64(50+i), byte(50+i), "")
+		}
+
+		a := newAccumulator(zap.NewNop(), time.Hour).(*lastValueAccumulator)
+		require.Equal(t, 2, a.Accumulate(rm))
+
+		sig := timeseriesSignature(ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), ilm.Metrics().At(0), dp2.Attributes(), pcommon.NewMap())
+		raw, ok := a.registeredMetrics.Load(sig)
+		require.True(t, ok)
+		got := raw.(*accumulatedValue).value.ExponentialHistogram().DataPoints().At(0)
+
+		require.Equal(t, maxExponentialHistogramExemplars, got.Exemplars().Len())
+		// 13 total: 12 at tieTs (dp1: 1..7, dp2: 50..54), 1 at t2+500ms (id 100).
+		// Drop 3 oldest ties (dp1: 1, 2, 3), keep dp1: 4..7, dp2: 50..54, then id 100.
+		wantIDs := []byte{4, 5, 6, 7, 50, 51, 52, 53, 54, 100}
+		for i, wantID := range wantIDs {
+			require.Equal(t, testTraceID(wantID), got.Exemplars().At(i).TraceID())
+		}
+	})
 }

@@ -1,0 +1,8 @@
+change_type: bug_fix
+component: exporter/prometheus
+note: Preserve bounded exemplars when accumulating aligned delta classic and exponential histograms.
+issues: [53377]
+subtext: |
+  Previously, aligned delta merges dropped all exemplars for both classic and exponential histograms.
+  Classic histograms now retain the latest exemplar per bucket when bounds match (or only the newer datapoint's exemplars when bounds change), and exponential histograms retain up to 10 most recent exemplars across aligned delta merges.
+change_logs: [user]
