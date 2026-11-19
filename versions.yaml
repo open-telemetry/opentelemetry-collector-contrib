@@ -7,6 +7,7 @@ module-sets:
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor
 
   contrib-base:
     version: v0.165.1
@@ -242,7 +243,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/telemetrypolicyprocessor
-      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/xtransformprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/unrollprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/verifyprocessor
