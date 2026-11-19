@@ -12,7 +12,7 @@ status:
     beta: [metrics]
   distributions: [contrib, k8s]
   codeowners:
-    active: [TylerHelmuth, ChrsMark, dloucasfx, jinja2]
+    active: [TylerHelmuth, ChrsMark, jinja2]
     emeritus: [dmitryax]
 
 sem_conv_version: 1.45.0

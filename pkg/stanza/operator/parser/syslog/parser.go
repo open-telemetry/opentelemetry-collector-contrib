@@ -54,6 +54,8 @@ type Parser struct {
 	location                     *time.Location
 	enableOctetCounting          bool
 	allowSkipPriHeader           bool
+	allowRFC3339Timestamp        bool
+	allowSecondFractions         bool
 	nonTransparentFramingTrailer *string
 	maxOctets                    int
 }
@@ -184,13 +186,13 @@ func (p *Parser) buildParseFunc() (parseFunc, error) {
 	case RFC3164:
 		// Octet Counting Parsing RFC6587 with RFC3164 message format
 		if p.enableOctetCounting {
-			return newOctetCountingRFC3164ParseFunc(p.location, p.maxOctets), nil
+			return newOctetCountingRFC3164ParseFunc(p.rfc3164MachineOptions(), p.maxOctets), nil
 		}
 		return func(input []byte) (sl.Message, error) {
 			if p.allowSkipPriHeader && !priRegex.Match(input) {
 				input = append([]byte("<0>"), input...)
 			}
-			return rfc3164.NewMachine(rfc3164.WithLocaleTimezone(p.location), rfc3164.WithLenientDay()).Parse(input)
+			return rfc3164.NewMachine(p.rfc3164MachineOptions()...).Parse(input)
 		}, nil
 	case RFC5424:
 		switch {
@@ -227,6 +229,19 @@ func (p *Parser) buildParseFunc() (parseFunc, error) {
 	default:
 		return nil, fmt.Errorf("invalid protocol %s", p.protocol)
 	}
+}
+
+// rfc3164MachineOptions returns the RFC3164 machine options shared by the
+// plain and octet counting paths.
+func (p *Parser) rfc3164MachineOptions() []sl.MachineOption {
+	opts := []sl.MachineOption{rfc3164.WithLocaleTimezone(p.location), rfc3164.WithLenientDay()}
+	if p.allowRFC3339Timestamp {
+		opts = append(opts, rfc3164.WithRFC3339())
+	}
+	if p.allowSecondFractions {
+		opts = append(opts, rfc3164.WithSecondFractions())
+	}
+	return opts
 }
 
 func (p *Parser) shouldSkipPriorityValues(value []byte) bool {
@@ -498,7 +513,7 @@ func newNonTransparentFramingParseFunc(trailerType nontransparent.TrailerType) p
 
 // newOctetCountingRFC3164ParseFunc returns a parse function that handles
 // RFC6587 octet counting framing with RFC3164 message format.
-func newOctetCountingRFC3164ParseFunc(location *time.Location, maxOctets int) parseFunc {
+func newOctetCountingRFC3164ParseFunc(machineOpts []sl.MachineOption, maxOctets int) parseFunc {
 	return func(input []byte) (message sl.Message, err error) {
 		listener := func(res *sl.Result) {
 			message = res.Message
@@ -508,9 +523,8 @@ func newOctetCountingRFC3164ParseFunc(location *time.Location, maxOctets int) pa
 		parserOpts := []sl.ParserOption{
 			sl.WithBestEffort(),
 			sl.WithListener(listener),
-			// Match the non-octet-counting RFC3164 path: honor the configured
-			// timezone and accept single-space-padded days.
-			sl.WithMachineOptions(rfc3164.WithLocaleTimezone(location), rfc3164.WithLenientDay()),
+			// Match the non-octet-counting RFC3164 path.
+			sl.WithMachineOptions(machineOpts...),
 		}
 
 		if maxOctets > 0 {

@@ -191,8 +191,8 @@ func TestTracesExporter_PushTraces_WhenCannotSend(t *testing.T) {
 			}()
 
 			// Add two rate limit errors
-			exp.EnableRateLimit()
-			exp.EnableRateLimit()
+			exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
+			exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
 
 			traces := ptrace.NewTraces()
 			resourceSpans := traces.ResourceSpans()
@@ -203,7 +203,7 @@ func TestTracesExporter_PushTraces_WhenCannotSend(t *testing.T) {
 			err = exp.pushTraces(t.Context(), traces)
 			assert.Error(t, err)
 			if tt.configEnabled {
-				assert.Contains(t, err.Error(), "rate limit exceeded")
+				assert.Contains(t, err.Error(), "authentication failed")
 			} else {
 				assert.Contains(t, err.Error(), "produced zero addresses")
 			}
@@ -573,7 +573,7 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 		mockSrv.recvCount = 0
 
 		for range 5 {
-			exp.EnableRateLimit()
+			exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
 		}
 
 		traces := ptrace.NewTraces()
@@ -596,7 +596,7 @@ func TestTracesExporter_PushTraces_Performance(t *testing.T) {
 		duration := time.Since(start)
 
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "rate limit exceeded")
+		assert.Contains(t, err.Error(), "authentication failed")
 		assert.Less(t, duration, time.Millisecond*100, "Operation took longer than 100 milliseconds")
 		assert.Zero(t, mockSrv.recvCount, "Expected no spans to be received due to rate limiting")
 	})
@@ -677,7 +677,7 @@ func TestTracesExporter_RateLimitErrorCountReset(t *testing.T) {
 	}()
 
 	for range 5 {
-		exp.EnableRateLimit()
+		exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
 	}
 	assert.Equal(t, int32(5), exp.rateError.errorCount.Load())
 
@@ -758,7 +758,7 @@ func TestTracesExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 
 	t.Run("Trigger errors below threshold", func(t *testing.T) {
 		for range 4 {
-			exp.EnableRateLimit()
+			exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
 		}
 		assert.Equal(t, int32(4), exp.rateError.errorCount.Load())
 		assert.False(t, exp.rateError.isRateLimited(), "Should not be rate limited yet")

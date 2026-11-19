@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/apiserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/targetallocator"
@@ -48,12 +49,29 @@ func createMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	configWarnings(set.Logger, cfg.(*Config))
-	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer)
+	pCfg := cfg.(*Config)
+	rcvr, err := newPrometheusReceiver(set, pCfg, nextConsumer)
+	if err != nil {
+		return nil, err
+	}
+	configWarnings(set.Logger, pCfg)
+	return rcvr, nil
 }
 
 func configWarnings(logger *zap.Logger, cfg *Config) {
-	for _, sc := range cfg.PrometheusConfig.ScrapeConfigs {
+	if cfg.PrometheusConfig == nil {
+		return
+	}
+	globalProtocols := cfg.PrometheusConfig.GlobalConfig.ScrapeProtocols
+	globalHasOM2 := internal.WarnOpenMetrics2GlobalConfig(logger, globalProtocols)
+	scrapeConfigs := cfg.PrometheusConfig.ScrapeConfigs
+	if len(cfg.PrometheusConfig.ScrapeConfigFiles) > 0 {
+		if loaded, err := (*promconfig.Config)(cfg.PrometheusConfig).GetScrapeConfigs(); err == nil {
+			scrapeConfigs = loaded
+		}
+	}
+	for _, sc := range scrapeConfigs {
+		internal.WarnOpenMetrics2ScrapeConfig(logger, sc, globalHasOM2, globalProtocols)
 		for _, rc := range sc.MetricRelabelConfigs {
 			if rc.TargetLabel == "__name__" {
 				logger.Warn("metric renaming using metric_relabel_configs will result in unknown-typed metrics without a unit or description", zap.String("job", sc.JobName))

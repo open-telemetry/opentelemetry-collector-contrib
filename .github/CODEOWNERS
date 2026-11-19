@@ -116,7 +116,7 @@ extension/googleclientauthextension/                             @open-telemetry
 extension/headerssetterextension/                                @open-telemetry/collector-contrib-approvers @VihasMakwana
 extension/healthcheckextension/                                  @open-telemetry/collector-contrib-approvers @evan-bradley @mwear
 extension/healthcheckv2extension/                                @open-telemetry/collector-contrib-approvers @evan-bradley @mwear
-extension/httpforwarderextension/                                @open-telemetry/collector-contrib-approvers @atoulme
+extension/httpforwarderextension/                                @open-telemetry/collector-contrib-approvers @atoulme @SatoshiKamiyama
 extension/jaegerremotesampling/                                  @open-telemetry/collector-contrib-approvers @yurishkuro @frzifus
 extension/k8sleaderelector/                                      @open-telemetry/collector-contrib-approvers @rakesh-garimella @jinja2
 extension/mcp/                                                   @open-telemetry/collector-contrib-approvers @pavolloffay @codeboten
@@ -201,6 +201,7 @@ pkg/translator/skywalking/                                       @open-telemetry
 pkg/translator/splunk/                                           @open-telemetry/collector-contrib-approvers @atoulme @crobert-1
 pkg/translator/zipkin/                                           @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
 pkg/winperfcounters/                                             @open-telemetry/collector-contrib-approvers @dashpole @pjanotti
+pkg/xcompression/                                                @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 pkg/xk8stest/                                                    @open-telemetry/collector-contrib-approvers @crobert-1
 pkg/xstreamencoding/                                             @open-telemetry/collector-contrib-approvers @Kavindu-Dodan
 processor/adaptivetailsamplingprocessor/                         @open-telemetry/collector-contrib-approvers @MikeGoldsmith @VinozzZ @jmacd @robbkidd
@@ -327,7 +328,7 @@ receiver/k8seventsreceiver/                                      @open-telemetry
 receiver/k8sobjectsreceiver/                                     @open-telemetry/collector-contrib-approvers @TylerHelmuth @ChrsMark @krisztianfekete @jinja2
 receiver/kafkametricsreceiver/                                   @open-telemetry/collector-contrib-approvers @dloucasfx
 receiver/kafkareceiver/                                          @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy @paulojmdias
-receiver/kubeletstatsreceiver/                                   @open-telemetry/collector-contrib-approvers @TylerHelmuth @ChrsMark @dloucasfx @jinja2
+receiver/kubeletstatsreceiver/                                   @open-telemetry/collector-contrib-approvers @TylerHelmuth @ChrsMark @jinja2
 receiver/libhoneyreceiver/                                       @open-telemetry/collector-contrib-approvers @mterhar
 receiver/lokireceiver/                                           @open-telemetry/collector-contrib-approvers @mar4uk
 receiver/macosunifiedloggingreceiver/                            @open-telemetry/collector-contrib-approvers @Caleb-Hurshman @atoulme

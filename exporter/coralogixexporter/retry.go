@@ -13,11 +13,30 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// dropReason classifies permanent errors that count toward the client-side drop window.
+type dropReason int32
+
+const (
+	dropReasonNone dropReason = iota
+	dropReasonAuth
+	dropReasonQuota
+)
+
+func (r dropReason) String() string {
+	switch r {
+	case dropReasonAuth:
+		return "authentication"
+	case dropReasonQuota:
+		return "quota"
+	default:
+		return "none"
+	}
+}
+
 // shouldRetry returns true if the error should be retried.
-// The second return value indicates whether the error should trigger a stop in retries by flagging
-// the rate limiting mechanism, since these errors (like authentication or quota failures) indicate a problem
-// that won't be fixed just by retrying.
-func shouldRetry(code codes.Code, retryInfo *errdetails.RetryInfo) (bool, bool) {
+// The second return value is the dropReason that counts toward the drop window when
+// the error will not go away by retrying (authentication or quota failures).
+func shouldRetry(code codes.Code, retryInfo *errdetails.RetryInfo) (bool, dropReason) {
 	switch code {
 	case codes.Canceled,
 		codes.DeadlineExceeded,
@@ -25,15 +44,18 @@ func shouldRetry(code codes.Code, retryInfo *errdetails.RetryInfo) (bool, bool) 
 		codes.OutOfRange,
 		codes.Unavailable,
 		codes.DataLoss:
-		return true, false
+		return true, dropReasonNone
 	case codes.ResourceExhausted:
 		// Retry only if RetryInfo was supplied by the server.
 		// This indicates that the server can still recover from resource exhaustion.
-		return retryInfo != nil, retryInfo == nil
+		if retryInfo != nil {
+			return true, dropReasonNone
+		}
+		return false, dropReasonQuota
 	case codes.Unauthenticated, codes.PermissionDenied:
-		return false, true
+		return false, dropReasonAuth
 	default:
-		return false, false
+		return false, dropReasonNone
 	}
 }
 
@@ -57,33 +79,32 @@ func getThrottleDuration(t *errdetails.RetryInfo) time.Duration {
 }
 
 // shouldRetryHTTP returns true if the HTTP status code should be retried.
-// The second return value indicates whether the error should trigger a stop in retries by flagging
-// the rate limiting mechanism.
-func shouldRetryHTTP(statusCode int) (bool, bool) {
+// The second return value is the dropReason that counts toward the drop window.
+func shouldRetryHTTP(statusCode int) (bool, dropReason) {
 	switch statusCode {
 	case http.StatusOK:
-		return false, false
+		return false, dropReasonNone
 	case http.StatusBadRequest,
 		http.StatusNotFound,
 		http.StatusMethodNotAllowed,
 		http.StatusUnprocessableEntity:
 		// Permanent errors - don't retry
-		return false, false
+		return false, dropReasonNone
 	case http.StatusUnauthorized,
 		http.StatusForbidden:
-		// Don't retry, but flag for rate limiting
-		return false, true
+		// Don't retry; count toward the drop window as authentication
+		return false, dropReasonAuth
 	case http.StatusRequestTimeout,
 		http.StatusBadGateway,
 		http.StatusServiceUnavailable,
 		http.StatusGatewayTimeout:
 		// Retryable errors
-		return true, false
+		return true, dropReasonNone
 	case http.StatusTooManyRequests:
 		// Retry with throttle
-		return true, false
+		return true, dropReasonNone
 	default:
-		return false, false
+		return false, dropReasonNone
 	}
 }
 

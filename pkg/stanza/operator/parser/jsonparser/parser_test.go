@@ -45,7 +45,29 @@ func TestConfigBuildFailure(t *testing.T) {
 func TestParserStringFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse("invalid")
-	require.ErrorContains(t, err, "expected { character for map value")
+	require.ErrorContains(t, err, "invalid character 'i' looking for beginning of value")
+}
+
+func TestParserParseIntsOutOfRange(t *testing.T) {
+	config := NewConfigWithID("test")
+	config.ParseInts = true
+	op, err := config.Build(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	parser := op.(*Parser)
+
+	for _, input := range []string{
+		`{"overflow":1e400}`,
+		`{"overflow":-1e400}`,
+		`{"nested":{"overflow":1e400}}`,
+		`{"array":[1,1e400]}`,
+		`{"array":[[1e400]]}`,
+		`{"array":[{"overflow":1e400}]}`,
+	} {
+		t.Run(input, func(t *testing.T) {
+			_, err := parser.parse(input)
+			require.ErrorContains(t, err, "value out of range")
+		})
+	}
 }
 
 func TestParserByteFailure(t *testing.T) {

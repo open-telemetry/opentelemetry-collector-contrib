@@ -4,6 +4,7 @@
 package awss3receiver
 
 import (
+	"math"
 	"path/filepath"
 	"testing"
 
@@ -98,6 +99,7 @@ func TestLoadConfig(t *testing.T) {
 					S3PartitionFormat:              "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 					FilePrefixIncludeTelemetryType: true,
 					EndpointPartitionID:            "aws",
+					MaxUnmarshalSize:               defaultMaxUnmarshalSize,
 					TagObjectAfterIngestion:        false,
 					SkipIngestingTaggedObjects:     false,
 				},
@@ -116,6 +118,7 @@ func TestLoadConfig(t *testing.T) {
 					FilePrefix:                     "otel",
 					FilePrefixIncludeTelemetryType: false,
 					EndpointPartitionID:            "aws",
+					MaxUnmarshalSize:               defaultMaxUnmarshalSize,
 					TagObjectAfterIngestion:        false,
 					SkipIngestingTaggedObjects:     false,
 				},
@@ -145,6 +148,7 @@ func TestLoadConfig(t *testing.T) {
 					S3PartitionFormat:              "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 					FilePrefixIncludeTelemetryType: true,
 					EndpointPartitionID:            "aws",
+					MaxUnmarshalSize:               defaultMaxUnmarshalSize,
 					TagObjectAfterIngestion:        true,
 					SkipIngestingTaggedObjects:     true,
 				},
@@ -161,6 +165,7 @@ func TestLoadConfig(t *testing.T) {
 					S3PartitionFormat:              "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 					FilePrefixIncludeTelemetryType: true,
 					EndpointPartitionID:            "aws",
+					MaxUnmarshalSize:               defaultMaxUnmarshalSize,
 					TagObjectAfterIngestion:        false,
 					SkipIngestingTaggedObjects:     false,
 				},
@@ -180,6 +185,7 @@ func TestLoadConfig(t *testing.T) {
 					S3PartitionFormat:              "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 					FilePrefixIncludeTelemetryType: true,
 					EndpointPartitionID:            "aws",
+					MaxUnmarshalSize:               defaultMaxUnmarshalSize,
 					Decompression:                  configcompression.TypeZstd,
 				},
 				StartTime: "2024-01-31 15:00",
@@ -208,6 +214,54 @@ func TestLoadConfig(t *testing.T) {
 
 			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestMaxUnmarshalSizeConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		size    int64
+		wantErr bool
+	}{
+		{
+			name: "default",
+			size: 0,
+		},
+		{
+			name: "positive",
+			size: 1024,
+		},
+		{
+			name:    "negative",
+			size:    -1,
+			wantErr: true,
+		},
+		{
+			name:    "overflow",
+			size:    math.MaxInt64,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			require.EqualValues(t, defaultMaxUnmarshalSize, cfg.S3Downloader.MaxUnmarshalSize)
+			cm := confmap.NewFromStringMap(map[string]any{
+				"s3downloader": map[string]any{
+					"s3_bucket":          "bucket",
+					"max_unmarshal_size": tt.size,
+				},
+				"starttime": "2024-01-01",
+				"endtime":   "2024-01-02",
+			})
+			require.NoError(t, cm.Unmarshal(cfg))
+			require.Equal(t, tt.size, cfg.S3Downloader.MaxUnmarshalSize)
+			if tt.wantErr {
+				require.ErrorContains(t, cfg.Validate(), "s3downloader.max_unmarshal_size")
+			} else {
+				require.NoError(t, cfg.Validate())
+			}
 		})
 	}
 }
