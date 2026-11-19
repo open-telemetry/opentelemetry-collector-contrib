@@ -255,3 +255,64 @@ func TestCardinalityProcessor_RepeatsThenGrowthEnforced(t *testing.T) {
 		p.rotate()
 	}
 }
+
+// TestTracker_IdleEpochKeepsBaseline: an epoch with no inserts keeps the
+// baseline, and growth after it is still caught.
+func TestTracker_IdleEpochKeepsBaseline(t *testing.T) {
+	const stableValues, limit = 100, 10
+	tracker := newTracker()
+	for v := range stableValues {
+		tracker.insert(rotationBenchmarkHash(0, v), limit)
+	}
+	require.False(t, tracker.rotate())
+	require.True(t, tracker.rotate(), "idle epoch")
+
+	dropped := 0
+	for v := range stableValues {
+		if tracker.insert(rotationBenchmarkHash(0, v), limit) {
+			dropped++
+		}
+	}
+	require.Zero(t, dropped, "the same values after an idle epoch are not growth")
+	require.InDelta(t, stableValues, tracker.cachedPrevEpoch, 2)
+
+	// Growth after an idle epoch is still detected.
+	require.False(t, tracker.rotate())
+	require.True(t, tracker.rotate(), "idle epoch")
+	dropped = 0
+	for v := range stableValues {
+		if tracker.insert(rotationBenchmarkHash(1, v), limit) {
+			dropped++
+		}
+	}
+	require.Equal(t, stableValues-limit, dropped)
+}
+
+// TestCardinalityProcessor_EmptyEpochKeepsBaseline: a stable label with an
+// empty epoch between reports is not flagged again.
+func TestCardinalityProcessor_EmptyEpochKeepsBaseline(t *testing.T) {
+	cfg := &Config{
+		MaxCardinalityDeltaPerEpoch: 10,
+		EpochDurationSeconds:        300, // rotation is driven manually below
+	}
+	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
+	proc, err := newCardinalityProcessor(t.Context(), cfg, set, consumertest.NewNop())
+	require.NoError(t, err)
+	p := proc.(*cardinalityProcessor)
+
+	const stableValues = 100
+	for epoch := range 6 {
+		dropped := 0
+		if epoch%2 == 0 {
+			for i := range stableValues {
+				if p.shouldDrop("api.request", "pod", pcommon.NewValueStr(fmt.Sprintf("pod-%d", i))) {
+					dropped++
+				}
+			}
+		}
+		if epoch > 0 {
+			assert.Zero(t, dropped, "epoch %d: a stable set scraped every other epoch must not be enforced", epoch)
+		}
+		p.rotate()
+	}
+}

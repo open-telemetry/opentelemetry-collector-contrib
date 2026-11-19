@@ -153,18 +153,18 @@ func (t *tracker) delta() uint64 {
 // rotate promotes current → window, reuses the retired window sketch when its
 // distinct count guarantees it stayed sparse, and replaces it otherwise. No
 // estimate runs here: the next insert snapshots the new window as the
-// baseline before adding to it. Returns true when this tracker received zero
-// inserts during the epoch that just ended.
+// baseline before adding to it. Returns true when the tracker received no
+// inserts in the epoch that just ended; such an epoch does not rotate, so the
+// baseline survives it.
 func (t *tracker) rotate() (idle bool) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	idle = t.insertCount == 0
-	if idle {
+	if t.insertCount == 0 {
 		t.idleEpochs++
-	} else {
-		t.idleEpochs = 0
+		return true
 	}
+	t.idleEpochs = 0
 
 	// The window gains at most one distinct value per insert, so this is an
 	// upper bound on its entries.
@@ -180,7 +180,7 @@ func (t *tracker) rotate() (idle bool) {
 	t.cachedPrevEpoch = t.cachedWindow
 	t.needBaseline = true
 	t.insertCount, t.sinceRefresh = 0, 0
-	return idle
+	return false
 }
 
 func newTracker() *tracker {
