@@ -131,6 +131,7 @@ components:
     - extension/text_encoding
     - extension/zipkin_encoding
     - internal/aws
+    - internal/canonicaljson
     - internal/collectd
     - internal/common
     - internal/datadog

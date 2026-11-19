@@ -8,7 +8,7 @@
 //
 // Each test documents:
 // - The bug that occurred
-// - How it was triggered  
+// - How it was triggered
 // - The PR that fixed it
 
 package canonicaljson

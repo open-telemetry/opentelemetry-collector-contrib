@@ -193,15 +193,6 @@ func (p *signingProcessor) putResourceIntegrity(attrs pcommon.Map) {
 	}
 }
 
-// serializeLogRecord is a test helper that wraps canonicaljson.SerializeLogRecord
-// with the signing processor's default options.
-func (*signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error) {
-	opts := canonicaljson.SerializeLogRecordOptions{
-		ExcludePrefixes: []string{"audit.integrity."},
-	}
-	return canonicaljson.SerializeLogRecord(lr, opts)
-}
-
 // sign produces a signature over payload using the configured JWA algorithm.
 // For RS256/RS512/ES256 it hashes payload first; for EdDSA it passes the raw
 // message because ed25519 hashes internally (SHA-512); for HMAC-SHA256 it
