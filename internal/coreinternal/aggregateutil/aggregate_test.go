@@ -698,6 +698,59 @@ func testDataExpHistogramDouble() pmetric.ExponentialHistogramDataPointSlice {
 	return dataWant
 }
 
+func TestAggregateExponentialHistogramBucketOffsets(t *testing.T) {
+	type buckets struct {
+		offset int32
+		counts []uint64
+	}
+	for _, tc := range []struct {
+		name            string
+		low, high, want buckets
+	}{
+		{"leading zero", buckets{3, []uint64{0, 1}}, buckets{5, []uint64{10}}, buckets{4, []uint64{1, 10}}},
+		{"empty", buckets{3, nil}, buckets{5, []uint64{10}}, buckets{5, []uint64{10}}},
+		{"all zero", buckets{3, []uint64{0, 0}}, buckets{5, []uint64{0}}, buckets{5, nil}},
+		{"equal offsets", buckets{3, []uint64{0, 1}}, buckets{3, []uint64{0, 2}}, buckets{3, []uint64{0, 3}}},
+		{"no leading zeros", buckets{3, []uint64{1}}, buckets{5, []uint64{10}}, buckets{3, []uint64{1, 0, 10}}},
+	} {
+		for name, pair := range map[string][2]buckets{
+			"lower first":  {tc.low, tc.high},
+			"higher first": {tc.high, tc.low},
+		} {
+			t.Run(tc.name+"/"+name, func(t *testing.T) {
+				in := pmetric.NewMetric()
+				points := in.SetEmptyExponentialHistogram().DataPoints()
+				for _, b := range pair {
+					dp := points.AppendEmpty()
+					// A zero observation keeps even an empty bucket range in the merge.
+					dp.SetZeroCount(1)
+					count := uint64(1)
+					for _, side := range []pmetric.ExponentialHistogramDataPointBuckets{dp.Positive(), dp.Negative()} {
+						side.SetOffset(b.offset)
+						side.BucketCounts().FromRaw(b.counts)
+						for _, n := range b.counts {
+							count += n
+						}
+					}
+					dp.SetCount(count)
+				}
+				var groups AggGroups
+				GroupDataPoints(in, &groups)
+				out := pmetric.NewMetric()
+				merged := out.SetEmptyExponentialHistogram().DataPoints()
+				MergeDataPoints(out, Sum, groups)
+				require.Equal(t, 1, merged.Len())
+				dp := merged.At(0)
+				for _, side := range []pmetric.ExponentialHistogramDataPointBuckets{dp.Positive(), dp.Negative()} {
+					got := side.BucketCounts().AsRaw()
+					require.Truef(t, slices.Equal(tc.want.counts, got), "want counts %v, got %v", tc.want.counts, got)
+					require.Equal(t, tc.want.offset, side.Offset())
+				}
+			})
+		}
+	}
+}
+
 func TestMergeExponentialHistogramBucketsByIndex(t *testing.T) {
 	for _, tc := range []struct {
 		name                  string

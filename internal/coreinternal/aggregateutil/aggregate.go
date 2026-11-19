@@ -318,11 +318,11 @@ func mergeExponentialHistogramDataPoints(dpsMap map[string]pmetric.ExponentialHi
 			// Only adjust offsets and remove leading zero buckets if we had different offsets and the buckets are not empty
 			if negOffsetDiff && dps.At(i).Negative().BucketCounts().Len() != 0 {
 				dp.Negative().SetOffset(min(dp.Negative().Offset(), dps.At(i).Negative().Offset()))
-				trimBuckets(negatives)
+				trimBuckets(dp.Negative())
 			}
 			if posOffsetDiff && dps.At(i).Positive().BucketCounts().Len() != 0 {
 				dp.Positive().SetOffset(min(dp.Positive().Offset(), dps.At(i).Positive().Offset()))
-				trimBuckets(positives)
+				trimBuckets(dp.Positive())
 			}
 
 			dps.At(i).Exemplars().MoveAndAppendTo(dp.Exemplars())
@@ -379,7 +379,8 @@ func mergeExponentialHistogramBuckets(tgt, src pcommon.UInt64Slice, tgtOff, srcO
 	}
 }
 
-func trimBuckets(buckets pcommon.UInt64Slice) {
+func trimBuckets(side pmetric.ExponentialHistogramDataPointBuckets) {
+	buckets := side.BucketCounts()
 	zeroCount := 0
 	for i := 0; i < buckets.Len() && buckets.At(i) == 0; i++ {
 		zeroCount++
@@ -394,6 +395,7 @@ func trimBuckets(buckets pcommon.UInt64Slice) {
 		newBuckets[i-zeroCount] = buckets.At(i)
 	}
 	buckets.FromRaw(newBuckets)
+	side.SetOffset(side.Offset() + int32(zeroCount))
 }
 
 func groupNumberDataPoints(dps pmetric.NumberDataPointSlice, useStartTime bool,
