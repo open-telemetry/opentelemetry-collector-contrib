@@ -55,7 +55,7 @@ $defs:
       domain:
         type: string
       password:
-        type: string
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       server:
         type: string
       username:

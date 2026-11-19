@@ -11,6 +11,7 @@ import (
 
 	"github.com/pkg/sftp"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
 )
@@ -27,9 +28,9 @@ type SSHClientSettings struct {
 	Timeout  time.Duration `mapstructure:"timeout"`
 
 	// authentication requires a Username and either a Password or KeyFile
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
-	KeyFile  string `mapstructure:"key_file"`
+	Username string              `mapstructure:"username"`
+	Password configopaque.String `mapstructure:"password"`
+	KeyFile  string              `mapstructure:"key_file"`
 
 	// file path to the known_hosts
 	KnownHosts string `mapstructure:"known_hosts"`
@@ -98,7 +99,7 @@ func (scs *SSHClientSettings) ToClient(component.Host, component.TelemetrySettin
 			auth = ssh.PublicKeys(sgn)
 		}
 	} else {
-		auth = ssh.Password(scs.Password)
+		auth = ssh.Password(string(scs.Password))
 	}
 
 	switch {

@@ -188,6 +188,7 @@ components:
     - pkg/translator/signalfx
     - pkg/translator/splunk
     - pkg/winperfcounters
+    - pkg/xcompression
     - pkg/xk8stest
     - pkg/xstreamencoding
     - pkg/zipkin
