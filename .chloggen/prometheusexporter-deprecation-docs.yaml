@@ -1,0 +1,7 @@
+change_type: deprecation
+component: exporter/prometheus
+note: "Standardize deprecation version notices in Prometheus exporter configuration."
+issues: [52830]
+subtext: |
+  Adds release version tags to deprecation notices for resource_to_telemetry_conversion ([v0.160.0]) and add_metric_suffixes ([v0.132.0]).
+change_logs: [user]

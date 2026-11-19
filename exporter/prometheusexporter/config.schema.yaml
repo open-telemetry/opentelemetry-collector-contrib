@@ -2,7 +2,7 @@ description: Config defines configuration for Prometheus exporter.
 type: object
 properties:
   add_metric_suffixes:
-    description: 'AddMetricSuffixes controls whether suffixes are added to metric names. Defaults to true. Deprecated: This setting is ignored and TranslationStrategy is always used.'
+    description: 'AddMetricSuffixes controls whether suffixes are added to metric names. Defaults to true. Deprecated: [v0.132.0] This setting is ignored and TranslationStrategy is always used.'
     type: boolean
   const_labels:
     description: ConstLabels are values that are applied for every exported metric.
@@ -21,7 +21,7 @@ properties:
     description: ResourceConstantLabels controls which resource attributes are added as constant labels on Prometheus metrics.
     $ref: /pkg/resourcetotelemetry.settings
   resource_to_telemetry_conversion:
-    description: 'ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels. Deprecated: Use ResourceConstantLabels instead.'
+    description: 'ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels. Deprecated: [v0.160.0] Use ResourceConstantLabels instead.'
     $ref: /pkg/resourcetotelemetry.settings
   send_timestamps:
     description: SendTimestamps will send the underlying scrape timestamp with the export
