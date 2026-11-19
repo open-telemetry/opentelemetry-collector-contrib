@@ -149,3 +149,8 @@ Current Prometheus exporter benchmark results are published on the [Collector Be
 | Baseline, 10k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-baseline-10k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-baseline-10k-ram-mib) |
 | Native histograms, 10k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-nativehistogram-10k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-nativehistogram-10k-ram-mib) |
 | `target_info` enabled, 10k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-withtargetinfo-10k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-withtargetinfo-10k-ram-mib) |
+
+## Internal Telemetry
+
+The exporter emits internal telemetry at the default `normal` telemetry level for active series in the accumulator, `/metrics` scrape duration, exported series, and scrape-time dropped series. For the complete list of metrics and their attributes, see the [Internal Telemetry documentation](./documentation.md#internal-telemetry).
+

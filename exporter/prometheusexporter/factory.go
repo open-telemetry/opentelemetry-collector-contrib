@@ -70,6 +70,7 @@ func createMetricsExporter(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 	)
 	if err != nil {
+		_ = prometheus.Shutdown(ctx)
 		return nil, err
 	}
 
