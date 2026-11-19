@@ -36,7 +36,7 @@ type accessLogStorageRecord struct {
 
 type accessLogClient interface {
 	GetProject(ctx context.Context, groupID string) (*mongodbatlas.Project, error)
-	GetClusters(ctx context.Context, groupID string) ([]mongodbatlas.Cluster, error)
+	GetClusters(ctx context.Context, groupID string) ([]*mongodbatlas.AdvancedCluster, error)
 	GetAccessLogs(ctx context.Context, groupID, clusterName string, opts *internal.GetAccessLogsOptions) (ret []*mongodbatlas.AccessLogs, err error)
 }
 
@@ -150,8 +150,7 @@ func (alr *accessLogsReceiver) pollAccessLogs(ctx context.Context, pc *LogsProje
 		alr.logger.Error("error filtering clusters", zap.Error(err), zap.String("project", pc.ProjectConfig.Name))
 		return err
 	}
-	for i := range filteredClusters {
-		cluster := &filteredClusters[i]
+	for _, cluster := range filteredClusters {
 		clusterCheckpoint := alr.getClusterCheckpoint(project.ID, cluster.Name)
 
 		if clusterCheckpoint == nil {
@@ -170,7 +169,7 @@ func (alr *accessLogsReceiver) pollAccessLogs(ctx context.Context, pc *LogsProje
 	return nil
 }
 
-func (alr *accessLogsReceiver) pollCluster(ctx context.Context, pc *LogsProjectConfig, project *mongodbatlas.Project, cluster *mongodbatlas.Cluster, startTime, now time.Time) time.Time {
+func (alr *accessLogsReceiver) pollCluster(ctx context.Context, pc *LogsProjectConfig, project *mongodbatlas.Project, cluster *mongodbatlas.AdvancedCluster, startTime, now time.Time) time.Time {
 	nowTimestamp := pcommon.NewTimestampFromTime(now)
 
 	opts := &internal.GetAccessLogsOptions{
@@ -302,14 +301,15 @@ func parseLogMessage(log *mongodbatlas.AccessLogs) (map[string]any, error) {
 	return body, nil
 }
 
-func transformAccessLogs(now pcommon.Timestamp, accessLogs []*mongodbatlas.AccessLogs, p *mongodbatlas.Project, c *mongodbatlas.Cluster, logger *zap.Logger) plog.Logs {
+func transformAccessLogs(now pcommon.Timestamp, accessLogs []*mongodbatlas.AccessLogs, p *mongodbatlas.Project, c *mongodbatlas.AdvancedCluster, logger *zap.Logger) plog.Logs {
 	logs := plog.NewLogs()
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	ra := resourceLogs.Resource().Attributes()
 	ra.PutStr("mongodbatlas.project.name", p.Name)
 	ra.PutStr("mongodbatlas.project.id", p.ID)
-	ra.PutStr("mongodbatlas.region.name", c.ProviderSettings.RegionName)
-	ra.PutStr("mongodbatlas.provider.name", c.ProviderSettings.ProviderName)
+	pv := clusterProviderValues(c)
+	ra.PutStr("mongodbatlas.region.name", pv.RegionName)
+	ra.PutStr("mongodbatlas.provider.name", pv.ProviderName)
 	ra.PutStr("mongodbatlas.org.id", p.OrgID)
 	ra.PutStr("mongodbatlas.cluster.name", c.Name)
 
