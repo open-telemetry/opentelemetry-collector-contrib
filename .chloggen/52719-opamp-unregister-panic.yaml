@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: extension/opamp
+note: Fix panic when Unregister is called more than once on a custom capability handler.
+issues: [52719]
+change_logs: [user]
+
