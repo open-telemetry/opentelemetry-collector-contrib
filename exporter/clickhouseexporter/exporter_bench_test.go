@@ -219,6 +219,7 @@ func BenchmarkPushTraceData(b *testing.B) {
 		cfg:       withDefaultConfig(),
 		insertSQL: "INSERT INTO test",
 	}
+	exporter.schemaFeatures.ScopeAttributes = true
 
 	b.ReportAllocs()
 	b.ResetTimer()

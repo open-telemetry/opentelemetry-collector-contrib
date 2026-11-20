@@ -491,6 +491,9 @@ Here are some columns you can add to your table to update the schema:
 -- EventName
 ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(3));
 
+-- ScopeAttributes. Map traces tables only.
+ALTER TABLE otel.otel_traces ADD COLUMN IF NOT EXISTS ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(3)) AFTER ScopeVersion;
+
 -- JSON tables only. These 3 columns are part of one feature, you must add all 3 at once.
 ALTER TABLE otel.otel_logs
   ADD COLUMN IF NOT EXISTS ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(3)),
