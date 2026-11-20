@@ -23,6 +23,7 @@ func newTraceParserCollection(t *testing.T) *TraceParserCollection {
 		componenttest.NewNopTelemetrySettings(),
 		WithSpanParser(ottlfuncs.StandardFuncs[*ottlspan.TransformContext]()),
 		WithSpanEventParser(ottlfuncs.StandardFuncs[*ottlspanevent.TransformContext]()),
+		WithTraceCommonParsers(nil, nil),
 		WithTraceErrorMode(ottl.PropagateError),
 	)
 	require.NoError(t, err)

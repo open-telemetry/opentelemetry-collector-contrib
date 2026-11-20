@@ -13,6 +13,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 )
@@ -122,13 +124,18 @@ func WithSpanEventParser(functions map[string]ottl.Factory[*ottlspanevent.Transf
 	}
 }
 
+// WithTraceCommonParsers registers the resource and scope context parsers, which are common to all signals.
+// A nil functions map registers the default functions of that context.
+func WithTraceCommonParsers(resourceFunctions map[string]ottl.Factory[*ottlresource.TransformContext], scopeFunctions map[string]ottl.Factory[*ottlscope.TransformContext]) TraceParserCollectionOption {
+	return TraceParserCollectionOption(withCommonContextParsers[TracesConsumer](resourceFunctions, scopeFunctions))
+}
+
 func WithTraceErrorMode(errorMode ottl.ErrorMode) TraceParserCollectionOption {
 	return TraceParserCollectionOption(ottl.WithParserCollectionErrorMode[TracesConsumer](errorMode))
 }
 
 func NewTraceParserCollection(settings component.TelemetrySettings, options ...TraceParserCollectionOption) (*TraceParserCollection, error) {
 	pcOptions := []ottl.ParserCollectionOption[TracesConsumer]{
-		withCommonContextParsers[TracesConsumer](),
 		ottl.EnableParserCollectionModifiedPathsLogging[TracesConsumer](true),
 	}
 

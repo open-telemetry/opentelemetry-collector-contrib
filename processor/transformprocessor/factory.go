@@ -22,6 +22,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/factoryoptions"
@@ -43,6 +45,34 @@ type transformProcessorFactory struct {
 
 // FactoryOption configures the OTTL functions registered by NewFactoryWithOptions.
 type FactoryOption func(options *factoryoptions.Options)
+
+// WithResourceFunctions will override the default OTTL resource context functions with the provided resourceFunctions in the resulting processor.
+// Subsequent uses of WithResourceFunctions will merge the provided resourceFunctions with the previously registered functions.
+// The functions apply to statements parsed in the resource context. A statement without an explicit context
+// can be inferred into a lower context, whose functions are not affected by this option.
+func WithResourceFunctions(resourceFunctions []ottl.Factory[*ottlresource.TransformContext]) FactoryOption {
+	return func(options *factoryoptions.Options) {
+		if !options.DefaultResourceFunctionsOverridden {
+			options.ResourceFunctions = map[string]ottl.Factory[*ottlresource.TransformContext]{}
+			options.DefaultResourceFunctionsOverridden = true
+		}
+		options.ResourceFunctions = factoryoptions.MergeFunctionsToMap(options.ResourceFunctions, resourceFunctions)
+	}
+}
+
+// WithScopeFunctions will override the default OTTL scope context functions with the provided scopeFunctions in the resulting processor.
+// Subsequent uses of WithScopeFunctions will merge the provided scopeFunctions with the previously registered functions.
+// The functions apply to statements parsed in the scope context. A statement without an explicit context
+// can be inferred into a lower context, whose functions are not affected by this option.
+func WithScopeFunctions(scopeFunctions []ottl.Factory[*ottlscope.TransformContext]) FactoryOption {
+	return func(options *factoryoptions.Options) {
+		if !options.DefaultScopeFunctionsOverridden {
+			options.ScopeFunctions = map[string]ottl.Factory[*ottlscope.TransformContext]{}
+			options.DefaultScopeFunctionsOverridden = true
+		}
+		options.ScopeFunctions = factoryoptions.MergeFunctionsToMap(options.ScopeFunctions, scopeFunctions)
+	}
+}
 
 // WithDataPointFunctions will override the default OTTL datapoint context functions with the provided dataPointFunctions in resulting processor.
 // Subsequent uses of WithDataPointFunctions will merge the provided dataPointFunctions with the previously registered functions.
@@ -148,6 +178,16 @@ func NewFactoryWithOptions(options ...FactoryOption) processor.Factory {
 	)
 }
 
+// logCommonContextFunctionsOverridden logs when non-default resource or scope context functions have been registered.
+func (f *transformProcessorFactory) logCommonContextFunctionsOverridden(logger *zap.Logger) {
+	if f.DefaultResourceFunctionsOverridden || f.DefaultScopeFunctionsOverridden {
+		logger.Debug("non-default OTTL resource or scope functions have been registered in the \"transform\" processor",
+			zap.Bool("resource", f.DefaultResourceFunctionsOverridden),
+			zap.Bool("scope", f.DefaultScopeFunctionsOverridden),
+		)
+	}
+}
+
 func (f *transformProcessorFactory) createDefaultConfig() component.Config {
 	return &Config{
 		ErrorMode:          ottl.IgnoreError,
@@ -155,6 +195,8 @@ func (f *transformProcessorFactory) createDefaultConfig() component.Config {
 		MetricStatements:   []ContextStatements{},
 		LogStatements:      []ContextStatements{},
 		ProfileStatements:  []ContextStatements{},
+		resourceFunctions:  f.ResourceFunctions,
+		scopeFunctions:     f.ScopeFunctions,
 		dataPointFunctions: f.DataPointFunctions,
 		exemplarFunctions:  f.ExemplarFunctions,
 		logFunctions:       f.LogFunctions,
@@ -175,7 +217,8 @@ func (f *transformProcessorFactory) createLogsProcessor(
 	if f.DefaultLogFunctionsOverridden {
 		set.Logger.Debug("non-default OTTL log functions have been registered in the \"transform\" processor", zap.Bool("log", f.DefaultLogFunctionsOverridden))
 	}
-	proc, err := logs.NewProcessor(toCommonContextStatements(oCfg.LogStatements), oCfg.ErrorMode, oCfg.Flatten.Log, set.TelemetrySettings, f.LogFunctions)
+	f.logCommonContextFunctionsOverridden(set.Logger)
+	proc, err := logs.NewProcessor(toCommonContextStatements(oCfg.LogStatements), oCfg.ErrorMode, oCfg.Flatten.Log, set.TelemetrySettings, f.LogFunctions, f.ResourceFunctions, f.ScopeFunctions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
@@ -202,7 +245,8 @@ func (f *transformProcessorFactory) createTracesProcessor(
 			zap.Bool("spanevent", f.DefaultSpanEventFunctionsOverridden),
 		)
 	}
-	proc, err := traces.NewProcessor(toCommonContextStatements(oCfg.TraceStatements), oCfg.ErrorMode, set.TelemetrySettings, f.SpanFunctions, f.SpanEventFunctions)
+	f.logCommonContextFunctionsOverridden(set.Logger)
+	proc, err := traces.NewProcessor(toCommonContextStatements(oCfg.TraceStatements), oCfg.ErrorMode, set.TelemetrySettings, f.SpanFunctions, f.SpanEventFunctions, f.ResourceFunctions, f.ScopeFunctions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
@@ -231,7 +275,8 @@ func (f *transformProcessorFactory) createMetricsProcessor(
 			zap.Bool("metric", f.DefaultMetricFunctionsOverridden),
 		)
 	}
-	proc, err := metrics.NewProcessor(toCommonContextStatements(oCfg.MetricStatements), oCfg.ErrorMode, set.TelemetrySettings, f.MetricFunctions, f.DataPointFunctions, f.ExemplarFunctions)
+	f.logCommonContextFunctionsOverridden(set.Logger)
+	proc, err := metrics.NewProcessor(toCommonContextStatements(oCfg.MetricStatements), oCfg.ErrorMode, set.TelemetrySettings, f.MetricFunctions, f.DataPointFunctions, f.ExemplarFunctions, f.ResourceFunctions, f.ScopeFunctions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
@@ -260,7 +305,8 @@ func (f *transformProcessorFactory) createProfilesProcessor(
 	if f.DefaultProfileFunctionsOverridden {
 		set.Logger.Debug("non-default OTTL profile functions have been registered in the \"transform\" processor", zap.Bool("profile", f.DefaultProfileFunctionsOverridden))
 	}
-	proc, err := profiles.NewProcessor(toCommonContextStatements(oCfg.ProfileStatements), oCfg.ErrorMode, set.TelemetrySettings, f.ProfileFunctions)
+	f.logCommonContextFunctionsOverridden(set.Logger)
+	proc, err := profiles.NewProcessor(toCommonContextStatements(oCfg.ProfileStatements), oCfg.ErrorMode, set.TelemetrySettings, f.ProfileFunctions, f.ResourceFunctions, f.ScopeFunctions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
