@@ -20,7 +20,7 @@ type Config struct {
 	// opening PostgreSQL connections. It cannot be combined with a datasource
 	// string or a static password.
 	DBAuth configdbauth.ID `mapstructure:"db_auth,omitempty"`
-	// The maximumn number of open connections to the sql server. <= 0 means unlimited
+	// The maximum number of open connections to the sql server. <= 0 means unlimited
 	MaxOpenConn int `mapstructure:"max_open_conn"`
 
 	// prevent unkeyed literal initialization

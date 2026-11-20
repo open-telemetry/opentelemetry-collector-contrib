@@ -66,7 +66,7 @@ The SQL Query Receiver uses custom SQL queries to generate logs and/or metrics f
 - `telemetry` (optional) Defines settings for the component's own telemetry - logs, metrics or traces.
   - `telemetry.logs` (optional) Defines settings for the component's own logs.
     - `telemetry.logs.query` (optional, default `false`) If set to `true`, every time a SQL query is run, the text of the query and the values of its parameters will be logged together with the debug log `"Running query"`.
-- `max_open_conn` (optional, default `0`): The maximumn number of open connections to the sql server. <= 0 means unlimited
+- `max_open_conn` (optional, default `0`): The maximum number of open connections to the sql server. <= 0 means unlimited
 
 For PostgreSQL, `db_auth` (optional) references a Collector extension implementing
 `dbauth.Provider`. The provider is resolved from the `extensions` map at receiver
@@ -124,7 +124,7 @@ receivers:
     driver: postgres
     host: localhost
     port: 5432
-    user: postgres
+    username: postgres
     password: s3cr3t
     additional_params:
       sslmode: disable
@@ -147,7 +147,7 @@ receivers:
   sql_query:
     driver: sqlserver
     host: localhost/instance
-    user: sql_server
+    username: sql_server
     password: s3cr3t
     additional_params:
       sslmode: disable
