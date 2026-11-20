@@ -5,14 +5,14 @@ go 1.26.0
 require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/pprof v0.0.0-20260604005048-7023385849c0
-	github.com/open-telemetry/sig-profiling/profcheck v0.0.0-20260605055552-091960d5da90
+	github.com/open-telemetry/sig-profiling/profcheck v0.0.0-20261120131622-f16d8cb17149
 	github.com/stretchr/testify v1.12.1
 	github.com/zeebo/xxh3 v1.1.0
 	go.opentelemetry.io/collector/pdata v1.71.1-0.20261119222305-0c7a74cd0a4a
 	go.opentelemetry.io/collector/pdata/pprofile v0.165.1-0.20261119222305-0c7a74cd0a4a
 	go.opentelemetry.io/otel v1.47.0
-	go.opentelemetry.io/proto/otlp v1.11.1
-	go.opentelemetry.io/proto/otlp/profiles/v1development v0.4.1
+	go.opentelemetry.io/proto/slim/otlp v1.11.1
+	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.4.1
 	google.golang.org/protobuf v1.36.12
 )
 
