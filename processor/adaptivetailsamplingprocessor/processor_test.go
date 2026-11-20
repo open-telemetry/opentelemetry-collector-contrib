@@ -1224,6 +1224,33 @@ func TestSerializedEmptyTraceState_MatchesFullSerialize(t *testing.T) {
 	}
 }
 
+// updateTraceState must not set `th` on a span carrying the zero-count flag,
+// since `zc` and `th` are mutually exclusive.
+func TestUpdateTraceState_ZeroCount(t *testing.T) {
+	th, err := sampling.ProbabilityToThreshold(0.5)
+	require.NoError(t, err)
+
+	for _, tc := range []struct {
+		name     string
+		incoming string
+		want     string
+	}{
+		{name: "no tracestate", incoming: "", want: serializedEmptyTraceState(th)},
+		{name: "zero count only", incoming: "ot=zc:1", want: "ot=zc:1"},
+		{name: "zero count with rv", incoming: "ot=rv:abcdef01234567;zc:1", want: "ot=rv:abcdef01234567;zc:1"},
+		{name: "zero count with other vendor", incoming: "ot=zc:1,vendor=abc", want: "ot=zc:1,vendor=abc"},
+		{name: "rv only gets th", incoming: "ot=rv:abcdef01234567", want: "ot=rv:abcdef01234567;th:8"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			span := ptrace.NewSpan()
+			span.TraceState().FromRaw(tc.incoming)
+			p := &adaptiveTailSamplingProcessor{}
+			p.updateTraceState(t.Context(), span, th, serializedEmptyTraceState(th))
+			assert.Equal(t, tc.want, span.TraceState().AsRaw())
+		})
+	}
+}
+
 func TestProcessor_ShutdownDrainsPendingTraces(t *testing.T) {
 	sink := &consumertest.TracesSink{}
 	cfg := &Config{

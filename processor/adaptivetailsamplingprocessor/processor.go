@@ -1158,7 +1158,9 @@ func (p *adaptiveTailSamplingProcessor) assembleTrace(ctx context.Context, spans
 // updateTraceState parses the existing TraceState, updates the OTel T-value to
 // reflect the sampling threshold, and serializes the result back onto the
 // span. `UpdateTValueWithSampling` refuses to lower a stricter incoming
-// threshold; that is spec-correct and treated as a silent no-op. Parse
+// threshold, and refuses to set a threshold on a span carrying the zero-count
+// flag (`ot=zc:1`), which is mutually exclusive with `th`; both are
+// spec-correct and treated as a silent no-op. Parse
 // failures on the incoming tracestate are counted in readIncomingSampling
 // (which runs on every decision path); here we silently skip the span.
 // emptyTS is the precomputed serialized tracestate to apply when the span has
