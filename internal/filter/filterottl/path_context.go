@@ -4,6 +4,8 @@
 package filterottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 
 import (
+	"slices"
+
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -54,7 +56,7 @@ func NewBoolExprForSpanWithPathContextNames(conditions []string, functions map[s
 		return nil, err
 	}
 	return newBoolExprWithPathContextNames(ottlspan.ContextName, parser, conditions, set, func(parsed []*ottl.Condition[*ottlspan.TransformContext]) ottl.ConditionSequence[*ottlspan.TransformContext] {
-		return ottlspan.NewConditionSequence(parsed, set, append([]ottlspan.ConditionSequenceOption{ottlspan.WithConditionSequenceErrorMode(errorMode)}, sequenceOptions...)...)
+		return ottlspan.NewConditionSequence(parsed, set, slices.Concat(sequenceOptions, []ottlspan.ConditionSequenceOption{ottlspan.WithConditionSequenceErrorMode(errorMode)})...)
 	})
 }
 
@@ -67,7 +69,7 @@ func NewBoolExprForSpanEventWithPathContextNames(conditions []string, functions 
 		return nil, err
 	}
 	return newBoolExprWithPathContextNames(ottlspanevent.ContextName, parser, conditions, set, func(parsed []*ottl.Condition[*ottlspanevent.TransformContext]) ottl.ConditionSequence[*ottlspanevent.TransformContext] {
-		return ottlspanevent.NewConditionSequence(parsed, set, append([]ottlspanevent.ConditionSequenceOption{ottlspanevent.WithConditionSequenceErrorMode(errorMode)}, sequenceOptions...)...)
+		return ottlspanevent.NewConditionSequence(parsed, set, slices.Concat(sequenceOptions, []ottlspanevent.ConditionSequenceOption{ottlspanevent.WithConditionSequenceErrorMode(errorMode)})...)
 	})
 }
 
@@ -80,7 +82,7 @@ func NewBoolExprForMetricWithPathContextNames(conditions []string, functions map
 		return nil, err
 	}
 	return newBoolExprWithPathContextNames(ottlmetric.ContextName, parser, conditions, set, func(parsed []*ottl.Condition[*ottlmetric.TransformContext]) ottl.ConditionSequence[*ottlmetric.TransformContext] {
-		return ottlmetric.NewConditionSequence(parsed, set, append([]ottlmetric.ConditionSequenceOption{ottlmetric.WithConditionSequenceErrorMode(errorMode)}, sequenceOptions...)...)
+		return ottlmetric.NewConditionSequence(parsed, set, slices.Concat(sequenceOptions, []ottlmetric.ConditionSequenceOption{ottlmetric.WithConditionSequenceErrorMode(errorMode)})...)
 	})
 }
 
@@ -93,7 +95,7 @@ func NewBoolExprForDataPointWithPathContextNames(conditions []string, functions 
 		return nil, err
 	}
 	return newBoolExprWithPathContextNames(ottldatapoint.ContextName, parser, conditions, set, func(parsed []*ottl.Condition[*ottldatapoint.TransformContext]) ottl.ConditionSequence[*ottldatapoint.TransformContext] {
-		return ottldatapoint.NewConditionSequence(parsed, set, append([]ottldatapoint.ConditionSequenceOption{ottldatapoint.WithConditionSequenceErrorMode(errorMode)}, sequenceOptions...)...)
+		return ottldatapoint.NewConditionSequence(parsed, set, slices.Concat(sequenceOptions, []ottldatapoint.ConditionSequenceOption{ottldatapoint.WithConditionSequenceErrorMode(errorMode)})...)
 	})
 }
 
@@ -106,7 +108,7 @@ func NewBoolExprForLogWithPathContextNames(conditions []string, functions map[st
 		return nil, err
 	}
 	return newBoolExprWithPathContextNames(ottllog.ContextName, parser, conditions, set, func(parsed []*ottl.Condition[*ottllog.TransformContext]) ottl.ConditionSequence[*ottllog.TransformContext] {
-		return ottllog.NewConditionSequence(parsed, set, append([]ottllog.ConditionSequenceOption{ottllog.WithConditionSequenceErrorMode(errorMode)}, sequenceOptions...)...)
+		return ottllog.NewConditionSequence(parsed, set, slices.Concat(sequenceOptions, []ottllog.ConditionSequenceOption{ottllog.WithConditionSequenceErrorMode(errorMode)})...)
 	})
 }
 
@@ -119,7 +121,7 @@ func NewBoolExprForProfileWithPathContextNames(conditions []string, functions ma
 		return nil, err
 	}
 	return newBoolExprWithPathContextNames(ottlprofile.ContextName, parser, conditions, set, func(parsed []*ottl.Condition[*ottlprofile.TransformContext]) ottl.ConditionSequence[*ottlprofile.TransformContext] {
-		return ottlprofile.NewConditionSequence(parsed, set, append([]ottlprofile.ConditionSequenceOption{ottlprofile.WithConditionSequenceErrorMode(errorMode)}, sequenceOptions...)...)
+		return ottlprofile.NewConditionSequence(parsed, set, slices.Concat(sequenceOptions, []ottlprofile.ConditionSequenceOption{ottlprofile.WithConditionSequenceErrorMode(errorMode)})...)
 	})
 }
 
@@ -132,7 +134,7 @@ func NewBoolExprForResourceWithPathContextNames(conditions []string, functions m
 		return nil, err
 	}
 	return newBoolExprWithPathContextNames(ottlresource.ContextName, parser, conditions, set, func(parsed []*ottl.Condition[*ottlresource.TransformContext]) ottl.ConditionSequence[*ottlresource.TransformContext] {
-		return ottlresource.NewConditionSequence(parsed, set, append([]ottlresource.ConditionSequenceOption{ottlresource.WithConditionSequenceErrorMode(errorMode)}, sequenceOptions...)...)
+		return ottlresource.NewConditionSequence(parsed, set, slices.Concat(sequenceOptions, []ottlresource.ConditionSequenceOption{ottlresource.WithConditionSequenceErrorMode(errorMode)})...)
 	})
 }
 
@@ -145,6 +147,6 @@ func NewBoolExprForScopeWithPathContextNames(conditions []string, functions map[
 		return nil, err
 	}
 	return newBoolExprWithPathContextNames(ottlscope.ContextName, parser, conditions, set, func(parsed []*ottl.Condition[*ottlscope.TransformContext]) ottl.ConditionSequence[*ottlscope.TransformContext] {
-		return ottlscope.NewConditionSequence(parsed, set, append([]ottlscope.ConditionSequenceOption{ottlscope.WithConditionSequenceErrorMode(errorMode)}, sequenceOptions...)...)
+		return ottlscope.NewConditionSequence(parsed, set, slices.Concat(sequenceOptions, []ottlscope.ConditionSequenceOption{ottlscope.WithConditionSequenceErrorMode(errorMode)})...)
 	})
 }

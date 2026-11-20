@@ -70,3 +70,32 @@ func Test_NewBoolExprForLogWithPathContextNames_SequenceOptions(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), counter.count)
 }
+
+func Test_NewBoolExprForLogWithOptions_ErrorModeNotOverridden(t *testing.T) {
+	cs, err := NewBoolExprForLogWithOptions(
+		[]string{"Fail()"},
+		failingFunctions(),
+		ottl.IgnoreError,
+		componenttest.NewNopTelemetrySettings(),
+		nil,
+		ottllog.WithConditionSequenceErrorMode(ottl.PropagateError),
+	)
+	require.NoError(t, err)
+
+	_, err = cs.Eval(t.Context(), nil)
+	require.NoError(t, err)
+}
+
+func Test_NewBoolExprForLogWithPathContextNames_ErrorModeNotOverridden(t *testing.T) {
+	cs, err := NewBoolExprForLogWithPathContextNames(
+		[]string{"Fail()"},
+		failingFunctions(),
+		ottl.IgnoreError,
+		componenttest.NewNopTelemetrySettings(),
+		ottllog.WithConditionSequenceErrorMode(ottl.PropagateError),
+	)
+	require.NoError(t, err)
+
+	_, err = cs.Eval(t.Context(), nil)
+	require.NoError(t, err)
+}

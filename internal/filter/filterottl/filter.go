@@ -4,6 +4,8 @@
 package filterottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 
 import (
+	"slices"
+
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -35,7 +37,7 @@ func NewBoolExprForSpanWithOptions(conditions []string, functions map[string]ott
 	if err != nil {
 		return nil, err
 	}
-	c := ottlspan.NewConditionSequence(statements, set, append([]ottlspan.ConditionSequenceOption{ottlspan.WithConditionSequenceErrorMode(errorMode)}, sequenceOptions...)...)
+	c := ottlspan.NewConditionSequence(statements, set, slices.Concat(sequenceOptions, []ottlspan.ConditionSequenceOption{ottlspan.WithConditionSequenceErrorMode(errorMode)})...)
 	return &c, nil
 }
 
@@ -56,7 +58,7 @@ func NewBoolExprForSpanEventWithOptions(conditions []string, functions map[strin
 	if err != nil {
 		return nil, err
 	}
-	c := ottlspanevent.NewConditionSequence(statements, set, append([]ottlspanevent.ConditionSequenceOption{ottlspanevent.WithConditionSequenceErrorMode(errorMode)}, sequenceOptions...)...)
+	c := ottlspanevent.NewConditionSequence(statements, set, slices.Concat(sequenceOptions, []ottlspanevent.ConditionSequenceOption{ottlspanevent.WithConditionSequenceErrorMode(errorMode)})...)
 	return &c, nil
 }
 
@@ -77,7 +79,7 @@ func NewBoolExprForMetricWithOptions(conditions []string, functions map[string]o
 	if err != nil {
 		return nil, err
 	}
-	c := ottlmetric.NewConditionSequence(statements, set, append([]ottlmetric.ConditionSequenceOption{ottlmetric.WithConditionSequenceErrorMode(errorMode)}, sequenceOptions...)...)
+	c := ottlmetric.NewConditionSequence(statements, set, slices.Concat(sequenceOptions, []ottlmetric.ConditionSequenceOption{ottlmetric.WithConditionSequenceErrorMode(errorMode)})...)
 	return &c, nil
 }
 
@@ -98,7 +100,7 @@ func NewBoolExprForDataPointWithOptions(conditions []string, functions map[strin
 	if err != nil {
 		return nil, err
 	}
-	c := ottldatapoint.NewConditionSequence(statements, set, append([]ottldatapoint.ConditionSequenceOption{ottldatapoint.WithConditionSequenceErrorMode(errorMode)}, sequenceOptions...)...)
+	c := ottldatapoint.NewConditionSequence(statements, set, slices.Concat(sequenceOptions, []ottldatapoint.ConditionSequenceOption{ottldatapoint.WithConditionSequenceErrorMode(errorMode)})...)
 	return &c, nil
 }
 
@@ -119,7 +121,7 @@ func NewBoolExprForExemplarWithOptions(conditions []string, functions map[string
 	if err != nil {
 		return nil, err
 	}
-	c := ottlexemplar.NewConditionSequence(statements, set, append([]ottlexemplar.ConditionSequenceOption{ottlexemplar.WithConditionSequenceErrorMode(errorMode)}, sequenceOptions...)...)
+	c := ottlexemplar.NewConditionSequence(statements, set, slices.Concat(sequenceOptions, []ottlexemplar.ConditionSequenceOption{ottlexemplar.WithConditionSequenceErrorMode(errorMode)})...)
 	return &c, nil
 }
 
@@ -140,7 +142,7 @@ func NewBoolExprForLogWithOptions(conditions []string, functions map[string]ottl
 	if err != nil {
 		return nil, err
 	}
-	c := ottllog.NewConditionSequence(statements, set, append([]ottllog.ConditionSequenceOption{ottllog.WithConditionSequenceErrorMode(errorMode)}, sequenceOptions...)...)
+	c := ottllog.NewConditionSequence(statements, set, slices.Concat(sequenceOptions, []ottllog.ConditionSequenceOption{ottllog.WithConditionSequenceErrorMode(errorMode)})...)
 	return &c, nil
 }
 
@@ -161,7 +163,7 @@ func NewBoolExprForProfileWithOptions(conditions []string, functions map[string]
 	if err != nil {
 		return nil, err
 	}
-	c := ottlprofile.NewConditionSequence(statements, set, append([]ottlprofile.ConditionSequenceOption{ottlprofile.WithConditionSequenceErrorMode(errorMode)}, sequenceOptions...)...)
+	c := ottlprofile.NewConditionSequence(statements, set, slices.Concat(sequenceOptions, []ottlprofile.ConditionSequenceOption{ottlprofile.WithConditionSequenceErrorMode(errorMode)})...)
 	return &c, nil
 }
 
@@ -182,7 +184,7 @@ func NewBoolExprForResourceWithOptions(conditions []string, functions map[string
 	if err != nil {
 		return nil, err
 	}
-	c := ottlresource.NewConditionSequence(statements, set, append([]ottlresource.ConditionSequenceOption{ottlresource.WithConditionSequenceErrorMode(errorMode)}, sequenceOptions...)...)
+	c := ottlresource.NewConditionSequence(statements, set, slices.Concat(sequenceOptions, []ottlresource.ConditionSequenceOption{ottlresource.WithConditionSequenceErrorMode(errorMode)})...)
 	return &c, nil
 }
 
@@ -203,6 +205,6 @@ func NewBoolExprForScopeWithOptions(conditions []string, functions map[string]ot
 	if err != nil {
 		return nil, err
 	}
-	c := ottlscope.NewConditionSequence(statements, set, append([]ottlscope.ConditionSequenceOption{ottlscope.WithConditionSequenceErrorMode(errorMode)}, sequenceOptions...)...)
+	c := ottlscope.NewConditionSequence(statements, set, slices.Concat(sequenceOptions, []ottlscope.ConditionSequenceOption{ottlscope.WithConditionSequenceErrorMode(errorMode)})...)
 	return &c, nil
 }
