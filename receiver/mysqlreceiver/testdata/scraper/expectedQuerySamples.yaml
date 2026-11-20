@@ -49,9 +49,15 @@ resourceLogs:
               - key: mysql.event_id
                 value:
                   intValue: "17470257762"
+              - key: mysql.wait_event.type
+                value:
+                  stringValue: io
+              - key: mysql.wait_event.name
+                value:
+                  stringValue: table/sql/handler
               - key: mysql.wait_type
                 value:
-                  stringValue: CPU
+                  stringValue: wait/io/table/sql/handler
               - key: mysql.session.status
                 value:
                   stringValue: waiting
@@ -76,6 +82,15 @@ resourceLogs:
               - key: network.peer.port
                 value:
                   intValue: "1234"
+              - key: mysql.client.name
+                value:
+                  stringValue: ""
+              - key: mysql.blocking.blocker.count
+                value:
+                  intValue: "0"
+              - key: mysql.blocking.blocker.details
+                value:
+                  stringValue: ""
             body: {}
             eventName: db.server.query_sample
             spanId: "2222222222222222"

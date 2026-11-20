@@ -1,5 +1,8 @@
 type: object
 properties:
+  db_auth:
+    description: DBAuth references an extension that supplies database credentials when opening PostgreSQL connections. It cannot be combined with a datasource string or a static password.
+    $ref: /config/configdbauth.id
   max_open_conn:
     description: The maximumn number of open connections to the sql server. <= 0 means unlimited
     type: integer

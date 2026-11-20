@@ -24,6 +24,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetServiceNamespace("service.namespace-val")
 			rb.SetSqlserverComputerName("sqlserver.computer.name-val")
 			rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
+			rb.SetSqlserverDbEditionStandard()
 			rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
 
 			res := rb.Emit()
@@ -33,7 +34,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 5, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 10, res.Attributes().Len())
+				assert.Equal(t, 11, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -85,6 +86,11 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.Equal(t, "sqlserver.database.name-val", sqlserverDatabaseNameAttrVal.Str())
 			}
+			sqlserverDbEditionAttrVal, ok := res.Attributes().Get("sqlserver.db.edition")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "standard", sqlserverDbEditionAttrVal.Str())
+			}
 			sqlserverInstanceNameAttrVal, ok := res.Attributes().Get("sqlserver.instance.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
@@ -107,6 +113,7 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 	rb.SetServiceNamespace("service.namespace-val")
 	rb.SetSqlserverComputerName("sqlserver.computer.name-val")
 	rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
+	rb.SetSqlserverDbEditionStandard()
 	rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
 
 	res := rb.Emit()
@@ -171,6 +178,13 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 		assert.True(t, ok, "sqlserver.database.name should be present")
 		if ok {
 			assert.Equal(t, "override-sqlserver.database.name", val.Str())
+		}
+	}
+	{
+		val, ok := res.Attributes().Get("sqlserver.db.edition")
+		assert.True(t, ok, "sqlserver.db.edition should be present")
+		if ok {
+			assert.Equal(t, "standard", val.Str())
 		}
 	}
 	{
@@ -253,6 +267,13 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 		}
 	}
 	{
+		val, ok := res.Attributes().Get("sqlserver.db.edition")
+		assert.True(t, ok, "sqlserver.db.edition should be present even without calling Set")
+		if ok {
+			assert.Equal(t, "standard", val.Str())
+		}
+	}
+	{
 		val, ok := res.Attributes().Get("sqlserver.instance.name")
 		assert.True(t, ok, "sqlserver.instance.name should be present even without calling Set")
 		if ok {
@@ -273,6 +294,7 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 	cfg.ServiceNamespace.Enabled = false
 	cfg.SqlserverComputerName.Enabled = false
 	cfg.SqlserverDatabaseName.Enabled = false
+	cfg.SqlserverDbEdition.Enabled = false
 	cfg.SqlserverInstanceName.Enabled = false
 	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
@@ -294,6 +316,7 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	assert.Nil(t, cfg.ServiceNamespace.OverrideValue, "OverrideValue should be nil for service.namespace")
 	assert.Nil(t, cfg.SqlserverComputerName.OverrideValue, "OverrideValue should be nil for sqlserver.computer.name")
 	assert.Nil(t, cfg.SqlserverDatabaseName.OverrideValue, "OverrideValue should be nil for sqlserver.database.name")
+	assert.Nil(t, cfg.SqlserverDbEdition.OverrideValue, "OverrideValue should be nil for sqlserver.db.edition")
 	assert.Nil(t, cfg.SqlserverInstanceName.OverrideValue, "OverrideValue should be nil for sqlserver.instance.name")
 	rb := NewResourceBuilder(cfg)
 	rb.SetDbSystemVersion("db.system.version-val")
@@ -305,10 +328,11 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	rb.SetServiceNamespace("service.namespace-val")
 	rb.SetSqlserverComputerName("sqlserver.computer.name-val")
 	rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
+	rb.SetSqlserverDbEditionStandard()
 	rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
 
 	res := rb.Emit()
-	assert.Equal(t, 10, res.Attributes().Len())
+	assert.Equal(t, 11, res.Attributes().Len())
 	dbSystemVersionAttrVal, ok := res.Attributes().Get("db.system.version")
 	assert.True(t, ok)
 	if ok {
@@ -353,6 +377,11 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	assert.True(t, ok)
 	if ok {
 		assert.Equal(t, "sqlserver.database.name-val", sqlserverDatabaseNameAttrVal.Str())
+	}
+	sqlserverDbEditionAttrVal, ok := res.Attributes().Get("sqlserver.db.edition")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "standard", sqlserverDbEditionAttrVal.Str())
 	}
 	sqlserverInstanceNameAttrVal, ok := res.Attributes().Get("sqlserver.instance.name")
 	assert.True(t, ok)

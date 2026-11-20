@@ -59,7 +59,7 @@ type Fan struct {
 
 type Temperature struct {
 	Name           string
-	ReadingCelsius *int64
+	ReadingCelsius *float64
 	Status         Status
 }
 

@@ -20,7 +20,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/partitioningprocessor/internal/metadatatest"
 )
 
 func buildLogsProcessor(t *testing.T, cfg *Config, next consumer.Logs) processor.Logs {
@@ -621,4 +625,96 @@ func (*capturingMetricsConsumer) Capabilities() consumer.Capabilities {
 
 func (c *capturingMetricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	return c.fn(ctx, md)
+}
+
+func TestConsumeLogs_RecordsPartitionsHistogram(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+	set := nopSettings()
+	set.TelemetrySettings = tel.NewTelemetrySettings()
+
+	proc, err := createLogsProcessor(t.Context(), set, validConfig(), consumertest.NewNop())
+	require.NoError(t, err)
+
+	logs := plog.NewLogs()
+	for _, tenant := range []string{"t1", "t2", "t1"} {
+		rl := logs.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("tenant.id", tenant)
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	}
+	require.NoError(t, proc.ConsumeLogs(t.Context(), logs))
+
+	m, err := tel.GetMetric("otelcol.processor.partitioning.partitions")
+	require.NoError(t, err)
+	hist, ok := m.Data.(metricdata.Histogram[int64])
+	require.True(t, ok)
+	require.Len(t, hist.DataPoints, 1)
+	dp := hist.DataPoints[0]
+	assert.Equal(t, uint64(1), dp.Count)
+	assert.Equal(t, int64(2), dp.Sum)
+	assert.Equal(t, metricdata.NewExtrema[int64](2), dp.Min)
+	assert.Equal(t, metricdata.NewExtrema[int64](2), dp.Max)
+
+	_, err = tel.GetMetric("otelcol.processor.partitioning.key_evaluation.errors")
+	assert.Error(t, err, "no key evaluation error should be recorded")
+}
+
+func TestConsumeLogs_RecordsKeyEvaluationErrors(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+	set := nopSettings()
+	set.TelemetrySettings = tel.NewTelemetrySettings()
+
+	proc, err := createLogsProcessor(t.Context(), set, &Config{Keys: map[string]string{
+		"count": `resource.attributes["count"]`,
+	}}, consumertest.NewNop())
+	require.NoError(t, err)
+
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutInt("count", 1)
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+	err = proc.ConsumeLogs(t.Context(), logs)
+	require.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err))
+
+	metadatatest.AssertEqualProcessorPartitioningKeyEvaluationErrors(t, tel,
+		[]metricdata.DataPoint[int64]{{
+			Attributes: attribute.NewSet(attribute.String("error.type", "invalid_value_type")),
+			Value:      1,
+		}},
+		metricdatatest.IgnoreTimestamp())
+
+	_, err = tel.GetMetric("otelcol.processor.partitioning.partitions")
+	assert.Error(t, err, "no partitions should be recorded for a rejected batch")
+}
+
+func TestConsumeLogs_RecordsKeyEvaluationErrors_EvaluationFailed(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+	set := nopSettings()
+	set.TelemetrySettings = tel.NewTelemetrySettings()
+
+	// Parses fine, but Substring fails at runtime because the range exceeds the value.
+	proc, err := createLogsProcessor(t.Context(), set, &Config{Keys: map[string]string{
+		"tenant": `Substring(resource.attributes["tenant.id"], 0, 100)`,
+	}}, consumertest.NewNop())
+	require.NoError(t, err)
+
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("tenant.id", "t1")
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+	err = proc.ConsumeLogs(t.Context(), logs)
+	require.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err))
+
+	metadatatest.AssertEqualProcessorPartitioningKeyEvaluationErrors(t, tel,
+		[]metricdata.DataPoint[int64]{{
+			Attributes: attribute.NewSet(attribute.String("error.type", "evaluation_failed")),
+			Value:      1,
+		}},
+		metricdatatest.IgnoreTimestamp())
 }

@@ -25,6 +25,9 @@ $defs:
         $ref: /pkg/stanza/split.config
       one_log_per_packet:
         type: boolean
+      resolve_names:
+        x-optional: true
+        type: boolean
     allOf:
       - $ref: /pkg/stanza/trim.config
   config:

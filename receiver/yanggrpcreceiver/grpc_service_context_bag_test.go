@@ -95,7 +95,7 @@ func TestGrpcService_ProcessTelemetryData_ContextBagAttributes(t *testing.T) {
 			settings := createTestSettings()
 			receiver := createMetricsReceiver(t.Context(), settings, config, consumer)
 
-			yangParser := internal.NewYANGParser()
+			yangParser := internal.NewYANGParser(settings.Logger)
 			yangParser.LoadBuiltinModules()
 			service := &grpcService{
 				receiver:   receiver.(*yangReceiver),

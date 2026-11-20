@@ -69,7 +69,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 		return nil
 	}
 	var errs []error
-	var criEntries []*entry.Entry
+	criEntries := make([]*entry.Entry, 0, len(entries))
 
 	for _, ent := range entries {
 		skip, err := p.Skip(ctx, ent)

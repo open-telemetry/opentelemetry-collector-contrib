@@ -10,4 +10,5 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [tigrannajaryan, MovieStoreGuy, dmitryax, atoulme, pjanotti, crobert-1]
+    active: [tigrannajaryan, MovieStoreGuy, atoulme, pjanotti, crobert-1]
+    emeritus: [dmitryax]

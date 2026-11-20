@@ -40,19 +40,19 @@ resources/include:
 	doc, err := readDocument(path)
 	require.NoError(t, err)
 
-	require.Equal(t, collectionModeInclude, doc.ResourcesMode)
+	require.Equal(t, collectionModeInclude, doc.ResourcesMatch.mode)
 	require.Len(t, doc.Resources, 1)
 
 	res := doc.Resources[0]
-	require.Equal(t, collectionModeInclude, res.ScopesMode)
+	require.Equal(t, collectionModeInclude, res.ScopesMatch.mode)
 	require.Len(t, res.Scopes, 1)
 
 	scope := res.Scopes[0]
-	require.Equal(t, collectionModeInclude, scope.MetricsMode)
+	require.Equal(t, collectionModeInclude, scope.MetricsMatch.mode)
 	require.Len(t, scope.Metrics, 1)
 
 	metric := scope.Metrics[0]
-	require.Equal(t, collectionModeInclude, metric.DatapointsMode)
+	require.Equal(t, collectionModeInclude, metric.DatapointsMatch.mode)
 	require.Len(t, metric.Datapoints, 1)
 	require.Equal(t, "GET", metric.Datapoints[0].Attributes["method"])
 }
@@ -74,12 +74,12 @@ resources:
 	doc, err := readDocument(path)
 	require.NoError(t, err)
 
-	require.Equal(t, collectionModeExact, doc.ResourcesMode)
-	require.Equal(t, collectionModeExact, doc.Resources[0].ScopesMode)
-	require.Equal(t, collectionModeExact, doc.Resources[0].Scopes[0].MetricsMode)
+	require.Equal(t, collectionModeExact, doc.ResourcesMatch.mode)
+	require.Equal(t, collectionModeExact, doc.Resources[0].ScopesMatch.mode)
+	require.Equal(t, collectionModeExact, doc.Resources[0].Scopes[0].MetricsMatch.mode)
 
 	metric := doc.Resources[0].Scopes[0].Metrics[0]
-	require.Equal(t, collectionModeExact, metric.DatapointsMode)
+	require.Equal(t, collectionModeExact, metric.DatapointsMatch.mode)
 	// The single empty-attribute datapoint shorthand still applies in an
 	// exact collection.
 	require.Equal(t, []datapointAssertion{{}}, metric.Datapoints)
@@ -99,7 +99,7 @@ resources/include:
 	require.NoError(t, err)
 
 	res := doc.Resources[0]
-	require.Equal(t, collectionModeInclude, res.ScopesMode)
+	require.Equal(t, collectionModeInclude, res.ScopesMatch.mode)
 	require.Empty(t, res.Scopes)
 }
 
@@ -120,7 +120,7 @@ resources/include:
 	require.NoError(t, err)
 
 	metric := doc.Resources[0].Scopes[0].Metrics[0]
-	require.Equal(t, collectionModeInclude, metric.DatapointsMode)
+	require.Equal(t, collectionModeInclude, metric.DatapointsMatch.mode)
 	require.Empty(t, metric.Datapoints, "no implicit datapoint may be injected under /include")
 }
 

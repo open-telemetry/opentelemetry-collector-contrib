@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
@@ -170,16 +171,16 @@ func TestGetDataSource(t *testing.T) {
 		{
 			name: "Default data source",
 			config: &Config{
-				DataSource: defaultDataSource,
+				DataSource: configopaque.String(defaultDataSource),
 			},
 			expected: defaultDataSource,
 		},
 		{
 			name: "Default data source takes priority over other config options",
 			config: &Config{
-				DataSource: defaultDataSource,
+				DataSource: configopaque.String(defaultDataSource),
 				Endpoint:   endpoint,
-				Password:   password,
+				Password:   configopaque.String(password),
 				Service:    service,
 				Username:   username,
 			},
@@ -189,11 +190,65 @@ func TestGetDataSource(t *testing.T) {
 			name: "Individual config options properly render data source",
 			config: &Config{
 				Endpoint: endpoint,
-				Password: password,
+				Password: configopaque.String(password),
 				Service:  service,
 				Username: username,
 			},
 			expected: nonDefaultDataSource,
+		},
+		{
+			name: "Kerberos auth renders data source without credentials and with AUTH TYPE",
+			config: &Config{
+				Endpoint: endpoint,
+				Service:  service,
+				AuthType: AuthTypeKerberos,
+				Kerberos: &KerberosConfig{
+					CredentialType: KerberosCredentialKeytab,
+					Realm:          "EXAMPLE.COM",
+					Principal:      "otel",
+					ConfigFile:     "/etc/krb5.conf",
+					KeytabFile:     "/etc/otel.keytab",
+				},
+			},
+			expected: "oracle://:@example1.com:1521/mydb1?AUTH TYPE=KERBEROS",
+		},
+		{
+			name: "Kerberos data source without query gets AUTH TYPE injected",
+			config: &Config{
+				DataSource: "oracle://host:1521/mydb",
+				AuthType:   AuthTypeKerberos,
+				Kerberos: &KerberosConfig{
+					CredentialType: KerberosCredentialKeytab,
+					Realm:          "EXAMPLE.COM",
+					Principal:      "otel",
+					ConfigFile:     "/etc/krb5.conf",
+					KeytabFile:     "/etc/otel.keytab",
+				},
+			},
+			expected: "oracle://host:1521/mydb?AUTH+TYPE=KERBEROS",
+		},
+		{
+			name: "Kerberos data source with additional options gets AUTH TYPE injected",
+			config: &Config{
+				DataSource: "oracle://host:1521/mydb?SSL=true",
+				AuthType:   AuthTypeKerberos,
+				Kerberos: &KerberosConfig{
+					CredentialType: KerberosCredentialKeytab,
+					Realm:          "EXAMPLE.COM",
+					Principal:      "otel",
+					ConfigFile:     "/etc/krb5.conf",
+					KeytabFile:     "/etc/otel.keytab",
+				},
+			},
+			expected: "oracle://host:1521/mydb?AUTH+TYPE=KERBEROS&SSL=true",
+		},
+		{
+			name: "Non-Kerberos data source is returned unchanged",
+			config: &Config{
+				DataSource: "oracle://host:1521/mydb?SSL=true",
+				AuthType:   AuthTypePassword,
+			},
+			expected: "oracle://host:1521/mydb?SSL=true",
 		},
 	}
 

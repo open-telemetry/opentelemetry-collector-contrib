@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 )
@@ -65,7 +66,7 @@ func newPostgresTestExtension() (storage.Extension, testcontainers.Container, er
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.DriverName = driverPostgreSQL
-	cfg.DataSource = fmt.Sprintf("host=%s port=%s user=%s password=%s database=%s sslmode=disable", "127.0.0.1", port.Port(), "root", "passwd", "db")
+	cfg.DataSource = configopaque.String(fmt.Sprintf("host=%s port=%s user=%s password=%s database=%s sslmode=disable", "127.0.0.1", port.Port(), "root", "passwd", "db"))
 
 	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
 	if err != nil {

@@ -110,9 +110,8 @@ func runningMetricTags(t *testing.T, body []byte, metricName string) [][]string 
 			continue
 		}
 		assert.Equal(t, gogen.MetricPayload_GAUGE, series.GetType())
-		require.Len(t, series.GetResources(), 1)
-		assert.Equal(t, "host", series.GetResources()[0].GetType())
-		assert.Empty(t, series.GetResources()[0].GetName())
+		// Running metrics are hostless, and hostless series carry no host resource.
+		assert.Empty(t, series.GetResources())
 		require.Len(t, series.GetPoints(), 1)
 		assert.Equal(t, 1.0, series.GetPoints()[0].GetValue())
 		tagSets = append(tagSets, series.GetTags())

@@ -37,12 +37,13 @@ func TestNewFactory(t *testing.T) {
 						CollectionInterval: defaultCollectionInterval,
 						Timeout:            defaultTimeout,
 					},
-					Endpoint:      defaultEndpoint,
-					Version:       defaultVersion,
-					Community:     defaultCommunity,
-					SecurityLevel: "no_auth_no_priv",
-					AuthType:      "MD5",
-					PrivacyType:   "DES",
+					Endpoint:       defaultEndpoint,
+					Version:        defaultVersion,
+					Community:      defaultCommunity,
+					SecurityLevel:  "no_auth_no_priv",
+					AuthType:       "MD5",
+					PrivacyType:    "DES",
+					MaxRepetitions: defaultMaxRepetitions,
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())
@@ -108,7 +109,10 @@ func TestNewFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				require.Equal(t, "udp://localhost:161", snmpCfg.Endpoint)
+				effective := snmpCfg.effectivePollingConfig()
+				require.NoError(t, addMissingConfigDefaults(effective))
+				require.Equal(t, "udp://localhost:161", effective.Endpoint)
+				require.Equal(t, "localhost:161", snmpCfg.Endpoint)
 			},
 		},
 		{
@@ -134,7 +138,10 @@ func TestNewFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				require.Equal(t, "udp://localhost:161", snmpCfg.Endpoint)
+				effective := snmpCfg.effectivePollingConfig()
+				require.NoError(t, addMissingConfigDefaults(effective))
+				require.Equal(t, "udp://localhost:161", effective.Endpoint)
+				require.Equal(t, "udp://localhost", snmpCfg.Endpoint)
 			},
 		},
 		{
@@ -160,7 +167,10 @@ func TestNewFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				require.Equal(t, "udp://localhost:161", snmpCfg.Endpoint)
+				effective := snmpCfg.effectivePollingConfig()
+				require.NoError(t, addMissingConfigDefaults(effective))
+				require.Equal(t, "udp://localhost:161", effective.Endpoint)
+				require.Equal(t, "udp://localhost:", snmpCfg.Endpoint)
 			},
 		},
 		{
@@ -184,7 +194,10 @@ func TestNewFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				require.Equal(t, "double", snmpCfg.Metrics["m1"].Gauge.ValueType)
+				effective := snmpCfg.effectivePollingConfig()
+				require.NoError(t, addMissingConfigDefaults(effective))
+				require.Equal(t, "double", effective.Metrics["m1"].Gauge.ValueType)
+				require.Empty(t, snmpCfg.Metrics["m1"].Gauge.ValueType)
 			},
 		},
 		{
@@ -208,7 +221,10 @@ func TestNewFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				require.Equal(t, "double", snmpCfg.Metrics["m1"].Sum.ValueType)
+				effective := snmpCfg.effectivePollingConfig()
+				require.NoError(t, addMissingConfigDefaults(effective))
+				require.Equal(t, "double", effective.Metrics["m1"].Sum.ValueType)
+				require.Empty(t, snmpCfg.Metrics["m1"].Sum.ValueType)
 			},
 		},
 		{
@@ -232,7 +248,10 @@ func TestNewFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				require.Equal(t, "cumulative", snmpCfg.Metrics["m1"].Sum.Aggregation)
+				effective := snmpCfg.effectivePollingConfig()
+				require.NoError(t, addMissingConfigDefaults(effective))
+				require.Equal(t, "cumulative", effective.Metrics["m1"].Sum.Aggregation)
+				require.Empty(t, snmpCfg.Metrics["m1"].Sum.Aggregation)
 			},
 		},
 		{
@@ -256,7 +275,65 @@ func TestNewFactory(t *testing.T) {
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				require.Equal(t, "1", snmpCfg.Metrics["m1"].Unit)
+				effective := snmpCfg.effectivePollingConfig()
+				require.NoError(t, addMissingConfigDefaults(effective))
+				require.Equal(t, "1", effective.Metrics["m1"].Unit)
+				require.Empty(t, snmpCfg.Metrics["m1"].Unit)
+			},
+		},
+		{
+			desc: "CreateMetrics adds missing max_repetitions as 25",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig()
+				snmpCfg := cfg.(*Config)
+				snmpCfg.MaxRepetitions = 0
+				snmpCfg.Metrics = map[string]*MetricConfig{
+					"m1": {
+						Unit:  "1",
+						Gauge: &GaugeMetric{ValueType: "int"},
+						ScalarOIDs: []ScalarOID{{
+							OID: ".1",
+						}},
+					},
+				}
+				_, err := factory.CreateMetrics(
+					t.Context(),
+					receivertest.NewNopSettings(metadata.Type),
+					cfg,
+					consumertest.NewNop(),
+				)
+				require.NoError(t, err)
+				effective := snmpCfg.effectivePollingConfig()
+				require.NoError(t, addMissingConfigDefaults(effective))
+				require.Equal(t, uint32(25), effective.MaxRepetitions)
+				require.Zero(t, snmpCfg.MaxRepetitions)
+			},
+		},
+		{
+			desc: "CreateMetrics preserves custom max_repetitions",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig()
+				snmpCfg := cfg.(*Config)
+				snmpCfg.MaxRepetitions = 10
+				snmpCfg.Metrics = map[string]*MetricConfig{
+					"m1": {
+						Unit:  "1",
+						Gauge: &GaugeMetric{ValueType: "int"},
+						ScalarOIDs: []ScalarOID{{
+							OID: ".1",
+						}},
+					},
+				}
+				_, err := factory.CreateMetrics(
+					t.Context(),
+					receivertest.NewNopSettings(metadata.Type),
+					cfg,
+					consumertest.NewNop(),
+				)
+				require.NoError(t, err)
+				require.Equal(t, uint32(10), snmpCfg.MaxRepetitions)
 			},
 		},
 	}

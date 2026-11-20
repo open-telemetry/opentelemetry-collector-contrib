@@ -1938,6 +1938,10 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asDouble: 24944
+                  attributes:
+                    - key: sqlserver.resource_pool.name
+                      value:
+                        stringValue: default
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: kBy
@@ -2279,6 +2283,10 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asDouble: 234720
+                  attributes:
+                    - key: sqlserver.resource_pool.name
+                      value:
+                        stringValue: internal
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: kBy
@@ -2578,47 +2586,6 @@ resourceMetrics:
             stringValue: d26d40521426
     scopeMetrics:
       - metrics:
-          - description: Total free space in temporary DB.
-            name: sqlserver.database.tempdb.space
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "18256656"
-                  attributes:
-                    - key: tempdb.state
-                      value:
-                        stringValue: free
-                  startTimeUnixNano: "2000000"
-                  timeUnixNano: "1000000"
-            unit: kBy
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: host.name
-          value:
-            stringValue: 0.0.0.0
-        - key: server.address
-          value:
-            stringValue: 0.0.0.0
-        - key: server.port
-          value:
-            intValue: "1433"
-        - key: service.instance.id
-          value:
-            stringValue: 0.0.0.0:1433
-        - key: service.name
-          value:
-            stringValue: unknown_service:microsoft.sql_server
-        - key: service.namespace
-          value:
-            stringValue: ""
-        - key: sqlserver.instance.name
-          value:
-            stringValue: d26d40521426
-    scopeMetrics:
-      - metrics:
           - description: TempDB version store size.
             gauge:
               dataPoints:
@@ -2661,6 +2628,10 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
+                  attributes:
+                    - key: sqlserver.workload_group.name
+                      value:
+                        stringValue: default
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
               isMonotonic: true
@@ -2699,6 +2670,10 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "20"
+                  attributes:
+                    - key: sqlserver.workload_group.name
+                      value:
+                        stringValue: internal
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
               isMonotonic: true

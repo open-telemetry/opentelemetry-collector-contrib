@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"net/http/pprof"
 	"testing"
 	"time"
@@ -59,4 +60,47 @@ func TestHttpScraper(t *testing.T) {
 		sp.Scope().Name(),
 	)
 	require.Equal(t, "1.2.3", sp.Scope().Version())
+}
+
+func TestHttpScraperErrorStatus(t *testing.T) {
+	for _, status := range []int{http.StatusNotFound, http.StatusInternalServerError} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				http.Error(w, "profiling disabled", status)
+			}))
+			t.Cleanup(server.Close)
+
+			s := HTTPClientScraper{ClientConfig: confighttp.NewDefaultClientConfig()}
+			s.ClientConfig.Endpoint = server.URL + "/debug/pprof/"
+			require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
+			t.Cleanup(func() {
+				require.NoError(t, s.Shutdown(t.Context()))
+			})
+
+			_, err := s.ScrapeProfiles(t.Context())
+			require.ErrorContains(t, err, fmt.Sprintf("unexpected status %q", fmt.Sprintf("%d %s", status, http.StatusText(status))))
+		})
+	}
+}
+
+func TestHttpScraperCanceledContext(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		<-r.Context().Done()
+	}))
+	t.Cleanup(server.Close)
+
+	s := HTTPClientScraper{
+		ClientConfig: confighttp.NewDefaultClientConfig(),
+		Settings:     componenttest.NewNopTelemetrySettings(),
+	}
+	s.ClientConfig.Endpoint = server.URL + "/debug/pprof/"
+	require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, s.Shutdown(t.Context()))
+	})
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	_, err := s.ScrapeProfiles(ctx)
+	require.ErrorIs(t, err, context.Canceled)
 }

@@ -85,6 +85,9 @@ all_set:
     mongodb.operation.count:
       enabled: true
       attributes: ["operation"]
+    mongodb.operation.latency.count:
+      enabled: true
+      attributes: ["operation"]
     mongodb.operation.latency.time:
       enabled: true
       attributes: ["operation"]
@@ -105,6 +108,8 @@ all_set:
     mongodb.queries.rate:
       enabled: true
     mongodb.query_executor.collection_scan.count:
+      enabled: true
+    mongodb.query_executor.collection_scan.non_tailable.count:
       enabled: true
     mongodb.query_executor.document.scanned.count:
       enabled: true
@@ -263,6 +268,9 @@ reaggregate_set:
     mongodb.operation.count:
       enabled: true
       attributes: []
+    mongodb.operation.latency.count:
+      enabled: true
+      attributes: []
     mongodb.operation.latency.time:
       enabled: true
       attributes: []
@@ -283,6 +291,8 @@ reaggregate_set:
     mongodb.queries.rate:
       enabled: true
     mongodb.query_executor.collection_scan.count:
+      enabled: true
+    mongodb.query_executor.collection_scan.non_tailable.count:
       enabled: true
     mongodb.query_executor.document.scanned.count:
       enabled: true
@@ -441,6 +451,9 @@ none_set:
     mongodb.operation.count:
       enabled: false
       attributes: ["operation"]
+    mongodb.operation.latency.count:
+      enabled: false
+      attributes: ["operation"]
     mongodb.operation.latency.time:
       enabled: false
       attributes: ["operation"]
@@ -461,6 +474,8 @@ none_set:
     mongodb.queries.rate:
       enabled: false
     mongodb.query_executor.collection_scan.count:
+      enabled: false
+    mongodb.query_executor.collection_scan.non_tailable.count:
       enabled: false
     mongodb.query_executor.document.scanned.count:
       enabled: false

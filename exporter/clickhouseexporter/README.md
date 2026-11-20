@@ -8,8 +8,8 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fclickhouse%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fclickhouse) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fclickhouse%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fclickhouse) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_clickhouse)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_clickhouse&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@hanjm](https://www.github.com/hanjm), [@Frapschen](https://www.github.com/Frapschen), [@SpencerTorres](https://www.github.com/SpencerTorres) |
-| Emeritus      | [@dmitryax](https://www.github.com/dmitryax) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Frapschen](https://www.github.com/Frapschen), [@SpencerTorres](https://www.github.com/SpencerTorres) |
+| Emeritus      | [@dmitryax](https://www.github.com/dmitryax), [@hanjm](https://www.github.com/hanjm) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -412,7 +412,7 @@ Processing:
 - `timeout` (default = 5s): The timeout for every attempt to send data to the backend.
 - `sending_queue`
     - `enabled` (default = true)
-    - `num_consumers` (default = 10): Number of concurrent consumers that dequeue and insert data into ClickHouse. Enabling `batch` does not reduce this parallelism, only the (cheap) queue reader becomes single-threaded, while inserts still run on up to `num_consumers` workers. Ignored if `enabled` is `false`.
+    - `num_consumers` (default = 10): Number of concurrent consumers that dequeue and insert data into ClickHouse. Enabling `batch` does not reduce this parallelism, only the (cheap) queue reader becomes single-threaded, while inserts still run on up to `num_consumers` workers. Ignored if `enabled` is `false`. Also used to size the ClickHouse client's connection pool unless they are set in the `endpoint` or `connection_params`.
     - `queue_size` (default = 1000): Maximum size of the queue, measured in `sizer` units. Data is dropped when the queue is full unless `block_on_overflow` is enabled.
     - `sizer` (default = `requests`): How `queue_size` is measured. One of `requests`, `items`, or `bytes`.
     - `block_on_overflow` (default = false): If `true`, waits for space when the queue is full instead of dropping data (applies backpressure to the pipeline).
@@ -473,7 +473,7 @@ If you already have tables created by a previous version of the exporter, you wi
 Here is an example of a command you can use to update your existing table (adjust database and table names as needed):
 
 ```sql
-ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(1));
+ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(3));
 ```
 
 To find the newest columns available check the `internal/sqltemplates` folder.
@@ -489,13 +489,13 @@ Here are some columns you can add to your table to update the schema:
 
 ```sql
 -- EventName
-ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(1));
+ALTER TABLE otel.otel_logs ADD COLUMN IF NOT EXISTS EventName String CODEC(ZSTD(3));
 
 -- JSON tables only. These 3 columns are part of one feature, you must add all 3 at once.
 ALTER TABLE otel.otel_logs
-  ADD COLUMN IF NOT EXISTS ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
-  ADD COLUMN IF NOT EXISTS ScopeAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
-  ADD COLUMN IF NOT EXISTS LogAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
+  ADD COLUMN IF NOT EXISTS ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(3)),
+  ADD COLUMN IF NOT EXISTS ScopeAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(3)),
+  ADD COLUMN IF NOT EXISTS LogAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(3)),
   -- Optional indices
   ADD INDEX IF NOT EXISTS idx_res_attr_keys ResourceAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
   ADD INDEX IF NOT EXISTS idx_scope_attr_keys ScopeAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
@@ -503,8 +503,8 @@ ALTER TABLE otel.otel_logs
 
 -- JSON tables only. These 2 columns are part of one feature, you must add all 2 at once.
 ALTER TABLE otel.otel_traces
-  ADD COLUMN IF NOT EXISTS ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(1)),
-  ADD COLUMN IF NOT EXISTS SpanAttributesKeys  Array(LowCardinality(String)) CODEC(ZSTD(1)),
+  ADD COLUMN IF NOT EXISTS ResourceAttributesKeys Array(LowCardinality(String)) CODEC(ZSTD(3)),
+  ADD COLUMN IF NOT EXISTS SpanAttributesKeys  Array(LowCardinality(String)) CODEC(ZSTD(3)),
   -- Optional indices
   ADD INDEX IF NOT EXISTS idx_res_attr_keys ResourceAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1,
   ADD INDEX IF NOT EXISTS idx_span_attr_keys SpanAttributesKeys TYPE bloom_filter(0.01) GRANULARITY 1;

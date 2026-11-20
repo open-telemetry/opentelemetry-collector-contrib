@@ -61,3 +61,119 @@ func TestSerializeMetricsConflict(t *testing.T) {
 		"_metric_names_hash": "33bf00a859c4ba3f",
 	}, result, eventAsJSON)
 }
+
+func TestSerializeMetricsTemporality(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		temporality  pmetric.AggregationTemporality
+		expectedJSON map[string]any
+	}{
+		{
+			name:        "cumulative temporality is serialized",
+			temporality: pmetric.AggregationTemporalityCumulative,
+			expectedJSON: map[string]any{
+				"@timestamp":  json.Number("0"),
+				"resource":    map[string]any{},
+				"scope":       map[string]any{},
+				"temporality": "cumulative",
+				"metrics": map[string]any{
+					"test": map[string]any{
+						"scale": json.Number("38"),
+						"sum":   json.Number("20.0"),
+						"min":   json.Number("10.0"),
+						"max":   json.Number("100.0"),
+						"zero": map[string]any{
+							"count": json.Number("10"),
+						},
+					},
+				},
+				"_metric_names_hash": "4fdcca5ddb678139",
+			},
+		},
+		{
+			name:        "delta temporality is serialized",
+			temporality: pmetric.AggregationTemporalityDelta,
+			expectedJSON: map[string]any{
+				"@timestamp":  json.Number("0"),
+				"resource":    map[string]any{},
+				"scope":       map[string]any{},
+				"temporality": "delta",
+				"metrics": map[string]any{
+					"test": map[string]any{
+						"scale": json.Number("38"),
+						"sum":   json.Number("20.0"),
+						"min":   json.Number("10.0"),
+						"max":   json.Number("100.0"),
+						"positive": map[string]any{
+							"counts":  []any{json.Number("10")},
+							"indices": []any{json.Number("274877906943")},
+						},
+					},
+				},
+				"_metric_names_hash": "4fdcca5ddb678139",
+			},
+		},
+		{
+			name:        "unspecified temporality is not serialized",
+			temporality: pmetric.AggregationTemporalityUnspecified,
+			expectedJSON: map[string]any{
+				"@timestamp": json.Number("0"),
+				"resource":   map[string]any{},
+				"scope":      map[string]any{},
+				"metrics": map[string]any{
+					"test": map[string]any{
+						"scale": json.Number("38"),
+						"sum":   json.Number("20.0"),
+						"min":   json.Number("10.0"),
+						"max":   json.Number("100.0"),
+						"positive": map[string]any{
+							"counts":  []any{json.Number("10")},
+							"indices": []any{json.Number("274877906943")},
+						},
+					},
+				},
+				"_metric_names_hash": "4fdcca5ddb678139",
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			metrics := pmetric.NewMetrics()
+			resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+			scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
+			var dataPoints []datapoints.DataPoint
+			metric := scopeMetrics.Metrics().AppendEmpty()
+
+			metric.SetName("test")
+			dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
+			dp.SetCount(10)
+			dp.SetSum(20)
+			dp.SetMax(100)
+			dp.SetMin(10)
+			metric.Histogram().SetAggregationTemporality(tc.temporality)
+
+			dataPoints = append(dataPoints, datapoints.NewHistogram(metric, dp, datapoints.HistogramMappingExponential))
+
+			var validationErrors []error
+			var buf bytes.Buffer
+
+			ser, err := New()
+			require.NoError(t, err)
+
+			_, err = ser.SerializeMetrics(resourceMetrics.Resource(), "", scopeMetrics.Scope(), "", dataPoints, &validationErrors, elasticsearch.Index{}, &buf)
+			require.NoError(t, err, "Should not get a serialized error")
+
+			b := buf.Bytes()
+			eventAsJSON := string(b)
+			var result any
+			decoder := json.NewDecoder(bytes.NewBuffer(b))
+			decoder.UseNumber()
+			if err := decoder.Decode(&result); err != nil {
+				require.NoError(t, err, "should not get a decode error")
+			}
+
+			assert.Empty(t, validationErrors)
+
+			assert.Equal(t, tc.expectedJSON, result, eventAsJSON)
+		})
+	}
+}

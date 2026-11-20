@@ -12,7 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/ebpf-profiler/libpf"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
 // Frame is a stack frame before mode-specific serialization.

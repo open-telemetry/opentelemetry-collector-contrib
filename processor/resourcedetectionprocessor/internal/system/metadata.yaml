@@ -1,5 +1,5 @@
 type: resourcedetectionprocessor/system
-sem_conv_version: 1.40.0
+sem_conv_version: 1.43.0
 
 parent: resourcedetection
 
@@ -74,10 +74,10 @@ resource_attributes:
     description: The host.name
     type: string
     enabled: true
-  os.build.id:
+  os.build_id:
     semantic_convention:
       ref: os.md#os-build-id
-    description: The os.build.id
+    description: The os.build_id
     type: string
     enabled: false
   os.description:

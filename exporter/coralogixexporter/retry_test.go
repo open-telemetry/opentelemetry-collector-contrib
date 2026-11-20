@@ -16,39 +16,39 @@ import (
 
 func TestShouldRetry(t *testing.T) {
 	tests := []struct {
-		name             string
-		code             codes.Code
-		retryInfo        *errdetails.RetryInfo
-		expected         bool
-		expectedThrottle bool
+		name           string
+		code           codes.Code
+		retryInfo      *errdetails.RetryInfo
+		expectedRetry  bool
+		expectedReason dropReason
 	}{
 		{
-			name:             "Canceled is retryable",
-			code:             codes.Canceled,
-			retryInfo:        nil,
-			expected:         true,
-			expectedThrottle: false,
+			name:           "Canceled is retryable",
+			code:           codes.Canceled,
+			retryInfo:      nil,
+			expectedRetry:  true,
+			expectedReason: dropReasonNone,
 		},
 		{
-			name:             "DeadlineExceeded is retryable",
-			code:             codes.DeadlineExceeded,
-			retryInfo:        nil,
-			expected:         true,
-			expectedThrottle: false,
+			name:           "DeadlineExceeded is retryable",
+			code:           codes.DeadlineExceeded,
+			retryInfo:      nil,
+			expectedRetry:  true,
+			expectedReason: dropReasonNone,
 		},
 		{
-			name:             "Unavailable is retryable",
-			code:             codes.Unavailable,
-			retryInfo:        nil,
-			expected:         true,
-			expectedThrottle: false,
+			name:           "Unavailable is retryable",
+			code:           codes.Unavailable,
+			retryInfo:      nil,
+			expectedRetry:  true,
+			expectedReason: dropReasonNone,
 		},
 		{
-			name:             "ResourceExhausted without retry info is not retryable",
-			code:             codes.ResourceExhausted,
-			retryInfo:        nil,
-			expected:         false,
-			expectedThrottle: true,
+			name:           "ResourceExhausted without retry info counts as quota",
+			code:           codes.ResourceExhausted,
+			retryInfo:      nil,
+			expectedRetry:  false,
+			expectedReason: dropReasonQuota,
 		},
 		{
 			name: "ResourceExhausted with retry info is retryable",
@@ -56,23 +56,37 @@ func TestShouldRetry(t *testing.T) {
 			retryInfo: &errdetails.RetryInfo{
 				RetryDelay: durationpb.New(time.Second),
 			},
-			expected:         true,
-			expectedThrottle: false,
+			expectedRetry:  true,
+			expectedReason: dropReasonNone,
 		},
 		{
-			name:             "InvalidArgument is not retryable",
-			code:             codes.InvalidArgument,
-			retryInfo:        nil,
-			expected:         false,
-			expectedThrottle: false,
+			name:           "Unauthenticated counts as authentication",
+			code:           codes.Unauthenticated,
+			retryInfo:      nil,
+			expectedRetry:  false,
+			expectedReason: dropReasonAuth,
+		},
+		{
+			name:           "PermissionDenied counts as authentication",
+			code:           codes.PermissionDenied,
+			retryInfo:      nil,
+			expectedRetry:  false,
+			expectedReason: dropReasonAuth,
+		},
+		{
+			name:           "InvalidArgument is not retryable",
+			code:           codes.InvalidArgument,
+			retryInfo:      nil,
+			expectedRetry:  false,
+			expectedReason: dropReasonNone,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, isThrottle := shouldRetry(tt.code, tt.retryInfo)
-			assert.Equal(t, tt.expected, result)
-			assert.Equal(t, tt.expectedThrottle, isThrottle)
+			retry, reason := shouldRetry(tt.code, tt.retryInfo)
+			assert.Equal(t, tt.expectedRetry, retry)
+			assert.Equal(t, tt.expectedReason, reason)
 		})
 	}
 }
@@ -152,96 +166,96 @@ func TestGetThrottleDuration(t *testing.T) {
 
 func TestShouldRetryHTTP(t *testing.T) {
 	tests := []struct {
-		name             string
-		statusCode       int
-		expectedRetry    bool
-		expectedThrottle bool
+		name           string
+		statusCode     int
+		expectedRetry  bool
+		expectedReason dropReason
 	}{
 		{
-			name:             "OK status should not retry",
-			statusCode:       200,
-			expectedRetry:    false,
-			expectedThrottle: false,
+			name:           "OK status should not retry",
+			statusCode:     200,
+			expectedRetry:  false,
+			expectedReason: dropReasonNone,
 		},
 		{
-			name:             "Bad Request is permanent error",
-			statusCode:       400,
-			expectedRetry:    false,
-			expectedThrottle: false,
+			name:           "Bad Request is permanent error",
+			statusCode:     400,
+			expectedRetry:  false,
+			expectedReason: dropReasonNone,
 		},
 		{
-			name:             "Unauthorized triggers rate limit flag",
-			statusCode:       401,
-			expectedRetry:    false,
-			expectedThrottle: true,
+			name:           "Unauthorized counts as authentication",
+			statusCode:     401,
+			expectedRetry:  false,
+			expectedReason: dropReasonAuth,
 		},
 		{
-			name:             "Forbidden triggers rate limit flag",
-			statusCode:       403,
-			expectedRetry:    false,
-			expectedThrottle: true,
+			name:           "Forbidden counts as authentication",
+			statusCode:     403,
+			expectedRetry:  false,
+			expectedReason: dropReasonAuth,
 		},
 		{
-			name:             "Not Found is permanent error",
-			statusCode:       404,
-			expectedRetry:    false,
-			expectedThrottle: false,
+			name:           "Not Found is permanent error",
+			statusCode:     404,
+			expectedRetry:  false,
+			expectedReason: dropReasonNone,
 		},
 		{
-			name:             "Method Not Allowed is permanent error",
-			statusCode:       405,
-			expectedRetry:    false,
-			expectedThrottle: false,
+			name:           "Method Not Allowed is permanent error",
+			statusCode:     405,
+			expectedRetry:  false,
+			expectedReason: dropReasonNone,
 		},
 		{
-			name:             "Request Timeout is retryable",
-			statusCode:       408,
-			expectedRetry:    true,
-			expectedThrottle: false,
+			name:           "Request Timeout is retryable",
+			statusCode:     408,
+			expectedRetry:  true,
+			expectedReason: dropReasonNone,
 		},
 		{
-			name:             "Unprocessable Entity is permanent error",
-			statusCode:       422,
-			expectedRetry:    false,
-			expectedThrottle: false,
+			name:           "Unprocessable Entity is permanent error",
+			statusCode:     422,
+			expectedRetry:  false,
+			expectedReason: dropReasonNone,
 		},
 		{
-			name:             "Too Many Requests is retryable",
-			statusCode:       429,
-			expectedRetry:    true,
-			expectedThrottle: false,
+			name:           "Too Many Requests is retryable",
+			statusCode:     429,
+			expectedRetry:  true,
+			expectedReason: dropReasonNone,
 		},
 		{
-			name:             "Bad Gateway is retryable",
-			statusCode:       502,
-			expectedRetry:    true,
-			expectedThrottle: false,
+			name:           "Bad Gateway is retryable",
+			statusCode:     502,
+			expectedRetry:  true,
+			expectedReason: dropReasonNone,
 		},
 		{
-			name:             "Service Unavailable is retryable",
-			statusCode:       503,
-			expectedRetry:    true,
-			expectedThrottle: false,
+			name:           "Service Unavailable is retryable",
+			statusCode:     503,
+			expectedRetry:  true,
+			expectedReason: dropReasonNone,
 		},
 		{
-			name:             "Gateway Timeout is retryable",
-			statusCode:       504,
-			expectedRetry:    true,
-			expectedThrottle: false,
+			name:           "Gateway Timeout is retryable",
+			statusCode:     504,
+			expectedRetry:  true,
+			expectedReason: dropReasonNone,
 		},
 		{
-			name:             "Unknown status code defaults to no retry",
-			statusCode:       418,
-			expectedRetry:    false,
-			expectedThrottle: false,
+			name:           "Unknown status code defaults to no retry",
+			statusCode:     418,
+			expectedRetry:  false,
+			expectedReason: dropReasonNone,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			retry, throttle := shouldRetryHTTP(tt.statusCode)
+			retry, reason := shouldRetryHTTP(tt.statusCode)
 			assert.Equal(t, tt.expectedRetry, retry)
-			assert.Equal(t, tt.expectedThrottle, throttle)
+			assert.Equal(t, tt.expectedReason, reason)
 		})
 	}
 }
@@ -301,4 +315,10 @@ func TestGetHTTPThrottleDuration(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestDropReasonString(t *testing.T) {
+	assert.Equal(t, "authentication", dropReasonAuth.String())
+	assert.Equal(t, "quota", dropReasonQuota.String())
+	assert.Equal(t, "none", dropReasonNone.String())
 }

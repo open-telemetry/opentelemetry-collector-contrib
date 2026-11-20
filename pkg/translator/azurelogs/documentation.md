@@ -8,7 +8,7 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `pkg.translator.azurelogs.DontEmitV0LogConventions` | alpha | When enabled, v0 semconv attribute names are not emitted. | v0.147.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033) |
-| `pkg.translator.azurelogs.EmitV1LogConventions` | alpha | When enabled, v1 semconv attribute names are emitted. | v0.147.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033) |
+| `pkg.translator.azurelogs.DontEmitV0LogConventions` | beta | When enabled, the deprecated semconv attributes code.function and code.filepath are not emitted. Requires pkg.translator.azurelogs.EmitV1LogConventions to also be enabled. | v0.147.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033) |
+| `pkg.translator.azurelogs.EmitV1LogConventions` | beta | When enabled, the stable semconv attributes code.function.name and code.file.path are emitted. | v0.147.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45033) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

@@ -11,7 +11,7 @@ status:
     alpha: [traces]
   distributions: [contrib]
   codeowners:
-    active: [MikeGoldsmith, VinozzZ, jmacd]
+    active: [MikeGoldsmith, VinozzZ, jmacd, robbkidd]
 
 tests:
   skip_context_propagation: true
@@ -71,6 +71,14 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+      stability: development
+    processor_adaptive_tail_sampling_root_span_condition_multiple_matches:
+      enabled: true
+      description: Distribution of root span condition matches for traces where the condition matched more than once.
+      unit: "{spans}"
+      histogram:
+        value_type: int
+        bucket_boundaries: [2, 3, 5, 10, 25, 100]
       stability: development
     processor_adaptive_tail_sampling_sampler_burst_count:
       enabled: true

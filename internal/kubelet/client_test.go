@@ -8,6 +8,7 @@
 package kubelet
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -18,6 +19,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -367,7 +369,7 @@ func TestBuildReq(t *testing.T) {
 	}
 	cl, err := p.BuildClient()
 	require.NoError(t, err)
-	req, err := cl.(*clientImpl).buildReq("/foo")
+	req, err := cl.(*clientImpl).buildReq(t.Context(), "/foo")
 	require.NoError(t, err)
 	require.NotNil(t, req)
 }
@@ -383,7 +385,7 @@ func TestBuildBadReq(t *testing.T) {
 	cl, err := p.BuildClient()
 	require.NoError(t, err)
 	require.NoError(t, err)
-	_, err = cl.(*clientImpl).buildReq("")
+	_, err = cl.(*clientImpl).buildReq(t.Context(), "")
 	require.Error(t, err)
 }
 
@@ -510,4 +512,48 @@ type fakeReadCloser struct {
 
 func (f *fakeReadCloser) Close() error {
 	return f.onClose()
+}
+
+func TestGetWithContextCanceled(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("hello"))
+	}))
+	defer server.Close()
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	client := &clientImpl{
+		baseURL:    server.URL,
+		httpClient: http.Client{},
+		logger:     zap.NewNop(),
+	}
+	_, err := client.GetWithContext(ctx, "/foo")
+	require.ErrorIs(t, err, context.Canceled)
+}
+
+func TestGetWithContextDeadlineInterruptsStalledRequest(t *testing.T) {
+	released := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		// Simulate a kubelet that accepts the connection and never answers until the client goes away.
+		<-r.Context().Done()
+		close(released)
+	}))
+	defer server.Close()
+
+	client := &clientImpl{
+		baseURL:    server.URL,
+		httpClient: http.Client{},
+		logger:     zap.NewNop(),
+	}
+	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+	defer cancel()
+	start := time.Now()
+	_, err := client.GetWithContext(ctx, "/pods")
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	require.Less(t, time.Since(start), 5*time.Second)
+	select {
+	case <-released:
+	case <-time.After(5 * time.Second):
+		t.Fatal("server handler was not released after client cancellation")
+	}
 }
