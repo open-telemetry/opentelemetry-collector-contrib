@@ -16,8 +16,8 @@ github.com/rogpeppe/go-internal v1.9.0 h1:73kH8U+JUqXU8lRuOHeVHaa/SZPifC7BkcraZV
 github.com/rogpeppe/go-internal v1.9.0/go.mod h1:WtVeX8xhTBvf0smdhujwtBcq4Qrzq/fJaraNFVN+nFs=
 github.com/stretchr/testify v1.12.1 h1:EuwCh5fleGS7H32xRwO3wRGT7DxrDhLAT6FF8MpWDWE=
 github.com/stretchr/testify v1.12.1/go.mod h1:MDEgiDPPsNp5cuIrHPPCyornHKgEVbtFUmoNlxoYthg=
-go.opentelemetry.io/collector/config/configcompression v1.71.1-0.20261112225459-4888f0b280f9 h1:WTPoQTpYmUZmPxx8s0k7g8KfyMvzwaHoUIFgHtEMOTs=
-go.opentelemetry.io/collector/config/configcompression v1.71.1-0.20261112225459-4888f0b280f9/go.mod h1:SyPEhp8hwY8Yxuxbet2AIFDRYIEKl+tn5/jKnWtV1y0=
+go.opentelemetry.io/collector/config/configcompression v1.71.1-0.20261119222305-0c7a74cd0a4a h1:xE75xiAWtaqy9NCEIbJYgPH5Os4WCKI50eCVP1T8z/g=
+go.opentelemetry.io/collector/config/configcompression v1.71.1-0.20261119222305-0c7a74cd0a4a/go.mod h1:SyPEhp8hwY8Yxuxbet2AIFDRYIEKl+tn5/jKnWtV1y0=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
 go.uber.org/goleak v1.3.0/go.mod h1:CoHD4mav9JJNrW/WLlf7HGZPjdw8EucARQHekz1X6bE=
 go.yaml.in/yaml/v3 v3.0.5 h1:N6y/pJk8buWs9NY5ERU2HSMfm+IuD/OtfdAnq6kESPw=
