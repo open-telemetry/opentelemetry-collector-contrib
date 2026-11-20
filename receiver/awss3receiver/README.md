@@ -52,6 +52,7 @@ The following exporter configuration parameters are supported.
 | `endpoint`              | Custom endpoint for the SQS service                                                                                                        |             | Optional |
 | `max_number_of_messages`          | Maximum number of messages to retrieve in a single SQS request                                                                             | 10          | Optional |
 | `wait_time_seconds`             | Wait time in seconds for long polling SQS requests                                                                                         | 20          | Optional |
+| `client_concurrency` | Number of independent SQS polling workers. Each worker processes its received messages sequentially. Must be positive. | 1 | Optional |
 | `encodings:`            | An array of entries with the following properties:                                                                                         |             | Optional |
 | `extension`             | Extension to use for decoding a key with a matching suffix.                                                                                |             | Required |
 | `suffix`                | Key suffix to match against.                                                                                                               |             | Required |
@@ -79,6 +80,16 @@ sqs:
 
 **Note:** You must configure your S3 bucket to send event notifications to the SQS queue.
 Time-based configuration (`starttime`/`endtime`) and SQS configuration cannot be used together.
+
+Use `sqs.client_concurrency` to process multiple S3 objects concurrently in one receiver. Each worker
+polls independently and processes one object at a time. The default of `1` preserves sequential
+processing. With multiple workers, ordering across messages is not guaranteed.
+
+Each worker can fetch up to `max_number_of_messages` messages per poll. Set this to `1` for large
+objects to avoid reserving messages that will wait behind another object. Size the queue's visibility
+timeout for processing and pipeline delays. Increasing concurrency increases memory use because
+each worker downloads and decodes its own object. Encoding extensions used with multiple workers
+must support concurrent decoding.
 
 ### Time format for `starttime` and `endtime`
 The `starttime` and `endtime` fields are used to specify the time range for which to retrieve data.
