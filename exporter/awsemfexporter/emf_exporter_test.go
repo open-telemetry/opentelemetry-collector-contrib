@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/aws/smithy-go"
@@ -464,4 +465,66 @@ func TestGetPusherConcurrent(t *testing.T) {
 		})
 	}
 	wg.Wait()
+}
+
+type flushTestMockPusher struct {
+	flushCount atomic.Int32
+	addCount   atomic.Int32
+	errOnFlush error
+}
+
+func (m *flushTestMockPusher) AddLogEntry(_ context.Context, _ *cwlogs.Event) error {
+	m.addCount.Add(1)
+	return nil
+}
+
+func (m *flushTestMockPusher) ForceFlush(_ context.Context) error {
+	m.flushCount.Add(1)
+	return m.errOnFlush
+}
+
+func TestPushMetricsData_ForceFlushFlushesAllPushersOnError(t *testing.T) {
+	cfg := &Config{
+		OutputDestination: outputDestinationCloudWatch,
+		LogGroupName:      "test-group",
+		LogStreamName:     "stream-{PodName}",
+		logger:            zap.NewNop(),
+	}
+
+	exp := &emfExporter{
+		config:           cfg,
+		metricTranslator: newMetricTranslator(*cfg),
+	}
+
+	errPusher1 := errors.New("connection reset")
+	errPusher2 := errors.New("timeout")
+	pusher1 := &flushTestMockPusher{errOnFlush: errPusher1}
+	pusher2 := &flushTestMockPusher{errOnFlush: errPusher2}
+
+	key1 := cwlogs.StreamKey{LogGroupName: "test-group", LogStreamName: "stream-pod1"}
+	key2 := cwlogs.StreamKey{LogGroupName: "test-group", LogStreamName: "stream-pod2"}
+
+	exp.pusherMap.Store(key1, pusher1)
+	exp.pusherMap.Store(key2, pusher2)
+
+	md := pmetric.NewMetrics()
+	rm1 := md.ResourceMetrics().AppendEmpty()
+	rm1.Resource().Attributes().PutStr("PodName", "pod1")
+	m1 := rm1.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m1.SetName("metric1")
+	m1.SetEmptyGauge().DataPoints().AppendEmpty().SetDoubleValue(1.0)
+
+	rm2 := md.ResourceMetrics().AppendEmpty()
+	rm2.Resource().Attributes().PutStr("PodName", "pod2")
+	m2 := rm2.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m2.SetName("metric2")
+	m2.SetEmptyGauge().DataPoints().AppendEmpty().SetDoubleValue(2.0)
+
+	err := exp.pushMetricsData(t.Context(), md)
+	require.Error(t, err)
+
+	assert.Equal(t, int32(1), pusher1.flushCount.Load(), "pusher1 must be flushed")
+	assert.Equal(t, int32(1), pusher2.flushCount.Load(), "pusher2 must be flushed even if another pusher errored")
+	assert.ErrorIs(t, err, errPusher1)
+	assert.ErrorIs(t, err, errPusher2)
 }
