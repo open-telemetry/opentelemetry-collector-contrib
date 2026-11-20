@@ -73,8 +73,9 @@ func BenchmarkUnmarshalAWSLogs(b *testing.B) {
 			r := bytes.NewReader(data)
 			for b.Loop() {
 				r.Reset(data)
-				_, err := u.UnmarshalAWSLogs(r)
-				require.NoError(b, err)
+				if _, err := u.UnmarshalAWSLogs(r); err != nil {
+					b.Fatal(err)
+				}
 			}
 		})
 	}
