@@ -16,7 +16,8 @@ import (
 
 // convertPodToEndpoints converts a pod instance into a slice of endpoints. The endpoints
 // include the pod itself as well as an endpoint for each container port that is mapped
-// to a container that is in a running state.
+// to a container that is in a running state. Native sidecars (init containers with
+// restartPolicy Always) are treated like regular containers.
 func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint {
 	podID := observer.EndpointID(fmt.Sprintf("%s/%s", idNamespace, pod.UID))
 	podIP := pod.Status.PodIP
@@ -43,16 +44,29 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 	// Map of running containers by name.
 	runningContainers := map[string]runningContainer{}
 
-	for i := range pod.Status.ContainerStatuses {
-		container := &pod.Status.ContainerStatuses[i]
-		if container.State.Running != nil {
-			runningContainers[container.Name] = containerIDWithRuntime(container)
+	for _, statuses := range [][]v1.ContainerStatus{pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses} {
+		for i := range statuses {
+			container := &statuses[i]
+			if container.State.Running != nil {
+				runningContainers[container.Name] = containerIDWithRuntime(container)
+			}
+		}
+	}
+	
+	// Native sidecars are init containers with restartPolicy Always; they run for the pod's lifetime.
+	containers := make([]*v1.Container, 0, len(pod.Spec.Containers)+len(pod.Spec.InitContainers))
+	for i := range pod.Spec.Containers {
+		containers = append(containers, &pod.Spec.Containers[i])
+	}
+	for i := range pod.Spec.InitContainers {
+		c := &pod.Spec.InitContainers[i]
+		if c.RestartPolicy != nil && *c.RestartPolicy == v1.ContainerRestartPolicyAlways {
+			containers = append(containers, c)
 		}
 	}
 
 	// Create endpoint for each named container port.
-	for i := range pod.Spec.Containers {
-		container := &pod.Spec.Containers[i]
+	for _, container := range containers {
 		var rc runningContainer
 		var ok bool
 		if rc, ok = runningContainers[container.Name]; !ok {
