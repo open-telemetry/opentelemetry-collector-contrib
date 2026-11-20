@@ -4,7 +4,6 @@
 package awsxrayreceiver
 
 import (
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,11 +27,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateTraces(t *testing.T) {
-	// TODO review if test should succeed on Windows
-	if runtime.GOOS == "windows" {
-		t.Skip()
-	}
-
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	// Use dynamic port to avoid port conflicts when running tests in parallel or with -count > 1
