@@ -4,8 +4,10 @@
 package prometheusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 
 import (
+	"cmp"
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -16,6 +18,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
+
+// maxExponentialHistogramExemplars caps the number of exemplars retained across
+// aligned delta exponential histogram merges, matching Prometheus client_golang's
+// default NativeHistogramMaxExemplars limit.
+const maxExponentialHistogramExemplars = 10
 
 // stringBuilderPool is a pool of strings.Builder instances to reduce allocations
 var stringBuilderPool = sync.Pool{
@@ -551,14 +558,77 @@ func accumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
 			counts[i] = newer.BucketCounts().At(i) + older.BucketCounts().At(i)
 		}
 		dest.BucketCounts().FromRaw(counts)
+		mergeHistogramExemplars(newer.ExplicitBounds().AsRaw(), older.Exemplars(), newer.Exemplars(), dest.Exemplars())
 	} else {
 		// use new value if bucket bounds do not match
 		dest.SetCount(newer.Count())
 		dest.SetSum(newer.Sum())
 		dest.BucketCounts().FromRaw(newer.BucketCounts().AsRaw())
+		newer.Exemplars().CopyTo(dest.Exemplars())
 	}
 
 	dest.ExplicitBounds().FromRaw(newer.ExplicitBounds().AsRaw())
+}
+
+func exemplarValue(e pmetric.Exemplar) float64 {
+	switch e.ValueType() {
+	case pmetric.ExemplarValueTypeDouble:
+		return e.DoubleValue()
+	case pmetric.ExemplarValueTypeInt:
+		return float64(e.IntValue())
+	default:
+		return 0
+	}
+}
+
+func mergeHistogramExemplars(bounds []float64, older, newer, dest pmetric.ExemplarSlice) {
+	if dest.Len() > 0 {
+		dest.RemoveIf(func(pmetric.Exemplar) bool { return true })
+	}
+	if older.Len() == 0 && newer.Len() == 0 {
+		return
+	}
+
+	sortedBounds := bounds
+	if !slices.IsSorted(sortedBounds) {
+		sortedBounds = slices.Clone(bounds)
+		slices.Sort(sortedBounds)
+	}
+
+	type exemplarSlot struct {
+		ex  pmetric.Exemplar
+		set bool
+	}
+
+	slots := make([]exemplarSlot, len(sortedBounds)+1)
+	selected := 0
+	insert := func(exemplars pmetric.ExemplarSlice) {
+		for _, ex := range exemplars.All() {
+			val := exemplarValue(ex)
+			if math.IsNaN(val) {
+				continue
+			}
+			idx := sort.Search(len(sortedBounds), func(j int) bool {
+				return sortedBounds[j] >= val
+			})
+			if !slots[idx].set {
+				slots[idx] = exemplarSlot{ex: ex, set: true}
+				selected++
+			} else if ex.Timestamp() >= slots[idx].ex.Timestamp() {
+				slots[idx].ex = ex
+			}
+		}
+	}
+
+	insert(older)
+	insert(newer)
+
+	dest.EnsureCapacity(selected)
+	for _, slot := range slots {
+		if slot.set {
+			slot.ex.CopyTo(dest.AppendEmpty())
+		}
+	}
 }
 
 // calculateBucketUpperBound calculates the upper bound for an exponential histogram bucket
@@ -600,15 +670,15 @@ func filterBucketsForZeroThreshold(offset int32, counts []uint64, scale int32, z
 }
 
 func accumulateExponentialHistogramValues(prev, current, dest pmetric.ExponentialHistogramDataPoint) {
+	older := prev
+	newer := current
 	if current.Timestamp().AsTime().Before(prev.Timestamp().AsTime()) {
-		dest.SetStartTimestamp(current.StartTimestamp())
-		prev.Attributes().CopyTo(dest.Attributes())
-		dest.SetTimestamp(prev.Timestamp())
-	} else {
-		dest.SetStartTimestamp(prev.StartTimestamp())
-		current.Attributes().CopyTo(dest.Attributes())
-		dest.SetTimestamp(current.Timestamp())
+		older = current
+		newer = prev
 	}
+	dest.SetStartTimestamp(older.StartTimestamp())
+	newer.Attributes().CopyTo(dest.Attributes())
+	dest.SetTimestamp(newer.Timestamp())
 
 	targetScale := min(current.Scale(), prev.Scale())
 	dest.SetScale(targetScale)
@@ -673,6 +743,55 @@ func accumulateExponentialHistogramValues(prev, current, dest pmetric.Exponentia
 		dest.SetMax(prev.Max())
 	case current.HasMax():
 		dest.SetMax(current.Max())
+	}
+
+	mergeExponentialHistogramExemplars(older.Exemplars(), newer.Exemplars(), dest.Exemplars())
+}
+
+func mergeExponentialHistogramExemplars(older, newer, dest pmetric.ExemplarSlice) {
+	if dest.Len() > 0 {
+		dest.RemoveIf(func(pmetric.Exemplar) bool { return true })
+	}
+
+	total := older.Len() + newer.Len()
+	if total == 0 {
+		return
+	}
+
+	if total <= maxExponentialHistogramExemplars {
+		if older.Len() == 0 {
+			newer.CopyTo(dest)
+			return
+		}
+		if newer.Len() == 0 {
+			older.CopyTo(dest)
+			return
+		}
+		dest.EnsureCapacity(total)
+		for _, ex := range older.All() {
+			ex.CopyTo(dest.AppendEmpty())
+		}
+		for _, ex := range newer.All() {
+			ex.CopyTo(dest.AppendEmpty())
+		}
+		return
+	}
+
+	combined := make([]pmetric.Exemplar, 0, total)
+	for _, ex := range older.All() {
+		combined = append(combined, ex)
+	}
+	for _, ex := range newer.All() {
+		combined = append(combined, ex)
+	}
+
+	slices.SortStableFunc(combined, func(a, b pmetric.Exemplar) int {
+		return cmp.Compare(a.Timestamp(), b.Timestamp())
+	})
+
+	dest.EnsureCapacity(maxExponentialHistogramExemplars)
+	for _, ex := range combined[total-maxExponentialHistogramExemplars:] {
+		ex.CopyTo(dest.AppendEmpty())
 	}
 }
 
