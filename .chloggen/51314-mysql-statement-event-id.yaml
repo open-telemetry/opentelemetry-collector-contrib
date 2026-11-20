@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/mysql
+
+note: Add `mysql.events_statements_current.timer_start` to `db.server.query_sample`, a stable per-execution key for deduplicating a statement's wait-event rows across scrape cycles.
+
+issues: [51314]
+
+subtext:
+
+change_logs: [user]

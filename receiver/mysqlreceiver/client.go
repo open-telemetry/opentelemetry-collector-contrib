@@ -418,6 +418,12 @@ type querySample struct {
 	// and not blocked, empty string when blocking isn't measurable on this
 	// engine/version (MariaDB, MySQL <8.0.11).
 	blockerDetails string
+	// statementEventID is statement.EVENT_ID from events_statements_current:
+	// an internal counter scoped to this thread that increases monotonically
+	// and changes only when a new statement begins. Paired with threadID,
+	// forms a stable per-execution key. Distinct from eventID, which follows
+	// the current wait event rather than the statement.
+	statementEventID int64
 }
 
 type topQuery struct {
@@ -1276,6 +1282,8 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist, support
 				dest = append(dest, &s.clientName)
 			case "blocker_details":
 				dest = append(dest, &s.blockerDetails)
+			case "statement_event_id":
+				dest = append(dest, &s.statementEventID)
 			default:
 				return nil, fmt.Errorf("unknown column name %q for query samples", col)
 			}
