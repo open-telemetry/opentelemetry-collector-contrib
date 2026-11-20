@@ -1586,13 +1586,13 @@ func (ms *ContainerMemoryUsageTotalMetricConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-// ContainerMemoryWorkingSetMetricConfig provides config for the container.memory.working_set metric.
-type ContainerMemoryWorkingSetMetricConfig struct {
+// ContainerMemoryWorkingSetV1MetricConfig provides config for the container.memory.working_set@v1 metric.
+type ContainerMemoryWorkingSetV1MetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryWorkingSetMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryWorkingSetV1MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2301,7 +2301,7 @@ type MetricsConfig struct {
 	ContainerMemoryUsageLimit                  ContainerMemoryUsageLimitMetricConfig                  `mapstructure:"container.memory.usage.limit"`
 	ContainerMemoryUsageMax                    ContainerMemoryUsageMaxMetricConfig                    `mapstructure:"container.memory.usage.max"`
 	ContainerMemoryUsageTotal                  ContainerMemoryUsageTotalMetricConfig                  `mapstructure:"container.memory.usage.total"`
-	ContainerMemoryWorkingSet                  ContainerMemoryWorkingSetMetricConfig                  `mapstructure:"container.memory.working_set"`
+	ContainerMemoryWorkingSetV1                ContainerMemoryWorkingSetV1MetricConfig                `mapstructure:"container.memory.working_set@v1"`
 	ContainerMemoryWriteback                   ContainerMemoryWritebackMetricConfig                   `mapstructure:"container.memory.writeback"`
 	ContainerNetworkIo                         ContainerNetworkIoMetricConfig                         `mapstructure:"container.network.io"`
 	ContainerNetworkIoUsageRxBytes             ContainerNetworkIoUsageRxBytesMetricConfig             `mapstructure:"container.network.io.usage.rx_bytes"`
@@ -2534,7 +2534,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerMemoryUsageTotal: ContainerMemoryUsageTotalMetricConfig{
 			Enabled: true,
 		},
-		ContainerMemoryWorkingSet: ContainerMemoryWorkingSetMetricConfig{
+		ContainerMemoryWorkingSetV1: ContainerMemoryWorkingSetV1MetricConfig{
 			Enabled: false,
 		},
 		ContainerMemoryWriteback: ContainerMemoryWritebackMetricConfig{

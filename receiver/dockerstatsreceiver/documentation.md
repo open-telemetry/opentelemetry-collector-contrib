@@ -104,6 +104,14 @@ Memory usage of the container. This excludes the cache.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
 
+#### Migration
+
+- Target Metric: `container.memory.working_set@v1`
+- Disable Old Gate: `receiver.docker_stats.DontEmitV0ContainerConventions`
+- Enable New Gate: `receiver.docker_stats.EmitV1ContainerConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
 ### container.network.io.usage.rx_bytes
 
 Bytes received by the container.
@@ -719,13 +727,15 @@ Maximum memory usage.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
 
-### container.memory.working_set
+### container.memory.working_set@v1
 
 Container memory working set.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
+
+Emitted Name: `container.memory.working_set`
 
 ### container.memory.writeback
 

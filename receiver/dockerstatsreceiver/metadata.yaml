@@ -754,7 +754,12 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
-  container.memory.working_set:
+    migration:
+      to: container.memory.working_set@v1
+      through_gates:
+        disable_old: receiver.docker_stats.DontEmitV0ContainerConventions
+        enable_new: receiver.docker_stats.EmitV1ContainerConventions
+  container.memory.working_set@v1:
     enabled: false
     stability: development
     description: "Container memory working set."

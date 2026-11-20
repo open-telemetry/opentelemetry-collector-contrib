@@ -29,7 +29,7 @@ Linux and Windows Docker hosts are supported. On Windows the daemon exposes a sm
 set of stats, so these metrics are never emitted there: all `container.blockio.*`
 metrics, `container.cpu.logical.count`, `container.cpu.throttling_data.*`, `container.cpu.usage.percpu`,
 `container.cpu.usage.system`, `container.memory.*` other than
-`container.memory.usage.total`, `container.network.io.usage.rx_errors`,
+`container.memory.usage.total` and `container.memory.working_set`, `container.network.io.usage.rx_errors`,
 `container.network.io.usage.tx_errors` and `container.pids.*`.
 
 ## Configuration
@@ -174,7 +174,7 @@ metric that distinguishes the data points with attributes.
 | `container.cpu.usage.kernelmode` | `container.cpu.time` with `cpu.mode=kernel` |
 | `container.cpu.usage.usermode` | `container.cpu.time` with `cpu.mode=user` |
 | `container.cpu.utilization` | `container.cpu.usage` |
-| `container.memory.usage.total` | `container.memory.usage` |
+| `container.memory.usage.total` | `container.memory.working_set` (configured as `container.memory.working_set@v1`) |
 | `container.memory.total_pgfault` | `container.memory.paging.faults` (configured as `container.memory.paging.faults@v1`) |
 | `container.network.io.usage.rx_bytes` | `container.network.io` with `network.io.direction=receive` |
 | `container.network.io.usage.tx_bytes` | `container.network.io` with `network.io.direction=transmit` |
@@ -194,8 +194,8 @@ These are enabled whenever `EmitV1ContainerConventions` is enabled and do not re
 
 | Enabled by `EmitV1ContainerConventions` | Notes |
 | --- | --- |
-| `container.memory.available` | |
-| `container.memory.working_set` | |
+| `container.memory.usage` | Includes the page cache, unlike `container.memory.usage.total`. Reports `0` on Windows. |
+| `container.memory.available` | Reports `0` on Windows. |
 | `container.disk.io` | Carries `system.device` (`major:minor`) and `disk.io.direction`. Does not disable `container.blockio.io_service_bytes_recursive`, so both are emitted. |
 
 ### Net effect on the defaults

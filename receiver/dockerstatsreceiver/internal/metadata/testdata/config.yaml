@@ -139,7 +139,7 @@ all_set:
       enabled: true
     container.memory.usage.total:
       enabled: true
-    container.memory.working_set:
+    container.memory.working_set@v1:
       enabled: true
     container.memory.writeback:
       enabled: true
@@ -339,7 +339,7 @@ reaggregate_set:
       enabled: true
     container.memory.usage.total:
       enabled: true
-    container.memory.working_set:
+    container.memory.working_set@v1:
       enabled: true
     container.memory.writeback:
       enabled: true
@@ -539,7 +539,7 @@ none_set:
       enabled: false
     container.memory.usage.total:
       enabled: false
-    container.memory.working_set:
+    container.memory.working_set@v1:
       enabled: false
     container.memory.writeback:
       enabled: false

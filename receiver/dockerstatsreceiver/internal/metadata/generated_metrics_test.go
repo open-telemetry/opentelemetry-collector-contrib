@@ -74,6 +74,8 @@ func TestMetricsBuilder(t *testing.T) {
 			migrationGatesPinned := true
 			migrationGatesPinned = setFeatureGateForTest(t, ReceiverDockerStatsDontEmitV0ContainerConventionsFeatureGate, false) && migrationGatesPinned
 			migrationGatesPinned = setFeatureGateForTest(t, ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ReceiverDockerStatsDontEmitV0ContainerConventionsFeatureGate, false) && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["container.blockio.io_merged_recursive"] = mb.metricContainerBlockioIoMergedRecursive.config.AggregationStrategy
@@ -357,12 +359,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerMemoryUsageMaxDataPoint(ts, 1)
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordContainerMemoryUsageTotalDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordContainerMemoryWorkingSetDataPoint(ts, 1)
+			if tt.name != "all_set" {
+				defaultMetricsCount++
+				allMetricsCount++
+				mb.RecordContainerMemoryUsageTotalDataPoint(ts, 1)
+			}
 
 			allMetricsCount++
 			mb.RecordContainerMemoryWritebackDataPoint(ts, 1)
@@ -1787,34 +1788,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "container.memory.usage.total":
-					assert.False(t, validatedMetrics["container.memory.usage.total"], "Found a duplicate in the metrics slice: container.memory.usage.total")
-					validatedMetrics["container.memory.usage.total"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Memory usage of the container. This excludes the cache.", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					assert.False(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "container.memory.working_set":
-					assert.False(t, validatedMetrics["container.memory.working_set"], "Found a duplicate in the metrics slice: container.memory.working_set")
-					validatedMetrics["container.memory.working_set"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Container memory working set.", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					assert.False(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
 				case "container.memory.writeback":
 					assert.False(t, validatedMetrics["container.memory.writeback"], "Found a duplicate in the metrics slice: container.memory.writeback")
 					validatedMetrics["container.memory.writeback"] = true
@@ -2476,6 +2449,90 @@ func TestVersionedMetrics(t *testing.T) {
 				if tt.enableNew {
 					for _, log := range observedLogs.All() {
 						if strings.Contains(log.Message, "container.memory.total_pgfault") {
+							assert.NotContains(t, log.Message, "same emitted name",
+								"should not log same name collision warning for metrics with different names")
+						}
+					}
+				}
+			})
+		}
+	})
+	t.Run("container.memory.usage.total", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: true,
+				expectNewMetric:    true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ReceiverDockerStatsDontEmitV0ContainerConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+				settings := receivertest.NewNopSettings(receivertest.NopType)
+				settings.Logger = zap.New(observedZapCore)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordContainerMemoryUsageTotalDataPoint(ts, 1)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Different emitted names - distinguish by name
+						if m.Name() == "container.memory.usage.total" {
+							legacyFound = true
+						}
+						if m.Name() == "container.memory.working_set" {
+							newFound = true
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+				// For metrics with different emitted names, no collision warning should be logged
+				// This guards against the regression where same name collision logic was
+				// incorrectly applied to renamed metrics.
+				if tt.enableNew {
+					for _, log := range observedLogs.All() {
+						if strings.Contains(log.Message, "container.memory.usage.total") {
 							assert.NotContains(t, log.Message, "same emitted name",
 								"should not log same name collision warning for metrics with different names")
 						}

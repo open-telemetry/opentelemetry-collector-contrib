@@ -72,8 +72,8 @@ type metricReplacement struct {
 
 // applyContainerConventionsGates enables and disables metrics according to the
 // EmitV1ContainerConventions and DontEmitV0ContainerConventions feature gates.
-// container.memory.total_pgfault is migrated by the generated metrics builder
-// and is not handled here.
+// container.memory.total_pgfault and container.memory.usage.total are migrated
+// by the generated metrics builder and are not handled here.
 func applyContainerConventionsGates(logger *zap.Logger, metrics *metadata.MetricsConfig) error {
 	emitV1 := metadata.ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate.IsEnabled()
 	dontEmitV0 := metadata.ReceiverDockerStatsDontEmitV0ContainerConventionsFeatureGate.IsEnabled()
@@ -88,13 +88,12 @@ func applyContainerConventionsGates(logger *zap.Logger, metrics *metadata.Metric
 		{&metrics.ContainerCPUUsageKernelmode.Enabled, &metrics.ContainerCPUTime.Enabled},
 		{&metrics.ContainerCPUUsageUsermode.Enabled, &metrics.ContainerCPUTime.Enabled},
 		{&metrics.ContainerCPUUtilization.Enabled, &metrics.ContainerCPUUsage.Enabled},
-		{&metrics.ContainerMemoryUsageTotal.Enabled, &metrics.ContainerMemoryUsage.Enabled},
 		{&metrics.ContainerNetworkIoUsageRxBytes.Enabled, &metrics.ContainerNetworkIo.Enabled},
 		{&metrics.ContainerNetworkIoUsageTxBytes.Enabled, &metrics.ContainerNetworkIo.Enabled},
 	}
 	additions := []*bool{
+		&metrics.ContainerMemoryUsage.Enabled,
 		&metrics.ContainerMemoryAvailable.Enabled,
-		&metrics.ContainerMemoryWorkingSet.Enabled,
 		&metrics.ContainerDiskIo.Enabled,
 	}
 

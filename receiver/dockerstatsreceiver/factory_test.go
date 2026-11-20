@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -39,6 +40,15 @@ func TestCreateReceiver(t *testing.T) {
 	assert.NotNil(t, metricReceiver, "receiver creation failed")
 }
 
+// setGateForTest sets a feature gate for the duration of the test.
+func setGateForTest(t *testing.T, gate *featuregate.Gate, enabled bool) {
+	original := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), original))
+	})
+}
+
 func TestCreateReceiverContainerConventionsGates(t *testing.T) {
 	// The same user config is used for every case: container.cpu.usage.system is
 	// opted into, container.cpu.utilization is opted out of, and the new
@@ -53,10 +63,9 @@ func TestCreateReceiverContainerConventionsGates(t *testing.T) {
 	emitBoth := func() metadata.MetricsConfig {
 		metrics := newConfig().MetricsBuilderConfig.Metrics
 		metrics.ContainerCPUTime.Enabled = true
-		metrics.ContainerMemoryUsage.Enabled = true
 		metrics.ContainerNetworkIo.Enabled = true
+		metrics.ContainerMemoryUsage.Enabled = true
 		metrics.ContainerMemoryAvailable.Enabled = true
-		metrics.ContainerMemoryWorkingSet.Enabled = true
 		metrics.ContainerDiskIo.Enabled = true
 		return metrics
 	}
@@ -91,7 +100,6 @@ func TestCreateReceiverContainerConventionsGates(t *testing.T) {
 				metrics.ContainerCPUUsageSystem.Enabled = false
 				metrics.ContainerCPUUsageKernelmode.Enabled = false
 				metrics.ContainerCPUUsageUsermode.Enabled = false
-				metrics.ContainerMemoryUsageTotal.Enabled = false
 				metrics.ContainerNetworkIoUsageRxBytes.Enabled = false
 				metrics.ContainerNetworkIoUsageTxBytes.Enabled = false
 				return metrics

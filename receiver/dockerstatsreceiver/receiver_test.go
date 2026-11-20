@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -103,7 +102,7 @@ var (
 		cfg.ContainerMemoryUsageLimit.Enabled = true
 		cfg.ContainerMemoryUsageMax.Enabled = true
 		cfg.ContainerMemoryUsageTotal.Enabled = true
-		cfg.ContainerMemoryWorkingSet.Enabled = true
+		cfg.ContainerMemoryWorkingSetV1.Enabled = true
 		cfg.ContainerMemoryWriteback.Enabled = true
 		cfg.ContainerNetworkIo.Enabled = true
 		cfg.ContainerNetworkIoUsageRxBytes.Enabled = true
@@ -208,15 +207,6 @@ func TestErrorsInStart(t *testing.T) {
 	cfg.Config.Endpoint = unreachable
 	err = recv.start(t.Context(), componenttest.NewNopHost())
 	assert.ErrorContains(t, err, "context deadline exceeded")
-}
-
-// setGateForTest sets a feature gate for the duration of the test.
-func setGateForTest(t *testing.T, gate *featuregate.Gate, enabled bool) {
-	original := gate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), original))
-	})
 }
 
 func TestScrapeV2(t *testing.T) {

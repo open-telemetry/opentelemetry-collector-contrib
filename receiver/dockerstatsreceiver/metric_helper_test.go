@@ -119,3 +119,22 @@ func Test_parseCPUSet(t *testing.T) {
 		}
 	}
 }
+
+func Test_calculateMemoryAvailable(t *testing.T) {
+	tests := []struct {
+		name        string
+		limit       uint64
+		usedNoCache uint64
+		expected    uint64
+	}{
+		{name: "usage below limit", limit: 1000, usedNoCache: 400, expected: 600},
+		{name: "usage at limit", limit: 1000, usedNoCache: 1000, expected: 0},
+		{name: "usage above limit", limit: 1000, usedNoCache: 1200, expected: 0},
+		{name: "no limit reported", limit: 0, usedNoCache: 400, expected: 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, calculateMemoryAvailable(tt.limit, tt.usedNoCache))
+		})
+	}
+}

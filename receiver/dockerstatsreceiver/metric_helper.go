@@ -22,6 +22,16 @@ func calculateMemoryPercent(limit, usedNoCache uint64) float64 {
 	return 0.0
 }
 
+// calculateMemoryAvailable returns the memory left before the container reaches
+// its limit. It returns 0 when the limit does not cover the usage, which includes
+// Windows daemons that do not report a limit.
+func calculateMemoryAvailable(limit, usedNoCache uint64) uint64 {
+	if limit < usedNoCache {
+		return 0
+	}
+	return limit - usedNoCache
+}
+
 // calculateCPULimit calculate the number of cpus assigned to a container.
 //
 // Calculation is based on 3 alternatives by the following order:

@@ -311,7 +311,7 @@ var MetricsInfo = metricsInfo{
 	ContainerMemoryUsageTotal: metricInfo{
 		Name: "container.memory.usage.total",
 	},
-	ContainerMemoryWorkingSet: metricInfo{
+	ContainerMemoryWorkingSetV1: metricInfo{
 		Name: "container.memory.working_set",
 	},
 	ContainerMemoryWriteback: metricInfo{
@@ -440,7 +440,7 @@ type metricsInfo struct {
 	ContainerMemoryUsageLimit                  metricInfo
 	ContainerMemoryUsageMax                    metricInfo
 	ContainerMemoryUsageTotal                  metricInfo
-	ContainerMemoryWorkingSet                  metricInfo
+	ContainerMemoryWorkingSetV1                metricInfo
 	ContainerMemoryWriteback                   metricInfo
 	ContainerNetworkIo                         metricInfo
 	ContainerNetworkIoUsageRxBytes             metricInfo
@@ -4261,14 +4261,14 @@ func newMetricContainerMemoryUsageTotal(cfg ContainerMemoryUsageTotalMetricConfi
 	return m
 }
 
-type metricContainerMemoryWorkingSet struct {
-	data     pmetric.Metric                        // data buffer for generated metric.
-	config   ContainerMemoryWorkingSetMetricConfig // metric config provided by user.
-	capacity int                                   // max observed number of data points added to the metric.
+type metricContainerMemoryWorkingSetV1 struct {
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   ContainerMemoryWorkingSetV1MetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
-// init fills container.memory.working_set metric with initial data.
-func (m *metricContainerMemoryWorkingSet) init() {
+// init fills container.memory.working_set@v1 metric with initial data.
+func (m *metricContainerMemoryWorkingSetV1) init() {
 	m.data.SetName("container.memory.working_set")
 	m.data.SetDescription("Container memory working set.")
 	m.data.SetUnit("By")
@@ -4277,7 +4277,7 @@ func (m *metricContainerMemoryWorkingSet) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricContainerMemoryWorkingSet) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricContainerMemoryWorkingSetV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -4288,14 +4288,14 @@ func (m *metricContainerMemoryWorkingSet) recordDataPoint(start pcommon.Timestam
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricContainerMemoryWorkingSet) updateCapacity() {
+func (m *metricContainerMemoryWorkingSetV1) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricContainerMemoryWorkingSet) emit(metrics pmetric.MetricSlice) {
+func (m *metricContainerMemoryWorkingSetV1) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -4303,8 +4303,8 @@ func (m *metricContainerMemoryWorkingSet) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryWorkingSet(cfg ContainerMemoryWorkingSetMetricConfig) metricContainerMemoryWorkingSet {
-	m := metricContainerMemoryWorkingSet{config: cfg}
+func newMetricContainerMemoryWorkingSetV1(cfg ContainerMemoryWorkingSetV1MetricConfig) metricContainerMemoryWorkingSetV1 {
+	m := metricContainerMemoryWorkingSetV1{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -5671,7 +5671,7 @@ type MetricsBuilder struct {
 	metricContainerMemoryUsageLimit                  metricContainerMemoryUsageLimit
 	metricContainerMemoryUsageMax                    metricContainerMemoryUsageMax
 	metricContainerMemoryUsageTotal                  metricContainerMemoryUsageTotal
-	metricContainerMemoryWorkingSet                  metricContainerMemoryWorkingSet
+	metricContainerMemoryWorkingSetV1                metricContainerMemoryWorkingSetV1
 	metricContainerMemoryWriteback                   metricContainerMemoryWriteback
 	metricContainerNetworkIo                         metricContainerNetworkIo
 	metricContainerNetworkIoUsageRxBytes             metricContainerNetworkIoUsageRxBytes
@@ -5777,7 +5777,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricContainerMemoryUsageLimit:                  newMetricContainerMemoryUsageLimit(mbc.Metrics.ContainerMemoryUsageLimit),
 		metricContainerMemoryUsageMax:                    newMetricContainerMemoryUsageMax(mbc.Metrics.ContainerMemoryUsageMax),
 		metricContainerMemoryUsageTotal:                  newMetricContainerMemoryUsageTotal(mbc.Metrics.ContainerMemoryUsageTotal),
-		metricContainerMemoryWorkingSet:                  newMetricContainerMemoryWorkingSet(mbc.Metrics.ContainerMemoryWorkingSet),
+		metricContainerMemoryWorkingSetV1:                newMetricContainerMemoryWorkingSetV1(mbc.Metrics.ContainerMemoryWorkingSetV1),
 		metricContainerMemoryWriteback:                   newMetricContainerMemoryWriteback(mbc.Metrics.ContainerMemoryWriteback),
 		metricContainerNetworkIo:                         newMetricContainerNetworkIo(mbc.Metrics.ContainerNetworkIo),
 		metricContainerNetworkIoUsageRxBytes:             newMetricContainerNetworkIoUsageRxBytes(mbc.Metrics.ContainerNetworkIoUsageRxBytes),
@@ -5849,6 +5849,17 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if !ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate.IsEnabled() && mb.metricContainerMemoryPagingFaultsV1.config.Enabled {
 		mb.metricContainerMemoryPagingFaultsV1.config.Enabled = false
 		settings.Logger.Warn("[WARNING] metric `container.memory.paging.faults@v1` requires feature gate `receiver.docker_stats.EmitV1ContainerConventions` to be enabled, metric has been disabled")
+	}
+	if ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate.IsEnabled() {
+		if mb.metricContainerMemoryUsageTotal.config.Enabled && !mb.metricContainerMemoryWorkingSetV1.config.enabledSetByUser {
+			mb.metricContainerMemoryWorkingSetV1.config.Enabled = true
+			mb.metricContainerMemoryWorkingSetV1.data = pmetric.NewMetric()
+			mb.metricContainerMemoryWorkingSetV1.init()
+		}
+	}
+	if !ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate.IsEnabled() && mb.metricContainerMemoryWorkingSetV1.config.Enabled {
+		mb.metricContainerMemoryWorkingSetV1.config.Enabled = false
+		settings.Logger.Warn("[WARNING] metric `container.memory.working_set@v1` requires feature gate `receiver.docker_stats.EmitV1ContainerConventions` to be enabled, metric has been disabled")
 	}
 
 	for _, op := range options {
@@ -5984,7 +5995,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricContainerMemoryUsageLimit.emit(ils.Metrics())
 	mb.metricContainerMemoryUsageMax.emit(ils.Metrics())
 	mb.metricContainerMemoryUsageTotal.emit(ils.Metrics())
-	mb.metricContainerMemoryWorkingSet.emit(ils.Metrics())
+	mb.metricContainerMemoryWorkingSetV1.emit(ils.Metrics())
 	mb.metricContainerMemoryWriteback.emit(ils.Metrics())
 	mb.metricContainerNetworkIo.emit(ils.Metrics())
 	mb.metricContainerNetworkIoUsageRxBytes.emit(ils.Metrics())
@@ -6351,12 +6362,14 @@ func (mb *MetricsBuilder) RecordContainerMemoryUsageMaxDataPoint(ts pcommon.Time
 
 // RecordContainerMemoryUsageTotalDataPoint adds a data point to container.memory.usage.total metric.
 func (mb *MetricsBuilder) RecordContainerMemoryUsageTotalDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryUsageTotal.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordContainerMemoryWorkingSetDataPoint adds a data point to container.memory.working_set metric.
-func (mb *MetricsBuilder) RecordContainerMemoryWorkingSetDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryWorkingSet.recordDataPoint(mb.startTime, ts, val)
+	// Dual-schema emission controlled by feature gates
+	emitLegacy := !ReceiverDockerStatsDontEmitV0ContainerConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
+		mb.metricContainerMemoryUsageTotal.recordDataPoint(mb.startTime, ts, val)
+	}
+	if ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate.IsEnabled() {
+		mb.metricContainerMemoryWorkingSetV1.recordDataPoint(mb.startTime, ts, val)
+	}
 }
 
 // RecordContainerMemoryWritebackDataPoint adds a data point to container.memory.writeback metric.

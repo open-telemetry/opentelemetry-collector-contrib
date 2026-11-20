@@ -274,11 +274,11 @@ func (r *metricsReceiver) recordContainerStatus(now pcommon.Timestamp, container
 func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *ctypes.MemoryStats) {
 	totalUsage := calculateMemUsageNoCache(memoryStats)
 	r.mb.RecordContainerMemoryUsageTotalDataPoint(now, int64(totalUsage))
-	r.mb.RecordContainerMemoryWorkingSetDataPoint(now, int64(totalUsage))
+
 	r.mb.RecordContainerMemoryUsageDataPoint(now, int64(memoryStats.Usage))
 
 	r.mb.RecordContainerMemoryUsageLimitDataPoint(now, int64(memoryStats.Limit))
-	r.mb.RecordContainerMemoryAvailableDataPoint(now, int64(memoryStats.Limit-totalUsage))
+	r.mb.RecordContainerMemoryAvailableDataPoint(now, int64(calculateMemoryAvailable(memoryStats.Limit, totalUsage)))
 
 	r.mb.RecordContainerMemoryPercentDataPoint(now, calculateMemoryPercent(memoryStats.Limit, totalUsage))
 
