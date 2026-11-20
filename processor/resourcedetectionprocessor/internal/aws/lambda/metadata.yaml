@@ -44,7 +44,7 @@ resource_attributes:
     semantic_convention:
       ref: faas.md#faas-max-memory
     description: The faas.max_memory
-    type: string
+    type: int
     enabled: true
   faas.name:
     semantic_convention:

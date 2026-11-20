@@ -64,9 +64,9 @@ func (rb *ResourceBuilder) SetFaasInstance(val string) {
 }
 
 // SetFaasMaxMemory sets provided value as "faas.max_memory" attribute.
-func (rb *ResourceBuilder) SetFaasMaxMemory(val string) {
+func (rb *ResourceBuilder) SetFaasMaxMemory(val int64) {
 	if rb.config.FaasMaxMemory.Enabled {
-		rb.res.Attributes().PutStr("faas.max_memory", val)
+		rb.res.Attributes().PutInt("faas.max_memory", val)
 	}
 }
 

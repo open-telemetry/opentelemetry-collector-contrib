@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"strconv"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
@@ -29,6 +30,9 @@ const (
 	awsLambdaLogGroupNameEnvVar       = "AWS_LAMBDA_LOG_GROUP_NAME"
 	awsLambdaLogStreamNameEnvVar      = "AWS_LAMBDA_LOG_STREAM_NAME"
 )
+
+// bytesPerMiB converts the MiB value of AWS_LAMBDA_FUNCTION_MEMORY_SIZE to the bytes faas.max_memory uses.
+const bytesPerMiB = 1 << 20
 
 var _ internal.Detector = (*detector)(nil)
 
@@ -73,7 +77,12 @@ func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 		d.rb.SetFaasInstance(value)
 	}
 	if value, ok := os.LookupEnv(awsLambdaFunctionMemorySizeEnvVar); ok {
-		d.rb.SetFaasMaxMemory(value)
+		if maxMemoryMiB, err := strconv.ParseInt(value, 10, 64); err == nil {
+			d.rb.SetFaasMaxMemory(maxMemoryMiB * bytesPerMiB)
+		} else {
+			d.logger.Warn("Invalid "+awsLambdaFunctionMemorySizeEnvVar+" value. This attribute will not be available.",
+				zap.String("key", string(conventions.FaaSMaxMemoryKey)), zap.Error(err))
+		}
 	}
 
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud_provider/aws/logs.md

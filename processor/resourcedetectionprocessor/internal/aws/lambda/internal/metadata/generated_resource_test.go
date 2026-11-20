@@ -19,7 +19,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetCloudProvider("cloud.provider-val")
 			rb.SetCloudRegion("cloud.region-val")
 			rb.SetFaasInstance("faas.instance-val")
-			rb.SetFaasMaxMemory("faas.max_memory-val")
+			rb.SetFaasMaxMemory(15)
 			rb.SetFaasName("faas.name-val")
 			rb.SetFaasVersion("faas.version-val")
 
@@ -70,7 +70,7 @@ func TestResourceBuilder(t *testing.T) {
 			faasMaxMemoryAttrVal, ok := res.Attributes().Get("faas.max_memory")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "faas.max_memory-val", faasMaxMemoryAttrVal.Str())
+				assert.EqualValues(t, 15, faasMaxMemoryAttrVal.Int())
 			}
 			faasNameAttrVal, ok := res.Attributes().Get("faas.name")
 			assert.True(t, ok)

@@ -77,9 +77,24 @@ func TestLambdaAllAttributes(t *testing.T) {
 		"faas.name":            "TestFunctionName",
 		"faas.version":         "$LATEST",
 		"faas.instance":        "2026/09/27/[$LATEST]abcdef",
-		"faas.max_memory":      "128",
+		"faas.max_memory":      int64(128 * 1024 * 1024),
 		"aws.log.group.names":  []any{"/aws/lambda/TestFunctionName"},
 		"aws.log.stream.names": []any{"2026/09/27/[$LATEST]abcdef"},
+	}, res.Attributes().AsRaw())
+}
+
+func TestLambdaInvalidMaxMemory(t *testing.T) {
+	t.Setenv(awsLambdaFunctionNameEnvVar, "TestFunctionName")
+	t.Setenv(awsLambdaFunctionMemorySizeEnvVar, "not-a-number")
+
+	lambdaDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+	require.NoError(t, err)
+	res, _, err := lambdaDetector.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{
+		"cloud.provider": "aws",
+		"cloud.platform": "aws_lambda",
+		"faas.name":      "TestFunctionName",
 	}, res.Attributes().AsRaw())
 }
 
