@@ -14,15 +14,10 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"hash"
-	"strconv"
-	"strings"
-	"unicode/utf8"
 
-	"github.com/gowebpki/jcs"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -30,19 +25,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
-)
 
-const (
-	// jsonMaxDepth caps recursion in valueToInterface, which walks OTLP
-	// Slice/Map values onto the Go call stack. A fatal stack overflow from
-	// deep nesting cannot be caught by recover(); the Go runtime kills the
-	// collector at roughly 700k–800k levels for json.Marshal and somewhat
-	// higher for valueToInterface itself. 128 is a conservative cap for
-	// operator-supplied data; legitimate attribute nesting rarely exceeds
-	// single digits.
-	jsonMaxDepth = 128
-	// jsonMaxInputBytes caps the serialized JSON size before JCS canonicalization.
-	jsonMaxInputBytes = 1 << 21 // 2 MiB
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/canonicaljson"
 )
 
 type signingProcessor struct {
@@ -136,7 +120,11 @@ func (p *signingProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error 
 //   - Flags (W3C trace-context sampling bit; observability concept, not audit-relevant;
 //     may be modified by intermediaries without breaking audit semantics)
 func (p *signingProcessor) processLogRecord(lr plog.LogRecord) error {
-	logData, err := p.serializeLogRecord(lr)
+	opts := canonicaljson.SerializeLogRecordOptions{
+		ExcludePrefixes: []string{"audit.integrity."},
+		// Uses default MaxDepth (128) and MaxInputBytes (2 MiB)
+	}
+	logData, err := canonicaljson.SerializeLogRecord(lr, opts)
 	if err != nil {
 		return fmt.Errorf("failed to serialize log record: %w", err)
 	}
@@ -178,7 +166,10 @@ func (p *signingProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 }
 
 func (p *signingProcessor) processSpan(span ptrace.Span) error {
-	spanData, err := p.serializeSpan(span)
+	opts := canonicaljson.SerializeSpanOptions{
+		ExcludePrefixes: []string{"audit.integrity."},
+	}
+	spanData, err := canonicaljson.SerializeSpan(span, opts)
 	if err != nil {
 		return fmt.Errorf("failed to serialize span: %w", err)
 	}
@@ -257,252 +248,6 @@ func (p *signingProcessor) sign(payload []byte) ([]byte, error) {
 	default:
 		return nil, fmt.Errorf("unsupported algorithm: %s", p.config.Algorithm)
 	}
-}
-
-// serializeLogRecord produces a canonical JSON representation of the log record
-// for signing. Excluded from the signed payload:
-//   - audit.integrity.* attributes (carry the proof; must not be part of the input)
-//   - SeverityNumber, SeverityText (SHOULD NOT be set on audit records per spec)
-//   - Flags (W3C trace-context sampling bit; not audit-relevant)
-func (p *signingProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error) {
-	data := make(map[string]any)
-
-	if lr.EventName() != "" {
-		if err := checkUTF8(lr.EventName(), "event name"); err != nil {
-			return nil, err
-		}
-		data["event_name"] = lr.EventName()
-	}
-
-	if lr.Body().Type() != pcommon.ValueTypeEmpty {
-		body, err := p.valueToInterface(lr.Body(), 0)
-		if err != nil {
-			return nil, fmt.Errorf("log record body: %w", err)
-		}
-		data["body"] = body
-	}
-
-	if lr.Timestamp() != 0 {
-		data["timestamp"] = strconv.FormatInt(lr.Timestamp().AsTime().UnixNano(), 10)
-	}
-
-	if lr.ObservedTimestamp() != 0 {
-		data["observed_timestamp"] = strconv.FormatInt(lr.ObservedTimestamp().AsTime().UnixNano(), 10)
-	}
-
-	if !lr.TraceID().IsEmpty() {
-		data["trace_id"] = lr.TraceID().String()
-	}
-
-	if !lr.SpanID().IsEmpty() {
-		data["span_id"] = lr.SpanID().String()
-	}
-
-	if err := p.putAttributes(data, lr.Attributes()); err != nil {
-		return nil, err
-	}
-
-	return p.marshalJCS(data)
-}
-
-// putAttributes sets data["attributes"] to the encoded attrs, leaving out
-// audit.integrity.* keys, and omits the key when nothing is left.
-func (p *signingProcessor) putAttributes(data map[string]any, attrs pcommon.Map) error {
-	out := make(map[string]any)
-	var attrErr error
-	attrs.Range(func(k string, v pcommon.Value) bool {
-		if strings.HasPrefix(k, "audit.integrity.") {
-			return true
-		}
-		if err := checkUTF8(k, "attribute key"); err != nil {
-			attrErr = err
-			return false
-		}
-		val, err := p.valueToInterface(v, 0)
-		if err != nil {
-			attrErr = err
-			return false
-		}
-		out[k] = val
-		return true
-	})
-	if attrErr != nil {
-		return attrErr
-	}
-	if len(out) > 0 {
-		data["attributes"] = out
-	}
-	return nil
-}
-
-// serializeSpan produces a canonical JSON representation of the span for
-// signing, using the same encoding as serializeLogRecord. Excluded from the
-// signed payload:
-//   - audit.integrity.* attributes, on the span, its events and its links
-//   - TraceState and Flags, on the span and its links (W3C trace-context
-//     sampling data; not audit-relevant, like log record Flags)
-//   - dropped attribute, event and link counts
-func (p *signingProcessor) serializeSpan(span ptrace.Span) ([]byte, error) {
-	data := make(map[string]any)
-
-	if !span.TraceID().IsEmpty() {
-		data["trace_id"] = span.TraceID().String()
-	}
-	if !span.SpanID().IsEmpty() {
-		data["span_id"] = span.SpanID().String()
-	}
-	if !span.ParentSpanID().IsEmpty() {
-		data["parent_span_id"] = span.ParentSpanID().String()
-	}
-	if span.Name() != "" {
-		if err := checkUTF8(span.Name(), "span name"); err != nil {
-			return nil, err
-		}
-		data["name"] = span.Name()
-	}
-	data["kind"] = int32(span.Kind())
-	if span.StartTimestamp() != 0 {
-		data["start_time"] = strconv.FormatInt(span.StartTimestamp().AsTime().UnixNano(), 10)
-	}
-	if span.EndTimestamp() != 0 {
-		data["end_time"] = strconv.FormatInt(span.EndTimestamp().AsTime().UnixNano(), 10)
-	}
-
-	if err := p.putAttributes(data, span.Attributes()); err != nil {
-		return nil, err
-	}
-
-	if span.Events().Len() > 0 {
-		events := make([]any, 0, span.Events().Len())
-		for i := 0; i < span.Events().Len(); i++ {
-			ev := span.Events().At(i)
-			event := make(map[string]any)
-			if ev.Name() != "" {
-				if err := checkUTF8(ev.Name(), "span event name"); err != nil {
-					return nil, err
-				}
-				event["name"] = ev.Name()
-			}
-			if ev.Timestamp() != 0 {
-				event["timestamp"] = strconv.FormatInt(ev.Timestamp().AsTime().UnixNano(), 10)
-			}
-			if err := p.putAttributes(event, ev.Attributes()); err != nil {
-				return nil, fmt.Errorf("span event %d: %w", i, err)
-			}
-			events = append(events, event)
-		}
-		data["events"] = events
-	}
-
-	if span.Links().Len() > 0 {
-		links := make([]any, 0, span.Links().Len())
-		for i := 0; i < span.Links().Len(); i++ {
-			l := span.Links().At(i)
-			link := make(map[string]any)
-			if !l.TraceID().IsEmpty() {
-				link["trace_id"] = l.TraceID().String()
-			}
-			if !l.SpanID().IsEmpty() {
-				link["span_id"] = l.SpanID().String()
-			}
-			if err := p.putAttributes(link, l.Attributes()); err != nil {
-				return nil, fmt.Errorf("span link %d: %w", i, err)
-			}
-			links = append(links, link)
-		}
-		data["links"] = links
-	}
-
-	status := map[string]any{"code": int32(span.Status().Code())}
-	if msg := span.Status().Message(); msg != "" {
-		if err := checkUTF8(msg, "span status message"); err != nil {
-			return nil, err
-		}
-		status["message"] = msg
-	}
-	data["status"] = status
-
-	return p.marshalJCS(data)
-}
-
-// marshalJCS produces a RFC 8785 (JCS) canonical JSON byte slice.
-// json.Marshal sorts map keys (Go ≥ 1.12), then jcs.Transform normalises
-// number representation and validates the result per the JCS spec.
-func (*signingProcessor) marshalJCS(v any) ([]byte, error) {
-	raw, err := json.Marshal(v)
-	if err != nil {
-		return nil, err
-	}
-	if len(raw) > jsonMaxInputBytes {
-		return nil, fmt.Errorf("serialized payload exceeds the size limit (%d > %d bytes)", len(raw), jsonMaxInputBytes)
-	}
-	return jcs.Transform(raw)
-}
-
-func (p *signingProcessor) valueToInterface(v pcommon.Value, depth int) (any, error) {
-	if depth > jsonMaxDepth {
-		return nil, fmt.Errorf("value exceeds nesting depth limit (%d)", jsonMaxDepth)
-	}
-	switch v.Type() {
-	case pcommon.ValueTypeStr:
-		s := v.Str()
-		if err := checkUTF8(s, "string value"); err != nil {
-			return nil, err
-		}
-		return map[string]any{"stringValue": s}, nil
-	case pcommon.ValueTypeInt:
-		return map[string]any{"intValue": strconv.FormatInt(v.Int(), 10)}, nil
-	case pcommon.ValueTypeDouble:
-		return map[string]any{"doubleValue": v.Double()}, nil
-	case pcommon.ValueTypeBool:
-		return map[string]any{"boolValue": v.Bool()}, nil
-	case pcommon.ValueTypeBytes:
-		return map[string]any{"bytesValue": base64.StdEncoding.EncodeToString(v.Bytes().AsRaw())}, nil
-	case pcommon.ValueTypeSlice:
-		slice := make([]any, v.Slice().Len())
-		for i := 0; i < v.Slice().Len(); i++ {
-			val, err := p.valueToInterface(v.Slice().At(i), depth+1) // recursive call!
-			if err != nil {
-				return nil, err
-			}
-			slice[i] = val
-		}
-		return slice, nil
-	case pcommon.ValueTypeMap:
-		m := make(map[string]any)
-		var mapErr error
-		v.Map().Range(func(k string, val pcommon.Value) bool {
-			if err := checkUTF8(k, "map key"); err != nil {
-				mapErr = err
-				return false
-			}
-			converted, err := p.valueToInterface(val, depth+1) // recursive call!
-			if err != nil {
-				mapErr = err
-				return false
-			}
-			m[k] = converted
-			return true
-		})
-		if mapErr != nil {
-			return nil, mapErr
-		}
-		return m, nil
-	default:
-		return nil, nil
-	}
-}
-
-// checkUTF8 refuses a string that is not valid UTF-8. json.Marshal replaces
-// each invalid byte with U+FFFD. Then two records that differ only in those
-// bytes share one signature. The check covers the log event name, the span
-// name, the span event name, and the span status message. The check also
-// covers attribute keys, map keys, and string values.
-func checkUTF8(s, what string) error {
-	if !utf8.ValidString(s) {
-		return fmt.Errorf("%s contains invalid UTF-8", what)
-	}
-	return nil
 }
 
 func (*signingProcessor) Start(_ context.Context, _ component.Host) error {

@@ -1,6 +1,21 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Package signingprocessor - HMAC-SHA256 Algorithm Integration Tests
+//
+// This file contains end-to-end tests for HMAC-SHA256 signing:
+// - HMAC-SHA256 signing and verification
+// - Configuration validation for HMAC algorithm
+//
+// Components tested:
+// - processor.go: Log record signing and verification flow
+// - inline_provider.go: In-memory key material provider for HMAC keys
+// - base_provider.go: Base provider functionality
+// - config.go: HMAC-specific configuration validation
+//
+// Tests cover the complete signing flow from configuration through key loading
+// to signature generation and verification for HMAC-SHA256 algorithm.
+
 package signingprocessor
 
 import (
@@ -241,7 +256,7 @@ func TestSignVerifyHMACSHA256(t *testing.T) {
 		t.Fatalf("decode sig: %v", err)
 	}
 
-	payload, err := p.serializeLogRecord(lr)
+	payload, err := serializeLogRecordWithDefaults(lr)
 	if err != nil {
 		t.Fatalf("serialize: %v", err)
 	}
@@ -318,7 +333,7 @@ func TestHMACTamperedPayloadDetected(t *testing.T) {
 	storedMAC, _ := base64.StdEncoding.DecodeString(sigVal.Str())
 
 	lr.SetEventName("tampered.event")
-	tamperedPayload, _ := p.serializeLogRecord(lr)
+	tamperedPayload, _ := serializeLogRecordWithDefaults(lr)
 
 	mac := hmac.New(sha256.New, []byte("tamper-test-secret"))
 	mac.Write(tamperedPayload)

@@ -15,14 +15,10 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
-	"unicode/utf8"
 
-	"github.com/gowebpki/jcs"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -30,11 +26,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/canonicaljson"
 )
 
 const (
-	jsonMaxDepth      = 128
-	jsonMaxInputBytes = 1 << 21 // 2 MiB
 	// maxFailureDetails caps how many record[r,s,i] indexes appear in a
 	// permanent verification error; remaining failures are summarized as
 	// "and N more" so large batches cannot inflate the error string.
@@ -443,7 +439,7 @@ func (p *verifyProcessor) verifyLogRecord(lr plog.LogRecord, algorithm string) *
 		return &verifyFailure{reason: reasonIntegrityMismatch, err: err}
 	}
 
-	stampedPayload, serErr := p.serializePayload(lr, true)
+	stampedPayload, serErr := serializePayload(lr, true)
 	if serErr != nil {
 		return &verifyFailure{reason: reasonSerializationError, err: serErr}
 	}
@@ -560,145 +556,17 @@ func sha256Sum(b []byte) []byte {
 	return sum[:]
 }
 
-func (p *verifyProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error) {
-	return p.serializePayload(lr, false)
+func (*verifyProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error) {
+	return serializePayload(lr, false)
 }
 
-func (p *verifyProcessor) serializePayload(lr plog.LogRecord, includeVerification bool) ([]byte, error) {
-	data := make(map[string]any)
-
-	if lr.EventName() != "" {
-		if err := checkUTF8(lr.EventName(), "event name"); err != nil {
-			return nil, err
-		}
-		data["event_name"] = lr.EventName()
+func serializePayload(lr plog.LogRecord, includeVerification bool) ([]byte, error) {
+	prefixes := []string{attrIntegrityPrefix}
+	if !includeVerification {
+		prefixes = append(prefixes, attrVerificationPrefix)
 	}
-
-	if lr.Body().Type() != pcommon.ValueTypeEmpty {
-		body, err := p.valueToInterface(lr.Body(), 0)
-		if err != nil {
-			return nil, fmt.Errorf("log record body: %w", err)
-		}
-		data["body"] = body
+	opts := canonicaljson.SerializeLogRecordOptions{
+		ExcludePrefixes: prefixes,
 	}
-
-	if lr.Timestamp() != 0 {
-		data["timestamp"] = strconv.FormatInt(lr.Timestamp().AsTime().UnixNano(), 10)
-	}
-
-	if lr.ObservedTimestamp() != 0 {
-		data["observed_timestamp"] = strconv.FormatInt(lr.ObservedTimestamp().AsTime().UnixNano(), 10)
-	}
-
-	if !lr.TraceID().IsEmpty() {
-		data["trace_id"] = lr.TraceID().String()
-	}
-
-	if !lr.SpanID().IsEmpty() {
-		data["span_id"] = lr.SpanID().String()
-	}
-
-	attrs := make(map[string]any)
-	var attrErr error
-	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
-		if strings.HasPrefix(k, attrIntegrityPrefix) {
-			return true
-		}
-		if !includeVerification && strings.HasPrefix(k, attrVerificationPrefix) {
-			return true
-		}
-		if err := checkUTF8(k, "attribute key"); err != nil {
-			attrErr = err
-			return false
-		}
-		val, err := p.valueToInterface(v, 0)
-		if err != nil {
-			attrErr = err
-			return false
-		}
-		attrs[k] = val
-		return true
-	})
-	if attrErr != nil {
-		return nil, attrErr
-	}
-	if len(attrs) > 0 {
-		data["attributes"] = attrs
-	}
-
-	return p.marshalJCS(data)
-}
-
-func (*verifyProcessor) marshalJCS(v any) ([]byte, error) {
-	raw, err := json.Marshal(v)
-	if err != nil {
-		return nil, err
-	}
-	if len(raw) > jsonMaxInputBytes {
-		return nil, fmt.Errorf("serialized log record exceeds size limit (%d > %d bytes)", len(raw), jsonMaxInputBytes)
-	}
-	return jcs.Transform(raw)
-}
-
-func (p *verifyProcessor) valueToInterface(v pcommon.Value, depth int) (any, error) {
-	if depth > jsonMaxDepth {
-		return nil, fmt.Errorf("value exceeds nesting depth limit (%d)", jsonMaxDepth)
-	}
-	switch v.Type() {
-	case pcommon.ValueTypeStr:
-		s := v.Str()
-		if err := checkUTF8(s, "string value"); err != nil {
-			return nil, err
-		}
-		return map[string]any{"stringValue": s}, nil
-	case pcommon.ValueTypeInt:
-		return map[string]any{"intValue": strconv.FormatInt(v.Int(), 10)}, nil
-	case pcommon.ValueTypeDouble:
-		return map[string]any{"doubleValue": v.Double()}, nil
-	case pcommon.ValueTypeBool:
-		return map[string]any{"boolValue": v.Bool()}, nil
-	case pcommon.ValueTypeBytes:
-		return map[string]any{"bytesValue": base64.StdEncoding.EncodeToString(v.Bytes().AsRaw())}, nil
-	case pcommon.ValueTypeSlice:
-		slice := make([]any, v.Slice().Len())
-		for i := 0; i < v.Slice().Len(); i++ {
-			val, err := p.valueToInterface(v.Slice().At(i), depth+1)
-			if err != nil {
-				return nil, err
-			}
-			slice[i] = val
-		}
-		return slice, nil
-	case pcommon.ValueTypeMap:
-		m := make(map[string]any)
-		var mapErr error
-		v.Map().Range(func(k string, val pcommon.Value) bool {
-			if err := checkUTF8(k, "map key"); err != nil {
-				mapErr = err
-				return false
-			}
-			converted, err := p.valueToInterface(val, depth+1)
-			if err != nil {
-				mapErr = err
-				return false
-			}
-			m[k] = converted
-			return true
-		})
-		if mapErr != nil {
-			return nil, mapErr
-		}
-		return m, nil
-	case pcommon.ValueTypeEmpty:
-		return nil, nil
-	default:
-		return nil, fmt.Errorf("unsupported value type: %s", v.Type())
-	}
-}
-
-func checkUTF8(s, what string) error {
-	if !utf8.ValidString(s) {
-		return fmt.Errorf("%s contains invalid UTF-8", what)
-	}
-	return nil
+	return canonicaljson.SerializeLogRecord(lr, opts)
 }
