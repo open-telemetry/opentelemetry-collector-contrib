@@ -15,7 +15,9 @@ $defs:
     type: object
     properties:
       compression:
-        type: string
+        $ref: go.opentelemetry.io/collector/config/configcompression.type
+      compression_settings:
+        $ref: go.opentelemetry.io/collector/config/configcompression.compression_params
       name:
         type: string
 description: Config contains the main configuration options for the awskinesis exporter
