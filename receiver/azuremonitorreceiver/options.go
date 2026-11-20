@@ -4,6 +4,8 @@
 package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
 
 import (
+	"net/http"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
@@ -71,8 +73,21 @@ func (r *clientOptionsResolver) GetArmMonitorClientOptions() *arm.ClientOptions 
 }
 
 func (r *clientOptionsResolver) GetAzMetricsClientOptions() *azmetrics.ClientOptions {
+	options := r.getClientOptions()
+	// Provides the standard retry codes and adds 529, which is used for backpressure by
+	// the Batch API. See the Batch API Migration Guide
+	// https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/migrate-to-batch-api?tabs=individual-response#529-throttling-errors
+	options.Retry.StatusCodes = []int{
+		http.StatusRequestTimeout,
+		http.StatusTooManyRequests,
+		http.StatusInternalServerError,
+		http.StatusBadGateway,
+		http.StatusServiceUnavailable,
+		http.StatusGatewayTimeout,
+		529, // Azure Monitor's throttling status for Batch API
+	}
 	return &azmetrics.ClientOptions{
-		ClientOptions: r.getClientOptions(),
+		ClientOptions: options,
 	}
 }
 
