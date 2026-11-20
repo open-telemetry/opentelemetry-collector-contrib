@@ -39,8 +39,22 @@ These metrics differ from host-level metrics (`hostmetricsreceiver` / `system.pr
 
 ### Kubernetes Versions
 
-This receiver is tested against the Kubernetes versions specified in the [e2e-tests.yml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/workflows/e2e-tests.yml#L97-L99)
-workflow. These tested versions represent the officially supported Kubernetes versions for this component.
+This receiver is tested against the Kubernetes versions specified in the [e2e-tests.yml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/workflows/e2e-tests.yml)
+workflow (`kubernetes-test-matrix` job). These tested versions represent the officially supported Kubernetes versions for this component.
+
+### Kubelet API
+
+The receiver reads the kubelet `/stats/summary` endpoint and decodes it with the
+`k8s.io/kubelet/pkg/apis/stats/v1alpha1` types. When `extra_metadata_labels` or any of the
+`{request,limit}_utilization` metrics are enabled, it also reads the kubelet `/pods` endpoint.
+The Summary API is not versioned by the kubelet, so its contents can vary between Kubernetes
+versions and container runtimes. Fields that the kubelet or the container runtime leave empty are
+skipped, and the corresponding metrics are not emitted.
+
+### Operating systems
+
+End-to-end tests run against Linux nodes only. The receiver has no Windows-specific handling;
+metrics depend on what the kubelet reports for Windows nodes and some metrics may be missing.
 
 ## Configuration
 
@@ -330,17 +344,6 @@ receivers:
 > produce an equivalent node-capacity-based utilization value.
 
 
-### Optional parameters
-
-The following parameters can also be specified:
-
-- `collection_interval` (default = `10s`): The interval at which to collect data.
-- `insecure_skip_verify` (default = `false`): Whether or not to skip certificate verification.
-
-The full list of settings exposed for this receiver are documented in [config.go](./config.go)
-with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
-
-
 ## Configuration Options Reference
 
 The Kubelet Stats Receiver supports the following configuration options. Options inherited from the Collector's scraper, network, kubelet client, and metric-builder configuration are included where applicable. See [config.go](./config.go) and the referenced configuration definitions for implementation details.
@@ -432,6 +435,23 @@ it and use the CPU usage reported by kubelet, start the Collector with:
 otelcol --config=config.yaml --feature-gates=-receiver.kubeletstats.cpuUsageScrapeBased
 ```
 
+### `receiver.kubelet_stats.cpuUtilizationRounding`
+
+This feature gate is at the alpha stage and is disabled by default. It affects the
+`k8s.{container,pod}.cpu.node.utilization`, `k8s.{container,pod}.cpu_limit_utilization`, and
+`k8s.{container,pod}.cpu_request_utilization` metrics.
+
+When enabled, these utilization ratios are computed from integer nanocore values and rounded to
+the number of significant digits justified by the inputs. This removes floating-point artifacts
+such as `0.30000000000000004`, which helps when values are compared, displayed, or deduplicated
+downstream. The result can differ slightly from the unrounded quotient.
+
+To enable it, start the Collector with:
+
+```shell
+otelcol --config=config.yaml --feature-gates=receiver.kubelet_stats.cpuUtilizationRounding
+```
+
 ## Self-observability
 
 The Kubelet Stats Receiver does not expose component-specific internal telemetry of its own. It uses the Collector's standard receiver and scraper observability mechanisms.
@@ -454,6 +474,8 @@ When `receiver.kubeletstats.cpuUsageScrapeBased` is enabled, the receiver retain
 
 After a Collector restart, the receiver needs to establish a new baseline from subsequent scrapes before it can calculate CPU usage. As a result, CPU usage values may be temporarily unavailable.
 
+Apart from these samples, the receiver keeps no state between scrapes and needs no special shutdown handling: stopping the Collector stops the scrape loop, and no data is buffered by the receiver.
+
 The receiver does not require persistent storage to preserve these CPU-time samples, and persistent storage is not supported for this calculation state.
 
 ## Deployment and scaling
@@ -468,6 +490,7 @@ When tuning collection for larger clusters, consider the following:
 - **Additional metadata and resource utilization:** Configuring `extra_metadata_labels` causes the receiver to fetch additional metadata from the kubelet `/pods` endpoint. Enabling any of the `{request,limit}_utilization` metrics also requires this endpoint to retrieve pod and container resource requests and limits.
 - **Kubernetes API access:** Configuring `k8s_api_config` enables additional Kubernetes API lookups for features that require Kubernetes metadata, including detailed persistent-volume metadata and node-capacity information used by the deprecated node-utilization metrics. The `k8s.{container,pod}.{cpu,memory}.node.utilization` metrics are deprecated. Prefer the corresponding CPU or memory usage metrics and `k8s.node.allocatable_cpu` or `k8s.node.allocatable_memory`, as appropriate. These alternatives use allocatable capacity and are not equivalent to the deprecated node-capacity-based calculation. Configure the required permissions for the features you enable.
 - **Network metric cardinality:** By default, node and pod network metrics are collected only for the default network interface. Enabling `collect_all_network_interfaces` increases the number of emitted metrics and their cardinality because metrics include the `interface` attribute.
+- **Resource sizing:** Collector CPU and memory usage grows with the number of pods and containers on the node, because each scrape decodes the full `/stats/summary` response. Use the [load-test benchmark results](#available-benchmarks) as a starting point and size DaemonSet resource limits for your largest nodes rather than the average node.
 - **Metric selection:** Use `metric_groups` and the individual metric enablement settings to limit the telemetry emitted to what your monitoring requirements need.
 
 ## Warnings
