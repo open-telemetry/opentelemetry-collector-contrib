@@ -378,9 +378,14 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 				panic("unknown consume error")
 			}
 			if errES.abortConnection {
-				// Aborting the handler makes net/http close the connection
-				// without writing a response.
-				panic(http.ErrAbortHandler)
+				// Close the connection without writing a response.
+				conn, _, hijackErr := http.NewResponseController(w).Hijack()
+				if hijackErr != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				_ = conn.Close()
+				return
 			}
 			if errES.httpStatus != http.StatusOK {
 				w.WriteHeader(errES.httpStatus)
