@@ -14,9 +14,11 @@ require (
 	github.com/jaegertracing/jaeger-idl v0.14.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.71.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/component/componenttest v0.165.1-0.20261112225459-4888f0b280f9
+	go.opentelemetry.io/collector/config/configcompression v1.71.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/config/configoptional v1.71.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/config/configretry v1.71.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/confmap v1.71.1-0.20261112225459-4888f0b280f9
@@ -52,6 +54,7 @@ require (
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/klauspost/compress v1.20.4 // indirect
 	github.com/knadh/koanf/maps v0.1.3 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.1 // indirect
 	github.com/knadh/koanf/v2 v2.4.1 // indirect
@@ -62,6 +65,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.165.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.165.1 // indirect
 	github.com/openzipkin/zipkin-go v0.4.3 // indirect
+	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.71.1-0.20261112225459-4888f0b280f9 // indirect
 	go.opentelemetry.io/collector/config/configstorage v0.165.1-0.20261112225459-4888f0b280f9 // indirect
@@ -110,3 +114,5 @@ retract (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression => ../../pkg/xcompression
