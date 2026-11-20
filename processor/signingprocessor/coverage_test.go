@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -603,7 +604,7 @@ func mustGenerateTestCertAndKey(t *testing.T) (certPEM, keyPEM []byte) {
 func TestEnvKeyMaterialProvider(t *testing.T) {
 	certPEM, keyPEM, _ := generateTestPEM(t)
 
-	prov, err := newInlineKeyMaterialProvider(&EnvKeyConfig{Certificate: string(certPEM), PrivateKey: string(keyPEM)})
+	prov, err := newInlineKeyMaterialProvider(&EnvKeyConfig{Certificate: string(certPEM), PrivateKey: configopaque.String(keyPEM)})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -630,7 +631,7 @@ func TestInlineKeyMaterialProvider(t *testing.T) {
 	certPEM, keyPEM := mustGenerateTestCertAndKey(t)
 	prov, err := newInlineKeyMaterialProvider(&EnvKeyConfig{
 		Certificate: string(certPEM),
-		PrivateKey:  string(keyPEM),
+		PrivateKey:  configopaque.String(keyPEM),
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -649,7 +650,7 @@ func TestInlineKeyMaterialProviderHMAC(t *testing.T) {
 		key[i] = byte(i)
 	}
 	encoded := base64.StdEncoding.EncodeToString(key)
-	prov, err := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: encoded})
+	prov, err := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: configopaque.String(encoded)})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -660,7 +661,7 @@ func TestInlineKeyMaterialProviderHMAC(t *testing.T) {
 
 func TestInlineKeyMaterialProviderEmptyHMAC(t *testing.T) {
 	empty := base64.StdEncoding.EncodeToString([]byte{})
-	_, err := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: empty})
+	_, err := newInlineKeyMaterialProvider(&EnvKeyConfig{HMACKey: configopaque.String(empty)})
 	if err == nil {
 		t.Error("expected error for empty HMAC key")
 	}
@@ -899,7 +900,7 @@ func TestNewKeyMaterialProviderEnv(t *testing.T) {
 		Algorithm: "RS256",
 		KeySource: KeySourceConfig{
 			Type: KeySourceEnv,
-			Env:  &EnvKeyConfig{Certificate: string(certPEM), PrivateKey: string(keyPEM)},
+			Env:  &EnvKeyConfig{Certificate: string(certPEM), PrivateKey: configopaque.String(keyPEM)},
 		},
 	}
 	prov, err := newKeyMaterialProvider(t.Context(), cfg, zap.NewNop())

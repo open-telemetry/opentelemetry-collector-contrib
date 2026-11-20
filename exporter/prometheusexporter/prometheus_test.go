@@ -116,8 +116,8 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 		Config: configtls.Config{
 			CertFile: "./testdata/certs/server.crt",
 			KeyFile:  "./testdata/certs/server.key",
-			CAFile:   "./testdata/certs/ca.crt",
 		},
+		ClientCAFile: "./testdata/certs/ca.crt",
 	})
 	cfg := &Config{
 		Namespace: "test",

@@ -437,7 +437,7 @@ func TestConfigValidateDBAuth(t *testing.T) {
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	assert.Equal(t, 10*time.Second, cfg.Config.CollectionInterval)
+	assert.Equal(t, 60*time.Second, cfg.Config.CollectionInterval)
 }
 
 func TestConfig_Validate_Multierr(t *testing.T) {

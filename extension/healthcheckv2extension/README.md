@@ -53,7 +53,7 @@ extensions:
   health_check/1:
     endpoint: "localhost:13"
     tls:
-      ca_file: "/path/to/ca.crt"
+      client_ca_file: "/path/to/ca.crt"
       cert_file: "/path/to/cert.crt"
       key_file: "/path/to/key.key"
     path: "/health/status"
