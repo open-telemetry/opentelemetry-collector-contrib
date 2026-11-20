@@ -74,21 +74,21 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	now := pcommon.NewTimestampFromTime(ghs.now())
-	ghs.logger.Sugar().Debug("current time", zap.Time("now", now.AsTime()))
+	ghs.logger.Debug("current time", zap.Time("now", now.AsTime()))
 
 	currentDate := ghs.now().Day()
 	ghs.logger.Sugar().Debugf("current date: %v", currentDate)
 
 	genClient, restClient, err := ghs.createClients()
 	if err != nil {
-		ghs.logger.Sugar().Error("unable to create clients", zap.Error(err))
+		ghs.logger.Error("unable to create clients", zap.Error(err))
 	}
 
 	// Do some basic validation to ensure the values provided actually exist in github
 	// prior to making queries against that org or user value
 	loginType, err := ghs.login(ctx, genClient, ghs.cfg.GitHubOrg)
 	if err != nil {
-		ghs.logger.Sugar().Error("error logging into GitHub via GraphQL", zap.Error(err))
+		ghs.logger.Error("error logging into GitHub via GraphQL", zap.Error(err))
 		return ghs.mb.Emit(), err
 	}
 
@@ -105,7 +105,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	// and the recording the total count of repositories
 	repos, count, err := ghs.getRepos(ctx, genClient, sq)
 	if err != nil {
-		ghs.logger.Sugar().Error("error getting repo data", zap.Error(err))
+		ghs.logger.Error("error getting repo data", zap.Error(err))
 		return ghs.mb.Emit(), err
 	}
 
@@ -151,7 +151,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 			branches, count, err := ghs.getBranches(ctx, genClient, name, trunk)
 			if err != nil {
-				ghs.logger.Sugar().Errorf("error getting branch count: %v", zap.Error(err))
+				ghs.logger.Error("error getting branch count", zap.Error(err))
 			}
 
 			refType := metadata.AttributeVcsRefTypeBranch
@@ -190,7 +190,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 				additions, deletions, age, err = ghs.evalCommits(ctx, genClient, branch.Repository.Name, branch)
 				if err != nil {
-					ghs.logger.Sugar().Errorf("error getting commit info: %v", zap.Error(err))
+					ghs.logger.Error("error getting commit info", zap.Error(err))
 					continue
 				}
 
@@ -204,7 +204,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			// Get the contributor count for each of the repositories
 			contribs, err := ghs.getContributorCount(ctx, restClient, name)
 			if err != nil {
-				ghs.logger.Sugar().Errorf("error getting contributor count: %v", zap.Error(err))
+				ghs.logger.Error("error getting contributor count", zap.Error(err))
 			}
 			mux.Lock()
 			ghs.mb.RecordVcsContributorCountDataPoint(now, int64(contribs), url, name)
@@ -213,7 +213,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			// Get change (pull request) data
 			openPRs, mergedPRs, err := ghs.getPullRequests(ctx, genClient, name)
 			if err != nil {
-				ghs.logger.Sugar().Errorf("error getting pull requests: %v", zap.Error(err))
+				ghs.logger.Error("error getting pull requests", zap.Error(err))
 			}
 
 			// Count variables for metrics

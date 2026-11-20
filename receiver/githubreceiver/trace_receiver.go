@@ -135,7 +135,7 @@ func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Requ
 
 	for k, v := range gtr.cfg.WebHook.RequiredHeaders {
 		if req.Header.Get(k) != string(v) {
-			gtr.logger.Sugar().Debugf("required header check failed", zap.String("header", k))
+			gtr.logger.Debug("required header check failed", zap.String("header", k))
 			http.Error(w, "invalid request", http.StatusBadRequest)
 			return
 		}
@@ -143,7 +143,7 @@ func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Requ
 
 	p, err := github.ValidatePayload(req, []byte(gtr.cfg.WebHook.Secret))
 	if err != nil {
-		gtr.logger.Sugar().Debugf("unable to validate payload", zap.Error(err))
+		gtr.logger.Debug("unable to validate payload", zap.Error(err))
 		http.Error(w, "invalid payload", http.StatusBadRequest)
 		return
 	}
@@ -151,7 +151,7 @@ func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Requ
 	eventType := github.WebHookType(req)
 	event, err := github.ParseWebHook(eventType, p)
 	if err != nil {
-		gtr.logger.Sugar().Debugf("failed to parse event", zap.Error(err))
+		gtr.logger.Debug("failed to parse event", zap.Error(err))
 		http.Error(w, "failed to parse event", http.StatusBadRequest)
 		return
 	}
@@ -177,7 +177,7 @@ func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Requ
 		w.WriteHeader(http.StatusOK)
 		return
 	default:
-		gtr.logger.Sugar().Debugf("event type not supported", zap.String("event_type", eventType))
+		gtr.logger.Debug("event type not supported", zap.String("event_type", eventType))
 		http.Error(w, "event type not supported", http.StatusBadRequest)
 		return
 	}
