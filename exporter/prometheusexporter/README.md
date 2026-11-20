@@ -17,44 +17,48 @@ Exports data in the [Prometheus format](https://prometheus.io/docs/concepts/data
 
 ## Getting Started
 
+Minimal configuration:
+
+```yaml
+exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+```
+
+### Configuration
+
 The following settings are required:
 
-- `endpoint` (no default): the address on which metrics will be exposed, using path `/metrics`. For more info, see the [full list of `ServerConfig` options](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md#server-configuration).
+- `endpoint` (no default): Address serving `/metrics`. All [`confighttp.ServerConfig` options](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md#server-configuration) (such as `tls`, `auth`, `cors`, `response_headers`, `read_header_timeout` [default = `1m`], and `write_timeout` [default = `30s`]) are also supported.
 
-The following settings can be optionally configured:
+The following settings are optional:
 
-- `const_labels` (no default): key/values that are applied for every exported metric.
-- `namespace` (no default): if set, exports metrics under the provided value.
-- `send_timestamps` (default = `false`): if true, sends the timestamp of the underlying metric sample in the response.
-- `metric_expiration` (default = `5m`): defines how long metrics are exposed without updates
-- `resource_constant_labels`: Controls which resource attributes are added as constant labels on exported metrics. Takes precedence over `resource_to_telemetry_conversion`.
-  - `included`: List of wildcard patterns (e.g., `service*`, `k8s.pod.*`) matching resource attribute keys to include. Note: if `included` is empty and `excluded` is non-empty, all resource attributes except those matched by `excluded` will be included.
-  - `excluded`: List of wildcard patterns matching resource attribute keys to exclude, overriding any matches in `included`. If `included` is empty, setting `excluded` implies including all non-excluded attributes.
-- `resource_to_telemetry_conversion` **[Deprecated: use `resource_constant_labels` instead]**: Disabled by default via the `exporter.prometheus.DisableResourceToTelemetryConversion` feature gate.
-  - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default. **[Deprecated]**: When using `resource_constant_labels`, the equivalent configuration is setting `included: ["*"]`.
-  - `exclude_service_attributes` (default = false): If set to `true`, the `service.name`, `service.instance.id` and `service.namespace` resource attributes, which are already converted to `job` and `instance` labels respectively, will be excluded from the final metrics. **[Deprecated]**: When using `resource_constant_labels`, the equivalent configuration is adding `service.name`, `service.instance.id`, and `service.namespace` to `excluded`.
-- `enable_open_metrics`: (default = `false`): If true, metrics will be exported using the OpenMetrics format. Exemplars are only exported in the OpenMetrics format, and only for histogram and monotonic sum (i.e. counter) metrics.
-- `without_scope_info`: (default = `false`): If true, metrics will be exported without scope name, version, schemaURL, and attributes encoded as labels.
+- `const_labels` (no default): Key/value pairs added as constant labels to every exported metric except `target_info`.
+- `namespace` (no default): Prefix prepended to exported metric names (including `target_info`, as `<namespace>_target_info`).
+- `send_timestamps` (default = `false`): If `true`, includes the underlying datapoint timestamp in the scrape response (does not apply to `target_info`).
+- `metric_expiration` (default = `5m`): How long metrics and metric family metadata remain exposed without updates before expiring from memory.
+- `resource_constant_labels`: Copies matching resource attributes onto exported metrics as constant labels. Takes precedence over `resource_to_telemetry_conversion` and cannot be configured alongside it. Does not support `enabled` or `exclude_service_attributes`.
+  - `included`: Wildcard patterns (`*`, `?`, such as `service*` or `k8s.pod.*`) of resource attribute keys to include. When empty and `excluded` is set, all non-excluded resource attributes are included.
+  - `excluded`: Wildcard patterns (`*`, `?`) of resource attribute keys to exclude, overriding `included`.
+- `resource_to_telemetry_conversion` **[Deprecated: use `resource_constant_labels` instead]**: Disabled by default via `exporter.prometheus.DisableResourceToTelemetryConversion`.
+  - `enabled` (default = `false`): Converts all resource attributes to metric labels. Equivalent to `resource_constant_labels.included: ["*"]`.
+  - `exclude_service_attributes` (default = `false`): Excludes `service.name`, `service.instance.id`, and `service.namespace`. Equivalent to listing them in `resource_constant_labels.excluded`.
+- `enable_open_metrics` (default = `false`): If `true`, allows `/metrics` scrapes to negotiate [OpenMetrics](https://prometheus.io/docs/specs/om/open_metrics_spec/) text (`0.0.1`, `1.0.0`) in addition to Prometheus protobuf and text formats. Exemplar export depends on the negotiated format:
+  - `PrometheusProto`: monotonic sums (counters), classic histograms, and native histograms (regardless of `enable_open_metrics`).
+  - `OpenMetricsText` (`0.0.1`, `1.0.0`, requires `enable_open_metrics: true`): monotonic sums (counters) and classic histograms only.
+  - `PrometheusText` (`0.0.4`, `1.0.0`): no exemplars.
+- `without_scope_info` (default = `false`): If `true`, omits `otel_scope_name`, `otel_scope_version`, `otel_scope_schema_url`, and `otel_scope_<attribute>` labels.
 - `sending_queue` **[Deprecated]**: The Prometheus exporter is pull-based and does not use a sending queue. Can be disabled and rejected via the `exporter.prometheus.DisableSendingQueue` feature gate.
-- `add_metric_suffixes`: (default = `true`): **Deprecated and ignored**: The `exporter.prometheusexporter.DisableAddMetricSuffixes` feature gate is now stable, so `add_metric_suffixes` is always ignored and `translation_strategy` is used instead.
-- `translation_strategy`: Controls how OTLP metric and attribute names are translated into Prometheus metric and label names. Available options:
-  - `UnderscoreEscapingWithSuffixes`: Fully escapes metric names for classic Prometheus metric name compatibility, and includes appending type and unit suffixes.
-  - `UnderscoreEscapingWithoutSuffixes`: Metric names will continue to escape special characters to `_`, but suffixes won't be attached.
-  - `NoUTF8EscapingWithSuffixes`: Disables changing special characters to `_`. Special suffixes like units and `_total` for counters will be attached.
-  - `NoTranslation`: Bypasses all metric and label name translation, passing them through unaltered.
+- `add_metric_suffixes` (default = `true`): **Deprecated and ignored**: Always ignored in favor of `translation_strategy` (`exporter.prometheusexporter.DisableAddMetricSuffixes` is stable).
+- `translation_strategy` (default = `UnderscoreEscapingWithSuffixes`): Controls OTLP-to-Prometheus metric and label name translation:
+  - `UnderscoreEscapingWithSuffixes`: Escapes unsupported characters to `_` and appends type and unit suffixes.
+  - `UnderscoreEscapingWithoutSuffixes`: Escapes unsupported characters to `_` without appending suffixes.
+  - `NoUTF8EscapingWithSuffixes`: Preserves UTF-8 characters and appends type and unit suffixes.
+  - `NoTranslation`: Passes metric and label names through unaltered.
 
-As required by the [OpenTelemetry specification](https://opentelemetry.io/docs/specs/otel/metrics/sdk_exporters/prometheus/#interaction-with-translation-strategy),
-`translation_strategy` is applied before HTTP content negotiation. The final metric and label
-names must also comply with the escaping scheme of the selected `Accept` header entry, even when
-`NoUTF8EscapingWithSuffixes` or `NoTranslation` is configured. If that entry has no escaping scheme,
-or no `Accept` header is provided, names are escaped using underscores. Escaping parameters on
-unsupported format entries do not apply to the selected format.
+`translation_strategy` runs before HTTP [content negotiation](https://prometheus.io/docs/instrumenting/content_negotiation/) ([OpenTelemetry specification](https://opentelemetry.io/docs/specs/otel/metrics/sdk_exporters/prometheus/#interaction-with-translation-strategy)). Output names also follow the escaping scheme of the selected `Accept` entry (defaulting to underscores if omitted or if no `Accept` header is sent; escaping parameters on unselected entries do not apply). To preserve UTF-8 names, use `NoUTF8EscapingWithSuffixes` or `NoTranslation` with a scraper requesting `escaping=allow-utf-8` on `PrometheusText 1.0.0`, `OpenMetricsText 1.0.0`, or `PrometheusProto` (`PrometheusText 1.0.0` and `PrometheusProto` do not require `enable_open_metrics: true`).
 
-To preserve UTF-8 names, use `NoUTF8EscapingWithSuffixes` or `NoTranslation` with a scraper
-that requests `escaping=allow-utf-8` for Prometheus text format 1.0.0 or OpenMetrics.
-Prometheus text format 1.0.0 does not require `enable_open_metrics: true`.
-
-Example:
+### Full Example
 
 ```yaml
 exporters:
@@ -71,73 +75,132 @@ exporters:
     send_timestamps: true
     metric_expiration: 180m
     enable_open_metrics: true
-    translation_strategy: "UnderscoreEscapingWithoutSuffixes"
+    translation_strategy: "UnderscoreEscapingWithSuffixes"
     resource_constant_labels:
       included:
         - "*"
 ```
 
-Given the example, metrics will be available at `https://1.2.3.4:1234/metrics`.
+Given this example, metrics are served at `https://1.2.3.4:1234/metrics`.
 
-### Native Histograms
+## Native Histograms
 
-The exporter supports [Prometheus native histograms](https://prometheus.io/docs/specs/native_histograms/). OpenTelemetry exponential histograms are automatically converted to the Prometheus native histogram format.
+OTLP exponential histograms are exported as [Prometheus native histograms](https://prometheus.io/docs/specs/native_histograms/) (including exemplars, regardless of `enable_open_metrics`) over `PrometheusProto` scrapes. Configure Prometheus to scrape protobuf native histograms via [`scrape_config`](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config). Text formats (`PrometheusText`, `OpenMetricsText`) do not expose native histogram buckets or native histogram exemplars.
 
-To scrape native histograms, configure your Prometheus server to [scrape using protobuf format](https://prometheus.io/docs/prometheus/latest/getting_started/#configure-native-histograms) and to accept native histograms.
+## Feature Gates
 
-Note that this exporter does not currently support exemplars for native histograms.
+Component feature gates are listed in [documentation.md](./documentation.md#feature-gates). From [pkg/translator/prometheus/documentation.md](../../pkg/translator/prometheus/documentation.md#feature-gates), only `pkg.prometheus.KeepIdentifyingResourceAttributes` applies to this exporter. Toggle gates with `--feature-gates=+<gate>` or `--feature-gates=-<gate>`:
 
-### Feature gates
-
-There are also flags that control translation behavior. [See the documentation for the Prometheus translator module](../../pkg/translator/prometheus/) for more information.
+- `exporter.prometheus.DisableResourceToTelemetryConversion` (`beta`, enabled by default): Disables `resource_to_telemetry_conversion` in favor of `resource_constant_labels`. Disable temporarily only while migrating configs.
+- `exporter.prometheus.DisableSendingQueue` (`alpha`, disabled by default): Rejects configs containing the deprecated `sending_queue` block. Enable to check configs ahead of removal.
+- `exporter.prometheusexporter.DisableAddMetricSuffixes` (`stable`, permanently enabled): Always ignores `add_metric_suffixes` in favor of `translation_strategy`.
+- `pkg.prometheus.KeepIdentifyingResourceAttributes` (`alpha`, disabled by default): Keeps `service.name`, `service.namespace`, and `service.instance.id` on `target_info` in addition to `job` and `instance`. Enable if queries read `service.*` directly on `target_info`.
 
 ## Metric names and labels normalization
 
-By Default, OpenTelemetry metric names and attributes are normalized to be compliant with [Prometheus naming rules](https://prometheus.io/docs/practices/naming/).
-
-Optionally, users can set different `translation_strategy` options to control how metrics are exposed. Please be aware that Prometheus itself uses content negotiation to decide how to ingest metrics, and underscore escaping might be applied even though this exporter is configured to keep UTF-8 characters. For more details, read [Prometheus' Content Negotiation documentation](https://prometheus.io/docs/instrumenting/content_negotiation/).
+By default (`UnderscoreEscapingWithSuffixes`), OTLP metric names and attributes are normalized to [Prometheus naming rules](https://prometheus.io/docs/practices/naming/); see the [Prometheus translator README](../../pkg/translator/prometheus/README.md) for unit and naming transformations. Set `translation_strategy` to customize translation, subject to scrape-time [content negotiation](https://prometheus.io/docs/instrumenting/content_negotiation/).
 
 ## Setting resource attributes as metric labels
 
-By default, resource attributes are added to a special metric called `target_info`. Enable the alpha feature gate
-`pkg.prometheus.KeepIdentifyingResourceAttributes` with
-`--feature-gates=pkg.prometheus.KeepIdentifyingResourceAttributes` to also preserve
-`service.name`, `service.namespace`, and `service.instance.id` on `target_info`.
-These attributes continue to populate `job` and `instance`.
-Label names follow the configured translation strategy.
+By default, resource attributes are exported on the gauge metric `target_info` (or `<namespace>_target_info` when `namespace` is set) with value `1`. A `target_info` series is emitted only when both `service.name` (producing a non-empty `job`, or `<service.namespace>/<service.name>` when `service.namespace` is set) and a non-empty `service.instance.id` (`instance`) are present. Enable `--feature-gates=+pkg.prometheus.KeepIdentifyingResourceAttributes` to also keep `service.name`, `service.namespace`, and `service.instance.id` on `target_info` (formatted per `translation_strategy`).
 
-To select and group by metrics by resource attributes, you [need to do join on `target_info`](https://prometheus.io/docs/prometheus/latest/querying/operators/#many-to-one-and-one-to-many-vector-matches). For example, to select metrics with `k8s_namespace_name` attribute equal to `my-namespace`:
+To filter or group by attributes on `target_info`, [join on `target_info`](https://prometheus.io/docs/prometheus/latest/querying/operators/#many-to-one-and-one-to-many-vector-matches):
 
 ```promql
 app_ads_ad_requests_total * on (job, instance) group_left target_info{k8s_namespace_name="my-namespace"}
-```
 
-Or to group by a particular attribute (for ex. `k8s_namespace_name`):
-
-```promql
 sum by (k8s_namespace_name) (app_ads_ad_requests_total * on (job, instance) group_left(k8s_namespace_name) target_info)
 ```
 
-This is not a common pattern, and we recommend copying the most common resource attributes into metric labels. You can do this through the transform processor:
+To copy resource attributes directly onto metric labels instead of joining:
+
+1. **Using `resource_constant_labels`** (keeps translated attribute names; supports `*` and `?` wildcards in `included`/`excluded`):
 
 ```yaml
-processor:
+exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    resource_constant_labels:
+      included:
+        - "k8s.namespace.name"
+        - "k8s.container.name"
+        - "k8s.pod.name"
+```
+
+```promql
+app_ads_ad_requests_total{k8s_namespace_name="my-namespace"}
+
+sum by (k8s_namespace_name) (app_ads_ad_requests_total)
+```
+
+2. **Using the `transform` processor** (when renaming or deriving labels):
+
+```yaml
+processors:
   transform:
     metric_statements:
       - context: datapoint
         statements:
-        - set(attributes["namespace"], resource.attributes["k8s.namespace.name"])
-        - set(attributes["container"], resource.attributes["k8s.container.name"])
-        - set(attributes["pod"], resource.attributes["k8s.pod.name"])
+          - set(attributes["namespace"], resource.attributes["k8s.namespace.name"])
+          - set(attributes["container"], resource.attributes["k8s.container.name"])
+          - set(attributes["pod"], resource.attributes["k8s.pod.name"])
 ```
-
-After this, grouping or selecting becomes as simple as:
 
 ```promql
 app_ads_ad_requests_total{namespace="my-namespace"}
 
 sum by (namespace) (app_ads_ad_requests_total)
 ```
+
+## Self-Observability
+
+- **Pipeline ingestion (`service.telemetry.metrics.level: normal`, default)**: `exporterhelper` emits `otelcol_exporter_sent_metric_points`, `otelcol_exporter_send_failed_metric_points`, and `otelcol_exporter_in_flight_requests`. `otelcol_exporter_sent_metric_points` counts all datapoints passed to the exporter (not scraped by Prometheus), including per-datapoint ingestion drops, which are not counted in `otelcol_exporter_send_failed_metric_points`. Queue metrics are not emitted unless `sending_queue` is enabled (see [documentation.md](./documentation.md#sending-queue)).
+- **`/metrics` scrapes (`service.telemetry.metrics.level: detailed`)**: `confighttp` (`otelhttp`) emits `http.server.request.duration`, `http.server.request.body.size`, and `http.server.response.body.size` (with HTTP status codes), plus server trace spans when internal tracing is enabled. HTTP scrape metrics are dropped below `detailed` level; enable them with:
+
+```yaml
+service:
+  telemetry:
+    metrics:
+      level: detailed
+```
+
+- **Logs and scraper metrics**: Conversion failures, metric-family conflicts, misaligned delta histogram warnings, and scrape gather/encode errors are logged by the Collector; no component-specific metrics are currently defined in [documentation.md](./documentation.md) for active or dropped series. Prometheus also records target scrape health via `up`, `scrape_duration_seconds`, and `scrape_samples_scraped`.
+
+## Compatibility
+
+- Compatible with Prometheus `2.x` and `3.x` and any scraper supporting [Prometheus exposition formats](https://prometheus.io/docs/instrumenting/exposition_formats/).
+- Serves `/metrics` over `PrometheusProto` (`delimited`, `text`, `compact-text`), `PrometheusText` (`0.0.4`, `1.0.0`), and (when `enable_open_metrics: true`) [OpenMetrics](https://prometheus.io/docs/specs/om/open_metrics_spec/) (`0.0.1`, `1.0.0`), with HTTP [content negotiation](https://prometheus.io/docs/instrumenting/content_negotiation/) (`Accept` and `escaping=`), `gzip` compression, and `?name[]=` metric filtering. On partial gather/encode errors, valid families are still returned with HTTP `200` (HTTP `500` only if a gather error yields zero families; an empty exporter returns HTTP `200`).
+- Optional features depend on scraper support: UTF-8 names require Prometheus `3.0+` (or another UTF-8 scraper requesting `escaping=allow-utf-8`), and native histograms require Prometheus `2.40+` (`3.x` recommended) configured for protobuf native-histogram scraping in [`scrape_config`](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config).
+
+## Production Deployment and Scaling
+
+### Statefulness, Persistent Storage, and Graceful Shutdown
+
+- **In-memory state**: Retains the latest datapoint per active series (keyed by metric name, type, scope, datapoint attributes, `job`, and `instance`), active metric family metadata, and cumulative state for delta monotonic sums, classic histograms, and exponential histograms in memory. Persistent storage extensions (`storage`) are not supported.
+- **Expiration**: Series and metric families without updates for `metric_expiration` (default `5m`) are evicted on `/metrics` scrapes and by a periodic background cleanup running every `metric_expiration`. Datapoints with `NoRecordedValue` delete the series immediately.
+- **Shutdown and restart**: `Shutdown` stops background cleanup and drains in-flight `/metrics` scrapes until completion or context expiration. Unscraped updates are lost on exit, and delta-to-cumulative state resets on restart. Set the Collector termination grace period longer than your maximum scrape duration (default `write_timeout` is `30s`).
+
+### Scaling and Memory Sizing
+
+- **Scrape each replica directly**: Do not load-balance `/metrics` across Collector replicas; use Prometheus service discovery (such as Kubernetes Pod or EndpointSlice SD) to scrape each replica individually.
+- **Route OTLP series consistently**: Do not round-robin OTLP metric streams for the same series across replicas; deploy as a node-local DaemonSet or route gateway traffic consistently by resource/series (for example, via the `load_balancing` exporter).
+- **Memory sizing**: Memory grows with active series cardinality retained over `metric_expiration` (see [Benchmark Results](#benchmark-results)). Keep `metric_expiration` slightly above `scrape_interval` (for example, 2x to 3x `scrape_interval`).
+- **Endpoint hardening**: Configure `tls` and/or `auth` via `confighttp.ServerConfig` when exposing `/metrics` beyond localhost, and increase `write_timeout` if scrapes exceed `30s`.
+
+## Known Limitations
+
+- **Dropped inputs**: Non-monotonic delta sums, unknown metric types, and sums with `AggregationTemporalityUnspecified` are dropped; subsequent updates to histograms or exponential histograms with unspecified temporality are ignored.
+- **Exponential histograms**: Dropped if `sum` is unset, `scale < -4`, or `scale == -53`. Scales `> 8` are downscaled to `8`.
+- **Out-of-order and misaligned datapoints**:
+  - Gauges, summaries, sums, and cumulative histograms/exponential histograms ignore datapoints older than the stored timestamp.
+  - Delta sums accumulate only when `StartTimestamp == previous Timestamp`, and otherwise replace the stored value.
+  - Delta classic and exponential histograms accumulate when `StartTimestamp == previous Timestamp`, drop overlapping intervals (`StartTimestamp < previous Timestamp`), and reset on forward gaps (`StartTimestamp > previous Timestamp`).
+  - Changing explicit bucket bounds on a delta classic histogram replaces the stored datapoint; aligned delta histogram merges do not preserve exemplars.
+- **Metric-family conflicts**: Conflicting metric types for the same translated name are dropped until the existing family expires after `metric_expiration`. Conflicting descriptions keep the existing `HELP` text.
+- **`target_info`**: Omitted unless both `service.name` and a non-empty `service.instance.id` are present. Duplicate `(job, instance)` resources keep the first resource seen per scrape, and colliding normalized attribute names are joined with `;`.
+- **Exemplars**: Only `trace_id` and `span_id` labels are exported (`filtered_attributes` are not). Counters keep the last exemplar in the slice, classic histograms keep the last applicable exemplar per bucket, native histograms export all valid exemplars over `PrometheusProto`, and OpenMetrics text omits exemplars without `trace_id` or `span_id`.
+- **OpenMetrics (`enable_open_metrics: true`)**: Follows [OpenMetrics](https://prometheus.io/docs/specs/om/open_metrics_spec/) formatting (including trailing `.0` on whole-number float labels such as `le="1.0"` and `quantile="1.0"`, which changes series identity if enabled on an existing deployment). Counters without a `_total` suffix are exported as `unknown`, and `_created` lines are not emitted.
+- **Label and scope collisions**: With `without_scope_info: true`, colliding series from different scopes with the same (or no) timestamp drop the duplicate non-deterministically and return the first collected series; with `send_timestamps: true` and distinct timestamps, both samples are emitted with identical labels. Distinct attributes normalizing to the same label name (such as `foo.bar` and `foo_bar`) drop the series.
 
 ## Benchmark Results
 
