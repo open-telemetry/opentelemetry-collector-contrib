@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"testing"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 )
 
 func TestMetricJoinedError(t *testing.T) {
@@ -61,8 +63,9 @@ func TestMetricProcessItemFailure(t *testing.T) {
 			mbi := &metricBulkIndexer{}
 			resp := opensearchapi.BulkRespItem{Status: tt.status}
 			mbi.processItemFailure(resp, tt.itemErr, pmetric.NewMetrics())
-			require.Len(t, mbi.errs, 1)
-			require.Equal(t, tt.wantPermanent, consumererror.IsPermanent(mbi.joinedError()))
+			err := mbi.joinedError()
+			require.Error(t, err)
+			require.Equal(t, tt.wantPermanent, consumererror.IsPermanent(err))
 		})
 	}
 }
@@ -230,5 +233,109 @@ func TestMetricDataPoints(t *testing.T) {
 	metric = pmetric.NewMetric()
 	if len(metricDataPoints(metric)) != 0 {
 		t.Fatal("expected no data points for empty metric")
+	}
+}
+
+func newTestMetrics(count int) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("service.name", "test-service")
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName("test-scope")
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("test.gauge")
+	gauge := m.SetEmptyGauge()
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for i := range count {
+		dp := gauge.DataPoints().AppendEmpty()
+		dp.SetTimestamp(now)
+		dp.SetIntValue(int64((i + 1) * 10))
+	}
+	return md
+}
+
+func collectGaugeValues(md pmetric.Metrics) []int64 {
+	var values []int64
+	for i := range md.ResourceMetrics().Len() {
+		values = appendScopeMetricGaugeValues(values, md.ResourceMetrics().At(i).ScopeMetrics())
+	}
+	return values
+}
+
+func appendScopeMetricGaugeValues(values []int64, sms pmetric.ScopeMetricsSlice) []int64 {
+	for j := range sms.Len() {
+		ms := sms.At(j).Metrics()
+		for k := range ms.Len() {
+			values = appendGaugeDataPointValues(values, ms.At(k).Gauge().DataPoints())
+		}
+	}
+	return values
+}
+
+func appendGaugeDataPointValues(values []int64, dps pmetric.NumberDataPointSlice) []int64 {
+	for l := range dps.Len() {
+		values = append(values, dps.At(l).IntValue())
+	}
+	return values
+}
+
+func assertRetryMetricValues(t *testing.T, err error, wantValues []int64) {
+	t.Helper()
+	if len(wantValues) == 0 {
+		return
+	}
+	var retryErr consumererror.Metrics
+	require.ErrorAs(t, err, &retryErr)
+	require.Equal(t, len(wantValues), retryErr.Data().DataPointCount())
+	require.Equal(t, wantValues, collectGaugeValues(retryErr.Data()))
+}
+
+func TestMetricBulkIndexerPartialBulkFailureRetry(t *testing.T) {
+	tests := []struct {
+		name          string
+		statuses      []int
+		wantPermanent bool
+		wantValues    []int64
+	}{
+		{
+			name:       "multiple retryable item failures",
+			statuses:   []int{http.StatusCreated, http.StatusTooManyRequests, http.StatusServiceUnavailable},
+			wantValues: []int64{20, 30},
+		},
+		{
+			name:       "mixed permanent and retryable item failures",
+			statuses:   []int{http.StatusBadRequest, http.StatusTooManyRequests, http.StatusServiceUnavailable},
+			wantValues: []int64{20, 30},
+		},
+		{
+			name:          "only permanent item failures",
+			statuses:      []int{http.StatusCreated, http.StatusBadRequest},
+			wantPermanent: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ts := newMockBulkServer(t, "ss4o_metrics-default-namespace", tt.statuses...)
+			defer ts.Close()
+
+			client, err := newOpenSearchClient(ts.URL, ts.Client(), zap.NewNop())
+			require.NoError(t, err)
+
+			cfg := newDefaultConfig().(*Config)
+			model := &encodeModel{sso: true, dataset: cfg.Dataset, namespace: cfg.Namespace}
+			ir := newIndexResolver("ss4o_metrics", cfg.Dataset, cfg.Namespace)
+
+			mbi := newMetricBulkIndexer(cfg.BulkAction, model, cfg.Pipeline)
+			require.NoError(t, mbi.start(client))
+
+			mbi.submit(t.Context(), newTestMetrics(len(tt.statuses)), ir, cfg, time.Now())
+			mbi.close(t.Context())
+
+			joined := mbi.joinedError()
+			require.Error(t, joined)
+			require.Equal(t, tt.wantPermanent, consumererror.IsPermanent(joined))
+			assertRetryMetricValues(t, joined, tt.wantValues)
+		})
 	}
 }

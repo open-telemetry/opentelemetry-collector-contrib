@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
@@ -17,15 +18,20 @@ import (
 )
 
 type logBulkIndexer struct {
-	bulkAction  string
-	pipeline    string
-	model       mappingModel
-	errs        []error
-	bulkIndexer opensearchutil.BulkIndexer
+	bulkAction    string
+	pipeline      string
+	model         mappingModel
+	mu            sync.Mutex
+	errs          []error
+	permanentErrs []error
+	retryErrs     []error
+	retryLogs     plog.Logs
+	hasRetryLogs  bool
+	bulkIndexer   opensearchutil.BulkIndexer
 }
 
 func newLogBulkIndexer(bulkAction string, model mappingModel, pipeline string) *logBulkIndexer {
-	return &logBulkIndexer{bulkAction: bulkAction, pipeline: pipeline, model: model, errs: nil, bulkIndexer: nil}
+	return &logBulkIndexer{bulkAction: bulkAction, pipeline: pipeline, model: model}
 }
 
 func (lbi *logBulkIndexer) start(client *opensearchapi.Client) error {
@@ -35,13 +41,22 @@ func (lbi *logBulkIndexer) start(client *opensearchapi.Client) error {
 }
 
 func (lbi *logBulkIndexer) joinedError() error {
-	return errors.Join(lbi.errs...)
+	lbi.mu.Lock()
+	defer lbi.mu.Unlock()
+
+	var retryConsumerErr error
+	if len(lbi.retryErrs) > 0 {
+		retryConsumerErr = consumererror.NewLogs(errors.Join(lbi.retryErrs...), lbi.retryLogs)
+	}
+	return joinBulkIndexerErrors(retryConsumerErr, lbi.errs, lbi.permanentErrs)
 }
 
 func (lbi *logBulkIndexer) close(ctx context.Context) {
 	closeErr := lbi.bulkIndexer.Close(ctx)
 	if closeErr != nil {
+		lbi.mu.Lock()
 		lbi.errs = append(lbi.errs, closeErr)
+		lbi.mu.Unlock()
 	}
 }
 
@@ -52,11 +67,20 @@ func (lbi *logBulkIndexer) onIndexerError(_ context.Context, indexerErr error) {
 }
 
 func (lbi *logBulkIndexer) appendPermanentError(e error) {
-	lbi.errs = append(lbi.errs, consumererror.NewPermanent(e))
+	lbi.mu.Lock()
+	defer lbi.mu.Unlock()
+	lbi.permanentErrs = append(lbi.permanentErrs, e)
 }
 
 func (lbi *logBulkIndexer) appendRetryLogError(err error, log plog.Logs) {
-	lbi.errs = append(lbi.errs, consumererror.NewLogs(err, log))
+	lbi.mu.Lock()
+	defer lbi.mu.Unlock()
+	if !lbi.hasRetryLogs {
+		lbi.retryLogs = plog.NewLogs()
+		lbi.hasRetryLogs = true
+	}
+	lbi.retryErrs = append(lbi.retryErrs, err)
+	log.ResourceLogs().MoveAndAppendTo(lbi.retryLogs.ResourceLogs())
 }
 
 func (lbi *logBulkIndexer) submit(ctx context.Context, ld plog.Logs, ir *indexResolver, cfg *Config, timestamp time.Time) {
