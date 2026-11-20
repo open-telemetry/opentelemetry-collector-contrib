@@ -23,3 +23,22 @@ tests:
     ignore:
       top:
         - "sync.runtime_notifyListWait"
+
+telemetry:
+  metrics:
+    processor_redaction_errors_total:
+      enabled: true
+      description: Total number of errors encountered during redaction or configuration compilation
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_redaction_redacted_attributes_total:
+      enabled: true
+      description: Total number of attributes redacted (masked or deleted) by the redaction processor
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development

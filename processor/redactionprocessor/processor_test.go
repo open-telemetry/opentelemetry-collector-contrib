@@ -23,7 +23,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap/zaptest"
 
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/db"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/url"
 )
 
@@ -3156,4 +3162,80 @@ func TestMaskingStringIsAppliedToMetrics(t *testing.T) {
 	creditCardAttr, ok := outAttrs.Get("credit.card")
 	assert.True(t, ok)
 	assert.Equal(t, "[REDACTED]", creditCardAttr.Str())
+}
+
+func TestTelemetryRedactedAttributesCount(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+
+	set := metadatatest.NewSettings(tel)
+	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	require.NoError(t, err)
+
+	cfg := &Config{
+		AllowedKeys:   []string{"keep", "card"},
+		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+		MaskingString: "[REDACTED]",
+	}
+
+	processor, err := newRedaction(t.Context(), cfg, zaptest.NewLogger(t), tb)
+	require.NoError(t, err)
+
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+	span := ss.Spans().AppendEmpty()
+	span.SetName("test-span")
+	span.Attributes().PutStr("keep", "safe")
+	span.Attributes().PutStr("remove", "secret")
+	span.Attributes().PutStr("card", "4111111111111111")
+
+	_, err = processor.processTraces(t.Context(), traces)
+	require.NoError(t, err)
+
+	// "remove" was deleted (1), "card" was masked (1), "keep" was preserved (0). Total = 2.
+	metadatatest.AssertEqualProcessorRedactionRedactedAttributesTotal(t, tel, []metricdata.DataPoint[int64]{
+		{
+			Value: 2,
+		},
+	}, metricdatatest.IgnoreTimestamp())
+
+	// Process another span with 1 masked attribute
+	traces2 := ptrace.NewTraces()
+	rs2 := traces2.ResourceSpans().AppendEmpty()
+	ss2 := rs2.ScopeSpans().AppendEmpty()
+	span2 := ss2.Spans().AppendEmpty()
+	span2.Attributes().PutStr("card", "4111111111111111")
+
+	_, err = processor.processTraces(t.Context(), traces2)
+	require.NoError(t, err)
+
+	// Cumulative count is now 3
+	metadatatest.AssertEqualProcessorRedactionRedactedAttributesTotal(t, tel, []metricdata.DataPoint[int64]{
+		{
+			Value: 3,
+		},
+	}, metricdatatest.IgnoreTimestamp())
+}
+
+func TestTelemetryErrorsOnRegexCompileFailure(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+
+	set := metadatatest.NewSettings(tel)
+	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	require.NoError(t, err)
+
+	cfg := &Config{
+		BlockedValues: []string{"[unclosed"},
+	}
+
+	_, err = newRedaction(t.Context(), cfg, zaptest.NewLogger(t), tb)
+	require.Error(t, err)
+
+	metadatatest.AssertEqualProcessorRedactionErrorsTotal(t, tel, []metricdata.DataPoint[int64]{
+		{
+			Value: 1,
+		},
+	}, metricdatatest.IgnoreTimestamp())
 }
