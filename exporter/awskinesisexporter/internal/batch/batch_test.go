@@ -20,7 +20,7 @@ func TestBatchingMessages(t *testing.T) {
 	}
 
 	chunk := b.Chunk()
-	for _, records := range chunk {
+	for records := range chunk {
 		for _, record := range records {
 			assert.Equal(t, []byte("foobar"), record.Data, "Must have the expected record value")
 			assert.Equal(t, "fixed-string", *record.PartitionKey, "Must have the expected partition key")
