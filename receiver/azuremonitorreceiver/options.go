@@ -4,11 +4,33 @@
 package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
 
 import (
+	"net/http"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics"
 )
+
+// statusAzureMonitorThrottled is a non-standard throttling status code returned by Azure Monitor.
+// It is not part of the azcore default retryable status codes.
+const statusAzureMonitorThrottled = 529
+
+// retryStatusCodes returns the HTTP status codes that trigger a retry.
+// Setting RetryOptions.StatusCodes replaces the azcore defaults (408, 429, 500, 502, 503, 504),
+// so they must be listed explicitly here along with the Azure Monitor specific 529.
+func retryStatusCodes() []int {
+	return []int{
+		http.StatusRequestTimeout,
+		http.StatusTooManyRequests,
+		http.StatusInternalServerError,
+		http.StatusBadGateway,
+		http.StatusServiceUnavailable,
+		http.StatusGatewayTimeout,
+		statusAzureMonitorThrottled,
+	}
+}
 
 type ClientOptionsResolver interface {
 	GetArmResourceClientOptions(subscriptionID string) *arm.ClientOptions
@@ -49,6 +71,9 @@ func newClientOptionsResolver(cloudStr string) ClientOptionsResolver {
 func (r *clientOptionsResolver) getClientOptions() azcore.ClientOptions {
 	return azcore.ClientOptions{
 		Cloud: r.cloud,
+		Retry: policy.RetryOptions{
+			StatusCodes: retryStatusCodes(),
+		},
 	}
 }
 
