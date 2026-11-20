@@ -46,7 +46,7 @@ const (
 	metricNameDuration = "duration"
 	metricNameCalls    = "calls"
 	metricNameEvents   = "events"
-	metricNameSelfTime = "self_time"
+	metricNameSelfTime = "duration_self_time"
 
 	metricAttrSamplingMethod = "sampling.method"
 
@@ -99,8 +99,9 @@ type connectorImp struct {
 	// duration dimensions to add to the events metric.
 	durationDimensions dimensionList
 
-	events   EventsConfig
-	selfTime SelfTimeConfig
+	events EventsConfig
+	// selfTime is true when the self-time histogram is enabled and histograms are not disabled.
+	selfTime bool
 
 	// Tracks the last TimestampUnixNano for delta metrics so that they represent an uninterrupted series. Unused for cumulative span metrics.
 	lastDeltaTimestamps *simplelru.LRU[deltaMetricKey, pcommon.Timestamp]
@@ -203,7 +204,7 @@ func newConnector(logger *zap.Logger, config component.Config, clock clockwork.C
 		callsDimensions:              callsDimensions,
 		durationDimensions:           durationDimensions,
 		events:                       cfg.Events,
-		selfTime:                     cfg.SelfTime,
+		selfTime:                     cfg.Histogram.SelfTime && !cfg.Histogram.Disable,
 		instanceID:                   instanceID,
 	}, nil
 }
@@ -243,12 +244,10 @@ func initHistogramMetrics(cfg Config) metrics.HistogramMetrics {
 // initSelfTimeHistogramMetrics builds a histogram aggregator for the optional
 // self-time metric using the same bucket/unit settings as duration histograms.
 func initSelfTimeHistogramMetrics(cfg Config) metrics.HistogramMetrics {
-	if !cfg.SelfTime.Enabled {
+	if !cfg.Histogram.SelfTime {
 		return nil
 	}
-	selfCfg := cfg
-	selfCfg.Histogram.Disable = false
-	return initHistogramMetrics(selfCfg)
+	return initHistogramMetrics(cfg)
 }
 
 // unitDivider returns a unit divider to convert nanoseconds to milliseconds or seconds.
@@ -389,7 +388,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 			events.BuildMetrics(metric, timestamp, timeStampGenerator, aggregationTemporality)
 		}
 
-		if p.selfTime.Enabled && rawMetrics.selfTimeHistograms != nil {
+		if p.selfTime && rawMetrics.selfTimeHistograms != nil {
 			metric = sm.Metrics().AppendEmpty()
 			metric.SetName(buildMetricName(metricsNamespace, metricNameSelfTime))
 			metric.SetUnit(p.config.Histogram.Unit.String())
@@ -414,7 +413,7 @@ func (p *connectorImp) resetState() {
 
 		// If none of these features are enabled then we can skip the remaining operations.
 		// Enabling either of these features requires to go over resource metrics and do operation on each.
-		if p.config.Histogram.Disable && !p.selfTime.Enabled && p.config.MetricsExpiration == 0 && p.config.SeriesExpiration == 0 && !p.config.Exemplars.Enabled {
+		if p.config.Histogram.Disable && p.config.MetricsExpiration == 0 && p.config.SeriesExpiration == 0 && !p.config.Exemplars.Enabled {
 			return
 		}
 
@@ -427,7 +426,7 @@ func (p *connectorImp) resetState() {
 				if !p.config.Histogram.Disable {
 					m.histograms.ClearExemplars()
 				}
-				if p.selfTime.Enabled && m.selfTimeHistograms != nil {
+				if p.selfTime && m.selfTimeHistograms != nil {
 					m.selfTimeHistograms.ClearExemplars()
 				}
 			}
@@ -438,7 +437,7 @@ func (p *connectorImp) resetState() {
 				if !p.config.Histogram.Disable {
 					m.histograms.ExpireSeries(p.config.SeriesExpiration, now)
 				}
-				if p.selfTime.Enabled && m.selfTimeHistograms != nil {
+				if p.selfTime && m.selfTimeHistograms != nil {
 					m.selfTimeHistograms.ExpireSeries(p.config.SeriesExpiration, now)
 				}
 			}
@@ -468,7 +467,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 	adjustedCountCache := metrics.NewAdjustedCountCache()
 
 	var selfTimeBySpanID map[pcommon.SpanID]int64
-	if p.selfTime.Enabled {
+	if p.selfTime {
 		selfTimeBySpanID = computeSelfTimeBySpanID(traces)
 	}
 
@@ -536,7 +535,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 
 				// Exclusive time computed from the parent-child tree of the
 				// consumed batch. Requires complete traces in the batch.
-				if p.selfTime.Enabled && selfTimeHistograms != nil {
+				if p.selfTime && selfTimeHistograms != nil {
 					if selfTimeNS, ok := selfTimeBySpanID[span.SpanID()]; ok {
 						selfTime := float64(selfTimeNS) / float64(unitDivider)
 						selfTimeKey := p.buildKey(serviceName, span, p.dimensions, p.durationDimensions, resourceAttr, nil, isAdjusted)

@@ -37,17 +37,17 @@ func TestSpanMetrics_SelfTime(t *testing.T) {
 			buildTrace:           buildOverlapSelfTimeTrace,
 		},
 		{
-			name:                 "enabled emits separate self_time metric from span tree",
+			name:                 "enabled emits separate duration_self_time metric from span tree",
 			selfTimeEnabled:      true,
 			expectSelfTimeMetric: true,
-			expectMetricCount:    3, // calls + duration + self_time
+			expectMetricCount:    3, // calls + duration + duration_self_time
 			expectDurationSumMS:  150,
 			// parent 60ms + two children 20ms + 30ms = 110ms
 			expectSelfTimeSumMS: 110,
 			buildTrace:          buildOverlapSelfTimeTrace,
 		},
 		{
-			name:                 "partial trace omits self_time observations",
+			name:                 "partial trace omits duration_self_time observations",
 			selfTimeEnabled:      true,
 			expectSelfTimeMetric: true,
 			expectMetricCount:    3,
@@ -62,7 +62,7 @@ func TestSpanMetrics_SelfTime(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.Histogram.Unit = metrics.Milliseconds
-			cfg.SelfTime = SelfTimeConfig{Enabled: tt.selfTimeEnabled}
+			cfg.Histogram.SelfTime = tt.selfTimeEnabled
 			c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock(), instanceID)
 			require.NoError(t, err)
 
@@ -238,7 +238,7 @@ func TestSpanMetrics_SelfTimeUsesDurationDimensions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Histogram.Unit = metrics.Milliseconds
-	cfg.SelfTime = SelfTimeConfig{Enabled: true}
+	cfg.Histogram.SelfTime = true
 	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock(), instanceID)
 	require.NoError(t, err)
 
@@ -253,33 +253,22 @@ func TestSpanMetrics_SelfTimeUsesDurationDimensions(t *testing.T) {
 	assert.ElementsMatch(t, durationAttrs, selfTimeAttrs)
 }
 
-func TestSpanMetrics_SelfTimeWithDurationHistogramDisabled(t *testing.T) {
+func TestSpanMetrics_SelfTimeWithHistogramDisabled(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Histogram.Unit = metrics.Milliseconds
 	cfg.Histogram.Disable = true
-	cfg.SelfTime = SelfTimeConfig{Enabled: true}
+	cfg.Histogram.SelfTime = true
 	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock(), instanceID)
 	require.NoError(t, err)
 
 	require.NoError(t, c.ConsumeTraces(t.Context(), buildOverlapSelfTimeTrace()))
-	// A new cumulative series reports zero on its first flush. Read the second one.
-	c.buildMetrics()
 	got := c.buildMetrics()
 
+	// histogram::disable turns off all histogram metrics, self time included.
 	metricsSlice := got.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-	require.Equal(t, 2, metricsSlice.Len()) // calls + self_time, no duration
-
-	var foundSelfTime bool
-	for i := 0; i < metricsSlice.Len(); i++ {
-		m := metricsSlice.At(i)
-		require.NotEqual(t, buildMetricName(DefaultNamespace, metricNameDuration), m.Name())
-		if m.Name() == buildMetricName(DefaultNamespace, metricNameSelfTime) {
-			foundSelfTime = true
-			assert.InDelta(t, 110.0, histogramSum(m), 0.001)
-		}
-	}
-	assert.True(t, foundSelfTime)
+	require.Equal(t, 1, metricsSlice.Len())
+	assert.Equal(t, buildMetricName(DefaultNamespace, metricNameCalls), metricsSlice.At(0).Name())
 }
 
 func histogramDataPointAttributes(t *testing.T, metricsSlice pmetric.MetricSlice, name string) []map[string]string {

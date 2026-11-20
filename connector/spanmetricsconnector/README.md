@@ -122,6 +122,7 @@ The following settings can be optionally configured:
       buckets: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
   - `exponential`:
     - `max_size` (default: `160`) the maximum number of buckets per positive or negative number range.
+  - `self_time` (default: `false`): enabling will compute exclusive/self time from parent-child span intervals in each consumed trace batch and emit `traces.span.metrics.duration_self_time`. Complete traces must be present in the batch; place the `groupbytrace` processor, or an equivalent processor that assembles complete traces, before this connector in the traces pipeline. The metric uses the same unit, buckets and dimensions as the duration histogram and is not emitted when `disable` is `true`.
 - `dimensions`: the list of dimensions to add to `traces.span.metrics.calls`, `traces.span.metrics.duration` and `traces.span.metrics.event` metrics with the default dimensions defined above.
   Each list entry must set **exactly one** of:
   1. `name` which is looked up in the span's collection of attributes or resource attributes (AKA process tags) such as `ip`, `host.name` or `region`.
@@ -150,8 +151,6 @@ The following settings can be optionally configured:
 - `events`: Use to configure the events metric.
   - `enabled`: (default: `false`): enabling will add the events metric.
   - `dimensions`: (mandatory if `enabled`) the list of the span's event attributes to add as dimensions to the `traces.span.metrics.events` metric, which will be included _on top of_ the common and configured `dimensions` for span attributes and resource attributes.
-- `self_time`: Use to configure the optional self-time histogram metric. Requires the `groupbytrace` processor, or an equivalent processor that assembles complete traces, ahead of this connector in the traces pipeline.
-  - `enabled`: (default: `false`): enabling will compute exclusive/self time from parent-child span intervals in each consumed trace batch and emit `traces.span.metrics.self_time`. Complete traces must be present in the batch; place `groupbytrace` before this connector in the traces pipeline. The self-time metric uses the same dimension set as duration by default.
 - `resource_metrics_key_attributes`: Filter the resource attributes used to produce the resource metrics key map hash(It's only used to build the hash key, not copy the attributes to metrics resource attributes).
    Use this in case changing resource attributes (e.g. process id) are breaking counter metrics.
 - `aggregation_cardinality_limit` (default: `0`): Defines the maximum number of unique combinations of dimensions that will be tracked for metrics aggregation. When the limit is reached, additional unique combinations will be dropped but registered under a new entry with `otel.metric.overflow="true"`. A value of `0` means no limit is applied.
