@@ -46,8 +46,8 @@ func TestLoadConfig(t *testing.T) {
 					Config: configtls.Config{
 						CertFile: "certs/server.crt",
 						KeyFile:  "certs/server.key",
-						CAFile:   "certs/ca.crt",
 					},
+					ClientCAFile: "certs/ca.crt",
 				})
 
 				return &Config{

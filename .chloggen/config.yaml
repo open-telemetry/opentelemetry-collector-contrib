@@ -15,6 +15,7 @@ components:
     - cmd/oteltestbedcol
     - cmd/telemetrygen
     - config/configdbauth
+    - config/xconfigunit
     - connector/count
     - connector/datadog
     - connector/exceptions
@@ -243,6 +244,7 @@ components:
     - processor/tencentcvmdetector
     - processor/transform
     - processor/transformprocessor/internal/logparsingfuncs
+    - processor/transformprocessor/xtransformprocessor
     - processor/unroll
     - processor/upclouddetector
     - processor/verify

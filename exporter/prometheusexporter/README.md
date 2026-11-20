@@ -61,7 +61,7 @@ exporters:
   prometheus:
     endpoint: "1.2.3.4:1234"
     tls:
-      ca_file: "/path/to/ca.pem"
+      client_ca_file: "/path/to/ca.pem"
       cert_file: "/path/to/cert.pem"
       key_file: "/path/to/key.pem"
     namespace: test-space

@@ -135,6 +135,10 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 }
 
 func (cfg *Config) Validate() error {
+	if metadata.ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate.IsEnabled() &&
+		!metadata.ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		return errors.New("feature gate receiver.kubelet_stats.DontEmitV0K8sConventions requires receiver.kubelet_stats.EmitV1K8sConventions to be enabled, otherwise no metrics are emitted")
+	}
 	if cfg.NodeName == "" {
 		switch {
 		case cfg.MetricsBuilderConfig.Metrics.K8sContainerCPUNodeUtilization.Enabled:
