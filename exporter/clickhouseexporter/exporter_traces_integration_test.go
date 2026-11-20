@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/proto"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -17,7 +18,27 @@ import (
 
 func testTracesExporter(t *testing.T, endpoint string) {
 	exporter := newTestTracesExporter(t, endpoint)
+	verifyTracesIndexType(t, exporter)
 	verifyExportTraces(t, exporter)
+}
+
+// verifyTracesIndexType checks that the version-gated index set was created on the server:
+// text indexes on ClickHouse 26.2+, bloom_filter indexes on older versions.
+func verifyTracesIndexType(t *testing.T, exporter *tracesExporter) {
+	sv, err := exporter.db.ServerVersion()
+	require.NoError(t, err)
+
+	expectedType := "bloom_filter"
+	if proto.CheckMinVersion(versionFullTextSearch, sv.Version) {
+		expectedType = "text"
+	}
+
+	var actualType string
+	row := exporter.db.QueryRow(t.Context(),
+		"SELECT type FROM system.data_skipping_indices WHERE database = ? AND table = ? AND name = 'idx_trace_id'",
+		exporter.cfg.database(), exporter.cfg.TracesTableName)
+	require.NoError(t, row.Scan(&actualType))
+	require.Equal(t, expectedType, actualType, "server version %s", sv.Version)
 }
 
 func newTestTracesExporter(t *testing.T, dsn string, fns ...func(*Config)) *tracesExporter {

@@ -1,10 +1,18 @@
-CREATE TABLE IF NOT EXISTS "%s"."%s_trace_id_ts" %s (
+CREATE TABLE IF NOT EXISTS {{ident .Database}}.{{ident .TableName}} {{.ClusterString}} (
     TraceId String CODEC(ZSTD(3)),
-    Start DateTime CODEC(Delta, ZSTD(3)),
-    End DateTime CODEC(Delta, ZSTD(3)),
-    INDEX idx_trace_id TraceId TYPE bloom_filter(0.01) GRANULARITY 1
-) ENGINE = %s
-    PARTITION BY toDate(Start)
-    ORDER BY (TraceId, Start)
-    %s
-    SETTINGS index_granularity=8192, ttl_only_drop_parts = 1
+{{- if .AggregatingEngine}}
+    Start SimpleAggregateFunction(min, DateTime) CODEC(ZSTD(3)),
+    End SimpleAggregateFunction(max, DateTime) CODEC(ZSTD(3))
+{{- else}}
+    Start DateTime CODEC(ZSTD(3)),
+    End DateTime CODEC(ZSTD(3))
+{{- end}}
+) ENGINE = {{.Engine}}
+PARTITION BY toStartOfWeek(Start)
+{{- if .AggregatingEngine}}
+ORDER BY (TraceId)
+{{- else}}
+ORDER BY (TraceId, Start)
+{{- end}}
+{{.TTL}}
+SETTINGS index_granularity = 8192, ttl_only_drop_parts = 1
