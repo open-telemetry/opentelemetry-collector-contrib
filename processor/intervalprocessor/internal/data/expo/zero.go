@@ -23,6 +23,16 @@ func WidenZero(dp DataPoint, width float64) {
 	scale := Scale(dp.Scale())
 	zero := scale.Idx(width) // the largest bucket index inside the zero width
 
+	// near a boundary, Idx may be one bucket off from Bounds due to floating
+	// point rounding. the new threshold is the upper boundary from Bounds, so
+	// use the bucket that Bounds places width in
+	switch lower, upper := scale.Bounds(zero); {
+	case width <= lower:
+		zero--
+	case width > upper:
+		zero++
+	}
+
 	widen := func(bs Buckets) {
 		abs := Abs(bs)
 		for i := abs.Lower(); i <= zero; i++ {
