@@ -72,6 +72,9 @@ type MetricsDiscoveryFilter struct {
 	Namespace string `mapstructure:"namespace"`
 	// MetricNames restricts discovery to these metric names; when empty, every metric in the namespace.
 	MetricNames []string `mapstructure:"metric_names"`
+	// Dimensions restricts discovery to metrics published with exactly this set of dimension names
+	// (e.g. [LoadBalancer] excludes [LoadBalancer, TargetGroup]); when empty, any dimension set matches.
+	Dimensions []string `mapstructure:"dimensions"`
 	// Stats selects the CloudWatch statistics to fetch for this entry; same semantics as MetricQuery.Stats.
 	Stats []string `mapstructure:"stats"`
 }
@@ -158,6 +161,8 @@ var (
 	errInvalidDiscoveryLimit            = errors.New("metrics discovery limit must be greater than 0")
 	errEmptyMetricName                  = errors.New("metric name must not be empty")
 	errEmptyStatName                    = errors.New("stat name must not be empty")
+	errEmptyDimensionName               = errors.New("dimension name must not be empty")
+	errDuplicateDimensionName           = errors.New("dimension name must not be repeated")
 	errCollectionIntervalLessThanPeriod = errors.New("metrics collection_interval must be greater than or equal to period")
 	errInitialLookbackAndStartFrom      = errors.New("both initial_lookback and start_from are configured, Only one or the other is permitted")
 	errInvalidInitialLookback           = errors.New("initial_lookback must be a positive duration (e.g. 1h)")
@@ -222,6 +227,16 @@ func (c *Config) validateMetricsConfig() error {
 				if name == "" {
 					return fmt.Errorf("metrics.discovery.filters[%d].metric_names[%d]: %w", i, j, errEmptyMetricName)
 				}
+			}
+			seenDims := make(map[string]struct{}, len(f.Dimensions))
+			for j, dim := range f.Dimensions {
+				if dim == "" {
+					return fmt.Errorf("metrics.discovery.filters[%d].dimensions[%d]: %w", i, j, errEmptyDimensionName)
+				}
+				if _, dup := seenDims[dim]; dup {
+					return fmt.Errorf("metrics.discovery.filters[%d].dimensions[%d] %q: %w", i, j, dim, errDuplicateDimensionName)
+				}
+				seenDims[dim] = struct{}{}
 			}
 			for j, st := range f.Stats {
 				if st == "" {

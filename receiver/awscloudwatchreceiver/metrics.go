@@ -163,6 +163,49 @@ func alignTimeToPeriod(t time.Time, periodSec int64) time.Time {
 type listSpec struct {
 	input *cloudwatch.ListMetricsInput
 	stats []string
+	// dimensions is the exact set of dimension names a discovered metric must have; nil matches any set.
+	dimensions map[string]struct{}
+}
+
+// dimensionFilters converts dimension names to ListMetrics name-only filters (server-side narrowing).
+func dimensionFilters(names []string) []types.DimensionFilter {
+	if len(names) == 0 {
+		return nil
+	}
+	out := make([]types.DimensionFilter, 0, len(names))
+	for _, n := range names {
+		out = append(out, types.DimensionFilter{Name: aws.String(n)})
+	}
+	return out
+}
+
+// dimensionNameSet returns the set of names, or nil when there are none.
+func dimensionNameSet(names []string) map[string]struct{} {
+	if len(names) == 0 {
+		return nil
+	}
+	out := make(map[string]struct{}, len(names))
+	for _, n := range names {
+		out[n] = struct{}{}
+	}
+	return out
+}
+
+// hasExactDimensionNames reports whether dims has exactly the wanted names. ListMetrics name filters
+// return every metric that has at least those dimensions, so supersets are dropped here.
+func hasExactDimensionNames(dims []types.Dimension, want map[string]struct{}) bool {
+	if want == nil {
+		return true
+	}
+	if len(dims) != len(want) {
+		return false
+	}
+	for _, d := range dims {
+		if _, ok := want[aws.ToString(d.Name)]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 // listSpecs expands the configured discovery filters into the ListMetrics calls to perform.
@@ -180,14 +223,21 @@ func (s *cloudWatchMetricsScraper) listSpecs() []listSpec {
 		if f.Namespace != "" {
 			namespace = aws.String(f.Namespace)
 		}
+		dimFilters := dimensionFilters(f.Dimensions)
+		dimSet := dimensionNameSet(f.Dimensions)
 		if len(f.MetricNames) == 0 {
-			specs = append(specs, listSpec{input: &cloudwatch.ListMetricsInput{Namespace: namespace}, stats: stats})
+			specs = append(specs, listSpec{
+				input:      &cloudwatch.ListMetricsInput{Namespace: namespace, Dimensions: dimFilters},
+				stats:      stats,
+				dimensions: dimSet,
+			})
 			continue
 		}
 		for _, name := range f.MetricNames {
 			specs = append(specs, listSpec{
-				input: &cloudwatch.ListMetricsInput{Namespace: namespace, MetricName: aws.String(name)},
-				stats: stats,
+				input:      &cloudwatch.ListMetricsInput{Namespace: namespace, MetricName: aws.String(name), Dimensions: dimFilters},
+				stats:      stats,
+				dimensions: dimSet,
 			})
 		}
 	}
@@ -231,6 +281,9 @@ func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQue
 				return nil, err
 			}
 			for _, met := range resp.Metrics {
+				if !hasExactDimensionNames(met.Dimensions, spec.dimensions) {
+					continue
+				}
 				if len(out) >= s.discovery.Limit {
 					return out, nil
 				}

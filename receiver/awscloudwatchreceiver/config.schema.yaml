@@ -102,6 +102,11 @@ $defs:
     description: MetricsDiscoveryFilter selects a set of metrics to discover via ListMetrics.
     type: object
     properties:
+      dimensions:
+        description: Dimensions restricts discovery to metrics published with exactly this set of dimension names (e.g. [LoadBalancer] excludes [LoadBalancer, TargetGroup]); when empty, any dimension set matches.
+        type: array
+        items:
+          type: string
       metric_names:
         description: MetricNames restricts discovery to these metric names; when empty, every metric in the namespace.
         type: array

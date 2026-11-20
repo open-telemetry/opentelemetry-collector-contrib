@@ -127,6 +127,20 @@ aws_cloudwatch/metrics-discovery-filter-list:
           metric_names: [StatusCheckFailed_Instance]
         - namespace: AWS/RDS
 
+aws_cloudwatch/metrics-discovery-dimensions:
+  region: us-east-1
+  metrics:
+    collection_interval: 5m
+    period: 300s
+    discovery:
+      limit: 100
+      filters:
+        - namespace: AWS/ApplicationELB
+          metric_names: [RequestCount]
+          dimensions: [LoadBalancer]
+        - namespace: AWS/ApplicationELB
+          dimensions: [LoadBalancer, TargetGroup]
+
 # Deprecated single-object filters form with a metric name.
 aws_cloudwatch/metrics-discovery-legacy-filters:
   region: us-east-1

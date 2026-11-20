@@ -465,6 +465,25 @@ func TestLoadMetricsConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "metrics-discovery-dimensions",
+			expectedConfig: &Config{
+				Region: "us-east-1",
+				Logs:   defaultLogs(),
+				Metrics: MetricsConfig{
+					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 5 * time.Minute, InitialDelay: time.Second},
+					Period:           300 * time.Second,
+					Delay:            defaultMetricsDelay,
+					Discovery: &MetricsDiscoveryConfig{
+						Filters: []MetricsDiscoveryFilter{
+							{Namespace: "AWS/ApplicationELB", MetricNames: []string{"RequestCount"}, Dimensions: []string{"LoadBalancer"}},
+							{Namespace: "AWS/ApplicationELB", Dimensions: []string{"LoadBalancer", "TargetGroup"}},
+						},
+						Limit: 100,
+					},
+				},
+			},
+		},
+		{
 			name: "metrics-discovery-legacy-filters",
 			expectedConfig: &Config{
 				Region: "us-east-1",
@@ -676,6 +695,26 @@ func TestValidateMetricsConfig(t *testing.T) {
 				},
 			}),
 			expectedErr: errEmptyStatName,
+		},
+		{
+			name: "discovery filter empty dimension name",
+			config: withMetrics(MetricsConfig{
+				Discovery: &MetricsDiscoveryConfig{
+					Limit:   100,
+					Filters: []MetricsDiscoveryFilter{{Namespace: "AWS/EC2", Dimensions: []string{""}}},
+				},
+			}),
+			expectedErr: errEmptyDimensionName,
+		},
+		{
+			name: "discovery filter duplicate dimension name",
+			config: withMetrics(MetricsConfig{
+				Discovery: &MetricsDiscoveryConfig{
+					Limit:   100,
+					Filters: []MetricsDiscoveryFilter{{Namespace: "AWS/EC2", Dimensions: []string{"InstanceId", "InstanceId"}}},
+				},
+			}),
+			expectedErr: errDuplicateDimensionName,
 		},
 		{
 			name: "discovery deprecated top-level empty stat name",

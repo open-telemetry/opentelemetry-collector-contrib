@@ -1003,3 +1003,139 @@ func TestScrape_DiscoveryError(t *testing.T) {
 	_, err := scr.scrape(t.Context())
 	require.ErrorContains(t, err, "list metrics")
 }
+
+func metricWithDims(namespace, name string, dimNames ...string) types.Metric {
+	m := types.Metric{Namespace: aws.String(namespace), MetricName: aws.String(name)}
+	for _, d := range dimNames {
+		m.Dimensions = append(m.Dimensions, types.Dimension{Name: aws.String(d), Value: aws.String("v-" + d)})
+	}
+	return m
+}
+
+func TestListMetrics_DimensionsExactSet(t *testing.T) {
+	const ns = "AWS/ApplicationELB"
+	mc := &mockMetricsClient{}
+	mc.On("ListMetrics", mock.Anything, mock.MatchedBy(func(p *cloudwatch.ListMetricsInput) bool {
+		// Name-only filters are sent server-side, in config order, without values.
+		if len(p.Dimensions) != 1 || aws.ToString(p.Dimensions[0].Name) != "LoadBalancer" || p.Dimensions[0].Value != nil {
+			return false
+		}
+		return aws.ToString(p.Namespace) == ns
+	}), mock.Anything).Return(&cloudwatch.ListMetricsOutput{Metrics: []types.Metric{
+		metricWithDims(ns, "RequestCount", "LoadBalancer"),
+		metricWithDims(ns, "RequestCount", "LoadBalancer", "TargetGroup"),                     // superset: dropped
+		metricWithDims(ns, "RequestCount", "AvailabilityZone", "LoadBalancer", "TargetGroup"), // superset: dropped
+	}}, nil).Once()
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{Discovery: &MetricsDiscoveryConfig{
+		Limit:   100,
+		Filters: []MetricsDiscoveryFilter{{Namespace: ns, Dimensions: []string{"LoadBalancer"}}},
+	}}}
+	scr := testScraper(cfg)
+	scr.client = mc
+
+	out, err := scr.listMetrics(t.Context())
+	require.NoError(t, err)
+	require.Len(t, out, 1)
+	require.Equal(t, map[string]string{"LoadBalancer": "v-LoadBalancer"}, out[0].Dimensions)
+	mc.AssertExpectations(t)
+}
+
+func TestListMetrics_DimensionsOrderIndependentAndMultiple(t *testing.T) {
+	const ns = "AWS/ApplicationELB"
+	mc := &mockMetricsClient{}
+	mc.On("ListMetrics", mock.Anything, mock.MatchedBy(func(p *cloudwatch.ListMetricsInput) bool {
+		return len(p.Dimensions) == 2
+	}), mock.Anything).Return(&cloudwatch.ListMetricsOutput{Metrics: []types.Metric{
+		metricWithDims(ns, "RequestCount", "TargetGroup", "LoadBalancer"), // same set, other order: kept
+		metricWithDims(ns, "RequestCount", "LoadBalancer"),                // subset: dropped
+		metricWithDims(ns, "RequestCount", "LoadBalancer", "Other"),       // different set: dropped
+	}}, nil).Once()
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{Discovery: &MetricsDiscoveryConfig{
+		Limit:   100,
+		Filters: []MetricsDiscoveryFilter{{Namespace: ns, Dimensions: []string{"LoadBalancer", "TargetGroup"}}},
+	}}}
+	scr := testScraper(cfg)
+	scr.client = mc
+
+	out, err := scr.listMetrics(t.Context())
+	require.NoError(t, err)
+	require.Len(t, out, 1)
+	require.Len(t, out[0].Dimensions, 2)
+}
+
+func TestListMetrics_DimensionsLimitCountsOnlyMatches(t *testing.T) {
+	const ns = "AWS/ApplicationELB"
+	mc := &mockMetricsClient{}
+	mc.On("ListMetrics", mock.Anything, mock.Anything, mock.Anything).Return(&cloudwatch.ListMetricsOutput{Metrics: []types.Metric{
+		metricWithDims(ns, "M1", "LoadBalancer", "TargetGroup"), // non-matching must not consume the limit
+		metricWithDims(ns, "M2", "LoadBalancer", "TargetGroup"),
+		metricWithDims(ns, "M3", "LoadBalancer"),
+		metricWithDims(ns, "M4", "LoadBalancer"),
+		metricWithDims(ns, "M5", "LoadBalancer"),
+	}}, nil)
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{Discovery: &MetricsDiscoveryConfig{
+		Limit:   2,
+		Filters: []MetricsDiscoveryFilter{{Namespace: ns, Dimensions: []string{"LoadBalancer"}}},
+	}}}
+	scr := testScraper(cfg)
+	scr.client = mc
+
+	out, err := scr.listMetrics(t.Context())
+	require.NoError(t, err)
+	require.Len(t, out, 2)
+	require.Equal(t, "M3", out[0].MetricName)
+	require.Equal(t, "M4", out[1].MetricName)
+}
+
+func TestListMetrics_DimensionsPaginated(t *testing.T) {
+	const ns = "AWS/ApplicationELB"
+	mc := &mockMetricsClient{}
+	mc.On("ListMetrics", mock.Anything, mock.MatchedBy(func(p *cloudwatch.ListMetricsInput) bool {
+		return p.NextToken == nil
+	}), mock.Anything).Return(&cloudwatch.ListMetricsOutput{
+		Metrics:   []types.Metric{metricWithDims(ns, "M1", "LoadBalancer", "TargetGroup")},
+		NextToken: aws.String("page2"),
+	}, nil).Once()
+	mc.On("ListMetrics", mock.Anything, mock.MatchedBy(func(p *cloudwatch.ListMetricsInput) bool {
+		return aws.ToString(p.NextToken) == "page2" && len(p.Dimensions) == 1
+	}), mock.Anything).Return(&cloudwatch.ListMetricsOutput{
+		Metrics: []types.Metric{metricWithDims(ns, "M2", "LoadBalancer")},
+	}, nil).Once()
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{Discovery: &MetricsDiscoveryConfig{
+		Limit:   100,
+		Filters: []MetricsDiscoveryFilter{{Namespace: ns, Dimensions: []string{"LoadBalancer"}}},
+	}}}
+	scr := testScraper(cfg)
+	scr.client = mc
+
+	out, err := scr.listMetrics(t.Context())
+	require.NoError(t, err)
+	require.Len(t, out, 1)
+	require.Equal(t, "M2", out[0].MetricName)
+	mc.AssertExpectations(t)
+}
+
+func TestListMetrics_NoDimensionsSendsNoFilter(t *testing.T) {
+	mc := &mockMetricsClient{}
+	mc.On("ListMetrics", mock.Anything, mock.MatchedBy(func(p *cloudwatch.ListMetricsInput) bool {
+		return p.Dimensions == nil
+	}), mock.Anything).Return(&cloudwatch.ListMetricsOutput{Metrics: []types.Metric{
+		metricWithDims("AWS/EC2", "M1", "InstanceId"),
+		metricWithDims("AWS/EC2", "M2"),
+	}}, nil).Once()
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{Discovery: &MetricsDiscoveryConfig{
+		Limit:   100,
+		Filters: []MetricsDiscoveryFilter{{Namespace: "AWS/EC2"}},
+	}}}
+	scr := testScraper(cfg)
+	scr.client = mc
+
+	out, err := scr.listMetrics(t.Context())
+	require.NoError(t, err)
+	require.Len(t, out, 2)
+}

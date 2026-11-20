@@ -107,6 +107,7 @@ Each `filters` entry supports:
 | -------------- | --------------- | -------- | ----------- |
 | `namespace`    | String          | no       | CloudWatch namespace to discover metrics in, e.g. `AWS/EC2`. When omitted, metrics are discovered across all namespaces. |
 | `metric_names` | List of strings | no       | Restrict discovery within the namespace to these metric names. When omitted, every metric in the namespace is discovered. One `ListMetrics` call is made per name. |
+| `dimensions`   | List of strings | no       | Restrict discovery to metrics published with exactly this set of dimension names, in any order. For example `[LoadBalancer]` matches `LoadBalancer` metrics but not `LoadBalancer, TargetGroup` ones. Names are sent to `ListMetrics` as name-only filters, so unwanted metrics are not queried or billed. Values are not matched. When omitted, any dimension set matches. |
 | `stats`        | List of strings | no       | Which CloudWatch statistics to fetch for the metrics discovered by this entry. Same semantics as in `queries`, see [Statistics](#statistics) below. When omitted, falls back to the deprecated top-level `discovery.stats`, and then to the Summary default. |
 
 The same namespace may be repeated across entries, for example to use different statistics for
@@ -234,6 +235,9 @@ awscloudwatch:
           # no stats: the four standard statistics are combined into a Summary
         - namespace: AWS/RDS
           # no metric_names: all metrics in the namespace
+        - namespace: AWS/ApplicationELB
+          metric_names: [RequestCount]
+          dimensions: [LoadBalancer] # only the per-load-balancer series, not LoadBalancer+TargetGroup
 ```
 
 #### Logs Autodiscovery Example Configuration
