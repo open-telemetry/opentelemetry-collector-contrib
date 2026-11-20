@@ -19,13 +19,18 @@ func newLogsExporter(set exporter.Settings, cfg component.Config) (exporter.Logs
 		logger: set.Logger,
 	}
 
-	l.client = newLogServiceClient(cfg.(*Config), set.Logger)
+	client, err := newLogServiceClient(cfg.(*Config), set.Logger)
+	if err != nil {
+		return nil, err
+	}
+	l.client = client
 
 	return exporterhelper.NewLogs(
 		context.TODO(),
 		set,
 		cfg,
 		l.pushLogsData,
+		exporterhelper.WithShutdown(l.client.shutdown),
 	)
 }
 

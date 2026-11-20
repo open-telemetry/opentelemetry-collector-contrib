@@ -9,3 +9,11 @@ status:
   codeowners:
     active: [wgliang]
     emeritus: [yiyang5055]
+
+tests:
+  config:
+    region: "ap-beijing"
+    logset: "demo-logset"
+    topic: "demo-topic"
+    secret_id: "demo-secret-id"
+    secret_key: "demo-secret-key"
