@@ -811,7 +811,7 @@ func TestFlushing(t *testing.T) {
 		compression:      fe.conf.Compression,
 		compressor:       buildCompressor(fe.conf.Compression),
 	}
-	export := buildExportFunc(fe.conf)
+	export := buildExportFunc(fe.conf, false)
 	var err error
 	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export, fe.conf.Compression, int(fe.conf.CompressionParams.Level), fe.logger)
 	assert.NoError(t, err)
@@ -971,7 +971,7 @@ func TestAppend(t *testing.T) {
 		compression:      fe.conf.Compression,
 		compressor:       buildCompressor(fe.conf.Compression),
 	}
-	export := buildExportFunc(fe.conf)
+	export := buildExportFunc(fe.conf, false)
 	var err error
 	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export, fe.conf.Compression, int(fe.conf.CompressionParams.Level), fe.logger)
 	assert.NoError(t, err)

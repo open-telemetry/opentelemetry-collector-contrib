@@ -29,6 +29,9 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.K8sWatcherDeploymentAdded.Add(context.Background(), 1)
 	tb.K8sWatcherDeploymentDeleted.Add(context.Background(), 1)
 	tb.K8sWatcherDeploymentUpdated.Add(context.Background(), 1)
+	tb.K8sWatcherHpaAdded.Add(context.Background(), 1)
+	tb.K8sWatcherHpaDeleted.Add(context.Background(), 1)
+	tb.K8sWatcherHpaUpdated.Add(context.Background(), 1)
 	tb.K8sWatcherJobAdded.Add(context.Background(), 1)
 	tb.K8sWatcherJobDeleted.Add(context.Background(), 1)
 	tb.K8sWatcherJobUpdated.Add(context.Background(), 1)
@@ -102,6 +105,15 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualK8sWatcherDeploymentUpdated(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherHpaAdded(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherHpaDeleted(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualK8sWatcherHpaUpdated(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualK8sWatcherJobAdded(t, testTel,

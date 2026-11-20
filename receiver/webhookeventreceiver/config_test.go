@@ -6,6 +6,7 @@ package webhookeventreceiver
 import (
 	"bufio"
 	"crypto/fips140"
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -370,6 +371,11 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, confmap.Validate(conf))
 
 	require.Equal(t, expect, conf)
+}
+
+func TestRequiredHeaderValueIsMasked(t *testing.T) {
+	cfg := RequiredHeader{Key: "key-present", Value: "super-secret"}
+	assert.NotContains(t, fmt.Sprintf("%v %+v %#v", cfg, cfg, cfg), "super-secret")
 }
 
 func TestValidateHMACSecretLength(t *testing.T) {

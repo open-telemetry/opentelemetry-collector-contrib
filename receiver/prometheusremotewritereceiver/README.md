@@ -169,8 +169,8 @@ If you rely on `service.namespace` being populated when `receiver.prometheus_rem
 
 1. **OTLP -> Prometheus -> Remote Write -> OTLP round-trip via `target_info`**:
    In the [OTLP-to-Prometheus specification](https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1), `service.namespace` and `service.name` are concatenated into `job="<service.namespace>/<service.name>"`. For round-trip preservation of `service.namespace` and `service.name` without splitting `job`:
-   - Configure the OTLP-to-Prometheus sender to include identifying resource attributes on `target_info` (e.g., `keep_identifying_resource_attributes: true` in `prometheusexporter` / `prometheusremotewriteexporter`, or `keep_identifying_attributes` in Prometheus OTLP ingestion) so `service.namespace` and `service.name` are emitted as labels on `target_info` (for Prometheus native OTLP ingestion, see also [prometheus/prometheus#20086](https://github.com/prometheus/prometheus/pull/20086)).
-   - Disable dot-to-underscore label translation on the sender/Prometheus side (preserve UTF-8 dots in label names, e.g. `translation_strategy: NoUTF8EscapingWithSuffixes`) so `target_info` carries `service.namespace` and `service.name` rather than `service_namespace` and `service_name`.
+   - Configure the OTLP-to-Prometheus sender to include identifying resource attributes on `target_info` (e.g., `--feature-gates=pkg.prometheus.KeepIdentifyingResourceAttributes` for `prometheusexporter` / `prometheusremotewriteexporter`, or `otlp.keep_identifying_resource_attributes: true` in Prometheus OTLP ingestion) so `service.namespace` and `service.name` are emitted as labels on `target_info` (for Prometheus native OTLP ingestion when a resource only has identifying attributes, see also [prometheus/prometheus#20401](https://github.com/prometheus/prometheus/pull/20401)).
+   - Disable dot-to-underscore label translation on the sender/Prometheus side (preserve UTF-8 dots in label names, e.g. `translation_strategy: NoUTF8EscapingWithSuffixes` for `prometheusexporter` / `prometheusremotewriteexporter`, or `otlp.translation_strategy: NoUTF8EscapingWithSuffixes` in Prometheus OTLP ingestion) so `target_info` carries `service.namespace` and `service.name` rather than `service_namespace` and `service_name`.
 
 2. **Splitting `job` via the `transform` processor (when `target_info` is not used)**:
    If your sender encodes `<service.namespace>/<service.name>` in `job` without emitting `service.namespace` on `target_info`, you can preserve the `<namespace>/<name>` split downstream using the [`transform` processor](../../processor/transformprocessor/README.md):
@@ -179,10 +179,11 @@ If you rely on `service.namespace` being populated when `receiver.prometheus_rem
    processors:
      transform:
        metric_statements:
-         - context: resource
+         - conditions:
+             - resource.attributes["service.namespace"] == nil and IsMatch(resource.attributes["service.name"], "^[^/]+/[^/]+$")
            statements:
-             - set(attributes["service.namespace"], Split(attributes["service.name"], "/")[0]) where IsMatch(attributes["service.name"], "^[^/]+/[^/]+$") and attributes["service.namespace"] == nil
-             - set(attributes["service.name"], Split(attributes["service.name"], "/")[1]) where IsMatch(attributes["service.name"], "^[^/]+/[^/]+$")
+             - set(resource.attributes["service.namespace"], Split(resource.attributes["service.name"], "/")[0])
+             - set(resource.attributes["service.name"], Split(resource.attributes["service.name"], "/")[1])
    ```
 
 ## Internal Telemetry
