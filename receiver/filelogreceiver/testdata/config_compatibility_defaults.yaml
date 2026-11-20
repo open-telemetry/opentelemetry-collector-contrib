@@ -1,0 +1,55 @@
+# Compatibility baseline: keep existing keys and defaults when adding options.
+# This fixture is decoded into a zero config, independently of default constructors.
+include: [testdata/*.log]
+exclude: null
+exclude_older_than: 0s
+start_at: end
+poll_interval: 200ms
+max_concurrent_files: 1024
+max_batches: 0
+fingerprint_size: 1000
+initial_buffer_size: 16384
+max_log_size: 1048576
+max_log_size_behavior: split
+encoding: utf-8
+force_flush_period: 500ms
+multiline:
+  line_start_pattern: ""
+  line_end_pattern: ""
+  omit_pattern: false
+preserve_leading_whitespaces: false
+preserve_trailing_whitespaces: false
+include_file_name: true
+include_file_path: false
+include_file_name_resolved: false
+include_file_path_resolved: false
+include_file_owner_name: false
+include_file_owner_group_name: false
+include_file_permissions: false
+include_file_record_number: false
+include_file_record_offset: false
+delete_after_read: false
+acquire_fs_lock: false
+file_cache_advise: false
+skip_unmodified_files: false
+header: null
+compression: ""
+polls_to_archive: 0
+on_truncate: ignore
+ordering_criteria:
+  regex: ""
+  group_by: ""
+  top_n: null
+  sort_by: null
+attributes: {}
+resource: {}
+id: file_input
+type: file_input
+output: null
+operators: []
+storage: null
+retry_on_failure:
+  enabled: false
+  initial_interval: 1s
+  max_interval: 30s
+  max_elapsed_time: 5m

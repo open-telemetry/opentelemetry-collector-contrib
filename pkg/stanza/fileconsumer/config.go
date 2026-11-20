@@ -190,6 +190,11 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		return nil, err
 	}
 
+	if len(c.OrderingCriteria.SortBy) > 0 && c.OrderingCriteria.TopN == nil {
+		set.Logger.Warn("Omitting ordering_criteria.top_n when sort_by is configured is deprecated; set top_n to 1 to preserve the current behavior, or 0 to match all files",
+			zap.String("migration_guide", "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/filelogreceiver/MIGRATION.md#explicit-ordering-limit"))
+	}
+
 	maxBatchFiles := c.MaxConcurrentFiles / 2
 	if maxBatchFiles == 0 {
 		maxBatchFiles = 1

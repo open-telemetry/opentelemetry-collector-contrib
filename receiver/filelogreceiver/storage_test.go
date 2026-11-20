@@ -8,16 +8,76 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver/internal/metadata"
 )
+
+func TestStorageAcrossReceiverTypeMigration(t *testing.T) {
+	t.Parallel()
+	logPath := filepath.Join(t.TempDir(), "application.log")
+	storageDir := t.TempDir()
+	initial := make([]string, 50)
+	for i := range initial {
+		initial[i] = fmt.Sprintf("initial record %03d with a stable file fingerprint", i)
+	}
+	require.NoError(t, os.WriteFile(logPath, []byte(strings.Join(initial, "\n")+"\n"), 0o600))
+
+	// Also exercise rollback to the alias. Each new receiver must resume at
+	// the stored offset, even with start_at: beginning.
+	for phase, receiverType := range []string{"filelog", "file_log", "filelog"} {
+		t.Run(fmt.Sprintf("%d_%s", phase, receiverType), func(t *testing.T) {
+			expected := initial
+			if phase > 0 {
+				line := fmt.Sprintf("new record after migration %d", phase)
+				f, err := os.OpenFile(logPath, os.O_APPEND|os.O_WRONLY, 0o600)
+				require.NoError(t, err)
+				_, err = f.WriteString(line + "\n")
+				require.NoError(t, err)
+				require.NoError(t, f.Close())
+				expected = []string{line}
+			}
+			ext := storagetest.NewFileBackedStorageExtension("migration", storageDir)
+			host := storagetest.NewStorageHost().WithExtension(ext.ID, ext)
+			t.Cleanup(func() { require.NoError(t, ext.Shutdown(t.Context())) })
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*FileLogConfig)
+			cfg.InputConfig.Include = []string{logPath}
+			cfg.InputConfig.StartAt = "beginning"
+			cfg.StorageID = &ext.ID
+			set := receivertest.NewNopSettings(component.MustNewType(receiverType))
+			set.ID = component.MustNewIDWithName(receiverType, "application")
+			sink := new(consumertest.LogsSink)
+			rcvr, err := factory.CreateLogs(t.Context(), set, cfg, sink)
+			require.NoError(t, err)
+			require.NoError(t, rcvr.Start(t.Context(), host))
+			stop := sync.OnceFunc(func() { require.NoError(t, rcvr.Shutdown(t.Context())) })
+			t.Cleanup(stop)
+			require.Eventually(t, func() bool { return sink.LogRecordCount() >= len(expected) }, 5*time.Second, 10*time.Millisecond)
+			stop() // Flush pending records before checking for duplicates and persisting offsets.
+			var actual []string
+			for _, batch := range sink.AllLogs() {
+				for _, resource := range batch.ResourceLogs().All() {
+					for _, scope := range resource.ScopeLogs().All() {
+						for _, record := range scope.LogRecords().All() {
+							actual = append(actual, record.Body().Str())
+						}
+					}
+				}
+			}
+			require.Equal(t, expected, actual, "migration must neither replay old records nor skip new ones")
+		})
+	}
+}
 
 func TestStorage(t *testing.T) {
 	t.Parallel()
