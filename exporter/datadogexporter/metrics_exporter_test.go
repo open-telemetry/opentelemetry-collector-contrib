@@ -171,7 +171,6 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			metrics: createTestMetrics(attrs),
 			source: source.Source{
 				Kind:             source.HostnameKind,
-				Identifier:       "test-host", //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 				SourceIdentifier: source.SourceIdentifier{Primary: "test-host"},
 			},
 			histogramMode: datadogconfig.HistogramModeNoBuckets,
@@ -182,7 +181,6 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			metrics: createTestMetrics(attrs),
 			source: source.Source{
 				Kind:             source.HostnameKind,
-				Identifier:       "test-host", //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 				SourceIdentifier: source.SourceIdentifier{Primary: "test-host"},
 			},
 			histogramMode: datadogconfig.HistogramModeCounters,
@@ -255,7 +253,6 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			}),
 			source: source.Source{
 				Kind:             source.HostnameKind,
-				Identifier:       "test-host", //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 				SourceIdentifier: source.SourceIdentifier{Primary: "test-host"},
 			},
 			histogramMode: datadogconfig.HistogramModeCounters,
@@ -325,7 +322,6 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			metrics: createTestMetrics(attrs),
 			source: source.Source{
 				Kind:             source.HostnameKind,
-				Identifier:       "test-host", //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 				SourceIdentifier: source.SourceIdentifier{Primary: "test-host"},
 			},
 			histogramMode: datadogconfig.HistogramModeDistributions,
@@ -397,7 +393,6 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			metrics: createTestMetrics(attrs),
 			source: source.Source{
 				Kind:             source.AWSECSFargateKind,
-				Identifier:       "task_arn", //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 				SourceIdentifier: source.SourceIdentifier{Primary: "task_arn"},
 			},
 			histogramMode: datadogconfig.HistogramModeCounters,
@@ -467,7 +462,6 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			metrics: loadOTLPMetrics(t, "metrics_stats.json"),
 			source: source.Source{
 				Kind:             source.HostnameKind,
-				Identifier:       "test-host", //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 				SourceIdentifier: source.SourceIdentifier{Primary: "test-host"},
 			},
 			histogramMode: datadogconfig.HistogramModeDistributions,
@@ -585,7 +579,7 @@ func Test_metricsExporter_HistogramZeroLowerBoundDoesNotLeakToZeroBin(t *testing
 		acfg,
 		&once,
 		attributesTranslator,
-		&testutil.MockSourceProvider{Src: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}}, //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+		&testutil.MockSourceProvider{Src: source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}},
 		reporter,
 		nil,
 		gatewayUsage,
@@ -898,7 +892,7 @@ func TestServiceInstanceIDTag(t *testing.T) {
 		traceconfig.New(),
 		&once,
 		attributesTranslator,
-		&testutil.MockSourceProvider{Src: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}}, //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+		&testutil.MockSourceProvider{Src: source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}},
 		reporter,
 		nil,
 		attributes.NewGatewayUsage(),

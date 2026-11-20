@@ -401,7 +401,7 @@ func newExtension(
 		// Hostname is already known from config; skip the source provider to avoid
 		// unnecessary cloud metadata probes (e.g. GCP metadata server on non-GCP hosts).
 		hostnameSource = "config"
-		host = source.Source{Kind: source.HostnameKind, Identifier: cfg.Hostname, SourceIdentifier: source.SourceIdentifier{Primary: cfg.Hostname}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+		host = source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: cfg.Hostname}}
 	} else {
 		hostnameSource = "inferred"
 		var err error
