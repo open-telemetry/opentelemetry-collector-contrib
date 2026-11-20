@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/prometheus/common/model"
@@ -65,6 +66,8 @@ type accumulator interface {
 	// cleanupExpired removes registered metrics whose last update exceeds the
 	// configured expiration, independently of Collect.
 	cleanupExpired()
+	// activeSeries returns the number of active time series currently retained.
+	activeSeries() int64
 }
 
 // LastValueAccumulator keeps last value for accumulated metrics
@@ -72,10 +75,33 @@ type lastValueAccumulator struct {
 	logger *zap.Logger
 
 	registeredMetrics sync.Map
+	seriesCount       atomic.Int64
 
 	// metricExpiration contains duration for which metric
 	// should be served after it was updated
 	metricExpiration time.Duration
+}
+
+func (a *lastValueAccumulator) storeSeries(key string, val *accumulatedValue) {
+	if _, loaded := a.registeredMetrics.Swap(key, val); !loaded {
+		a.seriesCount.Add(1)
+	}
+}
+
+func (a *lastValueAccumulator) deleteSeries(key any) {
+	if _, loaded := a.registeredMetrics.LoadAndDelete(key); loaded {
+		a.seriesCount.Add(-1)
+	}
+}
+
+func (a *lastValueAccumulator) deleteExpiredSeries(key, val any) {
+	if a.registeredMetrics.CompareAndDelete(key, val) {
+		a.seriesCount.Add(-1)
+	}
+}
+
+func (a *lastValueAccumulator) activeSeries() int64 {
+	return max(a.seriesCount.Load(), 0)
 }
 
 // NewAccumulator returns LastValueAccumulator
@@ -135,7 +161,7 @@ func (a *lastValueAccumulator) accumulateSummary(metric pmetric.Metric, scopeNam
 
 		signature := timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, ip.Attributes(), resourceAttrs)
 		if ip.Flags().NoRecordedValue() {
-			a.registeredMetrics.Delete(signature)
+			a.deleteSeries(signature)
 			continue
 		}
 
@@ -150,7 +176,7 @@ func (a *lastValueAccumulator) accumulateSummary(metric pmetric.Metric, scopeNam
 
 		m := copyMetricMetadata(metric)
 		ip.CopyTo(m.SetEmptySummary().DataPoints().AppendEmpty())
-		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+		a.storeSeries(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 		n++
 	}
 
@@ -164,7 +190,7 @@ func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, scopeName,
 
 		signature := timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, ip.Attributes(), resourceAttrs)
 		if ip.Flags().NoRecordedValue() {
-			a.registeredMetrics.Delete(signature)
+			a.deleteSeries(signature)
 			continue
 		}
 
@@ -172,7 +198,7 @@ func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, scopeName,
 		if !ok {
 			m := copyMetricMetadata(metric)
 			ip.CopyTo(m.SetEmptyGauge().DataPoints().AppendEmpty())
-			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+			a.storeSeries(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 			n++
 			continue
 		}
@@ -185,7 +211,7 @@ func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, scopeName,
 
 		m := copyMetricMetadata(metric)
 		ip.CopyTo(m.SetEmptyGauge().DataPoints().AppendEmpty())
-		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+		a.storeSeries(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 		n++
 	}
 	return n
@@ -214,7 +240,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName, s
 
 		signature := timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, ip.Attributes(), resourceAttrs)
 		if ip.Flags().NoRecordedValue() {
-			a.registeredMetrics.Delete(signature)
+			a.deleteSeries(signature)
 			continue
 		}
 
@@ -224,7 +250,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName, s
 			m.SetEmptySum().SetIsMonotonic(metric.Sum().IsMonotonic())
 			m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			ip.CopyTo(m.Sum().DataPoints().AppendEmpty())
-			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+			a.storeSeries(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 			n++
 			continue
 		}
@@ -250,7 +276,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName, s
 		m.SetEmptySum().SetIsMonotonic(metric.Sum().IsMonotonic())
 		m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		ip.CopyTo(m.Sum().DataPoints().AppendEmpty())
-		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+		a.storeSeries(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 		n++
 	}
 	return n
@@ -266,7 +292,7 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, scopeN
 
 		signature := timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, ip.Attributes(), resourceAttrs) // uniquely identify this time series you are accumulating for
 		if ip.Flags().NoRecordedValue() {
-			a.registeredMetrics.Delete(signature)
+			a.deleteSeries(signature)
 			continue
 		}
 
@@ -276,7 +302,7 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, scopeN
 			m := copyMetricMetadata(metric)
 			ip.CopyTo(m.SetEmptyHistogram().DataPoints().AppendEmpty())
 			m.Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+			a.storeSeries(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 			n++
 			continue
 		}
@@ -319,7 +345,7 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, scopeN
 			// unsupported temporality
 			continue
 		}
-		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+		a.storeSeries(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 		n++
 	}
 	return n
@@ -334,7 +360,7 @@ func (a *lastValueAccumulator) accumulateExponentialHistogram(metric pmetric.Met
 		ip := dps.At(i)
 		signature := timeseriesSignature(scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, metric, ip.Attributes(), resourceAttrs) // uniquely identify this time series you are accumulating for
 		if ip.Flags().NoRecordedValue() {
-			a.registeredMetrics.Delete(signature)
+			a.deleteSeries(signature)
 			continue
 		}
 
@@ -344,7 +370,7 @@ func (a *lastValueAccumulator) accumulateExponentialHistogram(metric pmetric.Met
 			m := copyMetricMetadata(metric)
 			ip.CopyTo(m.SetEmptyExponentialHistogram().DataPoints().AppendEmpty())
 			m.ExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+			a.storeSeries(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 			n++
 			continue
 		}
@@ -389,7 +415,7 @@ func (a *lastValueAccumulator) accumulateExponentialHistogram(metric pmetric.Met
 		}
 
 		// Store the updated metric and advance count
-		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+		a.storeSeries(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 		n++
 	}
 
@@ -412,7 +438,7 @@ func (a *lastValueAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []str
 		v := value.(*accumulatedValue)
 		if expirationTime.After(v.updated) {
 			a.logger.Debug(fmt.Sprintf("metric expired: %s", v.value.Name()))
-			a.registeredMetrics.Delete(key)
+			a.deleteExpiredSeries(key, value)
 			return true
 		}
 
@@ -438,7 +464,7 @@ func (a *lastValueAccumulator) cleanupExpired() {
 		v := value.(*accumulatedValue)
 		if expirationTime.After(v.updated) {
 			a.logger.Debug(fmt.Sprintf("metric expired: %s", v.value.Name()))
-			a.registeredMetrics.Delete(key)
+			a.deleteExpiredSeries(key, value)
 		}
 		return true
 	})

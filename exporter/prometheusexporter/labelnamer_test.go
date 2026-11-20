@@ -34,9 +34,10 @@ func TestCollectorTargetInfoLabelSanitization(t *testing.T) {
 	resourceAttrs.PutStr("app__component", "backend")
 
 	t.Run("preserves multiple underscores in target_info", func(t *testing.T) {
-		c := newCollector(&Config{}, zap.NewNop())
-		metrics, err := c.createTargetInfoMetrics([]pcommon.Map{resourceAttrs})
+		c := newCollector(&Config{}, zap.NewNop(), nil)
+		metrics, dropped, err := c.createTargetInfoMetrics([]pcommon.Map{resourceAttrs})
 		require.NoError(t, err)
+		require.Zero(t, dropped)
 		require.Len(t, metrics, 1)
 
 		desc := metrics[0].Desc().String()
@@ -51,7 +52,7 @@ func TestCollectorMetricLabelSanitization(t *testing.T) {
 	dp.Attributes().PutStr("app__component", "backend")
 
 	t.Run("preserves multiple underscores in metric labels", func(t *testing.T) {
-		c := newCollector(&Config{}, zap.NewNop())
+		c := newCollector(&Config{}, zap.NewNop(), nil)
 		m, err := c.convertMetric(metric, pcommon.NewMap(), "scope", "v1", "", pcommon.NewMap())
 		require.NoError(t, err)
 

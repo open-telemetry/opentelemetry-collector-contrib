@@ -4,6 +4,7 @@
 package prometheusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 
 import (
+	"context"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -22,6 +23,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
@@ -30,6 +32,7 @@ var separatorString = string([]byte{model.SeparatorByte})
 type collector struct {
 	accumulator accumulator
 	logger      *zap.Logger
+	telemetry   *metadata.TelemetryBuilder
 
 	sendTimestamps   bool
 	namespace        string
@@ -47,12 +50,13 @@ type metricFamily struct {
 	mf       *dto.MetricFamily
 }
 
-func newCollector(config *Config, logger *zap.Logger) *collector {
+func newCollector(config *Config, logger *zap.Logger, telemetry *metadata.TelemetryBuilder) *collector {
 	labelNamer := configureLabelNamer(config)
 
 	return &collector{
 		accumulator:      newAccumulator(logger, config.MetricExpiration),
 		logger:           logger,
+		telemetry:        telemetry,
 		namespace:        normalizeNamespace(config.Namespace, labelNamer, logger),
 		sendTimestamps:   config.SendTimestamps,
 		constLabels:      config.ConstLabels,
@@ -504,8 +508,9 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 	return m, nil
 }
 
-func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prometheus.Metric, error) {
+func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prometheus.Metric, int, error) {
 	var lastErr error
+	var dropped int
 
 	// deduplicate resourceAttrs by job and instance
 	deduplicatedResourceAttrs := make([]pcommon.Map, 0, len(resourceAttrs))
@@ -555,7 +560,7 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 			}
 		}
 		if multiErrs != nil {
-			return nil, multiErrs
+			return nil, len(deduplicatedResourceAttrs), multiErrs
 		}
 
 		// Map service.name + service.namespace to job
@@ -587,12 +592,13 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 		)
 		if err != nil {
 			lastErr = err
+			dropped++
 			continue
 		}
 
 		metrics = append(metrics, metric)
 	}
-	return metrics, lastErr
+	return metrics, dropped, lastErr
 }
 
 /*
@@ -603,7 +609,9 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 
 	inMetrics, resourceAttrs, scopeNames, scopeVersions, scopeSchemaURLs, scopeAttributes := c.accumulator.Collect()
 
-	targetMetrics, err := c.createTargetInfoMetrics(resourceAttrs)
+	var droppedSeries int64
+	targetMetrics, targetDropped, err := c.createTargetInfoMetrics(resourceAttrs)
+	droppedSeries += int64(targetDropped)
 	if err != nil {
 		c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", otlptranslator.TargetInfoMetricName, err.Error()))
 	}
@@ -618,12 +626,16 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 
 		m, err := c.convertMetric(pMetric, rAttr, scopeNames[i], scopeVersions[i], scopeSchemaURLs[i], scopeAttributes[i])
 		if err != nil {
+			droppedSeries++
 			c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", pMetric.Name(), err.Error()))
 			continue
 		}
 
 		ch <- m
 		c.logger.Debug(fmt.Sprintf("metric served: %s", m.Desc().String()))
+	}
+	if droppedSeries > 0 && c.telemetry != nil {
+		c.telemetry.ExporterPrometheusScrapeDroppedSeries.Add(context.Background(), droppedSeries, conversionDropAttrOpt)
 	}
 	c.cleanupMetricFamilies()
 }

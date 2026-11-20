@@ -27,6 +27,54 @@ sending_queue:
             metadata_keys: []  # default
 ```
 
+## Internal Telemetry
+
+The following telemetry is emitted by this component.
+
+### otelcol.exporter.prometheus.active_series
+
+Number of active time series currently retained in the accumulator.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {timeseries} | Sum | Int | false | Development |
+
+### otelcol.exporter.prometheus.scrape.dropped_series
+
+Number of time series dropped during /metrics scrapes due to conversion or gather errors.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {timeseries} | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| stage | The scrape stage where time series were dropped. | Str: ``conversion``, ``gather`` | - |
+
+### otelcol.exporter.prometheus.scrape.duration
+
+Duration of /metrics HTTP scrapes.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Histogram | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| outcome | The outcome of the /metrics HTTP scrape request. | Str: ``success``, ``failure`` | - |
+
+### otelcol.exporter.prometheus.scrape.exported_series
+
+Number of time series gathered and exported during /metrics scrapes.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {timeseries} | Sum | Int | true | Development |
+
 ## Feature Gates
 
 This component has the following feature gates:
