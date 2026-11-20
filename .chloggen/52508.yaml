@@ -1,0 +1,6 @@
+change_type: enhancement
+component: exporter/load_balancing
+note: Add `protocol.otlp_http` to send traces, metrics and logs to backends over OTLP/HTTP instead of OTLP/gRPC.
+issues: [52508]
+subtext:
+change_logs: [user]

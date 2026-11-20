@@ -47,3 +47,17 @@ load_balancing/5:
     otlp:
       sending_queue:
         enabled: false
+
+load_balancing/otlp_http:
+  routing_key: attributes
+  routing_attributes: [service.name]
+  protocol:
+    otlp_http:
+      metrics_endpoint: http://placeholder:8429/opentelemetry/v1/metrics
+      encoding: proto
+      compression: gzip
+      timeout: 30s
+  resolver:
+    dns:
+      hostname: vmagent-headless.monitoring.svc
+      port: "8429"
