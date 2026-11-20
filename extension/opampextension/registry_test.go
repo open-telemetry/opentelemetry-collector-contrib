@@ -267,22 +267,42 @@ func TestCustomCapability_Unregister(t *testing.T) {
 	t.Run("Repeated unregister is a no-op and does not panic", func(t *testing.T) {
 		capabilityString := "io.opentelemetry.teapot"
 
-		client := mockCustomCapabilityClient{}
+		setCapsCalls := 0
+		client := mockCustomCapabilityClient{
+			setCustomCapabilities: func(_ *protobufs.CustomCapabilities) error {
+				setCapsCalls++
+				return nil
+			},
+		}
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
 		sender, err := registry.Register(capabilityString)
 		require.NoError(t, err)
 		require.NotNil(t, sender)
 
-		// Calling Unregister multiple times should be safe and idempotent.
-		require.NotPanics(t, func() {
-			sender.Unregister()
-			sender.Unregister()
-		})
+		// Record the call count after Register (1 call expected).
+		callsAfterRegister := setCapsCalls
+
+		// First Unregister: should trigger a SetCustomCapabilities call.
+		require.NotPanics(t, func() { sender.Unregister() })
+		callsAfterFirstUnregister := setCapsCalls
+
+		// Second Unregister: must be a no-op — no additional SetCustomCapabilities call.
+		require.NotPanics(t, func() { sender.Unregister() })
+		require.Equal(t, callsAfterFirstUnregister, setCapsCalls,
+			"second Unregister must not trigger SetCustomCapabilities again")
+		_ = callsAfterRegister
 	})
 
-	t.Run("Repeated unregister with multiple handlers does not panic", func(t *testing.T) {
+	t.Run("Repeated unregister with multiple handlers does not panic and sender2 still works", func(t *testing.T) {
 		capabilityString := "io.opentelemetry.teapot"
+		messageType := "steep"
+		messageBytes := []byte("blackTea")
+		customMessage := &protobufs.CustomMessage{
+			Capability: capabilityString,
+			Type:       messageType,
+			Data:       messageBytes,
+		}
 
 		client := mockCustomCapabilityClient{}
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
@@ -295,9 +315,19 @@ func TestCustomCapability_Unregister(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, sender2)
 
+		// Double-unregister sender1 — must not panic.
 		require.NotPanics(t, func() {
 			sender1.Unregister()
 			sender1.Unregister()
+		})
+
+		// sender2 must still receive messages after sender1 was unregistered twice.
+		registry.ProcessMessage(customMessage)
+		require.Equal(t, customMessage, <-sender2.Message(),
+			"sender2 must still receive messages after sender1 is unregistered twice")
+
+		// Fully clean up sender2.
+		require.NotPanics(t, func() {
 			sender2.Unregister()
 			sender2.Unregister()
 		})
