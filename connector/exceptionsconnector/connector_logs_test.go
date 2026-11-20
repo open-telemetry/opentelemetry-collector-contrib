@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -151,6 +152,89 @@ func TestConnectorLogsConsumeLogsFiltersNonExceptions(t *testing.T) {
 	tv, ok := outRecords.At(0).Attributes().Get(exceptionTypeKey)
 	require.True(t, ok)
 	assert.Equal(t, "java.lang.NullPointerException", tv.Str())
+}
+
+func TestConnectorLogConsumeTracesNonStringDimensions(t *testing.T) {
+	lsink := new(consumertest.LogsSink)
+	defaultVal := "fallback"
+	cfg := &Config{
+		Dimensions: []Dimension{
+			{Name: "int_dim"},
+			{Name: "bool_dim"},
+			{Name: "double_dim"},
+			{Name: "str_dim"},
+			{Name: "event_int_dim"},
+			{Name: "resource_bool_dim"},
+			{Name: "default_dim", Default: &defaultVal},
+		},
+	}
+	c := newLogsConnector(zaptest.NewLogger(t), cfg)
+	c.logsConsumer = lsink
+
+	traces := ptrace.NewTraces()
+	rspans := traces.ResourceSpans().AppendEmpty()
+	rspans.Resource().Attributes().PutStr(serviceNameKey, "service-a")
+	rspans.Resource().Attributes().PutBool("resource_bool_dim", true)
+
+	ils := rspans.ScopeSpans().AppendEmpty()
+	span := ils.Spans().AppendEmpty()
+	span.SetName("test-span")
+	span.Attributes().PutInt("int_dim", 500)
+	span.Attributes().PutBool("bool_dim", true)
+	span.Attributes().PutDouble("double_dim", 3.14)
+	span.Attributes().PutStr("str_dim", "hello")
+
+	exc := span.Events().AppendEmpty()
+	exc.SetName(eventNameExc)
+	exc.Attributes().PutStr(exceptionTypeKey, "java.lang.IllegalStateException")
+	exc.Attributes().PutStr(exceptionMessageKey, "boom")
+	exc.Attributes().PutInt("event_int_dim", 42)
+
+	require.NoError(t, c.ConsumeTraces(t.Context(), traces))
+
+	logs := lsink.AllLogs()
+	require.Len(t, logs, 1)
+	require.Equal(t, 1, logs[0].ResourceLogs().Len())
+	require.Equal(t, 1, logs[0].ResourceLogs().At(0).ScopeLogs().Len())
+	require.Equal(t, 1, logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+
+	lr := logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	attrs := lr.Attributes()
+
+	val, ok := attrs.Get("int_dim")
+	require.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeInt, val.Type())
+	assert.Equal(t, int64(500), val.Int())
+
+	val, ok = attrs.Get("bool_dim")
+	require.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeBool, val.Type())
+	assert.True(t, val.Bool())
+
+	val, ok = attrs.Get("double_dim")
+	require.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeDouble, val.Type())
+	assert.Equal(t, 3.14, val.Double())
+
+	val, ok = attrs.Get("str_dim")
+	require.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeStr, val.Type())
+	assert.Equal(t, "hello", val.Str())
+
+	val, ok = attrs.Get("event_int_dim")
+	require.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeInt, val.Type())
+	assert.Equal(t, int64(42), val.Int())
+
+	val, ok = attrs.Get("resource_bool_dim")
+	require.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeBool, val.Type())
+	assert.True(t, val.Bool())
+
+	val, ok = attrs.Get("default_dim")
+	require.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeStr, val.Type())
+	assert.Equal(t, "fallback", val.Str())
 }
 
 func newTestLogsConnector(lcon consumer.Logs, logger *zap.Logger) *logsConnector {
