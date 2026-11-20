@@ -5,6 +5,7 @@ package batch // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis/types"
@@ -91,7 +92,7 @@ func (b *Batch) AddRecord(raw []byte, key string) error {
 	}
 
 	if l := len(record); l == 0 || l > b.maxRecordSize {
-		return ErrRecordLength
+		return fmt.Errorf("%w: encoded_size=%d bytes, max_record_size=%d bytes", ErrRecordLength, l, b.maxRecordSize)
 	}
 
 	b.records = append(b.records, types.PutRecordsRequestEntry{

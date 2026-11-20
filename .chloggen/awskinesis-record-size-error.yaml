@@ -1,0 +1,4 @@
+change_type: enhancement
+component: exporter/awskinesis
+note: Include the encoded record size and effective maximum record size in record length errors.
+issues: [53334]
