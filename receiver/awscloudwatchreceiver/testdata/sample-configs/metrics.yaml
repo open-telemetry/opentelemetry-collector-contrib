@@ -13,6 +13,9 @@ receivers:
           - namespace: AWS/EC2
             metric_names: [StatusCheckFailed_Instance]
             # no stats → Summary of Sum, SampleCount, Minimum, Maximum
+          - namespace: AWS/ApplicationELB
+            metric_names: [RequestCount]
+            dimensions: [LoadBalancer] # only series with exactly this dimension, not LoadBalancer + TargetGroup
           - namespace: AWS/RDS
             # no metric_names → all metrics in the namespace
         limit: 50
