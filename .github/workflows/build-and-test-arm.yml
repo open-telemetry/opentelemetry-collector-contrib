@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   setup-environment:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     if: ${{ github.actor != 'dependabot[bot]' && (!contains(github.event.pull_request.labels.*.name, 'Skip ARM') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -56,7 +56,7 @@ jobs:
           - cmd-0
           - other
     timeout-minutes: 30
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -116,7 +116,7 @@ jobs:
           fi
   flakytests-generate-issues:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [arm-unittest-matrix]
     permissions:
       issues: write

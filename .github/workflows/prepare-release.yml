@@ -29,7 +29,7 @@ jobs:
   prepare-release:
     permissions:
       contents: write # required for pushing changes in release-prepare-release.sh
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     env:
       # Distinct spellings of the same proxy joined by `|` make Go retry any fetch error. Keep in sync with Makefile.Common.
       GOPROXY: "https://proxy.golang.org|https://proxy.golang.org/|https://proxy.golang.org:443,direct"
