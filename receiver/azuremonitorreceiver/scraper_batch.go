@@ -30,8 +30,8 @@ import (
 type azureType struct {
 	name        *string
 	resourceIDs []string
-	// resourceIDsByRegion groups the IDs of resourceIDs by location. A regional batch endpoint must only be asked about the
-	// resources of its own region. Resources without a location are not part of it.
+	// resourceIDsByRegion groups the IDs of resourceIDs by location. A regional batch endpoint must only be asked
+	// about the resources of its own region. Resources without a location are not part of it.
 	resourceIDsByRegion       map[string][]string
 	metricsByCompositeKey     map[metricsCompositeKey]*azureResourceMetrics
 	metricsDefinitionsUpdated time.Time
