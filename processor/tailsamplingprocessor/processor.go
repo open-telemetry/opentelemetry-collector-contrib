@@ -706,6 +706,20 @@ func (tsp *tailSamplingSpanProcessor) runBatchPolicies(ctx context.Context, cand
 	}
 }
 
+// takeAll takes the spans of every trace ID from tail storage, in one call
+// when the storage implements BatchTailStorage and one Take per ID otherwise.
+func (tsp *tailSamplingSpanProcessor) takeAll(ids []pcommon.TraceID) ([]ptrace.Traces, []error) {
+	if bs, ok := tsp.tailStorage.(tailstorageextension.BatchTailStorage); ok {
+		return bs.TakeMany(ids)
+	}
+	out := make([]ptrace.Traces, len(ids))
+	errs := make([]error, len(ids))
+	for i, id := range ids {
+		out[i], errs[i] = tsp.tailStorage.Take(id)
+	}
+	return out, errs
+}
+
 // samplingPolicyOnTick takes the next batch and process all traces in that batch. Returns if there are more batches in the batcher.
 func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	tsp.logger.Debug("Sampling Policy Evaluation ticked")
@@ -728,6 +742,11 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 	// instead: finalize any still-pending trace as implicit not sampled
 	// without policy evaluation, so no candidate is collected for it.
 	candidates := make([]tickCandidate, 0, batchLen)
+	type pendingTake struct {
+		id    pcommon.TraceID
+		trace *TraceData
+	}
+	pending := make([]pendingTake, 0, batchLen)
 	for id := range batch {
 		trace, ok := tsp.idToTrace[id]
 		if !ok {
@@ -758,27 +777,35 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() bool {
 			continue
 		}
 
-		allSpans, err := tsp.tailStorage.Take(id)
-		if err != nil {
+		pending = append(pending, pendingTake{id: id, trace: trace})
+	}
+
+	ids := make([]pcommon.TraceID, len(pending))
+	for i, p := range pending {
+		ids[i] = p.id
+	}
+	allSpans, takeErrs := tsp.takeAll(ids)
+	for i, p := range pending {
+		if err := takeErrs[i]; err != nil {
 			tsp.logger.Error("Failed to retrieve trace from tail storage", zap.Error(err))
 			// Take failures are terminal for this trace: storage may already have
 			// deleted or otherwise invalidated the spilled batches. Keep going
 			// without eviction would leave idToTrace / deleteTraceQueue stranded.
-			tsp.dropTrace(id, time.Now())
+			tsp.dropTrace(p.id, time.Now())
 			continue
 		}
-		if allSpans.ResourceSpans().Len() == 0 {
+		if allSpans[i].ResourceSpans().Len() == 0 {
 			metrics.idNotFoundOnMapCount++
 			continue
 		}
 
 		candidates = append(candidates, tickCandidate{
-			id:    id,
-			trace: trace,
+			id:    p.id,
+			trace: p.trace,
 			data: &samplingpolicy.TraceData{
-				SpanCount:       trace.SpanCount,
-				SizeBytes:       trace.SizeBytes,
-				ReceivedBatches: allSpans,
+				SpanCount:       p.trace.SpanCount,
+				SizeBytes:       p.trace.SizeBytes,
+				ReceivedBatches: allSpans[i],
 			},
 		})
 	}
@@ -1017,13 +1044,17 @@ func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceI
 	return samplingpolicy.Pending, "", pkgsampling.AlwaysSampleThreshold
 }
 
-// splitResourceSpansByTrace moves spans from rss into one ResourceSpans per
-// trace ID in one pass, instead of grouping into a slice first. The resource,
-// scopes, and their schema URLs are copied, since several traces may share them.
-//
-// We walk scopes in order and never go back, so lastScope is enough to open
+// splitResourceSpansByTrace moves rss into one exclusively owned ResourceSpans
+// per trace ID, copying the resource and scopes only when traces share them.
+// rss is consumed. Scopes are walked in order, so lastScope is enough to open
 // dest scopes in first-seen order.
 func splitResourceSpansByTrace(rss ptrace.ResourceSpans) []traceBatch {
+	if batch, ok := moveSingleTrace(rss); ok {
+		return []traceBatch{batch}
+	}
+
+	// Past this point rss is only consumed if it holds a span, because the
+	// resource is moved when the first builder is created.
 	srcScopes := rss.ScopeSpans()
 	type builder struct {
 		rs        ptrace.ResourceSpans
@@ -1033,24 +1064,58 @@ func splitResourceSpansByTrace(rss ptrace.ResourceSpans) []traceBatch {
 		hasRoot   bool
 	}
 	builders := make(map[pcommon.TraceID]*builder)
+	// resourceOwner is the first builder, which received the moved resource.
+	var resourceOwner *builder
+	builderFor := func(id pcommon.TraceID) *builder {
+		b, ok := builders[id]
+		if ok {
+			return b
+		}
+		rs := ptrace.NewResourceSpans()
+		if resourceOwner == nil {
+			rss.Resource().MoveTo(rs.Resource())
+		} else {
+			resourceOwner.rs.Resource().CopyTo(rs.Resource())
+		}
+		rs.SetSchemaUrl(rss.SchemaUrl())
+		b = &builder{rs: rs, lastScope: -1}
+		builders[id] = b
+		if resourceOwner == nil {
+			resourceOwner = b
+		}
+		return b
+	}
 
 	for j := 0; j < srcScopes.Len(); j++ {
 		srcScope := srcScopes.At(j)
 		spans := srcScope.Spans()
+		if spans.Len() == 0 {
+			continue
+		}
+
+		if id, hasRoot, ok := singleTraceSpans(spans); ok {
+			b := builderFor(id)
+			b.count += int64(spans.Len())
+			srcScope.MoveTo(b.rs.ScopeSpans().AppendEmpty())
+			b.lastScope = j
+			b.hasRoot = b.hasRoot || hasRoot
+			continue
+		}
+
+		// scopeOwner is the first dest of this scope, which received the moved scope.
+		var scopeOwner ptrace.ScopeSpans
+		scopeOwned := false
 		for k := 0; k < spans.Len(); k++ {
 			span := spans.At(k)
-			id := span.TraceID()
-			b, ok := builders[id]
-			if !ok {
-				rs := ptrace.NewResourceSpans()
-				rss.Resource().CopyTo(rs.Resource())
-				rs.SetSchemaUrl(rss.SchemaUrl())
-				b = &builder{rs: rs, lastScope: -1}
-				builders[id] = b
-			}
+			b := builderFor(span.TraceID())
 			if b.lastScope != j {
 				dest := b.rs.ScopeSpans().AppendEmpty()
-				srcScope.Scope().CopyTo(dest.Scope())
+				if scopeOwned {
+					scopeOwner.Scope().CopyTo(dest.Scope())
+				} else {
+					srcScope.Scope().MoveTo(dest.Scope())
+					scopeOwner, scopeOwned = dest, true
+				}
 				dest.SetSchemaUrl(srcScope.SchemaUrl())
 				b.destScope = dest
 				b.lastScope = j
@@ -1074,6 +1139,53 @@ func splitResourceSpansByTrace(rss ptrace.ResourceSpans) []traceBatch {
 		})
 	}
 	return batches
+}
+
+// moveSingleTrace moves rss into a new ResourceSpans if all its spans belong
+// to one trace and no scope is empty, so that the result equals the general
+// split. It reports false and leaves rss untouched otherwise.
+func moveSingleTrace(rss ptrace.ResourceSpans) (traceBatch, bool) {
+	scopes := rss.ScopeSpans()
+	var (
+		id      pcommon.TraceID
+		count   int64
+		hasRoot bool
+	)
+	for j := 0; j < scopes.Len(); j++ {
+		spans := scopes.At(j).Spans()
+		if spans.Len() == 0 {
+			return traceBatch{}, false
+		}
+		scopeID, scopeHasRoot, ok := singleTraceSpans(spans)
+		if !ok || (j > 0 && scopeID != id) {
+			return traceBatch{}, false
+		}
+		id = scopeID
+		hasRoot = hasRoot || scopeHasRoot
+		count += int64(spans.Len())
+	}
+	if count == 0 {
+		return traceBatch{}, false
+	}
+	rs := ptrace.NewResourceSpans()
+	rss.MoveTo(rs)
+	return traceBatch{id: id, hasRoot: hasRoot, rss: rs, spanCount: count}, true
+}
+
+// singleTraceSpans reports whether all of the (non-empty) spans belong to one
+// trace, and returns that trace ID and whether one of the spans is a root.
+func singleTraceSpans(spans ptrace.SpanSlice) (id pcommon.TraceID, hasRoot, ok bool) {
+	id = spans.At(0).TraceID()
+	for k := 0; k < spans.Len(); k++ {
+		span := spans.At(k)
+		if span.TraceID() != id {
+			return pcommon.TraceID{}, false, false
+		}
+		if span.ParentSpanID().IsEmpty() {
+			hasRoot = true
+		}
+	}
+	return id, hasRoot, true
 }
 
 func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrace.ResourceSpans, spanCount int64, containsRootSpan bool) {

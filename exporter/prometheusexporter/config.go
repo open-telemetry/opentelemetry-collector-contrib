@@ -23,6 +23,8 @@ type Config struct {
 	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
 
 	// QueueBatchConfig defines the queue configuration.
+	//
+	// Deprecated: [v0.166.0] Use of sending_queue is deprecated and will be removed in a future release. The Prometheus exporter is pull-based and does not support queuing.
 	QueueBatchConfig configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// Namespace if set, exports metrics under the provided value.
@@ -53,11 +55,10 @@ type Config struct {
 
 	// AddMetricSuffixes controls whether suffixes are added to metric names. Defaults to true.
 	//
-	// Deprecated: Use TranslationStrategy instead. This setting is ignored when TranslationStrategy is explicitly set.
+	// Deprecated: This setting is ignored and TranslationStrategy is always used.
 	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
 
 	// TranslationStrategy controls how OTLP metric and attribute names are translated into Prometheus metric and label names.
-	// When set, this takes precedence over AddMetricSuffixes.
 	TranslationStrategy translationStrategy `mapstructure:"translation_strategy"`
 }
 
@@ -68,6 +69,11 @@ func (cfg *Config) Validate() error {
 	//nolint:staticcheck // check deprecated fields
 	if cfg.ResourceConstantLabels.Enabled || cfg.ResourceConstantLabels.ExcludeServiceAttributes {
 		return errors.New("enabled and exclude_service_attributes are not supported under resource_constant_labels; use included and excluded instead")
+	}
+	if metadata.ExporterPrometheusDisableSendingQueueFeatureGate.IsEnabled() {
+		if cfg.QueueBatchConfig.HasValue() {
+			return errors.New("sending_queue is disabled by the exporter.prometheus.DisableSendingQueue feature gate; the Prometheus exporter is pull-based and does not support queuing")
+		}
 	}
 	if metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate.IsEnabled() {
 		if !cfg.ResourceToTelemetrySettings.IsEmpty() {

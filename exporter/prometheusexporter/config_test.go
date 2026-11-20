@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -45,8 +46,8 @@ func TestLoadConfig(t *testing.T) {
 					Config: configtls.Config{
 						CertFile: "certs/server.crt",
 						KeyFile:  "certs/server.key",
-						CAFile:   "certs/ca.crt",
 					},
+					ClientCAFile: "certs/ca.crt",
 				})
 
 				return &Config{
@@ -93,18 +94,40 @@ func TestLoadConfig(t *testing.T) {
 func TestConfigValidate(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.ResourceConstantLabels = resourcetotelemetry.Settings{Included: []string{"foo"}}
-	assert.NoError(t, cfg.Validate())
+	require.NoError(t, cfg.Validate())
 
 	invalidCfg := createDefaultConfig().(*Config)
 	invalidCfg.ResourceConstantLabels.Enabled = true //nolint:staticcheck // testing deprecated field rejection
-	assert.Error(t, invalidCfg.Validate())
+	require.ErrorContains(t, invalidCfg.Validate(), "enabled and exclude_service_attributes are not supported under resource_constant_labels")
 
-	cfg.ResourceToTelemetrySettings.Enabled = true //nolint:staticcheck // ignore deprecated field
-	assert.Error(t, cfg.Validate())
+	cfg = createDefaultConfig().(*Config)
+	cfg.ResourceToTelemetrySettings = resourcetotelemetry.Settings{Included: []string{"*"}}
+	require.ErrorContains(t, cfg.Validate(), "resource_to_telemetry_conversion is disabled by the exporter.prometheus.DisableResourceToTelemetryConversion feature gate")
 
-	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate, true)()
-	assert.Error(t, cfg.Validate())
+	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusDisableResourceToTelemetryConversionFeatureGate, false)()
+	require.NoError(t, cfg.Validate())
+
+	cfg.ResourceConstantLabels = resourcetotelemetry.Settings{Included: []string{"foo"}}
+	require.ErrorContains(t, cfg.Validate(), "cannot configure both resource_to_telemetry_conversion and resource_constant_labels")
 
 	cfg.ResourceToTelemetrySettings = resourcetotelemetry.Settings{}
+	require.NoError(t, cfg.Validate())
+}
+
+func TestConfigValidate_SendingQueue(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
 	assert.NoError(t, cfg.Validate())
+
+	// Setting sending_queue explicitly should be valid when the feature gate is disabled
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	cfg.QueueBatchConfig = configoptional.Some(queueCfg)
+	assert.NoError(t, cfg.Validate())
+
+	// Setting sending_queue explicitly must fail when the feature gate is enabled
+	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusDisableSendingQueueFeatureGate, true)()
+	assert.ErrorContains(t, cfg.Validate(), "sending_queue is disabled by the exporter.prometheus.DisableSendingQueue feature gate")
+
+	// Default config (HasValue() == false) must remain valid even when the feature gate is enabled
+	defaultCfg := createDefaultConfig().(*Config)
+	assert.NoError(t, defaultCfg.Validate())
 }

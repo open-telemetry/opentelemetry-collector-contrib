@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"code.cloudfoundry.org/go-loggregator"
-	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
+	"code.cloudfoundry.org/go-loggregator/v10"
+	"code.cloudfoundry.org/go-loggregator/v10/rpc/loggregator_v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"

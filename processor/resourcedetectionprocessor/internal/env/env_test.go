@@ -285,6 +285,14 @@ func TestInitializeAttributeMap(t *testing.T) {
 			encoded:            `single=key`,
 			expectedAttributes: map[string]any{"single": "key"},
 		}, {
+			name:               "literal plus in value",
+			encoded:            `build.version=1.0+abc`,
+			expectedAttributes: map[string]any{"build.version": "1.0+abc"},
+		}, {
+			name:               "percent-encoded plus and space in value",
+			encoded:            `os.description=a%2Bb,cluster.name=a%20b`,
+			expectedAttributes: map[string]any{"os.description": "a+b", "cluster.name": "a b"},
+		}, {
 			name:          "invalid url escape sequence in value",
 			encoded:       `invalid=url-%3-encoding`,
 			expectedError: `invalid resource format in attribute: "invalid=url-%3-encoding", err: invalid URL escape "%3-"`,

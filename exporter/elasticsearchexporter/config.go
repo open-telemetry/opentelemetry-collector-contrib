@@ -241,8 +241,8 @@ type RetrySettings struct {
 	// RetryOnStatus configures the status codes that trigger request level retries.
 	RetryOnStatus []int `mapstructure:"retry_on_status"`
 
-	// RetryOnDocumentStatus configures the status codes that trigger document level retries.
-	// If unset, RetryOnDocumentStatus defaults to RetryOnStatus.
+	// RetryOnDocumentStatus configures the status codes that trigger document level retries
+	// for failed documents in a successful bulk HTTP response.
 	RetryOnDocumentStatus []int `mapstructure:"retry_on_document_status"`
 
 	// prevent unkeyed literal initialization
@@ -312,10 +312,6 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 
 	if err := conf.Unmarshal(cfg); err != nil {
 		return err
-	}
-
-	if !conf.IsSet("retry::retry_on_document_status") {
-		cfg.Retry.RetryOnDocumentStatus = cfg.Retry.RetryOnStatus
 	}
 
 	return nil

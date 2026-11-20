@@ -30,7 +30,7 @@ properties:
     description: Upload segments to AWS X-Ray through a proxy.
     type: string
   proxy_password:
-    type: string
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
   proxy_user:
     type: string
   region_id:

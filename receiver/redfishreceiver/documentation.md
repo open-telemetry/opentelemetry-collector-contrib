@@ -193,7 +193,7 @@ Measures the reading of a chassis temperature.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| Cel | Gauge | Int | Development |
+| Cel | Gauge | Double | Development |
 
 #### Attributes
 

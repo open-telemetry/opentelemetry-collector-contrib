@@ -51,7 +51,7 @@ func (cfg *Config) Validate() error {
 
 func createDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultControllerConfig()
-	cfg.CollectionInterval = 10 * time.Second
+	cfg.CollectionInterval = 60 * time.Second
 	return &Config{
 		Config: sqlquery.Config{
 			ControllerConfig: cfg,

@@ -30,16 +30,16 @@ import (
 	pb "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/yanggrpcreceiver/internal/proto/generated/proto"
 )
 
-// SampleTelemetryData represents a sample telemetry message for testing
-type SampleTelemetryData struct {
+// sampleTelemetryData represents a sample telemetry message for testing
+type sampleTelemetryData struct {
 	NodeID       string               `json:"node_id"`
 	Subscription string               `json:"subscription"`
 	EncodingPath string               `json:"encoding_path"`
-	Interfaces   []InterfaceTelemetry `json:"interfaces"`
+	Interfaces   []interfaceTelemetry `json:"interfaces"`
 }
 
-// InterfaceTelemetry represents telemetry data for a single interface
-type InterfaceTelemetry struct {
+// interfaceTelemetry represents telemetry data for a single interface
+type interfaceTelemetry struct {
 	Name       string            `json:"name"`
 	Statistics map[string]uint64 `json:"statistics"`
 }
@@ -98,7 +98,7 @@ func TestSampleTelemetryData(t *testing.T) {
 }
 
 // getSampleTelemetryData returns sample telemetry data (loads from file if available, otherwise uses built-in data)
-func getSampleTelemetryData(t *testing.T) SampleTelemetryData {
+func getSampleTelemetryData(t *testing.T) sampleTelemetryData {
 	// Try to load from sample_telemetry.json file first
 	if data, err := loadSampleFromFile(filepath.Join("internal", "testdata", "sample_telemetry.json")); err == nil {
 		t.Logf("Loaded sample telemetry data from file: %d interfaces", len(data.Interfaces))
@@ -107,11 +107,11 @@ func getSampleTelemetryData(t *testing.T) SampleTelemetryData {
 
 	// Use built-in realistic sample data based on production observations
 	t.Logf("Using built-in sample telemetry data")
-	return SampleTelemetryData{
+	return sampleTelemetryData{
 		NodeID:       "PROD-SWITCH-01",
 		Subscription: "interface-stats-production",
 		EncodingPath: "Cisco-IOS-XE-interfaces-oper:interfaces/interface/statistics",
-		Interfaces: []InterfaceTelemetry{
+		Interfaces: []interfaceTelemetry{
 			{
 				Name: "GigabitEthernet1/0/1",
 				Statistics: map[string]uint64{
@@ -186,8 +186,8 @@ func getSampleTelemetryData(t *testing.T) SampleTelemetryData {
 }
 
 // loadSampleFromFile loads sample telemetry data from a JSON file
-func loadSampleFromFile(filename string) (SampleTelemetryData, error) {
-	var data SampleTelemetryData
+func loadSampleFromFile(filename string) (sampleTelemetryData, error) {
+	var data sampleTelemetryData
 
 	file, err := os.Open(filename)
 	if err != nil {
@@ -205,7 +205,7 @@ func loadSampleFromFile(filename string) (SampleTelemetryData, error) {
 }
 
 // sendInterfaceTelemetryData sends telemetry data for a specific interface
-func sendInterfaceTelemetryData(conn *grpc.ClientConn, nodeID, subscription, encodingPath string, interfaceData InterfaceTelemetry) error {
+func sendInterfaceTelemetryData(conn *grpc.ClientConn, nodeID, subscription, encodingPath string, interfaceData interfaceTelemetry) error {
 	client := pb.NewGRPCMdtDialoutClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -282,7 +282,7 @@ func sendInterfaceTelemetryData(conn *grpc.ClientConn, nodeID, subscription, enc
 }
 
 // analyzeResults analyzes the captured metrics and provides detailed interface analysis
-func analyzeResults(t *testing.T, consumer *metricsCapture, sampleData SampleTelemetryData) {
+func analyzeResults(t *testing.T, consumer *metricsCapture, sampleData sampleTelemetryData) {
 	metrics := consumer.GetMetrics()
 	if len(metrics) == 0 {
 		t.Fatal("No metrics were captured")
