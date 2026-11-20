@@ -43,6 +43,7 @@ type providerContainer struct {
 	verifierCfg *oidc.Config // stored for recreating verifier on reload
 	client      *http.Client
 	transport   *http.Transport
+	remoteKeys  *expiringRemoteKeySet
 }
 
 func (pc *providerContainer) Verify(ctx context.Context, raw string) (*oidc.IDToken, error) {
@@ -130,18 +131,29 @@ func (e *oidcExtension) Start(ctx context.Context, _ component.Host) error {
 		errs = multierr.Append(errs, e.processProviderConfig(ctx, providerCfg))
 	}
 	if errs != nil {
+		e.stopRemoteKeySets()
 		return fmt.Errorf("failed to get configuration from at least one configured auth server: %w", errs)
 	}
 
 	// Start file watchers for providers with JWKS files
 	if err := e.startFileWatchers(ctx); err != nil {
+		e.stopRemoteKeySets()
 		return fmt.Errorf("failed to start file watchers: %w", err)
 	}
 
 	return nil
 }
 
+func (e *oidcExtension) stopRemoteKeySets() {
+	for _, p := range e.providerContainers {
+		if p.remoteKeys != nil {
+			p.remoteKeys.stop()
+		}
+	}
+}
+
 func (e *oidcExtension) Shutdown(context.Context) error {
+	e.stopRemoteKeySets()
 	// Signal file watchers to stop
 	e.shutdownOnce.Do(func() {
 		if e.shutdownCH != nil {
@@ -332,6 +344,16 @@ func (e *oidcExtension) processProviderConfig(ctx context.Context, p ProviderCfg
 		Transport: pc.transport,
 	}
 	oidcContext := oidc.ClientContext(ctx, pc.client)
+	if p.JWKSURL != "" {
+		for _, alg := range allSupportedAlgorithms {
+			vCfg.SupportedSigningAlgs = append(vCfg.SupportedSigningAlgs, string(alg))
+		}
+		pc.remoteKeys = newExpiringRemoteKeySet(ctx, p.JWKSURL, pc.client, e.logger)
+		pc.verifier = oidc.NewVerifier(p.IssuerURL, pc.remoteKeys, vCfg)
+		e.providerContainers[p.IssuerURL] = &pc
+		return nil
+	}
+
 	pc.provider, err = oidc.NewProvider(oidcContext, p.IssuerURL)
 	if err != nil {
 		pc.transport.CloseIdleConnections()
