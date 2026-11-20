@@ -1139,6 +1139,20 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], ParseJSON("{ \"timestamp\": 1790259447635 }", true))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutInt("timestamp", 1790259447635)
+			},
+		},
+		{
+			statement: `set(attributes["test"], ParseJSON("{ \"timestamp\": 1790259447635 }", parse_ints=true))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutInt("timestamp", 1790259447635)
+			},
+		},
+		{
 			statement: `set(attributes["test"], ParseKeyValue("k1=v1 k2=v2"))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")

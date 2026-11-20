@@ -20,6 +20,7 @@ func Test_ParseJSON(t *testing.T) {
 		target    ottl.StringGetter[any]
 		wantMap   func(pcommon.Map)
 		wantSlice func(pcommon.Slice)
+		parseInts bool
 	}{
 		{
 			name: "handle string",
@@ -137,6 +138,29 @@ func Test_ParseJSON(t *testing.T) {
 			},
 		},
 		{
+			name: "handle timestamp as float by default",
+			target: ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return `{"test":1790259447635}`, nil
+				},
+			},
+			wantMap: func(expectedMap pcommon.Map) {
+				expectedMap.PutDouble("test", 1790259447635) // This will be parsed as `1.790259447635e+12`
+			},
+		},
+		{
+			name:      "handle timestamp as int when parseInts is enabled",
+			parseInts: true,
+			target: ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return `{"test":1790259447635}`, nil
+				},
+			},
+			wantMap: func(expectedMap pcommon.Map) {
+				expectedMap.PutInt("test", 1790259447635)
+			},
+		},
+		{
 			name: "complex",
 			target: ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
@@ -159,10 +183,25 @@ func Test_ParseJSON(t *testing.T) {
 				expectedMap.PutEmpty("test6")
 			},
 		},
+		{
+			name:      "handle numbers when parseInts is enabled",
+			parseInts: true,
+			target: ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return `{"decimal":1.5,"integer":2,"exponent":1e3,"zero":0}`, nil
+				},
+			},
+			wantMap: func(expectedMap pcommon.Map) {
+				expectedMap.PutDouble("decimal", 1.5)
+				expectedMap.PutInt("integer", 2)
+				expectedMap.PutDouble("exponent", 1000)
+				expectedMap.PutInt("zero", 0)
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := parseJSON(tt.target)
+			exprFunc := parseJSON(tt.target, tt.parseInts)
 			result, err := exprFunc(t.Context(), nil)
 			require.NoError(t, err)
 
@@ -188,13 +227,34 @@ func Test_ParseJSON(t *testing.T) {
 	}
 }
 
+func Test_ParseJSON_TrailingData(t *testing.T) {
+	for _, input := range []string{
+		`{"a":1}{"b":2}`,
+		`{"a":1} [1,2,3]`,
+		`{} {}`,
+	} {
+		t.Run(input, func(t *testing.T) {
+			target := ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return input, nil
+				},
+			}
+
+			for _, parseInts := range []bool{true, false} {
+				_, err := parseJSON(target, parseInts)(t.Context(), nil)
+				assert.Error(t, err, "expected error for input: %s with parseInts=%v", input, parseInts)
+			}
+		})
+	}
+}
+
 func Test_ParseJSON_Error(t *testing.T) {
 	target := &ottl.StandardStringGetter[any]{
 		Getter: func(context.Context, any) (any, error) {
 			return 1, nil
 		},
 	}
-	exprFunc := parseJSON[any](target)
+	exprFunc := parseJSON[any](target, false)
 	_, err := exprFunc(t.Context(), nil)
 	assert.Error(t, err)
 }
@@ -242,7 +302,8 @@ const benchData = `{
 		}
 	],
 	"greeting": "Hello, Vincent Knox! You have 1 unread messages.",
-	"favoriteFruit": "apple"
+	"favoriteFruit": "apple",
+	"timestamp": 1790259447635
 }`
 
 func BenchmarkParseJSON(b *testing.B) {
@@ -254,7 +315,22 @@ func BenchmarkParseJSON(b *testing.B) {
 			Getter: func(context.Context, any) (any, error) {
 				return benchData, nil
 			},
-		})(ctx, nil); err != nil {
+		}, false)(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkParseJSON_ParseInts(b *testing.B) {
+	ctx := b.Context()
+	b.ReportAllocs()
+
+	for b.Loop() {
+		if _, err := parseJSON(ottl.StandardStringGetter[any]{
+			Getter: func(context.Context, any) (any, error) {
+				return benchData, nil
+			},
+		}, true)(ctx, nil); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -271,7 +347,7 @@ func Test_ParseJSONFactory(t *testing.T) {
 		args := factory.CreateDefaultArguments()
 
 		assert.IsType(t, &parseJSONArguments[any]{}, args)
-		assertArgumentFieldNames(t, args, []string{"Target"})
+		assertArgumentFieldNames(t, args, []string{"Target", "ParseInts"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
