@@ -1,3 +1,7 @@
+$defs:
+  translation_strategy:
+    description: TranslationStrategy controls how OTLP metric and attribute names are translated into Prometheus metric and label names.
+    type: string
 description: Config defines configuration for Prometheus exporter.
 type: object
 properties:
@@ -6,12 +10,14 @@ properties:
     type: boolean
   const_labels:
     description: ConstLabels are values that are applied for every exported metric.
-    x-customType: github.com/prometheus/client_golang/prometheus.labels
+    type: object
+    additionalProperties:
+      type: string
   enable_open_metrics:
     description: EnableOpenMetrics enables the use of the OpenMetrics encoding option for the prometheus exporter.
     type: boolean
   metric_expiration:
-    description: MetricExpiration defines how long metrics are kept without updates
+    description: MetricExpiration defines how long metrics are kept without updates. Must be greater than 0.
     type: string
     format: duration
   namespace:
@@ -32,7 +38,7 @@ properties:
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
   translation_strategy:
     description: TranslationStrategy controls how OTLP metric and attribute names are translated into Prometheus metric and label names.
-    type: string
+    $ref: translation_strategy
   without_scope_info:
     description: WithoutScopeInfo controls the addition of labels for the instrumentation scope.
     type: boolean

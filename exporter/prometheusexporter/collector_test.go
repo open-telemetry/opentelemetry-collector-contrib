@@ -1276,7 +1276,7 @@ func TestTargetInfoIdentifyingResourceAttributes(t *testing.T) {
 	for _, enabled := range []bool{false, true} {
 		t.Run(fmt.Sprintf("enabled=%t", enabled), func(t *testing.T) {
 			defer testutil.SetFeatureGateForTest(t, prometheustranslator.KeepIdentifyingResourceAttributesGate, enabled)()
-			for _, strategy := range []translationStrategy{underscoreEscapingWithSuffixes, noTranslation} {
+			for _, strategy := range []TranslationStrategy{TranslationStrategyUnderscoreEscapingWithSuffixes, TranslationStrategyNoTranslation} {
 				for _, withOtherAttribute := range []bool{false, true} {
 					t.Run(fmt.Sprintf("%s/other_attribute=%t", strategy, withOtherAttribute), func(t *testing.T) {
 						attrs := pcommon.NewMap()
@@ -1292,7 +1292,7 @@ func TestTargetInfoIdentifyingResourceAttributes(t *testing.T) {
 						if enabled {
 							for key, value := range original {
 								if strings.HasPrefix(key, "service.") {
-									if strategy != noTranslation {
+									if strategy != TranslationStrategyNoTranslation {
 										key = strings.ReplaceAll(key, ".", "_")
 									}
 									want[key] = value.(string)
