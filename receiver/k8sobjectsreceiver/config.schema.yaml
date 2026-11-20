@@ -40,6 +40,8 @@ properties:
   cache_sync_timeout:
     type: string
     format: duration
+  drop_managed_fields:
+    type: boolean
   error_mode:
     $ref: error_mode
   include_initial_state:

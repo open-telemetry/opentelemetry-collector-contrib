@@ -919,3 +919,71 @@ func TestCheckpointFlushOnCtxCancel(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "100", rv, "buffered checkpoint must be flushed on ctx cancel")
 }
+
+func TestTransformAppliesToObserversSharingInformer(t *testing.T) {
+	t.Parallel()
+	pod := makePod("pod1")
+	pod.SetManagedFields([]metav1.ManagedFieldsEntry{{Manager: "kubectl", Operation: metav1.ManagedFieldsOperationApply}})
+	client, _ := newFakeClient(t, pod)
+	stored, err := client.Resource(podsGVR).Namespace("default").Get(t.Context(), "pod1", metav1.GetOptions{})
+	require.NoError(t, err)
+	require.NotEmpty(t, stored.GetManagedFields())
+
+	reg := NewFactoryRegistry(client, 0, WithTransform(func(obj any) (any, error) {
+		if u, ok := obj.(*unstructured.Unstructured); ok {
+			u.SetManagedFields(nil)
+		}
+		return obj, nil
+	}))
+	t.Cleanup(reg.Shutdown)
+
+	pulled := make(chan *unstructured.UnstructuredList, 1)
+	pullObs, err := NewPull(reg, PullConfig{
+		Config:           k8sinventory.Config{Gvr: podsGVR},
+		CacheSyncTimeout: 5 * time.Second,
+		Interval:         time.Hour,
+	}, zap.NewNop(), func(list *unstructured.UnstructuredList) {
+		select {
+		case pulled <- list:
+		default:
+		}
+	})
+	require.NoError(t, err)
+
+	var wg sync.WaitGroup
+	pullStop, err := pullObs.Start(t.Context(), &wg)
+	require.NoError(t, err)
+
+	// The shared informer is already running when the second observer is created.
+	watched := make(chan *apiWatch.Event, 1)
+	watchObs, err := NewWatch(reg, WatchConfig{
+		Config:              k8sinventory.Config{Gvr: podsGVR},
+		CacheSyncTimeout:    5 * time.Second,
+		IncludeInitialState: true,
+	}, zap.NewNop(), func(ev *apiWatch.Event) {
+		select {
+		case watched <- ev:
+		default:
+		}
+	})
+	require.NoError(t, err)
+	watchStop, err := watchObs.Start(t.Context(), &wg)
+	require.NoError(t, err)
+	t.Cleanup(func() { close(pullStop); close(watchStop); wg.Wait() })
+
+	select {
+	case list := <-pulled:
+		require.Len(t, list.Items, 1)
+		assert.Empty(t, list.Items[0].GetManagedFields())
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for pull snapshot")
+	}
+	select {
+	case ev := <-watched:
+		u, ok := ev.Object.(*unstructured.Unstructured)
+		require.True(t, ok)
+		assert.Empty(t, u.GetManagedFields())
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for watch event")
+	}
+}

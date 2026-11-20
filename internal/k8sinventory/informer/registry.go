@@ -5,12 +5,15 @@ package informer // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
+	"k8s.io/client-go/tools/cache"
 )
 
 type factoryKey struct {
@@ -19,27 +22,49 @@ type factoryKey struct {
 	fieldSelector string
 }
 
+type informerKey struct {
+	factoryKey
+	gvr schema.GroupVersionResource
+}
+
 // FactoryRegistry shares a SharedInformerFactory across observers with the same
 // (namespace, labelSelector, fieldSelector) scope. The receiver builds one
 // registry per leader term and calls Shutdown() to stop everything at once.
 type FactoryRegistry struct {
 	client       dynamic.Interface
 	resyncPeriod time.Duration
+	transform    cache.TransformFunc
 	stopCh       chan struct{}
 	stopOnce     sync.Once
 
-	mu    sync.Mutex
-	cache map[factoryKey]dynamicinformer.DynamicSharedInformerFactory
+	mu          sync.Mutex
+	cache       map[factoryKey]dynamicinformer.DynamicSharedInformerFactory
+	transformed map[informerKey]struct{}
+}
+
+// Option configures a FactoryRegistry.
+type Option func(*FactoryRegistry)
+
+// WithTransform installs transform on every informer returned by Informer.
+func WithTransform(transform cache.TransformFunc) Option {
+	return func(r *FactoryRegistry) {
+		r.transform = transform
+	}
 }
 
 // NewFactoryRegistry creates a registry backed by client.
-func NewFactoryRegistry(client dynamic.Interface, resyncPeriod time.Duration) *FactoryRegistry {
-	return &FactoryRegistry{
+func NewFactoryRegistry(client dynamic.Interface, resyncPeriod time.Duration, opts ...Option) *FactoryRegistry {
+	r := &FactoryRegistry{
 		client:       client,
 		resyncPeriod: resyncPeriod,
 		stopCh:       make(chan struct{}),
 		cache:        make(map[factoryKey]dynamicinformer.DynamicSharedInformerFactory),
+		transformed:  make(map[informerKey]struct{}),
 	}
+	for _, opt := range opts {
+		opt(r)
+	}
+	return r
 }
 
 // Get returns the factory for the given scope, creating it on first use.
@@ -47,10 +72,38 @@ func NewFactoryRegistry(client dynamic.Interface, resyncPeriod time.Duration) *F
 func (r *FactoryRegistry) Get(namespace, labelSelector, fieldSelector string) (dynamicinformer.DynamicSharedInformerFactory, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	return r.getLocked(factoryKey{namespace: namespace, labelSelector: labelSelector, fieldSelector: fieldSelector})
+}
+
+// Informer returns the shared informer for gvr in the given scope, along with
+// the factory that runs it. Returns an error if called after Shutdown.
+func (r *FactoryRegistry) Informer(namespace, labelSelector, fieldSelector string, gvr schema.GroupVersionResource) (dynamicinformer.DynamicSharedInformerFactory, cache.SharedIndexInformer, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	key := factoryKey{namespace: namespace, labelSelector: labelSelector, fieldSelector: fieldSelector}
+	f, err := r.getLocked(key)
+	if err != nil {
+		return nil, nil, err
+	}
+	inf := f.ForResource(gvr).Informer()
+	if r.transform != nil {
+		// SetTransform fails once the informer has started, and informers are
+		// shared across observers, so install it only on first use.
+		ik := informerKey{factoryKey: key, gvr: gvr}
+		if _, ok := r.transformed[ik]; !ok {
+			if err := inf.SetTransform(r.transform); err != nil {
+				return nil, nil, fmt.Errorf("failed to set transform for %s: %w", gvr, err)
+			}
+			r.transformed[ik] = struct{}{}
+		}
+	}
+	return f, inf, nil
+}
+
+func (r *FactoryRegistry) getLocked(key factoryKey) (dynamicinformer.DynamicSharedInformerFactory, error) {
 	if r.cache == nil {
 		return nil, errors.New("registry has been shut down")
 	}
-	key := factoryKey{namespace: namespace, labelSelector: labelSelector, fieldSelector: fieldSelector}
 	if f, ok := r.cache[key]; ok {
 		return f, nil
 	}
@@ -67,9 +120,17 @@ func (r *FactoryRegistry) Get(namespace, labelSelector, fieldSelector string) (d
 	return f, nil
 }
 
-// StopCh returns the channel that signals factory shutdown. Observers pass it to factory.Start.
+// StopCh returns the channel that signals factory shutdown.
 func (r *FactoryRegistry) StopCh() <-chan struct{} {
 	return r.stopCh
+}
+
+// Start starts f's informers. It holds the registry lock so an informer is
+// never started between its creation and SetTransform in Informer.
+func (r *FactoryRegistry) Start(f dynamicinformer.DynamicSharedInformerFactory) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	f.Start(r.stopCh)
 }
 
 // Shutdown stops every factory. The registry is single-use; build a new one for the next leader term.

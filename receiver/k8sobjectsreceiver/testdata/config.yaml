@@ -80,3 +80,8 @@ k8s_objects/top_level_interval:
     - name: nodes
       mode: pull
       interval: 5m
+k8s_objects/drop_managed_fields:
+  drop_managed_fields: true
+  objects:
+    - name: pods
+      mode: watch
