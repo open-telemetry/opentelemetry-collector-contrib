@@ -60,25 +60,43 @@ func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 
 		serviceName := serviceAttr.Str()
 		ilsSlice := rspans.ScopeSpans()
+		var outRL plog.ResourceLogs
+		haveRL := false
+
 		for j := 0; j < ilsSlice.Len(); j++ {
-			sl := c.newScopeLogs(ld)
 			ils := ilsSlice.At(j)
-			ils.Scope().CopyTo(sl.Scope())
 			spans := ils.Spans()
+			var outSL plog.ScopeLogs
+			haveSL := false
+
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				if span.Kind() == ptrace.SpanKindClient && spanDuration(span) >= c.config.Threshold.Nanoseconds() {
-					// through db.Statement exists represents db client
-					if _, dbSystem := findAttributeValue(dbSystemKey, span.Attributes()); dbSystem {
+					if dbSystemVal, ok := getDBSystem(span.Attributes()); ok {
 						for _, db := range c.config.DBSystem {
-							if db == getValue(span.Attributes(), dbSystemKey) {
-								c.attrToLogRecord(sl, serviceName, span, resourceAttr)
+							if db == dbSystemVal {
+								if !haveRL {
+									outRL = ld.ResourceLogs().AppendEmpty()
+									rspans.Resource().CopyTo(outRL.Resource())
+									outRL.SetSchemaUrl(rspans.SchemaUrl())
+									haveRL = true
+								}
+								if !haveSL {
+									outSL = outRL.ScopeLogs().AppendEmpty()
+									ils.Scope().CopyTo(outSL.Scope())
+									outSL.SetSchemaUrl(ils.SchemaUrl())
+									haveSL = true
+								}
+								c.attrToLogRecord(outSL, serviceName, span, resourceAttr)
 							}
 						}
 					}
 				}
 			}
 		}
+	}
+	if ld.ResourceLogs().Len() == 0 {
+		return nil
 	}
 	return c.exportLogs(ctx, ld)
 }
@@ -94,12 +112,6 @@ func (c *logsConnector) exportLogs(ctx context.Context, ld plog.Logs) error {
 		return err
 	}
 	return nil
-}
-
-func (*logsConnector) newScopeLogs(ld plog.Logs) plog.ScopeLogs {
-	rl := ld.ResourceLogs().AppendEmpty()
-	sl := rl.ScopeLogs().AppendEmpty()
-	return sl
 }
 
 func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, span ptrace.Span, resourceAttrs pcommon.Map) plog.LogRecord {
@@ -126,7 +138,7 @@ func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, s
 	// Add configured dimension attributes to the log record.
 	for _, d := range c.dimensions {
 		if v, ok := pdatautil.GetDimensionValue(d, spanAttrs, resourceAttrs); ok {
-			logRecord.Attributes().PutStr(d.Name, v.Str())
+			logRecord.Attributes().PutStr(d.Name, v.AsString())
 		}
 	}
 
@@ -136,7 +148,7 @@ func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, s
 // getValue returns the value of the attribute with the given key.
 func getValue(attr pcommon.Map, key string) string {
 	if attrVal, ok := attr.Get(key); ok {
-		return attrVal.Str()
+		return attrVal.AsString()
 	}
 	return ""
 }
