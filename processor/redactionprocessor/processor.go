@@ -103,15 +103,15 @@ func newRedaction(ctx context.Context, config *Config, settings component.Teleme
 		}
 	}
 	dbObfuscator := db.NewObfuscator(config.DBSanitizer, settings.Logger)
-	traceSkipper, err := newTraceSkipper(config.SkipConditions, settings)
+	traceSkipper, err := newTraceSkipper(config.TraceSkipConditions, settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create trace skip conditions: %w", err)
 	}
-	logSkipper, err := newLogSkipper(config.SkipConditions, settings)
+	logSkipper, err := newLogSkipper(config.LogSkipConditions, settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create log skip conditions: %w", err)
 	}
-	metricSkipper, err := newMetricSkipper(config.SkipConditions, settings)
+	metricSkipper, err := newMetricSkipper(config.MetricSkipConditions, settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metric skip conditions: %w", err)
 	}
@@ -185,8 +185,7 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 
 	rsAttrs := rs.Resource().Attributes()
 
-	// Attributes can be part of a resource span
-	s.processAttrs(ctx, rsAttrs)
+	// Parents are redacted after their children, so skip conditions see the original values.
 
 	for j := 0; j < rs.ScopeSpans().Len(); j++ {
 		ils := rs.ScopeSpans().At(j)
@@ -198,7 +197,6 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 			continue
 		}
 		scopeAttrs := ils.Scope().Attributes()
-		s.processAttrs(ctx, scopeAttrs)
 		for k := 0; k < ils.Spans().Len(); k++ {
 			span := ils.Spans().At(k)
 			skip, err = s.traceSkipper.skipSpan(ctx, rs, ils, span)
@@ -210,17 +208,18 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 			}
 			spanAttrs := span.Attributes()
 
-			// Attributes can also be part of span
-			s.processAttrs(ctx, spanAttrs)
-
-			// Attributes can also be part of span events
+			// Span events are processed first, because their conditions can read span attributes.
 			if err := s.processSpanEvents(ctx, rs, ils, span, span.Events()); err != nil {
 				return err
 			}
 
+			s.processAttrs(ctx, spanAttrs)
+
 			s.sanitizeSpanName(span)
 		}
+		s.processAttrs(ctx, scopeAttrs)
 	}
+	s.processAttrs(ctx, rsAttrs)
 	return nil
 }
 
@@ -251,7 +250,7 @@ func (s *redaction) processResourceLog(ctx context.Context, rl plog.ResourceLogs
 
 	rsAttrs := rl.Resource().Attributes()
 
-	s.processAttrs(ctx, rsAttrs)
+	// Parents are redacted after their children, so skip conditions see the original values.
 
 	for j := 0; j < rl.ScopeLogs().Len(); j++ {
 		ils := rl.ScopeLogs().At(j)
@@ -263,7 +262,6 @@ func (s *redaction) processResourceLog(ctx context.Context, rl plog.ResourceLogs
 			continue
 		}
 		scopeAttrs := ils.Scope().Attributes()
-		s.processAttrs(ctx, scopeAttrs)
 		for k := 0; k < ils.LogRecords().Len(); k++ {
 			log := ils.LogRecords().At(k)
 			skip, err = s.logSkipper.skipLogRecord(ctx, rl, ils, log)
@@ -276,7 +274,9 @@ func (s *redaction) processResourceLog(ctx context.Context, rl plog.ResourceLogs
 			s.processAttrs(ctx, log.Attributes())
 			s.processLogBody(ctx, log.Body(), log.Attributes())
 		}
+		s.processAttrs(ctx, scopeAttrs)
 	}
+	s.processAttrs(ctx, rsAttrs)
 	return nil
 }
 
@@ -387,7 +387,7 @@ func (s *redaction) processResourceMetric(ctx context.Context, rm pmetric.Resour
 
 	rsAttrs := rm.Resource().Attributes()
 
-	s.processAttrs(ctx, rsAttrs)
+	// Parents are redacted after their children, so skip conditions see the original values.
 
 	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 		ils := rm.ScopeMetrics().At(j)
@@ -399,7 +399,6 @@ func (s *redaction) processResourceMetric(ctx context.Context, rm pmetric.Resour
 			continue
 		}
 		scopeAttrs := ils.Scope().Attributes()
-		s.processAttrs(ctx, scopeAttrs)
 		for k := 0; k < ils.Metrics().Len(); k++ {
 			metric := ils.Metrics().At(k)
 			skip, err = s.metricSkipper.skipMetric(ctx, rm, ils, metric)
@@ -473,7 +472,9 @@ func (s *redaction) processResourceMetric(ctx context.Context, rm pmetric.Resour
 			case pmetric.MetricTypeEmpty:
 			}
 		}
+		s.processAttrs(ctx, scopeAttrs)
 	}
+	s.processAttrs(ctx, rsAttrs)
 	return nil
 }
 

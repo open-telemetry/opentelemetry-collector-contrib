@@ -45,20 +45,30 @@ properties:
     type: array
     items:
       type: string
-  masking_string:
-    description: MaskingString is the string that replaces the values being masked. If not set, the masked values will be replaced with "****". If HashFunction is set, this value must not be set
-    type: string
-  redact_all_types:
-    description: RedactAllTypes of attributes, including those that are not string, by converting to a string representation. By default only string values are redacted.
-    type: boolean
-  skip_conditions:
-    description: SkipConditions is a list of OTTL-style conditions used to skip redaction for matching telemetry.
+  log_skip_conditions:
+    description: LogSkipConditions is a list of OTTL conditions. Redaction is skipped for log telemetry that matches any of them. Conditions can use the resource, scope and log contexts.
     type: array
     items:
       type: string
+  masking_string:
+    description: MaskingString is the string that replaces the values being masked. If not set, the masked values will be replaced with "****". If HashFunction is set, this value must not be set
+    type: string
+  metric_skip_conditions:
+    description: MetricSkipConditions is a list of OTTL conditions. Redaction is skipped for metric telemetry that matches any of them. Conditions can use the resource, scope, metric and datapoint contexts.
+    type: array
+    items:
+      type: string
+  redact_all_types:
+    description: RedactAllTypes of attributes, including those that are not string, by converting to a string representation. By default only string values are redacted.
+    type: boolean
   summary:
     description: Summary controls the verbosity level of the diagnostic attributes that the processor adds to the spans when it redacts or masks other attributes. In some contexts a list of redacted attributes leaks information, while it is valuable when integrating and testing a new configuration. Possible values are `debug`, `info`, and `silent`.
     type: string
+  trace_skip_conditions:
+    description: TraceSkipConditions is a list of OTTL conditions. Redaction is skipped for trace telemetry that matches any of them. Conditions can use the resource, scope, span and spanevent contexts.
+    type: array
+    items:
+      type: string
   url_sanitizer:
     description: URLSanitization is a flag to sanitize URLs by removing UUIDs, timestamps, and other non-essential information
     $ref: ./internal/url.url_sanitization_config

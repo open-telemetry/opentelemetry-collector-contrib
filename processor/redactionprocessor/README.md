@@ -119,12 +119,26 @@ processors:
       # When enabled, span names containing "/" will be sanitized to reduce cardinality
       # Set to false to disable span name sanitization while keeping attribute sanitization active
       sanitize_span_name: true
-    # skip_conditions is a list of OTTL-style expressions used to bypass redaction
-    # for matching telemetry. Conditions may reference resource, scope, span, spanevent,
-    # log, metric, or datapoint paths when those contexts exist in the current signal.
-    skip_conditions:
+    # trace_skip_conditions, log_skip_conditions and metric_skip_conditions are lists
+    # of OTTL conditions. Telemetry that matches any condition in a list is skipped
+    # (the conditions in a list are ORed). A skipped item is passed through
+    # unmodified, including its children, and gets no redaction summary attributes.
+    # For example, a skipped resource skips all its scopes and spans.
+    # Conditions are evaluated before redaction, so they see the original values.
+    # A condition that uses a context the signal does not have is rejected at startup.
+    # If a condition fails at runtime, the error is logged and the telemetry is redacted.
+    # trace_skip_conditions accepts the resource, scope, span and spanevent contexts.
+    trace_skip_conditions:
       - resource.attributes["service.name"] == "payments"
       - spanevent.name == "grpc.timeout"
+    # log_skip_conditions accepts the resource, scope and log contexts.
+    log_skip_conditions:
+      - resource.attributes["service.name"] == "payments"
+      - log.attributes["skip_redaction"] == "true"
+    # metric_skip_conditions accepts the resource, scope, metric and datapoint contexts.
+    metric_skip_conditions:
+      - resource.attributes["service.name"] == "payments"
+      - metric.name == "payments.internal.count"
     # masking_string is the string that replaces the values being masked.
     # If not set, the masked values will be replaced with "****".
     # If hash_function is set, this value must not be set.

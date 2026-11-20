@@ -2164,26 +2164,6 @@ func runMetricsTest(
 	return outBatch
 }
 
-func TestFilterSkipConditionsForSignal(t *testing.T) {
-	conditions := []string{
-		`resource.attributes["service.name"] == "payments"`,
-		`spanevent.name == "grpc.timeout"`,
-		`log.attributes["skip"] == "true"`,
-	}
-
-	filtered := filterSkipConditionsForSignal(conditions, map[string]struct{}{
-		"resource": {},
-		"log":      {},
-	})
-
-	assert.Equal(t, []string{
-		`resource.attributes["service.name"] == "payments"`,
-		`log.attributes["skip"] == "true"`,
-	}, filtered)
-	assert.True(t, skipConditionUsesUnsupportedContext(`spanevent.name == "grpc.timeout"`, map[string]struct{}{"resource": {}}))
-	assert.False(t, skipConditionUsesUnsupportedContext(`attributes["skip"] == "true"`, map[string]struct{}{"span": {}}))
-}
-
 func TestSkipConditionsTraceResource(t *testing.T) {
 	inBatch := ptrace.NewTraces()
 	rs := inBatch.ResourceSpans().AppendEmpty()
@@ -2194,7 +2174,7 @@ func TestSkipConditionsTraceResource(t *testing.T) {
 	span.Attributes().PutStr("span.secret", "top-secret")
 
 	processor, err := newRedaction(t.Context(), &Config{
-		SkipConditions: []string{`resource.attributes["service.name"] == "payments"`},
+		TraceSkipConditions: []string{`resource.attributes["service.name"] == "payments"`},
 	}, newTestTelemetrySettings(t))
 	require.NoError(t, err)
 
@@ -2227,7 +2207,7 @@ func TestSkipConditionsTraceSpanAndSpanEvent(t *testing.T) {
 		event.Attributes().PutStr("event.secret", "hide")
 
 		processor, err := newRedaction(t.Context(), &Config{
-			SkipConditions: []string{`span.attributes["skip"] == "true"`},
+			TraceSkipConditions: []string{`span.attributes["skip"] == "true"`},
 		}, newTestTelemetrySettings(t))
 		require.NoError(t, err)
 
@@ -2256,7 +2236,7 @@ func TestSkipConditionsTraceSpanAndSpanEvent(t *testing.T) {
 		processedEvent.Attributes().PutStr("event.secret", "hide")
 
 		processor, err := newRedaction(t.Context(), &Config{
-			SkipConditions: []string{`spanevent.name == "grpc.timeout"`},
+			TraceSkipConditions: []string{`spanevent.name == "grpc.timeout"`},
 		}, newTestTelemetrySettings(t))
 		require.NoError(t, err)
 
@@ -2274,8 +2254,8 @@ func TestSkipConditionsTraceSpanAndSpanEvent(t *testing.T) {
 func TestSkipConditionsLogs(t *testing.T) {
 	tc := testConfig{
 		config: &Config{
-			SkipConditions: []string{
-				`spanevent.name == "grpc.timeout"`,
+			LogSkipConditions: []string{
+				`resource.attributes["service.name"] == "payments"`,
 				`log.attributes["skip"] == "true"`,
 			},
 		},
@@ -2312,7 +2292,7 @@ func TestSkipConditionsMetrics(t *testing.T) {
 		t.Run(metricType.String(), func(t *testing.T) {
 			tc := testConfig{
 				config: &Config{
-					SkipConditions: []string{`datapoint.attributes["skip"] == "true"`},
+					MetricSkipConditions: []string{`datapoint.attributes["skip"] == "true"`},
 				},
 				allowed: map[string]pcommon.Value{
 					"skip": pcommon.NewValueStr("true"),
@@ -2351,7 +2331,7 @@ func TestSkipConditionsMetrics(t *testing.T) {
 func TestSkipConditionsMetricLevel(t *testing.T) {
 	tc := testConfig{
 		config: &Config{
-			SkipConditions: []string{`metric.description == "first-batch-first-metric"`},
+			MetricSkipConditions: []string{`metric.description == "first-batch-first-metric"`},
 		},
 		masked: map[string]pcommon.Value{
 			"metric.secret": pcommon.NewValueStr("hide"),
@@ -3450,4 +3430,108 @@ func TestMaskingStringIsAppliedToMetrics(t *testing.T) {
 	creditCardAttr, ok := outAttrs.Get("credit.card")
 	assert.True(t, ok)
 	assert.Equal(t, "[REDACTED]", creditCardAttr.Str())
+}
+
+func TestSkipConditionsTraceSeesUnredactedResource(t *testing.T) {
+	inBatch := ptrace.NewTraces()
+	rs := inBatch.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("tenant", "internal")
+	ss := rs.ScopeSpans().AppendEmpty()
+	skipped := ss.Spans().AppendEmpty()
+	skipped.SetName("s")
+	skipped.Attributes().PutStr("span.secret", "hide")
+	other := ss.Spans().AppendEmpty()
+	other.SetName("other")
+	other.Attributes().PutStr("span.secret", "hide")
+
+	processor, err := newRedaction(t.Context(), &Config{
+		TraceSkipConditions: []string{`span.name == "s" and resource.attributes["tenant"] == "internal"`},
+	}, newTestTelemetrySettings(t))
+	require.NoError(t, err)
+
+	out, err := processor.processTraces(t.Context(), inBatch)
+	require.NoError(t, err)
+
+	outRS := out.ResourceSpans().At(0)
+	spans := outRS.ScopeSpans().At(0).Spans()
+	assert.Equal(t, "hide", spans.At(0).Attributes().AsRaw()["span.secret"])
+	assert.Equal(t, 0, spans.At(1).Attributes().Len())
+	_, ok := outRS.Resource().Attributes().Get("tenant")
+	assert.False(t, ok, "resource attribute must still be redacted")
+}
+
+func TestSkipConditionsRuntimeErrorRedacts(t *testing.T) {
+	inBatch := ptrace.NewTraces()
+	span := inBatch.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.Attributes().PutStr("payload", "not json")
+	span.Attributes().PutStr("span.secret", "hide")
+
+	processor, err := newRedaction(t.Context(), &Config{
+		TraceSkipConditions: []string{`ParseJSON(span.attributes["payload"])["a"] == "b"`},
+	}, newTestTelemetrySettings(t))
+	require.NoError(t, err)
+
+	out, err := processor.processTraces(t.Context(), inBatch)
+	require.NoError(t, err)
+
+	attrs := out.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+	_, ok := attrs.Get("span.secret")
+	assert.False(t, ok)
+}
+
+func TestConfigValidateSkipConditions(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     Config
+		wantErr string
+	}{
+		{
+			name: "valid",
+			cfg: Config{
+				TraceSkipConditions:  []string{`span.name == "s"`, `resource.attributes["a"] == "b"`},
+				LogSkipConditions:    []string{`log.attributes["a"] == "b"`},
+				MetricSkipConditions: []string{`datapoint.attributes["a"] == "b"`},
+			},
+		},
+		{
+			name:    "syntax error",
+			cfg:     Config{TraceSkipConditions: []string{`span.attributes[`}},
+			wantErr: "invalid trace_skip_conditions",
+		},
+		{
+			name:    "wrong context",
+			cfg:     Config{TraceSkipConditions: []string{`log.attributes["x"] == "y"`}},
+			wantErr: "invalid trace_skip_conditions",
+		},
+		{
+			name:    "wrong context for logs",
+			cfg:     Config{LogSkipConditions: []string{`span.name == "s"`}},
+			wantErr: "invalid log_skip_conditions",
+		},
+		{
+			name:    "wrong context for metrics",
+			cfg:     Config{MetricSkipConditions: []string{`log.body == "s"`}},
+			wantErr: "invalid metric_skip_conditions",
+		},
+		{
+			name:    "no context prefix",
+			cfg:     Config{TraceSkipConditions: []string{`attributes["x"] == "y"`}},
+			wantErr: "invalid trace_skip_conditions",
+		},
+		{
+			name: "context-like token in string value",
+			cfg:  Config{TraceSkipConditions: []string{`span.attributes["note"] == "see log.body for details"`}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if tt.wantErr == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.ErrorContains(t, err, tt.wantErr)
+			t.Log(err)
+		})
+	}
 }

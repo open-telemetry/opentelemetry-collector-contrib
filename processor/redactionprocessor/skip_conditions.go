@@ -6,7 +6,6 @@ package redactionprocessor // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -23,8 +22,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 )
-
-var knownSkipContexts = []string{"resource", "scope", "span", "spanevent", "log", "metric", "datapoint"}
 
 type traceSkipper struct {
 	resource  *ottl.ConditionSequence[*ottlresource.TransformContext]
@@ -67,13 +64,7 @@ type parsedMetricSkipConditions struct {
 }
 
 func newTraceSkipper(conditions []string, set component.TelemetrySettings) (*traceSkipper, error) {
-	filtered := filterSkipConditionsForSignal(conditions, map[string]struct{}{
-		"resource":  {},
-		"scope":     {},
-		"span":      {},
-		"spanevent": {},
-	})
-	if len(filtered) == 0 {
+	if len(conditions) == 0 {
 		return nil, nil
 	}
 
@@ -89,7 +80,7 @@ func newTraceSkipper(conditions []string, set component.TelemetrySettings) (*tra
 		return nil, err
 	}
 
-	parsed, err := parseTraceSkipConditions(pc, filtered)
+	parsed, err := parseTraceSkipConditions(pc, conditions)
 	if err != nil {
 		return nil, err
 	}
@@ -103,12 +94,7 @@ func newTraceSkipper(conditions []string, set component.TelemetrySettings) (*tra
 }
 
 func newLogSkipper(conditions []string, set component.TelemetrySettings) (*logSkipper, error) {
-	filtered := filterSkipConditionsForSignal(conditions, map[string]struct{}{
-		"resource": {},
-		"scope":    {},
-		"log":      {},
-	})
-	if len(filtered) == 0 {
+	if len(conditions) == 0 {
 		return nil, nil
 	}
 
@@ -123,7 +109,7 @@ func newLogSkipper(conditions []string, set component.TelemetrySettings) (*logSk
 		return nil, err
 	}
 
-	parsed, err := parseLogSkipConditions(pc, filtered)
+	parsed, err := parseLogSkipConditions(pc, conditions)
 	if err != nil {
 		return nil, err
 	}
@@ -136,13 +122,7 @@ func newLogSkipper(conditions []string, set component.TelemetrySettings) (*logSk
 }
 
 func newMetricSkipper(conditions []string, set component.TelemetrySettings) (*metricSkipper, error) {
-	filtered := filterSkipConditionsForSignal(conditions, map[string]struct{}{
-		"resource":  {},
-		"scope":     {},
-		"metric":    {},
-		"datapoint": {},
-	})
-	if len(filtered) == 0 {
+	if len(conditions) == 0 {
 		return nil, nil
 	}
 
@@ -158,7 +138,7 @@ func newMetricSkipper(conditions []string, set component.TelemetrySettings) (*me
 		return nil, err
 	}
 
-	parsed, err := parseMetricSkipConditions(pc, filtered)
+	parsed, err := parseMetricSkipConditions(pc, conditions)
 	if err != nil {
 		return nil, err
 	}
@@ -169,30 +149,6 @@ func newMetricSkipper(conditions []string, set component.TelemetrySettings) (*me
 		metric:    newMetricSequence(parsed.metricConditions, set),
 		dataPoint: newDataPointSequence(parsed.dataPointConditions, set),
 	}, nil
-}
-
-func filterSkipConditionsForSignal(conditions []string, supported map[string]struct{}) []string {
-	filtered := make([]string, 0, len(conditions))
-	for _, condition := range conditions {
-		if skipConditionUsesUnsupportedContext(condition, supported) {
-			continue
-		}
-		filtered = append(filtered, condition)
-	}
-	return filtered
-}
-
-func skipConditionUsesUnsupportedContext(condition string, supported map[string]struct{}) bool {
-	lower := strings.ToLower(condition)
-	for _, contextName := range knownSkipContexts {
-		if !strings.Contains(lower, contextName+".") {
-			continue
-		}
-		if _, ok := supported[contextName]; !ok {
-			return true
-		}
-	}
-	return false
 }
 
 func parseTraceSkipConditions(pc *ottl.ParserCollection[parsedTraceSkipConditions], conditions []string) (parsedTraceSkipConditions, error) {
@@ -387,11 +343,13 @@ func commonScopeParser[R any](converter func([]*ottl.Condition[*ottlscope.Transf
 	}
 }
 
+// The sequences below use the ignore error mode: when a condition fails at runtime
+// the error is logged, the condition counts as not matched and the telemetry is redacted.
 func newTraceResourceSequence(conditions []*ottl.Condition[*ottlresource.TransformContext], set component.TelemetrySettings) *ottl.ConditionSequence[*ottlresource.TransformContext] {
 	if len(conditions) == 0 {
 		return nil
 	}
-	sequence := ottlresource.NewConditionSequence(conditions, set, ottlresource.WithConditionSequenceErrorMode(ottl.PropagateError))
+	sequence := ottlresource.NewConditionSequence(conditions, set, ottlresource.WithConditionSequenceErrorMode(ottl.IgnoreError))
 	return &sequence
 }
 
@@ -399,7 +357,7 @@ func newTraceScopeSequence(conditions []*ottl.Condition[*ottlscope.TransformCont
 	if len(conditions) == 0 {
 		return nil
 	}
-	sequence := ottlscope.NewConditionSequence(conditions, set, ottlscope.WithConditionSequenceErrorMode(ottl.PropagateError))
+	sequence := ottlscope.NewConditionSequence(conditions, set, ottlscope.WithConditionSequenceErrorMode(ottl.IgnoreError))
 	return &sequence
 }
 
@@ -407,7 +365,7 @@ func newTraceSpanSequence(conditions []*ottl.Condition[*ottlspan.TransformContex
 	if len(conditions) == 0 {
 		return nil
 	}
-	sequence := ottlspan.NewConditionSequence(conditions, set, ottlspan.WithConditionSequenceErrorMode(ottl.PropagateError))
+	sequence := ottlspan.NewConditionSequence(conditions, set, ottlspan.WithConditionSequenceErrorMode(ottl.IgnoreError))
 	return &sequence
 }
 
@@ -415,7 +373,7 @@ func newTraceSpanEventSequence(conditions []*ottl.Condition[*ottlspanevent.Trans
 	if len(conditions) == 0 {
 		return nil
 	}
-	sequence := ottlspanevent.NewConditionSequence(conditions, set, ottlspanevent.WithConditionSequenceErrorMode(ottl.PropagateError))
+	sequence := ottlspanevent.NewConditionSequence(conditions, set, ottlspanevent.WithConditionSequenceErrorMode(ottl.IgnoreError))
 	return &sequence
 }
 
@@ -423,7 +381,7 @@ func newLogResourceSequence(conditions []*ottl.Condition[*ottlresource.Transform
 	if len(conditions) == 0 {
 		return nil
 	}
-	sequence := ottlresource.NewConditionSequence(conditions, set, ottlresource.WithConditionSequenceErrorMode(ottl.PropagateError))
+	sequence := ottlresource.NewConditionSequence(conditions, set, ottlresource.WithConditionSequenceErrorMode(ottl.IgnoreError))
 	return &sequence
 }
 
@@ -431,7 +389,7 @@ func newLogScopeSequence(conditions []*ottl.Condition[*ottlscope.TransformContex
 	if len(conditions) == 0 {
 		return nil
 	}
-	sequence := ottlscope.NewConditionSequence(conditions, set, ottlscope.WithConditionSequenceErrorMode(ottl.PropagateError))
+	sequence := ottlscope.NewConditionSequence(conditions, set, ottlscope.WithConditionSequenceErrorMode(ottl.IgnoreError))
 	return &sequence
 }
 
@@ -439,7 +397,7 @@ func newLogRecordSequence(conditions []*ottl.Condition[*ottllog.TransformContext
 	if len(conditions) == 0 {
 		return nil
 	}
-	sequence := ottllog.NewConditionSequence(conditions, set, ottllog.WithConditionSequenceErrorMode(ottl.PropagateError))
+	sequence := ottllog.NewConditionSequence(conditions, set, ottllog.WithConditionSequenceErrorMode(ottl.IgnoreError))
 	return &sequence
 }
 
@@ -447,7 +405,7 @@ func newMetricResourceSequence(conditions []*ottl.Condition[*ottlresource.Transf
 	if len(conditions) == 0 {
 		return nil
 	}
-	sequence := ottlresource.NewConditionSequence(conditions, set, ottlresource.WithConditionSequenceErrorMode(ottl.PropagateError))
+	sequence := ottlresource.NewConditionSequence(conditions, set, ottlresource.WithConditionSequenceErrorMode(ottl.IgnoreError))
 	return &sequence
 }
 
@@ -455,7 +413,7 @@ func newMetricScopeSequence(conditions []*ottl.Condition[*ottlscope.TransformCon
 	if len(conditions) == 0 {
 		return nil
 	}
-	sequence := ottlscope.NewConditionSequence(conditions, set, ottlscope.WithConditionSequenceErrorMode(ottl.PropagateError))
+	sequence := ottlscope.NewConditionSequence(conditions, set, ottlscope.WithConditionSequenceErrorMode(ottl.IgnoreError))
 	return &sequence
 }
 
@@ -463,7 +421,7 @@ func newMetricSequence(conditions []*ottl.Condition[*ottlmetric.TransformContext
 	if len(conditions) == 0 {
 		return nil
 	}
-	sequence := ottlmetric.NewConditionSequence(conditions, set, ottlmetric.WithConditionSequenceErrorMode(ottl.PropagateError))
+	sequence := ottlmetric.NewConditionSequence(conditions, set, ottlmetric.WithConditionSequenceErrorMode(ottl.IgnoreError))
 	return &sequence
 }
 
@@ -471,7 +429,7 @@ func newDataPointSequence(conditions []*ottl.Condition[*ottldatapoint.TransformC
 	if len(conditions) == 0 {
 		return nil
 	}
-	sequence := ottldatapoint.NewConditionSequence(conditions, set, ottldatapoint.WithConditionSequenceErrorMode(ottl.PropagateError))
+	sequence := ottldatapoint.NewConditionSequence(conditions, set, ottldatapoint.WithConditionSequenceErrorMode(ottl.IgnoreError))
 	return &sequence
 }
 

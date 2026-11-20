@@ -10,7 +10,9 @@ import (
 	"fmt"
 	"strings"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/db"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/url"
@@ -90,8 +92,18 @@ type Config struct {
 	// URLSanitization is a flag to sanitize URLs by removing UUIDs, timestamps, and other non-essential information
 	URLSanitization url.URLSanitizationConfig `mapstructure:"url_sanitizer"`
 
-	// SkipConditions is a list of OTTL-style conditions used to skip redaction for matching telemetry.
-	SkipConditions []string `mapstructure:"skip_conditions"`
+	// TraceSkipConditions is a list of OTTL conditions. Redaction is skipped for trace telemetry
+	// that matches any of them. Conditions can use the resource, scope, span and spanevent contexts.
+	TraceSkipConditions []string `mapstructure:"trace_skip_conditions"`
+
+	// LogSkipConditions is a list of OTTL conditions. Redaction is skipped for log telemetry
+	// that matches any of them. Conditions can use the resource, scope and log contexts.
+	LogSkipConditions []string `mapstructure:"log_skip_conditions"`
+
+	// MetricSkipConditions is a list of OTTL conditions. Redaction is skipped for metric telemetry
+	// that matches any of them. Conditions can use the resource, scope, metric and datapoint contexts.
+	MetricSkipConditions []string `mapstructure:"metric_skip_conditions"`
+
 	// MaskingString is the string that replaces the values being masked.
 	// If not set, the masked values will be replaced with "****".
 	// If HashFunction is set, this value must not be set
@@ -158,6 +170,17 @@ func (cfg *Config) Validate() error {
 
 	if cfg.MaskingString != "" && cfg.HashFunction != None {
 		return errors.New("masking_string must not be set when hash_function is defined")
+	}
+
+	settings := component.TelemetrySettings{Logger: zap.NewNop()}
+	if _, err := newTraceSkipper(cfg.TraceSkipConditions, settings); err != nil {
+		return fmt.Errorf("invalid trace_skip_conditions: %w", err)
+	}
+	if _, err := newLogSkipper(cfg.LogSkipConditions, settings); err != nil {
+		return fmt.Errorf("invalid log_skip_conditions: %w", err)
+	}
+	if _, err := newMetricSkipper(cfg.MetricSkipConditions, settings); err != nil {
+		return fmt.Errorf("invalid metric_skip_conditions: %w", err)
 	}
 
 	return nil

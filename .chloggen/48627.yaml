@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/redaction
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `skip_conditions` support to conditionally bypass redaction with OTTL expressions.
+note: Add `trace_skip_conditions`, `log_skip_conditions` and `metric_skip_conditions` to conditionally bypass redaction with OTTL conditions.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48627]
