@@ -79,22 +79,30 @@ func New(opts ...Option) *Batch {
 }
 
 func (b *Batch) AddRecord(raw []byte, key string) error {
-	buf := bytes.NewBuffer(nil)
-
-	if _, err := b.writer.CompressBytes(buf, raw); err != nil {
-		return err
+	data := raw
+	switch b.writer.(type) {
+	case xcompression.Nop, *xcompression.Nop:
+		// In the event that no compression is set,
+		// it means that the raw can be passed
+		// through directly without modification.
+	default:
+		buf := bytes.NewBuffer(nil)
+		if _, err := b.writer.CompressBytes(buf, raw); err != nil {
+			return err
+		}
+		data = buf.Bytes()
 	}
 
 	if l := len(key); l == 0 || l > 256 {
 		return ErrPartitionKeyLength
 	}
 
-	if l := buf.Len(); l == 0 || l > b.maxRecordSize {
+	if l := len(data); l == 0 || l > b.maxRecordSize {
 		return ErrRecordLength
 	}
 
 	b.records = append(b.records, types.PutRecordsRequestEntry{
-		Data:         buf.Bytes(),
+		Data:         data,
 		PartitionKey: aws.String(key),
 	})
 	return nil
