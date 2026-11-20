@@ -14,6 +14,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 )
 
 type LogsConsumer interface {
@@ -71,13 +73,18 @@ func WithLogParser(functions map[string]ottl.Factory[*ottllog.TransformContext])
 	}
 }
 
+// WithLogCommonParsers registers the resource and scope context parsers, which are common to all signals.
+// A nil functions map registers the default functions of that context.
+func WithLogCommonParsers(resourceFunctions map[string]ottl.Factory[*ottlresource.TransformContext], scopeFunctions map[string]ottl.Factory[*ottlscope.TransformContext]) LogParserCollectionOption {
+	return LogParserCollectionOption(withCommonContextParsers[LogsConsumer](resourceFunctions, scopeFunctions))
+}
+
 func WithLogErrorMode(errorMode ottl.ErrorMode) LogParserCollectionOption {
 	return LogParserCollectionOption(ottl.WithParserCollectionErrorMode[LogsConsumer](errorMode))
 }
 
 func NewLogParserCollection(settings component.TelemetrySettings, options ...LogParserCollectionOption) (*LogParserCollection, error) {
 	pcOptions := []ottl.ParserCollectionOption[LogsConsumer]{
-		withCommonContextParsers[LogsConsumer](),
 		ottl.EnableParserCollectionModifiedPathsLogging[LogsConsumer](true),
 	}
 

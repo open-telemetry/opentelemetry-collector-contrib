@@ -12,14 +12,27 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/profiles"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
+
+// DefaultResourceFunctions returns the default OTTL functions available in the resource context.
+func DefaultResourceFunctions() []ottl.Factory[*ottlresource.TransformContext] {
+	return slices.Collect(maps.Values(common.ResourceFunctions()))
+}
+
+// DefaultScopeFunctions returns the default OTTL functions available in the scope context.
+func DefaultScopeFunctions() []ottl.Factory[*ottlscope.TransformContext] {
+	return slices.Collect(maps.Values(common.ScopeFunctions()))
+}
 
 // DefaultLogFunctions returns the default OTTL functions available in the log context.
 func DefaultLogFunctions() []ottl.Factory[*ottllog.TransformContext] {

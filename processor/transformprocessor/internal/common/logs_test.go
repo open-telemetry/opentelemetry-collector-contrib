@@ -20,6 +20,7 @@ func newLogParserCollection(t *testing.T) *LogParserCollection {
 	pc, err := NewLogParserCollection(
 		componenttest.NewNopTelemetrySettings(),
 		WithLogParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext]()),
+		WithLogCommonParsers(nil, nil),
 		WithLogErrorMode(ottl.PropagateError),
 	)
 	require.NoError(t, err)

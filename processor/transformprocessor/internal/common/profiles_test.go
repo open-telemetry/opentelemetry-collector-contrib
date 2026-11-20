@@ -20,6 +20,7 @@ func newProfileParserCollection(t *testing.T) *ProfileParserCollection {
 	pc, err := NewProfileParserCollection(
 		componenttest.NewNopTelemetrySettings(),
 		WithProfileParser(ottlfuncs.StandardFuncs[*ottlprofile.TransformContext]()),
+		WithProfileCommonParsers(nil, nil),
 		WithProfileErrorMode(ottl.PropagateError),
 	)
 	require.NoError(t, err)

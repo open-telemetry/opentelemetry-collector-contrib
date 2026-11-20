@@ -24,6 +24,7 @@ func newMetricParserCollection(t *testing.T) *MetricParserCollection {
 		WithMetricParser(ottlfuncs.StandardFuncs[*ottlmetric.TransformContext]()),
 		WithDataPointParser(ottlfuncs.StandardFuncs[*ottldatapoint.TransformContext]()),
 		WithExemplarParser(ottlfuncs.StandardFuncs[*ottlexemplar.TransformContext]()),
+		WithMetricCommonParsers(nil, nil),
 		WithMetricErrorMode(ottl.PropagateError),
 	)
 	require.NoError(t, err)

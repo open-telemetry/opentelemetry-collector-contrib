@@ -16,6 +16,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
@@ -30,8 +32,8 @@ type Processor struct {
 	sharedCacheContexts []common.ContextID
 }
 
-func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, metricFunctions map[string]ottl.Factory[*ottlmetric.TransformContext], dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext], exemplarFunctions map[string]ottl.Factory[*ottlexemplar.TransformContext]) (*Processor, error) {
-	pc, err := common.NewMetricParserCollection(settings, common.WithMetricParser(metricFunctions), common.WithDataPointParser(dataPointFunctions), common.WithExemplarParser(exemplarFunctions), common.WithMetricErrorMode(errorMode))
+func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, metricFunctions map[string]ottl.Factory[*ottlmetric.TransformContext], dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext], exemplarFunctions map[string]ottl.Factory[*ottlexemplar.TransformContext], resourceFunctions map[string]ottl.Factory[*ottlresource.TransformContext], scopeFunctions map[string]ottl.Factory[*ottlscope.TransformContext]) (*Processor, error) {
+	pc, err := common.NewMetricParserCollection(settings, common.WithMetricParser(metricFunctions), common.WithDataPointParser(dataPointFunctions), common.WithExemplarParser(exemplarFunctions), common.WithMetricCommonParsers(resourceFunctions, scopeFunctions), common.WithMetricErrorMode(errorMode))
 	if err != nil {
 		return nil, err
 	}
