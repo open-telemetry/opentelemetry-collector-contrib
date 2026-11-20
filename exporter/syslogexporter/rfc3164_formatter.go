@@ -10,7 +10,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-type rfc3164Formatter struct{}
+type rfc3164Formatter struct {
+	// rawMessage keeps LF, CR and NUL in the message, for framings in which they cannot start a new message.
+	rawMessage bool
+}
 
 func newRFC3164Formatter() *rfc3164Formatter {
 	return &rfc3164Formatter{}
@@ -50,6 +53,6 @@ func (*rfc3164Formatter) formatAppname(logRecord plog.LogRecord) string {
 	return value
 }
 
-func (*rfc3164Formatter) formatMessage(logRecord plog.LogRecord) string {
-	return getAttributeValueOrDefault(logRecord, message, emptyMessage)
+func (f *rfc3164Formatter) formatMessage(logRecord plog.LogRecord) string {
+	return getMessageOrDefault(logRecord, f.rawMessage)
 }

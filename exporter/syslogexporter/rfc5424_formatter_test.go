@@ -189,3 +189,28 @@ func TestRFC5424Formatter_NanoFractionIsTruncatedToMicro(t *testing.T) {
 	octetCounting := newRFC5424Formatter(true).format(logRecord)
 	assert.True(t, strings.HasPrefix(octetCounting, fmt.Sprintf("%d ", len(actual))))
 }
+
+func TestRFC5424Formatter_LineBreaksInAttributes(t *testing.T) {
+	logRecord := plog.NewLogRecord()
+	logRecord.Attributes().PutInt("priority", 165)
+	logRecord.Attributes().PutInt("version", 1)
+	logRecord.Attributes().PutStr("hostname", "host\n<13>1 forged")
+	logRecord.Attributes().PutStr("appname", "app\r\nname")
+	logRecord.Attributes().PutStr("proc_id", "1\r2")
+	logRecord.Attributes().PutStr("msg_id", "id\x003")
+	logRecord.Attributes().PutStr("message", "first line\n<4>1 2003-08-24T05:14:15Z forged-host forged-app - - - forged message")
+	structuredData := logRecord.Attributes().PutEmptyMap("structured_data")
+	structuredData.PutEmptyMap("sd\nid@32473").PutStr("par\ram", "val\nue")
+	timestamp, err := time.Parse(rfc5424.RFC3339MICRO, "2003-08-24T05:14:15.000003Z")
+	require.NoError(t, err)
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
+
+	header := `<165>1 2003-08-24T05:14:15.000003Z host <13>1 forged app name 1 2 id 3 [sd id@32473 par am="val\nue"]`
+
+	expected := header + " first line <4>1 2003-08-24T05:14:15Z forged-host forged-app - - - forged message\n"
+	assert.Equal(t, expected, newRFC5424Formatter(false).format(logRecord))
+
+	// With octet counting the length prefix delimits the message, so line breaks in MSG are kept.
+	expected = header + " first line\n<4>1 2003-08-24T05:14:15Z forged-host forged-app - - - forged message\n"
+	assert.Equal(t, fmt.Sprintf("%d %s", len(expected), expected), newRFC5424Formatter(true).format(logRecord))
+}

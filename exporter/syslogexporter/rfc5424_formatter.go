@@ -15,11 +15,14 @@ import (
 
 type rfc5424Formatter struct {
 	octetCounting bool
+	// rawMessage keeps LF, CR and NUL in the message, for framings in which they cannot start a new message.
+	rawMessage bool
 }
 
 func newRFC5424Formatter(octetCounting bool) *rfc5424Formatter {
 	return &rfc5424Formatter{
 		octetCounting: octetCounting,
+		rawMessage:    octetCounting,
 	}
 }
 
@@ -81,7 +84,7 @@ func (*rfc5424Formatter) formatStructuredData(logRecord plog.LogRecord) string {
 
 	var sdBuilder strings.Builder
 	for key, val := range structuredDataAttributeValue.Map().AsRaw() {
-		sdElements := []string{key}
+		sdElements := []string{replaceDelimiters(key)}
 		vval, ok := val.(map[string]any)
 		if !ok {
 			continue
@@ -91,15 +94,15 @@ func (*rfc5424Formatter) formatStructuredData(logRecord plog.LogRecord) string {
 			if !ok {
 				continue
 			}
-			sdElements = append(sdElements, fmt.Sprintf("%s=%q", k, vv))
+			sdElements = append(sdElements, fmt.Sprintf("%s=%q", replaceDelimiters(k), vv))
 		}
 		fmt.Fprint(&sdBuilder, sdElements)
 	}
 	return sdBuilder.String()
 }
 
-func (*rfc5424Formatter) formatMessage(logRecord plog.LogRecord) string {
-	formatted := getAttributeValueOrDefault(logRecord, message, emptyMessage)
+func (f *rfc5424Formatter) formatMessage(logRecord plog.LogRecord) string {
+	formatted := getMessageOrDefault(logRecord, f.rawMessage)
 	if formatted != "" {
 		formatted = " " + formatted
 	}

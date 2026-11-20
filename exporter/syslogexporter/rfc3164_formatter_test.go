@@ -54,3 +54,17 @@ func TestRFC3164Formatter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
 }
+
+func TestRFC3164Formatter_LineBreaksInAttributes(t *testing.T) {
+	expected := "<34>Aug 24 05:14:15 my host app name: first line second line <4>Aug 24 05:14:15 forged-host forged: forged message\n"
+	logRecord := plog.NewLogRecord()
+	logRecord.Attributes().PutStr("appname", "app\r\nname")
+	logRecord.Attributes().PutStr("hostname", "my\nhost")
+	logRecord.Attributes().PutStr("message", "first line\x00second line\r<4>Aug 24 05:14:15 forged-host forged: forged message")
+	logRecord.Attributes().PutInt("priority", 34)
+	timestamp, err := time.Parse(time.RFC3339Nano, "2003-08-24T05:14:15.000003Z")
+	require.NoError(t, err)
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
+
+	assert.Equal(t, expected, newRFC3164Formatter().format(logRecord))
+}
