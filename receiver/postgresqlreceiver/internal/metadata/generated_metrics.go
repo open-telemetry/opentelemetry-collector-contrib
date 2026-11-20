@@ -522,10 +522,6 @@ var MetricsInfo = metricsInfo{
 		Name:       "postgresql.wal.delay",
 		Attributes: []string{"wal_operation_lag", "replication_client"},
 	},
-	PostgresqlWalLag: metricInfo{
-		Name:       "postgresql.wal.lag",
-		Attributes: []string{"wal_operation_lag", "replication_client"},
-	},
 }
 
 type metricsInfo struct {
@@ -571,7 +567,6 @@ type metricsInfo struct {
 	PostgresqlVectorSearchRowsReturned metricInfo
 	PostgresqlWalAge                   metricInfo
 	PostgresqlWalDelay                 metricInfo
-	PostgresqlWalLag                   metricInfo
 }
 
 type metricInfo struct {
@@ -4334,100 +4329,6 @@ func newMetricPostgresqlWalDelay(cfg PostgresqlWalDelayMetricConfig) metricPostg
 	return m
 }
 
-type metricPostgresqlWalLag struct {
-	data          pmetric.Metric               // data buffer for generated metric.
-	config        PostgresqlWalLagMetricConfig // metric config provided by user.
-	capacity      int                          // max observed number of data points added to the metric.
-	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
-	dpIndex       map[uint64]int               // maps a data point's hash to its index, for O(1) dedup lookup.
-}
-
-// init fills postgresql.wal.lag metric with initial data.
-func (m *metricPostgresqlWalLag) init() {
-	m.data.SetName("postgresql.wal.lag")
-	m.data.SetDescription("Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.")
-	m.data.SetUnit("s")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-	m.aggDataPoints = m.aggDataPoints[:0]
-	m.dpIndex = make(map[uint64]int, m.capacity)
-}
-
-func (m *metricPostgresqlWalLag) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, walOperationLagAttributeValue string, replicationClientAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-
-	dp := pmetric.NewNumberDataPoint()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, PostgresqlWalLagMetricAttributeKeyWalOperationLag) {
-		dp.Attributes().PutStr("operation", walOperationLagAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, PostgresqlWalLagMetricAttributeKeyReplicationClient) {
-		dp.Attributes().PutStr("replication_client", replicationClientAttributeValue)
-	}
-
-	var s string
-	key := dataPointKey(dp)
-	dps := m.data.Gauge().DataPoints()
-	if i, ok := m.dpIndex[key]; ok {
-		dpi := dps.At(i)
-		switch s = m.config.AggregationStrategy; s {
-		case AggregationStrategySum, AggregationStrategyAvg:
-			dpi.SetIntValue(dpi.IntValue() + val)
-			m.aggDataPoints[i] += 1
-			return
-		case AggregationStrategyMin:
-			if dpi.IntValue() > val {
-				dpi.SetIntValue(val)
-			}
-			return
-		case AggregationStrategyMax:
-			if dpi.IntValue() < val {
-				dpi.SetIntValue(val)
-			}
-			return
-		}
-	}
-
-	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	m.dpIndex[key] = dps.Len()
-	dp.MoveTo(dps.AppendEmpty())
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricPostgresqlWalLag) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricPostgresqlWalLag) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricPostgresqlWalLag(cfg PostgresqlWalLagMetricConfig) metricPostgresqlWalLag {
-	m := metricPostgresqlWalLag{config: cfg}
-
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -4480,7 +4381,6 @@ type MetricsBuilder struct {
 	metricPostgresqlVectorSearchRowsReturned metricPostgresqlVectorSearchRowsReturned
 	metricPostgresqlWalAge                   metricPostgresqlWalAge
 	metricPostgresqlWalDelay                 metricPostgresqlWalDelay
-	metricPostgresqlWalLag                   metricPostgresqlWalLag
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -4548,7 +4448,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricPostgresqlVectorSearchRowsReturned: newMetricPostgresqlVectorSearchRowsReturned(mbc.Metrics.PostgresqlVectorSearchRowsReturned),
 		metricPostgresqlWalAge:                   newMetricPostgresqlWalAge(mbc.Metrics.PostgresqlWalAge),
 		metricPostgresqlWalDelay:                 newMetricPostgresqlWalDelay(mbc.Metrics.PostgresqlWalDelay),
-		metricPostgresqlWalLag:                   newMetricPostgresqlWalLag(mbc.Metrics.PostgresqlWalLag),
 		resourceAttributeIncludeFilter:           make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:           make(map[string]filter.Filter),
 	}
@@ -4723,7 +4622,6 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricPostgresqlVectorSearchRowsReturned.emit(ils.Metrics())
 	mb.metricPostgresqlWalAge.emit(ils.Metrics())
 	mb.metricPostgresqlWalDelay.emit(ils.Metrics())
-	mb.metricPostgresqlWalLag.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -4963,11 +4861,6 @@ func (mb *MetricsBuilder) RecordPostgresqlWalAgeDataPoint(ts pcommon.Timestamp, 
 // RecordPostgresqlWalDelayDataPoint adds a data point to postgresql.wal.delay metric.
 func (mb *MetricsBuilder) RecordPostgresqlWalDelayDataPoint(ts pcommon.Timestamp, val float64, walOperationLagAttributeValue AttributeWalOperationLag, replicationClientAttributeValue string) {
 	mb.metricPostgresqlWalDelay.recordDataPoint(mb.startTime, ts, val, walOperationLagAttributeValue.String(), replicationClientAttributeValue)
-}
-
-// RecordPostgresqlWalLagDataPoint adds a data point to postgresql.wal.lag metric.
-func (mb *MetricsBuilder) RecordPostgresqlWalLagDataPoint(ts pcommon.Timestamp, val int64, walOperationLagAttributeValue AttributeWalOperationLag, replicationClientAttributeValue string) {
-	mb.metricPostgresqlWalLag.recordDataPoint(mb.startTime, ts, val, walOperationLagAttributeValue.String(), replicationClientAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
