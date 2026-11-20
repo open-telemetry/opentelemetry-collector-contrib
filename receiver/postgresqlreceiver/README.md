@@ -261,12 +261,25 @@ GRANT USAGE ON SCHEMA otel TO monitoring_user;
 GRANT EXECUTE ON FUNCTION otel.explain_statement(text) TO monitoring_user;
 ```
 
-The script revokes public execute access. It sets the transaction read-only and
-uses EXPLAIN without ANALYZE. These measures do not make arbitrary SQL safe:
-PostgreSQL can evaluate functions during planning. Only use trusted application
-queries captured from `pg_stat_statements`. Do not expose the helper to user/API
-input or give its owner superuser privileges. Its execution grant is a privileged
-capability, even though the monitoring role has no direct table write grants.
+The monitoring role must not be able to create functions anywhere in a monitored
+database. PostgreSQL can run functions while it plans a statement, and the helper
+plans with its owner's privileges. Give the monitoring role no CREATE privilege on
+any schema. Also revoke `TEMPORARY`, which PostgreSQL grants to PUBLIC by default
+and which allows functions in `pg_temp`. Removing a PUBLIC grant affects all roles
+that inherit it, so grant `TEMPORARY` directly to roles that need it:
+
+```sql
+REVOKE TEMPORARY ON DATABASE example_db FROM PUBLIC;
+```
+
+The helper refuses to run for a caller that has `TEMPORARY` on the current database.
+
+The execute grant amounts to `SELECT` on everything the helper owner can read.
+Built-in functions can also read tables during planning, so the restrictions above
+do not remove this. Grant the owner only the privileges needed to plan the captured
+queries, do not give it superuser privileges, and do not expose the helper to
+user/API input. The script revokes public execute access, sets the transaction
+read-only, and uses EXPLAIN without ANALYZE, so the helper cannot write data.
 Plans reflect the helper owner's permissions and row security policies, which can
 differ from those of the application role.
 

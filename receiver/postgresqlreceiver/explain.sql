@@ -20,6 +20,12 @@ DECLARE
     v_prepared boolean := false;
     i int;
 BEGIN
+    -- A caller that can create temporary functions can make planning run them as the owner.
+    IF pg_catalog.has_database_privilege(session_user, pg_catalog.current_database(), 'TEMPORARY') THEN
+        RAISE EXCEPTION 'EXPLAIN helper refuses callers with the TEMPORARY privilege on this database'
+            USING ERRCODE = '42501';
+    END IF;
+
     l_query := pg_catalog.regexp_replace(l_query, ';[[:space:]]*$', '');
     -- Reject separators even inside literals or comments rather than parse SQL here.
     -- PREPARE through dynamic EXECUTE otherwise accepts additional commands.

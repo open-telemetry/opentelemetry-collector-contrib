@@ -69,6 +69,7 @@ CREATE ROLE monitor LOGIN PASSWORD 'monitor';
 CREATE ROLE outsider;
 GRANT pg_monitor TO monitor;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+REVOKE TEMPORARY ON DATABASE otel FROM PUBLIC;
 CREATE TABLE public.explain_items(id integer PRIMARY KEY, value text);
 INSERT INTO public.explain_items VALUES (1, 'unchanged');
 GRANT USAGE ON SCHEMA public TO explain_owner;
@@ -120,15 +121,22 @@ GRANT EXECUTE ON FUNCTION otel.explain_statement(text) TO monitor;`)
 				assert.Equal(t, 1, count)
 			})
 
-			t.Run("temporary objects cannot redirect helper lookups", func(t *testing.T) {
-				_, err := monitor.ExecContext(t.Context(), `
-CREATE TEMP TABLE explain_items(wrong_column integer);
-CREATE TEMP TABLE pg_prepared_statements(wrong_column integer);`)
+			t.Run("refuses callers that can create temporary functions", func(t *testing.T) {
+				_, err := admin.ExecContext(t.Context(), "GRANT TEMPORARY ON DATABASE otel TO monitor")
 				require.NoError(t, err)
-				plan, err := client.explainQuery(t.Context(), "UPDATE explain_items SET value = $1 WHERE id = $2", "shadow", quoted, zap.NewNop())
+				// Planning folds this IMMUTABLE call and would run it as the helper owner.
+				_, err = monitor.ExecContext(t.Context(), `
+CREATE FUNCTION pg_temp.leak(integer) RETURNS integer LANGUAGE plpgsql IMMUTABLE
+AS $$ BEGIN RAISE EXCEPTION 'leaked %', (SELECT value FROM public.explain_items WHERE id = 1); END; $$;`)
 				require.NoError(t, err)
-				assert.Contains(t, plan, "ModifyTable")
-				_, err = monitor.ExecContext(t.Context(), "DROP TABLE pg_temp.explain_items, pg_temp.pg_prepared_statements")
+				_, err = client.explainQuery(t.Context(), "SELECT pg_temp.leak(1)", "leak", quoted, zap.NewNop())
+				var queryErr *pq.Error
+				require.ErrorAs(t, err, &queryErr)
+				assert.Equal(t, "42501", queryErr.SQLState())
+				assert.NotContains(t, queryErr.Message, "leaked")
+				_, err = monitor.ExecContext(t.Context(), "DROP FUNCTION pg_temp.leak(integer)")
+				require.NoError(t, err)
+				_, err = admin.ExecContext(t.Context(), "REVOKE TEMPORARY ON DATABASE otel FROM monitor")
 				require.NoError(t, err)
 			})
 
