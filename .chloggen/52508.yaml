@@ -1,5 +1,6 @@
 change_type: enhancement
-component: exporter/loadbalancing
-note: Add OTLP/HTTP backend support for metrics
+component: exporter/load_balancing
+note: Add `protocol.otlp_http` to send traces, metrics and logs to backends over OTLP/HTTP instead of OTLP/gRPC.
 issues: [52508]
-subtext: Breaking change: Protocol.OTLP field type changed from otlpexporter.Config to configoptional.Optional[otlpexporter.Config]. Go code constructing or reading this field directly must be updated. YAML configuration remains backward compatible.
+subtext:
+change_logs: [user]

@@ -8,6 +8,7 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -44,84 +45,69 @@ func createDefaultConfig() component.Config {
 	otlpDefaultCfg := otlpFactory.CreateDefaultConfig().(*otlpexporter.Config)
 	otlpDefaultCfg.ClientConfig.Endpoint = "placeholder:4317"
 
-	httpFactory := otlphttpexporter.NewFactory()
-	httpDefaultCfg := httpFactory.CreateDefaultConfig().(*otlphttpexporter.Config)
-	httpDefaultCfg.ClientConfig.Endpoint = "placeholder:4318"
+	// Defaults of otlphttpexporter apply once the user sets protocol::otlp_http.
+	otlpHTTPDefaultCfg := otlphttpexporter.NewFactory().CreateDefaultConfig().(*otlphttpexporter.Config)
 
 	return &Config{
 		// By default we disable resilience options on loadbalancing exporter level
 		// to maintain compatibility with workflow in previous versions
 		Protocol: Protocol{
-			OTLP:     configoptional.Default(*otlpDefaultCfg),
-			OTLPHTTP: configoptional.Default(*httpDefaultCfg),
+			OTLP:     *otlpDefaultCfg,
+			OTLPHTTP: configoptional.Default(*otlpHTTPDefaultCfg),
 		},
 		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 	}
 }
 
-func buildExporterConfig(cfg *Config, endpoint string) *otlpexporter.Config {
-	// GetOrInsertDefault returns the default value if None, or the configured value if Some
-	// This ensures all factory defaults are preserved while allowing user overrides
-	oCfg := cfg.Protocol.OTLP.GetOrInsertDefault()
+func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
+	oCfg := cfg.Protocol.OTLP
 	oCfg.ClientConfig.Endpoint = endpoint
+
 	return oCfg
 }
 
-func buildHTTPExporterConfig(cfg *Config, resolvedBackend string) (*otlphttpexporter.Config, error) {
-	// GetOrInsertDefault returns the default value if None, or the configured value if Some
-	// This ensures all factory defaults are preserved while allowing user overrides
-	configured := cfg.Protocol.OTLPHTTP.GetOrInsertDefault()
-
-	// Create a copy to avoid mutating the original validated configuration
-	httpCfg := *configured
-
-	// Set default encoding to proto if not explicitly configured
-	if httpCfg.Encoding == "" {
-		httpCfg.Encoding = otlphttpexporter.EncodingProto
-	}
-
-	// For HTTP, we need to rewrite the endpoint to preserve the configured path
-	// while replacing the host and port with the resolved backend
-	var rewrittenEndpoint string
-	var err error
-
-	// Prefer signal-specific endpoints if configured
-	switch {
-	case httpCfg.MetricsEndpoint != "":
-		rewrittenEndpoint, err = rewriteHTTPEndpoint(httpCfg.MetricsEndpoint, resolvedBackend)
-		if err != nil {
-			return nil, fmt.Errorf("failed to rewrite metrics endpoint: %w", err)
+// buildHTTPExporterConfig copies the OTLP/HTTP settings and points every configured endpoint at hostPort.
+// Scheme, path and query of each endpoint stay as the user wrote them. Only string fields of the copy
+// are written, so the shared configuration is never modified.
+func buildHTTPExporterConfig(cfg *Config, hostPort string) otlphttpexporter.Config {
+	hCfg := *cfg.Protocol.OTLPHTTP.Get()
+	for _, e := range httpEndpoints(&hCfg) {
+		if *e.value == "" {
+			continue
 		}
-		httpCfg.MetricsEndpoint = rewrittenEndpoint
-	case httpCfg.ClientConfig.Endpoint != "":
-		// Fall back to the generic endpoint with /v1/metrics appended
-		rewrittenEndpoint, err = rewriteHTTPEndpoint(httpCfg.ClientConfig.Endpoint, resolvedBackend)
-		if err != nil {
-			return nil, fmt.Errorf("failed to rewrite endpoint: %w", err)
+		if u, err := url.Parse(*e.value); err == nil {
+			u.Host = hostPort
+			*e.value = u.String()
 		}
-		httpCfg.ClientConfig.Endpoint = rewrittenEndpoint
-	default:
-		// Use the default with resolved backend
-		httpCfg.ClientConfig.Endpoint = fmt.Sprintf("http://%s/v1/metrics", resolvedBackend)
 	}
+	return hCfg
+}
 
-	return &httpCfg, nil
+// newBackend returns the factory, config and settings of the exporter that sends to one resolved backend.
+func newBackend(cfg *Config, params exporter.Settings, endpoint string) (exporter.Factory, component.Config, exporter.Settings) {
+	if cfg.Protocol.OTLPHTTP.HasValue() {
+		f := otlphttpexporter.NewFactory()
+		hCfg := buildHTTPExporterConfig(cfg, endpoint)
+		return f, &hCfg, buildExporterSettings(f.Type(), params, endpoint)
+	}
+	f := otlpexporter.NewFactory()
+	oCfg := buildExporterConfig(cfg, endpoint)
+	return f, &oCfg, buildExporterSettings(f.Type(), params, endpoint)
 }
 
 func buildExporterSettings(typ component.Type, params exporter.Settings, endpoint string) exporter.Settings {
-	exporterParams := params
 	if name := params.ID.Name(); name != "" {
-		exporterParams.ID = component.NewIDWithName(typ, name)
+		params.ID = component.NewIDWithName(typ, name)
 	} else {
-		exporterParams.ID = component.NewID(typ)
+		params.ID = component.NewID(typ)
 	}
 	telemetry := params.TelemetrySettings
 	telemetry.MeterProvider = metricnoop.NewMeterProvider()
 	telemetry.TracerProvider = tracenoop.NewTracerProvider()
-	exporterParams.Logger = params.Logger.With(zap.String(zapEndpointKey, endpoint))
-	telemetry.Logger = exporterParams.Logger
-	exporterParams.TelemetrySettings = telemetry
-	return exporterParams
+	params.Logger = params.Logger.With(zap.String(zapEndpointKey, endpoint))
+	telemetry.Logger = params.Logger
+	params.TelemetrySettings = telemetry
+	return params
 }
 
 func buildExporterResilienceOptions(options []exporterhelper.Option, cfg *Config) []exporterhelper.Option {

@@ -27,6 +27,19 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 }
 
+func TestLoadConfigOTLPHTTP(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	cfg := NewFactory().CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "otlp_http").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, cfg.(*Config).Validate())
+	require.True(t, cfg.(*Config).Protocol.OTLPHTTP.HasValue())
+	require.Equal(t, "http://placeholder:8429/opentelemetry/v1/metrics", cfg.(*Config).Protocol.OTLPHTTP.Get().MetricsEndpoint)
+}
+
 func TestLoadConfigDeprecatedTypeAlias(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config-deprecated.yaml"))
 	require.NoError(t, err)

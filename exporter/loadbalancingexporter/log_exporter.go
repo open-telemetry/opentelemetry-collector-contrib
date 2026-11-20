@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/metric"
@@ -46,21 +45,20 @@ type logExporterImp struct {
 
 // Create new logs exporter
 func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExporterImp, error) {
+	if err := checkHTTPSignalEndpoint(cfg.(*Config), "logs"); err != nil {
+		return nil, err
+	}
 	telemetry, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
-
-	config := cfg.(*Config)
-	exporterFactory := otlpexporter.NewFactory()
 	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
-		oCfg := buildExporterConfig(config, endpoint)
-		oParams := buildExporterSettings(exporterFactory.Type(), params, endpoint)
+		f, oCfg, oParams := newBackend(cfg.(*Config), params, endpoint)
 
-		return exporterFactory.CreateLogs(ctx, oParams, oCfg)
+		return f.CreateLogs(ctx, oParams, oCfg)
 	}
 
-	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry, defaultGRPCPort)
+	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +70,7 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 		logger:       params.Logger,
 	}
 
-	switch config.RoutingKey {
+	switch cfg.(*Config).RoutingKey {
 	case svcRoutingStr, "":
 		logExporter.routingKey = svcRouting
 	case traceIDRoutingStr:
@@ -81,9 +79,9 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 		logExporter.routingKey = resourceRouting
 	case attrRoutingStr:
 		logExporter.routingKey = attrRouting
-		logExporter.routingAttrs = config.RoutingAttributes
+		logExporter.routingAttrs = cfg.(*Config).RoutingAttributes
 	default:
-		return nil, fmt.Errorf("unsupported routing_key: %q", config.RoutingKey)
+		return nil, fmt.Errorf("unsupported routing_key: %q", cfg.(*Config).RoutingKey)
 	}
 
 	return &logExporter, nil

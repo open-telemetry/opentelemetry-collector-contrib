@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/metric"
@@ -48,21 +47,21 @@ type traceExporterImp struct {
 
 // Create new traces exporter
 func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceExporterImp, error) {
+	if err := checkHTTPSignalEndpoint(cfg.(*Config), "traces"); err != nil {
+		return nil, err
+	}
 	telemetry, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
 
-	config := cfg.(*Config)
-	exporterFactory := otlpexporter.NewFactory()
 	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
-		oCfg := buildExporterConfig(config, endpoint)
-		oParams := buildExporterSettings(exporterFactory.Type(), params, endpoint)
+		f, oCfg, oParams := newBackend(cfg.(*Config), params, endpoint)
 
-		return exporterFactory.CreateTraces(ctx, oParams, oCfg)
+		return f.CreateTraces(ctx, oParams, oCfg)
 	}
 
-	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry, defaultGRPCPort)
+	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry)
 	if err != nil {
 		return nil, err
 	}
@@ -74,17 +73,17 @@ func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceEx
 		logger:       params.Logger,
 	}
 
-	switch config.RoutingKey {
+	switch cfg.(*Config).RoutingKey {
 	case svcRoutingStr:
 		traceExporter.routingKey = svcRouting
 	case attrRoutingStr:
 		traceExporter.routingKey = attrRouting
-		traceExporter.routingAttrs = config.RoutingAttributes
+		traceExporter.routingAttrs = cfg.(*Config).RoutingAttributes
 	case randomnessRoutingStr:
 		traceExporter.routingKey = randomnessRouting
 	case traceIDRoutingStr, "":
 	default:
-		return nil, fmt.Errorf("unsupported routing_key: %s", config.RoutingKey)
+		return nil, fmt.Errorf("unsupported routing_key: %s", cfg.(*Config).RoutingKey)
 	}
 	return &traceExporter, nil
 }
