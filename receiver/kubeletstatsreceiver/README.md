@@ -452,6 +452,35 @@ To enable it, start the Collector with:
 otelcol --config=config.yaml --feature-gates=receiver.kubelet_stats.cpuUtilizationRounding
 ```
 
+## Semantic Conventions Compatibility
+
+The receiver is migrating its metrics to the release candidate K8s and container [Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/registry/attributes/k8s/)
+through the following feature gates (both `alpha` and disabled by default):
+- `receiver.kubelet_stats.EmitV1K8sConventions`: emits the migrated metrics following the latest semantic conventions definition.
+- `receiver.kubelet_stats.DontEmitV0K8sConventions`: stops emitting the legacy version of the migrated metrics.
+
+Enabled `receiver.kubelet_stats.DontEmitV0K8sConventions` requires `receiver.kubelet_stats.EmitV1K8sConventions` to be enabled as well,
+otherwise the Collector fails to start because no version of the migrated metrics would be emitted.
+
+This follows the migration pattern described by the respective Collector [RFC](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/semconv-feature-gates.md#proposed-mechanism).
+
+The metric names are unchanged. The breaking changes between the 2 schemas are the following:
+- `container.memory.available`: Gauge -> non-monotonic cumulative Sum (UpDownCounter)
+- `container.memory.rss`: Gauge -> non-monotonic cumulative Sum (UpDownCounter)
+- `container.memory.usage`: Gauge -> non-monotonic cumulative Sum (UpDownCounter)
+- `container.memory.working_set`: Gauge -> non-monotonic cumulative Sum (UpDownCounter)
+
+The list of migrated metrics will grow as more metrics reach release candidate status in the semantic conventions.
+
+When `receiver.kubelet_stats.EmitV1K8sConventions` is enabled, the new version of each migrated metric is enabled
+whenever its legacy version is enabled. Because the legacy and new versions of the metrics above share the same name
+but have a different type, they cannot be emitted side by side: enabling `receiver.kubelet_stats.EmitV1K8sConventions`
+alone already replaces the legacy version with the new one, and a warning is logged at startup.
+Dashboards and alerts that rely on these metrics being Gauges should be reviewed before enabling the feature gate.
+
+To switch to the new schema, enable both feature gates:
+`--feature-gates=receiver.kubelet_stats.EmitV1K8sConventions,receiver.kubelet_stats.DontEmitV0K8sConventions`
+
 ## Self-observability
 
 The Kubelet Stats Receiver does not expose component-specific internal telemetry of its own. It uses the Collector's standard receiver and scraper observability mechanisms.
