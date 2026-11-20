@@ -4,3 +4,9 @@ properties:
   endpoint:
     description: The address to listen on for incoming Fluent Forward events.  Should be of the form `<ip addr>:<port>` (TCP) or `unix://<socket_path>` (Unix domain socket).
     type: string
+  max_connections:
+    description: MaxConnections caps simultaneously open connections. By default, connections over the cap wait in the accept backlog until a slot frees. 0 means no limit.
+    type: integer
+  refuse_over_limit:
+    description: RefuseOverLimit closes connections over MaxConnections on accept instead of queueing them, so long-lived clients reconnect, possibly to another instance, rather than waiting on a slot that may never free.
+    type: boolean
