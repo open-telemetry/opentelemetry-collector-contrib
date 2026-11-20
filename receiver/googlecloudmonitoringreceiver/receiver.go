@@ -15,6 +15,7 @@ import (
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/iterator"
@@ -84,7 +85,7 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 		calStartTime time.Time
 		calEndTime   time.Time
 		filterQuery  string
-		gErr         error
+		errs         []error
 	)
 
 	metrics := pmetric.NewMetrics()
@@ -132,10 +133,10 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 				break
 			}
 
-			// Handle errors and break conditions for the iterator
+			// Record the error and move on, so one failing metric type does not drop the others
 			if err != nil {
-				gErr = fmt.Errorf("failed to retrieve time series data: %w", err)
-				return metrics, gErr
+				errs = append(errs, fmt.Errorf("failed to retrieve time series data for %q: %w", metricType, err))
+				break
 			}
 
 			// Convert and append the metric directly within the loop
@@ -143,7 +144,10 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 		}
 	}
 
-	return metrics, gErr
+	if len(errs) > 0 {
+		return metrics, scrapererror.NewPartialScrapeError(errors.Join(errs...), len(errs))
+	}
+	return metrics, nil
 }
 
 // initializeClient handles the creation of the monitoring client
