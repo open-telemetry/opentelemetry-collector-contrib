@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/internal/metadata"
@@ -26,7 +27,8 @@ func TestRedisRunnable(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.AddrConfig.Endpoint = "localhost:6379"
 	rs := &redisScraper{mb: metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)}
-	runner, err := newRedisScraperWithClient(newFakeClient(), settings, cfg)
+	scraperSettings := scraper.Settings{ID: settings.ID, TelemetrySettings: settings.TelemetrySettings, BuildInfo: settings.BuildInfo}
+	runner, err := newRedisScraperWithClient(newFakeClient(), scraperSettings, &cfg.ScraperConfig)
 	require.NoError(t, err)
 	md, err := runner.ScrapeMetrics(t.Context())
 	require.NoError(t, err)

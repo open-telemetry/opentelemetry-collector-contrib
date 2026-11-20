@@ -1,4 +1,22 @@
 $defs:
+  default_component_config:
+    description: DefaultComponentConfig holds the settings for a component discovered by its default discovery rule.
+    type: object
+    properties:
+      config:
+        description: Config is merged over the default config of the component's discovery rule.
+        type: object
+        additionalProperties:
+          x-customType: any
+  defaults_config:
+    description: DefaultsConfig lists the components discovered by their default discovery rules.
+    type: object
+    properties:
+      scrapers:
+        description: Scrapers maps scraper types to their settings.
+        type: object
+        additionalProperties:
+          $ref: default_component_config
   discovery_config:
     type: object
     properties:
@@ -10,7 +28,11 @@ $defs:
         type: object
         additionalProperties:
           x-customType: any
+      defaults:
+        description: Defaults lists the components started for endpoints that match their default discovery rules, when nothing more specific claims the endpoint.
+        $ref: defaults_config
       enabled:
+        description: Enabled controls annotation hints only. Default discovery is active whenever Defaults lists a component.
         type: boolean
       ignore_receivers:
         type: array

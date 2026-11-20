@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/scraper/xscraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -30,6 +31,9 @@ type receiverConfig struct {
 	// the "config" section. The keys and values are arbitrarily configured by the user.
 	config     userConfigMap
 	endpointID observer.EndpointID
+	// scraperFactory is set when the config comes from a scraper's default
+	// discovery rule. The scraper then runs in its own scraper controller.
+	scraperFactory xscraper.Factory
 }
 
 // userConfigMap is an arbitrary map of string keys to arbitrary values as specified by the user
@@ -53,7 +57,10 @@ type receiverTemplate struct {
 	// It can contain expr expressions for endpoint env value expansion
 	ResourceAttributes map[string]any `mapstructure:"resource_attributes"`
 	rule               rule
-	signals            receiverSignals
+	// endpointRules holds the compiled rules per endpoint type of a default
+	// discovery rule. When set, it is used instead of rule.
+	endpointRules map[observer.EndpointType]rule
+	signals       receiverSignals
 }
 
 // resourceAttributes holds a map of default resource attributes for each Endpoint type.
@@ -91,10 +98,30 @@ type Config struct {
 }
 
 type DiscoveryConfig struct {
+	// Enabled controls annotation hints only. Default discovery is active
+	// whenever Defaults lists a component.
 	Enabled              bool              `mapstructure:"enabled"`
 	IgnoreReceivers      []string          `mapstructure:"ignore_receivers"`
 	DefaultAnnotations   map[string]string `mapstructure:"default_annotations"`
 	DefaultFileLogConfig userConfigMap     `mapstructure:"default_file_log_config"`
+	// Defaults lists the components started for endpoints that match their
+	// default discovery rules, when nothing more specific claims the endpoint.
+	Defaults DefaultsConfig `mapstructure:"defaults"`
+}
+
+// DefaultsConfig lists the components discovered by their default discovery rules.
+type DefaultsConfig struct {
+	// Scrapers maps scraper types to their settings.
+	Scrapers map[string]DefaultComponentConfig `mapstructure:"scrapers"`
+}
+
+// DefaultComponentConfig holds the settings for a component discovered by its
+// default discovery rule.
+type DefaultComponentConfig struct {
+	// Config is merged over the default config of the component's discovery rule.
+	Config userConfigMap `mapstructure:"config"`
+
+	_ struct{}
 }
 
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {

@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -57,6 +58,10 @@ func (run *receiverRunner) start(
 	discoveredConfig userConfigMap,
 	consumer *enhancingConsumer,
 ) (component.Component, error) {
+	if receiver.scraperFactory != nil {
+		return run.startScraper(receiver, discoveredConfig, consumer)
+	}
+
 	factory := run.host.GetFactory(component.KindReceiver, receiver.id.Type())
 
 	if factory == nil {
@@ -127,6 +132,36 @@ func (run *receiverRunner) start(
 	return wr, nil
 }
 
+// startScraper runs a scraper discovered by its default discovery rule in its own
+// scraper controller.
+func (run *receiverRunner) startScraper(
+	receiver receiverConfig,
+	discoveredConfig userConfigMap,
+	consumer *enhancingConsumer,
+) (component.Component, error) {
+	cfg, targetEndpoint, err := run.loadRuntimeReceiverConfig(receiver.scraperFactory, receiver, discoveredConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	id := component.NewIDWithName(receiver.scraperFactory.Type(), fmt.Sprintf("%s/%s{endpoint=%q}/%s", receiver.id.Name(), run.idNamespace, targetEndpoint, receiver.endpointID))
+	runParams := run.params
+	runParams.Logger = runParams.Logger.With(zap.String("name", id.String()))
+	runParams.ID = id
+
+	// TODO: make controller settings configurable for all discovered scrapers.
+	controllerCfg := scraperhelper.NewDefaultControllerConfig()
+	rcv, err := scraperhelper.NewMetricsController(&controllerCfg, runParams, consumer,
+		scraperhelper.AddFactoryWithConfig(receiver.scraperFactory, cfg))
+	if err != nil {
+		return nil, fmt.Errorf("failed creating endpoint-derived scraper: %w", err)
+	}
+	if err = rcv.Start(context.Background(), run.host); err != nil {
+		return nil, fmt.Errorf("failed starting endpoint-derived scraper: %w", err)
+	}
+	return rcv, nil
+}
+
 // shutdown the given receiver.
 func (*receiverRunner) shutdown(rcvr component.Component) error {
 	return rcvr.Shutdown(context.Background())
@@ -135,7 +170,7 @@ func (*receiverRunner) shutdown(rcvr component.Component) error {
 // loadRuntimeReceiverConfig loads the given receiverTemplate merged with config values
 // that may have been discovered at runtime.
 func (*receiverRunner) loadRuntimeReceiverConfig(
-	factory rcvr.Factory,
+	factory component.Factory,
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
 ) (component.Config, string, error) {
@@ -158,7 +193,7 @@ func (*receiverRunner) loadRuntimeReceiverConfig(
 // mergeTemplateAndDiscoveredConfigs will unify the templated and discovered configs,
 // setting the `endpoint` field from the discovered one if 1. not specified by the user
 // and 2. determined to be supported (by trial and error of unmarshalling a temp intermediary).
-func mergeTemplatedAndDiscoveredConfigs(factory rcvr.Factory, templated, discovered userConfigMap) (*confmap.Conf, string, error) {
+func mergeTemplatedAndDiscoveredConfigs(factory component.Factory, templated, discovered userConfigMap) (*confmap.Conf, string, error) {
 	targetEndpoint := cast.ToString(templated[endpointConfigKey])
 	if _, endpointSet := discovered[tmpSetEndpointConfigKey]; endpointSet {
 		delete(discovered, tmpSetEndpointConfigKey)

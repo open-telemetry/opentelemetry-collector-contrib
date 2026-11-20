@@ -65,3 +65,9 @@ providers:
 # file before passing it to OCB, to ensure that local versions are used for all
 # Contrib modules.
 replaces:
+  - go.opentelemetry.io/collector/component/xcomponentdiscovery => github.com/dmitryax/opentelemetry-collector/component/xcomponentdiscovery v0.0.0-20261114014407-0242376c78b1
+  - go.opentelemetry.io/collector/scraper/xscraper => github.com/dmitryax/opentelemetry-collector/scraper/xscraper v0.0.0-20261114014407-0242376c78b1
+  - go.opentelemetry.io/collector/receiver/xreceiver => github.com/dmitryax/opentelemetry-collector/receiver/xreceiver v0.0.0-20261114014407-0242376c78b1
+  - go.opentelemetry.io/collector/service => github.com/dmitryax/opentelemetry-collector/service v0.0.0-20261114014407-0242376c78b1
+  - go.opentelemetry.io/collector/service/hostcapabilities => github.com/dmitryax/opentelemetry-collector/service/hostcapabilities v0.0.0-20261114014407-0242376c78b1
+  - go.opentelemetry.io/collector/otelcol => github.com/dmitryax/opentelemetry-collector/otelcol v0.0.0-20261114014407-0242376c78b1

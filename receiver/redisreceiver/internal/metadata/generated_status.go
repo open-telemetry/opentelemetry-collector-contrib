@@ -6,6 +6,7 @@ package metadata
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/xcomponentdiscovery"
 )
 
 var (
@@ -16,3 +17,15 @@ var (
 const (
 	MetricsStability = component.StabilityLevelBeta
 )
+
+// DiscoveryRule returns the default discovery rule declared in metadata.yaml.
+func DiscoveryRule() xcomponentdiscovery.Rule {
+	return xcomponentdiscovery.Rule{
+		DefaultConfig: map[string]any{},
+		Endpoints: map[xcomponentdiscovery.EndpointType]xcomponentdiscovery.EndpointRule{
+			"container": {Rule: "port == 6379 and image matches \"(?i)redis\""},
+			"hostport":  {Rule: "port == 6379 and process_name matches \"(?i)redis-server\" and not is_ipv6"},
+			"port":      {Rule: "port == 6379 and container_image matches \"(?i)redis\""},
+		},
+	}
+}

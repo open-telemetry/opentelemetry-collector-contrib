@@ -26,6 +26,8 @@ require (
 	go.opentelemetry.io/collector/receiver v1.71.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/receiver/receivertest v0.165.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/receiver/xreceiver v0.165.1-0.20261112225459-4888f0b280f9
+	go.opentelemetry.io/collector/scraper v0.165.1-0.20261112225459-4888f0b280f9
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.165.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/service/hostcapabilities v0.165.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/otel v1.47.0
 	go.uber.org/goleak v1.3.0
@@ -33,6 +35,8 @@ require (
 	go.uber.org/zap v1.28.0
 	go.yaml.in/yaml/v3 v3.0.6
 )
+
+require go.opentelemetry.io/collector/receiver/receiverhelper v0.165.1-0.20261112225459-4888f0b280f9 // indirect
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -70,6 +74,7 @@ require (
 	github.com/tklauser/numcpus v0.12.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
+	go.opentelemetry.io/collector/component/xcomponentdiscovery v0.165.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/config/configopaque v1.71.1-0.20261112225459-4888f0b280f9 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.165.1-0.20261112225459-4888f0b280f9 // indirect
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.71.1-0.20261112225459-4888f0b280f9 // indirect
@@ -96,6 +101,7 @@ require (
 	go.opentelemetry.io/collector/processor v1.71.1-0.20261112225459-4888f0b280f9 // indirect
 	go.opentelemetry.io/collector/processor/processortest v0.165.1-0.20261112225459-4888f0b280f9 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.165.1-0.20261112225459-4888f0b280f9 // indirect
+	go.opentelemetry.io/collector/scraper/xscraper v0.165.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/service v0.165.1-0.20261112225459-4888f0b280f9 // indirect
 	go.opentelemetry.io/contrib/otelconf v0.27.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.23.0 // indirect
@@ -140,3 +146,15 @@ retract (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace go.opentelemetry.io/collector/component/xcomponentdiscovery => github.com/dmitryax/opentelemetry-collector/component/xcomponentdiscovery v0.0.0-20261114014407-0242376c78b1
+
+replace go.opentelemetry.io/collector/scraper/xscraper => github.com/dmitryax/opentelemetry-collector/scraper/xscraper v0.0.0-20261114014407-0242376c78b1
+
+replace go.opentelemetry.io/collector/receiver/xreceiver => github.com/dmitryax/opentelemetry-collector/receiver/xreceiver v0.0.0-20261114014407-0242376c78b1
+
+replace go.opentelemetry.io/collector/service => github.com/dmitryax/opentelemetry-collector/service v0.0.0-20261114014407-0242376c78b1
+
+replace go.opentelemetry.io/collector/service/hostcapabilities => github.com/dmitryax/opentelemetry-collector/service/hostcapabilities v0.0.0-20261114014407-0242376c78b1
+
+replace go.opentelemetry.io/collector/otelcol => github.com/dmitryax/opentelemetry-collector/otelcol v0.0.0-20261114014407-0242376c78b1

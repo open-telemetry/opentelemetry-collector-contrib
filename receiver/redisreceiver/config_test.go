@@ -31,20 +31,22 @@ func TestConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&Config{
-			AddrConfig: confignet.AddrConfig{
-				Endpoint:  "localhost:6379",
-				Transport: confignet.TransportTypeTCP,
-			},
-			TLS: configtls.ClientConfig{
-				Insecure: true,
-			},
-			Username: "test",
-			Password: "test",
 			ControllerConfig: scraperhelper.ControllerConfig{
 				CollectionInterval: 10 * time.Second,
 				InitialDelay:       time.Second,
 			},
-			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+			ScraperConfig: ScraperConfig{
+				AddrConfig: confignet.AddrConfig{
+					Endpoint:  "localhost:6379",
+					Transport: confignet.TransportTypeTCP,
+				},
+				TLS: configtls.ClientConfig{
+					Insecure: true,
+				},
+				Username:             "test",
+				Password:             "test",
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+			},
 		},
 		cfg,
 	)

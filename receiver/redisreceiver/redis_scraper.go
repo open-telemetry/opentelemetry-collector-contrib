@@ -34,7 +34,7 @@ type redisScraper struct {
 
 const redisMaxDbs = 16 // Maximum possible number of redis databases
 
-func newRedisScraper(cfg *Config, settings receiver.Settings) (scraper.Metrics, error) {
+func newRedisScraper(cfg *ScraperConfig, settings scraper.Settings) (scraper.Metrics, error) {
 	opts := &redis.Options{
 		Addr:     cfg.AddrConfig.Endpoint,
 		Username: cfg.Username,
@@ -53,16 +53,21 @@ func newRedisScraper(cfg *Config, settings receiver.Settings) (scraper.Metrics, 
 	return newRedisScraperWithClient(newRedisClient(opts), settings, cfg)
 }
 
-func newRedisScraperWithClient(client client, settings receiver.Settings, cfg *Config) (scraper.Metrics, error) {
+func newRedisScraperWithClient(client client, settings scraper.Settings, cfg *ScraperConfig) (scraper.Metrics, error) {
 	configInfo, err := newConfigInfo(cfg)
 	if err != nil {
 		return nil, err
 	}
 	rs := &redisScraper{
-		client:     client,
-		redisSvc:   newRedisSvc(client),
-		settings:   settings.TelemetrySettings,
-		mb:         metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
+		client:   client,
+		redisSvc: newRedisSvc(client),
+		settings: settings.TelemetrySettings,
+		// The generated MetricsBuilder takes receiver.Settings because metadata.yaml has class: receiver.
+		mb: metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receiver.Settings{
+			ID:                settings.ID,
+			TelemetrySettings: settings.TelemetrySettings,
+			BuildInfo:         settings.BuildInfo,
+		}),
 		configInfo: configInfo,
 	}
 	return scraper.NewMetrics(

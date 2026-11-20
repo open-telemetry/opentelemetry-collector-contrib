@@ -15,6 +15,15 @@ status:
     active: [crobert-1]
     emeritus: [dmitryax, hughesjj]
 
+discovery:
+  endpoints:
+    container:
+      rule: port == 6379 and image matches "(?i)redis"
+    hostport:
+      rule: port == 6379 and process_name matches "(?i)redis-server" and not is_ipv6
+    port:
+      rule: port == 6379 and container_image matches "(?i)redis"
+
 resource_attributes:
   redis.version:
     description: Redis server's version.

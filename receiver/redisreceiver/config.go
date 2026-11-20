@@ -17,6 +17,11 @@ import (
 
 type Config struct {
 	ControllerConfig scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ScraperConfig    `mapstructure:",squash"`
+}
+
+// ScraperConfig is the configuration of the Redis scraper.
+type ScraperConfig struct {
 	// TODO: Use one of the configs from core.
 	// The target endpoint.
 	AddrConfig confignet.AddrConfig `mapstructure:",squash"`
@@ -44,7 +49,7 @@ type configInfo struct {
 	Port    string
 }
 
-func newConfigInfo(cfg *Config) (configInfo, error) {
+func newConfigInfo(cfg *ScraperConfig) (configInfo, error) {
 	address, port, err := net.SplitHostPort(cfg.AddrConfig.Endpoint)
 	if err != nil {
 		return configInfo{}, fmt.Errorf("invalid endpoint %q: %w", cfg.AddrConfig.Endpoint, err)
