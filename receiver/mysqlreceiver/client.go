@@ -37,6 +37,11 @@ const (
 // replaced SHOW SLAVE STATUS. Initialized at package load; panics on bad literal.
 var minMySQLReplicaStatusVersion = version.Must(version.NewVersion("8.0.22"))
 
+// minMySQLProcedureStatsVersion is the MySQL version that added the SUM_CPU_TIME column to
+// performance_schema.events_statements_summary_by_program, which the top-procedure query selects.
+// MariaDB has no such table.
+var minMySQLProcedureStatsVersion = version.Must(version.NewVersion("8.0.28"))
+
 // minMySQLPerfSchemaLogStatusVersion is the MySQL version at which
 // performance_schema.log_status was introduced.
 var minMySQLPerfSchemaLogStatusVersion = version.Must(version.NewVersion("8.0.11"))
@@ -100,6 +105,15 @@ func (v dbVersion) supportsQuerySampleText() bool {
 		return false
 	}
 	return v.product == dbProductMySQL && !v.version.LessThan(minMySQLQuerySampleTextVersion)
+}
+
+// supportsProcedureStats reports whether performance_schema.events_statements_summary_by_program
+// has every column the top-procedure query reads (MySQL 8.0.28+, never MariaDB).
+func (v dbVersion) supportsProcedureStats() bool {
+	if !v.isValid() {
+		return false
+	}
+	return v.product == dbProductMySQL && !v.version.LessThan(minMySQLProcedureStatsVersion)
 }
 
 // supportsReplicaStatus reports whether the server uses SHOW REPLICA STATUS
@@ -195,6 +209,15 @@ type client interface {
 	getReplicaStatusStats(supportsReplicaStatus bool) ([]replicaStatusStats, error)
 	// supportsSampleText controls top-query template selection (MySQL 8+ vs fallback).
 	getTopQueries(topN, lookback uint64, supportsSampleText bool) ([]topQuery, error)
+	// getTopProcedures returns up to limit stored procedures and functions ordered by their
+	// cumulative elapsed time.
+	getTopProcedures(limit uint64) ([]topProcedure, error)
+	// getProcedureDefinitions returns the bodies of the given routines from information_schema.ROUTINES.
+	// Routines the user may not see, or whose body is hidden, are omitted or returned with an empty body.
+	getProcedureDefinitions(routines []topProcedure) ([]procedureDefinition, error)
+	// getProcedureStatements returns up to limit finished statements run inside routines whose
+	// timer_start is greater than sinceTimerStart, oldest first.
+	getProcedureStatements(sinceTimerStart uint64, limit uint64) ([]procedureStatement, error)
 	// supportsProcesslist controls whether the performance_schema.processlist JOIN
 	// is included to populate client.port and network.peer.port (MySQL 8.0.22+).
 	// supportsDataLockWaits controls whether mysql.blocking.blocker.details/
@@ -431,6 +454,49 @@ type topQuery struct {
 	// events_statements_summary_by_digest, diffed the same way as countStar.
 	sumRowsExamined int64
 	sumRowsSent     int64
+}
+
+// procedureStatement is one finished statement run inside a routine, read from
+// performance_schema.events_statements_history. Statements inside routines have no digest, so the
+// SQL text is the only way to group them.
+type procedureStatement struct {
+	schemaName   string
+	name         string
+	objectType   string
+	sqlText      string
+	timerStart   uint64 // picoseconds, a global monotonic counter
+	timerWait    int64  // picoseconds
+	cpuTime      int64  // picoseconds
+	rowsExamined int64
+	rowsSent     int64
+	rowsAffected int64
+}
+
+// topProcedure is one row of performance_schema.events_statements_summary_by_program. The
+// counters are cumulative since server start, except min/max duration which are lifetime values.
+type topProcedure struct {
+	schemaName         string
+	name               string
+	objectType         string
+	countStar          int64
+	sumTimerWait       int64 // picoseconds
+	sumCPUTime         int64 // picoseconds
+	sumErrors          int64
+	minTimerWait       int64 // picoseconds
+	maxTimerWait       int64 // picoseconds
+	sumRowsAffected    int64
+	sumRowsExamined    int64
+	sumRowsSent        int64
+	sumTmpDiskTables   int64
+	sumSortMergePasses int64
+}
+
+// procedureDefinition is the body of a routine, keyed like topProcedure.
+type procedureDefinition struct {
+	schemaName string
+	name       string
+	objectType string
+	definition string
 }
 
 var _ client = (*mySQLClient)(nil)
@@ -1201,6 +1267,88 @@ func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64, supportsSamp
 	return topQueries, nil
 }
 
+//go:embed templates/topProcedure.tmpl
+var topProcedureTemplate string
+
+func (c *mySQLClient) getTopProcedures(limit uint64) ([]topProcedure, error) {
+	tmpl, err := template.New("topProcedure").Option("missingkey=error").Parse(topProcedureTemplate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse top procedure template: %w", err)
+	}
+	buf := bytes.Buffer{}
+	if err = tmpl.Execute(&buf, map[string]any{"topNValue": limit}); err != nil {
+		return nil, fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	rows, err := c.client.Query(buf.String())
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var procedures []topProcedure
+	for rows.Next() {
+		var p topProcedure
+		if err := rows.Scan(
+			&p.schemaName,
+			&p.name,
+			&p.objectType,
+			&p.countStar,
+			&p.sumTimerWait,
+			&p.sumCPUTime,
+			&p.sumErrors,
+			&p.minTimerWait,
+			&p.maxTimerWait,
+			&p.sumRowsAffected,
+			&p.sumRowsExamined,
+			&p.sumRowsSent,
+			&p.sumTmpDiskTables,
+			&p.sumSortMergePasses,
+		); err != nil {
+			return nil, err
+		}
+		procedures = append(procedures, p)
+	}
+	return procedures, rows.Err()
+}
+
+// getProcedureDefinitions reads ROUTINE_DEFINITION for exactly the routines passed in, so cost follows
+// the number of reported routines rather than the number of routines on the server. ROUTINE_DEFINITION
+// is NULL without SHOW_ROUTINE (or ownership), and rows are hidden entirely without any routine privilege.
+func (c *mySQLClient) getProcedureDefinitions(routines []topProcedure) ([]procedureDefinition, error) {
+	if len(routines) == 0 {
+		return nil, nil
+	}
+	var q strings.Builder
+	q.WriteString("SELECT `ROUTINE_SCHEMA`, `ROUTINE_NAME`, LOWER(`ROUTINE_TYPE`), COALESCE(`ROUTINE_DEFINITION`, '') " +
+		"FROM information_schema.ROUTINES WHERE (`ROUTINE_SCHEMA`, `ROUTINE_NAME`, `ROUTINE_TYPE`) IN (")
+	args := make([]any, 0, len(routines)*3)
+	for i, r := range routines {
+		if i > 0 {
+			q.WriteString(",")
+		}
+		q.WriteString("(?,?,?)")
+		args = append(args, r.schemaName, r.name, strings.ToUpper(r.objectType))
+	}
+	q.WriteString(")")
+
+	rows, err := c.client.Query(q.String(), args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var defs []procedureDefinition
+	for rows.Next() {
+		var d procedureDefinition
+		if err := rows.Scan(&d.schemaName, &d.name, &d.objectType, &d.definition); err != nil {
+			return nil, err
+		}
+		defs = append(defs, d)
+	}
+	return defs, rows.Err()
+}
+
 //go:embed templates/querySample.tmpl
 var querySampleTemplate string
 
@@ -1415,4 +1563,45 @@ func (c *mySQLClient) Close() error {
 		return c.client.Close()
 	}
 	return nil
+}
+
+//go:embed templates/procedureStatement.tmpl
+var procedureStatementTemplate string
+
+func (c *mySQLClient) getProcedureStatements(sinceTimerStart, limit uint64) ([]procedureStatement, error) {
+	tmpl, err := template.New("procedureStatement").Option("missingkey=error").Parse(procedureStatementTemplate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse procedure statement template: %w", err)
+	}
+	buf := bytes.Buffer{}
+	if err = tmpl.Execute(&buf, map[string]any{"sinceTimerStart": sinceTimerStart, "limit": limit}); err != nil {
+		return nil, fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	rows, err := c.client.Query(buf.String())
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stmts []procedureStatement
+	for rows.Next() {
+		var st procedureStatement
+		if err := rows.Scan(
+			&st.schemaName,
+			&st.name,
+			&st.objectType,
+			&st.sqlText,
+			&st.timerStart,
+			&st.timerWait,
+			&st.cpuTime,
+			&st.rowsExamined,
+			&st.rowsSent,
+			&st.rowsAffected,
+		); err != nil {
+			return nil, err
+		}
+		stmts = append(stmts, st)
+	}
+	return stmts, rows.Err()
 }

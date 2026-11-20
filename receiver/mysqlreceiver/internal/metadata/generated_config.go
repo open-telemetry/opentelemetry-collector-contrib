@@ -3200,17 +3200,29 @@ func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
 
 // EventsConfig provides config for mysql events.
 type EventsConfig struct {
-	DbServerQueryPlan   EventConfig `mapstructure:"db.server.query_plan"`
-	DbServerQuerySample EventConfig `mapstructure:"db.server.query_sample"`
-	DbServerTopQuery    EventConfig `mapstructure:"db.server.top_query"`
+	DbServerProcedureDefinition EventConfig `mapstructure:"db.server.procedure_definition"`
+	DbServerProcedureStatement  EventConfig `mapstructure:"db.server.procedure_statement"`
+	DbServerQueryPlan           EventConfig `mapstructure:"db.server.query_plan"`
+	DbServerQuerySample         EventConfig `mapstructure:"db.server.query_sample"`
+	DbServerTopProcedure        EventConfig `mapstructure:"db.server.top_procedure"`
+	DbServerTopQuery            EventConfig `mapstructure:"db.server.top_query"`
 }
 
 func DefaultEventsConfig() EventsConfig {
 	return EventsConfig{
+		DbServerProcedureDefinition: EventConfig{
+			Enabled: false,
+		},
+		DbServerProcedureStatement: EventConfig{
+			Enabled: false,
+		},
 		DbServerQueryPlan: EventConfig{
 			Enabled: false,
 		},
 		DbServerQuerySample: EventConfig{
+			Enabled: false,
+		},
+		DbServerTopProcedure: EventConfig{
 			Enabled: false,
 		},
 		DbServerTopQuery: EventConfig{

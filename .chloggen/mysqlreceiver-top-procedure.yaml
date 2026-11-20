@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/mysql
+
+note: Add the `db.server.top_procedure`, `db.server.procedure_definition` (obfuscated routine body, needs `SHOW_ROUTINE`) and `db.server.procedure_statement` (sampled statements run inside a routine) events. `db.server.top_procedure` reports per-routine execution count, elapsed and CPU time, error count, duration bounds and row counters for stored procedures and functions, read from `performance_schema.events_statements_summary_by_program`.
+
+issues: [53405]
+
+subtext: All three events are disabled by default. Requires MySQL 8.0.28 or later.
+
+change_logs: [user]

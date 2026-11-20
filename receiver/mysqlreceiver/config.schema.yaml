@@ -15,6 +15,24 @@ $defs:
       time_limit:
         type: string
         format: duration
+  top_procedure_collection:
+    description: TopProcedureCollection configures stored routine collection. Up to MaxProcedureSampleCount routines are fetched, then the TopProcedureCount with the largest elapsed-time delta over the interval are reported.
+    type: object
+    properties:
+      collection_interval:
+        description: CollectionInterval throttles the query and sets the window the deltas cover.
+        type: string
+        format: duration
+      definition_max_length:
+        description: DefinitionMaxLength caps the characters of the obfuscated body reported on db.server.procedure_definition.
+        type: integer
+        x-customType: uint64
+      max_procedure_sample_count:
+        type: integer
+        x-customType: uint64
+      top_procedure_count:
+        type: integer
+        x-customType: uint64
   top_query_collection:
     type: object
     properties:
@@ -51,6 +69,8 @@ properties:
     $ref: statement_events_config
   tls:
     $ref: go.opentelemetry.io/collector/config/configtls.client_config
+  top_procedure_collection:
+    $ref: top_procedure_collection
   top_query_collection:
     $ref: top_query_collection
   username:

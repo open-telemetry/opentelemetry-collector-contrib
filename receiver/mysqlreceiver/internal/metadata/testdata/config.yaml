@@ -195,9 +195,15 @@ all_set:
     mysql.uptime:
       enabled: true
   events:
+    db.server.procedure_definition:
+      enabled: true
+    db.server.procedure_statement:
+      enabled: true
     db.server.query_plan:
       enabled: true
     db.server.query_sample:
+      enabled: true
+    db.server.top_procedure:
       enabled: true
     db.server.top_query:
       enabled: true
@@ -414,9 +420,15 @@ reaggregate_set:
     mysql.uptime:
       enabled: true
   events:
+    db.server.procedure_definition:
+      enabled: true
+    db.server.procedure_statement:
+      enabled: true
     db.server.query_plan:
       enabled: true
     db.server.query_sample:
+      enabled: true
+    db.server.top_procedure:
       enabled: true
     db.server.top_query:
       enabled: true
@@ -633,9 +645,15 @@ none_set:
     mysql.uptime:
       enabled: false
   events:
+    db.server.procedure_definition:
+      enabled: false
+    db.server.procedure_statement:
+      enabled: false
     db.server.query_plan:
       enabled: false
     db.server.query_sample:
+      enabled: false
+    db.server.top_procedure:
       enabled: false
     db.server.top_query:
       enabled: false

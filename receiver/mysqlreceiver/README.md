@@ -116,6 +116,13 @@ service:
     This defines the cache's size for query plan.
   - `query_plan_cache_ttl`: (optional, example = `1m`, default = `1h`). How long until a query plan expires in the cache. The receiver will run an explain query to MySQL to get the query plan after it expires.
 
+- `top_procedure_collection`: Additional configuration for stored procedure collection (`db.server.top_procedure` event):
+  - `max_procedure_sample_count` (optional, default = `1000`, max = `10000`): The maximum number of routines to fetch in a single run, ordered by cumulative elapsed time.
+  - `top_procedure_count` (optional, default = `100`): The maximum number of routines reported in a single run, ranked by their elapsed-time delta over the interval. Must not exceed `max_procedure_sample_count`.
+  - `collection_interval` (optional, default = `60s`): The interval at which procedures are emitted. It throttles the query in the same way as `top_query_collection.collection_interval` and sets the window the deltas cover.
+
+  - `definition_max_length` (optional, default = `1000`): Maximum characters of the obfuscated routine body reported on `db.server.procedure_definition`.
+
 ### Example Configuration
 
 ```yaml
@@ -178,6 +185,67 @@ application transactions to be correlated with query samples collected by this r
 > spelled them. The JOIN condition `VARIABLE_NAME = 'traceparent'` therefore
 > matches any case variation the client used (e.g. `SET @TraceParent = '...'`
 > works identically to `SET @traceparent = '...'`).
+### Stored procedure telemetry (`db.server.top_procedure`)
+
+Reports per-routine statistics for stored procedures and functions, so a procedure that runs many
+inner statements shows up as one row instead of unrelated `db.server.top_query` rows. It is
+disabled by default:
+
+```yaml
+events:
+  db.server.top_procedure:
+    enabled: true
+```
+
+- **Source:** `performance_schema.events_statements_summary_by_program`, filtered to `PROCEDURE`
+  and `FUNCTION`. No grant beyond `SELECT ON performance_schema.*` is needed.
+- **Versions:** MySQL 8.0.28+ (the release that added `SUM_CPU_TIME`). Older MySQL and all MariaDB
+  versions emit nothing for this event.
+- **Identity:** MySQL has no numeric routine ID. A routine is identified by `db.namespace` (the
+  routine's schema), `mysql.procedure.name` and `mysql.procedure.type`.
+- **Deltas:** execution count, elapsed and CPU time, error count and row counters are deltas over
+  the collection interval. `mysql.procedure.min_duration` and `mysql.procedure.max_duration` are
+  lifetime values since server start or table truncation. Durations are in seconds.
+- **Counter resets:** a counter that drops (server restart, table truncate) is treated as a reset
+  and the current value is reported as the delta.
+- **Seeding scrape:** the first scrape only primes the delta cache and reports nothing. Routines
+  with no executions or errors in the interval are not reported.
+- **Last execution:** there is no timestamp column. A routine is reported only in intervals where it ran, so the newest record's timestamp approximates the last execution to within the collection interval.
+- **Spills:** `mysql.procedure.tmp_disk_tables` and `mysql.procedure.sort_merge_passes` are deltas of `SUM_CREATED_TMP_DISK_TABLES` and `SUM_SORT_MERGE_PASSES`. They count temp tables and sort merges, not spilled pages.
+- **Not collected:** a link from APM traces to the routine, per-procedure wait time, logical/physical reads, and triggers or events.
+- **Statements inside the routine (`db.server.procedure_statement`):** a separate event, disabled by default, that
+  needs `db.server.top_procedure` enabled. Statements run inside a routine have no digest, so they are read from
+  `performance_schema.events_statements_history` (`statement/sp/stmt` rows carry the routine in `OBJECT_*`),
+  obfuscated, grouped by statement text per reported routine, and truncated to `definition_max_length`.
+  Each record carries a sampled execution count, elapsed and CPU time and row counters; a statement's share
+  of the routine's time can be derived by joining on `db.server.top_procedure`. Limits:
+  - `events_statements_history` keeps only the last `performance_schema_events_statements_history_size`
+    (default 10) statements per thread, and a thread's rows disappear when its connection closes. Counts are
+    therefore a sample, lower than the real number of executions, and short-lived connections are missed.
+    Raise the size (a server start option) to improve coverage.
+  - There is no logical-read figure.
+- **Procedure body (`db.server.procedure_definition`):** a separate event, disabled by default, that
+  needs `db.server.top_procedure` enabled. One record is emitted per routine reported on
+  `db.server.top_procedure`, joined to it by `db.namespace`, `mysql.procedure.name` and
+  `mysql.procedure.type`. The body is read from `information_schema.ROUTINES.ROUTINE_DEFINITION`
+  for the reported routines only, obfuscated (literals replaced, as for query text) and truncated to
+  `definition_max_length` characters. It needs the `SHOW_ROUTINE` privilege (MySQL 8.0.20+):
+
+  ```sql
+  GRANT SHOW_ROUTINE ON *.* TO '<your-user>'@'%';
+  ```
+
+  Without it `ROUTINE_DEFINITION` is `NULL` (with only `EXECUTE`) or the routine is hidden (with no
+  routine privilege). The receiver then emits no body and logs one warning. `EXECUTE` is not enough.
+- **CPU time:** `mysql.procedure.cpu_time` stays `0` unless the `events_statements_cpu` consumer is
+  enabled (it is off by default and resets to off on every server restart):
+
+  ```sql
+  UPDATE performance_schema.setup_consumers SET ENABLED = 'YES' WHERE NAME = 'events_statements_cpu';
+  ```
+- **Min duration:** `mysql.procedure.min_duration` can report `0` for routines first run since server
+  start, so do not rely on it. `mysql.procedure.max_duration` is reliable.
+
 ### Query plan availability by version
 
 EXPLAIN needs a concrete SQL statement. The normalized digest text in

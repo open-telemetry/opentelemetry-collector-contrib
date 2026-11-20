@@ -219,6 +219,52 @@ attributes:
     type: string
     enum: [read, write]
     requirement_level: recommended
+  mysql.procedure.cpu_time:
+    description: CPU time spent executing the routine, reported in delta seconds (SUM_CPU_TIME). Reported as 0 unless the events_statements_cpu consumer is enabled.
+    type: double
+  mysql.procedure.definition:
+    description: The SQL source text of the routine body (ROUTINE_DEFINITION), with literals obfuscated and truncated to top_procedure_collection.definition_max_length characters.
+    type: string
+  mysql.procedure.error_count:
+    description: Number of statement errors raised while executing the routine, reported as a delta value (SUM_ERRORS).
+    type: int
+  mysql.procedure.execution_count:
+    description: Number of times the routine was executed, reported as a delta value (COUNT_STAR).
+    type: int
+  mysql.procedure.max_duration:
+    description: Longest elapsed time of a single routine execution, in seconds (MAX_TIMER_WAIT). Covers the period since the server started or the summary table was last truncated, so unlike the other durations it is not a delta.
+    type: double
+  mysql.procedure.min_duration:
+    description: Shortest elapsed time of a single routine execution, in seconds (MIN_TIMER_WAIT). Can read 0 for routines first run since server start, so it is unreliable. Covers the period since the server started or the summary table was last truncated, so unlike the other durations it is not a delta.
+    type: double
+  mysql.procedure.name:
+    description: The name of the stored routine (OBJECT_NAME). MySQL has no numeric routine ID, so a routine is identified by db.namespace plus this name and mysql.procedure.type.
+    type: string
+  mysql.procedure.rows_affected:
+    description: Rows affected by the statements run by the routine, reported as a delta value (SUM_ROWS_AFFECTED).
+    type: int
+  mysql.procedure.rows_examined:
+    description: Rows examined by the statements run by the routine, reported as a delta value (SUM_ROWS_EXAMINED).
+    type: int
+  mysql.procedure.rows_sent:
+    description: Rows returned by the statements run by the routine, reported as a delta value (SUM_ROWS_SENT).
+    type: int
+  mysql.procedure.sort_merge_passes:
+    description: Sort merge passes done by the statements run by the routine, reported as a delta value (SUM_SORT_MERGE_PASSES). A proxy for sort spills.
+    type: int
+  mysql.procedure.statement:
+    description: The obfuscated text of one statement run inside the routine (SQL_TEXT of a statement/sp/stmt row), truncated to top_procedure_collection.definition_max_length characters.
+    type: string
+  mysql.procedure.tmp_disk_tables:
+    description: Internal temporary tables created on disk by the statements run by the routine, reported as a delta value (SUM_CREATED_TMP_DISK_TABLES). A proxy for spills.
+    type: int
+  mysql.procedure.total_elapsed_time:
+    description: Total time spent executing the routine, reported in delta seconds (SUM_TIMER_WAIT).
+    type: double
+  mysql.procedure.type:
+    description: The kind of stored routine (OBJECT_TYPE).
+    type: string
+    enum: [procedure, function]
   mysql.query_plan:
     description: The query plan for the statement, if available.
     type: string
@@ -359,6 +405,37 @@ attributes:
     enum: [allow_write, concurrent_insert, low_priority, normal, external]
     requirement_level: recommended
 events:
+  db.server.procedure_definition:
+    enabled: false
+    description: |
+      The obfuscated body of stored procedures and functions reported on db.server.top_procedure. Correlates with db.server.top_procedure via db.namespace, mysql.procedure.name and mysql.procedure.type.
+      Emits nothing unless db.server.top_procedure is enabled. Requires the SHOW_ROUTINE privilege (MySQL 8.0.20+).
+    attributes:
+      - db.system.name
+      - db.namespace
+      - mysql.procedure.name
+      - mysql.procedure.type
+      - mysql.procedure.definition
+
+  db.server.procedure_statement:
+    enabled: false
+    description: |
+      Statements run inside the stored procedures and functions reported on db.server.top_procedure, grouped by obfuscated statement text and summed over the statements seen since the previous scrape.
+      Read from performance_schema.events_statements_history, which keeps only the last events_statements_history_size (default 10) statements per thread, so counts are a sample, not exact. Correlates with db.server.top_procedure via db.namespace, mysql.procedure.name and mysql.procedure.type.
+      Emits nothing unless db.server.top_procedure is enabled.
+    attributes:
+      - db.system.name
+      - db.namespace
+      - mysql.procedure.name
+      - mysql.procedure.type
+      - mysql.procedure.statement
+      - mysql.procedure.execution_count
+      - mysql.procedure.total_elapsed_time
+      - mysql.procedure.cpu_time
+      - mysql.procedure.rows_examined
+      - mysql.procedure.rows_sent
+      - mysql.procedure.rows_affected
+
   db.server.query_plan:
     enabled: false
     description: The execution plan for a query.
@@ -400,6 +477,28 @@ events:
       - mysql.client.name
       - mysql.blocking.blocker.count
       - mysql.blocking.blocker.details
+
+  db.server.top_procedure:
+    enabled: false
+    description: |
+      Aggregated performance metrics for the top stored procedures and functions by elapsed time, computed as deltas over the collection interval.
+      A routine is identified by db.namespace, mysql.procedure.name and mysql.procedure.type, as MySQL exposes no numeric routine ID.
+    attributes:
+      - db.system.name
+      - db.namespace
+      - mysql.procedure.name
+      - mysql.procedure.type
+      - mysql.procedure.execution_count
+      - mysql.procedure.total_elapsed_time
+      - mysql.procedure.cpu_time
+      - mysql.procedure.error_count
+      - mysql.procedure.min_duration
+      - mysql.procedure.max_duration
+      - mysql.procedure.rows_affected
+      - mysql.procedure.rows_examined
+      - mysql.procedure.rows_sent
+      - mysql.procedure.sort_merge_passes
+      - mysql.procedure.tmp_disk_tables
 
   db.server.top_query:
     enabled: false

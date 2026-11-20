@@ -76,6 +76,12 @@ type mySQLScraper struct {
 	// db.system.version resource attributes on emitted data.
 	detectedVersion dbVersion
 
+	// warnedHiddenDefinitions limits the missing SHOW_ROUTINE warning to once per scraper.
+	warnedHiddenDefinitions bool
+	// lastProcedureStatementStart is the highest timer_start already emitted on
+	// db.server.procedure_statement, so history rows seen in an earlier scrape are not counted twice.
+	lastProcedureStatementStart uint64
+
 	// Feature gates regarding resource attributes
 	renameCommands bool
 }
@@ -280,6 +286,245 @@ func removeInlineQueryPlan(logs plog.Logs, eventName string) {
 				}
 			}
 		}
+	}
+}
+
+func (m *mySQLScraper) scrapeTopProcedureFunc(_ context.Context) (plog.Logs, error) {
+	if m.sqlclient == nil {
+		return plog.NewLogs(), errors.New("failed to connect to MySQL client")
+	}
+
+	errs := &scrapererror.ScrapeErrors{}
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	switch {
+	case !m.detectedVersion.supportsProcedureStats():
+		m.logger.Debug("Skipping top procedures scrape, performance_schema.events_statements_summary_by_program is not supported by this server")
+	case int(math.Ceil(time.Since(m.lastExecutionTimestamp).Seconds())) < int(m.config.TopProcedureCollection.CollectionInterval.Seconds()):
+		m.logger.Debug("Skipping top procedures scrape, not enough time has passed since last execution")
+	default:
+		m.scrapeTopProcedures(now, errs)
+	}
+
+	return m.emitLogs(errs)
+}
+
+func (m *mySQLScraper) scrapeTopProcedures(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	procedures, err := m.sqlclient.getTopProcedures(m.config.TopProcedureCollection.MaxProcedureSampleCount)
+	if err != nil {
+		m.logger.Error("Failed to fetch top procedures", zap.Error(err))
+		errs.AddPartial(1, err)
+		return
+	}
+
+	type candidate struct {
+		p                                                                           topProcedure
+		count, elapsed, cpu, errCount, affected, examined, sent, tmpDisk, sortMerge int64
+	}
+	candidates := make([]candidate, 0, len(procedures))
+	for _, p := range procedures {
+		// A routine is keyed by its type as well: a procedure and a function may share a name.
+		key := p.objectType + "." + p.name
+		diff := func(column string, val int64) int64 {
+			if cached, d := m.cacheAndDiff(p.schemaName, key, column, val); cached {
+				return d
+			}
+			return 0
+		}
+		candidates = append(candidates, candidate{
+			p:         p,
+			count:     diff("count_star", p.countStar),
+			elapsed:   diff("sum_timer_wait", p.sumTimerWait),
+			cpu:       diff("sum_cpu_time", p.sumCPUTime),
+			errCount:  diff("sum_errors", p.sumErrors),
+			affected:  diff("sum_rows_affected", p.sumRowsAffected),
+			examined:  diff("sum_rows_examined", p.sumRowsExamined),
+			sent:      diff("sum_rows_sent", p.sumRowsSent),
+			tmpDisk:   diff("sum_created_tmp_disk_tables", p.sumTmpDiskTables),
+			sortMerge: diff("sum_sort_merge_passes", p.sumSortMergePasses),
+		})
+	}
+
+	sort.SliceStable(candidates, func(i, j int) bool { return candidates[i].elapsed > candidates[j].elapsed })
+	if uint64(len(candidates)) > m.config.TopProcedureCollection.TopProcedureCount {
+		candidates = candidates[:m.config.TopProcedureCollection.TopProcedureCount]
+	}
+
+	m.lastExecutionTimestamp = now.AsTime()
+
+	const picosPerSecond = 1_000_000_000_000.0
+	var reported []topProcedure
+	for _, c := range candidates {
+		// Idle routines, and the seeding scrape that only primes the delta cache, report nothing.
+		if c.count == 0 && c.elapsed == 0 && c.errCount == 0 {
+			continue
+		}
+		procType, ok := metadata.MapAttributeMysqlProcedureType[c.p.objectType]
+		if !ok {
+			continue
+		}
+		m.lb.RecordDbServerTopProcedureEvent(
+			context.Background(),
+			now,
+			metadata.AttributeDbSystemNameMysql,
+			c.p.schemaName,
+			c.p.name,
+			procType,
+			c.count,
+			float64(c.elapsed)/picosPerSecond,
+			float64(c.cpu)/picosPerSecond,
+			c.errCount,
+			float64(c.p.minTimerWait)/picosPerSecond,
+			float64(c.p.maxTimerWait)/picosPerSecond,
+			c.affected,
+			c.examined,
+			c.sent,
+			c.sortMerge,
+			c.tmpDisk,
+		)
+		reported = append(reported, c.p)
+	}
+
+	if len(reported) > 0 && m.config.LogsBuilderConfig.Events.DbServerProcedureDefinition.Enabled {
+		m.scrapeProcedureDefinitions(now, reported, errs)
+	}
+	if len(reported) > 0 && m.config.LogsBuilderConfig.Events.DbServerProcedureStatement.Enabled {
+		m.scrapeProcedureStatements(now, reported, errs)
+	}
+}
+
+// maxProcedureStatementRows caps how many history rows one scrape reads. The history table holds
+// events_statements_history_size rows per thread, so this is only reached on very busy servers.
+const maxProcedureStatementRows = 10000
+
+// scrapeProcedureStatements emits db.server.procedure_statement for statements run inside the routines
+// just reported on db.server.top_procedure. Rows come from events_statements_history, which is a
+// sample (last N statements per thread), so counts are not exact. Statements have no digest inside a
+// routine, so they are grouped by obfuscated text. A statement that cannot be obfuscated is dropped.
+func (m *mySQLScraper) scrapeProcedureStatements(now pcommon.Timestamp, reported []topProcedure, errs *scrapererror.ScrapeErrors) {
+	stmts, err := m.sqlclient.getProcedureStatements(m.lastProcedureStatementStart, maxProcedureStatementRows)
+	if err != nil {
+		m.logger.Error("Failed to fetch procedure statements", zap.Error(err))
+		errs.AddPartial(1, err)
+		return
+	}
+
+	type routineKey struct{ schema, typ, name string }
+	wanted := make(map[routineKey]struct{}, len(reported))
+	for _, r := range reported {
+		wanted[routineKey{r.schemaName, r.objectType, r.name}] = struct{}{}
+	}
+
+	type groupKey struct {
+		routineKey
+		text string
+	}
+	type group struct {
+		count                                  int64
+		elapsed, cpu, examined, sent, affected int64
+	}
+	groups := map[groupKey]*group{}
+	var order []groupKey
+	for _, st := range stmts {
+		if st.timerStart > m.lastProcedureStatementStart {
+			m.lastProcedureStatementStart = st.timerStart
+		}
+		rk := routineKey{st.schemaName, st.objectType, st.name}
+		if _, ok := wanted[rk]; !ok {
+			continue
+		}
+		text, obfErr := m.obfuscator.obfuscateSQLString(st.sqlText)
+		if obfErr != nil {
+			m.logger.Error("Failed to obfuscate procedure statement", zap.String("procedure", st.name), zap.Error(obfErr))
+			continue
+		}
+		if max := int(m.config.TopProcedureCollection.DefinitionMaxLength); len([]rune(text)) > max {
+			text = string([]rune(text)[:max])
+		}
+		gk := groupKey{rk, text}
+		g, ok := groups[gk]
+		if !ok {
+			g = &group{}
+			groups[gk] = g
+			order = append(order, gk)
+		}
+		g.count++
+		g.elapsed += st.timerWait
+		g.cpu += st.cpuTime
+		g.examined += st.rowsExamined
+		g.sent += st.rowsSent
+		g.affected += st.rowsAffected
+	}
+
+	const picosPerSecond = 1_000_000_000_000.0
+	for _, gk := range order {
+		procType, ok := metadata.MapAttributeMysqlProcedureType[gk.typ]
+		if !ok {
+			continue
+		}
+		g := groups[gk]
+		m.lb.RecordDbServerProcedureStatementEvent(
+			context.Background(),
+			now,
+			metadata.AttributeDbSystemNameMysql,
+			gk.schema,
+			gk.name,
+			procType,
+			gk.text,
+			g.count,
+			float64(g.elapsed)/picosPerSecond,
+			float64(g.cpu)/picosPerSecond,
+			g.examined,
+			g.sent,
+			g.affected,
+		)
+	}
+}
+
+// scrapeProcedureDefinitions emits db.server.procedure_definition for the routines just reported on
+// db.server.top_procedure. Bodies can embed literals, so they are obfuscated, and an obfuscation
+// failure drops the body rather than reporting it raw.
+func (m *mySQLScraper) scrapeProcedureDefinitions(now pcommon.Timestamp, reported []topProcedure, errs *scrapererror.ScrapeErrors) {
+	defs, err := m.sqlclient.getProcedureDefinitions(reported)
+	if err != nil {
+		m.logger.Error("Failed to fetch procedure definitions", zap.Error(err))
+		errs.AddPartial(1, err)
+		return
+	}
+
+	hidden := len(reported) - len(defs)
+	for _, d := range defs {
+		procType, ok := metadata.MapAttributeMysqlProcedureType[d.objectType]
+		if !ok {
+			continue
+		}
+		if d.definition == "" {
+			hidden++
+			continue
+		}
+		body, obfErr := m.obfuscator.obfuscateSQLString(d.definition)
+		if obfErr != nil {
+			m.logger.Error("Failed to obfuscate procedure definition", zap.String("procedure", d.name), zap.Error(obfErr))
+			continue
+		}
+		if max := int(m.config.TopProcedureCollection.DefinitionMaxLength); len([]rune(body)) > max {
+			body = string([]rune(body)[:max])
+		}
+		m.lb.RecordDbServerProcedureDefinitionEvent(
+			context.Background(),
+			now,
+			metadata.AttributeDbSystemNameMysql,
+			d.schemaName,
+			d.name,
+			procType,
+			body,
+		)
+	}
+	if hidden > 0 && !m.warnedHiddenDefinitions {
+		m.warnedHiddenDefinitions = true
+		m.logger.Warn("procedure definitions are not visible for some routines; grant SHOW_ROUTINE (MySQL 8.0.20+) to the monitoring user",
+			zap.Int("routines_without_definition", hidden))
 	}
 }
 

@@ -1431,6 +1431,14 @@ type mockClient struct {
 	replicaStatusStats           []replicaStatusStats
 	querySamplesFile             string
 	topQueriesFile               string
+	topProcedures                []topProcedure
+	topProceduresErr             error
+	procedureStatements          []procedureStatement
+	procedureStatementsErr       error
+	statementSince               []uint64
+	definitions                  []procedureDefinition
+	definitionsErr               error
+	definitionCalls              [][]topProcedure
 	checkDBAvailabilityErr       error
 	checkDBAvailabilityCallCount int
 	queryExecutionTime           float64

@@ -13,6 +13,92 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+type eventDbServerProcedureDefinition struct {
+	data   plog.LogRecordSlice // data buffer for generated log records.
+	config EventConfig         // event config provided by user.
+}
+
+func (e *eventDbServerProcedureDefinition) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, mysqlProcedureNameAttributeValue string, mysqlProcedureTypeAttributeValue string, mysqlProcedureDefinitionAttributeValue string) {
+	if !e.config.Enabled {
+		return
+	}
+	dp := e.data.AppendEmpty()
+	dp.SetEventName("db.server.procedure_definition")
+	dp.SetTimestamp(timestamp)
+
+	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
+		dp.SetTraceID(pcommon.TraceID(span.TraceID()))
+		dp.SetSpanID(pcommon.SpanID(span.SpanID()))
+	}
+	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	dp.Attributes().PutStr("mysql.procedure.name", mysqlProcedureNameAttributeValue)
+	dp.Attributes().PutStr("mysql.procedure.type", mysqlProcedureTypeAttributeValue)
+	dp.Attributes().PutStr("mysql.procedure.definition", mysqlProcedureDefinitionAttributeValue)
+
+}
+
+// emit appends recorded event data to a events slice and prepares it for recording another set of log records.
+func (e *eventDbServerProcedureDefinition) emit(lrs plog.LogRecordSlice) {
+	if e.config.Enabled && e.data.Len() > 0 {
+		e.data.MoveAndAppendTo(lrs)
+	}
+}
+
+func newEventDbServerProcedureDefinition(cfg EventConfig) eventDbServerProcedureDefinition {
+	e := eventDbServerProcedureDefinition{config: cfg}
+	if cfg.Enabled {
+		e.data = plog.NewLogRecordSlice()
+	}
+	return e
+}
+
+type eventDbServerProcedureStatement struct {
+	data   plog.LogRecordSlice // data buffer for generated log records.
+	config EventConfig         // event config provided by user.
+}
+
+func (e *eventDbServerProcedureStatement) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, mysqlProcedureNameAttributeValue string, mysqlProcedureTypeAttributeValue string, mysqlProcedureStatementAttributeValue string, mysqlProcedureExecutionCountAttributeValue int64, mysqlProcedureTotalElapsedTimeAttributeValue float64, mysqlProcedureCPUTimeAttributeValue float64, mysqlProcedureRowsExaminedAttributeValue int64, mysqlProcedureRowsSentAttributeValue int64, mysqlProcedureRowsAffectedAttributeValue int64) {
+	if !e.config.Enabled {
+		return
+	}
+	dp := e.data.AppendEmpty()
+	dp.SetEventName("db.server.procedure_statement")
+	dp.SetTimestamp(timestamp)
+
+	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
+		dp.SetTraceID(pcommon.TraceID(span.TraceID()))
+		dp.SetSpanID(pcommon.SpanID(span.SpanID()))
+	}
+	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	dp.Attributes().PutStr("mysql.procedure.name", mysqlProcedureNameAttributeValue)
+	dp.Attributes().PutStr("mysql.procedure.type", mysqlProcedureTypeAttributeValue)
+	dp.Attributes().PutStr("mysql.procedure.statement", mysqlProcedureStatementAttributeValue)
+	dp.Attributes().PutInt("mysql.procedure.execution_count", mysqlProcedureExecutionCountAttributeValue)
+	dp.Attributes().PutDouble("mysql.procedure.total_elapsed_time", mysqlProcedureTotalElapsedTimeAttributeValue)
+	dp.Attributes().PutDouble("mysql.procedure.cpu_time", mysqlProcedureCPUTimeAttributeValue)
+	dp.Attributes().PutInt("mysql.procedure.rows_examined", mysqlProcedureRowsExaminedAttributeValue)
+	dp.Attributes().PutInt("mysql.procedure.rows_sent", mysqlProcedureRowsSentAttributeValue)
+	dp.Attributes().PutInt("mysql.procedure.rows_affected", mysqlProcedureRowsAffectedAttributeValue)
+
+}
+
+// emit appends recorded event data to a events slice and prepares it for recording another set of log records.
+func (e *eventDbServerProcedureStatement) emit(lrs plog.LogRecordSlice) {
+	if e.config.Enabled && e.data.Len() > 0 {
+		e.data.MoveAndAppendTo(lrs)
+	}
+}
+
+func newEventDbServerProcedureStatement(cfg EventConfig) eventDbServerProcedureStatement {
+	e := eventDbServerProcedureStatement{config: cfg}
+	if cfg.Enabled {
+		e.data = plog.NewLogRecordSlice()
+	}
+	return e
+}
+
 type eventDbServerQueryPlan struct {
 	data   plog.LogRecordSlice // data buffer for generated log records.
 	config EventConfig         // event config provided by user.
@@ -113,6 +199,56 @@ func newEventDbServerQuerySample(cfg EventConfig) eventDbServerQuerySample {
 	return e
 }
 
+type eventDbServerTopProcedure struct {
+	data   plog.LogRecordSlice // data buffer for generated log records.
+	config EventConfig         // event config provided by user.
+}
+
+func (e *eventDbServerTopProcedure) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, mysqlProcedureNameAttributeValue string, mysqlProcedureTypeAttributeValue string, mysqlProcedureExecutionCountAttributeValue int64, mysqlProcedureTotalElapsedTimeAttributeValue float64, mysqlProcedureCPUTimeAttributeValue float64, mysqlProcedureErrorCountAttributeValue int64, mysqlProcedureMinDurationAttributeValue float64, mysqlProcedureMaxDurationAttributeValue float64, mysqlProcedureRowsAffectedAttributeValue int64, mysqlProcedureRowsExaminedAttributeValue int64, mysqlProcedureRowsSentAttributeValue int64, mysqlProcedureSortMergePassesAttributeValue int64, mysqlProcedureTmpDiskTablesAttributeValue int64) {
+	if !e.config.Enabled {
+		return
+	}
+	dp := e.data.AppendEmpty()
+	dp.SetEventName("db.server.top_procedure")
+	dp.SetTimestamp(timestamp)
+
+	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
+		dp.SetTraceID(pcommon.TraceID(span.TraceID()))
+		dp.SetSpanID(pcommon.SpanID(span.SpanID()))
+	}
+	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
+	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	dp.Attributes().PutStr("mysql.procedure.name", mysqlProcedureNameAttributeValue)
+	dp.Attributes().PutStr("mysql.procedure.type", mysqlProcedureTypeAttributeValue)
+	dp.Attributes().PutInt("mysql.procedure.execution_count", mysqlProcedureExecutionCountAttributeValue)
+	dp.Attributes().PutDouble("mysql.procedure.total_elapsed_time", mysqlProcedureTotalElapsedTimeAttributeValue)
+	dp.Attributes().PutDouble("mysql.procedure.cpu_time", mysqlProcedureCPUTimeAttributeValue)
+	dp.Attributes().PutInt("mysql.procedure.error_count", mysqlProcedureErrorCountAttributeValue)
+	dp.Attributes().PutDouble("mysql.procedure.min_duration", mysqlProcedureMinDurationAttributeValue)
+	dp.Attributes().PutDouble("mysql.procedure.max_duration", mysqlProcedureMaxDurationAttributeValue)
+	dp.Attributes().PutInt("mysql.procedure.rows_affected", mysqlProcedureRowsAffectedAttributeValue)
+	dp.Attributes().PutInt("mysql.procedure.rows_examined", mysqlProcedureRowsExaminedAttributeValue)
+	dp.Attributes().PutInt("mysql.procedure.rows_sent", mysqlProcedureRowsSentAttributeValue)
+	dp.Attributes().PutInt("mysql.procedure.sort_merge_passes", mysqlProcedureSortMergePassesAttributeValue)
+	dp.Attributes().PutInt("mysql.procedure.tmp_disk_tables", mysqlProcedureTmpDiskTablesAttributeValue)
+
+}
+
+// emit appends recorded event data to a events slice and prepares it for recording another set of log records.
+func (e *eventDbServerTopProcedure) emit(lrs plog.LogRecordSlice) {
+	if e.config.Enabled && e.data.Len() > 0 {
+		e.data.MoveAndAppendTo(lrs)
+	}
+}
+
+func newEventDbServerTopProcedure(cfg EventConfig) eventDbServerTopProcedure {
+	e := eventDbServerTopProcedure{config: cfg}
+	if cfg.Enabled {
+		e.data = plog.NewLogRecordSlice()
+	}
+	return e
+}
+
 type eventDbServerTopQuery struct {
 	data   plog.LogRecordSlice // data buffer for generated log records.
 	config EventConfig         // event config provided by user.
@@ -161,15 +297,18 @@ func newEventDbServerTopQuery(cfg EventConfig) eventDbServerTopQuery {
 // LogsBuilder provides an interface for scrapers to report logs while taking care of all the transformations
 // required to produce log representation defined in metadata and user config.
 type LogsBuilder struct {
-	config                         LogsBuilderConfig // config of the logs builder.
-	logsBuffer                     plog.Logs
-	logRecordsBuffer               plog.LogRecordSlice
-	buildInfo                      component.BuildInfo // contains version information.
-	resourceAttributeIncludeFilter map[string]filter.Filter
-	resourceAttributeExcludeFilter map[string]filter.Filter
-	eventDbServerQueryPlan         eventDbServerQueryPlan
-	eventDbServerQuerySample       eventDbServerQuerySample
-	eventDbServerTopQuery          eventDbServerTopQuery
+	config                           LogsBuilderConfig // config of the logs builder.
+	logsBuffer                       plog.Logs
+	logRecordsBuffer                 plog.LogRecordSlice
+	buildInfo                        component.BuildInfo // contains version information.
+	resourceAttributeIncludeFilter   map[string]filter.Filter
+	resourceAttributeExcludeFilter   map[string]filter.Filter
+	eventDbServerProcedureDefinition eventDbServerProcedureDefinition
+	eventDbServerProcedureStatement  eventDbServerProcedureStatement
+	eventDbServerQueryPlan           eventDbServerQueryPlan
+	eventDbServerQuerySample         eventDbServerQuerySample
+	eventDbServerTopProcedure        eventDbServerTopProcedure
+	eventDbServerTopQuery            eventDbServerTopQuery
 }
 
 // LogBuilderOption applies changes to default logs builder.
@@ -179,15 +318,18 @@ type LogBuilderOption interface {
 
 func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuilder {
 	lb := &LogsBuilder{
-		config:                         lbc,
-		logsBuffer:                     plog.NewLogs(),
-		logRecordsBuffer:               plog.NewLogRecordSlice(),
-		buildInfo:                      settings.BuildInfo,
-		eventDbServerQueryPlan:         newEventDbServerQueryPlan(lbc.Events.DbServerQueryPlan),
-		eventDbServerQuerySample:       newEventDbServerQuerySample(lbc.Events.DbServerQuerySample),
-		eventDbServerTopQuery:          newEventDbServerTopQuery(lbc.Events.DbServerTopQuery),
-		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+		config:                           lbc,
+		logsBuffer:                       plog.NewLogs(),
+		logRecordsBuffer:                 plog.NewLogRecordSlice(),
+		buildInfo:                        settings.BuildInfo,
+		eventDbServerProcedureDefinition: newEventDbServerProcedureDefinition(lbc.Events.DbServerProcedureDefinition),
+		eventDbServerProcedureStatement:  newEventDbServerProcedureStatement(lbc.Events.DbServerProcedureStatement),
+		eventDbServerQueryPlan:           newEventDbServerQueryPlan(lbc.Events.DbServerQueryPlan),
+		eventDbServerQuerySample:         newEventDbServerQuerySample(lbc.Events.DbServerQuerySample),
+		eventDbServerTopProcedure:        newEventDbServerTopProcedure(lbc.Events.DbServerTopProcedure),
+		eventDbServerTopQuery:            newEventDbServerTopQuery(lbc.Events.DbServerTopQuery),
+		resourceAttributeIncludeFilter:   make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:   make(map[string]filter.Filter),
 	}
 	if lbc.ResourceAttributes.DbSystemName.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["db.system.name"] = filter.CreateFilter(lbc.ResourceAttributes.DbSystemName.EventsInclude)
@@ -280,8 +422,11 @@ func (lb *LogsBuilder) EmitForResource(options ...ResourceLogsOption) {
 	ils := rl.ScopeLogs().AppendEmpty()
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(lb.buildInfo.Version)
+	lb.eventDbServerProcedureDefinition.emit(ils.LogRecords())
+	lb.eventDbServerProcedureStatement.emit(ils.LogRecords())
 	lb.eventDbServerQueryPlan.emit(ils.LogRecords())
 	lb.eventDbServerQuerySample.emit(ils.LogRecords())
+	lb.eventDbServerTopProcedure.emit(ils.LogRecords())
 	lb.eventDbServerTopQuery.emit(ils.LogRecords())
 
 	for _, op := range options {
@@ -319,6 +464,16 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 	return logs
 }
 
+// RecordDbServerProcedureDefinitionEvent adds a log record of db.server.procedure_definition event.
+func (lb *LogsBuilder) RecordDbServerProcedureDefinitionEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, dbNamespaceAttributeValue string, mysqlProcedureNameAttributeValue string, mysqlProcedureTypeAttributeValue AttributeMysqlProcedureType, mysqlProcedureDefinitionAttributeValue string) {
+	lb.eventDbServerProcedureDefinition.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), dbNamespaceAttributeValue, mysqlProcedureNameAttributeValue, mysqlProcedureTypeAttributeValue.String(), mysqlProcedureDefinitionAttributeValue)
+}
+
+// RecordDbServerProcedureStatementEvent adds a log record of db.server.procedure_statement event.
+func (lb *LogsBuilder) RecordDbServerProcedureStatementEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, dbNamespaceAttributeValue string, mysqlProcedureNameAttributeValue string, mysqlProcedureTypeAttributeValue AttributeMysqlProcedureType, mysqlProcedureStatementAttributeValue string, mysqlProcedureExecutionCountAttributeValue int64, mysqlProcedureTotalElapsedTimeAttributeValue float64, mysqlProcedureCPUTimeAttributeValue float64, mysqlProcedureRowsExaminedAttributeValue int64, mysqlProcedureRowsSentAttributeValue int64, mysqlProcedureRowsAffectedAttributeValue int64) {
+	lb.eventDbServerProcedureStatement.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), dbNamespaceAttributeValue, mysqlProcedureNameAttributeValue, mysqlProcedureTypeAttributeValue.String(), mysqlProcedureStatementAttributeValue, mysqlProcedureExecutionCountAttributeValue, mysqlProcedureTotalElapsedTimeAttributeValue, mysqlProcedureCPUTimeAttributeValue, mysqlProcedureRowsExaminedAttributeValue, mysqlProcedureRowsSentAttributeValue, mysqlProcedureRowsAffectedAttributeValue)
+}
+
 // RecordDbServerQueryPlanEvent adds a log record of db.server.query_plan event.
 func (lb *LogsBuilder) RecordDbServerQueryPlanEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, mysqlQueryPlanHashAttributeValue string, dbNamespaceAttributeValue string, mysqlQueryPlanSourceAttributeValue AttributeMysqlQueryPlanSource, mysqlQueryPlanAttributeValue string) {
 	lb.eventDbServerQueryPlan.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), mysqlQueryPlanHashAttributeValue, dbNamespaceAttributeValue, mysqlQueryPlanSourceAttributeValue.String(), mysqlQueryPlanAttributeValue)
@@ -327,6 +482,11 @@ func (lb *LogsBuilder) RecordDbServerQueryPlanEvent(ctx context.Context, timesta
 // RecordDbServerQuerySampleEvent adds a log record of db.server.query_sample event.
 func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, mysqlThreadsThreadIDAttributeValue int64, userNameAttributeValue string, dbNamespaceAttributeValue string, mysqlThreadsProcesslistCommandAttributeValue string, mysqlThreadsProcesslistStateAttributeValue string, dbQueryTextAttributeValue string, mysqlEventsStatementsCurrentDigestAttributeValue string, mysqlQueryPlanAttributeValue string, mysqlQueryPlanHashAttributeValue string, mysqlEventIDAttributeValue int64, mysqlWaitEventTypeAttributeValue string, mysqlWaitEventNameAttributeValue string, mysqlWaitTypeAttributeValue string, mysqlSessionStatusAttributeValue string, mysqlSessionIDAttributeValue int64, mysqlEventsStatementsCurrentTimerWaitAttributeValue float64, mysqlEventsWaitsCurrentTimerWaitAttributeValue float64, clientAddressAttributeValue string, clientPortAttributeValue int64, networkPeerAddressAttributeValue string, networkPeerPortAttributeValue int64, mysqlClientNameAttributeValue string, mysqlBlockingBlockerCountAttributeValue int64, mysqlBlockingBlockerDetailsAttributeValue string) {
 	lb.eventDbServerQuerySample.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), mysqlThreadsThreadIDAttributeValue, userNameAttributeValue, dbNamespaceAttributeValue, mysqlThreadsProcesslistCommandAttributeValue, mysqlThreadsProcesslistStateAttributeValue, dbQueryTextAttributeValue, mysqlEventsStatementsCurrentDigestAttributeValue, mysqlQueryPlanAttributeValue, mysqlQueryPlanHashAttributeValue, mysqlEventIDAttributeValue, mysqlWaitEventTypeAttributeValue, mysqlWaitEventNameAttributeValue, mysqlWaitTypeAttributeValue, mysqlSessionStatusAttributeValue, mysqlSessionIDAttributeValue, mysqlEventsStatementsCurrentTimerWaitAttributeValue, mysqlEventsWaitsCurrentTimerWaitAttributeValue, clientAddressAttributeValue, clientPortAttributeValue, networkPeerAddressAttributeValue, networkPeerPortAttributeValue, mysqlClientNameAttributeValue, mysqlBlockingBlockerCountAttributeValue, mysqlBlockingBlockerDetailsAttributeValue)
+}
+
+// RecordDbServerTopProcedureEvent adds a log record of db.server.top_procedure event.
+func (lb *LogsBuilder) RecordDbServerTopProcedureEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, dbNamespaceAttributeValue string, mysqlProcedureNameAttributeValue string, mysqlProcedureTypeAttributeValue AttributeMysqlProcedureType, mysqlProcedureExecutionCountAttributeValue int64, mysqlProcedureTotalElapsedTimeAttributeValue float64, mysqlProcedureCPUTimeAttributeValue float64, mysqlProcedureErrorCountAttributeValue int64, mysqlProcedureMinDurationAttributeValue float64, mysqlProcedureMaxDurationAttributeValue float64, mysqlProcedureRowsAffectedAttributeValue int64, mysqlProcedureRowsExaminedAttributeValue int64, mysqlProcedureRowsSentAttributeValue int64, mysqlProcedureSortMergePassesAttributeValue int64, mysqlProcedureTmpDiskTablesAttributeValue int64) {
+	lb.eventDbServerTopProcedure.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), dbNamespaceAttributeValue, mysqlProcedureNameAttributeValue, mysqlProcedureTypeAttributeValue.String(), mysqlProcedureExecutionCountAttributeValue, mysqlProcedureTotalElapsedTimeAttributeValue, mysqlProcedureCPUTimeAttributeValue, mysqlProcedureErrorCountAttributeValue, mysqlProcedureMinDurationAttributeValue, mysqlProcedureMaxDurationAttributeValue, mysqlProcedureRowsAffectedAttributeValue, mysqlProcedureRowsExaminedAttributeValue, mysqlProcedureRowsSentAttributeValue, mysqlProcedureSortMergePassesAttributeValue, mysqlProcedureTmpDiskTablesAttributeValue)
 }
 
 // RecordDbServerTopQueryEvent adds a log record of db.server.top_query event.
