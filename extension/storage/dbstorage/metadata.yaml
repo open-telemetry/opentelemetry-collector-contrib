@@ -8,6 +8,7 @@ status:
   stability:
     alpha: [extension]
   distributions: [contrib]
+  warnings: [Other]
   codeowners:
     active: [atoulme]
     emeritus: [dmitryax]
