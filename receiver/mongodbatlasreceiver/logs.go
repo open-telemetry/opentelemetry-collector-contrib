@@ -143,7 +143,7 @@ func (s *logsReceiver) collect(ctx context.Context) {
 func (s *logsReceiver) processClusters(ctx context.Context, projectCfg LogsProjectConfig, projectID string) ([]mongodbatlas.Cluster, error) {
 	clusters, err := s.client.GetClusters(ctx, projectID)
 	if err != nil {
-		s.log.Error("Failure to collect clusters from project: %w", zap.Error(err))
+		s.log.Error("Failure to collect clusters from project", zap.Error(err))
 		return nil, err
 	}
 
