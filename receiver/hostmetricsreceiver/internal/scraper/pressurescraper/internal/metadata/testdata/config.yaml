@@ -1,0 +1,29 @@
+default:
+all_set:
+  metrics:
+    system.cpu.linux.pressure.some_time:
+      enabled: true
+    system.io.linux.pressure.full_time:
+      enabled: true
+    system.io.linux.pressure.some_time:
+      enabled: true
+    system.irq.linux.pressure.full_time:
+      enabled: true
+    system.memory.linux.pressure.full_time:
+      enabled: true
+    system.memory.linux.pressure.some_time:
+      enabled: true
+none_set:
+  metrics:
+    system.cpu.linux.pressure.some_time:
+      enabled: false
+    system.io.linux.pressure.full_time:
+      enabled: false
+    system.io.linux.pressure.some_time:
+      enabled: false
+    system.irq.linux.pressure.full_time:
+      enabled: false
+    system.memory.linux.pressure.full_time:
+      enabled: false
+    system.memory.linux.pressure.some_time:
+      enabled: false

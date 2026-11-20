@@ -314,6 +314,7 @@ receiver/hostmetricsreceiver/internal/scraper/memoryscraper/     @open-telemetry
 receiver/hostmetricsreceiver/internal/scraper/networkscraper/    @open-telemetry/collector-contrib-approvers @braydonk @rogercoll @pjanotti
 receiver/hostmetricsreceiver/internal/scraper/nfsscraper/        @open-telemetry/collector-contrib-approvers @braydonk @rogercoll @pjanotti
 receiver/hostmetricsreceiver/internal/scraper/pagingscraper/     @open-telemetry/collector-contrib-approvers @braydonk @rogercoll @pjanotti
+receiver/hostmetricsreceiver/internal/scraper/pressurescraper/   @open-telemetry/collector-contrib-approvers @braydonk @rogercoll @pjanotti
 receiver/hostmetricsreceiver/internal/scraper/processesscraper/  @open-telemetry/collector-contrib-approvers @braydonk @rogercoll @pjanotti
 receiver/hostmetricsreceiver/internal/scraper/processscraper/    @open-telemetry/collector-contrib-approvers @braydonk @rogercoll @pjanotti
 receiver/hostmetricsreceiver/internal/scraper/systemscraper/     @open-telemetry/collector-contrib-approvers @braydonk @rogercoll @pjanotti

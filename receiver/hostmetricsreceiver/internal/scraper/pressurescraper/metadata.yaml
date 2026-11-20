@@ -1,0 +1,73 @@
+type: pressure
+
+status:
+  class: scraper
+  stability:
+    development: [metrics]
+  distributions: [core, contrib, k8s]
+  unsupported_platforms: [darwin, windows, freebsd, netbsd, openbsd, dragonfly, zos]
+  codeowners:
+    active: [braydonk, rogercoll, pjanotti]
+
+sem_conv_version: 1.43.0
+
+metrics:
+  system.cpu.linux.pressure.some_time:
+    enabled: true
+    description: Total time in which at least some runnable tasks were delayed due to a lack of CPU.
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    stability: development
+
+  system.io.linux.pressure.full_time:
+    enabled: true
+    description: Total time in which all non-idle tasks were stalled simultaneously waiting for IO.
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    stability: development
+
+  system.io.linux.pressure.some_time:
+    enabled: true
+    description: Total time in which at least some non-idle tasks were stalled waiting for IO.
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    stability: development
+
+  system.irq.linux.pressure.full_time:
+    enabled: true
+    description: Total time in which all non-idle tasks were stalled due to IRQ or softirq handling. Only available on Linux 6.1+ kernels built with `CONFIG_IRQ_TIME_ACCOUNTING`, and not reported while IRQ time accounting is disabled at runtime.
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    stability: development
+
+  system.memory.linux.pressure.full_time:
+    enabled: true
+    description: Total time in which all non-idle tasks were stalled simultaneously due to a lack of memory.
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    stability: development
+
+  system.memory.linux.pressure.some_time:
+    enabled: true
+    description: Total time in which at least some non-idle tasks were stalled due to a lack of memory.
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation_temporality: cumulative
+    stability: development

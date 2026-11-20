@@ -17,6 +17,7 @@ hostmetrics/customname:
         match_type: "strict"
     nfs:
     paging:
+    pressure:
     processes:
     process:
       include:
