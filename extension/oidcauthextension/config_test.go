@@ -9,7 +9,10 @@ import (
 	"testing"
 
 	"github.com/go-jose/go-jose/v4/jose-util/generator"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestDuplicateIssuers(t *testing.T) {
@@ -182,4 +185,83 @@ func TestPublicKeysFile(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLegacySingleProvider_GetProviderConfigs(t *testing.T) {
+	config := &Config{
+		IssuerURL:      "https://issuer.example.com",
+		Audience:       "test-audience",
+		IgnoreAudience: false,
+		IssuerCAPath:   "/path/to/ca.pem",
+		UsernameClaim:  "preferred_username",
+		GroupsClaim:    "roles",
+	}
+
+	require.NoError(t, config.Validate())
+	providerConfigs := config.getProviderConfigs()
+	require.Len(t, providerConfigs, 1)
+	assert.Equal(t, "https://issuer.example.com", providerConfigs[0].IssuerURL)
+	assert.Equal(t, "test-audience", providerConfigs[0].Audience)
+	assert.False(t, providerConfigs[0].IgnoreAudience)
+	assert.Equal(t, "/path/to/ca.pem", providerConfigs[0].IssuerCAPath)
+	assert.Equal(t, "preferred_username", providerConfigs[0].UsernameClaim)
+	assert.Equal(t, "roles", providerConfigs[0].GroupsClaim)
+	assert.True(t, config.hasLegacySingleProvider())
+}
+
+func TestLegacyAndMultipleProviders_GetProviderConfigs(t *testing.T) {
+	config := &Config{
+		IssuerURL: "https://legacy.example.com",
+		Audience:  "legacy-audience",
+		Providers: []ProviderCfg{
+			{
+				IssuerURL: "https://modern.example.com",
+				Audience:  "modern-audience",
+			},
+		},
+	}
+
+	require.NoError(t, config.Validate())
+	providerConfigs := config.getProviderConfigs()
+	require.Len(t, providerConfigs, 2)
+	assert.Equal(t, "https://legacy.example.com", providerConfigs[0].IssuerURL)
+	assert.Equal(t, "https://modern.example.com", providerConfigs[1].IssuerURL)
+	assert.True(t, config.hasLegacySingleProvider())
+}
+
+func TestLegacySingleProviderDeprecationWarning(t *testing.T) {
+	core, logs := observer.New(zap.WarnLevel)
+	logger := zap.New(core)
+
+	config := &Config{
+		IssuerURL: "https://example.com",
+		Audience:  "aud",
+	}
+
+	ext := newExtension(config, logger)
+	require.NotNil(t, ext)
+
+	warns := logs.FilterMessageSnippet("The single-provider OIDC configuration is deprecated and will be removed in a future release")
+	assert.Equal(t, 1, warns.Len())
+}
+
+func TestModernProvidersNoDeprecationWarning(t *testing.T) {
+	core, logs := observer.New(zap.WarnLevel)
+	logger := zap.New(core)
+
+	config := &Config{
+		Providers: []ProviderCfg{
+			{
+				IssuerURL: "https://example.com",
+				Audience:  "aud",
+			},
+		},
+	}
+
+	ext := newExtension(config, logger)
+	require.NotNil(t, ext)
+
+	warns := logs.FilterMessageSnippet("The single-provider OIDC configuration is deprecated")
+	assert.Equal(t, 0, warns.Len())
+	assert.False(t, config.hasLegacySingleProvider())
 }

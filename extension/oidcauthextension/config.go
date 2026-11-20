@@ -60,6 +60,10 @@ type Config struct {
 	Providers []ProviderCfg `mapstructure:"providers"`
 }
 
+func (cfg *Config) hasLegacySingleProvider() bool {
+	return cfg.getLegacyProviderConfig() != nil
+}
+
 func (cfg *Config) getLegacyProviderConfig() *ProviderCfg {
 	if cfg.IssuerURL != "" ||
 		cfg.Audience != "" ||
