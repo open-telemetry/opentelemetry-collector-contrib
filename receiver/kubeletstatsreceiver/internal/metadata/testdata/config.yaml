@@ -100,6 +100,8 @@ all_set:
       enabled: true
     k8s.pod.filesystem.capacity:
       enabled: true
+    k8s.pod.filesystem.inode.used:
+      enabled: true
     k8s.pod.filesystem.usage:
       enabled: true
     k8s.pod.memory.available:
@@ -262,6 +264,8 @@ reaggregate_set:
       enabled: true
     k8s.pod.filesystem.capacity:
       enabled: true
+    k8s.pod.filesystem.inode.used:
+      enabled: true
     k8s.pod.filesystem.usage:
       enabled: true
     k8s.pod.memory.available:
@@ -423,6 +427,8 @@ none_set:
     k8s.pod.filesystem.available:
       enabled: false
     k8s.pod.filesystem.capacity:
+      enabled: false
+    k8s.pod.filesystem.inode.used:
       enabled: false
     k8s.pod.filesystem.usage:
       enabled: false

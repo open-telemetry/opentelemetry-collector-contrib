@@ -258,6 +258,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodFilesystemCapacityDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sPodFilesystemInodeUsedDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodFilesystemUsageDataPoint(ts, 1)
@@ -1078,6 +1081,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "Pod filesystem capacity", mi.Description())
 					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.pod.filesystem.inode.used":
+					assert.False(t, validatedMetrics["k8s.pod.filesystem.inode.used"], "Found a duplicate in the metrics slice: k8s.pod.filesystem.inode.used")
+					validatedMetrics["k8s.pod.filesystem.inode.used"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of inodes used by the pod's ephemeral storage. Derived from the Kubelet Summary API (PodStats.EphemeralStorage.InodesUsed), which sums the inodes used by the pod's container root filesystems, logs and local volumes.", mi.Description())
+					assert.Equal(t, "{inode}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
