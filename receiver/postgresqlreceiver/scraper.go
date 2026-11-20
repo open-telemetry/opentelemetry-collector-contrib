@@ -77,6 +77,7 @@ type postgreSQLScraper struct {
 	separateSchemaAttr     bool
 	useOTelSemconv         bool
 	queryPlanCache         *expirable.LRU[string, string]
+	explainFunctionCache   *lru.Cache[string, explainSetupState]
 	newestQueryTimestamp   float64
 	serviceInstanceID      string
 	serverEndpoint         serverEndpoint
@@ -141,20 +142,22 @@ func newPostgreSQLScraper(
 	}
 	endpoint := newServerEndpoint(config, settings.Logger)
 	mbConfig := metricsBuilderConfigForFeatureGate(config.MetricsBuilderConfig, useOTelSemconv)
+	explainFunctionCache, _ := lru.New[string, explainSetupState](max(1, config.TopQueryCollection.QueryPlanCacheSize))
 	return &postgreSQLScraper{
-		logger:             settings.Logger,
-		config:             config,
-		clientFactory:      clientFactory,
-		mb:                 metadata.NewMetricsBuilder(mbConfig, settings),
-		lb:                 metadata.NewLogsBuilder(config.LogsBuilderConfig, settings),
-		excludedDatabases:  excludedDatabases,
-		excludes:           excludes,
-		cache:              cache,
-		queryPlanCache:     queryPlanCache,
-		separateSchemaAttr: separateSchemaAttr,
-		serviceInstanceID:  serviceInstanceID,
-		serverEndpoint:     endpoint,
-		useOTelSemconv:     useOTelSemconv,
+		logger:               settings.Logger,
+		config:               config,
+		clientFactory:        clientFactory,
+		mb:                   metadata.NewMetricsBuilder(mbConfig, settings),
+		lb:                   metadata.NewLogsBuilder(config.LogsBuilderConfig, settings),
+		excludedDatabases:    excludedDatabases,
+		excludes:             excludes,
+		cache:                cache,
+		queryPlanCache:       queryPlanCache,
+		explainFunctionCache: explainFunctionCache,
+		separateSchemaAttr:   separateSchemaAttr,
+		serviceInstanceID:    serviceInstanceID,
+		serverEndpoint:       endpoint,
+		useOTelSemconv:       useOTelSemconv,
 	}, nil
 }
 
@@ -586,7 +589,8 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		if !ok && explained < maxExplainEachInterval {
 			dbClient, err := clientFactory.getClient(ctx, database)
 			if err == nil {
-				plan, err = dbClient.explainQuery(ctx, rawQuery, queryID, logger)
+				explainFunction := p.explainFunction(ctx, database, dbClient)
+				plan, err = dbClient.explainQuery(ctx, rawQuery, queryID, explainFunction, logger)
 				if err != nil {
 					logger.Error("failed to explain query", zap.String("query", rawQuery), zap.Error(err))
 				}

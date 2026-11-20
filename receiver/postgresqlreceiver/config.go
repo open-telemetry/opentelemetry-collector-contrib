@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"regexp"
 	"strings"
 	"time"
 
@@ -37,6 +38,8 @@ const (
 // db.server.query_plan is collected as part of top query collection, so on its own it reports nothing.
 var errQueryPlanWithoutTopQuery = errors.New("`db.server.query_plan` requires `db.server.top_query` to be enabled")
 
+var explainFunctionNamePattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)?$`)
+
 type TopQueryCollection struct {
 	MaxRowsPerQuery        int64         `mapstructure:"max_rows_per_query"`
 	TopNQuery              int64         `mapstructure:"top_n_query"`
@@ -44,6 +47,10 @@ type TopQueryCollection struct {
 	QueryPlanCacheSize     int           `mapstructure:"query_plan_cache_size"`
 	QueryPlanCacheTTL      time.Duration `mapstructure:"query_plan_cache_ttl"`
 	CollectionInterval     time.Duration `mapstructure:"collection_interval"`
+	// ExplainFunctionName names a DBA-provisioned SECURITY DEFINER function. Empty disables it.
+	ExplainFunctionName string `mapstructure:"explain_function_name"`
+	// ExplainFunctionCacheTTL controls how often the function is probed per database.
+	ExplainFunctionCacheTTL time.Duration `mapstructure:"explain_function_cache_ttl"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -135,6 +142,14 @@ func (cfg *Config) Validate() error {
 
 	if cfg.LogsBuilderConfig.Events.DbServerQueryPlan.Enabled && !cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		err = multierr.Append(err, errQueryPlanWithoutTopQuery)
+	}
+	if name := cfg.TopQueryCollection.ExplainFunctionName; name != "" {
+		if !explainFunctionNamePattern.MatchString(name) {
+			err = multierr.Append(err, errors.New("'top_query_collection.explain_function_name' must be a valid [schema.]function_name identifier"))
+		}
+		if cfg.TopQueryCollection.ExplainFunctionCacheTTL <= 0 {
+			err = multierr.Append(err, errors.New("'top_query_collection.explain_function_cache_ttl' must be positive"))
+		}
 	}
 
 	return err
