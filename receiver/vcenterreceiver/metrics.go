@@ -195,6 +195,38 @@ func (v *vcenterMetricScraper) recordClusterStats(
 	v.mb.RecordVcenterClusterMemoryLimitDataPoint(ts, s.TotalMemory)
 	v.mb.RecordVcenterClusterHostCountDataPoint(ts, int64(s.NumHosts-s.NumEffectiveHosts), false)
 	v.mb.RecordVcenterClusterHostCountDataPoint(ts, int64(s.NumEffectiveHosts), true)
+
+	v.recordClusterHAFailoverCapacity(ts, cr)
+}
+
+// recordClusterHAFailoverCapacity records vSphere HA admission control failover capacity for a vSphere Cluster.
+// It only records when HA and admission control are enabled and the "Cluster resource percentage" policy is used.
+func (v *vcenterMetricScraper) recordClusterHAFailoverCapacity(ts pcommon.Timestamp, cr *mo.ComputeResource) {
+	config, ok := cr.ConfigurationEx.(*types.ClusterConfigInfoEx)
+	if !ok {
+		return
+	}
+	das := config.DasConfig
+	if das.Enabled == nil || !*das.Enabled || das.AdmissionControlEnabled == nil || !*das.AdmissionControlEnabled {
+		return
+	}
+	policy, ok := das.AdmissionControlPolicy.(*types.ClusterFailoverResourcesAdmissionControlPolicy)
+	if !ok {
+		return
+	}
+	summary, ok := cr.Summary.(*types.ClusterComputeResourceSummary)
+	if !ok {
+		return
+	}
+	info, ok := summary.AdmissionControlInfo.(*types.ClusterFailoverResourcesAdmissionControlInfo)
+	if !ok {
+		return
+	}
+
+	v.mb.RecordVcenterClusterHaFailoverCapacityCurrentDataPoint(ts, int64(info.CurrentCpuFailoverResourcesPercent), metadata.AttributeFailoverResourceTypeCPU)
+	v.mb.RecordVcenterClusterHaFailoverCapacityCurrentDataPoint(ts, int64(info.CurrentMemoryFailoverResourcesPercent), metadata.AttributeFailoverResourceTypeMemory)
+	v.mb.RecordVcenterClusterHaFailoverCapacityReservedDataPoint(ts, int64(policy.CpuFailoverResourcesPercent), metadata.AttributeFailoverResourceTypeCPU)
+	v.mb.RecordVcenterClusterHaFailoverCapacityReservedDataPoint(ts, int64(policy.MemoryFailoverResourcesPercent), metadata.AttributeFailoverResourceTypeMemory)
 }
 
 // recordClusterVSANMetrics records vSAN metrics for a vSphere Cluster

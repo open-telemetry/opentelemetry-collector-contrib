@@ -160,6 +160,44 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MHz
+          - description: The percentage of the cluster's resources currently available for vSphere HA failover.
+            gauge:
+              dataPoints:
+                - asInt: "92"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: cpu
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "91"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: memory
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.cluster.ha.failover_capacity.current
+            unit: '%'
+          - description: The percentage of the cluster's resources that vSphere HA admission control reserves for failover.
+            gauge:
+              dataPoints:
+                - asInt: "33"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: cpu
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "33"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: memory
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.cluster.ha.failover_capacity.reserved
+            unit: '%'
           - description: The number of hosts in the cluster.
             name: vcenter.cluster.host.count
             sum:

@@ -198,6 +198,32 @@ var MapAttributeEntityStatus = map[string]AttributeEntityStatus{
 	"gray":   AttributeEntityStatusGray,
 }
 
+// AttributeFailoverResourceType specifies the value failover_resource_type attribute.
+type AttributeFailoverResourceType int
+
+const (
+	_ AttributeFailoverResourceType = iota
+	AttributeFailoverResourceTypeCPU
+	AttributeFailoverResourceTypeMemory
+)
+
+// String returns the string representation of the AttributeFailoverResourceType.
+func (av AttributeFailoverResourceType) String() string {
+	switch av {
+	case AttributeFailoverResourceTypeCPU:
+		return "cpu"
+	case AttributeFailoverResourceTypeMemory:
+		return "memory"
+	}
+	return ""
+}
+
+// MapAttributeFailoverResourceType is a helper map of string to AttributeFailoverResourceType attribute value.
+var MapAttributeFailoverResourceType = map[string]AttributeFailoverResourceType{
+	"cpu":    AttributeFailoverResourceTypeCPU,
+	"memory": AttributeFailoverResourceTypeMemory,
+}
+
 // AttributeHostPowerState specifies the value host_power_state attribute.
 type AttributeHostPowerState int
 
@@ -531,6 +557,14 @@ var MetricsInfo = metricsInfo{
 	VcenterClusterCPULimit: metricInfo{
 		Name: "vcenter.cluster.cpu.limit",
 	},
+	VcenterClusterHaFailoverCapacityCurrent: metricInfo{
+		Name:       "vcenter.cluster.ha.failover_capacity.current",
+		Attributes: []string{"failover_resource_type"},
+	},
+	VcenterClusterHaFailoverCapacityReserved: metricInfo{
+		Name:       "vcenter.cluster.ha.failover_capacity.reserved",
+		Attributes: []string{"failover_resource_type"},
+	},
 	VcenterClusterHostCount: metricInfo{
 		Name:       "vcenter.cluster.host.count",
 		Attributes: []string{"host_effective"},
@@ -815,87 +849,89 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
-	VcenterClusterCPUEffective          metricInfo
-	VcenterClusterCPULimit              metricInfo
-	VcenterClusterHostCount             metricInfo
-	VcenterClusterMemoryEffective       metricInfo
-	VcenterClusterMemoryLimit           metricInfo
-	VcenterClusterVMCount               metricInfo
-	VcenterClusterVMTemplateCount       metricInfo
-	VcenterClusterVsanCongestions       metricInfo
-	VcenterClusterVsanLatencyAvg        metricInfo
-	VcenterClusterVsanOperations        metricInfo
-	VcenterClusterVsanThroughput        metricInfo
-	VcenterDatacenterClusterCount       metricInfo
-	VcenterDatacenterCPULimit           metricInfo
-	VcenterDatacenterDatastoreCount     metricInfo
-	VcenterDatacenterDiskSpace          metricInfo
-	VcenterDatacenterHostCount          metricInfo
-	VcenterDatacenterMemoryLimit        metricInfo
-	VcenterDatacenterVMCount            metricInfo
-	VcenterDatastoreAlarmCount          metricInfo
-	VcenterDatastoreDiskUsage           metricInfo
-	VcenterDatastoreDiskUtilization     metricInfo
-	VcenterDatastoreMaintenanceStatus   metricInfo
-	VcenterHostAlarmCount               metricInfo
-	VcenterHostConnectionStatus         metricInfo
-	VcenterHostCPUCapacity              metricInfo
-	VcenterHostCPUReserved              metricInfo
-	VcenterHostCPUUsage                 metricInfo
-	VcenterHostCPUUtilization           metricInfo
-	VcenterHostDiskLatencyAvg           metricInfo
-	VcenterHostDiskLatencyMax           metricInfo
-	VcenterHostDiskThroughput           metricInfo
-	VcenterHostMemoryActive             metricInfo
-	VcenterHostMemoryBallooned          metricInfo
-	VcenterHostMemoryCapacity           metricInfo
-	VcenterHostMemoryGranted            metricInfo
-	VcenterHostMemoryUsage              metricInfo
-	VcenterHostMemoryUtilization        metricInfo
-	VcenterHostNetworkPacketDropRate    metricInfo
-	VcenterHostNetworkPacketErrorRate   metricInfo
-	VcenterHostNetworkPacketRate        metricInfo
-	VcenterHostNetworkThroughput        metricInfo
-	VcenterHostNetworkUsage             metricInfo
-	VcenterHostPowerStatus              metricInfo
-	VcenterHostUptime                   metricInfo
-	VcenterHostVsanCacheHitRate         metricInfo
-	VcenterHostVsanCongestions          metricInfo
-	VcenterHostVsanLatencyAvg           metricInfo
-	VcenterHostVsanOperations           metricInfo
-	VcenterHostVsanThroughput           metricInfo
-	VcenterResourcePoolCPUShares        metricInfo
-	VcenterResourcePoolCPUUsage         metricInfo
-	VcenterResourcePoolMemoryBallooned  metricInfo
-	VcenterResourcePoolMemoryGranted    metricInfo
-	VcenterResourcePoolMemoryShares     metricInfo
-	VcenterResourcePoolMemorySwapped    metricInfo
-	VcenterResourcePoolMemoryUsage      metricInfo
-	VcenterVMCPUReadiness               metricInfo
-	VcenterVMCPUTime                    metricInfo
-	VcenterVMCPUUsage                   metricInfo
-	VcenterVMCPUUtilization             metricInfo
-	VcenterVMDiskLatencyAvg             metricInfo
-	VcenterVMDiskLatencyMax             metricInfo
-	VcenterVMDiskThroughput             metricInfo
-	VcenterVMDiskUsage                  metricInfo
-	VcenterVMDiskUtilization            metricInfo
-	VcenterVMMemoryBallooned            metricInfo
-	VcenterVMMemoryGranted              metricInfo
-	VcenterVMMemorySwapped              metricInfo
-	VcenterVMMemorySwappedSsd           metricInfo
-	VcenterVMMemoryUsage                metricInfo
-	VcenterVMMemoryUtilization          metricInfo
-	VcenterVMNetworkBroadcastPacketRate metricInfo
-	VcenterVMNetworkMulticastPacketRate metricInfo
-	VcenterVMNetworkPacketDropRate      metricInfo
-	VcenterVMNetworkPacketRate          metricInfo
-	VcenterVMNetworkThroughput          metricInfo
-	VcenterVMNetworkUsage               metricInfo
-	VcenterVMPowerStatus                metricInfo
-	VcenterVMVsanLatencyAvg             metricInfo
-	VcenterVMVsanOperations             metricInfo
-	VcenterVMVsanThroughput             metricInfo
+	VcenterClusterCPUEffective               metricInfo
+	VcenterClusterCPULimit                   metricInfo
+	VcenterClusterHaFailoverCapacityCurrent  metricInfo
+	VcenterClusterHaFailoverCapacityReserved metricInfo
+	VcenterClusterHostCount                  metricInfo
+	VcenterClusterMemoryEffective            metricInfo
+	VcenterClusterMemoryLimit                metricInfo
+	VcenterClusterVMCount                    metricInfo
+	VcenterClusterVMTemplateCount            metricInfo
+	VcenterClusterVsanCongestions            metricInfo
+	VcenterClusterVsanLatencyAvg             metricInfo
+	VcenterClusterVsanOperations             metricInfo
+	VcenterClusterVsanThroughput             metricInfo
+	VcenterDatacenterClusterCount            metricInfo
+	VcenterDatacenterCPULimit                metricInfo
+	VcenterDatacenterDatastoreCount          metricInfo
+	VcenterDatacenterDiskSpace               metricInfo
+	VcenterDatacenterHostCount               metricInfo
+	VcenterDatacenterMemoryLimit             metricInfo
+	VcenterDatacenterVMCount                 metricInfo
+	VcenterDatastoreAlarmCount               metricInfo
+	VcenterDatastoreDiskUsage                metricInfo
+	VcenterDatastoreDiskUtilization          metricInfo
+	VcenterDatastoreMaintenanceStatus        metricInfo
+	VcenterHostAlarmCount                    metricInfo
+	VcenterHostConnectionStatus              metricInfo
+	VcenterHostCPUCapacity                   metricInfo
+	VcenterHostCPUReserved                   metricInfo
+	VcenterHostCPUUsage                      metricInfo
+	VcenterHostCPUUtilization                metricInfo
+	VcenterHostDiskLatencyAvg                metricInfo
+	VcenterHostDiskLatencyMax                metricInfo
+	VcenterHostDiskThroughput                metricInfo
+	VcenterHostMemoryActive                  metricInfo
+	VcenterHostMemoryBallooned               metricInfo
+	VcenterHostMemoryCapacity                metricInfo
+	VcenterHostMemoryGranted                 metricInfo
+	VcenterHostMemoryUsage                   metricInfo
+	VcenterHostMemoryUtilization             metricInfo
+	VcenterHostNetworkPacketDropRate         metricInfo
+	VcenterHostNetworkPacketErrorRate        metricInfo
+	VcenterHostNetworkPacketRate             metricInfo
+	VcenterHostNetworkThroughput             metricInfo
+	VcenterHostNetworkUsage                  metricInfo
+	VcenterHostPowerStatus                   metricInfo
+	VcenterHostUptime                        metricInfo
+	VcenterHostVsanCacheHitRate              metricInfo
+	VcenterHostVsanCongestions               metricInfo
+	VcenterHostVsanLatencyAvg                metricInfo
+	VcenterHostVsanOperations                metricInfo
+	VcenterHostVsanThroughput                metricInfo
+	VcenterResourcePoolCPUShares             metricInfo
+	VcenterResourcePoolCPUUsage              metricInfo
+	VcenterResourcePoolMemoryBallooned       metricInfo
+	VcenterResourcePoolMemoryGranted         metricInfo
+	VcenterResourcePoolMemoryShares          metricInfo
+	VcenterResourcePoolMemorySwapped         metricInfo
+	VcenterResourcePoolMemoryUsage           metricInfo
+	VcenterVMCPUReadiness                    metricInfo
+	VcenterVMCPUTime                         metricInfo
+	VcenterVMCPUUsage                        metricInfo
+	VcenterVMCPUUtilization                  metricInfo
+	VcenterVMDiskLatencyAvg                  metricInfo
+	VcenterVMDiskLatencyMax                  metricInfo
+	VcenterVMDiskThroughput                  metricInfo
+	VcenterVMDiskUsage                       metricInfo
+	VcenterVMDiskUtilization                 metricInfo
+	VcenterVMMemoryBallooned                 metricInfo
+	VcenterVMMemoryGranted                   metricInfo
+	VcenterVMMemorySwapped                   metricInfo
+	VcenterVMMemorySwappedSsd                metricInfo
+	VcenterVMMemoryUsage                     metricInfo
+	VcenterVMMemoryUtilization               metricInfo
+	VcenterVMNetworkBroadcastPacketRate      metricInfo
+	VcenterVMNetworkMulticastPacketRate      metricInfo
+	VcenterVMNetworkPacketDropRate           metricInfo
+	VcenterVMNetworkPacketRate               metricInfo
+	VcenterVMNetworkThroughput               metricInfo
+	VcenterVMNetworkUsage                    metricInfo
+	VcenterVMPowerStatus                     metricInfo
+	VcenterVMVsanLatencyAvg                  metricInfo
+	VcenterVMVsanOperations                  metricInfo
+	VcenterVMVsanThroughput                  metricInfo
 }
 
 type metricInfo struct {
@@ -999,6 +1035,188 @@ func (m *metricVcenterClusterCPULimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterClusterCPULimit(cfg VcenterClusterCPULimitMetricConfig) metricVcenterClusterCPULimit {
 	m := metricVcenterClusterCPULimit{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterClusterHaFailoverCapacityCurrent struct {
+	data          pmetric.Metric                                      // data buffer for generated metric.
+	config        VcenterClusterHaFailoverCapacityCurrentMetricConfig // metric config provided by user.
+	capacity      int                                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                                             // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                                      // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills vcenter.cluster.ha.failover_capacity.current metric with initial data.
+func (m *metricVcenterClusterHaFailoverCapacityCurrent) init() {
+	m.data.SetName("vcenter.cluster.ha.failover_capacity.current")
+	m.data.SetDescription("The percentage of the cluster's resources currently available for vSphere HA failover.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricVcenterClusterHaFailoverCapacityCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, failoverResourceTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, VcenterClusterHaFailoverCapacityCurrentMetricAttributeKeyFailoverResourceType) {
+		dp.Attributes().PutStr("type", failoverResourceTypeAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Gauge().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterClusterHaFailoverCapacityCurrent) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterClusterHaFailoverCapacityCurrent) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterClusterHaFailoverCapacityCurrent(cfg VcenterClusterHaFailoverCapacityCurrentMetricConfig) metricVcenterClusterHaFailoverCapacityCurrent {
+	m := metricVcenterClusterHaFailoverCapacityCurrent{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterClusterHaFailoverCapacityReserved struct {
+	data          pmetric.Metric                                       // data buffer for generated metric.
+	config        VcenterClusterHaFailoverCapacityReservedMetricConfig // metric config provided by user.
+	capacity      int                                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                                              // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                                       // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills vcenter.cluster.ha.failover_capacity.reserved metric with initial data.
+func (m *metricVcenterClusterHaFailoverCapacityReserved) init() {
+	m.data.SetName("vcenter.cluster.ha.failover_capacity.reserved")
+	m.data.SetDescription("The percentage of the cluster's resources that vSphere HA admission control reserves for failover.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricVcenterClusterHaFailoverCapacityReserved) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, failoverResourceTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, VcenterClusterHaFailoverCapacityReservedMetricAttributeKeyFailoverResourceType) {
+		dp.Attributes().PutStr("type", failoverResourceTypeAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Gauge().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterClusterHaFailoverCapacityReserved) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterClusterHaFailoverCapacityReserved) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterClusterHaFailoverCapacityReserved(cfg VcenterClusterHaFailoverCapacityReservedMetricConfig) metricVcenterClusterHaFailoverCapacityReserved {
+	m := metricVcenterClusterHaFailoverCapacityReserved{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -6907,94 +7125,96 @@ func newMetricVcenterVMVsanThroughput(cfg VcenterVMVsanThroughputMetricConfig) m
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                    MetricsBuilderConfig // config of the metrics builder.
-	startTime                                 pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                           int                  // maximum observed number of metrics per resource.
-	metricsBuffer                             pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                 component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter            map[string]filter.Filter
-	resourceAttributeExcludeFilter            map[string]filter.Filter
-	metricVcenterClusterCPUEffective          metricVcenterClusterCPUEffective
-	metricVcenterClusterCPULimit              metricVcenterClusterCPULimit
-	metricVcenterClusterHostCount             metricVcenterClusterHostCount
-	metricVcenterClusterMemoryEffective       metricVcenterClusterMemoryEffective
-	metricVcenterClusterMemoryLimit           metricVcenterClusterMemoryLimit
-	metricVcenterClusterVMCount               metricVcenterClusterVMCount
-	metricVcenterClusterVMTemplateCount       metricVcenterClusterVMTemplateCount
-	metricVcenterClusterVsanCongestions       metricVcenterClusterVsanCongestions
-	metricVcenterClusterVsanLatencyAvg        metricVcenterClusterVsanLatencyAvg
-	metricVcenterClusterVsanOperations        metricVcenterClusterVsanOperations
-	metricVcenterClusterVsanThroughput        metricVcenterClusterVsanThroughput
-	metricVcenterDatacenterClusterCount       metricVcenterDatacenterClusterCount
-	metricVcenterDatacenterCPULimit           metricVcenterDatacenterCPULimit
-	metricVcenterDatacenterDatastoreCount     metricVcenterDatacenterDatastoreCount
-	metricVcenterDatacenterDiskSpace          metricVcenterDatacenterDiskSpace
-	metricVcenterDatacenterHostCount          metricVcenterDatacenterHostCount
-	metricVcenterDatacenterMemoryLimit        metricVcenterDatacenterMemoryLimit
-	metricVcenterDatacenterVMCount            metricVcenterDatacenterVMCount
-	metricVcenterDatastoreAlarmCount          metricVcenterDatastoreAlarmCount
-	metricVcenterDatastoreDiskUsage           metricVcenterDatastoreDiskUsage
-	metricVcenterDatastoreDiskUtilization     metricVcenterDatastoreDiskUtilization
-	metricVcenterDatastoreMaintenanceStatus   metricVcenterDatastoreMaintenanceStatus
-	metricVcenterHostAlarmCount               metricVcenterHostAlarmCount
-	metricVcenterHostConnectionStatus         metricVcenterHostConnectionStatus
-	metricVcenterHostCPUCapacity              metricVcenterHostCPUCapacity
-	metricVcenterHostCPUReserved              metricVcenterHostCPUReserved
-	metricVcenterHostCPUUsage                 metricVcenterHostCPUUsage
-	metricVcenterHostCPUUtilization           metricVcenterHostCPUUtilization
-	metricVcenterHostDiskLatencyAvg           metricVcenterHostDiskLatencyAvg
-	metricVcenterHostDiskLatencyMax           metricVcenterHostDiskLatencyMax
-	metricVcenterHostDiskThroughput           metricVcenterHostDiskThroughput
-	metricVcenterHostMemoryActive             metricVcenterHostMemoryActive
-	metricVcenterHostMemoryBallooned          metricVcenterHostMemoryBallooned
-	metricVcenterHostMemoryCapacity           metricVcenterHostMemoryCapacity
-	metricVcenterHostMemoryGranted            metricVcenterHostMemoryGranted
-	metricVcenterHostMemoryUsage              metricVcenterHostMemoryUsage
-	metricVcenterHostMemoryUtilization        metricVcenterHostMemoryUtilization
-	metricVcenterHostNetworkPacketDropRate    metricVcenterHostNetworkPacketDropRate
-	metricVcenterHostNetworkPacketErrorRate   metricVcenterHostNetworkPacketErrorRate
-	metricVcenterHostNetworkPacketRate        metricVcenterHostNetworkPacketRate
-	metricVcenterHostNetworkThroughput        metricVcenterHostNetworkThroughput
-	metricVcenterHostNetworkUsage             metricVcenterHostNetworkUsage
-	metricVcenterHostPowerStatus              metricVcenterHostPowerStatus
-	metricVcenterHostUptime                   metricVcenterHostUptime
-	metricVcenterHostVsanCacheHitRate         metricVcenterHostVsanCacheHitRate
-	metricVcenterHostVsanCongestions          metricVcenterHostVsanCongestions
-	metricVcenterHostVsanLatencyAvg           metricVcenterHostVsanLatencyAvg
-	metricVcenterHostVsanOperations           metricVcenterHostVsanOperations
-	metricVcenterHostVsanThroughput           metricVcenterHostVsanThroughput
-	metricVcenterResourcePoolCPUShares        metricVcenterResourcePoolCPUShares
-	metricVcenterResourcePoolCPUUsage         metricVcenterResourcePoolCPUUsage
-	metricVcenterResourcePoolMemoryBallooned  metricVcenterResourcePoolMemoryBallooned
-	metricVcenterResourcePoolMemoryGranted    metricVcenterResourcePoolMemoryGranted
-	metricVcenterResourcePoolMemoryShares     metricVcenterResourcePoolMemoryShares
-	metricVcenterResourcePoolMemorySwapped    metricVcenterResourcePoolMemorySwapped
-	metricVcenterResourcePoolMemoryUsage      metricVcenterResourcePoolMemoryUsage
-	metricVcenterVMCPUReadiness               metricVcenterVMCPUReadiness
-	metricVcenterVMCPUTime                    metricVcenterVMCPUTime
-	metricVcenterVMCPUUsage                   metricVcenterVMCPUUsage
-	metricVcenterVMCPUUtilization             metricVcenterVMCPUUtilization
-	metricVcenterVMDiskLatencyAvg             metricVcenterVMDiskLatencyAvg
-	metricVcenterVMDiskLatencyMax             metricVcenterVMDiskLatencyMax
-	metricVcenterVMDiskThroughput             metricVcenterVMDiskThroughput
-	metricVcenterVMDiskUsage                  metricVcenterVMDiskUsage
-	metricVcenterVMDiskUtilization            metricVcenterVMDiskUtilization
-	metricVcenterVMMemoryBallooned            metricVcenterVMMemoryBallooned
-	metricVcenterVMMemoryGranted              metricVcenterVMMemoryGranted
-	metricVcenterVMMemorySwapped              metricVcenterVMMemorySwapped
-	metricVcenterVMMemorySwappedSsd           metricVcenterVMMemorySwappedSsd
-	metricVcenterVMMemoryUsage                metricVcenterVMMemoryUsage
-	metricVcenterVMMemoryUtilization          metricVcenterVMMemoryUtilization
-	metricVcenterVMNetworkBroadcastPacketRate metricVcenterVMNetworkBroadcastPacketRate
-	metricVcenterVMNetworkMulticastPacketRate metricVcenterVMNetworkMulticastPacketRate
-	metricVcenterVMNetworkPacketDropRate      metricVcenterVMNetworkPacketDropRate
-	metricVcenterVMNetworkPacketRate          metricVcenterVMNetworkPacketRate
-	metricVcenterVMNetworkThroughput          metricVcenterVMNetworkThroughput
-	metricVcenterVMNetworkUsage               metricVcenterVMNetworkUsage
-	metricVcenterVMPowerStatus                metricVcenterVMPowerStatus
-	metricVcenterVMVsanLatencyAvg             metricVcenterVMVsanLatencyAvg
-	metricVcenterVMVsanOperations             metricVcenterVMVsanOperations
-	metricVcenterVMVsanThroughput             metricVcenterVMVsanThroughput
+	config                                         MetricsBuilderConfig // config of the metrics builder.
+	startTime                                      pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                                int                  // maximum observed number of metrics per resource.
+	metricsBuffer                                  pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                      component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter                 map[string]filter.Filter
+	resourceAttributeExcludeFilter                 map[string]filter.Filter
+	metricVcenterClusterCPUEffective               metricVcenterClusterCPUEffective
+	metricVcenterClusterCPULimit                   metricVcenterClusterCPULimit
+	metricVcenterClusterHaFailoverCapacityCurrent  metricVcenterClusterHaFailoverCapacityCurrent
+	metricVcenterClusterHaFailoverCapacityReserved metricVcenterClusterHaFailoverCapacityReserved
+	metricVcenterClusterHostCount                  metricVcenterClusterHostCount
+	metricVcenterClusterMemoryEffective            metricVcenterClusterMemoryEffective
+	metricVcenterClusterMemoryLimit                metricVcenterClusterMemoryLimit
+	metricVcenterClusterVMCount                    metricVcenterClusterVMCount
+	metricVcenterClusterVMTemplateCount            metricVcenterClusterVMTemplateCount
+	metricVcenterClusterVsanCongestions            metricVcenterClusterVsanCongestions
+	metricVcenterClusterVsanLatencyAvg             metricVcenterClusterVsanLatencyAvg
+	metricVcenterClusterVsanOperations             metricVcenterClusterVsanOperations
+	metricVcenterClusterVsanThroughput             metricVcenterClusterVsanThroughput
+	metricVcenterDatacenterClusterCount            metricVcenterDatacenterClusterCount
+	metricVcenterDatacenterCPULimit                metricVcenterDatacenterCPULimit
+	metricVcenterDatacenterDatastoreCount          metricVcenterDatacenterDatastoreCount
+	metricVcenterDatacenterDiskSpace               metricVcenterDatacenterDiskSpace
+	metricVcenterDatacenterHostCount               metricVcenterDatacenterHostCount
+	metricVcenterDatacenterMemoryLimit             metricVcenterDatacenterMemoryLimit
+	metricVcenterDatacenterVMCount                 metricVcenterDatacenterVMCount
+	metricVcenterDatastoreAlarmCount               metricVcenterDatastoreAlarmCount
+	metricVcenterDatastoreDiskUsage                metricVcenterDatastoreDiskUsage
+	metricVcenterDatastoreDiskUtilization          metricVcenterDatastoreDiskUtilization
+	metricVcenterDatastoreMaintenanceStatus        metricVcenterDatastoreMaintenanceStatus
+	metricVcenterHostAlarmCount                    metricVcenterHostAlarmCount
+	metricVcenterHostConnectionStatus              metricVcenterHostConnectionStatus
+	metricVcenterHostCPUCapacity                   metricVcenterHostCPUCapacity
+	metricVcenterHostCPUReserved                   metricVcenterHostCPUReserved
+	metricVcenterHostCPUUsage                      metricVcenterHostCPUUsage
+	metricVcenterHostCPUUtilization                metricVcenterHostCPUUtilization
+	metricVcenterHostDiskLatencyAvg                metricVcenterHostDiskLatencyAvg
+	metricVcenterHostDiskLatencyMax                metricVcenterHostDiskLatencyMax
+	metricVcenterHostDiskThroughput                metricVcenterHostDiskThroughput
+	metricVcenterHostMemoryActive                  metricVcenterHostMemoryActive
+	metricVcenterHostMemoryBallooned               metricVcenterHostMemoryBallooned
+	metricVcenterHostMemoryCapacity                metricVcenterHostMemoryCapacity
+	metricVcenterHostMemoryGranted                 metricVcenterHostMemoryGranted
+	metricVcenterHostMemoryUsage                   metricVcenterHostMemoryUsage
+	metricVcenterHostMemoryUtilization             metricVcenterHostMemoryUtilization
+	metricVcenterHostNetworkPacketDropRate         metricVcenterHostNetworkPacketDropRate
+	metricVcenterHostNetworkPacketErrorRate        metricVcenterHostNetworkPacketErrorRate
+	metricVcenterHostNetworkPacketRate             metricVcenterHostNetworkPacketRate
+	metricVcenterHostNetworkThroughput             metricVcenterHostNetworkThroughput
+	metricVcenterHostNetworkUsage                  metricVcenterHostNetworkUsage
+	metricVcenterHostPowerStatus                   metricVcenterHostPowerStatus
+	metricVcenterHostUptime                        metricVcenterHostUptime
+	metricVcenterHostVsanCacheHitRate              metricVcenterHostVsanCacheHitRate
+	metricVcenterHostVsanCongestions               metricVcenterHostVsanCongestions
+	metricVcenterHostVsanLatencyAvg                metricVcenterHostVsanLatencyAvg
+	metricVcenterHostVsanOperations                metricVcenterHostVsanOperations
+	metricVcenterHostVsanThroughput                metricVcenterHostVsanThroughput
+	metricVcenterResourcePoolCPUShares             metricVcenterResourcePoolCPUShares
+	metricVcenterResourcePoolCPUUsage              metricVcenterResourcePoolCPUUsage
+	metricVcenterResourcePoolMemoryBallooned       metricVcenterResourcePoolMemoryBallooned
+	metricVcenterResourcePoolMemoryGranted         metricVcenterResourcePoolMemoryGranted
+	metricVcenterResourcePoolMemoryShares          metricVcenterResourcePoolMemoryShares
+	metricVcenterResourcePoolMemorySwapped         metricVcenterResourcePoolMemorySwapped
+	metricVcenterResourcePoolMemoryUsage           metricVcenterResourcePoolMemoryUsage
+	metricVcenterVMCPUReadiness                    metricVcenterVMCPUReadiness
+	metricVcenterVMCPUTime                         metricVcenterVMCPUTime
+	metricVcenterVMCPUUsage                        metricVcenterVMCPUUsage
+	metricVcenterVMCPUUtilization                  metricVcenterVMCPUUtilization
+	metricVcenterVMDiskLatencyAvg                  metricVcenterVMDiskLatencyAvg
+	metricVcenterVMDiskLatencyMax                  metricVcenterVMDiskLatencyMax
+	metricVcenterVMDiskThroughput                  metricVcenterVMDiskThroughput
+	metricVcenterVMDiskUsage                       metricVcenterVMDiskUsage
+	metricVcenterVMDiskUtilization                 metricVcenterVMDiskUtilization
+	metricVcenterVMMemoryBallooned                 metricVcenterVMMemoryBallooned
+	metricVcenterVMMemoryGranted                   metricVcenterVMMemoryGranted
+	metricVcenterVMMemorySwapped                   metricVcenterVMMemorySwapped
+	metricVcenterVMMemorySwappedSsd                metricVcenterVMMemorySwappedSsd
+	metricVcenterVMMemoryUsage                     metricVcenterVMMemoryUsage
+	metricVcenterVMMemoryUtilization               metricVcenterVMMemoryUtilization
+	metricVcenterVMNetworkBroadcastPacketRate      metricVcenterVMNetworkBroadcastPacketRate
+	metricVcenterVMNetworkMulticastPacketRate      metricVcenterVMNetworkMulticastPacketRate
+	metricVcenterVMNetworkPacketDropRate           metricVcenterVMNetworkPacketDropRate
+	metricVcenterVMNetworkPacketRate               metricVcenterVMNetworkPacketRate
+	metricVcenterVMNetworkThroughput               metricVcenterVMNetworkThroughput
+	metricVcenterVMNetworkUsage                    metricVcenterVMNetworkUsage
+	metricVcenterVMPowerStatus                     metricVcenterVMPowerStatus
+	metricVcenterVMVsanLatencyAvg                  metricVcenterVMVsanLatencyAvg
+	metricVcenterVMVsanOperations                  metricVcenterVMVsanOperations
+	metricVcenterVMVsanThroughput                  metricVcenterVMVsanThroughput
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -7016,93 +7236,95 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                    mbc,
-		startTime:                                 pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                             pmetric.NewMetrics(),
-		buildInfo:                                 settings.BuildInfo,
-		metricVcenterClusterCPUEffective:          newMetricVcenterClusterCPUEffective(mbc.Metrics.VcenterClusterCPUEffective),
-		metricVcenterClusterCPULimit:              newMetricVcenterClusterCPULimit(mbc.Metrics.VcenterClusterCPULimit),
-		metricVcenterClusterHostCount:             newMetricVcenterClusterHostCount(mbc.Metrics.VcenterClusterHostCount),
-		metricVcenterClusterMemoryEffective:       newMetricVcenterClusterMemoryEffective(mbc.Metrics.VcenterClusterMemoryEffective),
-		metricVcenterClusterMemoryLimit:           newMetricVcenterClusterMemoryLimit(mbc.Metrics.VcenterClusterMemoryLimit),
-		metricVcenterClusterVMCount:               newMetricVcenterClusterVMCount(mbc.Metrics.VcenterClusterVMCount),
-		metricVcenterClusterVMTemplateCount:       newMetricVcenterClusterVMTemplateCount(mbc.Metrics.VcenterClusterVMTemplateCount),
-		metricVcenterClusterVsanCongestions:       newMetricVcenterClusterVsanCongestions(mbc.Metrics.VcenterClusterVsanCongestions),
-		metricVcenterClusterVsanLatencyAvg:        newMetricVcenterClusterVsanLatencyAvg(mbc.Metrics.VcenterClusterVsanLatencyAvg),
-		metricVcenterClusterVsanOperations:        newMetricVcenterClusterVsanOperations(mbc.Metrics.VcenterClusterVsanOperations),
-		metricVcenterClusterVsanThroughput:        newMetricVcenterClusterVsanThroughput(mbc.Metrics.VcenterClusterVsanThroughput),
-		metricVcenterDatacenterClusterCount:       newMetricVcenterDatacenterClusterCount(mbc.Metrics.VcenterDatacenterClusterCount),
-		metricVcenterDatacenterCPULimit:           newMetricVcenterDatacenterCPULimit(mbc.Metrics.VcenterDatacenterCPULimit),
-		metricVcenterDatacenterDatastoreCount:     newMetricVcenterDatacenterDatastoreCount(mbc.Metrics.VcenterDatacenterDatastoreCount),
-		metricVcenterDatacenterDiskSpace:          newMetricVcenterDatacenterDiskSpace(mbc.Metrics.VcenterDatacenterDiskSpace),
-		metricVcenterDatacenterHostCount:          newMetricVcenterDatacenterHostCount(mbc.Metrics.VcenterDatacenterHostCount),
-		metricVcenterDatacenterMemoryLimit:        newMetricVcenterDatacenterMemoryLimit(mbc.Metrics.VcenterDatacenterMemoryLimit),
-		metricVcenterDatacenterVMCount:            newMetricVcenterDatacenterVMCount(mbc.Metrics.VcenterDatacenterVMCount),
-		metricVcenterDatastoreAlarmCount:          newMetricVcenterDatastoreAlarmCount(mbc.Metrics.VcenterDatastoreAlarmCount),
-		metricVcenterDatastoreDiskUsage:           newMetricVcenterDatastoreDiskUsage(mbc.Metrics.VcenterDatastoreDiskUsage),
-		metricVcenterDatastoreDiskUtilization:     newMetricVcenterDatastoreDiskUtilization(mbc.Metrics.VcenterDatastoreDiskUtilization),
-		metricVcenterDatastoreMaintenanceStatus:   newMetricVcenterDatastoreMaintenanceStatus(mbc.Metrics.VcenterDatastoreMaintenanceStatus),
-		metricVcenterHostAlarmCount:               newMetricVcenterHostAlarmCount(mbc.Metrics.VcenterHostAlarmCount),
-		metricVcenterHostConnectionStatus:         newMetricVcenterHostConnectionStatus(mbc.Metrics.VcenterHostConnectionStatus),
-		metricVcenterHostCPUCapacity:              newMetricVcenterHostCPUCapacity(mbc.Metrics.VcenterHostCPUCapacity),
-		metricVcenterHostCPUReserved:              newMetricVcenterHostCPUReserved(mbc.Metrics.VcenterHostCPUReserved),
-		metricVcenterHostCPUUsage:                 newMetricVcenterHostCPUUsage(mbc.Metrics.VcenterHostCPUUsage),
-		metricVcenterHostCPUUtilization:           newMetricVcenterHostCPUUtilization(mbc.Metrics.VcenterHostCPUUtilization),
-		metricVcenterHostDiskLatencyAvg:           newMetricVcenterHostDiskLatencyAvg(mbc.Metrics.VcenterHostDiskLatencyAvg),
-		metricVcenterHostDiskLatencyMax:           newMetricVcenterHostDiskLatencyMax(mbc.Metrics.VcenterHostDiskLatencyMax),
-		metricVcenterHostDiskThroughput:           newMetricVcenterHostDiskThroughput(mbc.Metrics.VcenterHostDiskThroughput),
-		metricVcenterHostMemoryActive:             newMetricVcenterHostMemoryActive(mbc.Metrics.VcenterHostMemoryActive),
-		metricVcenterHostMemoryBallooned:          newMetricVcenterHostMemoryBallooned(mbc.Metrics.VcenterHostMemoryBallooned),
-		metricVcenterHostMemoryCapacity:           newMetricVcenterHostMemoryCapacity(mbc.Metrics.VcenterHostMemoryCapacity),
-		metricVcenterHostMemoryGranted:            newMetricVcenterHostMemoryGranted(mbc.Metrics.VcenterHostMemoryGranted),
-		metricVcenterHostMemoryUsage:              newMetricVcenterHostMemoryUsage(mbc.Metrics.VcenterHostMemoryUsage),
-		metricVcenterHostMemoryUtilization:        newMetricVcenterHostMemoryUtilization(mbc.Metrics.VcenterHostMemoryUtilization),
-		metricVcenterHostNetworkPacketDropRate:    newMetricVcenterHostNetworkPacketDropRate(mbc.Metrics.VcenterHostNetworkPacketDropRate),
-		metricVcenterHostNetworkPacketErrorRate:   newMetricVcenterHostNetworkPacketErrorRate(mbc.Metrics.VcenterHostNetworkPacketErrorRate),
-		metricVcenterHostNetworkPacketRate:        newMetricVcenterHostNetworkPacketRate(mbc.Metrics.VcenterHostNetworkPacketRate),
-		metricVcenterHostNetworkThroughput:        newMetricVcenterHostNetworkThroughput(mbc.Metrics.VcenterHostNetworkThroughput),
-		metricVcenterHostNetworkUsage:             newMetricVcenterHostNetworkUsage(mbc.Metrics.VcenterHostNetworkUsage),
-		metricVcenterHostPowerStatus:              newMetricVcenterHostPowerStatus(mbc.Metrics.VcenterHostPowerStatus),
-		metricVcenterHostUptime:                   newMetricVcenterHostUptime(mbc.Metrics.VcenterHostUptime),
-		metricVcenterHostVsanCacheHitRate:         newMetricVcenterHostVsanCacheHitRate(mbc.Metrics.VcenterHostVsanCacheHitRate),
-		metricVcenterHostVsanCongestions:          newMetricVcenterHostVsanCongestions(mbc.Metrics.VcenterHostVsanCongestions),
-		metricVcenterHostVsanLatencyAvg:           newMetricVcenterHostVsanLatencyAvg(mbc.Metrics.VcenterHostVsanLatencyAvg),
-		metricVcenterHostVsanOperations:           newMetricVcenterHostVsanOperations(mbc.Metrics.VcenterHostVsanOperations),
-		metricVcenterHostVsanThroughput:           newMetricVcenterHostVsanThroughput(mbc.Metrics.VcenterHostVsanThroughput),
-		metricVcenterResourcePoolCPUShares:        newMetricVcenterResourcePoolCPUShares(mbc.Metrics.VcenterResourcePoolCPUShares),
-		metricVcenterResourcePoolCPUUsage:         newMetricVcenterResourcePoolCPUUsage(mbc.Metrics.VcenterResourcePoolCPUUsage),
-		metricVcenterResourcePoolMemoryBallooned:  newMetricVcenterResourcePoolMemoryBallooned(mbc.Metrics.VcenterResourcePoolMemoryBallooned),
-		metricVcenterResourcePoolMemoryGranted:    newMetricVcenterResourcePoolMemoryGranted(mbc.Metrics.VcenterResourcePoolMemoryGranted),
-		metricVcenterResourcePoolMemoryShares:     newMetricVcenterResourcePoolMemoryShares(mbc.Metrics.VcenterResourcePoolMemoryShares),
-		metricVcenterResourcePoolMemorySwapped:    newMetricVcenterResourcePoolMemorySwapped(mbc.Metrics.VcenterResourcePoolMemorySwapped),
-		metricVcenterResourcePoolMemoryUsage:      newMetricVcenterResourcePoolMemoryUsage(mbc.Metrics.VcenterResourcePoolMemoryUsage),
-		metricVcenterVMCPUReadiness:               newMetricVcenterVMCPUReadiness(mbc.Metrics.VcenterVMCPUReadiness),
-		metricVcenterVMCPUTime:                    newMetricVcenterVMCPUTime(mbc.Metrics.VcenterVMCPUTime),
-		metricVcenterVMCPUUsage:                   newMetricVcenterVMCPUUsage(mbc.Metrics.VcenterVMCPUUsage),
-		metricVcenterVMCPUUtilization:             newMetricVcenterVMCPUUtilization(mbc.Metrics.VcenterVMCPUUtilization),
-		metricVcenterVMDiskLatencyAvg:             newMetricVcenterVMDiskLatencyAvg(mbc.Metrics.VcenterVMDiskLatencyAvg),
-		metricVcenterVMDiskLatencyMax:             newMetricVcenterVMDiskLatencyMax(mbc.Metrics.VcenterVMDiskLatencyMax),
-		metricVcenterVMDiskThroughput:             newMetricVcenterVMDiskThroughput(mbc.Metrics.VcenterVMDiskThroughput),
-		metricVcenterVMDiskUsage:                  newMetricVcenterVMDiskUsage(mbc.Metrics.VcenterVMDiskUsage),
-		metricVcenterVMDiskUtilization:            newMetricVcenterVMDiskUtilization(mbc.Metrics.VcenterVMDiskUtilization),
-		metricVcenterVMMemoryBallooned:            newMetricVcenterVMMemoryBallooned(mbc.Metrics.VcenterVMMemoryBallooned),
-		metricVcenterVMMemoryGranted:              newMetricVcenterVMMemoryGranted(mbc.Metrics.VcenterVMMemoryGranted),
-		metricVcenterVMMemorySwapped:              newMetricVcenterVMMemorySwapped(mbc.Metrics.VcenterVMMemorySwapped),
-		metricVcenterVMMemorySwappedSsd:           newMetricVcenterVMMemorySwappedSsd(mbc.Metrics.VcenterVMMemorySwappedSsd),
-		metricVcenterVMMemoryUsage:                newMetricVcenterVMMemoryUsage(mbc.Metrics.VcenterVMMemoryUsage),
-		metricVcenterVMMemoryUtilization:          newMetricVcenterVMMemoryUtilization(mbc.Metrics.VcenterVMMemoryUtilization),
-		metricVcenterVMNetworkBroadcastPacketRate: newMetricVcenterVMNetworkBroadcastPacketRate(mbc.Metrics.VcenterVMNetworkBroadcastPacketRate),
-		metricVcenterVMNetworkMulticastPacketRate: newMetricVcenterVMNetworkMulticastPacketRate(mbc.Metrics.VcenterVMNetworkMulticastPacketRate),
-		metricVcenterVMNetworkPacketDropRate:      newMetricVcenterVMNetworkPacketDropRate(mbc.Metrics.VcenterVMNetworkPacketDropRate),
-		metricVcenterVMNetworkPacketRate:          newMetricVcenterVMNetworkPacketRate(mbc.Metrics.VcenterVMNetworkPacketRate),
-		metricVcenterVMNetworkThroughput:          newMetricVcenterVMNetworkThroughput(mbc.Metrics.VcenterVMNetworkThroughput),
-		metricVcenterVMNetworkUsage:               newMetricVcenterVMNetworkUsage(mbc.Metrics.VcenterVMNetworkUsage),
-		metricVcenterVMPowerStatus:                newMetricVcenterVMPowerStatus(mbc.Metrics.VcenterVMPowerStatus),
-		metricVcenterVMVsanLatencyAvg:             newMetricVcenterVMVsanLatencyAvg(mbc.Metrics.VcenterVMVsanLatencyAvg),
-		metricVcenterVMVsanOperations:             newMetricVcenterVMVsanOperations(mbc.Metrics.VcenterVMVsanOperations),
-		metricVcenterVMVsanThroughput:             newMetricVcenterVMVsanThroughput(mbc.Metrics.VcenterVMVsanThroughput),
-		resourceAttributeIncludeFilter:            make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:            make(map[string]filter.Filter),
+		config:                           mbc,
+		startTime:                        pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                    pmetric.NewMetrics(),
+		buildInfo:                        settings.BuildInfo,
+		metricVcenterClusterCPUEffective: newMetricVcenterClusterCPUEffective(mbc.Metrics.VcenterClusterCPUEffective),
+		metricVcenterClusterCPULimit:     newMetricVcenterClusterCPULimit(mbc.Metrics.VcenterClusterCPULimit),
+		metricVcenterClusterHaFailoverCapacityCurrent:  newMetricVcenterClusterHaFailoverCapacityCurrent(mbc.Metrics.VcenterClusterHaFailoverCapacityCurrent),
+		metricVcenterClusterHaFailoverCapacityReserved: newMetricVcenterClusterHaFailoverCapacityReserved(mbc.Metrics.VcenterClusterHaFailoverCapacityReserved),
+		metricVcenterClusterHostCount:                  newMetricVcenterClusterHostCount(mbc.Metrics.VcenterClusterHostCount),
+		metricVcenterClusterMemoryEffective:            newMetricVcenterClusterMemoryEffective(mbc.Metrics.VcenterClusterMemoryEffective),
+		metricVcenterClusterMemoryLimit:                newMetricVcenterClusterMemoryLimit(mbc.Metrics.VcenterClusterMemoryLimit),
+		metricVcenterClusterVMCount:                    newMetricVcenterClusterVMCount(mbc.Metrics.VcenterClusterVMCount),
+		metricVcenterClusterVMTemplateCount:            newMetricVcenterClusterVMTemplateCount(mbc.Metrics.VcenterClusterVMTemplateCount),
+		metricVcenterClusterVsanCongestions:            newMetricVcenterClusterVsanCongestions(mbc.Metrics.VcenterClusterVsanCongestions),
+		metricVcenterClusterVsanLatencyAvg:             newMetricVcenterClusterVsanLatencyAvg(mbc.Metrics.VcenterClusterVsanLatencyAvg),
+		metricVcenterClusterVsanOperations:             newMetricVcenterClusterVsanOperations(mbc.Metrics.VcenterClusterVsanOperations),
+		metricVcenterClusterVsanThroughput:             newMetricVcenterClusterVsanThroughput(mbc.Metrics.VcenterClusterVsanThroughput),
+		metricVcenterDatacenterClusterCount:            newMetricVcenterDatacenterClusterCount(mbc.Metrics.VcenterDatacenterClusterCount),
+		metricVcenterDatacenterCPULimit:                newMetricVcenterDatacenterCPULimit(mbc.Metrics.VcenterDatacenterCPULimit),
+		metricVcenterDatacenterDatastoreCount:          newMetricVcenterDatacenterDatastoreCount(mbc.Metrics.VcenterDatacenterDatastoreCount),
+		metricVcenterDatacenterDiskSpace:               newMetricVcenterDatacenterDiskSpace(mbc.Metrics.VcenterDatacenterDiskSpace),
+		metricVcenterDatacenterHostCount:               newMetricVcenterDatacenterHostCount(mbc.Metrics.VcenterDatacenterHostCount),
+		metricVcenterDatacenterMemoryLimit:             newMetricVcenterDatacenterMemoryLimit(mbc.Metrics.VcenterDatacenterMemoryLimit),
+		metricVcenterDatacenterVMCount:                 newMetricVcenterDatacenterVMCount(mbc.Metrics.VcenterDatacenterVMCount),
+		metricVcenterDatastoreAlarmCount:               newMetricVcenterDatastoreAlarmCount(mbc.Metrics.VcenterDatastoreAlarmCount),
+		metricVcenterDatastoreDiskUsage:                newMetricVcenterDatastoreDiskUsage(mbc.Metrics.VcenterDatastoreDiskUsage),
+		metricVcenterDatastoreDiskUtilization:          newMetricVcenterDatastoreDiskUtilization(mbc.Metrics.VcenterDatastoreDiskUtilization),
+		metricVcenterDatastoreMaintenanceStatus:        newMetricVcenterDatastoreMaintenanceStatus(mbc.Metrics.VcenterDatastoreMaintenanceStatus),
+		metricVcenterHostAlarmCount:                    newMetricVcenterHostAlarmCount(mbc.Metrics.VcenterHostAlarmCount),
+		metricVcenterHostConnectionStatus:              newMetricVcenterHostConnectionStatus(mbc.Metrics.VcenterHostConnectionStatus),
+		metricVcenterHostCPUCapacity:                   newMetricVcenterHostCPUCapacity(mbc.Metrics.VcenterHostCPUCapacity),
+		metricVcenterHostCPUReserved:                   newMetricVcenterHostCPUReserved(mbc.Metrics.VcenterHostCPUReserved),
+		metricVcenterHostCPUUsage:                      newMetricVcenterHostCPUUsage(mbc.Metrics.VcenterHostCPUUsage),
+		metricVcenterHostCPUUtilization:                newMetricVcenterHostCPUUtilization(mbc.Metrics.VcenterHostCPUUtilization),
+		metricVcenterHostDiskLatencyAvg:                newMetricVcenterHostDiskLatencyAvg(mbc.Metrics.VcenterHostDiskLatencyAvg),
+		metricVcenterHostDiskLatencyMax:                newMetricVcenterHostDiskLatencyMax(mbc.Metrics.VcenterHostDiskLatencyMax),
+		metricVcenterHostDiskThroughput:                newMetricVcenterHostDiskThroughput(mbc.Metrics.VcenterHostDiskThroughput),
+		metricVcenterHostMemoryActive:                  newMetricVcenterHostMemoryActive(mbc.Metrics.VcenterHostMemoryActive),
+		metricVcenterHostMemoryBallooned:               newMetricVcenterHostMemoryBallooned(mbc.Metrics.VcenterHostMemoryBallooned),
+		metricVcenterHostMemoryCapacity:                newMetricVcenterHostMemoryCapacity(mbc.Metrics.VcenterHostMemoryCapacity),
+		metricVcenterHostMemoryGranted:                 newMetricVcenterHostMemoryGranted(mbc.Metrics.VcenterHostMemoryGranted),
+		metricVcenterHostMemoryUsage:                   newMetricVcenterHostMemoryUsage(mbc.Metrics.VcenterHostMemoryUsage),
+		metricVcenterHostMemoryUtilization:             newMetricVcenterHostMemoryUtilization(mbc.Metrics.VcenterHostMemoryUtilization),
+		metricVcenterHostNetworkPacketDropRate:         newMetricVcenterHostNetworkPacketDropRate(mbc.Metrics.VcenterHostNetworkPacketDropRate),
+		metricVcenterHostNetworkPacketErrorRate:        newMetricVcenterHostNetworkPacketErrorRate(mbc.Metrics.VcenterHostNetworkPacketErrorRate),
+		metricVcenterHostNetworkPacketRate:             newMetricVcenterHostNetworkPacketRate(mbc.Metrics.VcenterHostNetworkPacketRate),
+		metricVcenterHostNetworkThroughput:             newMetricVcenterHostNetworkThroughput(mbc.Metrics.VcenterHostNetworkThroughput),
+		metricVcenterHostNetworkUsage:                  newMetricVcenterHostNetworkUsage(mbc.Metrics.VcenterHostNetworkUsage),
+		metricVcenterHostPowerStatus:                   newMetricVcenterHostPowerStatus(mbc.Metrics.VcenterHostPowerStatus),
+		metricVcenterHostUptime:                        newMetricVcenterHostUptime(mbc.Metrics.VcenterHostUptime),
+		metricVcenterHostVsanCacheHitRate:              newMetricVcenterHostVsanCacheHitRate(mbc.Metrics.VcenterHostVsanCacheHitRate),
+		metricVcenterHostVsanCongestions:               newMetricVcenterHostVsanCongestions(mbc.Metrics.VcenterHostVsanCongestions),
+		metricVcenterHostVsanLatencyAvg:                newMetricVcenterHostVsanLatencyAvg(mbc.Metrics.VcenterHostVsanLatencyAvg),
+		metricVcenterHostVsanOperations:                newMetricVcenterHostVsanOperations(mbc.Metrics.VcenterHostVsanOperations),
+		metricVcenterHostVsanThroughput:                newMetricVcenterHostVsanThroughput(mbc.Metrics.VcenterHostVsanThroughput),
+		metricVcenterResourcePoolCPUShares:             newMetricVcenterResourcePoolCPUShares(mbc.Metrics.VcenterResourcePoolCPUShares),
+		metricVcenterResourcePoolCPUUsage:              newMetricVcenterResourcePoolCPUUsage(mbc.Metrics.VcenterResourcePoolCPUUsage),
+		metricVcenterResourcePoolMemoryBallooned:       newMetricVcenterResourcePoolMemoryBallooned(mbc.Metrics.VcenterResourcePoolMemoryBallooned),
+		metricVcenterResourcePoolMemoryGranted:         newMetricVcenterResourcePoolMemoryGranted(mbc.Metrics.VcenterResourcePoolMemoryGranted),
+		metricVcenterResourcePoolMemoryShares:          newMetricVcenterResourcePoolMemoryShares(mbc.Metrics.VcenterResourcePoolMemoryShares),
+		metricVcenterResourcePoolMemorySwapped:         newMetricVcenterResourcePoolMemorySwapped(mbc.Metrics.VcenterResourcePoolMemorySwapped),
+		metricVcenterResourcePoolMemoryUsage:           newMetricVcenterResourcePoolMemoryUsage(mbc.Metrics.VcenterResourcePoolMemoryUsage),
+		metricVcenterVMCPUReadiness:                    newMetricVcenterVMCPUReadiness(mbc.Metrics.VcenterVMCPUReadiness),
+		metricVcenterVMCPUTime:                         newMetricVcenterVMCPUTime(mbc.Metrics.VcenterVMCPUTime),
+		metricVcenterVMCPUUsage:                        newMetricVcenterVMCPUUsage(mbc.Metrics.VcenterVMCPUUsage),
+		metricVcenterVMCPUUtilization:                  newMetricVcenterVMCPUUtilization(mbc.Metrics.VcenterVMCPUUtilization),
+		metricVcenterVMDiskLatencyAvg:                  newMetricVcenterVMDiskLatencyAvg(mbc.Metrics.VcenterVMDiskLatencyAvg),
+		metricVcenterVMDiskLatencyMax:                  newMetricVcenterVMDiskLatencyMax(mbc.Metrics.VcenterVMDiskLatencyMax),
+		metricVcenterVMDiskThroughput:                  newMetricVcenterVMDiskThroughput(mbc.Metrics.VcenterVMDiskThroughput),
+		metricVcenterVMDiskUsage:                       newMetricVcenterVMDiskUsage(mbc.Metrics.VcenterVMDiskUsage),
+		metricVcenterVMDiskUtilization:                 newMetricVcenterVMDiskUtilization(mbc.Metrics.VcenterVMDiskUtilization),
+		metricVcenterVMMemoryBallooned:                 newMetricVcenterVMMemoryBallooned(mbc.Metrics.VcenterVMMemoryBallooned),
+		metricVcenterVMMemoryGranted:                   newMetricVcenterVMMemoryGranted(mbc.Metrics.VcenterVMMemoryGranted),
+		metricVcenterVMMemorySwapped:                   newMetricVcenterVMMemorySwapped(mbc.Metrics.VcenterVMMemorySwapped),
+		metricVcenterVMMemorySwappedSsd:                newMetricVcenterVMMemorySwappedSsd(mbc.Metrics.VcenterVMMemorySwappedSsd),
+		metricVcenterVMMemoryUsage:                     newMetricVcenterVMMemoryUsage(mbc.Metrics.VcenterVMMemoryUsage),
+		metricVcenterVMMemoryUtilization:               newMetricVcenterVMMemoryUtilization(mbc.Metrics.VcenterVMMemoryUtilization),
+		metricVcenterVMNetworkBroadcastPacketRate:      newMetricVcenterVMNetworkBroadcastPacketRate(mbc.Metrics.VcenterVMNetworkBroadcastPacketRate),
+		metricVcenterVMNetworkMulticastPacketRate:      newMetricVcenterVMNetworkMulticastPacketRate(mbc.Metrics.VcenterVMNetworkMulticastPacketRate),
+		metricVcenterVMNetworkPacketDropRate:           newMetricVcenterVMNetworkPacketDropRate(mbc.Metrics.VcenterVMNetworkPacketDropRate),
+		metricVcenterVMNetworkPacketRate:               newMetricVcenterVMNetworkPacketRate(mbc.Metrics.VcenterVMNetworkPacketRate),
+		metricVcenterVMNetworkThroughput:               newMetricVcenterVMNetworkThroughput(mbc.Metrics.VcenterVMNetworkThroughput),
+		metricVcenterVMNetworkUsage:                    newMetricVcenterVMNetworkUsage(mbc.Metrics.VcenterVMNetworkUsage),
+		metricVcenterVMPowerStatus:                     newMetricVcenterVMPowerStatus(mbc.Metrics.VcenterVMPowerStatus),
+		metricVcenterVMVsanLatencyAvg:                  newMetricVcenterVMVsanLatencyAvg(mbc.Metrics.VcenterVMVsanLatencyAvg),
+		metricVcenterVMVsanOperations:                  newMetricVcenterVMVsanOperations(mbc.Metrics.VcenterVMVsanOperations),
+		metricVcenterVMVsanThroughput:                  newMetricVcenterVMVsanThroughput(mbc.Metrics.VcenterVMVsanThroughput),
+		resourceAttributeIncludeFilter:                 make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:                 make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.VcenterClusterName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["vcenter.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterClusterName.MetricsInclude)
@@ -7247,6 +7469,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricVcenterClusterCPUEffective.emit(ils.Metrics())
 	mb.metricVcenterClusterCPULimit.emit(ils.Metrics())
+	mb.metricVcenterClusterHaFailoverCapacityCurrent.emit(ils.Metrics())
+	mb.metricVcenterClusterHaFailoverCapacityReserved.emit(ils.Metrics())
 	mb.metricVcenterClusterHostCount.emit(ils.Metrics())
 	mb.metricVcenterClusterMemoryEffective.emit(ils.Metrics())
 	mb.metricVcenterClusterMemoryLimit.emit(ils.Metrics())
@@ -7365,6 +7589,16 @@ func (mb *MetricsBuilder) RecordVcenterClusterCPUEffectiveDataPoint(ts pcommon.T
 // RecordVcenterClusterCPULimitDataPoint adds a data point to vcenter.cluster.cpu.limit metric.
 func (mb *MetricsBuilder) RecordVcenterClusterCPULimitDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricVcenterClusterCPULimit.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordVcenterClusterHaFailoverCapacityCurrentDataPoint adds a data point to vcenter.cluster.ha.failover_capacity.current metric.
+func (mb *MetricsBuilder) RecordVcenterClusterHaFailoverCapacityCurrentDataPoint(ts pcommon.Timestamp, val int64, failoverResourceTypeAttributeValue AttributeFailoverResourceType) {
+	mb.metricVcenterClusterHaFailoverCapacityCurrent.recordDataPoint(mb.startTime, ts, val, failoverResourceTypeAttributeValue.String())
+}
+
+// RecordVcenterClusterHaFailoverCapacityReservedDataPoint adds a data point to vcenter.cluster.ha.failover_capacity.reserved metric.
+func (mb *MetricsBuilder) RecordVcenterClusterHaFailoverCapacityReservedDataPoint(ts pcommon.Timestamp, val int64, failoverResourceTypeAttributeValue AttributeFailoverResourceType) {
+	mb.metricVcenterClusterHaFailoverCapacityReserved.recordDataPoint(mb.startTime, ts, val, failoverResourceTypeAttributeValue.String())
 }
 
 // RecordVcenterClusterHostCountDataPoint adds a data point to vcenter.cluster.host.count metric.

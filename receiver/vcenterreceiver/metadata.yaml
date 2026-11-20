@@ -119,6 +119,14 @@ attributes:
       - "green"
       - "gray"
     requirement_level: recommended
+  failover_resource_type:
+    name_override: type
+    description: The type of cluster resource reserved for vSphere HA failover.
+    type: string
+    enum:
+      - cpu
+      - memory
+    requirement_level: recommended
   host_effective:
     type: bool
     name_override: effective
@@ -246,6 +254,29 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
+  vcenter.cluster.ha.failover_capacity.current:
+    enabled: false
+    description: The percentage of the cluster's resources currently available for vSphere HA failover.
+    stability: development
+    unit: "%"
+    gauge:
+      value_type: int
+    attributes: [failover_resource_type]
+    extended_documentation: >-
+      Only reported when vSphere HA and admission control are enabled on the cluster and the admission
+      control policy is "Cluster resource percentage". vSphere HA prevents operations such as powering on
+      virtual machines when this value would drop below `vcenter.cluster.ha.failover_capacity.reserved`.
+  vcenter.cluster.ha.failover_capacity.reserved:
+    enabled: false
+    description: The percentage of the cluster's resources that vSphere HA admission control reserves for failover.
+    stability: development
+    unit: "%"
+    gauge:
+      value_type: int
+    attributes: [failover_resource_type]
+    extended_documentation: >-
+      Only reported when vSphere HA and admission control are enabled on the cluster and the admission
+      control policy is "Cluster resource percentage".
   vcenter.cluster.host.count:
     enabled: true
     description: The number of hosts in the cluster.

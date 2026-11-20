@@ -81,7 +81,16 @@
                     <propSet>
                         <name>configurationEx</name>
                         <val xsi:type="ClusterConfigInfoEx">
-                            <dasConfig xsi:type="ClusterDasConfigInfo"></dasConfig>
+                            <dasConfig xsi:type="ClusterDasConfigInfo">
+                                <enabled>true</enabled>
+                                <admissionControlPolicy xsi:type="ClusterFailoverResourcesAdmissionControlPolicy">
+                                    <cpuFailoverResourcesPercent>33</cpuFailoverResourcesPercent>
+                                    <memoryFailoverResourcesPercent>33</memoryFailoverResourcesPercent>
+                                    <failoverLevel>1</failoverLevel>
+                                    <autoComputePercentages>true</autoComputePercentages>
+                                </admissionControlPolicy>
+                                <admissionControlEnabled>true</admissionControlEnabled>
+                            </dasConfig>
                             <drsConfig xsi:type="ClusterDrsConfigInfo"></drsConfig>
                             <vsanConfigInfo xsi:type="VsanClusterConfigInfo">
                                 <enabled>true</enabled>

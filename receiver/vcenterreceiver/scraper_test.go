@@ -57,6 +57,8 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 	optConfigs.Metrics.VcenterDatastoreMaintenanceStatus.Enabled = true
 	optConfigs.Metrics.VcenterDatastoreAlarmCount.Enabled = true
 	optConfigs.Metrics.VcenterVMPowerStatus.Enabled = true
+	optConfigs.Metrics.VcenterClusterHaFailoverCapacityCurrent.Enabled = true
+	optConfigs.Metrics.VcenterClusterHaFailoverCapacityReserved.Enabled = true
 
 	cfg := &Config{
 		MetricsBuilderConfig: optConfigs,
