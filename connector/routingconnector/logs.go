@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
@@ -158,13 +159,28 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	// anything left wasn't matched by any route. Send to default consumer
 	groupAllLogs(groups, c.router.defaultConsumer, ld)
 	var errs error
-	for consumer, group := range groups {
-		err := consumer.ConsumeLogs(ctx, group)
+	rejected := plog.NewLogs()
+	for destination, group := range groups {
+		err := destination.ConsumeLogs(ctx, group)
 		if err != nil {
 			errs = errors.Join(errs, err)
+			failed := group
+			if partial, ok := errors.AsType[consumererror.Logs](err); ok {
+				failed = partial.Data()
+			}
+			if failed.IsReadOnly() {
+				for i := 0; i < failed.ResourceLogs().Len(); i++ {
+					failed.ResourceLogs().At(i).CopyTo(rejected.ResourceLogs().AppendEmpty())
+				}
+			} else {
+				failed.ResourceLogs().MoveAndAppendTo(rejected.ResourceLogs())
+			}
 		}
 	}
-	return errs
+	if errs != nil {
+		return consumererror.NewLogs(errs, rejected)
+	}
+	return nil
 }
 
 func groupAllLogs(
