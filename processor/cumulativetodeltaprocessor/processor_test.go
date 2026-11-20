@@ -1053,6 +1053,148 @@ func TestCumulativeToDeltaExponentialHistogramNaNSum(t *testing.T) {
 	require.NoError(t, mgp.Shutdown(t.Context()))
 }
 
+// TestCumulativeToDeltaHistogramUnsetSum checks that a data point without a sum is not read as a sum of 0,
+// which would make the next sum be diffed against 0 and repeat what was already emitted.
+func TestCumulativeToDeltaHistogramUnsetSum(t *testing.T) {
+	now := time.Now()
+
+	// Each stream is a series of cumulative points. A nil sum is a point without a sum, and a nil
+	// expected sum is a delta point that stays without one.
+	streams := []struct {
+		name     string
+		counts   []uint64
+		sums     []*float64
+		expected []*float64
+	}{
+		{
+			name:     "unset sum in the middle",
+			counts:   []uint64{10, 20, 30, 40},
+			sums:     []*float64{new(1000.0), nil, new(1200.0), new(1300.0)},
+			expected: []*float64{new(1000.0), nil, new(200.0), new(100.0)},
+		},
+		{
+			name:     "consecutive unset sums",
+			counts:   []uint64{10, 20, 30, 40},
+			sums:     []*float64{new(1000.0), nil, nil, new(1300.0)},
+			expected: []*float64{new(1000.0), nil, nil, new(300.0)},
+		},
+		{
+			// OTLP requires the sum to be 0 when the count is 0, so the first point has a known sum
+			// even though it is unset, and the next sum is a real delta.
+			name:     "unset sum on an empty first point",
+			counts:   []uint64{0, 10, 20},
+			sums:     []*float64{nil, new(500.0), new(700.0)},
+			expected: []*float64{nil, new(500.0), new(200.0)},
+		},
+		{
+			// With observations the sum is unknown, so there is nothing to diff the next sum against.
+			name:     "unset sum on a first point with observations",
+			counts:   []uint64{10, 20, 30},
+			sums:     []*float64{nil, new(500.0), new(700.0)},
+			expected: []*float64{nil, new(0.0), new(200.0)},
+		},
+	}
+
+	histogram := func(counts []uint64, sums []*float64) pmetric.Metrics {
+		md := pmetric.NewMetrics()
+		m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m.SetName("metric_1")
+		h := m.SetEmptyHistogram()
+		h.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		for i, sum := range sums {
+			dp := h.DataPoints().AppendEmpty()
+			dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(time.Second)))
+			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(time.Duration(i+2) * time.Second)))
+			dp.SetCount(counts[i])
+			if sum != nil {
+				dp.SetSum(*sum)
+			}
+			dp.ExplicitBounds().FromRaw([]float64{1})
+			dp.BucketCounts().FromRaw([]uint64{counts[i], 0})
+		}
+		return md
+	}
+	exponentialHistogram := func(counts []uint64, sums []*float64) pmetric.Metrics {
+		points := make([]testExponentialHistogramPoint, 0, len(sums))
+		for i, sum := range sums {
+			points = append(points, testExponentialHistogramPoint{
+				startTs:         1,
+				ts:              int64(i + 2),
+				count:           counts[i],
+				sum:             sum,
+				positiveBuckets: []uint64{counts[i]},
+			})
+		}
+		return testExponentialHistogramMetrics{
+			metrics: []testExponentialHistogramMetric{{name: "metric_1", cumulative: true, points: points}},
+		}.generateMetrics(now)
+	}
+	histogramSums := func(m pmetric.Metric) []*float64 {
+		var out []*float64
+		dps := m.Histogram().DataPoints()
+		for i := range dps.Len() {
+			out = append(out, optionalSum(dps.At(i).HasSum(), dps.At(i).Sum()))
+		}
+		return out
+	}
+	exponentialHistogramSums := func(m pmetric.Metric) []*float64 {
+		var out []*float64
+		dps := m.ExponentialHistogram().DataPoints()
+		for i := range dps.Len() {
+			out = append(out, optionalSum(dps.At(i).HasSum(), dps.At(i).Sum()))
+		}
+		return out
+	}
+
+	for _, typ := range []struct {
+		name    string
+		metrics func(counts []uint64, sums []*float64) pmetric.Metrics
+		sums    func(pmetric.Metric) []*float64
+	}{
+		{name: "histogram", metrics: histogram, sums: histogramSums},
+		{name: "exponential_histogram", metrics: exponentialHistogram, sums: exponentialHistogramSums},
+	} {
+		for _, stream := range streams {
+			t.Run(typ.name+"/"+stream.name, func(t *testing.T) {
+				next := new(consumertest.MetricsSink)
+				mgp, err := NewFactory().CreateMetrics(
+					t.Context(),
+					processortest.NewNopSettings(metadata.Type),
+					&Config{InitialValue: tracking.InitialValueKeep},
+					next,
+				)
+				require.NoError(t, err)
+				require.NoError(t, mgp.Start(t.Context(), componenttest.NewNopHost()))
+				require.NoError(t, mgp.ConsumeMetrics(t.Context(), typ.metrics(stream.counts, stream.sums)))
+
+				got := next.AllMetrics()
+				require.Len(t, got, 1)
+				actual := typ.sums(got[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0))
+				require.Len(t, actual, len(stream.expected))
+				for i := range stream.expected {
+					if stream.expected[i] == nil {
+						assert.Nil(t, actual[i], "point %d has no sum", i)
+						continue
+					}
+					if assert.NotNil(t, actual[i], "point %d has a sum", i) {
+						assert.InDelta(t, *stream.expected[i], *actual[i], 1e-9, "point %d", i)
+					}
+				}
+
+				require.NoError(t, mgp.Shutdown(t.Context()))
+			})
+		}
+	}
+}
+
+// optionalSum returns the sum of a data point, or nil when it has none.
+func optionalSum(hasSum bool, sum float64) *float64 {
+	if !hasSum {
+		return nil
+	}
+	return &sum
+}
+
 func generateTestSumMetrics(tm testSumMetric) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	now := time.Now()
