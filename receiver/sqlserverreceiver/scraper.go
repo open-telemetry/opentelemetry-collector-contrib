@@ -502,7 +502,7 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	hostName := s.config.Server
 
 	if s.config.DataSource != "" {
-		config, err := parseDataSource(s.config.DataSource)
+		config, err := parseDataSource(string(s.config.DataSource))
 		if err != nil {
 			s.logger.Warn("Failed to parse datasource for host.name attribute, using fallback", zap.Error(err))
 		} else {
@@ -989,7 +989,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const totalServerMemory = "Total Server Memory (KB)"
 	const cachePages = "Cache Pages"
 	const totalPages = "Total Pages"
-	const targetPages = "Target Pages"
+	const targetPages = "Target pages"
 	const databasePages = "Database pages"
 	const stolenPages = "Stolen Pages"
 	const reservedPages = "Reserved Pages"
@@ -1464,7 +1464,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockWaitCount)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverLockWaitCountDataPoint(now, val.(int64))
+				s.mb.RecordSqlserverLockWaitCountDataPoint(now, val.(int64), row[instanceKey])
 			}
 		case lockWaitTimeAvgMS:
 			val, err := retrieveFloat(row, valueKey)
@@ -1890,7 +1890,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, usedMemory)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverMemoryUsageDataPoint(now, val.(float64))
+				s.mb.RecordSqlserverMemoryUsageDataPoint(now, val.(float64), row[instanceKey])
 			}
 		case userConnCount:
 			val, err := retrieveInt(row, valueKey)
@@ -2558,6 +2558,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const transactionIsolationLevel = "transaction_isolation_level"
 	const username = "username"
 	const waitResource = "wait_resource"
+	const waitStartTime = "wait_start_time"
 	const waitTimeMillisecond = "wait_time"
 	const waitType = "wait_type"
 	const writes = "writes"
@@ -2702,6 +2703,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		waitTimeSecondVal := float64(waitTimeMillisecondVal) / 1000.0
 		resourceTypeVal, resourceIDVal := parseWaitResource(waitResourceVal)
 		blockingStartTimeVal := row[blockingStartTime]
+		waitStartTimeVal := row[waitStartTime]
 		clientAppNameVal := row[clientAppName]
 		sessionStartTimeVal := row[sessionStartTime]
 		waitTypeVal := row[waitType]
@@ -2745,7 +2747,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			requestStatusVal, resourceIDVal, resourceTypeVal, rowCountVal,
 			sessionDurationSecondVal, sessionStartTimeVal, sessionIDVal, sessionStatusVal,
 			totalElapsedTimeSecondVal, transactionIDVal, transactionIsolationLevelVal,
-			waitResourceVal, waitTimeSecondVal, waitTypeVal, writesVal, usernameVal,
+			waitResourceVal, waitStartTimeVal, waitTimeSecondVal, waitTypeVal, writesVal, usernameVal,
 			row[storedProcedureID], row[storedProcedureName],
 		)
 

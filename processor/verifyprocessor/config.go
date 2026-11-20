@@ -69,8 +69,12 @@ type SecretConfig struct {
 // EnvKeyConfig configures inline key material whose values are resolved by the
 // confmap provider (e.g. via ${env:VAR_NAME} substitution in the collector
 // config). Each field holds the actual PEM text or HMAC secret, not an
-// env-var name.
-type EnvKeyConfig SecretConfig
+// env-var name, so the HMAC secret is opaque to avoid leaking it when the
+// configuration is marshaled.
+type EnvKeyConfig struct {
+	Certificate string              `mapstructure:"certificate"`
+	HMACKey     configopaque.String `mapstructure:"hmac_key"`
+}
 
 // FileKeyConfig configures file-based key material (local paths).
 type FileKeyConfig SecretConfig
@@ -163,7 +167,10 @@ func (c *Config) validateKeySource() error {
 		if c.KeySource.Env == nil {
 			return errMissingKeySourceConfig
 		}
-		return validateSecretMaterial(SecretConfig(*c.KeySource.Env))
+		return validateSecretMaterial(SecretConfig{
+			Certificate: c.KeySource.Env.Certificate,
+			HMACKey:     string(c.KeySource.Env.HMACKey),
+		})
 	case keySourceFile:
 		if c.KeySource.File == nil {
 			return errMissingKeySourceConfig

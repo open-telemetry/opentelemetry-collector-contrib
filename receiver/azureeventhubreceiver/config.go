@@ -9,6 +9,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 type logFormat string
@@ -25,18 +26,18 @@ var (
 )
 
 type Config struct {
-	Connection               string         `mapstructure:"connection"`
-	EventHub                 EventHubConfig `mapstructure:"event_hub"`
-	Partition                string         `mapstructure:"partition"`
-	Offset                   string         `mapstructure:"offset"`
-	StorageID                *component.ID  `mapstructure:"storage"`
-	Auth                     *component.ID  `mapstructure:"auth"`
-	Encoding                 *component.ID  `mapstructure:"encoding"`
-	Format                   string         `mapstructure:"format"`
-	ConsumerGroup            string         `mapstructure:"group"`
-	ApplySemanticConventions bool           `mapstructure:"apply_semantic_conventions"`
-	TimeFormats              TimeFormat     `mapstructure:"time_formats"`
-	MetricAggregation        string         `mapstructure:"metric_aggregation"`
+	Connection               configopaque.String `mapstructure:"connection"`
+	EventHub                 EventHubConfig      `mapstructure:"event_hub"`
+	Partition                string              `mapstructure:"partition"`
+	Offset                   string              `mapstructure:"offset"`
+	StorageID                *component.ID       `mapstructure:"storage"`
+	Auth                     *component.ID       `mapstructure:"auth"`
+	Encoding                 *component.ID       `mapstructure:"encoding"`
+	Format                   string              `mapstructure:"format"`
+	ConsumerGroup            string              `mapstructure:"group"`
+	ApplySemanticConventions bool                `mapstructure:"apply_semantic_conventions"`
+	TimeFormats              TimeFormat          `mapstructure:"time_formats"`
+	MetricAggregation        string              `mapstructure:"metric_aggregation"`
 
 	// BlobCheckpointStore enables distributed consumption using Azure Blob Storage
 	// for checkpoint coordination. When configured, the receiver uses the Azure SDK
@@ -62,7 +63,7 @@ type Config struct {
 type BlobCheckpointStoreConfig struct {
 	// Connection is the connection string for Azure Blob Storage.
 	// Required when the parent config does not use auth.
-	Connection string `mapstructure:"connection"`
+	Connection configopaque.String `mapstructure:"connection"`
 	// StorageAccountURL is the blob service URL (e.g., https://myaccount.blob.core.windows.net).
 	// Required when the parent config uses auth.
 	StorageAccountURL string `mapstructure:"storage_account_url"`
@@ -98,7 +99,7 @@ func (config *Config) Validate() error {
 		if config.Connection == "" {
 			return errMissingConnection
 		}
-		if _, err := azeventhubs.ParseConnectionString(config.Connection); err != nil {
+		if _, err := azeventhubs.ParseConnectionString(string(config.Connection)); err != nil {
 			return err
 		}
 	}
