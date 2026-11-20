@@ -8,6 +8,9 @@ import "time"
 type FlowControlConfig struct {
 	// The maximum duration the acknowledgement loop waits before sending the acknowledgements.
 	TriggerAckBatchDuration time.Duration
+	// The number of pending acknowledgements (acks and nacks combined) that triggers an
+	// immediate flush, without waiting for TriggerAckBatchDuration. 0 disables the size trigger.
+	TriggerAckBatchSize int
 	// The ack deadline to use for the Pub/Sub stream.
 	StreamAckDeadline time.Duration
 	// Pub/Sub flow control settings for the maximum number of outstanding messages.
@@ -19,6 +22,7 @@ type FlowControlConfig struct {
 func NewDefaultFlowControlConfig() *FlowControlConfig {
 	return &FlowControlConfig{
 		TriggerAckBatchDuration: 10 * time.Second,
+		TriggerAckBatchSize:     0,
 		StreamAckDeadline:       60 * time.Second,
 		MaxOutstandingMessages:  0,
 		MaxOutstandingBytes:     0,
