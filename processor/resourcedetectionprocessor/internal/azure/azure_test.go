@@ -4,67 +4,100 @@
 package azure
 
 import (
+	"context"
 	"errors"
-	"regexp"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor/processortest"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/otel/attribute"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/internal/metadata"
 )
 
+const testSchemaURL = "https://opentelemetry.io/schemas/1.43.0"
+
+// fakeDetector stands in for the upstream SDK detector, whose metadata endpoint is not injectable.
+type fakeDetector struct {
+	res *sdkresource.Resource
+	err error
+}
+
+func (f fakeDetector) Detect(context.Context) (*sdkresource.Resource, error) {
+	return f.res, f.err
+}
+
+func withFakeDetector(t *testing.T, res *sdkresource.Resource, err error) {
+	t.Helper()
+
+	orig := newResourceDetector
+	newResourceDetector = func(func(string) bool) sdkresource.Detector {
+		return fakeDetector{res: res, err: err}
+	}
+	t.Cleanup(func() { newResourceDetector = orig })
+}
+
+// sdkAttributes mirrors what the SDK detector reports for a healthy VM, including the
+// attributes this detector does not declare.
+func sdkAttributes() []attribute.KeyValue {
+	return []attribute.KeyValue{
+		attribute.String("cloud.provider", "azure"),
+		attribute.String("cloud.platform", "azure.vm"),
+		attribute.String("host.id", "vmID"),
+		attribute.String("cloud.region", "location"),
+		attribute.String("cloud.resource_id", "/subscriptions/subscriptionID/vm"),
+		attribute.String("host.name", "computerName"),
+		attribute.String("host.type", "vmSize"),
+		attribute.String("os.type", "Linux"),
+		attribute.String("os.version", "1.2.3"),
+		attribute.String("cloud.account.id", "subscriptionID"),
+		attribute.String("cloud.availability_zone", "zone"),
+		attribute.String("azure.vm.name", "name"),
+		attribute.String("azure.vm.size", "vmSize"),
+		attribute.String("azure.vm.scaleset.name", "myScaleset"),
+		attribute.String("azure.resource_group.name", "resourceGroup"),
+	}
+}
+
+func sdkResource() *sdkresource.Resource {
+	return sdkresource.NewWithAttributes(testSchemaURL, sdkAttributes()...)
+}
+
+func newTestDetector(t *testing.T, cfg Config, failOnMissingMetadata bool) internal.Detector {
+	t.Helper()
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, failOnMissingMetadata)
+	require.NoError(t, err)
+	return d
+}
+
 func TestNewDetector(t *testing.T) {
-	dcfg := CreateDefaultConfig()
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), dcfg, false)
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 	assert.NotNil(t, d)
 }
 
-func TestDetectAzureAvailable(t *testing.T) {
-	mp := &azure.MockProvider{}
-	mp.On("Metadata").Return(&azure.ComputeMetadata{
-		Location:          "location",
-		Name:              "name",
-		VMID:              "vmID",
-		VMSize:            "vmSize",
-		SubscriptionID:    "subscriptionID",
-		ResourceGroupName: "resourceGroup",
-		VMScaleSetName:    "myScaleset",
-		AvailabilityZone:  "availabilityZone",
-		OSProfile: azure.OSProfile{
-			ComputerName: "computerName",
-		},
-		TagsList: []azure.ComputeTagsListMetadata{
-			{
-				Name:  "tag1key",
-				Value: "value1",
-			},
-			{
-				Name:  "tag2key",
-				Value: "value2",
-			},
-		},
-	}, nil)
+func TestNewDetectorInvalidTagRegex(t *testing.T) {
+	cfg := CreateDefaultConfig()
+	cfg.Tags = []string{"("}
+	_, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	require.Error(t, err)
+}
 
-	detector := &Detector{
-		provider: mp,
-		tagKeyRegexes: []*regexp.Regexp{
-			regexp.MustCompile("^tag1key$"),
-		},
-		rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
-	}
-	res, schemaURL, err := detector.Detect(t.Context())
+// The default output is exactly the declared and enabled attributes: cloud.availability_zone
+// is disabled by default and the SDK's undeclared attributes must not leak through.
+func TestDetectDefaultConfig(t *testing.T) {
+	withFakeDetector(t, sdkResource(), nil)
+
+	res, schemaURL, err := newTestDetector(t, CreateDefaultConfig(), false).Detect(t.Context())
 	require.NoError(t, err)
-	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
-	mp.AssertExpectations(t)
-
-	expected := map[string]any{
+	assert.Equal(t, testSchemaURL, schemaURL)
+	assert.Equal(t, map[string]any{
 		"cloud.provider":           "azure",
 		"cloud.platform":           "azure.vm",
 		"host.name":                "computerName",
@@ -75,15 +108,24 @@ func TestDetectAzureAvailable(t *testing.T) {
 		"azure.vm.size":            "vmSize",
 		"azure.resourcegroup.name": "resourceGroup",
 		"azure.vm.scaleset.name":   "myScaleset",
-		"azure.tag.tag1key":        "value1",
-	}
+	}, res.Attributes().AsRaw())
+}
 
-	notExpected := map[string]any{
-		"azure.tag.tag2key": "value2",
-	}
+func TestDetectConfiguredAttributes(t *testing.T) {
+	withFakeDetector(t, sdkResource(), nil)
 
-	assert.Equal(t, expected, res.Attributes().AsRaw())
-	assert.NotEqual(t, notExpected, res.Attributes().AsRaw())
+	cfg := CreateDefaultConfig()
+	cfg.ResourceAttributes.CloudAvailabilityZone.Enabled = true
+	cfg.ResourceAttributes.HostName.Enabled = false
+
+	res, _, err := newTestDetector(t, cfg, false).Detect(t.Context())
+	require.NoError(t, err)
+
+	zone, ok := res.Attributes().Get("cloud.availability_zone")
+	require.True(t, ok)
+	assert.Equal(t, "zone", zone.Str())
+	_, ok = res.Attributes().Get("host.name")
+	assert.False(t, ok)
 }
 
 func TestDetectResourceGroupNameFeatureGate(t *testing.T) {
@@ -113,24 +155,9 @@ func TestDetectResourceGroupNameFeatureGate(t *testing.T) {
 				require.NoError(t, featuregate.GlobalRegistry().Set(gateID, false))
 			})
 
-			mp := &azure.MockProvider{}
-			mp.On("Metadata").Return(&azure.ComputeMetadata{
-				Location:          "location",
-				Name:              "name",
-				VMID:              "vmID",
-				VMSize:            "vmSize",
-				SubscriptionID:    "subscriptionID",
-				ResourceGroupName: "resourceGroup",
-				OSProfile: azure.OSProfile{
-					ComputerName: "computerName",
-				},
-			}, nil)
+			withFakeDetector(t, sdkResource(), nil)
 
-			detector := &Detector{
-				provider: mp,
-				rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
-			}
-			res, _, err := detector.Detect(t.Context())
+			res, _, err := newTestDetector(t, CreateDefaultConfig(), false).Detect(t.Context())
 			require.NoError(t, err)
 
 			got, ok := res.Attributes().Get(tt.wantKey)
@@ -139,84 +166,134 @@ func TestDetectResourceGroupNameFeatureGate(t *testing.T) {
 
 			_, ok = res.Attributes().Get(tt.notWantKey)
 			assert.False(t, ok, "expected %q to be absent", tt.notWantKey)
-
-			mp.AssertExpectations(t)
 		})
 	}
 }
 
-func TestDetectEmptyComputerNameFallsBackToVMName(t *testing.T) {
-	mp := &azure.MockProvider{}
-	mp.On("Metadata").Return(&azure.ComputeMetadata{
-		Location:          "location",
-		Name:              "vm-name",
-		VMID:              "vmID",
-		VMSize:            "vmSize",
-		SubscriptionID:    "subscriptionID",
-		ResourceGroupName: "resourceGroup",
-		OSProfile: azure.OSProfile{
-			ComputerName: "",
-		},
-	}, nil)
-
-	detector := &Detector{
-		provider: mp,
-		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
+// The configured regexes reach the SDK detector as a single OR matcher, and the tags it
+// reports survive even though they are not declared in metadata.yaml.
+func TestDetectTags(t *testing.T) {
+	orig := newResourceDetector
+	t.Cleanup(func() { newResourceDetector = orig })
+	newResourceDetector = func(tagKeyFilter func(string) bool) sdkresource.Detector {
+		attrs := sdkAttributes()
+		for _, tag := range []string{"tag1key", "tag2key", "other"} {
+			if tagKeyFilter(tag) {
+				attrs = append(attrs, attribute.String(tagPrefix+tag, tag+"-value"))
+			}
+		}
+		return fakeDetector{res: sdkresource.NewWithAttributes(testSchemaURL, attrs...)}
 	}
-	res, _, err := detector.Detect(t.Context())
-	require.NoError(t, err)
-	mp.AssertExpectations(t)
 
-	// host.name should fall back to compute.Name when computerName is empty
-	hostName, ok := res.Attributes().Get("host.name")
-	require.True(t, ok)
-	require.Equal(t, "vm-name", hostName.Str())
+	cfg := CreateDefaultConfig()
+	cfg.Tags = []string{"^tag1key$", "^tag2"}
+
+	res, _, err := newTestDetector(t, cfg, false).Detect(t.Context())
+	require.NoError(t, err)
+
+	raw := res.Attributes().AsRaw()
+	assert.Equal(t, "tag1key-value", raw["azure.tag.tag1key"])
+	assert.Equal(t, "tag2key-value", raw["azure.tag.tag2key"])
+	assert.NotContains(t, raw, "azure.tag.other")
 }
 
-func TestDetectEmptyFieldsOmitted(t *testing.T) {
-	mp := &azure.MockProvider{}
-	mp.On("Metadata").Return(&azure.ComputeMetadata{
-		Location:          "location",
-		Name:              "vm-name",
-		VMID:              "vmID",
-		VMSize:            "vmSize",
-		SubscriptionID:    "subscriptionID",
-		ResourceGroupName: "resourceGroup",
-		VMScaleSetName:    "",
-		AvailabilityZone:  "",
-		OSProfile: azure.OSProfile{
-			ComputerName: "computerName",
-		},
-	}, nil)
-
-	cfg := metadata.DefaultResourceAttributesConfig()
-	cfg.CloudAvailabilityZone.Enabled = true
-
-	detector := &Detector{
-		provider: mp,
-		rb:       metadata.NewResourceBuilder(cfg),
+func TestDetectNoTagsConfigured(t *testing.T) {
+	orig := newResourceDetector
+	t.Cleanup(func() { newResourceDetector = orig })
+	var filter func(string) bool
+	newResourceDetector = func(tagKeyFilter func(string) bool) sdkresource.Detector {
+		filter = tagKeyFilter
+		return fakeDetector{res: sdkResource()}
 	}
-	res, _, err := detector.Detect(t.Context())
+
+	newTestDetector(t, CreateDefaultConfig(), false)
+	require.NotNil(t, filter)
+	assert.False(t, filter("anything"))
+}
+
+// Attributes the SDK did not report stay absent rather than being emitted empty.
+func TestDetectAbsentAttributesOmitted(t *testing.T) {
+	withFakeDetector(t, sdkresource.NewWithAttributes(testSchemaURL,
+		attribute.String("cloud.provider", "azure"),
+		attribute.String("host.id", "vmID"),
+	), nil)
+
+	res, _, err := newTestDetector(t, CreateDefaultConfig(), false).Detect(t.Context())
 	require.NoError(t, err)
-	mp.AssertExpectations(t)
+	assert.Equal(t, map[string]any{
+		"cloud.provider": "azure",
+		"host.id":        "vmID",
+	}, res.Attributes().AsRaw())
+}
 
-	// Empty VMScaleSetName and AvailabilityZone should not be set
-	_, hasScaleSet := res.Attributes().Get("azure.vm.scaleset.name")
-	require.False(t, hasScaleSet, "empty azure.vm.scaleset.name should not be set")
+// The ResourceBuilder is shared across calls: nothing may carry over from an earlier Detect.
+func TestDetectRepeatedDoesNotRetainAttributes(t *testing.T) {
+	withFakeDetector(t, sdkResource(), nil)
 
-	_, hasZone := res.Attributes().Get("cloud.availability_zone")
-	require.False(t, hasZone, "empty cloud.availability_zone should not be set")
+	d := newTestDetector(t, CreateDefaultConfig(), false)
+	_, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+
+	d.(*Detector).detector = fakeDetector{res: sdkresource.NewWithAttributes(testSchemaURL,
+		attribute.String("host.id", "otherVMID"),
+	)}
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"host.id": "otherVMID"}, res.Attributes().AsRaw())
+}
+
+func TestDetectNotOnAzure(t *testing.T) {
+	withFakeDetector(t, sdkresource.Empty(), nil)
+
+	res, schemaURL, err := newTestDetector(t, CreateDefaultConfig(), false).Detect(t.Context())
+	require.NoError(t, err)
+	assert.True(t, internal.IsEmptyResource(res))
+	assert.Empty(t, schemaURL)
+}
+
+func TestDetectNotOnAzureFailOnMissingMetadata(t *testing.T) {
+	withFakeDetector(t, sdkresource.Empty(), nil)
+
+	res, schemaURL, err := newTestDetector(t, CreateDefaultConfig(), true).Detect(t.Context())
+	require.EqualError(t, err, "azure metadata unavailable")
+	assert.True(t, internal.IsEmptyResource(res))
+	assert.Empty(t, schemaURL)
 }
 
 func TestDetectError(t *testing.T) {
-	mp := &azure.MockProvider{}
-	mp.On("Metadata").Return(&azure.ComputeMetadata{}, errors.New("mock error"))
-	detector := &Detector{
-		provider: mp,
-		logger:   zap.NewNop(),
-		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
-	}
-	res, _, err := detector.Detect(t.Context())
-	assert.NoError(t, err)
+	withFakeDetector(t, nil, errors.New("mock error"))
+
+	res, schemaURL, err := newTestDetector(t, CreateDefaultConfig(), false).Detect(t.Context())
+	require.NoError(t, err)
 	assert.True(t, internal.IsEmptyResource(res))
+	assert.Empty(t, schemaURL)
+}
+
+func TestDetectErrorFailOnMissingMetadata(t *testing.T) {
+	errMock := errors.New("mock error")
+	withFakeDetector(t, nil, errMock)
+
+	res, schemaURL, err := newTestDetector(t, CreateDefaultConfig(), true).Detect(t.Context())
+	require.ErrorIs(t, err, errMock)
+	assert.True(t, internal.IsEmptyResource(res))
+	assert.Empty(t, schemaURL)
+}
+
+func TestDetectPartialResult(t *testing.T) {
+	partial := sdkresource.NewWithAttributes(testSchemaURL,
+		attribute.String("cloud.provider", "azure"),
+		attribute.String("host.name", "computerName"),
+	)
+	partialErr := fmt.Errorf("%w: missing fields", sdkresource.ErrPartialResource)
+
+	for _, failOnMissingMetadata := range []bool{false, true} {
+		withFakeDetector(t, partial, partialErr)
+
+		res, _, err := newTestDetector(t, CreateDefaultConfig(), failOnMissingMetadata).Detect(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, map[string]any{
+			"cloud.provider": "azure",
+			"host.name":      "computerName",
+		}, res.Attributes().AsRaw())
+	}
 }

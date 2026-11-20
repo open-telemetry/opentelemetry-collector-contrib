@@ -14,7 +14,7 @@ type inlineKeyMaterialProvider struct {
 
 func newInlineKeyMaterialProvider(cfg *EnvKeyConfig) (KeyMaterialProvider, error) {
 	if cfg.HMACKey != "" {
-		key, err := decodeHMACKey(cfg.HMACKey)
+		key, err := decodeHMACKey(string(cfg.HMACKey))
 		if err != nil {
 			return nil, fmt.Errorf("env.hmac_key: %w", err)
 		}

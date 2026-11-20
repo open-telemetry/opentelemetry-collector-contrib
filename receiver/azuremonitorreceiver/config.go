@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -276,10 +277,10 @@ type Config struct {
 	Authentication *AuthConfig `mapstructure:"auth"`
 
 	// Deprecated: Credentials is deprecated.
-	Credentials        string `mapstructure:"credentials"`
-	ClientID           string `mapstructure:"client_id"`
-	ClientSecret       string `mapstructure:"client_secret"`
-	FederatedTokenFile string `mapstructure:"federated_token_file"`
+	Credentials        string              `mapstructure:"credentials"`
+	ClientID           string              `mapstructure:"client_id"`
+	ClientSecret       configopaque.String `mapstructure:"client_secret"`
+	FederatedTokenFile string              `mapstructure:"federated_token_file"`
 }
 
 // AuthConfig defines the auth settings for the azure receiver.

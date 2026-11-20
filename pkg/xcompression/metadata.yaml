@@ -1,0 +1,7 @@
+type: xcompression
+
+status:
+  disable_codecov_badge: true
+  class: pkg
+  codeowners:
+    active: [MovieStoreGuy]

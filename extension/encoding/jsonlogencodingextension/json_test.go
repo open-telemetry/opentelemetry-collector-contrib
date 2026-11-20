@@ -353,7 +353,7 @@ func TestInvalidUnmarshal(t *testing.T) {
 		},
 	}
 	_, err := e.UnmarshalLogs([]byte("NOT A JSON"))
-	assert.ErrorContains(t, err, "json: slice unexpected end of JSON input")
+	assert.ErrorContains(t, err, "invalid character 'N' looking for beginning of value")
 }
 
 func TestPrettyLogProcessor(t *testing.T) {
