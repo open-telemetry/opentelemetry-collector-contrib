@@ -520,14 +520,14 @@ func TestDatabaseFilter(t *testing.T) {
 		},
 		{
 			name:  "query sample",
-			query: getSQLServerQuerySamplesQuery(),
+			query: getSQLServerQuerySamplesQuery(false),
 			configure: func(cfg *Config) {
 				cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 			},
 		},
 		{
 			name:  "top query",
-			query: getSQLServerQueryTextAndPlanQuery(),
+			query: getSQLServerQueryTextAndPlanQuery(false),
 			configure: func(cfg *Config) {
 				cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 			},
