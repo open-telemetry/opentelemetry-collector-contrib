@@ -52,6 +52,15 @@ extensions:
       audience: someaudience
     scopes: ["api.metrics"]
     timeout: 1s
+
+  oauth2client/private-key-jwt:
+    client_id: someclientid
+    token_endpoint_auth_method: private_key_jwt
+    client_certificate_key_file: /etc/otelcol/oauth/client.key
+    client_certificate_key_id: my-key-1
+    token_url: https://example.com/oauth2/token
+    scopes: ["api.metrics"]
+    timeout: 1s
     
 receivers:
   hostmetrics:
@@ -81,13 +90,20 @@ exporters:
     auth:
       authenticator: oauth2client/jwt-bearer-grant-type
 
+  otlp_grpc/withprivatekeyjwt:
+    endpoint: 0.0.0.0:5000
+    tls:
+      ca_file: /tmp/certs/ca.pem
+    auth:
+      authenticator: oauth2client/private-key-jwt
+
 service:
-  extensions: [oauth2client,oauth2client/jwt-bearer-grant-type]
+  extensions: [oauth2client,oauth2client/jwt-bearer-grant-type,oauth2client/private-key-jwt]
   pipelines:
     metrics:
       receivers: [hostmetrics]
       processors: []
-      exporters: [otlp_http/withauth, otlp_grpc/withauth, otlp_grpc/withjwtauth]
+      exporters: [otlp_http/withauth, otlp_grpc/withauth, otlp_grpc/withjwtauth, otlp_grpc/withprivatekeyjwt]
 ```
 
 Following are the configuration fields
@@ -95,26 +111,44 @@ Following are the configuration fields
 - [**token_url**](https://datatracker.ietf.org/doc/html/rfc6749#section-3.2) - The resource server's token endpoint URLs.
 - [**client_id**](https://datatracker.ietf.org/doc/html/rfc6749#section-2.2) - The client identifier issued to the client.
 - [**grant_type**](https://datatracker.ietf.org/doc/html/rfc6749#section-1.3) - **Optional** OAuth2 grant type to use. It can be one of "client_credentials" or "urn:ietf:params:oauth:grant-type:jwt-bearer" and defaults to "client_credentials"
+- **token_endpoint_auth_method** - **Optional** How the client authenticates to the token endpoint when grant_type is "client_credentials". It can be one of:
+  - `client_secret_basic` - send `client_id` and `client_secret` in an HTTP Basic `Authorization` header.
+  - `client_secret_post` - send `client_id` and `client_secret` in the request body.
+  - `private_key_jwt` - send a signed JWT as `client_assertion` ([RFC7523 section 2.2](https://datatracker.ietf.org/doc/html/rfc7523#section-2.2)). No client secret is used.
+
+  When unset, the client secret is sent and its placement is detected automatically. See [JWT bearer grant vs. private_key_jwt](#jwt-bearer-grant-vs-private_key_jwt).
 - **client_id_file** - The file path to retrieve the client identifier issued to the client.
   The extension reads this file and updates the client ID used whenever it needs to issue a new token. This enables dynamically changing the client credentials by modifying the file contents when, for example, they need to rotate. <!-- Intended whitespace for compact new line -->  
   This setting takes precedence over `client_id`.
-- [**client_secret**](https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1) - The secret string associated with above identifier. This is required when grant_type is "client_credentials"
+- [**client_secret**](https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1) - The secret string associated with above identifier. This is required when grant_type is "client_credentials", unless token_endpoint_auth_method is "private_key_jwt".
 - **client_secret_file** - The file path to retrieve the secret string associated with above identifier.
   The extension reads this file and updates the client secret used whenever it needs to issue a new token. This enables dynamically changing the client credentials by modifying the file contents when, for example, they need to rotate. <!-- Intended whitespace for compact new line -->  
   This setting takes precedence over `client_secret`.
-- **client_certificate_key** - The private key used to sign the jwt assertion used for [RFC7523](https://datatracker.ietf.org/doc/html/rfc7523). This is required when grant_type is "urn:ietf:params:oauth:grant-type:jwt-bearer"
-- **client_certificate_key_file** - The file path to retrieve the secret string associated with above identifier.
+- **client_certificate_key** - The PEM encoded (PKCS#1 or PKCS#8) RSA private key used to sign the jwt assertion used for [RFC7523](https://datatracker.ietf.org/doc/html/rfc7523). This is required when grant_type is "urn:ietf:params:oauth:grant-type:jwt-bearer" or token_endpoint_auth_method is "private_key_jwt".
+  The key can be read from an environment variable with `client_certificate_key: ${env:OAUTH_CLIENT_KEY}`.
+- **client_certificate_key_file** - The file path to retrieve the private key from.
   The extension reads this file and updates the client key used whenever it needs to issue a new token. This enables dynamically changing the credentials by modifying the file contents when, for example, they need to rotate. <!-- Intended whitespace for compact new line -->  
   This setting takes precedence over `client_certificate_key`.
 - **client_certificate_key_id** - **Optional** [kid](https://datatracker.ietf.org/doc/html/rfc7515#section-4.1.4) used to sign the jwt assertion used for [RFC7523](https://datatracker.ietf.org/doc/html/rfc7523).
 - **signature_algorithm** - **Optional** RSA algorithm used to sign jwt assertion used for [RFC7523](https://datatracker.ietf.org/doc/html/rfc7523) and defaults to "RS256".
-- **iss** - **Optional** client identifier used added to jwt assertion used for [RFC7523](https://datatracker.ietf.org/doc/html/rfc7523) and defaults to "client_id".
-- **audience**: - **Optional** intended audience of the jwt assertion used for [RFC7523](https://datatracker.ietf.org/doc/html/rfc7523) and defaults to "token_url".
+- **iss** - **Optional** client identifier used added to jwt assertion used for [RFC7523](https://datatracker.ietf.org/doc/html/rfc7523) and defaults to "client_id". Not used with "private_key_jwt", where `iss` and `sub` are always the client identifier.
+- **audience**: - **Optional** value of the `aud` claim of the jwt assertion used for [RFC7523](https://datatracker.ietf.org/doc/html/rfc7523) and defaults to "token_url".
+  Set it when the authorization server expects a different value, for example when `token_url` points at a proxy. This is not the audience of the requested access token; use `endpoint_params` for that.
 - **claims**: - **Optional** extra claims to be added to jwt assertion used for [RFC7523](https://datatracker.ietf.org/doc/html/rfc7523).
 - [**endpoint_params**](https://github.com/golang/oauth2/blob/master/clientcredentials/clientcredentials.go#L44) - Additional parameters that are sent to the token endpoint.
 - [**scopes**](https://datatracker.ietf.org/doc/html/rfc6749#section-3.3) - **Optional** optional requested permissions associated for the client.
 - [**timeout**](https://golang.org/src/net/http/client.go#L90) -  **Optional** specifies the timeout on the underlying client to authorization server for fetching the tokens (initial and while refreshing).
   This is optional and not setting this configuration implies there is no timeout on the client.
 - **expiry_buffer** -  **Optional** Specifies the time buffer to refresh the access token before it expires, preventing authentication failures due to token expiration. The default value is 5m.
+
+### JWT bearer grant vs. private_key_jwt
+
+[RFC7523](https://datatracker.ietf.org/doc/html/rfc7523) defines two different uses of a signed JWT at the token endpoint:
+
+- **JWT bearer grant** ([section 2.1](https://datatracker.ietf.org/doc/html/rfc7523#section-2.1)), `grant_type: urn:ietf:params:oauth:grant-type:jwt-bearer`.
+  The JWT is the authorization grant and is sent as `assertion`.
+- **JWT client authentication** ([section 2.2](https://datatracker.ietf.org/doc/html/rfc7523#section-2.2)), called `private_key_jwt` in [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication), `token_endpoint_auth_method: private_key_jwt`.
+  The grant is `client_credentials`, and the JWT replaces the client secret. The token request contains `grant_type=client_credentials`, `client_id`, `client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer`, `client_assertion` and, when configured, `scope`.
+  A new assertion with `iss` and `sub` set to the client identifier, `aud`, `iat`, a five minute `exp` and a unique `jti` is signed for every token request.
 
 For more information on client side TLS settings, see [configtls README](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/configtls).

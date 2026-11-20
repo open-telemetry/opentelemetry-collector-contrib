@@ -74,6 +74,46 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "private-key-jwt"),
+			expected: &Config{
+				ClientID:                 "someclientid",
+				TokenEndpointAuthMethod:  "private_key_jwt",
+				ClientCertificateKeyFile: "/etc/otelcol/oauth/client.key",
+				ClientCertificateKeyID:   "key-1",
+				Audience:                 "https://issuer.example.com/oauth2/token",
+				Scopes:                   []string{"api.metrics"},
+				TokenURL:                 "https://example.com/oauth2/default/v1/token",
+				Timeout:                  time.Second,
+				ExpiryBuffer:             5 * time.Minute,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "client-secret-post"),
+			expected: &Config{
+				ClientID:                "someclientid",
+				ClientSecret:            "someclientsecret",
+				TokenEndpointAuthMethod: "client_secret_post",
+				TokenURL:                "https://example.com/oauth2/default/v1/token",
+				ExpiryBuffer:            5 * time.Minute,
+			},
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "private-key-jwt-missingkey"),
+			expectedErr: errNoClientCertificateProvided,
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "private-key-jwt-withsecret"),
+			expectedErr: errClientSecretWithPrivateKey,
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "private-key-jwt-withjwtbearer"),
+			expectedErr: errAuthMethodWithJWTBearer,
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalidauthmethod"),
+			expectedErr: errInvalidAuthMethod,
+		},
+		{
 			id:          component.NewIDWithName(metadata.Type, "missingurl"),
 			expectedErr: errNoTokenURLProvided,
 		},

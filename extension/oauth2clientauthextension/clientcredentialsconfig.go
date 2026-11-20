@@ -27,6 +27,7 @@ func newClientCredentialsGrantTypeConfig(cfg *Config) *clientCredentialsConfig {
 			TokenURL:       cfg.TokenURL,
 			Scopes:         cfg.Scopes,
 			EndpointParams: cfg.EndpointParams,
+			AuthStyle:      authStyle(cfg.TokenEndpointAuthMethod),
 		},
 		ClientIDFile:     cfg.ClientIDFile,
 		ClientSecretFile: cfg.ClientSecretFile,
@@ -107,7 +108,21 @@ func (c *clientCredentialsConfig) createConfig() (*clientcredentials.Config, err
 		TokenURL:       c.TokenURL,
 		Scopes:         c.Scopes,
 		EndpointParams: c.EndpointParams,
+		AuthStyle:      c.AuthStyle,
 	}, nil
+}
+
+// authStyle maps a token endpoint authentication method to the matching
+// oauth2.AuthStyle. Unknown or empty values auto-detect.
+func authStyle(method string) oauth2.AuthStyle {
+	switch method {
+	case authMethodClientSecretBasic:
+		return oauth2.AuthStyleInHeader
+	case authMethodClientSecretPost:
+		return oauth2.AuthStyleInParams
+	default:
+		return oauth2.AuthStyleAutoDetect
+	}
 }
 
 func (c *clientCredentialsConfig) TokenSource(ctx context.Context) oauth2.TokenSource {

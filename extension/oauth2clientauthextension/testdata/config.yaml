@@ -51,3 +51,44 @@ oauth2client/missingurl:
   client_id: someclientid
   client_secret: someclientsecret
   scopes: ["api.metrics"]
+
+oauth2client/private-key-jwt:
+  client_id: someclientid
+  token_endpoint_auth_method: private_key_jwt
+  client_certificate_key_file: /etc/otelcol/oauth/client.key
+  client_certificate_key_id: key-1
+  audience: https://issuer.example.com/oauth2/token
+  token_url: https://example.com/oauth2/default/v1/token
+  scopes: ["api.metrics"]
+  timeout: 1s
+
+oauth2client/private-key-jwt-missingkey:
+  client_id: someclientid
+  token_endpoint_auth_method: private_key_jwt
+  token_url: https://example.com/oauth2/default/v1/token
+
+oauth2client/private-key-jwt-withsecret:
+  client_id: someclientid
+  client_secret: someclientsecret
+  token_endpoint_auth_method: private_key_jwt
+  client_certificate_key_file: /etc/otelcol/oauth/client.key
+  token_url: https://example.com/oauth2/default/v1/token
+
+oauth2client/private-key-jwt-withjwtbearer:
+  client_id: someclientid
+  grant_type: urn:ietf:params:oauth:grant-type:jwt-bearer
+  token_endpoint_auth_method: private_key_jwt
+  client_certificate_key_file: /etc/otelcol/oauth/client.key
+  token_url: https://example.com/oauth2/default/v1/token
+
+oauth2client/invalidauthmethod:
+  client_id: someclientid
+  client_secret: someclientsecret
+  token_endpoint_auth_method: tls_client_auth
+  token_url: https://example.com/oauth2/default/v1/token
+
+oauth2client/client-secret-post:
+  client_id: someclientid
+  client_secret: someclientsecret
+  token_endpoint_auth_method: client_secret_post
+  token_url: https://example.com/oauth2/default/v1/token
