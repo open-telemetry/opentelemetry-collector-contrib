@@ -1365,7 +1365,7 @@ func TestTranslateV2(t *testing.T) {
 						Histograms: []writev2.Histogram{
 							{
 								Schema:         0,
-								Count:          &writev2.Histogram_CountInt{CountInt: 6},
+								Count:          &writev2.Histogram_CountInt{CountInt: 7},
 								Sum:            1,
 								Timestamp:      1,
 								StartTimestamp: 150,
@@ -1765,7 +1765,7 @@ func TestTranslateV2(t *testing.T) {
 						Histograms: []writev2.Histogram{
 							{
 								Count: &writev2.Histogram_CountInt{
-									CountInt: 20,
+									CountInt: 1015,
 								},
 								Sum:            30,
 								Timestamp:      1,
@@ -2467,7 +2467,7 @@ func TestTranslateV2(t *testing.T) {
 								StartTimestamp: 123456000,
 								Schema:         -4,
 								Sum:            200.0,
-								Count:          &writev2.Histogram_CountInt{CountInt: 100},
+								Count:          &writev2.Histogram_CountInt{CountInt: 105},
 								ZeroThreshold:  1.0,
 								ZeroCount:      &writev2.Histogram_ZeroCountInt{ZeroCountInt: 5},
 								PositiveSpans: []writev2.BucketSpan{
@@ -2553,7 +2553,7 @@ func TestTranslateV2(t *testing.T) {
 						Histograms: []writev2.Histogram{
 							{
 								Count: &writev2.Histogram_CountInt{
-									CountInt: 20,
+									CountInt: 1015,
 								},
 								Sum:            30,
 								Timestamp:      1,
@@ -2934,9 +2934,9 @@ func TestTranslateV2(t *testing.T) {
 			// Bucket 1024 is the last one mapping to a finite OTLP bucket at scale 0, so it is kept.
 			// Bucket 1025 is the Prometheus overflow bucket: it covers values past the IEEE float
 			// range, and the compatibility specification requires it to be dropped and left out of
-			// the count.
-			// The original count was 50. Bucket 1024 has count 10, bucket 1025 has count 30 (10 + 20).
-			// The total count is updated to 50 - 30 = 20.
+			// the OTLP count.
+			// Bucket 1024 has count 10, bucket 1025 has count 30 (10 + 20), so the wire count is 40
+			// and the rebuilt OTLP count is 10.
 			request: &writev2.Request{
 				Symbols: []string{
 					"",
@@ -2954,7 +2954,7 @@ func TestTranslateV2(t *testing.T) {
 						Histograms: []writev2.Histogram{
 							{
 								Count: &writev2.Histogram_CountInt{
-									CountInt: 50,
+									CountInt: 40,
 								},
 								Sum:            100,
 								Timestamp:      1,
@@ -3246,7 +3246,7 @@ func TestTranslateV2(t *testing.T) {
 						},
 						Histograms: []writev2.Histogram{
 							{
-								Count:          &writev2.Histogram_CountInt{CountInt: 50},
+								Count:          &writev2.Histogram_CountInt{CountInt: 40},
 								Sum:            100,
 								Timestamp:      1,
 								StartTimestamp: 1,
@@ -4912,16 +4912,24 @@ func TestValidateBucketSpanLayout(t *testing.T) {
 			spans:         []writev2.BucketSpan{{Offset: 0, Length: 3}},
 			deltas:        []int64{1, 2, -2},
 			overflowLimit: schema0Limit,
-			expected:      bucketSpanLayout{hasBuckets: true, firstIndex: 0, lastIndex: 2, numBuckets: 3, retained: 5},
+			expected:      bucketSpanLayout{hasBuckets: true, firstIndex: 0, lastIndex: 2, numBuckets: 3, retained: 5, total: 5},
 		},
 		{
-			// The overflow bucket is consumed so the deltas after it still add up, but it holds
-			// observations no OTLP bucket can carry, so it is left out of the population.
-			name:          "the overflow bucket is not counted",
+			// The overflow bucket is consumed so the deltas after it still add up, and its count
+			// goes into total for wire count validation, but it is left out of retained since no
+			// OTLP bucket can carry it.
+			name:          "the overflow bucket is not counted in retained",
 			spans:         []writev2.BucketSpan{{Offset: 1024, Length: 2}},
 			deltas:        []int64{7, 0},
 			overflowLimit: schema0Limit,
-			expected:      bucketSpanLayout{hasBuckets: true, firstIndex: 1024, lastIndex: 1024, numBuckets: 1, retained: 7},
+			expected:      bucketSpanLayout{hasBuckets: true, firstIndex: 1024, lastIndex: 1024, numBuckets: 1, retained: 7, total: 14},
+		},
+		{
+			name:          "overflow bucket only preserves total population",
+			spans:         []writev2.BucketSpan{{Offset: 1025, Length: 1}},
+			deltas:        []int64{10},
+			overflowLimit: schema0Limit,
+			expected:      bucketSpanLayout{total: 10},
 		},
 		{
 			name:          "a delta that takes a bucket below zero is rejected",
@@ -4976,7 +4984,7 @@ func TestSpanRangeWiderThanInt32(t *testing.T) {
 
 	_, err = validateExponentialHistogram(&writev2.Histogram{
 		Schema:         0,
-		Count:          &writev2.Histogram_CountInt{CountInt: 1},
+		Count:          &writev2.Histogram_CountInt{CountInt: 3},
 		PositiveSpans:  spans,
 		PositiveDeltas: []int64{1, 0, 0},
 	})
@@ -4990,6 +4998,7 @@ func TestValidateExponentialHistogramSharesTheBucketBudget(t *testing.T) {
 
 	fits := &writev2.Histogram{
 		Schema:         8,
+		Count:          &writev2.Histogram_CountInt{CountInt: 4},
 		PositiveSpans:  halfTheLimit,
 		PositiveDeltas: []int64{1, 0},
 		NegativeSpans:  halfTheLimit,
@@ -5001,6 +5010,7 @@ func TestValidateExponentialHistogramSharesTheBucketBudget(t *testing.T) {
 
 	exceeds := &writev2.Histogram{
 		Schema:         8,
+		Count:          &writev2.Histogram_CountInt{CountInt: 4},
 		PositiveSpans:  halfTheLimit,
 		PositiveDeltas: []int64{1, 0},
 		NegativeSpans:  oneMore,
@@ -5159,21 +5169,46 @@ func TestTranslatedHistogramsSatisfyTheDataModel(t *testing.T) {
 			declared = random.IntN(8)
 		}
 		deltas := make([]int64, declared)
+		var runningSum int64
+		var bucketTotal uint64
+		nonNegative := true
 		for i := range deltas {
 			deltas[i] = int64(random.IntN(11)) - 3
+			runningSum += deltas[i]
+			if runningSum < 0 {
+				nonNegative = false
+			} else if nonNegative {
+				bucketTotal += uint64(runningSum)
+			}
+		}
+
+		count := bucketTotal
+		sum := float64(1)
+		switch random.IntN(8) {
+		case 0:
+			sum = stale
+			count = uint64(random.IntN(50))
+		case 1:
+			// Non-stale NaN observation: Count may be >= bucketTotal (valid) or < bucketTotal (invalid).
+			sum = math.NaN()
+			if random.IntN(2) == 0 {
+				count = bucketTotal + uint64(random.IntN(5))
+			} else if bucketTotal > 0 {
+				count = bucketTotal - 1
+			}
+		case 2:
+			// Deliberately mismatch Count against bucketTotal with finite Sum.
+			count = bucketTotal + 1 + uint64(random.IntN(5))
 		}
 
 		histogram := writev2.Histogram{
 			Schema:         -53,
-			Count:          &writev2.Histogram_CountInt{CountInt: uint64(random.IntN(50))},
-			Sum:            1,
+			Count:          &writev2.Histogram_CountInt{CountInt: count},
+			Sum:            sum,
 			Timestamp:      1,
 			CustomValues:   bounds,
 			PositiveSpans:  spans,
 			PositiveDeltas: deltas,
-		}
-		if random.IntN(8) == 0 {
-			histogram.Sum = stale
 		}
 		if random.IntN(30) == 0 {
 			histogram.ZeroCount = &writev2.Histogram_ZeroCountInt{ZeroCountInt: uint64(random.IntN(3))}
@@ -5218,23 +5253,30 @@ func TestTranslatedHistogramsSatisfyTheDataModel(t *testing.T) {
 				translatable = false
 			}
 			running := int64(0)
+			var total uint64
 			for _, delta := range deltas {
 				running += delta
 				if running < 0 {
 					translatable = false
+				} else {
+					total += uint64(running)
 				}
 			}
 			if histogram.GetZeroCountInt() != 0 {
 				translatable = false
 			}
+			if math.IsNaN(histogram.Sum) {
+				if total > histogram.GetCountInt() {
+					translatable = false
+				}
+			} else if total != histogram.GetCountInt() {
+				translatable = false
+			}
 		}
 
 		// A shape the converter refuses fails the request exactly when Prometheus' own validation
-		// refuses it too. The count is rebuilt here rather than checked, so Prometheus is given
-		// one that cannot disagree with the buckets.
-		structural := histogram.ToIntHistogram()
-		structural.Count, structural.Sum = math.MaxUint64, math.NaN()
-		require.Equal(t, !translatable && structural.Validate() != nil, err != nil, "iteration %d: %v", n, err)
+		// refuses it too (including wire Count consistency).
+		require.Equal(t, !translatable && histogram.ToIntHistogram().Validate() != nil, err != nil, "iteration %d: %v", n, err)
 
 		rms := metrics.ResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
@@ -5465,6 +5507,16 @@ func TestOnlyHistogramsPrometheusRefusesFailTheRequest(t *testing.T) {
 				Sum:            1,
 				PositiveSpans:  []writev2.BucketSpan{{Offset: math.MinInt32, Length: 1}},
 				PositiveDeltas: []int64{1},
+			},
+			status: http.StatusBadRequest,
+		},
+		{
+			name: "wire count disagrees with buckets",
+			histogram: writev2.Histogram{
+				Count:          &writev2.Histogram_CountInt{CountInt: 99},
+				Sum:            1,
+				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+				PositiveDeltas: []int64{1, 1},
 			},
 			status: http.StatusBadRequest,
 		},
@@ -5856,9 +5908,8 @@ func TestExtractScopeInfoDropsUnrepresentableScopeLabels(t *testing.T) {
 }
 
 func TestNHCBCountIsRebuiltLikeTheExponentialSchemas(t *testing.T) {
-	// Count is derived from the buckets for both schemas, so a count that disagrees with them is
-	// replaced rather than refused. Prometheus sends one when an observation of NaN raised the
-	// count without landing in a bucket.
+	// Count is derived from the buckets for both schemas when NaN observations raise the wire
+	// count above the bucket total (with Sum set to NaN so Prometheus validation accepts it).
 	for _, tc := range []struct {
 		name string
 		hist writev2.Histogram
@@ -5868,7 +5919,7 @@ func TestNHCBCountIsRebuiltLikeTheExponentialSchemas(t *testing.T) {
 			hist: writev2.Histogram{
 				Schema:         -53,
 				Count:          &writev2.Histogram_CountInt{CountInt: 5},
-				Sum:            1,
+				Sum:            math.NaN(),
 				Timestamp:      1,
 				CustomValues:   []float64{1},
 				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
@@ -5880,7 +5931,7 @@ func TestNHCBCountIsRebuiltLikeTheExponentialSchemas(t *testing.T) {
 			hist: writev2.Histogram{
 				Schema:         0,
 				Count:          &writev2.Histogram_CountInt{CountInt: 5},
-				Sum:            1,
+				Sum:            math.NaN(),
 				Timestamp:      1,
 				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
 				PositiveDeltas: []int64{1, 0},
@@ -6018,7 +6069,7 @@ func TestHistogramWithOnlyOverflowBucketHasZeroSum(t *testing.T) {
 				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
 				Histograms: []writev2.Histogram{{
 					Schema:         0,
-					Count:          &writev2.Histogram_CountInt{CountInt: 5},
+					Count:          &writev2.Histogram_CountInt{CountInt: 10},
 					Sum:            100,
 					Timestamp:      1,
 					PositiveSpans:  []writev2.BucketSpan{{Offset: 1025, Length: 1}},
@@ -6041,16 +6092,19 @@ func TestHistogramWithUnrepresentablePopulationIsDropped(t *testing.T) {
 	// No data point can satisfy the OTLP rule that the count equals the bucket populations when
 	// those populations do not fit a uint64, so the histogram is dropped rather than emitted with
 	// a count that silently wrapped. Deltas are cumulative, so a leading 2^62 and then zeroes is
-	// a run of buckets holding 2^62 each.
+	// a run of buckets holding 2^62 each. Each fixture sets Count to the value the uint64 sum
+	// wraps to so Prometheus' own Validate accepts it and only the checked addition drops it.
 	const huge = int64(1) << 62
 
 	for _, tc := range []struct {
 		name      string
+		count     uint64
 		histogram writev2.Histogram
 	}{
 		{
-			// Five buckets of 2^62 pass the limit within the positive range on its own.
-			name: "one range overflows by itself",
+			// Five buckets of 2^62 pass the limit within the positive range on its own (wraps to 2^62).
+			name:  "one range overflows by itself",
+			count: 1 << 62,
 			histogram: writev2.Histogram{
 				Schema:         0,
 				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 5}},
@@ -6059,8 +6113,9 @@ func TestHistogramWithUnrepresentablePopulationIsDropped(t *testing.T) {
 		},
 		{
 			// Three buckets of 2^62 fit a uint64, so neither range reaches the limit alone. They
-			// only pass it once both are added to the count the data point has to carry.
-			name: "the two ranges only overflow together",
+			// only pass it once both are added to the count the data point has to carry (6 * 2^62 wraps to 2^63).
+			name:  "the two ranges only overflow together",
+			count: 1 << 63,
 			histogram: writev2.Histogram{
 				Schema:         0,
 				PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 3}},
@@ -6072,7 +6127,7 @@ func TestHistogramWithUnrepresentablePopulationIsDropped(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			histogram := tc.histogram
-			histogram.Count = &writev2.Histogram_CountInt{CountInt: 5}
+			histogram.Count = &writev2.Histogram_CountInt{CountInt: tc.count}
 			histogram.Sum = 1
 			histogram.Timestamp = 1
 
@@ -8032,5 +8087,217 @@ func TestInvalidUTF8SymbolReferences(t *testing.T) {
 				}
 			})
 		}
+	})
+}
+
+func TestIntegerHistogramWireCountValidation(t *testing.T) {
+	symbols := []string{"", "__name__", "test_hist", "job", "test_job", "instance", "test_instance", "trace_id", "4bf92f3577b34da6a3ce929d0e0e4736"}
+	exemplar := []writev2.Exemplar{{LabelsRefs: []uint32{7, 8}, Value: 1, Timestamp: 1}}
+	const huge = int64(1) << 62
+	cnt := func(n uint64) *writev2.Histogram_CountInt { return &writev2.Histogram_CountInt{CountInt: n} }
+	zero := func(n uint64) *writev2.Histogram_ZeroCountInt {
+		return &writev2.Histogram_ZeroCountInt{ZeroCountInt: n}
+	}
+	span := func(off int32, l uint32) writev2.BucketSpan { return writev2.BucketSpan{Offset: off, Length: l} }
+
+	for _, tc := range []struct {
+		name            string
+		hist            writev2.Histogram
+		wantStatus      int
+		wantErrContains string
+		wantHistograms  int
+		wantExemplars   int
+		wantOTLPCount   uint64
+		wantEmitted     bool
+	}{
+		{
+			name:            "exponential mismatched count higher than buckets rejected",
+			hist:            writev2.Histogram{Count: cnt(99), Sum: 1, PositiveSpans: []writev2.BucketSpan{span(0, 2)}, PositiveDeltas: []int64{1, 1}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "observation count",
+		},
+		{
+			name:            "exponential mismatched count lower than buckets rejected",
+			hist:            writev2.Histogram{Count: cnt(1), Sum: 1, PositiveSpans: []writev2.BucketSpan{span(0, 2)}, PositiveDeltas: []int64{1, 1}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "observation count",
+		},
+		{
+			name:            "exponential unset Count with non-zero buckets rejected",
+			hist:            writev2.Histogram{Sum: 1, PositiveSpans: []writev2.BucketSpan{span(0, 1)}, PositiveDeltas: []int64{1}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "observation count",
+		},
+		{
+			name:           "exponential with +Inf overflow bucket matching wire count accepted",
+			hist:           writev2.Histogram{Count: cnt(40), Sum: 100, PositiveSpans: []writev2.BucketSpan{span(1024, 2)}, PositiveDeltas: []int64{10, 20}},
+			wantStatus:     http.StatusNoContent,
+			wantHistograms: 1,
+			wantExemplars:  1,
+			wantEmitted:    true,
+			wantOTLPCount:  10,
+		},
+		{
+			name:            "exponential with +Inf overflow bucket missing overflow count rejected",
+			hist:            writev2.Histogram{Count: cnt(10), Sum: 100, PositiveSpans: []writev2.BucketSpan{span(1024, 2)}, PositiveDeltas: []int64{10, 20}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "observation count",
+		},
+		{
+			name:           "exponential with +Inf overflow bucket and NaN sum allows higher wire count",
+			hist:           writev2.Histogram{Count: cnt(45), Sum: math.NaN(), PositiveSpans: []writev2.BucketSpan{span(1024, 2)}, PositiveDeltas: []int64{10, 20}},
+			wantStatus:     http.StatusNoContent,
+			wantHistograms: 1,
+			wantExemplars:  1,
+			wantEmitted:    true,
+			wantOTLPCount:  10,
+		},
+		{
+			name:            "exponential with +Inf overflow bucket and NaN sum rejects lower wire count",
+			hist:            writev2.Histogram{Count: cnt(39), Sum: math.NaN(), PositiveSpans: []writev2.BucketSpan{span(1024, 2)}, PositiveDeltas: []int64{10, 20}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "observation count",
+		},
+		{
+			name:           "exponential with -Inf overflow bucket matching wire count accepted",
+			hist:           writev2.Histogram{Count: cnt(8), ZeroCount: zero(1), Sum: 10, PositiveSpans: []writev2.BucketSpan{span(0, 1)}, PositiveDeltas: []int64{2}, NegativeSpans: []writev2.BucketSpan{span(1025, 1)}, NegativeDeltas: []int64{5}},
+			wantStatus:     http.StatusNoContent,
+			wantHistograms: 1,
+			wantExemplars:  1,
+			wantEmitted:    true,
+			wantOTLPCount:  3,
+		},
+		{
+			name:            "exponential with -Inf overflow bucket missing overflow count rejected",
+			hist:            writev2.Histogram{Count: cnt(3), ZeroCount: zero(1), Sum: 10, PositiveSpans: []writev2.BucketSpan{span(0, 1)}, PositiveDeltas: []int64{2}, NegativeSpans: []writev2.BucketSpan{span(1025, 1)}, NegativeDeltas: []int64{5}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "observation count",
+		},
+		{
+			name:            "NHCB mismatched count rejected",
+			hist:            writev2.Histogram{Schema: -53, Count: cnt(10), Sum: 1, CustomValues: []float64{1}, PositiveSpans: []writev2.BucketSpan{span(0, 2)}, PositiveDeltas: []int64{1, 1}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "observation count",
+		},
+		{
+			name:            "NHCB NaN sum rejects count smaller than buckets",
+			hist:            writev2.Histogram{Schema: -53, Count: cnt(2), Sum: math.NaN(), CustomValues: []float64{1}, PositiveSpans: []writev2.BucketSpan{span(0, 2)}, PositiveDeltas: []int64{1, 1}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "observation count",
+		},
+		{
+			name:           "NHCB NaN sum accepts count larger than buckets and rebuilds OTLP count",
+			hist:           writev2.Histogram{Schema: -53, Count: cnt(5), Sum: math.NaN(), CustomValues: []float64{1}, PositiveSpans: []writev2.BucketSpan{span(0, 2)}, PositiveDeltas: []int64{1, 1}},
+			wantStatus:     http.StatusNoContent,
+			wantHistograms: 1,
+			wantExemplars:  1,
+			wantEmitted:    true,
+			wantOTLPCount:  3,
+		},
+		{
+			name:            "unrepresentable uint64 population with non-matching count fails with 400",
+			hist:            writev2.Histogram{Count: cnt(5), Sum: 1, PositiveSpans: []writev2.BucketSpan{span(0, 5)}, PositiveDeltas: []int64{huge, 0, 0, 0, 0}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "observation count",
+		},
+		{
+			name:            "leading -Inf custom bound with mismatched count fails with 400",
+			hist:            writev2.Histogram{Schema: -53, Count: cnt(99), Sum: 1, CustomValues: []float64{math.Inf(-1), 1}, PositiveSpans: []writev2.BucketSpan{span(1, 2)}, PositiveDeltas: []int64{1, 0}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "observation count",
+		},
+		{
+			name:            "expansion limit exceeded with mismatched count fails with 400",
+			hist:            writev2.Histogram{Schema: 8, Count: cnt(99), Sum: 1, PositiveSpans: []writev2.BucketSpan{span(-10000, 1), span(19999, 1)}, PositiveDeltas: []int64{1, 0}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "observation count",
+		},
+		{
+			name:           "stale integer histogram ignores mismatched wire count",
+			hist:           writev2.Histogram{Count: cnt(0), Sum: math.Float64frombits(value.StaleNaN), PositiveSpans: []writev2.BucketSpan{span(0, 1)}, PositiveDeltas: []int64{1}},
+			wantStatus:     http.StatusNoContent,
+			wantHistograms: 1,
+			wantExemplars:  1,
+			wantEmitted:    true,
+			wantOTLPCount:  0,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := tc.hist
+			h.Timestamp = 1
+			sink := &consumertest.MetricsSink{}
+			resp := sendPRW(t, setupMetricsReceiverWithConsumer(t, sink), &writev2.Request{
+				Symbols: symbols,
+				Timeseries: []writev2.TimeSeries{{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Histograms: []writev2.Histogram{h},
+					Exemplars:  exemplar,
+				}},
+			})
+			defer resp.Body.Close()
+
+			body, readErr := io.ReadAll(resp.Body)
+			require.NoError(t, readErr)
+			assert.Equal(t, tc.wantStatus, resp.StatusCode)
+			if tc.wantErrContains != "" {
+				assert.Contains(t, string(body), tc.wantErrContains)
+			}
+			written, err := remote.ParseWriteResponseStats(resp)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantHistograms, written.Histograms)
+			assert.Equal(t, tc.wantExemplars, written.Exemplars)
+			if tc.wantEmitted {
+				require.Len(t, sink.AllMetrics(), 1)
+				m := sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+				if m.Type() == pmetric.MetricTypeHistogram {
+					assert.Equal(t, tc.wantOTLPCount, m.Histogram().DataPoints().At(0).Count())
+				} else {
+					assert.Equal(t, tc.wantOTLPCount, m.ExponentialHistogram().DataPoints().At(0).Count())
+				}
+			} else {
+				assert.Empty(t, sink.AllMetrics())
+			}
+		})
+	}
+
+	// Bypass protobuf round-trip so an in-process caller passing an empty non-nil CustomValues
+	// slice on an exponential schema exercises dropped() CustomValues normalization directly.
+	t.Run("empty non-nil CustomValues on exponential schema normalizes in dropped fallback", func(t *testing.T) {
+		prwReceiver := setupMetricsReceiver(t)
+		reqFor := func(h writev2.Histogram) *writev2.Request {
+			h.Timestamp = 1
+			return &writev2.Request{
+				Symbols: symbols,
+				Timeseries: []writev2.TimeSeries{{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Histograms: []writev2.Histogram{h},
+				}},
+			}
+		}
+
+		// Valid count past expansion limit: dropped without error once empty CustomValues is cleared.
+		_, stats, err := prwReceiver.translateV2(t.Context(), reqFor(writev2.Histogram{
+			Schema:         8,
+			Count:          cnt(2),
+			Sum:            1,
+			CustomValues:   []float64{},
+			PositiveSpans:  []writev2.BucketSpan{span(-10000, 1), span(19999, 1)},
+			PositiveDeltas: []int64{1, 0},
+		}))
+		require.NoError(t, err)
+		assert.Equal(t, 0, stats.Histograms)
+
+		// Mismatched count with empty non-nil CustomValues: rejected for count mismatch, not custom bounds.
+		_, _, err = prwReceiver.translateV2(t.Context(), reqFor(writev2.Histogram{
+			Schema:         0,
+			Count:          cnt(99),
+			Sum:            1,
+			CustomValues:   []float64{},
+			PositiveSpans:  []writev2.BucketSpan{span(0, 1)},
+			PositiveDeltas: []int64{1},
+		}))
+		require.ErrorContains(t, err, "observation count")
 	})
 }

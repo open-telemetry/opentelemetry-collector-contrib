@@ -827,12 +827,12 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 				zapcore.Field{Key: "timestamp", Type: zapcore.Int64Type, Integer: histogram.Timestamp},
 				zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err},
 			)
-			// The request fails as well when Prometheus' own validation refuses the histogram. The
-			// count is rebuilt here rather than checked, so Prometheus is given one that cannot
-			// disagree with the buckets.
-			structural := histogram.ToIntHistogram()
-			structural.Count, structural.Sum = math.MaxUint64, math.NaN()
-			if err := structural.Validate(); err != nil {
+			// The request fails as well when Prometheus' own validation refuses the histogram.
+			ih := histogram.ToIntHistogram()
+			if len(ih.CustomValues) == 0 {
+				ih.CustomValues = nil
+			}
+			if err := ih.Validate(); err != nil {
 				invalid = errors.Join(invalid, fmt.Errorf("invalid histogram for metric %q: %w", metricName, err))
 			}
 		}
@@ -1068,18 +1068,42 @@ func addPopulations(values ...uint64) (uint64, bool) {
 	return total, true
 }
 
-// hasNegativeCounts reports whether a run of cumulative bucket deltas ever resolves to a negative
-// population. Float histograms are dropped before they reach this.
-func hasNegativeCounts(deltas []int64) bool {
-	var absolute int64
+// sumDeltaPopulations accumulates a run of cumulative bucket deltas, rejecting negative
+// populations and uint64 overflow. Float histograms are dropped before they reach this.
+func sumDeltaPopulations(deltas []int64) (uint64, error) {
+	var (
+		bucket int64
+		total  uint64
+	)
 	for _, delta := range deltas {
-		absolute += delta
-		if absolute < 0 {
-			return true
+		bucket += delta
+		if bucket < 0 {
+			return 0, errors.New("histogram has negative counts")
 		}
+		sum := total + uint64(bucket)
+		if sum < total {
+			return 0, errors.New("bucket populations are too large to represent")
+		}
+		total = sum
 	}
+	return total, nil
+}
 
-	return false
+// validateIntegerCount checks that an integer native histogram's wire Count is consistent with
+// the total population across ZeroCount and all buckets (including ±Inf overflow buckets),
+// matching Prometheus Histogram.Validate.
+func validateIntegerCount(histogram *writev2.Histogram, total uint64) error {
+	count := histogram.GetCountInt()
+	if math.IsNaN(histogram.Sum) {
+		if total > count {
+			return fmt.Errorf("histogram count %d is less than bucket total %d", count, total)
+		}
+		return nil
+	}
+	if total != count {
+		return fmt.Errorf("histogram count %d does not match bucket total %d", count, total)
+	}
+	return nil
 }
 
 // maxExponentialHistogramBuckets bounds the dense OTLP buckets one data point may expand into,
@@ -1127,6 +1151,7 @@ type bucketSpanLayout struct {
 	lastIndex  int64  // Prometheus index of the last bucket within the overflow limit
 	numBuckets int64  // bucket_counts length; may exceed a 32-bit int before validation
 	retained   uint64 // population of the buckets it keeps, leaving out the overflow bucket
+	total      uint64 // population of all buckets in this range, including the overflow bucket
 }
 
 // otelOffset returns the OTLP offset of the layout, one below firstIndex: an OTLP offset
@@ -1175,25 +1200,9 @@ func nhcbBucketCount(histogram *writev2.Histogram) int {
 	return len(histogram.CustomValues) + 1
 }
 
-// populationsFit reports whether the bucket populations a run of cumulative deltas describes sum
-// to a count a uint64 can hold. Every population is non-negative by the time this runs.
-func populationsFit(deltas []int64) bool {
-	var bucket int64
-	var total uint64
-	for _, delta := range deltas {
-		bucket += delta
-		sum := total + uint64(bucket)
-		if sum < total {
-			return false
-		}
-		total = sum
-	}
-	return true
-}
-
 // validateNHCB checks that the spans and deltas of a custom bucket histogram describe exactly the
-// buckets its bounds separate, with populations a data point can hold. Count is left out on
-// purpose: it is rebuilt from the buckets, so the count that arrived does not have to agree.
+// buckets its bounds separate, with populations a data point can hold, and that the wire Count
+// is consistent with those populations (matching Prometheus Histogram.Validate).
 func validateNHCB(histogram *writev2.Histogram) error {
 	if len(histogram.NegativeSpans) > 0 || len(histogram.NegativeDeltas) > 0 {
 		return errors.New("custom buckets have no negative range")
@@ -1201,11 +1210,9 @@ func validateNHCB(histogram *writev2.Histogram) error {
 	if histogram.GetZeroCountInt() != 0 || histogram.ZeroThreshold != 0 {
 		return errors.New("custom buckets have no zero bucket")
 	}
-	if hasNegativeCounts(histogram.PositiveDeltas) {
-		return errors.New("histogram has negative counts")
-	}
-	if !populationsFit(histogram.PositiveDeltas) {
-		return errors.New("bucket populations are too large to represent")
+	total, err := sumDeltaPopulations(histogram.PositiveDeltas)
+	if err != nil {
+		return err
 	}
 
 	var described, dense int64
@@ -1222,7 +1229,7 @@ func validateNHCB(histogram *writev2.Histogram) error {
 	if buckets := int64(nhcbBucketCount(histogram)); dense > buckets {
 		return fmt.Errorf("spans reach past the %d buckets the bounds describe", buckets)
 	}
-	return nil
+	return validateIntegerCount(histogram, total)
 }
 
 // validateExponentialHistogram returns the dense layout the spans of an exponential Native
@@ -1249,13 +1256,21 @@ func validateExponentialHistogram(histogram *writev2.Histogram) (exponentialHist
 		)
 	}
 
-	// The compatibility specification derives Count from what the data point holds, not from the
-	// count Prometheus sent. The two differ whenever an observation reaches no kept bucket, which
-	// is the case for NaN and for overflow.
-	count, ok := addPopulations(histogram.GetZeroCountInt(), positive.retained, negative.retained)
+	// Validate wire count consistency against the full bucket population (including ±Inf overflow
+	// buckets), matching Prometheus Histogram.Validate.
+	wireTotal, ok := addPopulations(histogram.GetZeroCountInt(), positive.total, negative.total)
 	if !ok {
 		return exponentialHistogramLayout{}, errors.New("bucket populations are too large to represent")
 	}
+	if err := validateIntegerCount(histogram, wireTotal); err != nil {
+		return exponentialHistogramLayout{}, err
+	}
+
+	// The compatibility specification derives OTLP Count from what the data point holds, not from
+	// the count Prometheus sent. The two differ whenever an observation reaches no kept bucket,
+	// which is the case for NaN and for overflow.
+	// Safe against overflow: retained <= total for each side, and wireTotal already fit in uint64.
+	count := histogram.GetZeroCountInt() + positive.retained + negative.retained
 
 	return exponentialHistogramLayout{positive: positive, negative: negative, count: count}, nil
 }
@@ -1313,16 +1328,17 @@ func validateBucketSpanLayout(spans []writev2.BucketSpan, deltas []int64, finite
 			if bucketCount < 0 {
 				return bucketSpanLayout{}, fmt.Errorf("bucket %d holds a negative population of %d", valueIdx, bucketCount)
 			}
+			// Written out rather than calling addPopulations, which costs noticeably more in a
+			// loop that runs once per bucket.
+			total := layout.total + uint64(bucketCount)
+			if total < layout.total {
+				return bucketSpanLayout{}, errors.New("bucket populations are too large to represent")
+			}
+			layout.total = total
 			if start+int64(i) > int64(finiteLimit) {
 				continue
 			}
-			// Written out rather than calling addPopulations, which costs noticeably more in a
-			// loop that runs once per bucket.
-			retained := layout.retained + uint64(bucketCount)
-			if retained < layout.retained {
-				return bucketSpanLayout{}, errors.New("bucket populations are too large to represent")
-			}
-			layout.retained = retained
+			layout.retained += uint64(bucketCount)
 		}
 
 		// The overflow bucket itself is consumed but dropped, so it must not widen the range.
@@ -1344,7 +1360,7 @@ func validateBucketSpanLayout(spans []writev2.BucketSpan, deltas []int64, finite
 		return bucketSpanLayout{}, fmt.Errorf("spans define %d bucket values, %d provided", spanBuckets, valueCount)
 	}
 	if !layout.hasBuckets {
-		return bucketSpanLayout{}, nil
+		return layout, nil
 	}
 
 	// The two ranges share one limit, so it is taken once in validateExponentialHistogram.
