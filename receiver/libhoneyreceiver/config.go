@@ -64,10 +64,8 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 			}
 		}
 	}
-	if cleanURL, err := url.Parse(cfg.AuthAPI); err != nil {
-		cfg.AuthAPI = cleanURL.String()
-	} else {
-		return err
+	if _, err := url.Parse(cfg.AuthAPI); err != nil {
+		return fmt.Errorf("invalid auth_api: %w", err)
 	}
 
 	return nil

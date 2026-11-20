@@ -43,3 +43,35 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, "library.name", libhoneyCfg.FieldMapConfig.Scopes.LibraryName)
 	assert.Equal(t, []string{"duration_ms"}, libhoneyCfg.FieldMapConfig.Attributes.DurationFields)
 }
+
+func TestUnmarshalAuthAPI(t *testing.T) {
+	tests := []struct {
+		name    string
+		authAPI string
+		wantErr string
+	}{
+		{
+			name:    "valid",
+			authAPI: "https://api.honeycomb.io",
+		},
+		{
+			name:    "invalid",
+			authAPI: "http://[::1",
+			wantErr: `invalid auth_api: parse "http://[::1": missing ']' in host`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig()
+			conf := confmap.NewFromStringMap(map[string]any{"auth_api": tt.authAPI})
+			err := conf.Unmarshal(cfg)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.authAPI, cfg.(*Config).AuthAPI)
+		})
+	}
+}
