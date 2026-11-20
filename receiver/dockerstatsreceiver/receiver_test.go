@@ -52,12 +52,16 @@ var (
 		cfg.ContainerCPUThrottlingDataPeriods.Enabled = true
 		cfg.ContainerCPUThrottlingDataThrottledPeriods.Enabled = true
 		cfg.ContainerCPUThrottlingDataThrottledTime.Enabled = true
+		cfg.ContainerCPUTime.Enabled = true
+		cfg.ContainerCPUUsage.Enabled = true
 		cfg.ContainerCPUUsageKernelmode.Enabled = true
 		cfg.ContainerCPUUsagePercpu.Enabled = true
 		cfg.ContainerCPUUsageSystem.Enabled = true
 		cfg.ContainerCPUUsageTotal.Enabled = true
 		cfg.ContainerCPUUsageUsermode.Enabled = true
 		cfg.ContainerCPULogicalCount.Enabled = true
+		cfg.ContainerDiskIo.Enabled = true
+		cfg.ContainerMemoryAvailable.Enabled = true
 		cfg.ContainerMemoryActiveAnon.Enabled = true
 		cfg.ContainerMemoryActiveFile.Enabled = true
 		cfg.ContainerMemoryAnon.Enabled = true
@@ -70,6 +74,7 @@ var (
 		cfg.ContainerMemoryInactiveAnon.Enabled = true
 		cfg.ContainerMemoryInactiveFile.Enabled = true
 		cfg.ContainerMemoryMappedFile.Enabled = true
+		cfg.ContainerMemoryPagingFaultsV1.Enabled = true
 		cfg.ContainerMemoryPercent.Enabled = true
 		cfg.ContainerMemoryPgfault.Enabled = true
 		cfg.ContainerMemoryPgmajfault.Enabled = true
@@ -93,10 +98,13 @@ var (
 		cfg.ContainerMemoryTotalUnevictable.Enabled = true
 		cfg.ContainerMemoryTotalWriteback.Enabled = true
 		cfg.ContainerMemoryUnevictable.Enabled = true
+		cfg.ContainerMemoryUsage.Enabled = true
 		cfg.ContainerMemoryUsageLimit.Enabled = true
 		cfg.ContainerMemoryUsageMax.Enabled = true
 		cfg.ContainerMemoryUsageTotal.Enabled = true
+		cfg.ContainerMemoryWorkingSetV1.Enabled = true
 		cfg.ContainerMemoryWriteback.Enabled = true
+		cfg.ContainerNetworkIo.Enabled = true
 		cfg.ContainerNetworkIoUsageRxBytes.Enabled = true
 		cfg.ContainerNetworkIoUsageRxDropped.Enabled = true
 		cfg.ContainerNetworkIoUsageRxErrors.Enabled = true
@@ -202,6 +210,9 @@ func TestErrorsInStart(t *testing.T) {
 }
 
 func TestScrapeV2(t *testing.T) {
+	// Emit the semantic convention metrics alongside the legacy ones so the
+	// golden files cover both.
+	setGateForTest(t, metadata.ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate, true)
 	// test docker client works with both minimum supported version, and default version
 	for _, dockerAPIVersion := range []string{minimumRequiredDockerAPIVersion, defaultDockerAPIVersion} {
 		testCases := []struct {
@@ -389,6 +400,7 @@ func TestScrapeV2(t *testing.T) {
 // TestScrapeV2Streaming verifies that with stream_stats enabled the scraper reads
 // stats from the persistent stream cache once the first frame has been delivered.
 func TestScrapeV2Streaming(t *testing.T) {
+	setGateForTest(t, metadata.ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate, true)
 	dockerAPIVersion := defaultDockerAPIVersion
 	containerID := "10b703fb312b25e8368ab5a3bce3a1610d1cee5d71a94920f1a7adbc5b0cb326"
 	mockDockerEngine, err := dockerMockServer(&map[string]string{

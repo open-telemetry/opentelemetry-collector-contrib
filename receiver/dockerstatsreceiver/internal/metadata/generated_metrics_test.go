@@ -3,9 +3,12 @@
 package metadata
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -65,6 +68,14 @@ func TestMetricsBuilder(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
+			// Pin migration gates so the warning and metric counts are deterministic. When a gate's
+			// stage forbids the requested state (e.g. once promoted to stable), only the gate-dependent
+			// assertions below are skipped; the rest of the test still runs.
+			migrationGatesPinned := true
+			migrationGatesPinned = setFeatureGateForTest(t, ReceiverDockerStatsDontEmitV0ContainerConventionsFeatureGate, false) && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ReceiverDockerStatsDontEmitV0ContainerConventionsFeatureGate, false) && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["container.blockio.io_merged_recursive"] = mb.metricContainerBlockioIoMergedRecursive.config.AggregationStrategy
@@ -76,6 +87,8 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["container.blockio.io_wait_time_recursive"] = mb.metricContainerBlockioIoWaitTimeRecursive.config.AggregationStrategy
 			aggMap["container.blockio.sectors_recursive"] = mb.metricContainerBlockioSectorsRecursive.config.AggregationStrategy
 			aggMap["container.cpu.usage.percpu"] = mb.metricContainerCPUUsagePercpu.config.AggregationStrategy
+			aggMap["container.disk.io"] = mb.metricContainerDiskIo.config.AggregationStrategy
+			aggMap["container.network.io"] = mb.metricContainerNetworkIo.config.AggregationStrategy
 			aggMap["container.network.io.usage.rx_bytes"] = mb.metricContainerNetworkIoUsageRxBytes.config.AggregationStrategy
 			aggMap["container.network.io.usage.rx_dropped"] = mb.metricContainerNetworkIoUsageRxDropped.config.AggregationStrategy
 			aggMap["container.network.io.usage.rx_errors"] = mb.metricContainerNetworkIoUsageRxErrors.config.AggregationStrategy
@@ -88,8 +101,12 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["container.state.status"] = mb.metricContainerStateStatus.config.AggregationStrategy
 
 			expectedWarnings := 0
-			if tt.metricsSet != testDataSetReag {
-				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.name == "all_set" {
+			}
+			if migrationGatesPinned {
+				if tt.metricsSet != testDataSetReag {
+					assert.Equal(t, expectedWarnings, observedLogs.Len())
+				}
 			}
 
 			defaultMetricsCount := 0
@@ -184,6 +201,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerCPUTimeDataPoint(ts, 1, WithCPUModeMetricAttribute("cpu.mode-val"))
+
+			allMetricsCount++
+			mb.RecordContainerCPUUsageDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUsageKernelmodeDataPoint(ts, 1)
@@ -210,6 +233,15 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordContainerDiskIoDataPoint(ts, 1, "system.device-val", "disk.io.direction-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordContainerDiskIoDataPoint(ts, 3, "system.device-val-2", "disk.io.direction-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerDiskIoDataPoint(ts+1, 3, "system.device-val-2", "disk.io.direction-val-2")
+				assert.Equal(t, 2, mb.metricContainerDiskIo.data.Sum().DataPoints().Len())
+			}
+
+			allMetricsCount++
 			mb.RecordContainerMemoryActiveAnonDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -217,6 +249,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerMemoryAnonDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryAvailableDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordContainerMemoryCacheDataPoint(ts, 1)
@@ -286,9 +321,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerMemoryTotalMappedFileDataPoint(ts, 1)
+			if tt.name != "all_set" {
 
-			allMetricsCount++
-			mb.RecordContainerMemoryTotalPgfaultDataPoint(ts, 1)
+				allMetricsCount++
+				mb.RecordContainerMemoryTotalPgfaultDataPoint(ts, 1)
+			}
 
 			allMetricsCount++
 			mb.RecordContainerMemoryTotalPgmajfaultDataPoint(ts, 1)
@@ -313,18 +350,32 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerMemoryUnevictableDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryUsageDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryUsageLimitDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordContainerMemoryUsageMaxDataPoint(ts, 1)
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordContainerMemoryUsageTotalDataPoint(ts, 1)
+			if tt.name != "all_set" {
+				defaultMetricsCount++
+				allMetricsCount++
+				mb.RecordContainerMemoryUsageTotalDataPoint(ts, 1)
+			}
 
 			allMetricsCount++
 			mb.RecordContainerMemoryWritebackDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerNetworkIoDataPoint(ts, 1, "network.io.direction-val", "network.interface.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordContainerNetworkIoDataPoint(ts, 3, "network.io.direction-val-2", "network.interface.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerNetworkIoDataPoint(ts+1, 3, "network.io.direction-val-2", "network.interface.name-val-2")
+				assert.Equal(t, 2, mb.metricContainerNetworkIo.data.Sum().DataPoints().Len())
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageRxBytesDataPoint(ts, 1, "interface-val")
@@ -448,6 +499,8 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricContainerBlockioIoWaitTimeRecursive.aggDataPoints)
 				assert.Empty(t, mb.metricContainerBlockioSectorsRecursive.aggDataPoints)
 				assert.Empty(t, mb.metricContainerCPUUsagePercpu.aggDataPoints)
+				assert.Empty(t, mb.metricContainerDiskIo.aggDataPoints)
+				assert.Empty(t, mb.metricContainerNetworkIo.aggDataPoints)
 				assert.Empty(t, mb.metricContainerNetworkIoUsageRxBytes.aggDataPoints)
 				assert.Empty(t, mb.metricContainerNetworkIoUsageRxDropped.aggDataPoints)
 				assert.Empty(t, mb.metricContainerNetworkIoUsageRxErrors.aggDataPoints)
@@ -476,10 +529,10 @@ func TestMetricsBuilder(t *testing.T) {
 					allMetricsList = append(allMetricsList, ms.At(mi))
 				}
 			}
-			if tt.metricsSet == testDataSetDefault {
+			if tt.metricsSet == testDataSetDefault && migrationGatesPinned {
 				assert.Equal(t, defaultMetricsCount, totalMetricsCount)
 			}
-			if tt.metricsSet == testDataSetAll {
+			if tt.metricsSet == testDataSetAll && migrationGatesPinned {
 				assert.Equal(t, allMetricsCount, totalMetricsCount)
 			}
 			validatedMetrics := make(map[string]bool)
@@ -1011,6 +1064,35 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.cpu.time":
+					assert.False(t, validatedMetrics["container.cpu.time"], "Found a duplicate in the metrics slice: container.cpu.time")
+					validatedMetrics["container.cpu.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total CPU time consumed.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					cpuModeAttrVal, ok := dp.Attributes().Get("cpu.mode")
+					assert.True(t, ok)
+					assert.Equal(t, "cpu.mode-val", cpuModeAttrVal.Str())
+				case "container.cpu.usage":
+					assert.False(t, validatedMetrics["container.cpu.usage"], "Found a duplicate in the metrics slice: container.cpu.usage")
+					validatedMetrics["container.cpu.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Container’s CPU usage, measured in cpus. Range from 0 to the number of allocatable CPUs.", mi.Description())
+					assert.Equal(t, "{cpu}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "container.cpu.usage.kernelmode":
 					assert.False(t, validatedMetrics["container.cpu.usage.kernelmode"], "Found a duplicate in the metrics slice: container.cpu.usage.kernelmode")
 					validatedMetrics["container.cpu.usage.kernelmode"] = true
@@ -1125,6 +1207,57 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "container.disk.io":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["container.disk.io"], "Found a duplicate in the metrics slice: container.disk.io")
+						validatedMetrics["container.disk.io"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Disk bytes for the container.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						systemDeviceAttrVal, ok := dp.Attributes().Get("system.device")
+						assert.True(t, ok)
+						assert.Equal(t, "system.device-val", systemDeviceAttrVal.Str())
+						diskIoDirectionAttrVal, ok := dp.Attributes().Get("disk.io.direction")
+						assert.True(t, ok)
+						assert.Equal(t, "disk.io.direction-val", diskIoDirectionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["container.disk.io"], "Found a duplicate in the metrics slice: container.disk.io")
+						validatedMetrics["container.disk.io"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Disk bytes for the container.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["container.disk.io"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("system.device")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("disk.io.direction")
+						assert.False(t, ok)
+					}
 				case "container.memory.active_anon":
 					assert.False(t, validatedMetrics["container.memory.active_anon"], "Found a duplicate in the metrics slice: container.memory.active_anon")
 					validatedMetrics["container.memory.active_anon"] = true
@@ -1159,6 +1292,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
 					assert.Equal(t, "Amount of memory used in anonymous mappings such as brk(), sbrk(), and mmap(MAP_ANONYMOUS) (Only available with cgroups v2).", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.available":
+					assert.False(t, validatedMetrics["container.memory.available"], "Found a duplicate in the metrics slice: container.memory.available")
+					validatedMetrics["container.memory.available"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Container memory available. Not supported on Windows.", mi.Description())
 					assert.Equal(t, "By", mi.Unit())
 					assert.False(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
@@ -1487,20 +1634,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "container.memory.total_pgfault":
-					assert.False(t, validatedMetrics["container.memory.total_pgfault"], "Found a duplicate in the metrics slice: container.memory.total_pgfault")
-					validatedMetrics["container.memory.total_pgfault"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault (Only available with cgroups v1).", mi.Description())
-					assert.Equal(t, "{faults}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
 				case "container.memory.total_pgmajfault":
 					assert.False(t, validatedMetrics["container.memory.total_pgmajfault"], "Found a duplicate in the metrics slice: container.memory.total_pgmajfault")
 					validatedMetrics["container.memory.total_pgmajfault"] = true
@@ -1613,6 +1746,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.usage":
+					assert.False(t, validatedMetrics["container.memory.usage"], "Found a duplicate in the metrics slice: container.memory.usage")
+					validatedMetrics["container.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Memory usage of the container.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "container.memory.usage.limit":
 					assert.False(t, validatedMetrics["container.memory.usage.limit"], "Found a duplicate in the metrics slice: container.memory.usage.limit")
 					validatedMetrics["container.memory.usage.limit"] = true
@@ -1641,20 +1788,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "container.memory.usage.total":
-					assert.False(t, validatedMetrics["container.memory.usage.total"], "Found a duplicate in the metrics slice: container.memory.usage.total")
-					validatedMetrics["container.memory.usage.total"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Memory usage of the container. This excludes the cache.", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					assert.False(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
 				case "container.memory.writeback":
 					assert.False(t, validatedMetrics["container.memory.writeback"], "Found a duplicate in the metrics slice: container.memory.writeback")
 					validatedMetrics["container.memory.writeback"] = true
@@ -1669,6 +1802,57 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.network.io":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["container.network.io"], "Found a duplicate in the metrics slice: container.network.io")
+						validatedMetrics["container.network.io"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Network bytes for the container.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						networkIoDirectionAttrVal, ok := dp.Attributes().Get("network.io.direction")
+						assert.True(t, ok)
+						assert.Equal(t, "network.io.direction-val", networkIoDirectionAttrVal.Str())
+						networkInterfaceNameAttrVal, ok := dp.Attributes().Get("network.interface.name")
+						assert.True(t, ok)
+						assert.Equal(t, "network.interface.name-val", networkInterfaceNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["container.network.io"], "Found a duplicate in the metrics slice: container.network.io")
+						validatedMetrics["container.network.io"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Network bytes for the container.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["container.network.io"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("network.io.direction")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("network.interface.name")
+						assert.False(t, ok)
+					}
 				case "container.network.io.usage.rx_bytes":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["container.network.io.usage.rx_bytes"], "Found a duplicate in the metrics slice: container.network.io.usage.rx_bytes")
@@ -2187,4 +2371,194 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 		})
 	}
+}
+func TestVersionedMetrics(t *testing.T) {
+	t.Run("container.memory.total_pgfault", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: true,
+				expectNewMetric:    true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ReceiverDockerStatsDontEmitV0ContainerConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+				settings := receivertest.NewNopSettings(receivertest.NopType)
+				settings.Logger = zap.New(observedZapCore)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordContainerMemoryTotalPgfaultDataPoint(ts, 1)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Different emitted names - distinguish by name
+						if m.Name() == "container.memory.total_pgfault" {
+							legacyFound = true
+						}
+						if m.Name() == "container.memory.paging.faults" {
+							newFound = true
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+				// For metrics with different emitted names, no collision warning should be logged
+				// This guards against the regression where same name collision logic was
+				// incorrectly applied to renamed metrics.
+				if tt.enableNew {
+					for _, log := range observedLogs.All() {
+						if strings.Contains(log.Message, "container.memory.total_pgfault") {
+							assert.NotContains(t, log.Message, "same emitted name",
+								"should not log same name collision warning for metrics with different names")
+						}
+					}
+				}
+			})
+		}
+	})
+	t.Run("container.memory.usage.total", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: true,
+				expectNewMetric:    true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ReceiverDockerStatsDontEmitV0ContainerConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+				settings := receivertest.NewNopSettings(receivertest.NopType)
+				settings.Logger = zap.New(observedZapCore)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordContainerMemoryUsageTotalDataPoint(ts, 1)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Different emitted names - distinguish by name
+						if m.Name() == "container.memory.usage.total" {
+							legacyFound = true
+						}
+						if m.Name() == "container.memory.working_set" {
+							newFound = true
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+				// For metrics with different emitted names, no collision warning should be logged
+				// This guards against the regression where same name collision logic was
+				// incorrectly applied to renamed metrics.
+				if tt.enableNew {
+					for _, log := range observedLogs.All() {
+						if strings.Contains(log.Message, "container.memory.usage.total") {
+							assert.NotContains(t, log.Message, "same emitted name",
+								"should not log same name collision warning for metrics with different names")
+						}
+					}
+				}
+			})
+		}
+	})
+}
+
+// setFeatureGateForTest sets the gate for the duration of the test and restores its previous state afterwards.
+// It reports whether the gate reached the requested state. A gate whose stage forbids the requested state
+// (e.g. a stable gate cannot be disabled) is left at its registered default and false is returned, so the
+// caller can decide whether its gate-dependent expectations still apply.
+func setFeatureGateForTest(t *testing.T, gate *featuregate.Gate, enabled bool) bool {
+	t.Helper()
+	if gate.IsEnabled() == enabled {
+		return true
+	}
+	if stage := gate.Stage(); stage == featuregate.StageStable || stage == featuregate.StageDeprecated {
+		return false
+	}
+	prev := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
+	})
+	return true
 }

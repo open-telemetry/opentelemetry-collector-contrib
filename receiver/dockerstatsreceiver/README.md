@@ -29,7 +29,7 @@ Linux and Windows Docker hosts are supported. On Windows the daemon exposes a sm
 set of stats, so these metrics are never emitted there: all `container.blockio.*`
 metrics, `container.cpu.logical.count`, `container.cpu.throttling_data.*`, `container.cpu.usage.percpu`,
 `container.cpu.usage.system`, `container.memory.*` other than
-`container.memory.usage.total`, `container.network.io.usage.rx_errors`,
+`container.memory.usage.total` and `container.memory.working_set`, `container.network.io.usage.rx_errors`,
 `container.network.io.usage.tx_errors` and `container.pids.*`.
 
 ## Configuration
@@ -142,3 +142,69 @@ For enhanced security, consider:
 - Running this receiver in an isolated collector instance with elevated privileges that only exports data (does not expose receiver ports like OTLP or Zipkin), forwarding metrics to your main collector via OTLP. This reduces the attack surface and RCE risk on the privileged container.
 
 For more information, see [issue #11791](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11791).
+
+## Semantic convention feature gates
+
+Two alpha feature gates move the receiver over to metrics that follow the
+[container semantic conventions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/container.md):
+
+| `receiver.docker_stats.EmitV1ContainerConventions` | `receiver.docker_stats.DontEmitV0ContainerConventions` | Result |
+| --- | --- | --- |
+| Disabled | Disabled | Only the legacy metrics are emitted (default) |
+| Enabled | Disabled | Both the legacy and the semantic convention metrics are emitted |
+| Enabled | Enabled | Only the semantic convention metrics are emitted |
+| Disabled | Enabled | The receiver fails to start |
+
+For example, to emit only the semantic convention metrics:
+
+```shell
+otelcol-contrib --feature-gates=+receiver.docker_stats.EmitV1ContainerConventions,+receiver.docker_stats.DontEmitV0ContainerConventions
+```
+
+### Metrics that are replaced
+
+A replacement is turned on only if the legacy metric it replaces is enabled. If you have already
+disabled a metric in the left column, its replacement is **not** turned on. Several old metrics collapse into a single new
+metric that distinguishes the data points with attributes.
+
+| Legacy metric (disabled by `DontEmitV0ContainerConventions`) | Replaced by (enabled by `EmitV1ContainerConventions`) |
+| --- | --- |
+| `container.cpu.usage.total` | `container.cpu.time` (no `cpu.mode` attribute) |
+| `container.cpu.usage.system` | `container.cpu.time` with `cpu.mode=system` |
+| `container.cpu.usage.kernelmode` | `container.cpu.time` with `cpu.mode=kernel` |
+| `container.cpu.usage.usermode` | `container.cpu.time` with `cpu.mode=user` |
+| `container.cpu.utilization` | `container.cpu.usage` |
+| `container.memory.usage.total` | `container.memory.working_set` (configured as `container.memory.working_set@v1`) |
+| `container.memory.total_pgfault` | `container.memory.paging.faults` (configured as `container.memory.paging.faults@v1`) |
+| `container.network.io.usage.rx_bytes` | `container.network.io` with `network.io.direction=receive` |
+| `container.network.io.usage.tx_bytes` | `container.network.io` with `network.io.direction=transmit` |
+
+`container.cpu.time` is turned on if any of the four legacy CPU time metrics is enabled, and it then
+emits all four sets of data points: the total without a `cpu.mode` attribute, plus `cpu.mode=system`,
+`cpu.mode=kernel` and `cpu.mode=user`. This includes `cpu.mode=system`, even though
+`container.cpu.usage.system` is disabled by default. Filter on `cpu.mode` when aggregating, because
+summing every data point counts the CPU time more than once.
+
+`container.memory.total_pgfault` is disabled by default, so `container.memory.paging.faults` only
+appears if you had explicitly enabled it.
+
+### Metrics that are added
+
+These are enabled whenever `EmitV1ContainerConventions` is enabled and do not replace or disable anything:
+
+| Enabled by `EmitV1ContainerConventions` | Notes |
+| --- | --- |
+| `container.memory.usage` | Includes the page cache, unlike `container.memory.usage.total`. Reports `0` on Windows. |
+| `container.memory.available` | Reports `0` on Windows. |
+| `container.disk.io` | Carries `system.device` (`major:minor`) and `disk.io.direction`. Does not disable `container.blockio.io_service_bytes_recursive`, so both are emitted. |
+
+### Net effect on the defaults
+
+With a default configuration and both gates enabled, the receiver emits `container.cpu.time`,
+`container.cpu.usage`, `container.memory.usage`, `container.memory.available`,
+`container.memory.working_set`, `container.disk.io`, and `container.network.io`, and stops emitting
+`container.cpu.usage.total`, `container.cpu.usage.kernelmode`, `container.cpu.usage.usermode`,
+`container.cpu.utilization`, `container.memory.usage.total`, `container.network.io.usage.rx_bytes`,
+and `container.network.io.usage.tx_bytes`. All other metrics are unaffected.
+
+More information regarding this change can be found at https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649.
