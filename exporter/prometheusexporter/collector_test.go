@@ -1370,3 +1370,103 @@ func TestConvertExponentialHistogramZeroThreshold(t *testing.T) {
 		})
 	}
 }
+
+func TestTargetInfoConflictResolution(t *testing.T) {
+	makeRM := func(job, instance, env, metricName string, ts pcommon.Timestamp) pmetric.ResourceMetrics {
+		rm := pmetric.NewResourceMetrics()
+		attrs := rm.Resource().Attributes()
+		attrs.PutStr("service.name", job)
+		attrs.PutStr("service.instance.id", instance)
+		attrs.PutStr("deployment.environment.name", env)
+
+		m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m.SetName(metricName)
+		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp.SetDoubleValue(1)
+		dp.SetTimestamp(ts)
+		return rm
+	}
+
+	tests := []struct {
+		name    string
+		rms     []pmetric.ResourceMetrics
+		wantEnv string
+	}{
+		{
+			name: "different metrics, second resource has newer timestamp",
+			rms: []pmetric.ResourceMetrics{
+				makeRM("svc", "inst-1", "old-env", "metric_a", 100),
+				makeRM("svc", "inst-1", "new-env", "metric_b", 200),
+			},
+			wantEnv: "new-env",
+		},
+		{
+			name: "different metrics, first resource has newer timestamp",
+			rms: []pmetric.ResourceMetrics{
+				makeRM("svc", "inst-1", "new-env", "metric_a", 200),
+				makeRM("svc", "inst-1", "old-env", "metric_b", 100),
+			},
+			wantEnv: "new-env",
+		},
+		{
+			name: "different metrics, equal timestamps keeps last-seen resource",
+			rms: []pmetric.ResourceMetrics{
+				makeRM("svc", "inst-1", "first-env", "metric_a", 100),
+				makeRM("svc", "inst-1", "second-env", "metric_b", 100),
+			},
+			wantEnv: "second-env",
+		},
+		{
+			name: "same metric, first resource has newer timestamp",
+			rms: []pmetric.ResourceMetrics{
+				makeRM("svc", "inst-1", "new-env", "metric_a", 200),
+				makeRM("svc", "inst-1", "old-env", "metric_a", 100),
+			},
+			wantEnv: "new-env",
+		},
+		{
+			name: "same metric, equal timestamps keeps last-seen resource",
+			rms: []pmetric.ResourceMetrics{
+				makeRM("svc", "inst-1", "first-env", "metric_a", 100),
+				makeRM("svc", "inst-1", "second-env", "metric_a", 100),
+			},
+			wantEnv: "second-env",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Run multiple times to ensure determinism regardless of sync.Map iteration order.
+			for range 20 {
+				c := newCollector(&Config{MetricExpiration: time.Minute}, zap.NewNop())
+				for _, rm := range tt.rms {
+					c.processMetrics(rm)
+				}
+
+				ch := make(chan prometheus.Metric, 10)
+				c.Collect(ch)
+				close(ch)
+
+				var targetInfos []*io_prometheus_client.Metric
+				for m := range ch {
+					if strings.Contains(m.Desc().String(), `fqName: "target_info"`) {
+						pbMetric := &io_prometheus_client.Metric{}
+						require.NoError(t, m.Write(pbMetric))
+						targetInfos = append(targetInfos, pbMetric)
+					}
+				}
+
+				require.Len(t, targetInfos, 1)
+				labels := map[string]string{}
+				for _, l := range targetInfos[0].GetLabel() {
+					labels[l.GetName()] = l.GetValue()
+				}
+				require.Equal(t, map[string]string{
+					"job":                         "svc",
+					"instance":                    "inst-1",
+					"deployment_environment_name": tt.wantEnv,
+				}, labels)
+			}
+		})
+	}
+}

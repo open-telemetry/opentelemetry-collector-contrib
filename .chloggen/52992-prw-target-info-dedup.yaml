@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: pkg/translator/prometheusremotewrite
+note: Deduplicate `target_info` metrics across resources with the same `job` and `instance` labels in a batch by keeping the resource with the most recent metric timestamp.
+issues: [52992]
+change_logs: [user, api]

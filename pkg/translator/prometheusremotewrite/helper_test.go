@@ -1010,6 +1010,140 @@ func TestTargetInfoIdentifyingResourceAttributes(t *testing.T) {
 	}
 }
 
+func TestTargetInfoConflictResolution(t *testing.T) {
+	appendRM := func(md pmetric.Metrics, job, instance, env, metricName string, ts pcommon.Timestamp) {
+		rm := md.ResourceMetrics().AppendEmpty()
+		attrs := rm.Resource().Attributes()
+		attrs.PutStr("service.name", job)
+		attrs.PutStr("service.instance.id", instance)
+		if env != "" {
+			attrs.PutStr("deployment.environment.name", env)
+		}
+		m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m.SetName(metricName)
+		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp.SetDoubleValue(1)
+		dp.SetTimestamp(ts)
+	}
+
+	tsOld := pcommon.Timestamp(1_000_000_000)
+	tsNew := pcommon.Timestamp(2_000_000_000)
+
+	tests := []struct {
+		name              string
+		build             func() pmetric.Metrics
+		wantEnv           string
+		wantTimestampMs   int64
+		wantTargetInfoCnt int
+	}{
+		{
+			name: "second resource has newer timestamp",
+			build: func() pmetric.Metrics {
+				md := pmetric.NewMetrics()
+				appendRM(md, "api", "replica-1", "staging", "metric_a", tsOld)
+				appendRM(md, "api", "replica-1", "prod", "metric_b", tsNew)
+				return md
+			},
+			wantEnv:           "prod",
+			wantTimestampMs:   convertTimeStamp(tsNew),
+			wantTargetInfoCnt: 1,
+		},
+		{
+			name: "first resource has newer timestamp",
+			build: func() pmetric.Metrics {
+				md := pmetric.NewMetrics()
+				appendRM(md, "api", "replica-1", "prod", "metric_a", tsNew)
+				appendRM(md, "api", "replica-1", "staging", "metric_b", tsOld)
+				return md
+			},
+			wantEnv:           "prod",
+			wantTimestampMs:   convertTimeStamp(tsNew),
+			wantTargetInfoCnt: 1,
+		},
+		{
+			name: "equal timestamps keeps last-seen resource",
+			build: func() pmetric.Metrics {
+				md := pmetric.NewMetrics()
+				appendRM(md, "api", "replica-1", "first", "metric_a", tsOld)
+				appendRM(md, "api", "replica-1", "second", "metric_b", tsOld)
+				return md
+			},
+			wantEnv:           "second",
+			wantTimestampMs:   convertTimeStamp(tsOld),
+			wantTargetInfoCnt: 1,
+		},
+		{
+			name: "identical resource attributes exports single target_info sample with latest timestamp",
+			build: func() pmetric.Metrics {
+				md := pmetric.NewMetrics()
+				appendRM(md, "api", "replica-1", "prod", "metric_a", tsNew)
+				appendRM(md, "api", "replica-1", "prod", "metric_b", tsOld)
+				return md
+			},
+			wantEnv:           "prod",
+			wantTimestampMs:   convertTimeStamp(tsNew),
+			wantTargetInfoCnt: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := tt.build()
+
+			v1, err := FromMetrics(md, Settings{})
+			require.NoError(t, err)
+
+			var v1Targets []*prompb.TimeSeries
+			for _, ts := range v1 {
+				for _, l := range ts.Labels {
+					if l.Name == model.MetricNameLabel && l.Value == "target_info" {
+						v1Targets = append(v1Targets, ts)
+					}
+				}
+			}
+			require.Len(t, v1Targets, tt.wantTargetInfoCnt)
+			require.Len(t, v1Targets[0].Samples, 1)
+			require.Equal(t, tt.wantTimestampMs, v1Targets[0].Samples[0].Timestamp)
+			v1Labels := map[string]string{}
+			for _, l := range v1Targets[0].Labels {
+				v1Labels[l.Name] = l.Value
+			}
+			require.Equal(t, map[string]string{
+				"__name__":                    "target_info",
+				"job":                         "api",
+				"instance":                    "replica-1",
+				"deployment_environment_name": tt.wantEnv,
+			}, v1Labels)
+
+			v2, table, err := FromMetricsV2(md, Settings{})
+			require.NoError(t, err)
+			symbols := table.Symbols()
+
+			var v2Targets []*writev2.TimeSeries
+			var v2Labels map[string]string
+			for _, ts := range v2 {
+				labels := map[string]string{}
+				for i := 0; i < len(ts.LabelsRefs); i += 2 {
+					labels[symbols[ts.LabelsRefs[i]]] = symbols[ts.LabelsRefs[i+1]]
+				}
+				if labels[model.MetricNameLabel] == "target_info" {
+					v2Targets = append(v2Targets, ts)
+					v2Labels = labels
+				}
+			}
+			require.Len(t, v2Targets, tt.wantTargetInfoCnt)
+			require.Len(t, v2Targets[0].Samples, 1)
+			require.Equal(t, tt.wantTimestampMs, v2Targets[0].Samples[0].Timestamp)
+			require.Equal(t, map[string]string{
+				"__name__":                    "target_info",
+				"job":                         "api",
+				"instance":                    "replica-1",
+				"deployment_environment_name": tt.wantEnv,
+			}, v2Labels)
+		})
+	}
+}
+
 func TestMostRecentTimestampInMetric(t *testing.T) {
 	laterTimestamp := pcommon.NewTimestampFromTime(testdata.TestMetricTime.Add(1 * time.Minute))
 	metricMultipleTimestamps := testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
