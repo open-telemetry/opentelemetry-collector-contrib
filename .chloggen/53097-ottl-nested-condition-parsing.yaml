@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: pkg/ottl
+note: Fix quadratic time parsing and stack overflow when parsing deeply nested condition expressions.
+issues: [53097]

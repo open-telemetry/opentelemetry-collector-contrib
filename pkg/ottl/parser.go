@@ -327,7 +327,66 @@ var (
 	valueExpressionParser = sync.OnceValue(newParser[value])
 )
 
+// maxNestingDepth is the maximum allowed syntactic nesting depth for parentheses, brackets,
+// and braces to prevent stack overflow during recursive descent parsing.
+const maxNestingDepth = 2000
+
+func checkNestingDepth(raw string) error {
+	depth := 0
+	line := 1
+	col := 1
+	inString := false
+	escaped := false
+
+	for i := 0; i < len(raw); i++ {
+		ch := raw[i]
+		curLine := line
+		curCol := col
+		if ch == '\n' {
+			line++
+			col = 1
+		} else {
+			col++
+		}
+
+		if inString {
+			switch {
+			case escaped:
+				escaped = false
+			case ch == '\\':
+				escaped = true
+			case ch == '"':
+				inString = false
+			}
+			continue
+		}
+
+		switch ch {
+		case '"':
+			inString = true
+		case '(', '[', '{':
+			depth++
+			if depth > maxNestingDepth {
+				pos := lexer.Position{
+					Offset: i,
+					Line:   curLine,
+					Column: curCol,
+				}
+				return ottlerror.Errorf(pos, "expression exceeds maximum allowed nesting depth of %d", maxNestingDepth)
+			}
+		case ')', ']', '}':
+			if depth > 0 {
+				depth--
+			}
+		}
+	}
+	return nil
+}
+
 func parseStatement(raw string) (*parsedStatement, error) {
+	if err := checkNestingDepth(raw); err != nil {
+		return nil, formatParseError("statement", raw, err)
+	}
 	parsed, err := parser().ParseString("", raw)
 	if err != nil {
 		return nil, formatParseError("statement", raw, err)
@@ -341,6 +400,9 @@ func parseStatement(raw string) (*parsedStatement, error) {
 }
 
 func parseCondition(raw string) (*booleanExpression, error) {
+	if err := checkNestingDepth(raw); err != nil {
+		return nil, formatParseError("condition", raw, err)
+	}
 	parsed, err := conditionParser().ParseString("", raw)
 	if err != nil {
 		return nil, formatParseError("condition", raw, err)
@@ -354,6 +416,9 @@ func parseCondition(raw string) (*booleanExpression, error) {
 }
 
 func parseValueExpression(raw string) (*value, error) {
+	if err := checkNestingDepth(raw); err != nil {
+		return nil, formatParseError("expression", raw, err)
+	}
 	parsed, err := valueExpressionParser().ParseString("", raw)
 	if err != nil {
 		return nil, formatParseError("expression", raw, err)

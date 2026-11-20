@@ -47,9 +47,9 @@ type constExpr struct {
 type booleanValue struct {
 	Pos        lexer.Position
 	Negation   *string            `parser:"@OpNot?"`
-	Comparison *comparison        `parser:"( @@"`
-	ConstExpr  *constExpr         `parser:"| @@"`
-	SubExpr    *booleanExpression `parser:"| '(' @@ ')' )"`
+	SubExpr    *booleanExpression `parser:"( '(' @@ ')'"`
+	Comparison *comparison        `parser:"| @@"`
+	ConstExpr  *constExpr         `parser:"| @@ )"`
 }
 
 func (b *booleanValue) accept(v grammarVisitor) {
