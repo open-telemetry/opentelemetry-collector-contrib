@@ -231,6 +231,22 @@ func (dps histogramDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
 func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, instrumentationScopeName string, _ bool, _ *emfCalculators) ([]dataPoint, bool) {
 	metric := dps.At(idx)
 
+	if metric.Scale() < -9 {
+		return []dataPoint{{
+			name: dps.metricName,
+			value: &cWMetricHistogram{
+				Values: []float64{},
+				Counts: []float64{},
+				Count:  metric.Count(),
+				Sum:    metric.Sum(),
+				Max:    metric.Max(),
+				Min:    metric.Min(),
+			},
+			labels:      createLabels(metric.Attributes(), instrumentationScopeName),
+			timestampMs: unixNanoToMilliseconds(metric.Timestamp()),
+		}}, true
+	}
+
 	const splitThreshold = 100
 	currentBucketIndex := 0
 	currentPositiveIndex := metric.Positive().BucketCounts().Len() - 1
@@ -299,9 +315,13 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, 
 		}}, true
 	}
 
-	// Override the min and max values of the first and last splits with the raw data of the metric.
-	datapoints[0].value.(*cWMetricHistogram).Max = metric.Max()
-	datapoints[len(datapoints)-1].value.(*cWMetricHistogram).Min = metric.Min()
+	// Override the min and max values of the first and last splits with the raw data of the metric if present.
+	if metric.HasMax() {
+		datapoints[0].value.(*cWMetricHistogram).Max = metric.Max()
+	}
+	if metric.HasMin() {
+		datapoints[len(datapoints)-1].value.(*cWMetricHistogram).Min = metric.Min()
+	}
 
 	return datapoints, true
 }
@@ -313,6 +333,11 @@ func collectDatapointsWithPositiveBuckets(split *dataPointSplit, metric pmetric.
 
 	scale := metric.Scale()
 	base := math.Pow(2, math.Pow(2, float64(-scale)))
+	if scale < -9 || math.IsInf(base, 0) {
+		currentBucketIndex += currentPositiveIndex + 1
+		currentPositiveIndex = -1
+		return currentBucketIndex, currentPositiveIndex
+	}
 	positiveBuckets := metric.Positive()
 	positiveOffset := positiveBuckets.Offset()
 	positiveBucketCounts := positiveBuckets.BucketCounts()
@@ -336,9 +361,7 @@ func collectDatapointsWithPositiveBuckets(split *dataPointSplit, metric pmetric.
 			if split.length == 1 {
 				split.setMax(bucketEnd)
 			}
-			if split.isFull() {
-				split.setMin(bucketBegin)
-			}
+			split.setMin(bucketBegin)
 		}
 		currentBucketIndex++
 		currentPositiveIndex--
@@ -355,9 +378,7 @@ func collectDatapointsWithZeroBucket(split *dataPointSplit, metric pmetric.Expon
 		if split.length == 1 {
 			split.setMax(0)
 		}
-		if split.isFull() {
-			split.setMin(0)
-		}
+		split.setMin(0)
 		currentZeroIndex++
 		currentBucketIndex++
 	}
@@ -377,6 +398,11 @@ func collectDatapointsWithNegativeBuckets(split *dataPointSplit, metric pmetric.
 
 	scale := metric.Scale()
 	base := math.Pow(2, math.Pow(2, float64(-scale)))
+	if scale < -9 || math.IsInf(base, 0) {
+		currentBucketIndex += metric.Negative().BucketCounts().Len() - currentNegativeIndex
+		currentNegativeIndex = metric.Negative().BucketCounts().Len()
+		return currentBucketIndex, currentNegativeIndex
+	}
 	negativeBuckets := metric.Negative()
 	negativeOffset := negativeBuckets.Offset()
 	negativeBucketCounts := negativeBuckets.BucketCounts()
@@ -400,9 +426,7 @@ func collectDatapointsWithNegativeBuckets(split *dataPointSplit, metric pmetric.
 			if split.length == 1 {
 				split.setMax(bucketEnd)
 			}
-			if split.isFull() {
-				split.setMin(bucketBegin)
-			}
+			split.setMin(bucketBegin)
 		}
 		currentBucketIndex++
 		currentNegativeIndex++
@@ -414,6 +438,9 @@ func collectDatapointsWithNegativeBuckets(split *dataPointSplit, metric pmetric.
 func (dps exponentialHistogramDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
 	metric := dps.At(i)
 	if metric.Flags().NoRecordedValue() {
+		return true, metric.Attributes()
+	}
+	if metric.Scale() < -9 {
 		return true, metric.Attributes()
 	}
 	if math.IsNaN(metric.Max()) ||

@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: exporter/awsemf
+note: Fix float64 overflow when scale <= -10 and preserve calculated bucket bounds when Min/Max are unset for exponential histograms.
+issues: [53236]
+change_logs: [user]
