@@ -16,6 +16,6 @@ Fixes
 of the user; the human author must check it themselves before the PR is ready for review.-->
 #### Authorship
 
-- [ ] I, a human, wrote this pull request description myself.
+- [ ] I have reviewed this pull request and its description, understand its contents, and can answer questions about it.
 
 <!--Please delete paragraphs that you did not use before submitting.-->
