@@ -108,6 +108,14 @@ metrics:
     gauge:
       value_type: double
     attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
+  splunk.api.info.up:
+    enabled: false
+    description: Availability of the authenticated /services/server/info endpoint. 1 for HTTP 200, 0 for other HTTP responses or transport errors.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   splunk.buckets.searchable.status:
     enabled: false
     description: Gauge tracking the number of buckets and their searchable status. *Note:** Search is best run against a Cluster Manager.
