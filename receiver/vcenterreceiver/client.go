@@ -272,8 +272,7 @@ func (vc *vcenterClient) VMs(ctx context.Context, containerMoRef vt.ManagedObjec
 	}
 	defer func() { _ = v.Destroy(ctx) }()
 
-	var vms []mo.VirtualMachine
-	err = v.Retrieve(ctx, []string{"VirtualMachine"}, []string{
+	props := []string{
 		"name",
 		"config.hardware.numCPU",
 		"config.instanceUuid",
@@ -293,7 +292,14 @@ func (vc *vcenterClient) VMs(ctx context.Context, containerMoRef vt.ManagedObjec
 		"summary.runtime.host",
 		"resourcePool",
 		"parentVApp",
-	}, &vms)
+	}
+	// Only fetch per datastore usage when its metric is enabled
+	if vc.cfg.MetricsBuilderConfig.Metrics.VcenterVMDatastoreUsage.Enabled {
+		props = append(props, "storage.perDatastoreUsage")
+	}
+
+	var vms []mo.VirtualMachine
+	err = v.Retrieve(ctx, []string{"VirtualMachine"}, props, &vms)
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve VMs: %w", err)
 	}

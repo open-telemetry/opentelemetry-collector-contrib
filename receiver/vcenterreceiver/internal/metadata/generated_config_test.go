@@ -266,6 +266,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcenterVMCPUUtilization: VcenterVMCPUUtilizationMetricConfig{
 						Enabled: true,
 					},
+					VcenterVMDatastoreUsage: VcenterVMDatastoreUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterVMDatastoreUsageMetricAttributeKey{VcenterVMDatastoreUsageMetricAttributeKeyDatastoreName, VcenterVMDatastoreUsageMetricAttributeKeyDiskState},
+					},
 					VcenterVMDiskLatencyAvg: VcenterVMDiskLatencyAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
@@ -618,6 +623,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcenterVMCPUUtilization: VcenterVMCPUUtilizationMetricConfig{
 						Enabled: false,
 					},
+					VcenterVMDatastoreUsage: VcenterVMDatastoreUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []VcenterVMDatastoreUsageMetricAttributeKey{VcenterVMDatastoreUsageMetricAttributeKeyDatastoreName, VcenterVMDatastoreUsageMetricAttributeKeyDiskState},
+					},
 					VcenterVMDiskLatencyAvg: VcenterVMDiskLatencyAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
@@ -730,7 +740,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(VcenterClusterCPUEffectiveMetricConfig{}, VcenterClusterCPULimitMetricConfig{}, VcenterClusterHostCountMetricConfig{}, VcenterClusterMemoryEffectiveMetricConfig{}, VcenterClusterMemoryLimitMetricConfig{}, VcenterClusterVMCountMetricConfig{}, VcenterClusterVMTemplateCountMetricConfig{}, VcenterClusterVsanCongestionsMetricConfig{}, VcenterClusterVsanLatencyAvgMetricConfig{}, VcenterClusterVsanOperationsMetricConfig{}, VcenterClusterVsanThroughputMetricConfig{}, VcenterDatacenterClusterCountMetricConfig{}, VcenterDatacenterCPULimitMetricConfig{}, VcenterDatacenterDatastoreCountMetricConfig{}, VcenterDatacenterDiskSpaceMetricConfig{}, VcenterDatacenterHostCountMetricConfig{}, VcenterDatacenterMemoryLimitMetricConfig{}, VcenterDatacenterVMCountMetricConfig{}, VcenterDatastoreAlarmCountMetricConfig{}, VcenterDatastoreDiskUsageMetricConfig{}, VcenterDatastoreDiskUtilizationMetricConfig{}, VcenterDatastoreMaintenanceStatusMetricConfig{}, VcenterHostAlarmCountMetricConfig{}, VcenterHostConnectionStatusMetricConfig{}, VcenterHostCPUCapacityMetricConfig{}, VcenterHostCPUReservedMetricConfig{}, VcenterHostCPUUsageMetricConfig{}, VcenterHostCPUUtilizationMetricConfig{}, VcenterHostDiskLatencyAvgMetricConfig{}, VcenterHostDiskLatencyMaxMetricConfig{}, VcenterHostDiskThroughputMetricConfig{}, VcenterHostMemoryActiveMetricConfig{}, VcenterHostMemoryBalloonedMetricConfig{}, VcenterHostMemoryCapacityMetricConfig{}, VcenterHostMemoryGrantedMetricConfig{}, VcenterHostMemoryUsageMetricConfig{}, VcenterHostMemoryUtilizationMetricConfig{}, VcenterHostNetworkPacketDropRateMetricConfig{}, VcenterHostNetworkPacketErrorRateMetricConfig{}, VcenterHostNetworkPacketRateMetricConfig{}, VcenterHostNetworkThroughputMetricConfig{}, VcenterHostNetworkUsageMetricConfig{}, VcenterHostPowerStatusMetricConfig{}, VcenterHostUptimeMetricConfig{}, VcenterHostVsanCacheHitRateMetricConfig{}, VcenterHostVsanCongestionsMetricConfig{}, VcenterHostVsanLatencyAvgMetricConfig{}, VcenterHostVsanOperationsMetricConfig{}, VcenterHostVsanThroughputMetricConfig{}, VcenterResourcePoolCPUSharesMetricConfig{}, VcenterResourcePoolCPUUsageMetricConfig{}, VcenterResourcePoolMemoryBalloonedMetricConfig{}, VcenterResourcePoolMemoryGrantedMetricConfig{}, VcenterResourcePoolMemorySharesMetricConfig{}, VcenterResourcePoolMemorySwappedMetricConfig{}, VcenterResourcePoolMemoryUsageMetricConfig{}, VcenterVMCPUReadinessMetricConfig{}, VcenterVMCPUTimeMetricConfig{}, VcenterVMCPUUsageMetricConfig{}, VcenterVMCPUUtilizationMetricConfig{}, VcenterVMDiskLatencyAvgMetricConfig{}, VcenterVMDiskLatencyMaxMetricConfig{}, VcenterVMDiskThroughputMetricConfig{}, VcenterVMDiskUsageMetricConfig{}, VcenterVMDiskUtilizationMetricConfig{}, VcenterVMMemoryBalloonedMetricConfig{}, VcenterVMMemoryGrantedMetricConfig{}, VcenterVMMemorySwappedMetricConfig{}, VcenterVMMemorySwappedSsdMetricConfig{}, VcenterVMMemoryUsageMetricConfig{}, VcenterVMMemoryUtilizationMetricConfig{}, VcenterVMNetworkBroadcastPacketRateMetricConfig{}, VcenterVMNetworkMulticastPacketRateMetricConfig{}, VcenterVMNetworkPacketDropRateMetricConfig{}, VcenterVMNetworkPacketRateMetricConfig{}, VcenterVMNetworkThroughputMetricConfig{}, VcenterVMNetworkUsageMetricConfig{}, VcenterVMPowerStatusMetricConfig{}, VcenterVMVsanLatencyAvgMetricConfig{}, VcenterVMVsanOperationsMetricConfig{}, VcenterVMVsanThroughputMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(VcenterClusterCPUEffectiveMetricConfig{}, VcenterClusterCPULimitMetricConfig{}, VcenterClusterHostCountMetricConfig{}, VcenterClusterMemoryEffectiveMetricConfig{}, VcenterClusterMemoryLimitMetricConfig{}, VcenterClusterVMCountMetricConfig{}, VcenterClusterVMTemplateCountMetricConfig{}, VcenterClusterVsanCongestionsMetricConfig{}, VcenterClusterVsanLatencyAvgMetricConfig{}, VcenterClusterVsanOperationsMetricConfig{}, VcenterClusterVsanThroughputMetricConfig{}, VcenterDatacenterClusterCountMetricConfig{}, VcenterDatacenterCPULimitMetricConfig{}, VcenterDatacenterDatastoreCountMetricConfig{}, VcenterDatacenterDiskSpaceMetricConfig{}, VcenterDatacenterHostCountMetricConfig{}, VcenterDatacenterMemoryLimitMetricConfig{}, VcenterDatacenterVMCountMetricConfig{}, VcenterDatastoreAlarmCountMetricConfig{}, VcenterDatastoreDiskUsageMetricConfig{}, VcenterDatastoreDiskUtilizationMetricConfig{}, VcenterDatastoreMaintenanceStatusMetricConfig{}, VcenterHostAlarmCountMetricConfig{}, VcenterHostConnectionStatusMetricConfig{}, VcenterHostCPUCapacityMetricConfig{}, VcenterHostCPUReservedMetricConfig{}, VcenterHostCPUUsageMetricConfig{}, VcenterHostCPUUtilizationMetricConfig{}, VcenterHostDiskLatencyAvgMetricConfig{}, VcenterHostDiskLatencyMaxMetricConfig{}, VcenterHostDiskThroughputMetricConfig{}, VcenterHostMemoryActiveMetricConfig{}, VcenterHostMemoryBalloonedMetricConfig{}, VcenterHostMemoryCapacityMetricConfig{}, VcenterHostMemoryGrantedMetricConfig{}, VcenterHostMemoryUsageMetricConfig{}, VcenterHostMemoryUtilizationMetricConfig{}, VcenterHostNetworkPacketDropRateMetricConfig{}, VcenterHostNetworkPacketErrorRateMetricConfig{}, VcenterHostNetworkPacketRateMetricConfig{}, VcenterHostNetworkThroughputMetricConfig{}, VcenterHostNetworkUsageMetricConfig{}, VcenterHostPowerStatusMetricConfig{}, VcenterHostUptimeMetricConfig{}, VcenterHostVsanCacheHitRateMetricConfig{}, VcenterHostVsanCongestionsMetricConfig{}, VcenterHostVsanLatencyAvgMetricConfig{}, VcenterHostVsanOperationsMetricConfig{}, VcenterHostVsanThroughputMetricConfig{}, VcenterResourcePoolCPUSharesMetricConfig{}, VcenterResourcePoolCPUUsageMetricConfig{}, VcenterResourcePoolMemoryBalloonedMetricConfig{}, VcenterResourcePoolMemoryGrantedMetricConfig{}, VcenterResourcePoolMemorySharesMetricConfig{}, VcenterResourcePoolMemorySwappedMetricConfig{}, VcenterResourcePoolMemoryUsageMetricConfig{}, VcenterVMCPUReadinessMetricConfig{}, VcenterVMCPUTimeMetricConfig{}, VcenterVMCPUUsageMetricConfig{}, VcenterVMCPUUtilizationMetricConfig{}, VcenterVMDatastoreUsageMetricConfig{}, VcenterVMDiskLatencyAvgMetricConfig{}, VcenterVMDiskLatencyMaxMetricConfig{}, VcenterVMDiskThroughputMetricConfig{}, VcenterVMDiskUsageMetricConfig{}, VcenterVMDiskUtilizationMetricConfig{}, VcenterVMMemoryBalloonedMetricConfig{}, VcenterVMMemoryGrantedMetricConfig{}, VcenterVMMemorySwappedMetricConfig{}, VcenterVMMemorySwappedSsdMetricConfig{}, VcenterVMMemoryUsageMetricConfig{}, VcenterVMMemoryUtilizationMetricConfig{}, VcenterVMNetworkBroadcastPacketRateMetricConfig{}, VcenterVMNetworkMulticastPacketRateMetricConfig{}, VcenterVMNetworkPacketDropRateMetricConfig{}, VcenterVMNetworkPacketRateMetricConfig{}, VcenterVMNetworkThroughputMetricConfig{}, VcenterVMNetworkUsageMetricConfig{}, VcenterVMPowerStatusMetricConfig{}, VcenterVMVsanLatencyAvgMetricConfig{}, VcenterVMVsanOperationsMetricConfig{}, VcenterVMVsanThroughputMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -1092,6 +1102,18 @@ func TestVcenterVMCPUTimeMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.cpu.time doesn't have an attribute invalid, valid attributes: [cpu_state, object]")
 
 	cfg = DefaultMetricsConfig().VcenterVMCPUTime
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestVcenterVMDatastoreUsageMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().VcenterVMDatastoreUsage
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []VcenterVMDatastoreUsageMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric vcenter.vm.datastore.usage doesn't have an attribute invalid, valid attributes: [vcenter.datastore.name, disk_state]")
+
+	cfg = DefaultMetricsConfig().VcenterVMDatastoreUsage
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }

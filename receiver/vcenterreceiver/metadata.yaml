@@ -87,6 +87,11 @@ attributes:
       - "ready"
       - "wait"
     requirement_level: recommended
+  datastore_name:
+    name_override: vcenter.datastore.name
+    description: The name of the vCenter datastore.
+    type: string
+    requirement_level: recommended
   disk_direction:
     name_override: direction
     description: The direction of disk latency.
@@ -807,6 +812,16 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  vcenter.vm.datastore.usage:
+    enabled: false
+    description: The amount of storage space used by the virtual machine on each datastore.
+    stability: development
+    unit: By
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [datastore_name, disk_state]
   vcenter.vm.disk.latency.avg:
     enabled: true
     description: The latency of operations to the virtual machine's disk.

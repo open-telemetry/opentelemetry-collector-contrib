@@ -30,6 +30,7 @@ type vmGroupInfo struct {
 type vcenterScrapeData struct {
 	datacenters              []*mo.Datacenter
 	datastores               []*mo.Datastore
+	datastoreNamesByRef      map[string]string
 	clusterRefs              []*types.ManagedObjectReference
 	rPoolIPathsByRef         map[string]*string
 	vAppIPathsByRef          map[string]*string
@@ -73,6 +74,7 @@ func newVcenterScrapeData() *vcenterScrapeData {
 	return &vcenterScrapeData{
 		datacenters:              make([]*mo.Datacenter, 0),
 		datastores:               make([]*mo.Datastore, 0),
+		datastoreNamesByRef:      make(map[string]string),
 		clusterRefs:              make([]*types.ManagedObjectReference, 0),
 		rPoolIPathsByRef:         make(map[string]*string),
 		vAppIPathsByRef:          make(map[string]*string),
@@ -243,6 +245,7 @@ func (v *vcenterMetricScraper) scrapeDatacenters(ctx context.Context, errs *scra
 func (v *vcenterMetricScraper) scrapeDatastores(ctx context.Context, dc *mo.Datacenter, errs *scrapererror.ScrapeErrors) {
 	// Init for current collection
 	v.scrapeData.datastores = make([]*mo.Datastore, 0)
+	v.scrapeData.datastoreNamesByRef = make(map[string]string)
 
 	// Get Datastores w/properties and store for later retrieval
 	datastores, err := v.client.Datastores(ctx, dc.Reference())
@@ -252,6 +255,7 @@ func (v *vcenterMetricScraper) scrapeDatastores(ctx context.Context, dc *mo.Data
 	}
 	for i := range datastores {
 		v.scrapeData.datastores = append(v.scrapeData.datastores, &datastores[i])
+		v.scrapeData.datastoreNamesByRef[datastores[i].Reference().Value] = datastores[i].Name
 	}
 }
 

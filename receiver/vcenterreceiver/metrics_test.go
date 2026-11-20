@@ -621,3 +621,91 @@ func metricDataPoints(metrics pmetric.Metrics, name string) map[string]float64 {
 	}
 	return values
 }
+
+func TestRecordVMDatastoreUsage(t *testing.T) {
+	testCases := []struct {
+		name    string
+		storage *types.VirtualMachineStorageInfo
+		want    map[string]int64
+	}{
+		{
+			name:    "nil storage info",
+			storage: nil,
+			want:    map[string]int64{},
+		},
+		{
+			name: "vm on two datastores",
+			storage: &types.VirtualMachineStorageInfo{
+				PerDatastoreUsage: []types.VirtualMachineUsageOnDatastore{
+					{Datastore: types.ManagedObjectReference{Type: "Datastore", Value: "datastore-1"}, Committed: 100, Uncommitted: 400},
+					{Datastore: types.ManagedObjectReference{Type: "Datastore", Value: "datastore-2"}, Committed: 50, Uncommitted: 10},
+				},
+			},
+			want: map[string]int64{
+				"ssd-ds/used":       100,
+				"ssd-ds/available":  400,
+				"sata-ds/used":      50,
+				"sata-ds/available": 10,
+			},
+		},
+		{
+			name: "unknown datastore is skipped",
+			storage: &types.VirtualMachineStorageInfo{
+				PerDatastoreUsage: []types.VirtualMachineUsageOnDatastore{
+					{Datastore: types.ManagedObjectReference{Type: "Datastore", Value: "datastore-1"}, Committed: 100, Uncommitted: 400},
+					{Datastore: types.ManagedObjectReference{Type: "Datastore", Value: "datastore-99"}, Committed: 7, Uncommitted: 7},
+				},
+			},
+			want: map[string]int64{
+				"ssd-ds/used":      100,
+				"ssd-ds/available": 400,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mbc := metadata.NewDefaultMetricsBuilderConfig()
+			mbc.Metrics.VcenterVMDatastoreUsage.Enabled = true
+			scraper := &vcenterMetricScraper{
+				mb: metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type)),
+				scrapeData: &vcenterScrapeData{
+					datastoreNamesByRef: map[string]string{
+						"datastore-1": "ssd-ds",
+						"datastore-2": "sata-ds",
+					},
+				},
+			}
+
+			scraper.recordVMDatastoreUsage(pcommon.NewTimestampFromTime(time.Now()), &mo.VirtualMachine{Storage: tc.storage})
+
+			require.Equal(t, tc.want, datastoreUsageValues(scraper.mb.Emit()))
+		})
+	}
+}
+
+// datastoreUsageValues returns vcenter.vm.datastore.usage values keyed by "<datastore>/<disk_state>"
+func datastoreUsageValues(metrics pmetric.Metrics) map[string]int64 {
+	values := map[string]int64{}
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		sms := rms.At(i).ScopeMetrics()
+		for j := 0; j < sms.Len(); j++ {
+			ms := sms.At(j).Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				m := ms.At(k)
+				if m.Name() != "vcenter.vm.datastore.usage" {
+					continue
+				}
+				dps := m.Sum().DataPoints()
+				for l := 0; l < dps.Len(); l++ {
+					dp := dps.At(l)
+					ds, _ := dp.Attributes().Get("vcenter.datastore.name")
+					state, _ := dp.Attributes().Get("disk_state")
+					values[ds.Str()+"/"+state.Str()] = dp.IntValue()
+				}
+			}
+		}
+	}
+	return values
+}
