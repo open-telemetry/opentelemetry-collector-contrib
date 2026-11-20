@@ -27,6 +27,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/db"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/url"
 )
 
@@ -62,31 +63,34 @@ type redaction struct {
 	dbObfuscator *db.Obfuscator
 	// Masking string used to replace masked values
 	maskingString string
+	// Telemetry builder for recording metrics
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 // newRedaction creates a new instance of the redaction processor
-func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*redaction, error) {
+func newRedaction(ctx context.Context, config *Config, logger *zap.Logger, telemetryBuilder ...*metadata.TelemetryBuilder) (*redaction, error) {
+	var tb *metadata.TelemetryBuilder
+	if len(telemetryBuilder) > 0 {
+		tb = telemetryBuilder[0]
+	}
+
 	allowList := makeAllowList(config)
 	ignoreList := makeIgnoreList(config)
-	ignoreKeysRegexList, err := makeRegexList(ctx, config.IgnoredKeyPatterns)
+	ignoreKeysRegexList, err := makeRegexList(ctx, config.IgnoredKeyPatterns, tb)
 	if err != nil {
-		// TODO: Placeholder for an error metric in the next PR
 		return nil, fmt.Errorf("failed to process ignore keys list: %w", err)
 	}
-	blockRegexList, err := makeRegexList(ctx, config.BlockedValues)
+	blockRegexList, err := makeRegexList(ctx, config.BlockedValues, tb)
 	if err != nil {
-		// TODO: Placeholder for an error metric in the next PR
 		return nil, fmt.Errorf("failed to process block list: %w", err)
 	}
-	blockKeysRegexList, err := makeRegexList(ctx, config.BlockedKeyPatterns)
+	blockKeysRegexList, err := makeRegexList(ctx, config.BlockedKeyPatterns, tb)
 	if err != nil {
-		// TODO: Placeholder for an error metric in the next PR
 		return nil, fmt.Errorf("failed to process block keys list: %w", err)
 	}
 
-	allowRegexList, err := makeRegexList(ctx, config.AllowedValues)
+	allowRegexList, err := makeRegexList(ctx, config.AllowedValues, tb)
 	if err != nil {
-		// TODO: Placeholder for an error metric in the next PR
 		return nil, fmt.Errorf("failed to process allow list: %w", err)
 	}
 
@@ -94,6 +98,9 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 	if config.URLSanitization.Enabled {
 		urlSanitizer, err = url.NewURLSanitizer(config.URLSanitization)
 		if err != nil {
+			if tb != nil {
+				tb.ProcessorRedactionErrorsTotal.Add(ctx, 1)
+			}
 			return nil, fmt.Errorf("failed to create URL sanitizer: %w", err)
 		}
 	}
@@ -117,6 +124,7 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 		urlSanitizer:       urlSanitizer,
 		dbObfuscator:       dbObfuscator,
 		maskingString:      maskingString,
+		telemetryBuilder:   tb,
 	}, nil
 }
 
@@ -168,7 +176,7 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 			// Attributes can also be part of span events
 			s.processSpanEvents(ctx, span.Events())
 
-			s.sanitizeSpanName(span)
+			s.sanitizeSpanName(ctx, span)
 		}
 	}
 }
@@ -234,7 +242,7 @@ func (s *redaction) processLogBody(ctx context.Context, body pcommon.Value, attr
 		if s.shouldAllowValue(strVal) {
 			allowedKeys = append(allowedKeys, "body")
 		} else {
-			processedValue := s.processStringValueForLogBody(strVal)
+			processedValue := s.processStringValueForLogBody(ctx, strVal)
 			if strVal != processedValue {
 				maskedKeys = append(maskedKeys, "body")
 				body.SetStr(processedValue)
@@ -286,7 +294,7 @@ func (s *redaction) redactLogBodyRecursive(ctx context.Context, key string, valu
 			*allowedKeys = append(*allowedKeys, key)
 			return
 		}
-		processedValue := s.processStringValueForLogBody(strVal)
+		processedValue := s.processStringValueForLogBody(ctx, strVal)
 		if strVal != processedValue {
 			*maskedKeys = append(*maskedKeys, key)
 			value.SetStr(processedValue)
@@ -338,8 +346,7 @@ func (s *redaction) processResourceMetric(ctx context.Context, rm pmetric.Resour
 }
 
 // processAttrs redacts the attributes of a resource span or a span
-func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
-	// TODO: Use the context for recording metrics
+func (s *redaction) processAttrs(ctx context.Context, attributes pcommon.Map) {
 	var redactedKeys, maskedKeys, allowedKeys, ignoredKeys []string
 
 	dbSystem := db.GetDBSystem(attributes)
@@ -391,7 +398,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 			value.SetStr(maskedValue)
 			continue
 		}
-		processedString := s.processStringValueForAttribute(strVal, k, dbSystem)
+		processedString := s.processStringValueForAttribute(ctx, strVal, k, dbSystem)
 		if processedString != strVal {
 			maskedKeys = append(maskedKeys, k)
 			value.SetStr(processedString)
@@ -407,6 +414,12 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 	s.addMetaAttrs(maskedKeys, attributes, redactionMaskedKeys, redactionMaskedCount, true)
 	s.addMetaAttrs(allowedKeys, attributes, redactionAllowedKeys, redactionAllowedCount, false)
 	s.addMetaAttrs(ignoredKeys, attributes, "", redactionIgnoredCount, false)
+
+	if s.telemetryBuilder != nil {
+		if count := int64(len(redactedKeys) + len(maskedKeys)); count > 0 {
+			s.telemetryBuilder.ProcessorRedactionRedactedAttributesTotal.Add(ctx, count)
+		}
+	}
 }
 
 //nolint:gosec
@@ -486,7 +499,7 @@ func (s *redaction) addMetaAttrs(keys []string, attributes pcommon.Map, valuesAt
 	}
 }
 
-func (s *redaction) processStringValueForAttribute(strVal, attributeKey, dbSystem string) string {
+func (s *redaction) processStringValueForAttribute(ctx context.Context, strVal, attributeKey, dbSystem string) string {
 	for _, compiledRE := range s.blockRegexList {
 		match := compiledRE.MatchString(strVal)
 		if match {
@@ -501,6 +514,9 @@ func (s *redaction) processStringValueForAttribute(strVal, attributeKey, dbSyste
 	if s.dbObfuscator.HasObfuscators() {
 		obfuscatedQuery, err := s.dbObfuscator.ObfuscateAttribute(strVal, attributeKey, dbSystem)
 		if err != nil {
+			if s.telemetryBuilder != nil {
+				s.telemetryBuilder.ProcessorRedactionErrorsTotal.Add(ctx, 1)
+			}
 			return strVal
 		}
 		strVal = obfuscatedQuery
@@ -509,7 +525,7 @@ func (s *redaction) processStringValueForAttribute(strVal, attributeKey, dbSyste
 	return strVal
 }
 
-func (s *redaction) processStringValueForLogBody(strVal string) string {
+func (s *redaction) processStringValueForLogBody(ctx context.Context, strVal string) string {
 	// Mask any blocked values for the other attributes
 	for _, compiledRE := range s.blockRegexList {
 		match := compiledRE.MatchString(strVal)
@@ -525,6 +541,9 @@ func (s *redaction) processStringValueForLogBody(strVal string) string {
 	if s.dbObfuscator.HasObfuscators() {
 		obfuscatedQuery, err := s.dbObfuscator.Obfuscate(strVal)
 		if err != nil {
+			if s.telemetryBuilder != nil {
+				s.telemetryBuilder.ProcessorRedactionErrorsTotal.Add(ctx, 1)
+			}
 			return strVal
 		}
 		strVal = obfuscatedQuery
@@ -575,7 +594,7 @@ func (s *redaction) shouldRedactKey(k string) bool {
 	return false
 }
 
-func (s *redaction) sanitizeSpanName(span ptrace.Span) {
+func (s *redaction) sanitizeSpanName(ctx context.Context, span ptrace.Span) {
 	name := span.Name()
 
 	if s.shouldAllowValue(name) {
@@ -591,6 +610,9 @@ func (s *redaction) sanitizeSpanName(span ptrace.Span) {
 
 	if s.shouldSanitizeSpanNameForDB() {
 		if sanitized, ok, err := db.SanitizeSpanName(span, s.dbObfuscator); err != nil {
+			if s.telemetryBuilder != nil {
+				s.telemetryBuilder.ProcessorRedactionErrorsTotal.Add(ctx, 1)
+			}
 			s.logger.Error("failed to obfuscate span name", zap.Error(err))
 		} else if ok {
 			applySpanName(span, name, sanitized)
@@ -704,12 +726,14 @@ func makeIgnoreList(c *Config) map[string]string {
 
 // makeRegexList precompiles all the regex patterns in the defined list,
 // preserving the order in which they are listed in the configuration
-func makeRegexList(_ context.Context, valuesList []string) ([]*regexp.Regexp, error) {
+func makeRegexList(ctx context.Context, valuesList []string, tb *metadata.TelemetryBuilder) ([]*regexp.Regexp, error) {
 	regexList := make([]*regexp.Regexp, 0, len(valuesList))
 	for _, pattern := range valuesList {
 		re, err := regexp.Compile(pattern)
 		if err != nil {
-			// TODO: Placeholder for an error metric in the next PR
+			if tb != nil {
+				tb.ProcessorRedactionErrorsTotal.Add(ctx, 1)
+			}
 			return nil, fmt.Errorf("error compiling regex in list: %w", err)
 		}
 		regexList = append(regexList, re)

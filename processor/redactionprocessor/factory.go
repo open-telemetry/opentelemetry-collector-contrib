@@ -41,9 +41,13 @@ func createTracesProcessor(
 ) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
 
-	redaction, err := newRedaction(ctx, oCfg, set.Logger)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
-		// TODO: Placeholder for an error metric in the next PR
+		return nil, err
+	}
+
+	redaction, err := newRedaction(ctx, oCfg, set.Logger, telemetryBuilder)
+	if err != nil {
 		return nil, fmt.Errorf("error creating a redaction processor: %w", err)
 	}
 
@@ -72,7 +76,12 @@ func createLogsProcessor(
 	// do the sanitization.
 	logCfg.DBSanitizer.AllowFallbackWithoutSystem = true
 
-	red, err := newRedaction(ctx, &logCfg, set.Logger)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+
+	red, err := newRedaction(ctx, &logCfg, set.Logger, telemetryBuilder)
 	if err != nil {
 		return nil, fmt.Errorf("error creating a redaction processor: %w", err)
 	}
@@ -96,7 +105,12 @@ func createMetricsProcessor(
 ) (processor.Metrics, error) {
 	oCfg := cfg.(*Config)
 
-	red, err := newRedaction(ctx, oCfg, set.Logger)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+
+	red, err := newRedaction(ctx, oCfg, set.Logger, telemetryBuilder)
 	if err != nil {
 		return nil, fmt.Errorf("error creating a redaction processor: %w", err)
 	}
