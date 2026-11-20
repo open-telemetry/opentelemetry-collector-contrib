@@ -1,0 +1,228 @@
+version: 1
+signal: metrics
+# Only the resources of the kubeletstats-e2e-workload test pod (pod, its
+# container and its emptyDir volume) and the node are asserted. The other pods
+# on the kind node (control plane, CNI, the collector itself) are tolerated
+# through /include. Within each listed resource, the metric set is exact, so a
+# missing or unexpected metric fails the test. Utilization values are checked
+# for a sane range: node and memory limit utilization within [0, 1] (the pod
+# is OOM-killed above its memory limit), the others non-negative (usage may
+# exceed a request, and the scrape-based CPU usage may briefly exceed a limit).
+resources/include:
+    # The node resource is only checked for presence here; its metric set is
+    # pinned by the default e2e scenario (testdata/e2e/expected.yaml).
+    - attributes:
+        k8s.node.name: kind-control-plane
+      scopes/include:
+        - name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+          version/exists: true
+          metrics/include:
+            - name: k8s.node.cpu.usage
+              type: gauge
+              unit: "{cpu}"
+    # Pod resource. The pod sets CPU and memory requests and limits, so the
+    # *_limit_utilization and *_request_utilization metrics are emitted, and
+    # the node informer provides capacity for *.node.utilization.
+    - attributes:
+        k8s.namespace.name: default
+        k8s.pod.name: kubeletstats-e2e-workload
+        k8s.pod.uid/exists: true
+      scopes/include:
+        - name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+          version/exists: true
+          metrics:
+            - name: k8s.pod.cpu.time
+              type: sum
+              unit: "s"
+              temporality: cumulative
+              monotonic: true
+            - name: k8s.pod.cpu.usage
+              type: gauge
+              unit: "{cpu}"
+            - name: k8s.pod.cpu.node.utilization
+              type: gauge
+              unit: "1"
+              datapoints:
+                - double_value/gte: 0
+                  double_value/lte: 1
+            - name: k8s.pod.cpu_limit_utilization
+              type: gauge
+              unit: "1"
+              datapoints:
+                - double_value/gte: 0
+            - name: k8s.pod.cpu_request_utilization
+              type: gauge
+              unit: "1"
+              datapoints:
+                - double_value/gte: 0
+            - name: k8s.pod.filesystem.available
+              type: gauge
+              unit: "By"
+            - name: k8s.pod.filesystem.capacity
+              type: gauge
+              unit: "By"
+            - name: k8s.pod.filesystem.usage
+              type: gauge
+              unit: "By"
+            - name: k8s.pod.memory.available
+              type: gauge
+              unit: "By"
+            - name: k8s.pod.memory.major_page_faults
+              type: gauge
+              unit: "1"
+            - name: k8s.pod.memory.node.utilization
+              type: gauge
+              unit: "1"
+              datapoints:
+                - double_value/gte: 0
+                  double_value/lte: 1
+            - name: k8s.pod.memory.page_faults
+              type: gauge
+              unit: "1"
+            - name: k8s.pod.memory.rss
+              type: gauge
+              unit: "By"
+            - name: k8s.pod.memory.usage
+              type: gauge
+              unit: "By"
+            - name: k8s.pod.memory.working_set
+              type: gauge
+              unit: "By"
+            - name: k8s.pod.memory_limit_utilization
+              type: gauge
+              unit: "1"
+              datapoints:
+                - double_value/gte: 0
+                  double_value/lte: 1
+            - name: k8s.pod.memory_request_utilization
+              type: gauge
+              unit: "1"
+              datapoints:
+                - double_value/gte: 0
+            # Only the direction permutations are asserted, so the test does
+            # not depend on the pod interface names of the CNI in use.
+            - name: k8s.pod.network.errors
+              type: sum
+              unit: "1"
+              temporality: cumulative
+              monotonic: true
+              datapoints/include:
+                - attributes/include:
+                    direction: receive
+                - attributes/include:
+                    direction: transmit
+            - name: k8s.pod.network.io
+              type: sum
+              unit: "By"
+              temporality: cumulative
+              monotonic: true
+              datapoints/include:
+                - attributes/include:
+                    direction: receive
+                - attributes/include:
+                    direction: transmit
+    # Container resource. container.id comes from extra_metadata_labels.
+    - attributes:
+        k8s.namespace.name: default
+        k8s.pod.name: kubeletstats-e2e-workload
+        k8s.pod.uid/exists: true
+        k8s.container.name: workload
+        container.id/exists: true
+      scopes/include:
+        - name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+          version/exists: true
+          metrics:
+            - name: container.cpu.time
+              type: sum
+              unit: "s"
+              temporality: cumulative
+              monotonic: true
+            - name: container.cpu.usage
+              type: gauge
+              unit: "{cpu}"
+            - name: container.filesystem.available
+              type: gauge
+              unit: "By"
+            - name: container.filesystem.capacity
+              type: gauge
+              unit: "By"
+            - name: container.filesystem.usage
+              type: gauge
+              unit: "By"
+            - name: container.memory.available
+              type: gauge
+              unit: "By"
+            - name: container.memory.major_page_faults
+              type: gauge
+              unit: "1"
+            - name: container.memory.page_faults
+              type: gauge
+              unit: "1"
+            - name: container.memory.rss
+              type: gauge
+              unit: "By"
+            - name: container.memory.usage
+              type: gauge
+              unit: "By"
+            - name: container.memory.working_set
+              type: gauge
+              unit: "By"
+            - name: k8s.container.cpu.node.utilization
+              type: gauge
+              unit: "1"
+              datapoints:
+                - double_value/gte: 0
+                  double_value/lte: 1
+            - name: k8s.container.cpu_limit_utilization
+              type: gauge
+              unit: "1"
+              datapoints:
+                - double_value/gte: 0
+            - name: k8s.container.cpu_request_utilization
+              type: gauge
+              unit: "1"
+              datapoints:
+                - double_value/gte: 0
+            - name: k8s.container.memory.node.utilization
+              type: gauge
+              unit: "1"
+              datapoints:
+                - double_value/gte: 0
+                  double_value/lte: 1
+            - name: k8s.container.memory_limit_utilization
+              type: gauge
+              unit: "1"
+              datapoints:
+                - double_value/gte: 0
+                  double_value/lte: 1
+            - name: k8s.container.memory_request_utilization
+              type: gauge
+              unit: "1"
+              datapoints:
+                - double_value/gte: 0
+    # emptyDir volume resource. k8s.volume.type comes from extra_metadata_labels.
+    - attributes:
+        k8s.namespace.name: default
+        k8s.pod.name: kubeletstats-e2e-workload
+        k8s.pod.uid/exists: true
+        k8s.volume.name: scratch
+        k8s.volume.type: emptyDir
+      scopes/include:
+        - name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+          version/exists: true
+          metrics:
+            - name: k8s.volume.available
+              type: gauge
+              unit: "By"
+            - name: k8s.volume.capacity
+              type: gauge
+              unit: "By"
+            - name: k8s.volume.inodes
+              type: gauge
+              unit: "1"
+            - name: k8s.volume.inodes.free
+              type: gauge
+              unit: "1"
+            - name: k8s.volume.inodes.used
+              type: gauge
+              unit: "1"

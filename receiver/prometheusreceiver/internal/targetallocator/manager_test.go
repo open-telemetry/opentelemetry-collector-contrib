@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -191,4 +192,65 @@ func TestGetScrapeConfigsResponse_InvalidYAML(t *testing.T) {
 
 	_, err := getScrapeConfigsResponse(httpClient, server.URL)
 	assert.Error(t, err)
+}
+
+func TestSyncOpenMetrics2Warnings(t *testing.T) {
+	prev := metadata.ReceiverPrometheusEnableOpenMetrics2FeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverPrometheusEnableOpenMetrics2FeatureGate.ID(), false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverPrometheusEnableOpenMetrics2FeatureGate.ID(), prev))
+	})
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/scrape_configs" {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`ta-om2-job:
+  job_name: ta-om2-job
+  scrape_protocols: [OpenMetricsText2.0.0]
+  fallback_scrape_protocol: OpenMetricsText2.0.0
+`))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	cfg := &Config{
+		Interval:    30 * time.Second,
+		CollectorID: "test-collector",
+	}
+	cfg.ClientConfig.Endpoint = server.URL
+	promCfg, err := promconfig.Load("", nil)
+	require.NoError(t, err)
+
+	core, logs := observer.New(zapcore.WarnLevel)
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(core)
+
+	manager := NewManager(settings, cfg, sharedpromconfig.NewConfig(promCfg))
+
+	promLogger := promslog.NewNopLogger()
+	reg := prometheus.NewRegistry()
+	sdMetrics, err := discovery.CreateAndRegisterSDMetrics(reg)
+	require.NoError(t, err)
+	discoveryManager := discovery.NewManager(t.Context(), promLogger, reg, sdMetrics)
+	store := teststorage.New(t)
+	scrapeManager, err := scrape.NewManager(&scrape.Options{}, promLogger, nil, nil, store, reg)
+	require.NoError(t, err)
+	defer scrapeManager.Stop()
+
+	manager.discoveryManager = discoveryManager
+	manager.scrapeManager = scrapeManager
+
+	_, err = manager.sync(0, server.Client())
+	require.NoError(t, err)
+
+	msgs := make([]string, 0, logs.Len())
+	for _, entry := range logs.All() {
+		msgs = append(msgs, entry.Message)
+	}
+	assert.Equal(t, []string{
+		"OpenMetricsText2.0.0 is configured in scrape_protocols, but the feature gate is disabled; OpenMetrics 2.0 responses will fall back to fallback_scrape_protocol (or fail if none is configured)",
+		"fallback_scrape_protocol OpenMetricsText2.0.0 is not supported by the pinned Prometheus scrape library and currently falls back to OpenMetrics 1.0",
+	}, msgs)
 }

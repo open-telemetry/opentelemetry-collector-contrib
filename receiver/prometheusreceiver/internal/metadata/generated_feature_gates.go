@@ -6,6 +6,14 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var ReceiverPrometheusEnableOpenMetrics2FeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.prometheus.EnableOpenMetrics2",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Enables OpenMetrics 2.0 scraping and parsing support in the Prometheus receiver."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/53286"),
+	featuregate.WithRegisterFromVersion("v0.166.0"),
+)
+
 var ReceiverPrometheusUseTargetURLForServerAddressFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheus.UseTargetUrlForServerAddress",
 	featuregate.StageAlpha,

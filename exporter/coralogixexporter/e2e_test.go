@@ -7,6 +7,7 @@ package coralogixexporter
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -18,6 +19,9 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func Test_E2E_RateLimit_HappyPath(t *testing.T) {
@@ -223,6 +227,91 @@ func Test_E2E_LowQuotaRateLimit(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return exp.canSend()
 	}, 2*time.Minute, 100*time.Millisecond, "Should be able to send data after rate limiter duration")
+}
+
+func Test_E2E_BlockedThenRecoversWithValidKey(t *testing.T) {
+	privateKey := os.Getenv("CORALOGIX_PRIVATE_KEY")
+	if privateKey == "" {
+		t.Skip("Skipping E2E test: CORALOGIX_PRIVATE_KEY not set")
+	}
+
+	core, logs := observer.New(zapcore.InfoLevel)
+	set := exportertest.NewNopSettings(exportertest.NopType)
+	set.Logger = zap.New(core)
+
+	runID := fmt.Sprintf("coe1224-recover-%d", time.Now().Unix())
+	cfg := &Config{
+		Domain:     "eu2.coralogix.com",
+		PrivateKey: configopaque.String(privateKey),
+		RateLimiter: RateLimiterConfig{
+			Enabled:   true,
+			Threshold: 2,
+			Duration:  5 * time.Second,
+		},
+		AppName:   "coe1224-e2e",
+		SubSystem: runID,
+	}
+	cfg.Traces.ClientConfig.Endpoint = "ingress.eu2.coralogix.com:443"
+
+	exp, err := newTracesExporter(cfg, set)
+	require.NoError(t, err)
+	require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, exp.shutdown(context.Background()))
+	}()
+
+	send := func(name string) (string, error) {
+		traceID := make([]byte, 16)
+		spanID := make([]byte, 8)
+		_, _ = time.Now().UnixNano(), 0
+		for i := range traceID {
+			traceID[i] = byte(time.Now().UnixNano() >> (i * 2))
+		}
+		for i := range spanID {
+			spanID[i] = byte(i + 1)
+		}
+		td := ptrace.NewTraces()
+		rs := td.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("service.name", runID)
+		ss := rs.ScopeSpans().AppendEmpty()
+		span := ss.Spans().AppendEmpty()
+		span.SetName(name)
+		var tid pcommon.TraceID
+		var sid pcommon.SpanID
+		copy(tid[:], traceID)
+		copy(sid[:], spanID)
+		span.SetTraceID(tid)
+		span.SetSpanID(sid)
+		now := pcommon.NewTimestampFromTime(time.Now().UTC())
+		span.SetStartTimestamp(now)
+		span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().UTC().Add(time.Millisecond)))
+		return fmt.Sprintf("%x", traceID), exp.pushTraces(context.Background(), td)
+	}
+
+	beforeID, err := send("recover-before-block")
+	require.NoError(t, err, "valid key must send before the window opens")
+	t.Logf("before_trace_id=%s", beforeID)
+
+	exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
+	exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
+	require.False(t, exp.canSend())
+
+	blockedID, err := send("recover-while-blocked")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "authentication failed")
+	assert.NotContains(t, err.Error(), "rate limit exceeded")
+	t.Logf("blocked_trace_id=%s err=%v", blockedID, err)
+
+	require.Eventually(t, func() bool {
+		return exp.canSend()
+	}, 15*time.Second, 100*time.Millisecond, "window should close after duration")
+
+	closeLogs := logs.FilterMessage("Drop window closed; resuming sends to Coralogix").All()
+	require.NotEmpty(t, closeLogs)
+
+	afterID, err := send("recover-after-window")
+	require.NoError(t, err, "sends must work again after the window closes")
+	t.Logf("after_trace_id=%s run_id=%s", afterID, runID)
 }
 
 func generateTestTraces() ptrace.Traces {

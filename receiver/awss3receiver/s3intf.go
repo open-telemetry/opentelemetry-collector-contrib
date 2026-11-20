@@ -5,6 +5,7 @@ package awss3receiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log"
 
@@ -67,8 +68,9 @@ func (api *s3ListObjectsAPIImpl) NewListObjectsV2Paginator(params *s3.ListObject
 	return s3.NewListObjectsV2Paginator(api.client, params)
 }
 
-// retrieveS3Object retrieves S3 object content for a given bucket and key
-func retrieveS3Object(ctx context.Context, client SingleObjectAPI, bucket, key string) ([]byte, error) {
+// retrieveS3Object retrieves S3 object content for a given bucket and key.
+// The caller must close the returned body.
+func retrieveS3Object(ctx context.Context, client SingleObjectAPI, bucket, key string) (io.ReadCloser, error) {
 	params := s3.GetObjectInput{
 		Bucket: &bucket,
 		Key:    &key,
@@ -77,12 +79,14 @@ func retrieveS3Object(ctx context.Context, client SingleObjectAPI, bucket, key s
 	if err != nil {
 		return nil, err
 	}
-	defer output.Body.Close()
-	contents, err := io.ReadAll(output.Body)
-	if err != nil {
-		return nil, err
-	}
-	return contents, nil
+	return output.Body, nil
+}
+
+func processS3Object(ctx context.Context, key string, body io.ReadCloser, callback s3ObjectCallback) (err error) {
+	defer func() {
+		err = errors.Join(err, body.Close())
+	}()
+	return callback(ctx, key, body)
 }
 
 // tagS3Object tags an S3 object for a given bucket and key

@@ -37,6 +37,22 @@ func AssertEqualExporterDroppedUnsupportedProfileRecords(t *testing.T, tt *compo
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualExporterSplunkhecApproachingCapacity(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_splunkhec_approaching_capacity",
+		Description: "Number of accepted requests for which Splunk HEC reported its queue or ack channel is approaching capacity (response codes 24 and 25). [Development]",
+		Unit:        "{request}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_splunkhec_approaching_capacity")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualExporterSplunkhecHeartbeatsFailed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_splunkhec_heartbeats_failed",

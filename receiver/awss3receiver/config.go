@@ -6,10 +6,12 @@ package awss3receiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/multierr"
 )
 
@@ -28,6 +30,13 @@ type S3DownloaderConfig struct {
 	S3ForcePathStyle               bool   `mapstructure:"s3_force_path_style"`
 	TagObjectAfterIngestion        bool   `mapstructure:"tag_object_after_ingestion"`
 	SkipIngestingTaggedObjects     bool   `mapstructure:"skip_ingesting_tagged_objects"`
+	// Decompression sets the algorithm used to decompress objects whose key does not
+	// end with a recognized compression suffix (`.gz` or `.zst`).
+	// Valid values are: `gzip`, `zstd`, `none` or no value set.
+	Decompression configcompression.Type `mapstructure:"decompression"`
+	// MaxUnmarshalSize limits the decompressed bytes buffered by non-streaming decoders.
+	// Zero uses the default of 256 MiB. Streaming decoders are not subject to this limit.
+	MaxUnmarshalSize int64 `mapstructure:"max_unmarshal_size"`
 }
 
 // SQSConfig holds SQS queue configuration for receiving object change notifications.
@@ -76,6 +85,7 @@ type Config struct {
 
 const (
 	s3PartitionFormatDefault = "year=%Y/month=%m/day=%d/hour=%H/minute=%M"
+	defaultMaxUnmarshalSize  = 256 * 1024 * 1024
 )
 
 func createDefaultConfig() component.Config {
@@ -85,12 +95,16 @@ func createDefaultConfig() component.Config {
 			S3PartitionFormat:              s3PartitionFormatDefault,
 			FilePrefixIncludeTelemetryType: true,
 			EndpointPartitionID:            "aws",
+			MaxUnmarshalSize:               defaultMaxUnmarshalSize,
 		},
 	}
 }
 
 func (c Config) Validate() error {
 	var errs error
+	if c.S3Downloader.MaxUnmarshalSize < 0 || c.S3Downloader.MaxUnmarshalSize == math.MaxInt64 {
+		errs = multierr.Append(errs, errors.New("s3downloader.max_unmarshal_size must be between 0 and 9223372036854775806"))
+	}
 	if c.S3Downloader.S3Bucket == "" {
 		errs = multierr.Append(errs, errors.New("bucket is required"))
 	}
@@ -128,6 +142,12 @@ func (c Config) Validate() error {
 		if _, err := parseTime(c.EndTime, "endtime"); err != nil {
 			errs = multierr.Append(errs, err)
 		}
+	}
+
+	if c.S3Downloader.Decompression.IsCompressed() &&
+		c.S3Downloader.Decompression != configcompression.TypeGzip &&
+		c.S3Downloader.Decompression != configcompression.TypeZstd {
+		errs = multierr.Append(errs, fmt.Errorf("unsupported decompression type %q, valid values are: gzip, zstd, none", c.S3Downloader.Decompression))
 	}
 
 	// Validate SQS notifications if configured
