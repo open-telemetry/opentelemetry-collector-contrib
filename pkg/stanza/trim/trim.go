@@ -116,18 +116,26 @@ func ToLengthWithTruncate(splitFunc bufio.SplitFunc, maxLength int, skipping *bo
 			}
 
 			// splitFunc needs more data but didn't return anything.
-			// If buffer appears to be at capacity, we must advance to avoid "token too long" error.
-			// Buffer is at capacity if: dataLen == maxLength (buffer limited to maxLength),
-			// OR dataLen == lastDataLen (buffer couldn't grow between calls).
-			if dataLen == maxLength || (dataLen > maxLength && dataLen == lastDataLen) {
-				// Buffer at capacity, skip all available data and stay in skip mode
-				return dataLen, nil, nil
+			if atEOF {
+				if dataLen == 0 {
+					// The entry was truncated at the end of the data, and a new entry may start next.
+					*skipping = false
+				}
+				// Keep the data: the rest of the entry may be written after this poll.
+				// The flush timeout ends the entry if no more data is written.
+				return 0, nil, nil
 			}
 
-			// At EOF, done skipping
-			if atEOF {
-				*skipping = false
-				return dataLen, nil, nil
+			// The buffer may be full once it holds maxLength bytes, and the scanner fails with
+			// "token too long" if nothing is advanced. Skip all but the last half of maxLength bytes,
+			// which may hold the start of a boundary that spans reads.
+			if dataLen >= maxLength {
+				advance := dataLen - maxLength/2
+				// Keep the next slice on a code unit boundary of UTF-16 and UTF-32 input.
+				if aligned := advance &^ 3; aligned > 0 {
+					advance = aligned
+				}
+				return advance, nil, nil
 			}
 
 			// Request more data, stay in skip mode

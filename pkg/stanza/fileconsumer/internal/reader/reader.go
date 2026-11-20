@@ -287,8 +287,10 @@ func (r *Reader) readContents(ctx context.Context) (completed bool) {
 					return false
 				}
 				r.RecordNum += int64(numTokensBatched)
-				r.Offset = s.Pos()
 			}
+			// Also move past data consumed without a token, such as the remainder of a truncated
+			// entry, or it is read again on the next poll.
+			r.Offset = s.Pos()
 
 			if scanErr == nil && r.deleteAtEOF {
 				r.delete()

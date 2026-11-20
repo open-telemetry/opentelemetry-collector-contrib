@@ -111,9 +111,9 @@ func withMaxLogSize(size int) testFactoryOpt {
 	}
 }
 
-func withTruncateOnMaxLogSize(truncate bool) testFactoryOpt {
+func withTruncateOnMaxLogSize() testFactoryOpt {
 	return func(c *testFactoryCfg) {
-		c.truncateOnMaxLogSize = truncate
+		c.truncateOnMaxLogSize = true
 	}
 }
 
