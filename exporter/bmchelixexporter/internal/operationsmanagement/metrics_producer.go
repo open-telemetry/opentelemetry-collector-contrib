@@ -9,6 +9,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -31,6 +32,7 @@ type BMCHelixOMSample struct {
 // MetricsProducer is responsible for converting OpenTelemetry metrics into BMC Helix Operations Management metrics
 type MetricsProducer struct {
 	logger                     *zap.Logger
+	mu                         sync.Mutex
 	previousCounters           map[string]BMCHelixOMSample
 	enrichMetricWithAttributes bool
 }
@@ -488,11 +490,17 @@ func (mp *MetricsProducer) computeRateMetricFromCounter(metric BMCHelixOMMetric)
 	sample := metric.Samples[0]
 	key := metric.Labels["entityId"] + ":" + metric.Labels["metricName"]
 
-	prev, ok := mp.previousCounters[key]
-	mp.previousCounters[key] = sample
+	mp.mu.Lock()
+	defer mp.mu.Unlock()
 
-	if !ok || sample.Timestamp <= prev.Timestamp {
-		return nil // not enough data
+	prev, ok := mp.previousCounters[key]
+	// Out-of-order or duplicate (e.g. retry): keep the newest baseline.
+	if ok && sample.Timestamp <= prev.Timestamp {
+		return nil
+	}
+	mp.previousCounters[key] = sample
+	if !ok {
+		return nil // first sample
 	}
 
 	deltaValue := sample.Value - prev.Value
