@@ -138,13 +138,9 @@ func createDefaultConfig() component.Config {
 		TTL:               0,
 		CreateSchema:      true,
 		AsyncInsert:       true,
-		MetricsTables: MetricTablesConfig{
-			Gauge:                metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultGaugeSuffix},
-			Sum:                  metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultSumSuffix},
-			Summary:              metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultSummarySuffix},
-			Histogram:            metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultHistogramSuffix},
-			ExponentialHistogram: metrics.MetricTypeConfig{Name: defaultMetricTableName + defaultExpHistogramSuffix},
-		},
+		// MetricsTables names are intentionally left empty here: they are filled
+		// in by buildMetricTableNames during Validate, so that the deprecated
+		// metrics_table_name option can still be honored.
 	}
 }
 

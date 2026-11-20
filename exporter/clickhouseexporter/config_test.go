@@ -38,6 +38,7 @@ func TestLoadConfig(t *testing.T) {
 
 	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).Endpoint = defaultEndpoint
+	defaultCfg.(*Config).buildMetricTableNames()
 
 	storageID := component.MustNewIDWithName("file_storage", "clickhouse")
 
@@ -102,6 +103,7 @@ func TestLoadConfig(t *testing.T) {
 	jsonCfg := createDefaultConfig()
 	jsonCfg.(*Config).Endpoint = defaultEndpoint
 	jsonCfg.(*Config).JSON = true
+	jsonCfg.(*Config).buildMetricTableNames()
 
 	tests = append(tests, struct {
 		id       component.ID
@@ -122,6 +124,7 @@ func TestLoadConfig(t *testing.T) {
 			batch.MaxSize = 10000
 			return queue
 		}())
+		cfg.buildMetricTableNames()
 	})
 
 	tests = append(tests, struct {
@@ -998,4 +1001,20 @@ func TestBuildClickHouseOptions_ConnectionPoolSize(t *testing.T) {
 			assert.Equal(t, tt.expectedMaxIdle, opt.MaxIdleConns)
 		})
 	}
+}
+
+func TestMetricsTableNameWithDefaultConfig(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cm := confmap.NewFromStringMap(map[string]any{
+		"endpoint":           defaultEndpoint,
+		"metrics_table_name": "custom_metrics",
+	})
+	require.NoError(t, cm.Unmarshal(cfg))
+	require.NoError(t, cfg.Validate())
+
+	require.Equal(t, "custom_metrics_gauge", cfg.MetricsTables.Gauge.Name)
+	require.Equal(t, "custom_metrics_sum", cfg.MetricsTables.Sum.Name)
+	require.Equal(t, "custom_metrics_summary", cfg.MetricsTables.Summary.Name)
+	require.Equal(t, "custom_metrics_histogram", cfg.MetricsTables.Histogram.Name)
+	require.Equal(t, "custom_metrics_exponential_histogram", cfg.MetricsTables.ExponentialHistogram.Name)
 }
