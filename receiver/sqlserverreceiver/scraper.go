@@ -774,6 +774,7 @@ func isPerformanceCounterRate(counterType, counterName string) bool {
 		"Number of Deadlocks/sec",
 		"Page Compression Attempts/sec",
 		"Page Deallocations/sec",
+		"Page Splits/sec",
 		"Page lookups/sec",
 		"Page reads/sec",
 		"Page writes/sec",
@@ -960,6 +961,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const pageLifeExpectancy = "Page life expectancy"
 	const pageLookupsPerSec = "Page lookups/sec"
 	const pageReadsPerSec = "Page reads/sec"
+	const pageSplitsPerSec = "Page Splits/sec"
 	const pageWritesPerSec = "Page writes/sec"
 	const pagesAllocatedPerSec = "Pages Allocated/sec"
 	const pagesCompressedPerSec = "Pages Compressed/sec"
@@ -1033,6 +1035,15 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		compRate, recompRate float64
 		compSeen, recompSeen bool
 		recompRatioRow       sqlquery.StringMap
+	)
+
+	// Track batch request rate and page split rate so the derived
+	// sqlserver.batch.compilation.ratio and sqlserver.page.split.ratio
+	// metrics can be emitted after the row loop. compRate/compSeen above are reused here.
+	var (
+		batchRate, pageSplitRate float64
+		batchSeen, pageSplitSeen bool
+		ratioRow                 sqlquery.StringMap
 	)
 
 	seenPerformanceCounterKeys := make(map[performanceCounterKey]struct{})
@@ -1145,6 +1156,9 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverBatchRequestRateDataPoint(now, val.(float64))
+				batchRate = val.(float64)
+				batchSeen = true
+				ratioRow = row
 			}
 		case bufferCacheHitRatio:
 			val, err := retrieveFloat(row, valueKey)
@@ -1626,6 +1640,19 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 			} else {
 				s.mb.RecordSqlserverPageOperationRateDataPoint(now, val.(float64), metadata.AttributePageOperationsRead)
 			}
+		case pageSplitsPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, pageSplitsPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverPageSplitRateDataPoint(now, val.(float64))
+				pageSplitRate = val.(float64)
+				pageSplitSeen = true
+				if ratioRow == nil {
+					ratioRow = row
+				}
+			}
 		case pageWritesPerSec:
 			val, err := retrieveFloat(row, valueKey)
 			if err != nil {
@@ -1734,6 +1761,9 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				compRate = val.(float64)
 				compSeen = true
 				recompRatioRow = row
+				if ratioRow == nil {
+					ratioRow = row
+				}
 			}
 		case sqlReCompilationsRate:
 			val, err := retrieveFloat(row, valueKey)
@@ -1933,6 +1963,20 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	if compSeen && recompSeen && compRate > 0 {
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), recompRatioRow)
 		s.mb.RecordSqlserverRecompilationRatioDataPoint(now, recompRate/compRate*100)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	// Emit derived sqlserver.batch.compilation.ratio and
+	// sqlserver.page.split.ratio metrics once their respective source
+	// counters, plus the shared batch request rate, have been observed in this cycle.
+	if batchSeen && batchRate > 0 {
+		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), ratioRow)
+		if compSeen {
+			s.mb.RecordSqlserverBatchCompilationRatioDataPoint(now, compRate/batchRate*100)
+		}
+		if pageSplitSeen {
+			s.mb.RecordSqlserverPageSplitRatioDataPoint(now, pageSplitRate/batchRate*100)
+		}
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
