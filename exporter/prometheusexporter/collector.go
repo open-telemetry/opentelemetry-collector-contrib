@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -595,6 +596,17 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 	return metrics, lastErr
 }
 
+func sanitizeConversionError(err error) string {
+	msg := err.Error()
+	if strings.Contains(msg, "is not valid UTF-8") {
+		return "invalid UTF-8 label value"
+	}
+	if strings.Contains(msg, "inconsistent label cardinality") {
+		return "inconsistent label cardinality"
+	}
+	return msg
+}
+
 /*
 Reporting
 */
@@ -605,11 +617,18 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 
 	targetMetrics, err := c.createTargetInfoMetrics(resourceAttrs)
 	if err != nil {
-		c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", otlptranslator.TargetInfoMetricName, err.Error()))
+		if ce := c.logger.Check(zap.DebugLevel, "failed to convert metric"); ce != nil {
+			ce.Write(
+				zap.String("metric_name", otlptranslator.TargetInfoMetricName),
+				zap.String("error", sanitizeConversionError(err)),
+			)
+		}
 	}
 	for _, m := range targetMetrics {
 		ch <- m
-		c.logger.Debug(fmt.Sprintf("metric served: %s", m.Desc().String()))
+		if ce := c.logger.Check(zap.DebugLevel, "metric served"); ce != nil {
+			ce.Write(zap.String("desc", m.Desc().String()))
+		}
 	}
 
 	for i := range inMetrics {
@@ -618,12 +637,19 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 
 		m, err := c.convertMetric(pMetric, rAttr, scopeNames[i], scopeVersions[i], scopeSchemaURLs[i], scopeAttributes[i])
 		if err != nil {
-			c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", pMetric.Name(), err.Error()))
+			if ce := c.logger.Check(zap.DebugLevel, "failed to convert metric"); ce != nil {
+				ce.Write(
+					zap.String("metric_name", pMetric.Name()),
+					zap.String("error", sanitizeConversionError(err)),
+				)
+			}
 			continue
 		}
 
 		ch <- m
-		c.logger.Debug(fmt.Sprintf("metric served: %s", m.Desc().String()))
+		if ce := c.logger.Check(zap.DebugLevel, "metric served"); ce != nil {
+			ce.Write(zap.String("desc", m.Desc().String()))
+		}
 	}
 	c.cleanupMetricFamilies()
 }

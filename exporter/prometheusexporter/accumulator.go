@@ -4,7 +4,6 @@
 package prometheusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 
 import (
-	"fmt"
 	"math"
 	"sort"
 	"strings"
@@ -105,7 +104,9 @@ func (a *lastValueAccumulator) Accumulate(rm pmetric.ResourceMetrics) (n int) {
 }
 
 func (a *lastValueAccumulator) addMetric(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes, resourceAttrs pcommon.Map, now time.Time) int {
-	a.logger.Debug(fmt.Sprintf("accumulating metric: %s", metric.Name()))
+	if ce := a.logger.Check(zap.DebugLevel, "accumulating metric"); ce != nil {
+		ce.Write(zap.String("metric_name", metric.Name()))
+	}
 
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
@@ -119,10 +120,12 @@ func (a *lastValueAccumulator) addMetric(metric pmetric.Metric, scopeName, scope
 	case pmetric.MetricTypeExponentialHistogram:
 		return a.accumulateExponentialHistogram(metric, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, resourceAttrs, now)
 	default:
-		a.logger.With(
-			zap.String("data_type", metric.Type().String()),
-			zap.String("metric_name", metric.Name()),
-		).Error("failed to translate metric")
+		if ce := a.logger.Check(zap.DebugLevel, "failed to translate metric"); ce != nil {
+			ce.Write(
+				zap.String("data_type", metric.Type().String()),
+				zap.String("metric_name", metric.Name()),
+			)
+		}
 	}
 
 	return 0
@@ -196,6 +199,12 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName, s
 
 	// Drop metrics with unspecified aggregations
 	if doubleSum.AggregationTemporality() == pmetric.AggregationTemporalityUnspecified {
+		if ce := a.logger.Check(zap.DebugLevel, "dropping sum metric with unspecified aggregation temporality"); ce != nil {
+			ce.Write(
+				zap.String("metric_name", metric.Name()),
+				zap.Int("data_points_dropped", doubleSum.DataPoints().Len()),
+			)
+		}
 		return n
 	}
 
@@ -290,16 +299,19 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, scopeN
 			pp := mv.value.Histogram().DataPoints().At(0) // previous aggregated value for time range
 			if ip.StartTimestamp().AsTime() != pp.Timestamp().AsTime() {
 				// treat misalignment as restart and reset, or violation of single-writer principle and drop
-				a.logger.With(
-					zap.String("ip_start_time", ip.StartTimestamp().String()),
-					zap.String("pp_start_time", pp.StartTimestamp().String()),
-					zap.String("pp_timestamp", pp.Timestamp().String()),
-					zap.String("ip_timestamp", ip.Timestamp().String()),
-				).Warn("Misaligned starting timestamps")
-				if !ip.StartTimestamp().AsTime().After(pp.Timestamp().AsTime()) {
-					a.logger.With(
+				if ce := a.logger.Check(zap.DebugLevel, "Misaligned starting timestamps"); ce != nil {
+					ce.Write(
 						zap.String("metric_name", metric.Name()),
-					).Warn("Dropped misaligned histogram datapoint")
+						zap.String("ip_start_time", ip.StartTimestamp().String()),
+						zap.String("pp_start_time", pp.StartTimestamp().String()),
+						zap.String("pp_timestamp", pp.Timestamp().String()),
+						zap.String("ip_timestamp", ip.Timestamp().String()),
+					)
+				}
+				if !ip.StartTimestamp().AsTime().After(pp.Timestamp().AsTime()) {
+					if ce := a.logger.Check(zap.DebugLevel, "Dropped misaligned histogram datapoint"); ce != nil {
+						ce.Write(zap.String("metric_name", metric.Name()))
+					}
 					continue
 				}
 				a.logger.Debug("treating it like reset")
@@ -317,6 +329,12 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, scopeN
 			ip.CopyTo(m.Histogram().DataPoints().AppendEmpty())
 		default:
 			// unsupported temporality
+			if ce := a.logger.Check(zap.DebugLevel, "dropping histogram datapoint with unsupported aggregation temporality"); ce != nil {
+				ce.Write(
+					zap.String("metric_name", metric.Name()),
+					zap.String("aggregation_temporality", histogram.AggregationTemporality().String()),
+				)
+			}
 			continue
 		}
 		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
@@ -358,16 +376,19 @@ func (a *lastValueAccumulator) accumulateExponentialHistogram(metric pmetric.Met
 			pp := mv.value.ExponentialHistogram().DataPoints().At(0) // previous aggregated value for time range
 			if ip.StartTimestamp().AsTime() != pp.Timestamp().AsTime() {
 				// treat misalignment as restart and reset, or violation of single-writer principle and drop
-				a.logger.With(
-					zap.String("ip_start_time", ip.StartTimestamp().String()),
-					zap.String("pp_start_time", pp.StartTimestamp().String()),
-					zap.String("pp_timestamp", pp.Timestamp().String()),
-					zap.String("ip_timestamp", ip.Timestamp().String()),
-				).Warn("Misaligned starting timestamps")
-				if !ip.StartTimestamp().AsTime().After(pp.Timestamp().AsTime()) {
-					a.logger.With(
+				if ce := a.logger.Check(zap.DebugLevel, "Misaligned starting timestamps"); ce != nil {
+					ce.Write(
 						zap.String("metric_name", metric.Name()),
-					).Warn("Dropped misaligned histogram datapoint")
+						zap.String("ip_start_time", ip.StartTimestamp().String()),
+						zap.String("pp_start_time", pp.StartTimestamp().String()),
+						zap.String("pp_timestamp", pp.Timestamp().String()),
+						zap.String("ip_timestamp", ip.Timestamp().String()),
+					)
+				}
+				if !ip.StartTimestamp().AsTime().After(pp.Timestamp().AsTime()) {
+					if ce := a.logger.Check(zap.DebugLevel, "Dropped misaligned histogram datapoint"); ce != nil {
+						ce.Write(zap.String("metric_name", metric.Name()))
+					}
 					continue
 				}
 				a.logger.Debug("Treating it like reset")
@@ -385,6 +406,12 @@ func (a *lastValueAccumulator) accumulateExponentialHistogram(metric pmetric.Met
 			ip.CopyTo(m.ExponentialHistogram().DataPoints().AppendEmpty())
 		default:
 			// unsupported temporality
+			if ce := a.logger.Check(zap.DebugLevel, "dropping exponential histogram datapoint with unsupported aggregation temporality"); ce != nil {
+				ce.Write(
+					zap.String("metric_name", metric.Name()),
+					zap.String("aggregation_temporality", expHistogram.AggregationTemporality().String()),
+				)
+			}
 			continue
 		}
 
@@ -411,7 +438,9 @@ func (a *lastValueAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []str
 	a.registeredMetrics.Range(func(key, value any) bool {
 		v := value.(*accumulatedValue)
 		if expirationTime.After(v.updated) {
-			a.logger.Debug(fmt.Sprintf("metric expired: %s", v.value.Name()))
+			if ce := a.logger.Check(zap.DebugLevel, "metric expired"); ce != nil {
+				ce.Write(zap.String("metric_name", v.value.Name()))
+			}
 			a.registeredMetrics.Delete(key)
 			return true
 		}
@@ -437,7 +466,9 @@ func (a *lastValueAccumulator) cleanupExpired() {
 	a.registeredMetrics.Range(func(key, value any) bool {
 		v := value.(*accumulatedValue)
 		if expirationTime.After(v.updated) {
-			a.logger.Debug(fmt.Sprintf("metric expired: %s", v.value.Name()))
+			if ce := a.logger.Check(zap.DebugLevel, "metric expired"); ce != nil {
+				ce.Write(zap.String("metric_name", v.value.Name()))
+			}
 			a.registeredMetrics.Delete(key)
 		}
 		return true
