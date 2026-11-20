@@ -134,3 +134,13 @@ Number of uncompressed bytes flushed by the indexer.
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | By | Sum | Int | true | Alpha |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `exporter.elasticsearch.Exemplars` | alpha | When enabled, exemplars are sent to ES | v0.167.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52803) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
