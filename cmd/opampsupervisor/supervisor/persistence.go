@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"os"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/open-telemetry/opamp-go/protobufs"
@@ -19,11 +20,17 @@ type persistentState struct {
 	// InstanceID must be a valid UUID string. If it is not, a new UUIDv7 will be generated automatically.
 	InstanceID             uuid.UUID           `yaml:"instance_id"`
 	LastRemoteConfigStatus *RemoteConfigStatus `yaml:"last_remote_config_status"`
+	// AllPackagesHash is a hex encoded string of the all-packages hash last set by the OpAMP client.
+	AllPackagesHash string `yaml:"all_packages_hash,omitempty"`
 
 	// Path to the config file that the state should be saved to.
 	// This is not marshaled.
 	configPath string      `yaml:"-"`
 	logger     *zap.Logger `yaml:"-"`
+	// mux serializes the setters, which write the whole state to disk. The
+	// package manager updates AllPackagesHash from the OpAMP client's package
+	// sync goroutine while the supervisor updates the other fields.
+	mux sync.Mutex `yaml:"-"`
 }
 
 // RemoteConfigStatus is a custom struct that is used to marshal/unmarshal the remote config status.
@@ -38,11 +45,15 @@ type RemoteConfigStatus struct {
 }
 
 func (p *persistentState) SetInstanceID(id uuid.UUID) error {
+	p.mux.Lock()
+	defer p.mux.Unlock()
 	p.InstanceID = id
 	return p.writeState()
 }
 
 func (p *persistentState) SetLastRemoteConfigStatus(status *protobufs.RemoteConfigStatus) error {
+	p.mux.Lock()
+	defer p.mux.Unlock()
 	p.LastRemoteConfigStatus = &RemoteConfigStatus{
 		Status:               status.Status,
 		LastRemoteConfigHash: hex.EncodeToString(status.LastRemoteConfigHash),
@@ -52,6 +63,8 @@ func (p *persistentState) SetLastRemoteConfigStatus(status *protobufs.RemoteConf
 }
 
 func (p *persistentState) GetLastRemoteConfigStatus() *protobufs.RemoteConfigStatus {
+	p.mux.Lock()
+	defer p.mux.Unlock()
 	if p.LastRemoteConfigStatus == nil {
 		return nil
 	}
@@ -67,6 +80,29 @@ func (p *persistentState) GetLastRemoteConfigStatus() *protobufs.RemoteConfigSta
 	}
 }
 
+func (p *persistentState) SetAllPackagesHash(hash []byte) error {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+	p.AllPackagesHash = hex.EncodeToString(hash)
+	return p.writeState()
+}
+
+func (p *persistentState) GetAllPackagesHash() []byte {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+	if p.AllPackagesHash == "" {
+		return nil
+	}
+	hash, err := hex.DecodeString(p.AllPackagesHash)
+	if err != nil {
+		p.logger.Error("Failed to decode all packages hash, returning empty hash", zap.Error(err))
+		return nil
+	}
+	return hash
+}
+
+// writeState writes the state to disk. Callers must hold mux, except during
+// construction before the state is shared.
 func (p *persistentState) writeState() error {
 	by, err := yaml.Marshal(p)
 	if err != nil {
