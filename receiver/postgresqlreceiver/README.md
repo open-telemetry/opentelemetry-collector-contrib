@@ -190,6 +190,15 @@ We provide functionality to collect the most executed queries from PostgreSQL. I
 ...
 ```
 
+Top-query counters report changes since each statement's previous observation. The first
+observation establishes a baseline and emits no top-query event, including after receiver
+restart or cache eviction. Where available, the receiver uses PostgreSQL's statistics reset
+timestamp to detect resets. Counter decreases also identify resets, including on older
+extensions without reset information.
+
+Direct and nested executions of the same statement are combined into one top-query event.
+Where `toplevel` is available, their counter changes are calculated separately before merging.
+
 Along with those attributes, we will also report the query plan we gathered if it is possible. 
 
 By default, top query collection is disabled, also note, to use it, you will need
@@ -233,8 +242,6 @@ A query with no plan available yet (not yet explained, or the `EXPLAIN` failed) 
 `db.server.query_plan` record. Leaving `db.server.query_plan` disabled preserves the previous
 behavior exactly.
 
-Known limitation of the join key: it doesn't distinguish `toplevel`, so a top-level statement and a
-nested one it calls can still collide (only with `pg_stat_statements.track = all`, not the default).
 `postgresql.userid` is an OID, so it can in principle be reused once the OID counter wraps around,
 and it is not preserved across a dump/restore. It is only meaningful within one running instance —
 the same is already true of `postgresql.queryid`.
