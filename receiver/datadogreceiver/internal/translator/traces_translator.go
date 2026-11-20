@@ -278,6 +278,9 @@ func traceChunkSamplingPriority(traceChunk *pb.TraceChunk) (float64, bool) {
 	return 0, false
 }
 
+// ToTraces converts a tracer payload in the v0.x formats to OTel traces, grouping the spans by service. If the
+// receiver.datadog.EnableSamplingThreshold feature gate is enabled, spans of chunks that Datadog kept by rate get a
+// sampling threshold in their tracestate.
 func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, traceIDCache *lru.Cache[uint64, pcommon.TraceID]) (ptrace.Traces, error) {
 	sharedAttributes := pcommon.NewMap()
 	for k, v := range map[string]string{
@@ -327,6 +330,10 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 
 	for _, traceChunk := range payload.GetChunks() {
 		samplingPriority, hasSamplingPriority := traceChunkSamplingPriority(traceChunk)
+		var traceState string
+		if hasSamplingPriority {
+			traceState = chunkTraceState(logger, traceChunk, samplingPriority)
+		}
 		for _, span := range traceChunk.GetSpans() {
 			// Restore base service name as the service name.
 			// Without this, internal spans such as postgresql queries have a service.name set to postgresql
@@ -420,6 +427,10 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 
 			// Some spans need specific processing (http, db, grpc...)
 			processSpanByName(legacySpanView(span), &newSpan)
+
+			if traceState != "" {
+				newSpan.TraceState().FromRaw(traceState)
+			}
 		}
 	}
 

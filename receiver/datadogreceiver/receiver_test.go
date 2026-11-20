@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -173,6 +174,99 @@ func TestDatadogServer(t *testing.T) {
 
 			assert.Equal(t, tc.expectContent, string(actual))
 			assert.Equal(t, tc.expectCode, resp.StatusCode, "Must match the expected status code")
+		})
+	}
+}
+
+// enableSamplingThreshold enables the sampling threshold feature gate for the test.
+func enableSamplingThreshold(t *testing.T) {
+	t.Helper()
+	id := metadata.ReceiverDatadogEnableSamplingThresholdFeatureGate.ID()
+	require.NoError(t, featuregate.GlobalRegistry().Set(id, true))
+	t.Cleanup(func() { require.NoError(t, featuregate.GlobalRegistry().Set(id, false)) })
+}
+
+func TestDatadogTraces_SamplingThreshold_EndToEnd(t *testing.T) {
+	enableSamplingThreshold(t)
+	// A v0.4 trace kept by the Agent rate, with priority 1.
+	const body = `[[{"trace_id":7,"span_id":1,"parent_id":0,"name":"n","service":"s","start":1,"duration":1,` +
+		`"metrics":{"_sampling_priority_v1":1,"_dd.agent_psr":0.5}}]]`
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
+
+	sink := new(consumertest.TracesSink)
+	dd, err := newDataDogReceiver(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+	require.NoError(t, err)
+	dd.(*datadogReceiver).nextTracesConsumer = sink
+	require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, dd.Shutdown(context.WithoutCancel(t.Context()))) })
+
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s/v0.4/traces", dd.(*datadogReceiver).address), strings.NewReader(body))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	req.Close = true
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	require.NoError(t, resp.Body.Close())
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	require.Equal(t, 1, sink.SpanCount())
+	span := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	assert.Equal(t, "ot=rv:940fc851cda0e3;th:8", span.TraceState().AsRaw())
+}
+
+func TestDatadogTracesV1_SamplingThreshold_EndToEnd(t *testing.T) {
+	enableSamplingThreshold(t)
+	newPayload := func() *idx.InternalTracerPayload {
+		strs := idx.NewStringTable()
+		span := idx.NewInternalSpan(strs, &idx.Span{ServiceRef: strs.Add("checkout"), SpanID: 1})
+		span.SetFloat64Attribute("_dd.agent_psr", 0.5)
+		traceID := make([]byte, 16)
+		traceID[15] = 7
+		chunk := idx.NewInternalTraceChunk(strs, 1, "", nil, []*idx.InternalSpan{span}, false, traceID, 0)
+		return &idx.InternalTracerPayload{Strings: strs, Chunks: []*idx.InternalTraceChunk{chunk}}
+	}
+
+	for _, tc := range []struct {
+		name        string
+		path        string
+		contentType string
+		encode      func(*testing.T, *idx.InternalTracerPayload) []byte
+	}{
+		{name: "v1.0 endpoint", path: "/v1.0/traces", contentType: "application/msgpack", encode: func(t *testing.T, p *idx.InternalTracerPayload) []byte {
+			body, err := p.MarshalMsg(nil)
+			require.NoError(t, err)
+			return body
+		}},
+		{name: "agent payload", path: "/api/v0.2/traces", contentType: "application/x-protobuf", encode: func(t *testing.T, p *idx.InternalTracerPayload) []byte {
+			body, err := proto.Marshal(&pb.AgentPayload{IdxTracerPayloads: []*idx.TracerPayload{p.ToProto()}})
+			require.NoError(t, err)
+			return body
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Traces.EnableV1Endpoint = true
+			cfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
+			sink := new(consumertest.TracesSink)
+			dd, err := newDataDogReceiver(t.Context(), cfg, receivertest.NewNopSettings(metadata.Type))
+			require.NoError(t, err)
+			dd.(*datadogReceiver).nextTracesConsumer = sink
+			require.NoError(t, dd.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() { require.NoError(t, dd.Shutdown(t.Context())) }()
+
+			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s%s", dd.(*datadogReceiver).address, tc.path), bytes.NewReader(tc.encode(t, newPayload())))
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", tc.contentType)
+			resp, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
+			require.NoError(t, resp.Body.Close())
+			require.Equal(t, http.StatusOK, resp.StatusCode)
+
+			require.Equal(t, 1, sink.SpanCount())
+			span := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+			assert.Equal(t, "ot=rv:940fc851cda0e3;th:8", span.TraceState().AsRaw())
 		})
 	}
 }
