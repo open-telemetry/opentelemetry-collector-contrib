@@ -70,7 +70,7 @@ type azureBatchScraper struct {
 }
 
 func (s *azureBatchScraper) GetMetricsBatchValuesClient(region string) (*azmetrics.Client, error) {
-	endpoint := "https://" + region + ".metrics.monitor.azure.com"
+	endpoint := s.clientOptionsResolver.GetBatchAPIEndpoint(region)
 	s.settings.Logger.Info("Batch Endpoint", zap.String("endpoint", endpoint))
 	return azmetrics.NewClient(endpoint, s.cred, s.clientOptionsResolver.GetAzMetricsClientOptions())
 }
