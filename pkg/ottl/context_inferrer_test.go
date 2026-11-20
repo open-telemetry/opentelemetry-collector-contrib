@@ -496,6 +496,7 @@ func Test_NewPriorityContextInferrer_DefaultPriorityList(t *testing.T) {
 		"datapoint",
 		"metric",
 		"spanevent",
+		"spanlink",
 		"span",
 		"profile",
 		"scope",

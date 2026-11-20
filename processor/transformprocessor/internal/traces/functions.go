@@ -10,6 +10,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	xprofilefuncs "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlfuncs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xspanlink/ottlspanlink"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	xottlfuncs "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs"
 )
@@ -25,6 +26,11 @@ func SpanFunctions() map[string]ottl.Factory[*ottlspan.TransformContext] {
 	maps.Copy(functions, spanFunctions)
 
 	return functions
+}
+
+func SpanLinkFunctions() map[string]ottl.Factory[*ottlspanlink.TransformContext] {
+	// No trace-only functions yet.
+	return xottlfuncs.WithExperimentalConverters(xprofilefuncs.WithProfileConverters(ottlfuncs.StandardFuncs[*ottlspanlink.TransformContext]()))
 }
 
 func SpanEventFunctions() map[string]ottl.Factory[*ottlspanevent.TransformContext] {
