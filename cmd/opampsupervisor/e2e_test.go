@@ -24,6 +24,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -2267,6 +2268,9 @@ func TestSupervisorRestartCommand(t *testing.T) {
 		t.Run(mode.name, func(t *testing.T) {
 			var healthReport atomic.Value
 			var agentConfig atomic.Value
+			var commandStatuses []protobufs.CommandStatuses
+			var commandStatusesMu sync.Mutex
+			commandID := []byte("restart-command-1")
 			server := newOpAMPServer(
 				t,
 				defaultConnectingHandler,
@@ -2274,6 +2278,11 @@ func TestSupervisorRestartCommand(t *testing.T) {
 					OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 						if message.Health != nil {
 							healthReport.Store(message.Health)
+						}
+						if status := message.CommandStatus; status != nil && bytes.Equal(status.CommandId, commandID) {
+							commandStatusesMu.Lock()
+							commandStatuses = append(commandStatuses, status.Status)
+							commandStatusesMu.Unlock()
 						}
 
 						if message.EffectiveConfig != nil {
@@ -2343,7 +2352,8 @@ func TestSupervisorRestartCommand(t *testing.T) {
 
 			server.sendToSupervisor(&protobufs.ServerToAgent{
 				Command: &protobufs.ServerToAgentCommand{
-					Type: protobufs.CommandType_CommandType_Restart,
+					Type:      protobufs.CommandType_CommandType_Restart,
+					CommandId: commandID,
 				},
 			})
 
@@ -2365,6 +2375,19 @@ func TestSupervisorRestartCommand(t *testing.T) {
 				}
 				return false
 			}, 30*time.Second, 250*time.Millisecond, "Collector never reported healthy after restart")
+
+			require.Eventually(t, func() bool {
+				commandStatusesMu.Lock()
+				defer commandStatusesMu.Unlock()
+				return slices.Contains(commandStatuses, protobufs.CommandStatuses_CommandStatuses_COMPLETED)
+			}, 30*time.Second, 250*time.Millisecond, "Supervisor never reported the restart command as completed")
+
+			commandStatusesMu.Lock()
+			defer commandStatusesMu.Unlock()
+			require.Equal(t, []protobufs.CommandStatuses{
+				protobufs.CommandStatuses_CommandStatuses_EXECUTING,
+				protobufs.CommandStatuses_CommandStatuses_COMPLETED,
+			}, commandStatuses)
 		})
 	}
 }
