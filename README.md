@@ -100,6 +100,7 @@ For more information about the approver role, see the [community repository](htt
 
 ### Triagers
 
+- [Abhimanyu Bajaj](https://github.com/Abhimanyu9988), Splunk
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
 - [Bogdan Stancu](https://github.com/bogdan-st), Adobe
 - [Dónal O'Sullivan](https://github.com/osullivandonal), Elastic
