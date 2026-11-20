@@ -1558,6 +1558,51 @@ func TestRetries(t *testing.T) {
 	}
 }
 
+func TestExecutePreservesHTTP429AfterRetryExhaustion(t *testing.T) {
+	var attempts int
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		attempts++
+		http.Error(w, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
+	}))
+	defer mockServer.Close()
+
+	endpointURL, err := url.Parse(mockServer.URL)
+	require.NoError(t, err)
+
+	testTel := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, testTel.Shutdown(context.WithoutCancel(t.Context())))
+	})
+	telemetry, err := newPRWTelemetry(exporter.Settings{TelemetrySettings: testTel.NewTelemetrySettings()}, endpointURL)
+	require.NoError(t, err)
+
+	prwe := &prwExporter{
+		endpointURL:         endpointURL,
+		client:              http.DefaultClient,
+		retryOnHTTP429:      true,
+		retryStopCh:         make(chan struct{}),
+		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
+		retrySettings: configretry.BackOffConfig{
+			Enabled:         true,
+			InitialInterval: time.Hour,
+			MaxInterval:     time.Hour,
+			MaxElapsedTime:  time.Nanosecond,
+			Multiplier:      1,
+		},
+		settings:  testTel.NewTelemetrySettings(),
+		telemetry: telemetry,
+	}
+
+	err = prwe.execute(t.Context(), []byte("request"))
+	require.Error(t, err)
+	require.False(t, consumererror.IsPermanent(err))
+	var structuredErr *consumererror.Error
+	require.ErrorAs(t, err, &structuredErr)
+	assert.True(t, structuredErr.IsRetryable())
+	assert.Equal(t, http.StatusTooManyRequests, consumererror.ToHTTPStatus(err))
+	assert.Equal(t, 1, attempts)
+}
+
 func BenchmarkExecute(b *testing.B) {
 	for _, numSample := range []int{100, 1000, 10000} {
 		b.Run(fmt.Sprintf("numSample=%d", numSample), func(b *testing.B) {
