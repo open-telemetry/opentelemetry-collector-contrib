@@ -1013,6 +1013,18 @@ func TestFromContext(t *testing.T) {
 			expectedAttributes: map[string]any{"dest": "192.168.1.1"},
 			action:             &ActionKeyValue{Key: "dest", FromContext: "client.address", Action: INSERT},
 		},
+		{
+			name:               "no_address",
+			ctx:                t.Context(),
+			expectedAttributes: map[string]any{},
+			action:             &ActionKeyValue{Key: "dest", FromContext: "client.address", Action: INSERT},
+		},
+		{
+			name:               "no_address_with_default_value",
+			ctx:                t.Context(),
+			expectedAttributes: map[string]any{"dest": "unknown"},
+			action:             &ActionKeyValue{Key: "dest", FromContext: "client.address", DefaultValue: "unknown", Action: INSERT},
+		},
 	}
 
 	for _, tc := range testCases {
