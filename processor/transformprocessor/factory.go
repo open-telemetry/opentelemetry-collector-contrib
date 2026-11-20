@@ -41,7 +41,7 @@ type transformProcessorFactory struct {
 	factoryoptions.Options
 }
 
-// FactoryOption applies changes to transformProcessorFactory.
+// FactoryOption configures the OTTL functions registered by NewFactoryWithOptions.
 type FactoryOption func(options *factoryoptions.Options)
 
 // WithDataPointFunctions will override the default OTTL datapoint context functions with the provided dataPointFunctions in resulting processor.
@@ -116,6 +116,7 @@ func WithSpanFunctions(spanFunctions []ottl.Factory[*ottlspan.TransformContext])
 	}
 }
 
+// NewFactory returns a transform processor factory with the default OTTL functions.
 func NewFactory() processor.Factory {
 	return NewFactoryWithOptions()
 }
