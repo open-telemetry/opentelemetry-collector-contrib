@@ -13,6 +13,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
@@ -29,8 +31,8 @@ type Processor struct {
 	sharedCacheContexts []common.ContextID
 }
 
-func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, spanFunctions map[string]ottl.Factory[*ottlspan.TransformContext], spanEventFunctions map[string]ottl.Factory[*ottlspanevent.TransformContext]) (*Processor, error) {
-	pc, err := common.NewTraceParserCollection(settings, common.WithSpanParser(spanFunctions), common.WithSpanEventParser(spanEventFunctions), common.WithTraceErrorMode(errorMode))
+func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, spanFunctions map[string]ottl.Factory[*ottlspan.TransformContext], spanEventFunctions map[string]ottl.Factory[*ottlspanevent.TransformContext], resourceFunctions map[string]ottl.Factory[*ottlresource.TransformContext], scopeFunctions map[string]ottl.Factory[*ottlscope.TransformContext]) (*Processor, error) {
+	pc, err := common.NewTraceParserCollection(settings, common.WithSpanParser(spanFunctions), common.WithSpanEventParser(spanEventFunctions), common.WithTraceCommonParsers(resourceFunctions, scopeFunctions), common.WithTraceErrorMode(errorMode))
 	if err != nil {
 		return nil, err
 	}

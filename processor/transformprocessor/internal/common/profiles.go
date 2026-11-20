@@ -13,6 +13,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
 )
 
@@ -69,13 +71,18 @@ func WithProfileParser(functions map[string]ottl.Factory[*ottlprofile.TransformC
 	}
 }
 
+// WithProfileCommonParsers registers the resource and scope context parsers, which are common to all signals.
+// A nil functions map registers the default functions of that context.
+func WithProfileCommonParsers(resourceFunctions map[string]ottl.Factory[*ottlresource.TransformContext], scopeFunctions map[string]ottl.Factory[*ottlscope.TransformContext]) ProfileParserCollectionOption {
+	return ProfileParserCollectionOption(withCommonContextParsers[ProfilesConsumer](resourceFunctions, scopeFunctions))
+}
+
 func WithProfileErrorMode(errorMode ottl.ErrorMode) ProfileParserCollectionOption {
 	return ProfileParserCollectionOption(ottl.WithParserCollectionErrorMode[ProfilesConsumer](errorMode))
 }
 
 func NewProfileParserCollection(settings component.TelemetrySettings, options ...ProfileParserCollectionOption) (*ProfileParserCollection, error) {
 	pcOptions := []ottl.ParserCollectionOption[ProfilesConsumer]{
-		withCommonContextParsers[ProfilesConsumer](),
 		ottl.EnableParserCollectionModifiedPathsLogging[ProfilesConsumer](true),
 	}
 

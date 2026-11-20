@@ -16,6 +16,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 )
 
 type MetricsConsumer interface {
@@ -301,13 +303,18 @@ func WithDataPointParser(functions map[string]ottl.Factory[*ottldatapoint.Transf
 	}
 }
 
+// WithMetricCommonParsers registers the resource and scope context parsers, which are common to all signals.
+// A nil functions map registers the default functions of that context.
+func WithMetricCommonParsers(resourceFunctions map[string]ottl.Factory[*ottlresource.TransformContext], scopeFunctions map[string]ottl.Factory[*ottlscope.TransformContext]) MetricParserCollectionOption {
+	return MetricParserCollectionOption(withCommonContextParsers[MetricsConsumer](resourceFunctions, scopeFunctions))
+}
+
 func WithMetricErrorMode(errorMode ottl.ErrorMode) MetricParserCollectionOption {
 	return MetricParserCollectionOption(ottl.WithParserCollectionErrorMode[MetricsConsumer](errorMode))
 }
 
 func NewMetricParserCollection(settings component.TelemetrySettings, options ...MetricParserCollectionOption) (*MetricParserCollection, error) {
 	pcOptions := []ottl.ParserCollectionOption[MetricsConsumer]{
-		withCommonContextParsers[MetricsConsumer](),
 		ottl.EnableParserCollectionModifiedPathsLogging[MetricsConsumer](true),
 	}
 
