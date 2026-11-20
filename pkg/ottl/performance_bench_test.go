@@ -13,7 +13,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/metric/noop"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
@@ -114,6 +116,15 @@ func BenchmarkParserParseStatements(b *testing.B) {
 }
 
 func BenchmarkStatementSequenceExecuteLogs(b *testing.B) {
+	benchmarkStatementSequenceExecuteLogs(b, ottl.SequenceTelemetry{})
+}
+
+// BenchmarkStatementSequenceExecuteLogsWithFailureCounter measures the overhead of setting a failure counter.
+func BenchmarkStatementSequenceExecuteLogsWithFailureCounter(b *testing.B) {
+	benchmarkStatementSequenceExecuteLogs(b, ottl.SequenceTelemetry{FailureCounter: noop.Int64Counter{}})
+}
+
+func benchmarkStatementSequenceExecuteLogs(b *testing.B, telemetry ottl.SequenceTelemetry) {
 	settings := componenttest.NewNopTelemetrySettings()
 	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
 	if err != nil {
@@ -136,7 +147,7 @@ func BenchmarkStatementSequenceExecuteLogs(b *testing.B) {
 		if err != nil {
 			b.Fatalf("failed to parse log statements: %v", err)
 		}
-		sequence := ottllog.NewStatementSequence(parsed, settings)
+		sequence := ottllog.NewStatementSequence(parsed, settings, ottllog.WithStatementSequenceTelemetry(telemetry))
 
 		contexts := make([]*ottllog.TransformContext, benchmarkContextPoolSize)
 		for i := range contexts {
@@ -160,6 +171,15 @@ func BenchmarkStatementSequenceExecuteLogs(b *testing.B) {
 }
 
 func BenchmarkStatementSequenceExecuteSpans(b *testing.B) {
+	benchmarkStatementSequenceExecuteSpans(b, ottl.SequenceTelemetry{})
+}
+
+// BenchmarkStatementSequenceExecuteSpansWithFailureCounter measures the overhead of setting a failure counter.
+func BenchmarkStatementSequenceExecuteSpansWithFailureCounter(b *testing.B) {
+	benchmarkStatementSequenceExecuteSpans(b, ottl.SequenceTelemetry{FailureCounter: noop.Int64Counter{}})
+}
+
+func benchmarkStatementSequenceExecuteSpans(b *testing.B, telemetry ottl.SequenceTelemetry) {
 	settings := componenttest.NewNopTelemetrySettings()
 	parser, err := ottlspan.NewParser(ottlfuncs.StandardFuncs[*ottlspan.TransformContext](), settings, ottlspan.EnablePathContextNames())
 	if err != nil {
@@ -182,7 +202,7 @@ func BenchmarkStatementSequenceExecuteSpans(b *testing.B) {
 		if err != nil {
 			b.Fatalf("failed to parse span statements: %v", err)
 		}
-		sequence := ottlspan.NewStatementSequence(parsed, settings)
+		sequence := ottlspan.NewStatementSequence(parsed, settings, ottlspan.WithStatementSequenceTelemetry(telemetry))
 
 		contexts := make([]*ottlspan.TransformContext, benchmarkContextPoolSize)
 		for i := range contexts {
@@ -205,6 +225,15 @@ func BenchmarkStatementSequenceExecuteSpans(b *testing.B) {
 }
 
 func BenchmarkStatementSequenceExecuteMetrics(b *testing.B) {
+	benchmarkStatementSequenceExecuteMetrics(b, ottl.SequenceTelemetry{})
+}
+
+// BenchmarkStatementSequenceExecuteMetricsWithFailureCounter measures the overhead of setting a failure counter.
+func BenchmarkStatementSequenceExecuteMetricsWithFailureCounter(b *testing.B) {
+	benchmarkStatementSequenceExecuteMetrics(b, ottl.SequenceTelemetry{FailureCounter: noop.Int64Counter{}})
+}
+
+func benchmarkStatementSequenceExecuteMetrics(b *testing.B, telemetry ottl.SequenceTelemetry) {
 	settings := componenttest.NewNopTelemetrySettings()
 	parser, err := ottlmetric.NewParser(ottlfuncs.StandardFuncs[*ottlmetric.TransformContext](), settings, ottlmetric.EnablePathContextNames())
 	if err != nil {
@@ -227,7 +256,7 @@ func BenchmarkStatementSequenceExecuteMetrics(b *testing.B) {
 		if err != nil {
 			b.Fatalf("failed to parse metric statements: %v", err)
 		}
-		sequence := ottlmetric.NewStatementSequence(parsed, settings)
+		sequence := ottlmetric.NewStatementSequence(parsed, settings, ottlmetric.WithStatementSequenceTelemetry(telemetry))
 
 		contexts := make([]*ottlmetric.TransformContext, benchmarkContextPoolSize)
 		for i := range contexts {
@@ -251,6 +280,15 @@ func BenchmarkStatementSequenceExecuteMetrics(b *testing.B) {
 }
 
 func BenchmarkConditionSequenceEvalLogs(b *testing.B) {
+	benchmarkConditionSequenceEvalLogs(b, ottl.SequenceTelemetry{})
+}
+
+// BenchmarkConditionSequenceEvalLogsWithFailureCounter measures the overhead of setting a failure counter.
+func BenchmarkConditionSequenceEvalLogsWithFailureCounter(b *testing.B) {
+	benchmarkConditionSequenceEvalLogs(b, ottl.SequenceTelemetry{FailureCounter: noop.Int64Counter{}})
+}
+
+func benchmarkConditionSequenceEvalLogs(b *testing.B, telemetry ottl.SequenceTelemetry) {
 	settings := componenttest.NewNopTelemetrySettings()
 	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
 	if err != nil {
@@ -273,7 +311,7 @@ func BenchmarkConditionSequenceEvalLogs(b *testing.B) {
 		if err != nil {
 			b.Fatalf("failed to parse log conditions: %v", err)
 		}
-		sequence := ottllog.NewConditionSequence(parsed, settings)
+		sequence := ottllog.NewConditionSequence(parsed, settings, ottllog.WithConditionSequenceTelemetry(telemetry))
 
 		contexts := make([]*ottllog.TransformContext, benchmarkContextPoolSize)
 		for i := range contexts {
@@ -298,6 +336,15 @@ func BenchmarkConditionSequenceEvalLogs(b *testing.B) {
 }
 
 func BenchmarkConditionSequenceEvalMetrics(b *testing.B) {
+	benchmarkConditionSequenceEvalMetrics(b, ottl.SequenceTelemetry{})
+}
+
+// BenchmarkConditionSequenceEvalMetricsWithFailureCounter measures the overhead of setting a failure counter.
+func BenchmarkConditionSequenceEvalMetricsWithFailureCounter(b *testing.B) {
+	benchmarkConditionSequenceEvalMetrics(b, ottl.SequenceTelemetry{FailureCounter: noop.Int64Counter{}})
+}
+
+func benchmarkConditionSequenceEvalMetrics(b *testing.B, telemetry ottl.SequenceTelemetry) {
 	settings := componenttest.NewNopTelemetrySettings()
 	parser, err := ottlmetric.NewParser(ottlfuncs.StandardFuncs[*ottlmetric.TransformContext](), settings, ottlmetric.EnablePathContextNames())
 	if err != nil {
@@ -320,7 +367,7 @@ func BenchmarkConditionSequenceEvalMetrics(b *testing.B) {
 		if err != nil {
 			b.Fatalf("failed to parse metric conditions: %v", err)
 		}
-		sequence := ottlmetric.NewConditionSequence(parsed, settings)
+		sequence := ottlmetric.NewConditionSequence(parsed, settings, ottlmetric.WithConditionSequenceTelemetry(telemetry))
 
 		contexts := make([]*ottlmetric.TransformContext, benchmarkContextPoolSize)
 		for i := range contexts {
