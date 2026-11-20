@@ -132,6 +132,7 @@ func (pph *pathParserHelper) Parse(line string) (pmetric.Metric, error) {
 	if pp.MetricType == CumulativeMetricType {
 		sum := m.SetEmptySum()
 		sum.SetIsMonotonic(true)
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		dp = sum.DataPoints().AppendEmpty()
 	} else {
 		dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
