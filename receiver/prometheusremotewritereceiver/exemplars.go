@@ -69,7 +69,8 @@ func collectExemplars(
 				writev2.Metadata_METRIC_TYPE_INFO,
 				writev2.Metadata_METRIC_TYPE_STATESET,
 				writev2.Metadata_METRIC_TYPE_SUMMARY,
-				writev2.Metadata_METRIC_TYPE_HISTOGRAM:
+				writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+				writev2.Metadata_METRIC_TYPE_GAUGEHISTOGRAM:
 			default:
 				continue
 			}

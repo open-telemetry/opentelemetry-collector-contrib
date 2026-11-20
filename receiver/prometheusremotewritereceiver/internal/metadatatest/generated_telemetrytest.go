@@ -24,7 +24,7 @@ func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 func AssertEqualReceiverPrometheusremotewriteDroppedSeries(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_prometheusremotewrite_dropped_series",
-		Description: "Number of classic histogram and summary series dropped because the receiver does not support them. Their samples are still reported as written. [Development]",
+		Description: "Number of unsupported series dropped by design (classic histograms, summaries, and gauge histograms). Their samples and histograms are still reported as written. [Development]",
 		Unit:        "{series}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
