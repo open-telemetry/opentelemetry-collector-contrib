@@ -110,8 +110,8 @@ github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJ
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee h1:W5t00kpgFdJifH4BDsTlE89Zl93FEloxaWZfGcifgq8=
 github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
-github.com/open-telemetry/sig-profiling/profcheck v0.0.0-20260605055552-091960d5da90 h1:Pvu/hHr3XjXFlWQlNk/+dG69b0R1ScGWk8Bgm29lP2g=
-github.com/open-telemetry/sig-profiling/profcheck v0.0.0-20260605055552-091960d5da90/go.mod h1:WPdgk1BinVdvYdkbt1KIkgDw6qUiK8CnGq+ftaJ41Ns=
+github.com/open-telemetry/sig-profiling/profcheck v0.0.0-20261120131622-f16d8cb17149 h1:wpnjuDhzJ5w2iXp1yuaK7LZgfgvNDCYgpvTpPhdSbQ0=
+github.com/open-telemetry/sig-profiling/profcheck v0.0.0-20261120131622-f16d8cb17149/go.mod h1:bBexo6j/xoGobNPWudLt67wD37u16C/Vvbrm5XiQqtY=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.1 h1:y0fUlFfIZhPF1W537XOLg0/fcx6zcHCJwooC2xJA040=
@@ -253,10 +253,6 @@ go.opentelemetry.io/otel/sdk/metric v1.47.0 h1:lfISg2j93VT6yqdk9OfUaZmw/GfcZqCCV
 go.opentelemetry.io/otel/sdk/metric v1.47.0/go.mod h1:ypLp+mW1Nt2x+Szt3b5/i1syodyts49lMOwxpDI3VGw=
 go.opentelemetry.io/otel/trace v1.47.0 h1:JOjX/Oci8K94QHddo+bbfya/Ai/nf6/dt9ZfrFNWSrM=
 go.opentelemetry.io/otel/trace v1.47.0/go.mod h1:jNaSLa2PZEYFG6fRjJABAu+bw4FS08uDmPg28lTghu0=
-go.opentelemetry.io/proto/otlp v1.11.1 h1:SCrPqH9NE5CmBrOqpjNCiT0X5mGwMyGERXdogfR7Yjw=
-go.opentelemetry.io/proto/otlp v1.11.1/go.mod h1:wq8W4aSf6bOy8RZyESOeQFr9Pu7wydWX/TY4sgvrTPg=
-go.opentelemetry.io/proto/otlp/profiles/v1development v0.4.1 h1:/r6OKUO8PmUMAfAG0lIIZEWQZHa3o56LHMulrusszYo=
-go.opentelemetry.io/proto/otlp/profiles/v1development v0.4.1/go.mod h1:iXB90dhIyHY9OFlaMA3a4pCftOIs6gxbN4kXoLQEtmU=
 go.opentelemetry.io/proto/slim/otlp v1.11.1 h1:qf2OA3kQcIDXh3q7b6kc0IzRe8BFXlVIlH5uaOACrVQ=
 go.opentelemetry.io/proto/slim/otlp v1.11.1/go.mod h1:15pWfj6/rYjQzyrC3ZGQoZ0rNgLqI/Lk+jFgYgV4UIE=
 go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.4.1 h1:pgPIbi29ViNY/gE//bHlHuLyqHE+PDhhw7jAhItWIaM=

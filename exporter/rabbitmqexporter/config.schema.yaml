@@ -31,7 +31,7 @@ $defs:
     type: object
     properties:
       password:
-        type: string
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       username:
         type: string
   routing_config:
