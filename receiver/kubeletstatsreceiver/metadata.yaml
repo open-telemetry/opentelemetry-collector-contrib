@@ -732,14 +732,14 @@ feature_gates:
     stage: alpha
     description: >-
       When enabled, the legacy (pre semantic conventions) version of the migrated metrics is not emitted.
-    from_version: v0.165.0
+    from_version: v0.166.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50728
   - id: receiver.kubelet_stats.EmitV1K8sConventions
     stage: alpha
     description: >-
       When enabled, metrics that are release candidate in the K8s/container semantic conventions
       are emitted following the latest semantic conventions definition.
-    from_version: v0.165.0
+    from_version: v0.166.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50728
   - id: receiver.kubelet_stats.cpuUtilizationRounding
     stage: alpha
