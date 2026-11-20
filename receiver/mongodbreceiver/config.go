@@ -5,6 +5,7 @@ package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"strings"
@@ -123,14 +124,13 @@ func (c *Config) secondaryDiscoverySkipReason() string {
 	if c.DirectConnection {
 		return "direct_connection is enabled"
 	}
-	// The driver enables TLS implicitly for the mongodb+srv scheme when it applies the URI, but
-	// secondary connections are built from a host list rather than a URI and would not pick that
-	// up, so they would reach the same deployment in plaintext.
-	if c.Scheme == "mongodb+srv" {
-		return "the mongodb+srv scheme applies TLS that secondary connections cannot inherit"
-	}
 	return ""
 }
+
+// memberServerSelectionTimeout bounds how long a scrape waits for an unreachable member, so one
+// member that cannot be reached does not hold up collection from the others for the driver's
+// 30 second default.
+const memberServerSelectionTimeout = 5 * time.Second
 
 func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 	if secondary {
@@ -156,10 +156,17 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 			clientOptions.SetAuth(credential)
 		}
 
+		clientOptions.SetServerSelectionTimeout(memberServerSelectionTimeout)
+
 		// Secondaries are members of the same deployment as the primary, so they need the
 		// same transport security.
 		if tlsConfig, err := c.ClientConfig.LoadTLSConfig(context.Background()); err == nil && tlsConfig != nil {
 			clientOptions.SetTLSConfig(tlsConfig)
+		} else if c.Scheme == "mongodb+srv" {
+			// The driver turns TLS on for a mongodb+srv URI even when the receiver's tls settings
+			// leave it off. Members are reached by host and port rather than through that URI, so
+			// apply the same default here instead of connecting to them in plaintext.
+			clientOptions.SetTLSConfig(&tls.Config{MinVersion: tls.VersionTLS12})
 		}
 
 		return clientOptions
