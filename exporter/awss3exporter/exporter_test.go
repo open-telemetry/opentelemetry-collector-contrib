@@ -9,6 +9,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
@@ -95,4 +98,67 @@ func TestLogWithBucketAndPrefixAttrs(t *testing.T) {
 	logs := getTestLogs(t)
 	exporter := getLogExporterWithBucketAndPrefixAttrs(t)
 	assert.NoError(t, exporter.ConsumeLogs(t.Context(), logs))
+}
+
+type mockLogOnlyExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
+}
+
+func (*mockLogOnlyExtension) MarshalLogs(_ plog.Logs) ([]byte, error) {
+	return []byte("log data"), nil
+}
+
+type testHostWithExtensions struct {
+	component.Host
+	extensions map[component.ID]component.Component
+}
+
+func (h *testHostWithExtensions) GetExtensions() map[component.ID]component.Component {
+	return h.extensions
+}
+
+func TestExporterStart_EncodingValidation(t *testing.T) {
+	extID := component.MustNewID("mock_log_encoding")
+	mockExt := &mockLogOnlyExtension{}
+	host := &testHostWithExtensions{
+		Host: componenttest.NewNopHost(),
+		extensions: map[component.ID]component.Component{
+			extID: mockExt,
+		},
+	}
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Encoding = &extID
+	cfg.S3Uploader.Region = "us-east-1"
+	cfg.S3Uploader.S3Bucket = "my-bucket"
+
+	// Logs exporter should succeed because mockLogOnlyExtension implements plog.Marshaler
+	logsExp := &s3Exporter{
+		config:     cfg,
+		signalType: "logs",
+		logger:     zap.NewNop(),
+	}
+	err := logsExp.start(t.Context(), host)
+	require.NoError(t, err)
+
+	// Metrics exporter should fail fast with descriptive error
+	metricsExp := &s3Exporter{
+		config:     cfg,
+		signalType: "metrics",
+		logger:     zap.NewNop(),
+	}
+	err = metricsExp.start(t.Context(), host)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `does not implement pmetric.Marshaler`)
+
+	// Traces exporter should fail fast with descriptive error
+	tracesExp := &s3Exporter{
+		config:     cfg,
+		signalType: "traces",
+		logger:     zap.NewNop(),
+	}
+	err = tracesExp.start(t.Context(), host)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `does not implement ptrace.Marshaler`)
 }
