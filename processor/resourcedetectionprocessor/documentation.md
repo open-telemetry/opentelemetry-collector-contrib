@@ -44,3 +44,13 @@ Number of resource detection results, by detector and outcome. On failure, error
 | detector | The resource detector that produced the result. | Str: ``akamai``, ``aks``, ``alibaba_ecs``, ``azure``, ``azureappservice``, ``azurecontainerapps``, ``azurefunctions``, ``consul``, ``digitalocean``, ``docker``, ``dynatrace``, ``ec2``, ``ecs``, ``eks``, ``elastic_beanstalk``, ``env``, ``gcp``, ``heroku``, ``hetzner``, ``ibmcloud_classic``, ``ibmcloud_vpc``, ``k8s_api``, ``k8snode``, ``kubeadm``, ``lambda``, ``nova``, ``openshift``, ``oraclecloud``, ``scaleway``, ``system``, ``tencent_cvm``, ``upcloud``, ``vultr`` | - |
 | outcome | Whether the detection operation succeeded or failed. | Str: ``success``, ``failure`` | - |
 | error.type | The type of error that caused detection to fail. Absent on success. | Any Str | - |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `processor.resource_detection.DetectHostIDByDefault` | alpha | When enabled and the processor is not configured, it detects `host.id`, `cloud.provider` and `cloud.platform` following the `host.id` semantic conventions priority order, without overriding existing attributes, instead of only running the `env` detector. | v0.166.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52344) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
