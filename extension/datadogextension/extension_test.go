@@ -55,7 +55,7 @@ func TestNewExtension(t *testing.T) {
 	set := extension.Settings{TelemetrySettings: componenttest.NewNopTelemetrySettings()}
 
 	t.Run("success", func(t *testing.T) {
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
 		require.NoError(t, err)
@@ -92,7 +92,7 @@ func TestNewExtension(t *testing.T) {
 func TestExtensionLifecycle(t *testing.T) {
 	t.Run("start/shutdown with serializer and http server", func(t *testing.T) {
 		set := extension.Settings{TelemetrySettings: componenttest.NewNopTelemetrySettings()}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
 		serverConfig.NetAddr = confignet.AddrConfig{
@@ -136,7 +136,7 @@ func TestExtensionLifecycle(t *testing.T) {
 
 	t.Run("start/shutdown without serializer", func(t *testing.T) {
 		set := extension.Settings{TelemetrySettings: componenttest.NewNopTelemetrySettings()}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		cfg := &Config{API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"}}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -151,7 +151,7 @@ func TestExtensionLifecycle(t *testing.T) {
 
 	t.Run("start without ModuleInfo host capability", func(t *testing.T) {
 		set := extension.Settings{TelemetrySettings: componenttest.NewNopTelemetrySettings()}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		cfg := &Config{API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"}}
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -170,7 +170,7 @@ func TestNotifyConfig(t *testing.T) {
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 		}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
 		serverConfig.NetAddr = confignet.AddrConfig{
@@ -223,7 +223,7 @@ func TestCollectorResourceAttributesArePopulated(t *testing.T) {
 		TelemetrySettings: tel,
 		BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 	}
-	hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+	hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}}
 	uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 	serverConfig := confighttp.NewDefaultServerConfig()
 	serverConfig.NetAddr = confignet.AddrConfig{
@@ -269,7 +269,7 @@ func TestCollectorResourceAttributesWithMultipleKeys(t *testing.T) {
 		TelemetrySettings: tel,
 		BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 	}
-	hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+	hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}}
 	uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 	serverConfig := confighttp.NewDefaultServerConfig()
 	serverConfig.NetAddr = confignet.AddrConfig{
@@ -327,7 +327,7 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 		}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
 		serverConfig.NetAddr = confignet.AddrConfig{
@@ -369,7 +369,7 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 		}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
 		serverConfig.NetAddr = confignet.AddrConfig{
@@ -409,7 +409,7 @@ func TestNotifyConfigErrorPaths(t *testing.T) {
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 		}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
 		serverConfig.NetAddr = confignet.AddrConfig{
@@ -495,7 +495,7 @@ func TestExtension_DeploymentTypeInPayload(t *testing.T) {
 				TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 				BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 			}
-			hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+			hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}}
 			uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 			serverConfig := confighttp.NewDefaultServerConfig()
 			serverConfig.NetAddr = confignet.AddrConfig{
@@ -547,7 +547,7 @@ func TestPeriodicPayloadSending(t *testing.T) {
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 		}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
 		serverConfig.NetAddr = confignet.AddrConfig{
@@ -605,7 +605,7 @@ func TestPeriodicPayloadSending(t *testing.T) {
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 		}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
 		serverConfig.NetAddr = confignet.AddrConfig{
@@ -665,7 +665,7 @@ func TestPeriodicPayloadSending(t *testing.T) {
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 		}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
 		serverConfig.NetAddr = confignet.AddrConfig{
@@ -732,7 +732,7 @@ func TestNotifyConfigConcurrentAccess(t *testing.T) {
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 			BuildInfo:         component.BuildInfo{Version: "1.2.3"},
 		}
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host", SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: "test-host"}}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 		serverConfig := confighttp.NewDefaultServerConfig()
 		serverConfig.NetAddr = confignet.AddrConfig{
@@ -1022,7 +1022,7 @@ func TestExtensionLivenessMetric(t *testing.T) {
 			},
 		}
 
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-hostname-configured", SourceIdentifier: source.SourceIdentifier{Primary: "test-hostname-configured"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: "test-hostname-configured"}}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -1099,7 +1099,7 @@ func TestExtensionLivenessMetric(t *testing.T) {
 			},
 		}
 
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "inferred-hostname", SourceIdentifier: source.SourceIdentifier{Primary: "inferred-hostname"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: "inferred-hostname"}}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
@@ -1169,7 +1169,7 @@ func TestExtensionLivenessMetric(t *testing.T) {
 			BuildInfo:         component.BuildInfo{Version: "test-version", Command: "test-collector"},
 		}
 
-		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-hostname", SourceIdentifier: source.SourceIdentifier{Primary: "test-hostname"}}} //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+		hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: "test-hostname"}}}
 		uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
 
 		ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)

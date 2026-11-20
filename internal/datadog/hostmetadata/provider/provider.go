@@ -141,7 +141,7 @@ func (p *configProvider) Source(context.Context) (source.Source, error) {
 	if p.hostname == "" {
 		return source.Source{}, errors.New("empty configuration hostname")
 	}
-	return source.Source{Kind: source.HostnameKind, Identifier: p.hostname, SourceIdentifier: source.SourceIdentifier{Primary: p.hostname}}, nil //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+	return source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: p.hostname}}, nil
 }
 
 // Config returns fixed hostname.

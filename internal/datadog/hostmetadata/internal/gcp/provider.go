@@ -138,7 +138,7 @@ func (p *Provider) Source(ctx context.Context) (source.Source, error) {
 	}
 
 	identifier := fmt.Sprintf("%s.%s", name, cloudAccount)
-	return source.Source{Kind: source.HostnameKind, Identifier: identifier, SourceIdentifier: source.SourceIdentifier{Primary: identifier}}, nil
+	return source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: identifier}}, nil
 }
 
 // ClusterName returns the GKE cluster name.

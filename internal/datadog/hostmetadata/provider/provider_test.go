@@ -19,7 +19,7 @@ var _ source.Provider = (*HostProvider)(nil)
 type HostProvider string
 
 func (p HostProvider) Source(context.Context) (source.Source, error) {
-	return source.Source{Kind: source.HostnameKind, Identifier: string(p), SourceIdentifier: source.SourceIdentifier{Primary: string(p)}}, nil //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
+	return source.Source{Kind: source.HostnameKind, SourceIdentifier: source.SourceIdentifier{Primary: string(p)}}, nil
 }
 
 var _ source.Provider = (*ErrorSourceProvider)(nil)

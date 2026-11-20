@@ -208,7 +208,6 @@ func TestExtensionWithProxyConfig(t *testing.T) {
 	hostProvider := &mockSourceProvider{
 		source: source.Source{
 			Kind:             source.HostnameKind,
-			Identifier:       "test-host", //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 			SourceIdentifier: source.SourceIdentifier{Primary: "test-host"},
 		},
 	}

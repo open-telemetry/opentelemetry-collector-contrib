@@ -137,7 +137,7 @@ func (exp *traceExporter) consumeTraces(
 		}
 		switch src.Kind {
 		case source.HostnameKind:
-			hosts[src.Identifier] = struct{}{} //nolint:staticcheck // SA1019: pkg/trace's OTLPReceiver fallback-hostname path (datadog-agent's api/otlp.go) does not yet populate SourceIdentifier; revisit once that's migrated
+			hosts[src.SourceIdentifier.Primary] = struct{}{}
 		case source.AWSECSFargateKind:
 			tags[src.Tag()] = struct{}{}
 		case source.InvalidKind:
