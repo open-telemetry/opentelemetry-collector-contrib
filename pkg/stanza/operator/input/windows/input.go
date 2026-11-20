@@ -128,7 +128,12 @@ func (i *Input) Start(persister operator.Persister) error {
 
 	if i.isRemote() {
 		if err := i.startRemoteSession(); err != nil {
-			return fmt.Errorf("failed to start remote session for server %s: %w", i.remote.Server, err)
+			errorString := fmt.Sprintf("failed to start remote session for server %s", i.remote.Server)
+			if !i.ignoreChannelErrors {
+				return fmt.Errorf("%s: %w", errorString, err)
+			}
+			i.Logger().Warn(errorString, zap.Error(err))
+			return nil
 		}
 	}
 
@@ -140,54 +145,51 @@ func (i *Input) Start(persister operator.Persister) error {
 
 	if offsetXML != "" {
 		if err := i.bookmark.Open(offsetXML); err != nil {
+			_ = i.stopRemoteSession()
 			return fmt.Errorf("failed to open bookmark: %w", err)
 		}
 	}
 
 	i.publisherCache = newPublisherCache()
 
-	subscriptionError := false
-	subscription := NewLocalSubscription(i.Logger())
 	if i.isRemote() {
-		subscription = NewRemoteSubscription(i.remote.Server, i.Logger())
-	}
-
-	if err := subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.path, i.bookmark); err != nil {
-		var errorString string
-		if isNonTransientError(err) {
-			if i.isRemote() {
-				errorString = fmt.Sprintf("failed to open subscription for remote server: %s", i.remote.Server)
-			} else {
-				errorString = "failed to open local subscription"
+		// Opening a remote subscription (EvtSubscribe) initiates a synchronous Win32 RPC
+		// network connection that can block for ~21s if the remote host is unreachable.
+		// Defer remote subscription.Open() to the background reader goroutine so Start()
+		// returns without blocking collector startup or reload.
+		i.subscription = NewRemoteSubscription(i.remote.Server, i.Logger())
+	} else {
+		subscription := NewLocalSubscription(i.Logger())
+		if err := subscription.Open(i.startAt, 0, i.channel, i.query, i.path, i.bookmark); err != nil {
+			if isNonTransientError(err) {
+				errorString := "failed to open local subscription"
+				if !i.ignoreChannelErrors {
+					_ = i.bookmark.Close()
+					return fmt.Errorf("%s, error: %w", errorString, err)
+				}
+				i.Logger().Warn(errorString, zap.Error(err))
+				_ = i.bookmark.Close()
+				return nil
 			}
-			if !i.ignoreChannelErrors {
-				return fmt.Errorf("%s, error: %w", errorString, err)
-			}
-			subscriptionError = true
-			i.Logger().Warn(errorString, zap.Error(err))
-		} else {
-			if i.isRemote() {
-				i.Logger().Warn("Transient error opening subscription for remote server, continuing", zap.String("server", i.remote.Server), zap.Error(err))
-			} else {
-				i.Logger().Warn("Transient error opening local subscription, continuing", zap.Error(err))
-			}
+			i.Logger().Warn("Transient error opening local subscription, continuing", zap.Error(err))
 		}
-	}
-
-	if !subscriptionError {
 		i.subscription = subscription
-		if i.eventDrivenScraping {
-			cancelEvent, err := windows.CreateEvent(nil, 1, 0, nil) // manual-reset, initially non-signaled
-			if err != nil {
-				return fmt.Errorf("failed to create cancel event: %w", err)
-			}
-			i.cancelEvent = cancelEvent
-			i.wg.Add(1)
-			go i.awaitAndReadEvents(ctx)
-		} else {
-			i.wg.Add(1)
-			go i.pollAndRead(ctx)
+	}
+
+	if i.eventDrivenScraping {
+		cancelEvent, err := windows.CreateEvent(nil, 1, 0, nil) // manual-reset, initially non-signaled
+		if err != nil {
+			_ = i.subscription.Close()
+			_ = i.bookmark.Close()
+			_ = i.stopRemoteSession()
+			return fmt.Errorf("failed to create cancel event: %w", err)
 		}
+		i.cancelEvent = cancelEvent
+		i.wg.Add(1)
+		go i.awaitAndReadEvents(ctx)
+	} else {
+		i.wg.Add(1)
+		go i.pollAndRead(ctx)
 	}
 
 	return nil
@@ -234,8 +236,36 @@ func (i *Input) Stop() error {
 	return multierr.Append(errs, i.stopRemoteSession())
 }
 
+// openRemoteSubscription opens the remote subscription on the background reader goroutine.
+// It returns false if a non-transient channel error occurred and the reader loop should exit.
+func (i *Input) openRemoteSubscription() bool {
+	err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.path, i.bookmark)
+	if err == nil {
+		return true
+	}
+
+	if isNonTransientError(err) {
+		errorString := fmt.Sprintf("failed to open subscription for remote server: %s", i.remote.Server)
+		if i.ignoreChannelErrors {
+			i.Logger().Warn(errorString, zap.Error(err))
+		} else {
+			i.Logger().Error(errorString, zap.Error(err))
+		}
+		return false
+	}
+
+	i.Logger().Warn("Transient error opening subscription for remote server, continuing", zap.String("server", i.remote.Server), zap.Error(err))
+	return true
+}
+
 func (i *Input) pollAndRead(ctx context.Context) {
 	defer i.wg.Done()
+
+	if i.isRemote() {
+		if !i.openRemoteSubscription() || ctx.Err() != nil {
+			return
+		}
+	}
 
 	for {
 		i.eventsReadInPollCycle = 0
@@ -338,16 +368,30 @@ func (i *Input) readBatch(ctx context.Context) bool {
 func (i *Input) awaitAndReadEvents(ctx context.Context) {
 	defer i.wg.Done()
 
-	timeoutMs := uint32(i.waitTimeout.Milliseconds())
-	for {
-		ready, err := i.subscription.Wait(i.cancelEvent, timeoutMs)
-		if err != nil {
-			i.Logger().Error("Failed to wait for subscription signal", zap.Error(err))
+	if i.isRemote() {
+		if !i.openRemoteSubscription() || ctx.Err() != nil {
 			return
 		}
-		if !ready {
-			// cancel event was signaled
-			return
+	}
+
+	timeoutMs := uint32(i.waitTimeout.Milliseconds())
+	for {
+		if i.subscription.signalEvent == 0 {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(i.waitTimeout):
+			}
+		} else {
+			ready, err := i.subscription.Wait(i.cancelEvent, timeoutMs)
+			if err != nil {
+				i.Logger().Error("Failed to wait for subscription signal", zap.Error(err))
+				return
+			}
+			if !ready {
+				// cancel event was signaled
+				return
+			}
 		}
 
 		i.eventsReadInPollCycle = 0
