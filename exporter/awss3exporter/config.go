@@ -5,6 +5,7 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
@@ -162,5 +163,14 @@ func (c *Config) Validate() error {
 	} else if c.S3Uploader.AccessKey != "" && c.S3Uploader.RoleArn != "" {
 		errs = multierr.Append(errs, errors.New("cannot use both static credentials (access_key/secret_key) and role_arn"))
 	}
+
+	if c.Encoding == nil {
+		switch c.MarshalerName {
+		case OtlpJSON, OtlpProtobuf, SumoIC, Body, "":
+		default:
+			errs = multierr.Append(errs, fmt.Errorf("unknown marshaler: %s", c.MarshalerName))
+		}
+	}
+
 	return errs
 }
