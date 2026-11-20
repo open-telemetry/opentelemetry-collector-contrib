@@ -48,6 +48,8 @@ $defs:
         x-customType: int64
       template_enabled:
         type: boolean
+      template_scope:
+        $ref: template_scope
       time_parser_enabled:
         type: boolean
       time_parser_ranges:
@@ -82,6 +84,9 @@ $defs:
         type: string
       traces:
         type: string
+  template_scope:
+    description: TemplateScope controls which telemetry a blob name template is evaluated against.
+    type: string
 description: Config contains the main configuration options for the azure storage blob exporter
 type: object
 properties:

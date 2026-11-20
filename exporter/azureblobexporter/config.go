@@ -37,10 +37,23 @@ type BlobNameFormat struct {
 	SerialNumBeforeExtension bool              `mapstructure:"serial_num_before_extension"`
 	Timezone                 string            `mapstructure:"timezone"`
 	TemplateEnabled          bool              `mapstructure:"template_enabled"`
+	TemplateScope            TemplateScope     `mapstructure:"template_scope"`
 	TimeParserEnabled        bool              `mapstructure:"time_parser_enabled"`
 	TimeParserRanges         []string          `mapstructure:"time_parser_ranges"`
 	Params                   map[string]string `mapstructure:"params"`
 }
+
+// TemplateScope controls which telemetry a blob name template is evaluated against.
+type TemplateScope string
+
+const (
+	// TemplateScopeRequest evaluates the template once against the whole export
+	// request and uploads the request to a single blob.
+	TemplateScopeRequest TemplateScope = "request"
+	// TemplateScopeResource evaluates the template once per resource entry and
+	// uploads resource entries that resolve to the same blob name together.
+	TemplateScopeResource TemplateScope = "resource"
+)
 
 type AppendBlob struct {
 	Enabled   bool   `mapstructure:"enabled"`
@@ -131,6 +144,13 @@ func (c *Config) Validate() error {
 		if c.Auth.TenantID == "" || c.Auth.ClientID == "" || c.Auth.FederatedTokenFile == "" {
 			return errors.New("tenant_id, client_id and federated_token_file cannot be empty when auth type is workload_identity")
 		}
+	}
+
+	switch c.BlobNameFormat.TemplateScope {
+	case TemplateScopeRequest, TemplateScopeResource:
+	default:
+		return fmt.Errorf("unknown template_scope %q, valid values are %q and %q",
+			c.BlobNameFormat.TemplateScope, TemplateScopeRequest, TemplateScopeResource)
 	}
 
 	if c.FormatType != formatTypeJSON && c.FormatType != formatTypeProto {
