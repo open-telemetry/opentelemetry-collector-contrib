@@ -716,6 +716,32 @@ var MapAttributeMysqlMyisamKeyCacheOperationType = map[string]AttributeMysqlMyis
 	"write": AttributeMysqlMyisamKeyCacheOperationTypeWrite,
 }
 
+// AttributeMysqlProcedureType specifies the value mysql.procedure.type attribute.
+type AttributeMysqlProcedureType int
+
+const (
+	_ AttributeMysqlProcedureType = iota
+	AttributeMysqlProcedureTypeProcedure
+	AttributeMysqlProcedureTypeFunction
+)
+
+// String returns the string representation of the AttributeMysqlProcedureType.
+func (av AttributeMysqlProcedureType) String() string {
+	switch av {
+	case AttributeMysqlProcedureTypeProcedure:
+		return "procedure"
+	case AttributeMysqlProcedureTypeFunction:
+		return "function"
+	}
+	return ""
+}
+
+// MapAttributeMysqlProcedureType is a helper map of string to AttributeMysqlProcedureType attribute value.
+var MapAttributeMysqlProcedureType = map[string]AttributeMysqlProcedureType{
+	"procedure": AttributeMysqlProcedureTypeProcedure,
+	"function":  AttributeMysqlProcedureTypeFunction,
+}
+
 // AttributeMysqlQueryPlanSource specifies the value mysql.query_plan.source attribute.
 type AttributeMysqlQueryPlanSource int
 

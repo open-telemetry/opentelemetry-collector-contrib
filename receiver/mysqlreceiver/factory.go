@@ -57,6 +57,12 @@ func createDefaultConfig() component.Config {
 		QuerySampleCollection: QuerySampleCollection{
 			MaxRowsPerQuery: 100,
 		},
+		TopProcedureCollection: TopProcedureCollection{
+			MaxProcedureSampleCount: 1000,
+			TopProcedureCount:       100,
+			CollectionInterval:      60 * time.Second,
+			DefinitionMaxLength:     1000,
+		},
 	}
 }
 
@@ -145,6 +151,29 @@ func createLogsReceiver(
 		}
 		s, err := scraper.NewLogs(
 			ns.scrapeQuerySampleFunc,
+			scraper.WithStart(ns.start),
+			scraper.WithShutdown(ns.shutdown),
+		)
+		if err != nil {
+			return nil, err
+		}
+		opt := scraperhelper.AddFactoryWithConfig(
+			scraper.NewFactory(metadata.Type, nil,
+				scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
+					return s, nil
+				}, component.StabilityLevelDevelopment)), nil,
+		)
+		opts = append(opts, opt)
+	}
+
+	if cfg.LogsBuilderConfig.Events.DbServerTopProcedure.Enabled {
+		// Nine delta counters are cached per routine (see scrapeTopProcedures); size for 2x headroom.
+		ns, err := newMySQLScraper(params, cfg, clientFactory, newCache[int64](int(cfg.TopProcedureCollection.MaxProcedureSampleCount*9*2)), nil)
+		if err != nil {
+			return nil, err
+		}
+		s, err := scraper.NewLogs(
+			ns.scrapeTopProcedureFunc,
 			scraper.WithStart(ns.start),
 			scraper.WithShutdown(ns.shutdown),
 		)

@@ -37,23 +37,29 @@ const (
 	ErrDBAuthRequiresTLS = "invalid config: 'db_auth' requires TLS; set 'tls.insecure' to false"
 	// db.server.query_plan reports the plans collected for the statements the other two events report,
 	// so on its own it reports nothing.
-	ErrQueryPlanWithoutSource = "invalid config: 'db.server.query_plan' requires 'db.server.top_query' or 'db.server.query_sample' to be enabled"
+	// db.server.procedure_definition describes the routines db.server.top_procedure reports, so on its own it
+	// reports nothing.
+	ErrProcedureDefinitionWithoutSource = "invalid config: 'db.server.procedure_definition' requires 'db.server.top_procedure' to be enabled"
+	// ErrProcedureStatementWithoutSource is the same constraint for db.server.procedure_statement.
+	ErrProcedureStatementWithoutSource = "invalid config: 'db.server.procedure_statement' requires 'db.server.top_procedure' to be enabled"
+	ErrQueryPlanWithoutSource          = "invalid config: 'db.server.query_plan' requires 'db.server.top_query' or 'db.server.query_sample' to be enabled"
 )
 
 type Config struct {
-	ControllerConfig      scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Username              string                         `mapstructure:"username,omitempty"`
-	Password              configopaque.String            `mapstructure:"password,omitempty"`
-	Database              string                         `mapstructure:"database,omitempty"`
-	AllowNativePasswords  bool                           `mapstructure:"allow_native_passwords,omitempty"`
-	AddrConfig            confignet.AddrConfig           `mapstructure:",squash"`
-	TLS                   configtls.ClientConfig         `mapstructure:"tls,omitempty"`
-	MetricsBuilderConfig  metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	LogsBuilderConfig     metadata.LogsBuilderConfig     `mapstructure:",squash"`
-	StatementEvents       StatementEventsConfig          `mapstructure:"statement_events"`
-	TopQueryCollection    TopQueryCollection             `mapstructure:"top_query_collection"`
-	QuerySampleCollection QuerySampleCollection          `mapstructure:"query_sample_collection"`
-	DBAuth                configdbauth.ID                `mapstructure:"db_auth,omitempty"`
+	ControllerConfig       scraperhelper.ControllerConfig `mapstructure:",squash"`
+	Username               string                         `mapstructure:"username,omitempty"`
+	Password               configopaque.String            `mapstructure:"password,omitempty"`
+	Database               string                         `mapstructure:"database,omitempty"`
+	AllowNativePasswords   bool                           `mapstructure:"allow_native_passwords,omitempty"`
+	AddrConfig             confignet.AddrConfig           `mapstructure:",squash"`
+	TLS                    configtls.ClientConfig         `mapstructure:"tls,omitempty"`
+	MetricsBuilderConfig   metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	LogsBuilderConfig      metadata.LogsBuilderConfig     `mapstructure:",squash"`
+	StatementEvents        StatementEventsConfig          `mapstructure:"statement_events"`
+	TopQueryCollection     TopQueryCollection             `mapstructure:"top_query_collection"`
+	QuerySampleCollection  QuerySampleCollection          `mapstructure:"query_sample_collection"`
+	TopProcedureCollection TopProcedureCollection         `mapstructure:"top_procedure_collection"`
+	DBAuth                 configdbauth.ID                `mapstructure:"db_auth,omitempty"`
 }
 
 type TopQueryCollection struct {
@@ -66,6 +72,22 @@ type TopQueryCollection struct {
 
 	_ struct{}
 }
+
+// TopProcedureCollection configures stored routine collection. Up to MaxProcedureSampleCount
+// routines are fetched, then the TopProcedureCount with the largest elapsed-time delta over the
+// interval are reported.
+type TopProcedureCollection struct {
+	MaxProcedureSampleCount uint64 `mapstructure:"max_procedure_sample_count"`
+	TopProcedureCount       uint64 `mapstructure:"top_procedure_count"`
+	// CollectionInterval throttles the query and sets the window the deltas cover.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	// DefinitionMaxLength caps the characters of the obfuscated body reported on
+	// db.server.procedure_definition.
+	DefinitionMaxLength uint64 `mapstructure:"definition_max_length"`
+
+	_ struct{}
+}
+
 type QuerySampleCollection struct {
 	MaxRowsPerQuery uint64 `mapstructure:"max_rows_per_query"`
 
@@ -120,6 +142,37 @@ func (cfg *Config) Validate() error {
 	events := cfg.LogsBuilderConfig.Events
 	if events.DbServerQueryPlan.Enabled && !events.DbServerTopQuery.Enabled && !events.DbServerQuerySample.Enabled {
 		err = multierr.Append(err, errors.New(ErrQueryPlanWithoutSource))
+	}
+
+	if cfg.TopProcedureCollection.MaxProcedureSampleCount > 10000 {
+		err = multierr.Append(err, errors.New("invalid config: 'top_procedure_collection.max_procedure_sample_count' must be between 1 and 10000"))
+	}
+	if cfg.TopProcedureCollection.TopProcedureCount > cfg.TopProcedureCollection.MaxProcedureSampleCount {
+		err = multierr.Append(err, errors.New("invalid config: 'top_procedure_collection.top_procedure_count' must be less than or equal to 'max_procedure_sample_count'"))
+	}
+	// Zero counts would leave the event silently reporting nothing, so they are only rejected
+	// when the event that reads them is enabled.
+	if events.DbServerTopProcedure.Enabled &&
+		(cfg.TopProcedureCollection.MaxProcedureSampleCount < 1 || cfg.TopProcedureCollection.TopProcedureCount < 1) {
+		err = multierr.Append(err, errors.New("invalid config: 'top_procedure_collection' counts must be greater than 0 when 'db.server.top_procedure' is enabled"))
+	}
+
+	if events.DbServerProcedureDefinition.Enabled {
+		if !events.DbServerTopProcedure.Enabled {
+			err = multierr.Append(err, errors.New(ErrProcedureDefinitionWithoutSource))
+		}
+		if cfg.TopProcedureCollection.DefinitionMaxLength < 1 {
+			err = multierr.Append(err, errors.New("invalid config: 'top_procedure_collection.definition_max_length' must be greater than 0 when 'db.server.procedure_definition' is enabled"))
+		}
+	}
+
+	if events.DbServerProcedureStatement.Enabled {
+		if !events.DbServerTopProcedure.Enabled {
+			err = multierr.Append(err, errors.New(ErrProcedureStatementWithoutSource))
+		}
+		if cfg.TopProcedureCollection.DefinitionMaxLength < 1 {
+			err = multierr.Append(err, errors.New("invalid config: 'top_procedure_collection.definition_max_length' must be greater than 0 when 'db.server.procedure_statement' is enabled"))
+		}
 	}
 
 	return err
