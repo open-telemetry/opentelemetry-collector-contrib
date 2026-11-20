@@ -5,6 +5,7 @@ package expo_test
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"testing"
@@ -251,6 +252,38 @@ func TestIdx(t *testing.T) {
 	for _, cs := range cases {
 		t.Run(fmt.Sprintf("%d/%g", cs.scale, cs.v), func(t *testing.T) {
 			assert.Equal(t, cs.want, cs.scale.Idx(cs.v))
+		})
+	}
+}
+
+func TestBounds(t *testing.T) {
+	cases := []struct {
+		scale        expo.Scale
+		index        int
+		lower, upper float64
+	}{
+		{scale: 0, index: -3, lower: 0.125, upper: 0.25},
+		{scale: 0, index: 3, lower: 8, upper: 16},
+		{scale: -1, index: 0, lower: 1, upper: 4},
+		{scale: -2, index: -1, lower: 0.0625, upper: 1},
+		{scale: 1, index: 1, lower: math.Sqrt2, upper: 2},
+		{scale: 1, index: 2, lower: 2, upper: 2 * math.Sqrt2},
+	}
+
+	for _, cs := range cases {
+		t.Run(fmt.Sprintf("%d/%d", cs.scale, cs.index), func(t *testing.T) {
+			// a boundary that is a power of two must be exact. others may be rounded
+			check := func(want, got float64) {
+				if frac, _ := math.Frexp(want); frac == 0.5 {
+					assert.Equal(t, want, got)
+					return
+				}
+				assert.InEpsilon(t, want, got, 1e-15)
+			}
+
+			lower, upper := cs.scale.Bounds(cs.index)
+			check(cs.lower, lower)
+			check(cs.upper, upper)
 		})
 	}
 }

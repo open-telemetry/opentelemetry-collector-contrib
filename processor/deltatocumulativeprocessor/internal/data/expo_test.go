@@ -26,10 +26,6 @@ func TestExpoAdd(t *testing.T) {
 	maxBuckets = 8
 	defer func() { maxBuckets = prevMaxBuckets }()
 
-	// upper boundary of (8,16] as computed by Bounds. it rounds to
-	// 15.999999999999998, which Idx places in the next bucket
-	_, upper3 := expo.Scale(0).Bounds(3)
-
 	cases := []struct {
 		name            string
 		dp, in          expdp
@@ -88,15 +84,15 @@ func TestExpoAdd(t *testing.T) {
 		in:   expdp{PosNeg: bins{ø, ø, ø, 1, 1, ø, ø, ø}.Into(), Zt: 1.5, Zc: 0},
 		want: expdp{PosNeg: bins{ø, ø, ø, ø, 2, ø, ø, ø}.Into(), Zt: 2.0, Zc: 2*1 + 2*1},
 	}, {
-		// zt=10 is within bucket 3. widening in to the rounded upper boundary
-		// of bucket 3 must not also move bucket 4 into zero
-		name: "zero/rounded-boundary", flip: true,
+		// zt=10 is within bucket 3, (8,16]. move bucket 3 into zero for both and
+		// set zt=16, which covers every value in it, such as 12 and 16. widening in
+		// to zt=16 must not also move bucket 4 into zero
+		name: "zero/upper-boundary", flip: true,
 		dp:   expdp{PosNeg: bins{ø, ø, ø, ø, ø, 1, 1, 1}.Into(), Zt: 0, Zc: 0},
 		in:   expdp{PosNeg: bins{ø, ø, ø, ø, ø, ø, 1, 1}.Into(), Zt: 10, Zc: 0},
-		want: expdp{PosNeg: bins{ø, ø, ø, ø, ø, ø, ø, 2}.Into(), Zt: upper3, Zc: 2*(1+1) + 2*1},
+		want: expdp{PosNeg: bins{ø, ø, ø, ø, ø, ø, ø, 2}.Into(), Zt: 16, Zc: 2*(1+1) + 2*1},
 	}, {
-		// zt=16 is the exact upper boundary of bucket 3. keep it, even though
-		// Bounds rounds that boundary down
+		// zt=16 is the upper boundary of bucket 3. keep it
 		name: "zero/power-of-two", flip: true,
 		dp:   expdp{PosNeg: bins{ø, ø, ø, ø, ø, ø, 1, 1}.Into(), Zt: 0, Zc: 0},
 		in:   expdp{PosNeg: bins{ø, ø, ø, ø, ø, ø, ø, 1}.Into(), Zt: 16, Zc: 2},

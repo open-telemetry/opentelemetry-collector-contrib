@@ -23,11 +23,14 @@ func WidenZero(dp DataPoint, width float64) {
 	scale := Scale(dp.Scale())
 	zero := scale.Idx(width) // the largest bucket index inside the zero width
 
-	// Idx and Bounds may disagree near a boundary due to floating point rounding.
-	// if width is an upper boundary as computed by Bounds (e.g. a threshold set
-	// by an earlier call), Idx may return the next bucket, which is not inside.
-	if lower, _ := scale.Bounds(zero); width <= lower {
+	// near a boundary, Idx may be one bucket off from Bounds due to floating
+	// point rounding. the new threshold is the upper boundary from Bounds, so
+	// use the bucket that Bounds places width in
+	switch lower, upper := scale.Bounds(zero); {
+	case width <= lower:
 		zero--
+	case width > upper:
+		zero++
 	}
 
 	widen := func(bs Buckets) {
@@ -44,9 +47,8 @@ func WidenZero(dp DataPoint, width float64) {
 	widen(dp.Positive())
 	widen(dp.Negative())
 
-	// Bounds may round the upper boundary below width, which must stay covered
 	_, maxVal := scale.Bounds(zero)
-	dp.SetZeroThreshold(max(width, maxVal))
+	dp.SetZeroThreshold(maxVal)
 }
 
 // Slice drops data outside the range from <= i < to from the bucket counts. It behaves the same as Go's [a:b]

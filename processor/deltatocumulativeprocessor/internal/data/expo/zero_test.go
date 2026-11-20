@@ -5,9 +5,11 @@ package expo_test
 
 import (
 	"fmt"
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo/expotest"
@@ -16,10 +18,6 @@ import (
 type hist = expotest.Histogram
 
 func TestWidenZero(t *testing.T) {
-	// upper boundary of (8,16] as computed by Bounds. it rounds to
-	// 15.999999999999998, which Idx places in the next bucket
-	_, upper3 := expo.Scale(0).Bounds(3)
-
 	cases := []struct {
 		name string
 		hist hist
@@ -47,13 +45,21 @@ func TestWidenZero(t *testing.T) {
 		hist: hist{PosNeg: bins{ø, ø, ø, ø, ø, ø, 1, 1}.Into(), Zt: 1.0, Zc: 2},
 		want: hist{PosNeg: bins{ø, ø, ø, ø, ø, ø, 1, 1}.Into(), Zt: 2.0, Zc: 2},
 	}, {
-		// zt=upper3 is upper boundary of bucket 3, but Idx says bucket 4. keep buckets [4:n]
-		hist: hist{PosNeg: bins{ø, ø, 1, 2, 3, 4, 5, 6}.Into(), Zt: 0, Zc: 2},
-		want: hist{PosNeg: bins{ø, ø, ø, ø, ø, ø, ø, 6}.Into(), Zt: upper3, Zc: 2 + 2*(1+2+3+4+5)},
-	}, {
-		// zt=16 is upper boundary of bucket 3. keep zt=16, although Bounds rounds it down
+		// zt=16 is upper boundary of bucket 3. keep buckets [4:n]
 		hist: hist{PosNeg: bins{ø, ø, 1, 2, 3, 4, 5, 6}.Into(), Zt: 0, Zc: 2},
 		want: hist{PosNeg: bins{ø, ø, ø, ø, ø, ø, ø, 6}.Into(), Zt: 16, Zc: 2 + 2*(1+2+3+4+5)},
+	}, {
+		// zt just below 16 is within bucket 3, but Idx may round it up to bucket 4.
+		// keep buckets [4:n] and set zt=16
+		hist: hist{PosNeg: bins{ø, ø, 1, 2, 3, 4, 5, 6}.Into(), Zt: 0, Zc: 2},
+		min:  math.Nextafter(16, 0),
+		want: hist{PosNeg: bins{ø, ø, ø, ø, ø, ø, ø, 6}.Into(), Zt: 16, Zc: 2 + 2*(1+2+3+4+5)},
+	}, {
+		// zt just above 0.125 is within bucket -3, (0.125,0.25]. keep buckets [-2:n]
+		// and set zt=0.25
+		hist: hist{PosNeg: bins{1, 2, 3, 4, 5, 6, 7, 8}.Into(), Zt: 0, Zc: 2},
+		min:  math.Nextafter(0.125, 1),
+		want: hist{PosNeg: bins{ø, 2, 3, 4, 5, 6, 7, 8}.Into(), Zt: 0.25, Zc: 2 + 2*1},
 	}}
 
 	for _, cs := range cases {
@@ -77,6 +83,40 @@ func TestWidenZero(t *testing.T) {
 			expo.WidenZero(hist, 0.5)
 		})
 	})
+}
+
+// Near a boundary, Idx can be one bucket off from Bounds due to floating point
+// rounding. WidenZero must use the bucket that Bounds places width in, as the
+// new threshold is the upper boundary of that bucket.
+func TestWidenZeroAtBoundaries(t *testing.T) {
+	for scale := expo.Scale(-2); scale <= 8; scale++ {
+		for i := -100; i <= 100; i++ {
+			_, upper := scale.Bounds(i)
+			cases := []struct {
+				width float64
+				zero  int // the largest bucket index inside the zero bucket
+			}{
+				{width: upper, zero: i},                                  // the upper boundary of bucket i
+				{width: math.Nextafter(upper, math.Inf(1)), zero: i + 1}, // just above it, in bucket i+1
+			}
+
+			for _, cs := range cases {
+				dp := pmetric.NewExponentialHistogramDataPoint()
+				dp.SetScale(int32(scale))
+				// one observation in each bucket from i-1 to i+2
+				dp.Positive().SetOffset(int32(i - 1))
+				dp.Positive().BucketCounts().FromRaw([]uint64{1, 1, 1, 1})
+
+				expo.WidenZero(dp, cs.width)
+
+				_, zt := scale.Bounds(cs.zero)
+				msg := fmt.Sprintf("scale=%d width=%v", scale, cs.width)
+				assert.Equal(t, zt, dp.ZeroThreshold(), msg)
+				assert.Equal(t, uint64(cs.zero-i+2), dp.ZeroCount(), msg)
+				assert.Equal(t, int32(cs.zero+1), dp.Positive().Offset(), msg)
+			}
+		}
+	}
 }
 
 func TestSlice(t *testing.T) {
