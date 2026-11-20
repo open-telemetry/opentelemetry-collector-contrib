@@ -50,7 +50,9 @@ func createMetricsExporter(
 ) (exporter.Metrics, error) {
 	pcfg := cfg.(*Config)
 
-	if pcfg.QueueBatchConfig.HasValue() {
+	if pcfg.sendingQueueEnabled {
+		set.Logger.Warn("sending_queue.enabled is not supported; the Prometheus exporter is pull-based and does not support queuing")
+	} else if pcfg.QueueBatchConfig.HasValue() {
 		set.Logger.Warn("sending_queue is deprecated and will be removed in a future release; the Prometheus exporter is pull-based and does not support queuing")
 	}
 

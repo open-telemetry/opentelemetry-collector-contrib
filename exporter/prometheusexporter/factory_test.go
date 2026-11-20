@@ -114,3 +114,20 @@ func TestCreateMetrics_DefaultSendingQueueNoWarning(t *testing.T) {
 	warnLogs := observedLogs.FilterMessageSnippet("sending_queue is deprecated and will be removed in a future release")
 	assert.Equal(t, 0, warnLogs.Len())
 }
+
+func TestCreateMetrics_SendingQueueEnabledWarning(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
+	cfg.sendingQueueEnabled = true
+
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	set := exportertest.NewNopSettings(metadata.Type)
+	set.Logger = zap.New(observedZapCore)
+
+	exp, err := createMetricsExporter(t.Context(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exp)
+
+	warnLogs := observedLogs.FilterMessageSnippet("sending_queue.enabled is not supported")
+	assert.Equal(t, 1, warnLogs.Len())
+}
