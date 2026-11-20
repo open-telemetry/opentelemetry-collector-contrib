@@ -23,6 +23,12 @@ tests:
         - "go.opencensus.io/stats/view.(*worker).start"
 
 feature_gates:
+  - id: receiver.prometheus.EnableOpenMetrics2
+    stage: alpha
+    description: >-
+      Enables OpenMetrics 2.0 scraping and parsing support in the Prometheus receiver.
+    from_version: v0.166.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/53286
   - id: receiver.prometheus.UseTargetUrlForServerAddress
     stage: alpha
     description: >-

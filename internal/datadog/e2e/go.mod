@@ -245,7 +245,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/go-zookeeper/zk v1.0.4 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/goccy/go-json v0.10.6 // indirect
+	github.com/goccy/go-json v0.12.0 // indirect
 	github.com/goccy/go-yaml v1.19.2 // indirect
 	github.com/gofrs/flock v0.13.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -484,7 +484,7 @@ require (
 	go.opentelemetry.io/contrib/detectors/gcp v1.47.0 // indirect
 	go.opentelemetry.io/contrib/detectors/hetzner v0.19.0 // indirect
 	go.opentelemetry.io/contrib/detectors/ibmcloud/classic v0.0.0-20261106092722-ca27f49bc143 // indirect
-	go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.19.0 // indirect
+	go.opentelemetry.io/contrib/detectors/ibmcloud/vpc v0.19.1-0.20261106092722-ca27f49bc143 // indirect
 	go.opentelemetry.io/contrib/detectors/kubeadm v0.19.0 // indirect
 	go.opentelemetry.io/contrib/detectors/openshift v0.19.0 // indirect
 	go.opentelemetry.io/contrib/detectors/openstack/nova v0.0.0-20261106092722-ca27f49bc143 // indirect

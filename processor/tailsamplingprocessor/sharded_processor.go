@@ -188,8 +188,8 @@ func (sp *shardedProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces)
 
 	shardBatches := make([][]traceBatch, sp.numShards)
 
-	// The split moves spans out of td, so returning an error after it would
-	// make a retry resend empty spans.
+	// The split consumes td (spans, resources and scopes), so returning an
+	// error after it would make a retry resend empty data.
 	for _, rss := range td.ResourceSpans().All() {
 		totalResourceSpans++
 		for _, batch := range splitResourceSpansByTrace(rss) {

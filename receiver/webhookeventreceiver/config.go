@@ -49,8 +49,10 @@ type Config struct {
 }
 
 type RequiredHeader struct {
-	Key   string `mapstructure:"key"`
-	Value string `mapstructure:"value"`
+	Key string `mapstructure:"key"`
+	// Value is the expected header value. It acts as a shared secret, so it is
+	// masked when the configuration is printed.
+	Value configopaque.String `mapstructure:"value"`
 }
 
 // HMACSignature defines configuration for HMAC hex digest signature verification.

@@ -9,6 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.165.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.71.1-0.20261112225459-4888f0b280f9
+	go.opentelemetry.io/collector/config/configopaque v1.71.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/confmap v1.71.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/consumer v1.71.1-0.20261112225459-4888f0b280f9
 	go.opentelemetry.io/collector/receiver v1.71.1-0.20261112225459-4888f0b280f9
@@ -40,7 +41,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/goccy/go-json v0.10.6 // indirect
+	github.com/goccy/go-json v0.12.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
