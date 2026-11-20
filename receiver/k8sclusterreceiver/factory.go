@@ -20,7 +20,7 @@ const (
 	distributionOpenShift  = "openshift"
 
 	// Default config values.
-	defaultCollectionInterval         = 10 * time.Second
+	defaultCollectionInterval         = 60 * time.Second
 	defaultDistribution               = distributionKubernetes
 	defaultMetadataCollectionInterval = 5 * time.Minute
 )
