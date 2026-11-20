@@ -704,9 +704,6 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 
 	for i := range ts.Histograms {
 		histogram := &ts.Histograms[i]
-		if histogram.ResetHint == writev2.Histogram_RESET_HINT_GAUGE {
-			continue
-		}
 
 		var histogramType string
 
@@ -730,15 +727,32 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			continue
 		}
 
-		// The compatibility specification requires native histograms of the float flavor to be
-		// dropped; the gauge flavor is already rejected above.
-		if isFloatFlavored(histogram) {
-			prw.settings.Logger.Debug(
-				"Dropping float flavored Native Histogram",
-				zapcore.Field{Key: "metric_name", Type: zapcore.StringType, String: metricName},
-				zapcore.Field{Key: "job", Type: zapcore.StringType, String: ls.Get("job")},
-				zapcore.Field{Key: "instance", Type: zapcore.StringType, String: ls.Get("instance")},
-			)
+		// The compatibility specification requires native histograms of the float or gauge flavors
+		// to be dropped. Validate non-stale inputs first so malformed payloads still fail with 400.
+		isGauge := histogram.ResetHint == writev2.Histogram_RESET_HINT_GAUGE
+		if isGauge || isFloatFlavored(histogram) {
+			if !value.IsStaleNaN(histogram.Sum) {
+				if err := validatePrometheusHistogram(histogram); err != nil {
+					prw.settings.Logger.Error(
+						"Dropping Native Histogram that cannot be converted",
+						zapcore.Field{Key: "metric_name", Type: zapcore.StringType, String: metricName},
+						zapcore.Field{Key: "job", Type: zapcore.StringType, String: ls.Get("job")},
+						zapcore.Field{Key: "instance", Type: zapcore.StringType, String: ls.Get("instance")},
+						zapcore.Field{Key: "timestamp", Type: zapcore.Int64Type, Integer: histogram.Timestamp},
+						zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err},
+					)
+					invalid = errors.Join(invalid, fmt.Errorf("invalid histogram for metric %q: %w", metricName, err))
+					continue
+				}
+			}
+			if !isGauge {
+				prw.settings.Logger.Debug(
+					"Dropping float flavored Native Histogram",
+					zapcore.Field{Key: "metric_name", Type: zapcore.StringType, String: metricName},
+					zapcore.Field{Key: "job", Type: zapcore.StringType, String: ls.Get("job")},
+					zapcore.Field{Key: "instance", Type: zapcore.StringType, String: ls.Get("instance")},
+				)
+			}
 			continue
 		}
 
@@ -1074,6 +1088,50 @@ func isFloatFlavored(histogram *writev2.Histogram) bool {
 	}
 	_, floatZero := histogram.GetZeroCount().(*writev2.Histogram_ZeroCountFloat)
 	return floatZero
+}
+
+// validatePrometheusHistogram runs Prometheus' own Histogram.Validate / FloatHistogram.Validate
+// against a wire histogram with a supported schema (-53 or -4..8).
+func validatePrometheusHistogram(h *writev2.Histogram) error {
+	if h.IsFloatHistogram() ||
+		(h.Count == nil && (len(h.PositiveCounts) > 0 || len(h.NegativeCounts) > 0) && len(h.PositiveDeltas) == 0 && len(h.NegativeDeltas) == 0) {
+		if len(h.PositiveDeltas) > 0 || len(h.NegativeDeltas) > 0 {
+			return errors.New("histogram mixes integer and float bucket counts")
+		}
+		if h.Schema == -53 && h.GetZeroCountInt() != 0 {
+			return errors.New("custom buckets: must have zero count of 0")
+		}
+		src := h
+		if !h.IsFloatHistogram() {
+			// Count oneof was left unset on the wire, but float bucket counts were provided.
+			// Copy with a zero CountFloat so ToFloatHistogram reads the float bucket slices and zero count.
+			fhCopy := *h
+			fhCopy.Count = &writev2.Histogram_CountFloat{}
+			src = &fhCopy
+		}
+		fh := src.ToFloatHistogram()
+		if len(fh.CustomValues) == 0 {
+			fh.CustomValues = nil
+		}
+		return fh.Validate()
+	}
+
+	if len(h.PositiveCounts) > 0 || len(h.NegativeCounts) > 0 {
+		return errors.New("histogram mixes integer and float bucket counts")
+	}
+	if z, ok := h.GetZeroCount().(*writev2.Histogram_ZeroCountFloat); ok {
+		if h.Schema == -53 && z.ZeroCountFloat != 0 {
+			return errors.New("custom buckets: must have zero count of 0")
+		}
+		if z.ZeroCountFloat < 0 {
+			return fmt.Errorf("zero bucket has observation count of %v: negative bucket count", z.ZeroCountFloat)
+		}
+	}
+	ih := h.ToIntHistogram()
+	if len(ih.CustomValues) == 0 {
+		ih.CustomValues = nil
+	}
+	return ih.Validate()
 }
 
 // validateCustomBounds checks the bounds a custom bucket histogram carries. They become OTLP

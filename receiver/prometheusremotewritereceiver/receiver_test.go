@@ -1963,7 +1963,7 @@ func TestTranslateV2(t *testing.T) {
 								PositiveSpans:  []writev2.BucketSpan{{Offset: 1, Length: 2}, {Offset: 3, Length: 1}, {Offset: 5, Length: 1}},
 								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}},
 								NegativeCounts: []float64{1},
-								// As we are passing negative counts, the translation should drop the sample.
+								// Negative bucket counts fail Prometheus validation, so the request is rejected.
 								PositiveCounts: []float64{-33, 30, 26, -100},
 							},
 						},
@@ -1971,6 +1971,7 @@ func TestTranslateV2(t *testing.T) {
 					},
 				},
 			},
+			expectError: "invalid histogram for metric",
 			expectedStats: remote.WriteResponseStats{
 				Confirmed:  true,
 				Samples:    0,
@@ -2009,7 +2010,7 @@ func TestTranslateV2(t *testing.T) {
 									ZeroCountFloat: 2,
 								},
 								Schema:         -4,
-								PositiveSpans:  []writev2.BucketSpan{{Offset: 1, Length: 2}},
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 1, Length: 1}},
 								NegativeSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}},
 								NegativeCounts: []float64{1},
 								PositiveCounts: []float64{33},
@@ -7260,4 +7261,224 @@ func TestDroppedSeriesAreLoggedAtDebug(t *testing.T) {
 	_, _, err = writeReceiver.translateV2(t.Context(), droppedSeriesRequest(true))
 	require.NoError(t, err)
 	assert.Empty(t, infoObs.All())
+}
+
+func TestFloatAndGaugeHistogramValidationRejectsMalformed(t *testing.T) {
+	symbols := []string{
+		"", "__name__", "test_gauge", "test_hist",
+		"job", "test_job", "instance", "test_instance",
+		"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736",
+	}
+	validGauge := writev2.TimeSeries{
+		Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+		LabelsRefs: []uint32{1, 2, 4, 5, 6, 7},
+		Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+	}
+	histLabels := []uint32{1, 3, 4, 5, 6, 7}
+	exemplar := []writev2.Exemplar{{LabelsRefs: []uint32{8, 9}, Value: 1, Timestamp: 1}}
+
+	cf := func(v float64) *writev2.Histogram_CountFloat { return &writev2.Histogram_CountFloat{CountFloat: v} }
+	ci := func(v uint64) *writev2.Histogram_CountInt { return &writev2.Histogram_CountInt{CountInt: v} }
+	zf := func(v float64) *writev2.Histogram_ZeroCountFloat {
+		return &writev2.Histogram_ZeroCountFloat{ZeroCountFloat: v}
+	}
+	zi := func(v uint64) *writev2.Histogram_ZeroCountInt {
+		return &writev2.Histogram_ZeroCountInt{ZeroCountInt: v}
+	}
+	span := func(l uint32) []writev2.BucketSpan { return []writev2.BucketSpan{{Offset: 0, Length: l}} }
+	stale := math.Float64frombits(value.StaleNaN)
+
+	for _, tc := range []struct {
+		name            string
+		hist            writev2.Histogram
+		wantStatus      int
+		wantErrContains string
+	}{
+		{
+			name:            "float negative CountFloat",
+			hist:            writev2.Histogram{Count: cf(-1), PositiveSpans: span(1), PositiveCounts: []float64{1}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "histogram's observation count is negative",
+		},
+		{
+			name:            "float negative bucket count",
+			hist:            writev2.Histogram{Count: cf(1), PositiveSpans: span(2), PositiveCounts: []float64{-1, 2}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "negative",
+		},
+		{
+			name:            "float negative zero count",
+			hist:            writev2.Histogram{Count: cf(1), ZeroCount: zf(-1), PositiveSpans: span(1), PositiveCounts: []float64{1}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "zero bucket has observation count of -1",
+		},
+		{
+			name:            "float span bucket length mismatch",
+			hist:            writev2.Histogram{Count: cf(1), PositiveSpans: span(2), PositiveCounts: []float64{1}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "spans need 2 buckets, have 1 buckets",
+		},
+		{
+			name:            "float NHCB unsorted custom bounds",
+			hist:            writev2.Histogram{Schema: -53, Count: cf(2), CustomValues: []float64{5, 1}, PositiveSpans: span(2), PositiveCounts: []float64{1, 1}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "custom buckets",
+		},
+		{
+			name:            "float NHCB non-zero ZeroCountFloat",
+			hist:            writev2.Histogram{Schema: -53, Count: cf(2), ZeroCount: zf(1), CustomValues: []float64{1}, PositiveSpans: span(1), PositiveCounts: []float64{1}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "zero count",
+		},
+		{
+			name:            "unset Count with negative float bucket",
+			hist:            writev2.Histogram{Schema: -53, CustomValues: []float64{1}, PositiveSpans: span(2), PositiveCounts: []float64{-1, 2}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "negative",
+		},
+		{
+			name:            "unset Count with float span mismatch",
+			hist:            writev2.Histogram{PositiveCounts: []float64{1, 2}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "spans need 0 buckets, have 2 buckets",
+		},
+		{
+			name:            "unset Count with non-zero ZeroCountInt on NHCB",
+			hist:            writev2.Histogram{Schema: -53, ZeroCount: zi(1), CustomValues: []float64{1}, PositiveSpans: span(2), PositiveCounts: []float64{1, 1}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "custom buckets: must have zero count of 0",
+		},
+		{
+			name:            "mixed CountInt with PositiveCounts",
+			hist:            writev2.Histogram{Count: ci(0), PositiveCounts: []float64{1}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "histogram mixes integer and float bucket counts",
+		},
+		{
+			name:            "mixed CountFloat with PositiveDeltas",
+			hist:            writev2.Histogram{Count: cf(1), PositiveSpans: span(1), PositiveCounts: []float64{1}, PositiveDeltas: []int64{1}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "histogram mixes integer and float bucket counts",
+		},
+		{
+			name:            "mixed CountInt with negative ZeroCountFloat",
+			hist:            writev2.Histogram{Count: ci(2), ZeroCount: zf(-1), PositiveSpans: span(2), PositiveDeltas: []int64{1, 0}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "zero bucket has observation count of -1: negative bucket count",
+		},
+		{
+			name:            "mixed CountInt with non-zero ZeroCountFloat on NHCB",
+			hist:            writev2.Histogram{Schema: -53, Count: ci(2), ZeroCount: zf(1), CustomValues: []float64{1}, PositiveSpans: span(2), PositiveDeltas: []int64{1, 0}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "custom buckets: must have zero count of 0",
+		},
+		{
+			name:            "mixed CountFloat with non-zero ZeroCountInt on NHCB",
+			hist:            writev2.Histogram{Schema: -53, Count: cf(2), ZeroCount: zi(1), CustomValues: []float64{1}, PositiveSpans: span(2), PositiveCounts: []float64{1, 1}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "custom buckets: must have zero count of 0",
+		},
+		{
+			name:            "integer gauge RESET_HINT_GAUGE with bad count",
+			hist:            writev2.Histogram{ResetHint: writev2.Histogram_RESET_HINT_GAUGE, Count: ci(99), PositiveSpans: span(2), PositiveDeltas: []int64{1, 0}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "observation count",
+		},
+		{
+			name:            "integer gauge RESET_HINT_GAUGE with negative bucket count",
+			hist:            writev2.Histogram{ResetHint: writev2.Histogram_RESET_HINT_GAUGE, Count: ci(1), PositiveSpans: span(2), PositiveDeltas: []int64{2, -5}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "negative",
+		},
+		{
+			name:            "integer NHCB gauge RESET_HINT_GAUGE with unsorted bounds",
+			hist:            writev2.Histogram{Schema: -53, ResetHint: writev2.Histogram_RESET_HINT_GAUGE, Count: ci(2), CustomValues: []float64{5, 1}, PositiveSpans: span(2), PositiveDeltas: []int64{1, 0}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "custom buckets",
+		},
+		{
+			name:            "float gauge RESET_HINT_GAUGE with negative CountFloat",
+			hist:            writev2.Histogram{ResetHint: writev2.Histogram_RESET_HINT_GAUGE, Count: cf(-1), PositiveSpans: span(1), PositiveCounts: []float64{1}},
+			wantStatus:      http.StatusBadRequest,
+			wantErrContains: "histogram's observation count is negative",
+		},
+		{
+			name:       "stale float marker passes without validation",
+			hist:       writev2.Histogram{Schema: -53, Count: cf(-1), Sum: stale, CustomValues: []float64{1}, PositiveCounts: []float64{1, 2}},
+			wantStatus: http.StatusNoContent,
+		},
+		{
+			name:       "stale gauge marker passes without validation",
+			hist:       writev2.Histogram{ResetHint: writev2.Histogram_RESET_HINT_GAUGE, Count: ci(0), Sum: stale, PositiveSpans: span(1), PositiveDeltas: []int64{1}},
+			wantStatus: http.StatusNoContent,
+		},
+		{
+			name:       "unknown schema drops before validation",
+			hist:       writev2.Histogram{Schema: -10, ResetHint: writev2.Histogram_RESET_HINT_GAUGE, Count: cf(-1), PositiveSpans: span(1), PositiveCounts: []float64{-5}},
+			wantStatus: http.StatusNoContent,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			hist := tc.hist
+			if hist.Sum == 0 {
+				hist.Sum = 1
+			}
+			hist.Timestamp = 1
+
+			core, obs := observer.New(zapcore.DebugLevel)
+			sink := &consumertest.MetricsSink{}
+			writeReceiver := setupMetricsReceiverWithConsumer(t, sink)
+			writeReceiver.settings.Logger = zap.New(core)
+
+			resp := sendPRW(t, writeReceiver, &writev2.Request{
+				Symbols: symbols,
+				Timeseries: []writev2.TimeSeries{
+					validGauge,
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: histLabels,
+						Histograms: []writev2.Histogram{hist},
+						Exemplars:  exemplar,
+					},
+				},
+			})
+			defer resp.Body.Close()
+
+			body, readErr := io.ReadAll(resp.Body)
+			require.NoError(t, readErr)
+			assert.Equal(t, tc.wantStatus, resp.StatusCode)
+			if tc.wantErrContains != "" {
+				assert.Contains(t, string(body), tc.wantErrContains)
+				errLogs := obs.FilterLevelExact(zapcore.ErrorLevel).All()
+				require.Len(t, errLogs, 1)
+				assert.Equal(t, "Dropping Native Histogram that cannot be converted", errLogs[0].Message)
+				assert.Equal(t, "test_hist", errLogs[0].ContextMap()["metric_name"])
+			} else {
+				assert.Empty(t, obs.FilterLevelExact(zapcore.ErrorLevel).All())
+			}
+
+			written, err := remote.ParseWriteResponseStats(resp)
+			require.NoError(t, err)
+			assert.Equal(t, remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    1,
+				Histograms: 0,
+				Exemplars:  0,
+			}, written)
+			require.Len(t, sink.AllMetrics(), 1)
+			assert.Equal(t, 1, sink.AllMetrics()[0].DataPointCount())
+		})
+	}
+
+	// Protobuf round-tripping turns empty non-nil slices into nil; verify direct normalization too.
+	t.Run("empty non-nil CustomValues normalized to nil", func(t *testing.T) {
+		require.NoError(t, validatePrometheusHistogram(&writev2.Histogram{
+			Schema: 0, Count: cf(1), Sum: 1, CustomValues: []float64{},
+			PositiveSpans: span(1), PositiveCounts: []float64{1},
+		}))
+		require.NoError(t, validatePrometheusHistogram(&writev2.Histogram{
+			Schema: 0, Count: ci(1), Sum: 1, CustomValues: []float64{},
+			PositiveSpans: span(1), PositiveDeltas: []int64{1},
+		}))
+	})
 }
