@@ -116,6 +116,9 @@ func (t *fileTracker) AddUnmatched(file *os.File, fp *fingerprint.Fingerprint) {
 	// exclude duplicate fingerprints
 	if slices.ContainsFunc(t.unmatchedFps, fp.Equal) {
 		t.set.Logger.Debug("Skipping duplicate file", zap.String("path", file.Name()))
+		if err := file.Close(); err != nil {
+			t.set.Logger.Debug("problem closing file", zap.Error(err))
+		}
 		return
 	}
 	t.unmatchedFps = append(t.unmatchedFps, fp)
