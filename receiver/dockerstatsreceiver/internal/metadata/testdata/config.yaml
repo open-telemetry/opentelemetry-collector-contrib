@@ -83,7 +83,7 @@ all_set:
       enabled: true
     container.memory.mapped_file:
       enabled: true
-    container.memory.paging.faults:
+    container.memory.paging.faults@v1:
       enabled: true
     container.memory.percent:
       enabled: true
@@ -283,7 +283,7 @@ reaggregate_set:
       enabled: true
     container.memory.mapped_file:
       enabled: true
-    container.memory.paging.faults:
+    container.memory.paging.faults@v1:
       enabled: true
     container.memory.percent:
       enabled: true
@@ -483,7 +483,7 @@ none_set:
       enabled: false
     container.memory.mapped_file:
       enabled: false
-    container.memory.paging.faults:
+    container.memory.paging.faults@v1:
       enabled: false
     container.memory.percent:
       enabled: false

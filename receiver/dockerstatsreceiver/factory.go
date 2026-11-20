@@ -5,6 +5,7 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -12,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
@@ -47,74 +49,8 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	dockerConfig := config.(*Config)
 
-	if metadata.ReceiverDockerstatsreceiverEnableSemConvMetricsFeatureGate.IsEnabled() {
-		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageTotal.Enabled {
-			dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageTotal.Enabled = false
-			dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUTime.Enabled = true
-		}
-		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageSystem.Enabled {
-			dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageSystem.Enabled = false
-			dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUTime.Enabled = true
-		}
-		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageUsermode.Enabled {
-			dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageUsermode.Enabled = false
-			dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUTime.Enabled = true
-		}
-		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageKernelmode.Enabled {
-			dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageKernelmode.Enabled = false
-			dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUTime.Enabled = true
-		}
-		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUtilization.Enabled {
-			dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUtilization.Enabled = false
-			dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsage.Enabled = true
-		}
-		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerMemoryUsageTotal.Enabled {
-			dockerConfig.MetricsBuilderConfig.Metrics.ContainerMemoryUsageTotal.Enabled = false
-			dockerConfig.MetricsBuilderConfig.Metrics.ContainerMemoryUsage.Enabled = true
-		}
-		dockerConfig.MetricsBuilderConfig.Metrics.ContainerMemoryAvailable.Enabled = true
-		dockerConfig.MetricsBuilderConfig.Metrics.ContainerMemoryWorkingSet.Enabled = true
-		dockerConfig.MetricsBuilderConfig.Metrics.ContainerDiskIo.Enabled = true
-		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerMemoryTotalPgfault.Enabled {
-			dockerConfig.MetricsBuilderConfig.Metrics.ContainerMemoryTotalPgfault.Enabled = false
-			dockerConfig.MetricsBuilderConfig.Metrics.ContainerMemoryPagingFaults.Enabled = true
-		}
-		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerNetworkIoUsageRxBytes.Enabled {
-			dockerConfig.MetricsBuilderConfig.Metrics.ContainerNetworkIoUsageRxBytes.Enabled = false
-			dockerConfig.MetricsBuilderConfig.Metrics.ContainerNetworkIo.Enabled = true
-		}
-		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerNetworkIoUsageTxBytes.Enabled {
-			dockerConfig.MetricsBuilderConfig.Metrics.ContainerNetworkIoUsageTxBytes.Enabled = false
-			dockerConfig.MetricsBuilderConfig.Metrics.ContainerNetworkIo.Enabled = true
-		}
-	} else {
-		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageTotal.Enabled {
-			params.Logger.Warn("The default container.cpu.usage.total metric is being replaced by the container.cpu.time metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
-		}
-		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageSystem.Enabled {
-			params.Logger.Warn("The default container.cpu.usage.system metric is being replaced by the container.cpu.time{cpu.mode=system} metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
-		}
-		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageUsermode.Enabled {
-			params.Logger.Warn("The default container.cpu.usage.usermode metric is being replaced by the container.cpu.time{cpu.mode=user} metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
-		}
-		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUsageKernelmode.Enabled {
-			params.Logger.Warn("The default container.cpu.usage.kernelmode metric is being replaced by the container.cpu.time{cpu.mode=kernel} metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
-		}
-		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerCPUUtilization.Enabled {
-			params.Logger.Warn("The default container.cpu.utilization metric is being replaced by the container.cpu.usage metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
-		}
-		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerMemoryUsageTotal.Enabled {
-			params.Logger.Warn("The default container.memory.usage.total metric is being replaced by the container.memory.usage metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
-		}
-		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerMemoryTotalPgfault.Enabled {
-			params.Logger.Warn("The default container.memory.total_pgfault metric is being replaced by the container.memory.paging.faults metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
-		}
-		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerNetworkIoUsageRxBytes.Enabled {
-			params.Logger.Warn("The default container.network.io.usage.rx_bytes metric is being replaced by the container.network.io{network.io.direction=receive} metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
-		}
-		if dockerConfig.MetricsBuilderConfig.Metrics.ContainerNetworkIoUsageTxBytes.Enabled {
-			params.Logger.Warn("The default container.network.io.usage.tx_bytes metric is being replaced by the container.network.io{network.io.direction=transmit} metric. Switch now by enabling the receiver.dockerstatsreceiver.enableSemConvMetrics feature gate.")
-		}
+	if err := applyContainerConventionsGates(params.Logger, &dockerConfig.MetricsBuilderConfig.Metrics); err != nil {
+		return nil, err
 	}
 
 	dsr := newMetricsReceiver(params, dockerConfig)
@@ -125,4 +61,68 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewMetricsController(&dsr.config.ControllerConfig, params, consumer, scraperhelper.AddMetricsScraper(metadata.Type, scrp))
+}
+
+// metricReplacement pairs a legacy metric with the semantic convention metric
+// that replaces it. Several legacy metrics can share one replacement.
+type metricReplacement struct {
+	legacy      *bool
+	replacement *bool
+}
+
+// applyContainerConventionsGates enables and disables metrics according to the
+// EmitV1ContainerConventions and DontEmitV0ContainerConventions feature gates.
+// container.memory.total_pgfault is migrated by the generated metrics builder
+// and is not handled here.
+func applyContainerConventionsGates(logger *zap.Logger, metrics *metadata.MetricsConfig) error {
+	emitV1 := metadata.ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate.IsEnabled()
+	dontEmitV0 := metadata.ReceiverDockerStatsDontEmitV0ContainerConventionsFeatureGate.IsEnabled()
+	if dontEmitV0 && !emitV1 {
+		return errors.New("feature gate " + metadata.ReceiverDockerStatsDontEmitV0ContainerConventionsFeatureGate.ID() +
+			" requires " + metadata.ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate.ID() + " to be enabled")
+	}
+
+	replacements := []metricReplacement{
+		{&metrics.ContainerCPUUsageTotal.Enabled, &metrics.ContainerCPUTime.Enabled},
+		{&metrics.ContainerCPUUsageSystem.Enabled, &metrics.ContainerCPUTime.Enabled},
+		{&metrics.ContainerCPUUsageKernelmode.Enabled, &metrics.ContainerCPUTime.Enabled},
+		{&metrics.ContainerCPUUsageUsermode.Enabled, &metrics.ContainerCPUTime.Enabled},
+		{&metrics.ContainerCPUUtilization.Enabled, &metrics.ContainerCPUUsage.Enabled},
+		{&metrics.ContainerMemoryUsageTotal.Enabled, &metrics.ContainerMemoryUsage.Enabled},
+		{&metrics.ContainerNetworkIoUsageRxBytes.Enabled, &metrics.ContainerNetworkIo.Enabled},
+		{&metrics.ContainerNetworkIoUsageTxBytes.Enabled, &metrics.ContainerNetworkIo.Enabled},
+	}
+	additions := []*bool{
+		&metrics.ContainerMemoryAvailable.Enabled,
+		&metrics.ContainerMemoryWorkingSet.Enabled,
+		&metrics.ContainerDiskIo.Enabled,
+	}
+
+	if !emitV1 {
+		logger.Warn("Container metrics will change to follow the semantic conventions. Enable the " +
+			metadata.ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate.ID() + " and " +
+			metadata.ReceiverDockerStatsDontEmitV0ContainerConventionsFeatureGate.ID() + " feature gates to switch now.")
+		for _, r := range replacements {
+			*r.replacement = false
+		}
+		for _, enabled := range additions {
+			*enabled = false
+		}
+		return nil
+	}
+
+	for _, r := range replacements {
+		if *r.legacy {
+			*r.replacement = true
+		}
+	}
+	for _, enabled := range additions {
+		*enabled = true
+	}
+	if dontEmitV0 {
+		for _, r := range replacements {
+			*r.legacy = false
+		}
+	}
+	return nil
 }

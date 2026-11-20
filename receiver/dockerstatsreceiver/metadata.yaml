@@ -495,7 +495,7 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
-  container.memory.paging.faults:
+  container.memory.paging.faults@v1:
     enabled: false
     stability: development
     description: "Container memory paging faults. (Only available with cgroups v1)."
@@ -641,6 +641,11 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: true
+    migration:
+      to: container.memory.paging.faults@v1
+      through_gates:
+        disable_old: receiver.docker_stats.DontEmitV0ContainerConventions
+        enable_new: receiver.docker_stats.EmitV1ContainerConventions
   container.memory.total_pgmajfault:
     enabled: false
     stability: development
@@ -937,8 +942,13 @@ metrics:
       value_type: double
 
 feature_gates:
-  - id: receiver.dockerstatsreceiver.enableSemConvMetrics
-    description: 'Enable new container metrics that align with new container semantic convention'
+  - id: receiver.docker_stats.DontEmitV0ContainerConventions
+    description: When enabled, the legacy container metrics replaced by semantic convention metrics are no longer emitted.
     stage: alpha
-    from_version: 'v0.161.0'
-    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649'
+    from_version: v0.166.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649
+  - id: receiver.docker_stats.EmitV1ContainerConventions
+    description: When enabled, container metrics that follow the semantic conventions are emitted.
+    stage: alpha
+    from_version: v0.166.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649

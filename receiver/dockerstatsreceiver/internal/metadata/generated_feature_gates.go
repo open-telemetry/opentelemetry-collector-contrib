@@ -6,10 +6,18 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var ReceiverDockerstatsreceiverEnableSemConvMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.dockerstatsreceiver.enableSemConvMetrics",
+var ReceiverDockerStatsDontEmitV0ContainerConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.docker_stats.DontEmitV0ContainerConventions",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Enable new container metrics that align with new container semantic convention"),
+	featuregate.WithRegisterDescription("When enabled, the legacy container metrics replaced by semantic convention metrics are no longer emitted."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649"),
-	featuregate.WithRegisterFromVersion("v0.161.0"),
+	featuregate.WithRegisterFromVersion("v0.166.0"),
+)
+
+var ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.docker_stats.EmitV1ContainerConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, container metrics that follow the semantic conventions are emitted."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649"),
+	featuregate.WithRegisterFromVersion("v0.166.0"),
 )

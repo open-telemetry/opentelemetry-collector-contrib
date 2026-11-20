@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -39,62 +39,85 @@ func TestCreateReceiver(t *testing.T) {
 	assert.NotNil(t, metricReceiver, "receiver creation failed")
 }
 
-func TestEnableSemConvMetricsFeatureGate(t *testing.T) {
-	factory := NewFactory()
-	config := factory.CreateDefaultConfig().(*Config)
-	// Enable container.cpu.usage.system as disabled by default
-	config.MetricsBuilderConfig.Metrics.ContainerCPUUsageSystem.Enabled = true
-	params := receivertest.NewNopSettings(metadata.Type)
+func TestCreateReceiverContainerConventionsGates(t *testing.T) {
+	// The same user config is used for every case: container.cpu.usage.system is
+	// opted into, container.cpu.utilization is opted out of, and the new
+	// container.memory.available metric is enabled directly.
+	newConfig := func() *Config {
+		cfg := NewFactory().CreateDefaultConfig().(*Config)
+		cfg.MetricsBuilderConfig.Metrics.ContainerCPUUsageSystem.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.ContainerCPUUtilization.Enabled = false
+		cfg.MetricsBuilderConfig.Metrics.ContainerMemoryAvailable.Enabled = true
+		return cfg
+	}
+	emitBoth := func() metadata.MetricsConfig {
+		metrics := newConfig().MetricsBuilderConfig.Metrics
+		metrics.ContainerCPUTime.Enabled = true
+		metrics.ContainerMemoryUsage.Enabled = true
+		metrics.ContainerNetworkIo.Enabled = true
+		metrics.ContainerMemoryAvailable.Enabled = true
+		metrics.ContainerMemoryWorkingSet.Enabled = true
+		metrics.ContainerDiskIo.Enabled = true
+		return metrics
+	}
 
-	err := featuregate.GlobalRegistry().Set("receiver.dockerstatsreceiver.enableSemConvMetrics", true)
-	assert.NoError(t, err)
-	receiver, err := createMetricsReceiver(t.Context(), params, config, consumertest.NewNop())
-	assert.NoError(t, err, "Metric receiver creation failed")
-	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUsageTotal.Enabled)
-	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUsageUsermode.Enabled)
-	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUsageSystem.Enabled)
-	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUsageKernelmode.Enabled)
-	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerCPUTime.Enabled)
-	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUtilization.Enabled)
-	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUsage.Enabled)
-	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerMemoryUsageTotal.Enabled)
-	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerMemoryUsage.Enabled)
-	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerMemoryWorkingSet.Enabled)
-	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerDiskIo.Enabled)
+	tests := []struct {
+		name            string
+		emitV1          bool
+		dontEmitV0      bool
+		expectedMetrics func() metadata.MetricsConfig
+		expectedErr     string
+	}{
+		{
+			name: "legacy only",
+			expectedMetrics: func() metadata.MetricsConfig {
+				metrics := newConfig().MetricsBuilderConfig.Metrics
+				metrics.ContainerMemoryAvailable.Enabled = false
+				return metrics
+			},
+		},
+		{
+			name:            "legacy and semantic conventions",
+			emitV1:          true,
+			expectedMetrics: emitBoth,
+		},
+		{
+			name:       "semantic conventions only",
+			emitV1:     true,
+			dontEmitV0: true,
+			expectedMetrics: func() metadata.MetricsConfig {
+				metrics := emitBoth()
+				metrics.ContainerCPUUsageTotal.Enabled = false
+				metrics.ContainerCPUUsageSystem.Enabled = false
+				metrics.ContainerCPUUsageKernelmode.Enabled = false
+				metrics.ContainerCPUUsageUsermode.Enabled = false
+				metrics.ContainerMemoryUsageTotal.Enabled = false
+				metrics.ContainerNetworkIoUsageRxBytes.Enabled = false
+				metrics.ContainerNetworkIoUsageTxBytes.Enabled = false
+				return metrics
+			},
+		},
+		{
+			name:        "no metrics",
+			dontEmitV0:  true,
+			expectedErr: "feature gate receiver.docker_stats.DontEmitV0ContainerConventions requires receiver.docker_stats.EmitV1ContainerConventions to be enabled",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setGateForTest(t, metadata.ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate, tt.emitV1)
+			setGateForTest(t, metadata.ReceiverDockerStatsDontEmitV0ContainerConventionsFeatureGate, tt.dontEmitV0)
+			cfg := newConfig()
 
-	t.Cleanup(func() {
-		err := featuregate.GlobalRegistry().Set("receiver.dockerstatsreceiver.enableSemConvMetrics", false)
-		assert.NoError(t, err, "Failed to reset feature gate to default state")
-		assert.NoError(t, receiver.Shutdown(t.Context()), "Failed to shutdown receiver")
-	})
-}
+			metricReceiver, err := NewFactory().CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 
-func TestDisableSemConvMetricsFeatureGate(t *testing.T) {
-	factory := NewFactory()
-	config := factory.CreateDefaultConfig().(*Config)
-	// Enable container.cpu.usage.system as disabled by default
-	config.MetricsBuilderConfig.Metrics.ContainerCPUUsageSystem.Enabled = true
-	params := receivertest.NewNopSettings(metadata.Type)
-
-	err := featuregate.GlobalRegistry().Set("receiver.dockerstatsreceiver.enableSemConvMetrics", false)
-	assert.NoError(t, err)
-	receiver, err := createMetricsReceiver(t.Context(), params, config, consumertest.NewNop())
-	assert.NoError(t, err, "Metric receiver creation failed")
-	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUsageTotal.Enabled)
-	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUsageUsermode.Enabled)
-	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUsageSystem.Enabled)
-	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUsageKernelmode.Enabled)
-	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerCPUTime.Enabled)
-	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUtilization.Enabled)
-	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerCPUUsage.Enabled)
-	assert.True(t, config.MetricsBuilderConfig.Metrics.ContainerMemoryUsageTotal.Enabled)
-	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerMemoryUsage.Enabled)
-	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerMemoryWorkingSet.Enabled)
-	assert.False(t, config.MetricsBuilderConfig.Metrics.ContainerDiskIo.Enabled)
-
-	t.Cleanup(func() {
-		err := featuregate.GlobalRegistry().Set("receiver.dockerstatsreceiver.enableSemConvMetrics", false)
-		assert.NoError(t, err, "Failed to reset feature gate to default state")
-		assert.NoError(t, receiver.Shutdown(t.Context()), "Failed to shutdown receiver")
-	})
+			if tt.expectedErr != "" {
+				require.EqualError(t, err, tt.expectedErr)
+				assert.Nil(t, metricReceiver)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedMetrics(), cfg.MetricsBuilderConfig.Metrics)
+		})
+	}
 }

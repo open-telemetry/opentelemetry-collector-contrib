@@ -447,16 +447,6 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
-          - description: Container memory paging faults. (Only available with cgroups v1).
-            name: container.memory.paging.faults
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: '{faults}'
           - description: Percentage of memory used. Not supported on Windows.
             gauge:
               dataPoints:

@@ -1026,13 +1026,13 @@ func (ms *ContainerMemoryMappedFileMetricConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-// ContainerMemoryPagingFaultsMetricConfig provides config for the container.memory.paging.faults metric.
-type ContainerMemoryPagingFaultsMetricConfig struct {
+// ContainerMemoryPagingFaultsV1MetricConfig provides config for the container.memory.paging.faults@v1 metric.
+type ContainerMemoryPagingFaultsV1MetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ContainerMemoryPagingFaultsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ContainerMemoryPagingFaultsV1MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2273,7 +2273,7 @@ type MetricsConfig struct {
 	ContainerMemoryInactiveAnon                ContainerMemoryInactiveAnonMetricConfig                `mapstructure:"container.memory.inactive_anon"`
 	ContainerMemoryInactiveFile                ContainerMemoryInactiveFileMetricConfig                `mapstructure:"container.memory.inactive_file"`
 	ContainerMemoryMappedFile                  ContainerMemoryMappedFileMetricConfig                  `mapstructure:"container.memory.mapped_file"`
-	ContainerMemoryPagingFaults                ContainerMemoryPagingFaultsMetricConfig                `mapstructure:"container.memory.paging.faults"`
+	ContainerMemoryPagingFaultsV1              ContainerMemoryPagingFaultsV1MetricConfig              `mapstructure:"container.memory.paging.faults@v1"`
 	ContainerMemoryPercent                     ContainerMemoryPercentMetricConfig                     `mapstructure:"container.memory.percent"`
 	ContainerMemoryPgfault                     ContainerMemoryPgfaultMetricConfig                     `mapstructure:"container.memory.pgfault"`
 	ContainerMemoryPgmajfault                  ContainerMemoryPgmajfaultMetricConfig                  `mapstructure:"container.memory.pgmajfault"`
@@ -2450,7 +2450,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerMemoryMappedFile: ContainerMemoryMappedFileMetricConfig{
 			Enabled: false,
 		},
-		ContainerMemoryPagingFaults: ContainerMemoryPagingFaultsMetricConfig{
+		ContainerMemoryPagingFaultsV1: ContainerMemoryPagingFaultsV1MetricConfig{
 			Enabled: false,
 		},
 		ContainerMemoryPercent: ContainerMemoryPercentMetricConfig{

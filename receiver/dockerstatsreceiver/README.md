@@ -143,18 +143,31 @@ For enhanced security, consider:
 
 For more information, see [issue #11791](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11791).
 
-## `receiver.dockerstatsreceiver.enableSemConvMetrics` feature gate
+## Semantic convention feature gates
 
-This alpha feature gate switches the receiver over to metrics that follow the
-[container semantic conventions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/container.md).
+Two alpha feature gates move the receiver over to metrics that follow the
+[container semantic conventions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/container.md):
+
+| `receiver.docker_stats.EmitV1ContainerConventions` | `receiver.docker_stats.DontEmitV0ContainerConventions` | Result |
+| --- | --- | --- |
+| Disabled | Disabled | Only the legacy metrics are emitted (default) |
+| Enabled | Disabled | Both the legacy and the semantic convention metrics are emitted |
+| Enabled | Enabled | Only the semantic convention metrics are emitted |
+| Disabled | Enabled | The receiver fails to start |
+
+For example, to emit only the semantic convention metrics:
+
+```shell
+otelcol-contrib --feature-gates=+receiver.docker_stats.EmitV1ContainerConventions,+receiver.docker_stats.DontEmitV0ContainerConventions
+```
 
 ### Metrics that are replaced
 
-Each metric below is swapped only if it was enabled. If you have already disabled a metric in the
-left column, its replacement is **not** turned on. Several old metrics collapse into a single new
+A replacement is turned on only if the legacy metric it replaces is enabled. If you have already
+disabled a metric in the left column, its replacement is **not** turned on. Several old metrics collapse into a single new
 metric that distinguishes the data points with attributes.
 
-| Disabled when the gate is enabled | Replaced by |
+| Legacy metric (disabled by `DontEmitV0ContainerConventions`) | Replaced by (enabled by `EmitV1ContainerConventions`) |
 | --- | --- |
 | `container.cpu.usage.total` | `container.cpu.time` (no `cpu.mode` attribute) |
 | `container.cpu.usage.system` | `container.cpu.time` with `cpu.mode=system` |
@@ -162,19 +175,24 @@ metric that distinguishes the data points with attributes.
 | `container.cpu.usage.usermode` | `container.cpu.time` with `cpu.mode=user` |
 | `container.cpu.utilization` | `container.cpu.usage` |
 | `container.memory.usage.total` | `container.memory.usage` |
-| `container.memory.total_pgfault` | `container.memory.paging.faults` |
+| `container.memory.total_pgfault` | `container.memory.paging.faults` (configured as `container.memory.paging.faults@v1`) |
 | `container.network.io.usage.rx_bytes` | `container.network.io` with `network.io.direction=receive` |
 | `container.network.io.usage.tx_bytes` | `container.network.io` with `network.io.direction=transmit` |
 
-`container.cpu.usage.system` and `container.memory.total_pgfault` are disabled by default, so
-`cpu.mode=system` data points and `container.memory.paging.faults` only appear if you had explicitly
-enabled those metrics.
+`container.cpu.time` is turned on if any of the four legacy CPU time metrics is enabled, and it then
+emits all four sets of data points: the total without a `cpu.mode` attribute, plus `cpu.mode=system`,
+`cpu.mode=kernel` and `cpu.mode=user`. This includes `cpu.mode=system`, even though
+`container.cpu.usage.system` is disabled by default. Filter on `cpu.mode` when aggregating, because
+summing every data point counts the CPU time more than once.
+
+`container.memory.total_pgfault` is disabled by default, so `container.memory.paging.faults` only
+appears if you had explicitly enabled it.
 
 ### Metrics that are added
 
-These are enabled unconditionally and do not replace or disable anything:
+These are enabled whenever `EmitV1ContainerConventions` is enabled and do not replace or disable anything:
 
-| Enabled when the gate is enabled | Notes |
+| Enabled by `EmitV1ContainerConventions` | Notes |
 | --- | --- |
 | `container.memory.available` | |
 | `container.memory.working_set` | |
@@ -182,7 +200,7 @@ These are enabled unconditionally and do not replace or disable anything:
 
 ### Net effect on the defaults
 
-With a default configuration and the gate enabled, the receiver emits `container.cpu.time`,
+With a default configuration and both gates enabled, the receiver emits `container.cpu.time`,
 `container.cpu.usage`, `container.memory.usage`, `container.memory.available`,
 `container.memory.working_set`, `container.disk.io`, and `container.network.io`, and stops emitting
 `container.cpu.usage.total`, `container.cpu.usage.kernelmode`, `container.cpu.usage.usermode`,

@@ -227,7 +227,7 @@ var MetricsInfo = metricsInfo{
 	ContainerMemoryMappedFile: metricInfo{
 		Name: "container.memory.mapped_file",
 	},
-	ContainerMemoryPagingFaults: metricInfo{
+	ContainerMemoryPagingFaultsV1: metricInfo{
 		Name: "container.memory.paging.faults",
 	},
 	ContainerMemoryPercent: metricInfo{
@@ -412,7 +412,7 @@ type metricsInfo struct {
 	ContainerMemoryInactiveAnon                metricInfo
 	ContainerMemoryInactiveFile                metricInfo
 	ContainerMemoryMappedFile                  metricInfo
-	ContainerMemoryPagingFaults                metricInfo
+	ContainerMemoryPagingFaultsV1              metricInfo
 	ContainerMemoryPercent                     metricInfo
 	ContainerMemoryPgfault                     metricInfo
 	ContainerMemoryPgmajfault                  metricInfo
@@ -2807,14 +2807,14 @@ func newMetricContainerMemoryMappedFile(cfg ContainerMemoryMappedFileMetricConfi
 	return m
 }
 
-type metricContainerMemoryPagingFaults struct {
-	data     pmetric.Metric                          // data buffer for generated metric.
-	config   ContainerMemoryPagingFaultsMetricConfig // metric config provided by user.
-	capacity int                                     // max observed number of data points added to the metric.
+type metricContainerMemoryPagingFaultsV1 struct {
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   ContainerMemoryPagingFaultsV1MetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
-// init fills container.memory.paging.faults metric with initial data.
-func (m *metricContainerMemoryPagingFaults) init() {
+// init fills container.memory.paging.faults@v1 metric with initial data.
+func (m *metricContainerMemoryPagingFaultsV1) init() {
 	m.data.SetName("container.memory.paging.faults")
 	m.data.SetDescription("Container memory paging faults. (Only available with cgroups v1).")
 	m.data.SetUnit("{faults}")
@@ -2823,7 +2823,7 @@ func (m *metricContainerMemoryPagingFaults) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
-func (m *metricContainerMemoryPagingFaults) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricContainerMemoryPagingFaultsV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2834,14 +2834,14 @@ func (m *metricContainerMemoryPagingFaults) recordDataPoint(start pcommon.Timest
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricContainerMemoryPagingFaults) updateCapacity() {
+func (m *metricContainerMemoryPagingFaultsV1) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricContainerMemoryPagingFaults) emit(metrics pmetric.MetricSlice) {
+func (m *metricContainerMemoryPagingFaultsV1) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -2849,8 +2849,8 @@ func (m *metricContainerMemoryPagingFaults) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryPagingFaults(cfg ContainerMemoryPagingFaultsMetricConfig) metricContainerMemoryPagingFaults {
-	m := metricContainerMemoryPagingFaults{config: cfg}
+func newMetricContainerMemoryPagingFaultsV1(cfg ContainerMemoryPagingFaultsV1MetricConfig) metricContainerMemoryPagingFaultsV1 {
+	m := metricContainerMemoryPagingFaultsV1{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -5643,7 +5643,7 @@ type MetricsBuilder struct {
 	metricContainerMemoryInactiveAnon                metricContainerMemoryInactiveAnon
 	metricContainerMemoryInactiveFile                metricContainerMemoryInactiveFile
 	metricContainerMemoryMappedFile                  metricContainerMemoryMappedFile
-	metricContainerMemoryPagingFaults                metricContainerMemoryPagingFaults
+	metricContainerMemoryPagingFaultsV1              metricContainerMemoryPagingFaultsV1
 	metricContainerMemoryPercent                     metricContainerMemoryPercent
 	metricContainerMemoryPgfault                     metricContainerMemoryPgfault
 	metricContainerMemoryPgmajfault                  metricContainerMemoryPgmajfault
@@ -5749,7 +5749,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricContainerMemoryInactiveAnon:                newMetricContainerMemoryInactiveAnon(mbc.Metrics.ContainerMemoryInactiveAnon),
 		metricContainerMemoryInactiveFile:                newMetricContainerMemoryInactiveFile(mbc.Metrics.ContainerMemoryInactiveFile),
 		metricContainerMemoryMappedFile:                  newMetricContainerMemoryMappedFile(mbc.Metrics.ContainerMemoryMappedFile),
-		metricContainerMemoryPagingFaults:                newMetricContainerMemoryPagingFaults(mbc.Metrics.ContainerMemoryPagingFaults),
+		metricContainerMemoryPagingFaultsV1:              newMetricContainerMemoryPagingFaultsV1(mbc.Metrics.ContainerMemoryPagingFaultsV1),
 		metricContainerMemoryPercent:                     newMetricContainerMemoryPercent(mbc.Metrics.ContainerMemoryPercent),
 		metricContainerMemoryPgfault:                     newMetricContainerMemoryPgfault(mbc.Metrics.ContainerMemoryPgfault),
 		metricContainerMemoryPgmajfault:                  newMetricContainerMemoryPgmajfault(mbc.Metrics.ContainerMemoryPgmajfault),
@@ -5838,6 +5838,17 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if mbc.ResourceAttributes.ContainerRuntime.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["container.runtime"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerRuntime.MetricsExclude)
+	}
+	if ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate.IsEnabled() {
+		if mb.metricContainerMemoryTotalPgfault.config.Enabled && !mb.metricContainerMemoryPagingFaultsV1.config.enabledSetByUser {
+			mb.metricContainerMemoryPagingFaultsV1.config.Enabled = true
+			mb.metricContainerMemoryPagingFaultsV1.data = pmetric.NewMetric()
+			mb.metricContainerMemoryPagingFaultsV1.init()
+		}
+	}
+	if !ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate.IsEnabled() && mb.metricContainerMemoryPagingFaultsV1.config.Enabled {
+		mb.metricContainerMemoryPagingFaultsV1.config.Enabled = false
+		settings.Logger.Warn("[WARNING] metric `container.memory.paging.faults@v1` requires feature gate `receiver.docker_stats.EmitV1ContainerConventions` to be enabled, metric has been disabled")
 	}
 
 	for _, op := range options {
@@ -5945,7 +5956,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricContainerMemoryInactiveAnon.emit(ils.Metrics())
 	mb.metricContainerMemoryInactiveFile.emit(ils.Metrics())
 	mb.metricContainerMemoryMappedFile.emit(ils.Metrics())
-	mb.metricContainerMemoryPagingFaults.emit(ils.Metrics())
+	mb.metricContainerMemoryPagingFaultsV1.emit(ils.Metrics())
 	mb.metricContainerMemoryPercent.emit(ils.Metrics())
 	mb.metricContainerMemoryPgfault.emit(ils.Metrics())
 	mb.metricContainerMemoryPgmajfault.emit(ils.Metrics())
@@ -6201,11 +6212,6 @@ func (mb *MetricsBuilder) RecordContainerMemoryMappedFileDataPoint(ts pcommon.Ti
 	mb.metricContainerMemoryMappedFile.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordContainerMemoryPagingFaultsDataPoint adds a data point to container.memory.paging.faults metric.
-func (mb *MetricsBuilder) RecordContainerMemoryPagingFaultsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryPagingFaults.recordDataPoint(mb.startTime, ts, val)
-}
-
 // RecordContainerMemoryPercentDataPoint adds a data point to container.memory.percent metric.
 func (mb *MetricsBuilder) RecordContainerMemoryPercentDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricContainerMemoryPercent.recordDataPoint(mb.startTime, ts, val)
@@ -6278,7 +6284,14 @@ func (mb *MetricsBuilder) RecordContainerMemoryTotalMappedFileDataPoint(ts pcomm
 
 // RecordContainerMemoryTotalPgfaultDataPoint adds a data point to container.memory.total_pgfault metric.
 func (mb *MetricsBuilder) RecordContainerMemoryTotalPgfaultDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryTotalPgfault.recordDataPoint(mb.startTime, ts, val)
+	// Dual-schema emission controlled by feature gates
+	emitLegacy := !ReceiverDockerStatsDontEmitV0ContainerConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
+		mb.metricContainerMemoryTotalPgfault.recordDataPoint(mb.startTime, ts, val)
+	}
+	if ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate.IsEnabled() {
+		mb.metricContainerMemoryPagingFaultsV1.recordDataPoint(mb.startTime, ts, val)
+	}
 }
 
 // RecordContainerMemoryTotalPgmajfaultDataPoint adds a data point to container.memory.total_pgmajfault metric.

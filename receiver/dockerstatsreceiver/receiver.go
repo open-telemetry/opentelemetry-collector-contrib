@@ -328,8 +328,6 @@ func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats
 			recorder(now, int64(val))
 		}
 	}
-
-	r.mb.RecordContainerMemoryPagingFaultsDataPoint(now, int64(memoryStats.Stats["total_pgfault"]))
 }
 
 type blkioRecorder func(now pcommon.Timestamp, val int64, devMaj, devMin, operation string)

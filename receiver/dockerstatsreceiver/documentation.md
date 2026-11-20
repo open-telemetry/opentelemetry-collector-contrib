@@ -509,13 +509,15 @@ Indicates the amount of memory mapped by the processes in the control group (Onl
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
 
-### container.memory.paging.faults
+### container.memory.paging.faults@v1
 
 Container memory paging faults. (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {faults} | Sum | Int | Cumulative | true | Development |
+
+Emitted Name: `container.memory.paging.faults`
 
 ### container.memory.pgfault
 
@@ -628,6 +630,14 @@ Indicate the number of times that a process of the cgroup (or descendant cgroups
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {faults} | Sum | Int | Cumulative | true | Development |
+
+#### Migration
+
+- Target Metric: `container.memory.paging.faults@v1`
+- Disable Old Gate: `receiver.docker_stats.DontEmitV0ContainerConventions`
+- Enable New Gate: `receiver.docker_stats.EmitV1ContainerConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
 
 ### container.memory.total_pgmajfault
 
@@ -878,6 +888,7 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `receiver.dockerstatsreceiver.enableSemConvMetrics` | alpha | Enable new container metrics that align with new container semantic convention | v0.161.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649) |
+| `receiver.docker_stats.DontEmitV0ContainerConventions` | alpha | When enabled, the legacy container metrics replaced by semantic convention metrics are no longer emitted. | v0.166.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649) |
+| `receiver.docker_stats.EmitV1ContainerConventions` | alpha | When enabled, container metrics that follow the semantic conventions are emitted. | v0.166.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

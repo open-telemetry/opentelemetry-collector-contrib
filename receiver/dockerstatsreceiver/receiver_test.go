@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -74,7 +75,7 @@ var (
 		cfg.ContainerMemoryInactiveAnon.Enabled = true
 		cfg.ContainerMemoryInactiveFile.Enabled = true
 		cfg.ContainerMemoryMappedFile.Enabled = true
-		cfg.ContainerMemoryPagingFaults.Enabled = true
+		cfg.ContainerMemoryPagingFaultsV1.Enabled = true
 		cfg.ContainerMemoryPercent.Enabled = true
 		cfg.ContainerMemoryPgfault.Enabled = true
 		cfg.ContainerMemoryPgmajfault.Enabled = true
@@ -209,7 +210,19 @@ func TestErrorsInStart(t *testing.T) {
 	assert.ErrorContains(t, err, "context deadline exceeded")
 }
 
+// setGateForTest sets a feature gate for the duration of the test.
+func setGateForTest(t *testing.T, gate *featuregate.Gate, enabled bool) {
+	original := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), original))
+	})
+}
+
 func TestScrapeV2(t *testing.T) {
+	// Emit the semantic convention metrics alongside the legacy ones so the
+	// golden files cover both.
+	setGateForTest(t, metadata.ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate, true)
 	// test docker client works with both minimum supported version, and default version
 	for _, dockerAPIVersion := range []string{minimumRequiredDockerAPIVersion, defaultDockerAPIVersion} {
 		testCases := []struct {
@@ -397,6 +410,7 @@ func TestScrapeV2(t *testing.T) {
 // TestScrapeV2Streaming verifies that with stream_stats enabled the scraper reads
 // stats from the persistent stream cache once the first frame has been delivered.
 func TestScrapeV2Streaming(t *testing.T) {
+	setGateForTest(t, metadata.ReceiverDockerStatsEmitV1ContainerConventionsFeatureGate, true)
 	dockerAPIVersion := defaultDockerAPIVersion
 	containerID := "10b703fb312b25e8368ab5a3bce3a1610d1cee5d71a94920f1a7adbc5b0cb326"
 	mockDockerEngine, err := dockerMockServer(&map[string]string{
