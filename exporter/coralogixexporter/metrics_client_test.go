@@ -202,8 +202,8 @@ func TestMetricsExporter_PushMetrics_WhenCannotSend(t *testing.T) {
 			}()
 
 			// Add two rate limit errors
-			exp.EnableRateLimit()
-			exp.EnableRateLimit()
+			exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
+			exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
 
 			metrics := pmetric.NewMetrics()
 			resourceMetrics := metrics.ResourceMetrics()
@@ -214,7 +214,7 @@ func TestMetricsExporter_PushMetrics_WhenCannotSend(t *testing.T) {
 			err = exp.pushMetrics(t.Context(), metrics)
 			assert.Error(t, err)
 			if tt.enabled {
-				assert.Contains(t, err.Error(), "rate limit exceeded")
+				assert.Contains(t, err.Error(), "authentication failed")
 			} else {
 				assert.Contains(t, err.Error(), "produced zero addresses")
 			}
@@ -484,7 +484,7 @@ func TestMetricsExporter_PushMetrics_Performance(t *testing.T) {
 		mockSrv.recvCount = 0
 
 		for range 5 {
-			exp.EnableRateLimit()
+			exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
 		}
 
 		metrics := pmetric.NewMetrics()
@@ -508,7 +508,7 @@ func TestMetricsExporter_PushMetrics_Performance(t *testing.T) {
 		duration := time.Since(start)
 
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "rate limit exceeded")
+		assert.Contains(t, err.Error(), "authentication failed")
 		assert.Less(t, duration, time.Millisecond*100, "Operation took longer than 100 milliseconds")
 		assert.Zero(t, mockSrv.recvCount, "Expected no metrics to be received due to rate limiting")
 	})
@@ -595,7 +595,7 @@ func TestMetricsExporter_RateLimitErrorCountReset(t *testing.T) {
 	}()
 
 	for range 5 {
-		exp.EnableRateLimit()
+		exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
 	}
 	assert.Equal(t, int32(5), exp.rateError.errorCount.Load())
 
@@ -625,6 +625,80 @@ func TestMetricsExporter_RateLimitErrorCountReset(t *testing.T) {
 			exp.rateError.errorCount.Load() == 0 &&
 			srv.recvCount > 0
 	}, 3*time.Second, 100*time.Millisecond)
+}
+
+func TestMetricsExporter_BlockedThenRecoversAndSends(t *testing.T) {
+	endpoint, stop, srv := startMockOtlpMetricsServer(t)
+	defer stop()
+
+	core, logs := observer.New(zapcore.InfoLevel)
+	set := exportertest.NewNopSettings(exportertest.NopType)
+	set.Logger = zap.New(core)
+
+	cfg := &Config{
+		Metrics: TransportConfig{
+			ClientConfig: configgrpc.ClientConfig{
+				Endpoint: endpoint,
+				TLS: configtls.ClientConfig{
+					Insecure: true,
+				},
+			},
+		},
+		PrivateKey: "test-key",
+		RateLimiter: RateLimiterConfig{
+			Enabled:   true,
+			Threshold: 2,
+			Duration:  time.Minute,
+		},
+	}
+
+	exp, err := newMetricsExporter(cfg, set)
+	require.NoError(t, err)
+	require.NoError(t, exp.start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, exp.shutdown(t.Context()))
+	}()
+
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("service.name", "recovery-service")
+	sm := rm.ScopeMetrics().AppendEmpty()
+	metric := sm.Metrics().AppendEmpty()
+	metric.SetName("recovery-metric")
+	metric.SetEmptyGauge()
+	dp := metric.Gauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	dp.SetDoubleValue(1)
+
+	// Open the drop window with authentication failures.
+	exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
+	exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
+	require.False(t, exp.canSend())
+
+	err = exp.pushMetrics(t.Context(), metrics)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "authentication failed")
+	assert.NotContains(t, err.Error(), "rate limit exceeded")
+	assert.Equal(t, 0, srv.recvCount, "backend must not receive data while blocked")
+
+	// Expire the window without waiting a full minute.
+	past := time.Now().Add(-2 * time.Minute)
+	exp.rateError.timestamp.Store(&past)
+
+	err = exp.pushMetrics(t.Context(), metrics)
+	require.NoError(t, err)
+	assert.Equal(t, 1, srv.recvCount, "backend should receive data after the window closes")
+	assert.Equal(t, int32(0), exp.rateError.errorCount.Load())
+	assert.False(t, exp.rateError.isRateLimited())
+
+	closeLogs := logs.FilterMessage("Drop window closed; resuming sends to Coralogix").All()
+	require.Len(t, closeLogs, 1)
+	assert.Equal(t, "authentication", closeLogs[0].ContextMap()["reason"])
+
+	// Traffic continues to flow after recovery.
+	err = exp.pushMetrics(t.Context(), metrics)
+	require.NoError(t, err)
+	assert.Equal(t, 2, srv.recvCount)
 }
 
 func TestMetricsExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
@@ -684,7 +758,7 @@ func TestMetricsExporter_RateLimitCounterResetOnSuccess(t *testing.T) {
 
 	t.Run("Trigger errors below threshold", func(t *testing.T) {
 		for range 4 {
-			exp.EnableRateLimit()
+			exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
 		}
 		assert.Equal(t, int32(4), exp.rateError.errorCount.Load())
 		assert.False(t, exp.rateError.isRateLimited(), "Should not be rate limited yet")

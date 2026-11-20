@@ -5,10 +5,12 @@ package awss3receiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"io"
 )
 
 // s3ObjectCallback is a function that processes a single S3 object content
-type s3ObjectCallback func(ctx context.Context, key string, content []byte) error
+// The reader is valid only for the duration of the callback.
+type s3ObjectCallback func(ctx context.Context, key string, content io.Reader) error
 
 // s3Reader defines a common interface for components that read from S3
 type s3Reader interface {

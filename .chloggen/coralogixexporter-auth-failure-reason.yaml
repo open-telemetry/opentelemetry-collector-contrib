@@ -1,16 +1,14 @@
-# Use this changelog template to create an entry for release notes.
-
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: deprecation
+change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: exporter/influxdb
+component: exporter/coralogix
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Mark component as unmaintained
+note: Report authentication failures as `authentication failed (private key rotated or invalid)` and log once when the drop window opens and closes, instead of reporting every failure as `rate limit exceeded`.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [53021]
+issues: [53104]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
@@ -24,4 +22,4 @@ subtext:
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: []
+change_logs: [user]
