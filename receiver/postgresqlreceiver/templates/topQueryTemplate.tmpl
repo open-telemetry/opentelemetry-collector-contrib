@@ -1,7 +1,22 @@
 SELECT
   {{- if .toplevel }}
   toplevel::TEXT,
-  {{- end }}
+  calls,
+  datname,
+  shared_blks_dirtied,
+  shared_blks_hit,
+  shared_blks_read,
+  shared_blks_written,
+  temp_blks_read,
+  temp_blks_written,
+  query,
+  queryid::TEXT,
+  userid::TEXT,
+  COALESCE(rolname, '') AS rolname,
+  rows::TEXT,
+  total_exec_time,
+  total_plan_time
+  {{- else }}
   SUM(calls) AS calls,
   datname,
   SUM(shared_blks_dirtied) AS shared_blks_dirtied,
@@ -17,6 +32,7 @@ SELECT
   SUM(rows)::TEXT AS rows,
   SUM(total_exec_time) AS total_exec_time,
   SUM(total_plan_time) AS total_plan_time
+  {{- end }}
 FROM
   pg_stat_statements as pg_stat_statements
   LEFT JOIN pg_roles ON pg_stat_statements.userid = pg_roles.oid
@@ -28,6 +44,8 @@ WHERE
   {{- if .excludedDatabases }}
   AND datname NOT IN ({{ .excludedDatabases }})
   {{- end }}
-GROUP BY pg_stat_statements.dbid, datname, userid, queryid, rolname{{ if .toplevel }}, toplevel{{ end }}
+{{- if not .toplevel }}
+GROUP BY pg_stat_statements.dbid, datname, userid, queryid, rolname
+{{- end }}
 ORDER BY calls DESC
 LIMIT {{ .limit }};
