@@ -144,13 +144,11 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 						}
 						refTsi, found := tsm.Get(metric, dp.Attributes())
 						if !found {
-							refTsi.ExponentialHistogram = datapointstorage.ExponentialHistogramInfo{StartTime: startTimeTs, Scale: dp.Scale()}
+							refTsi.ExponentialHistogram = datapointstorage.ExponentialHistogramInfo{StartTime: startTimeTs}
 						} else if refTsi.IsResetExponentialHistogram(dp) {
 							refTsi.ExponentialHistogram.StartTime = pcommon.NewTimestampFromTime(dp.Timestamp().AsTime().Add(-1 * time.Millisecond))
 						}
-						refTsi.ExponentialHistogram.PreviousPositive = datapointstorage.NewExponentialHistogramBucketInfo(dp.Positive())
-						refTsi.ExponentialHistogram.PreviousNegative = datapointstorage.NewExponentialHistogramBucketInfo(dp.Negative())
-						refTsi.ExponentialHistogram.PreviousCount, refTsi.ExponentialHistogram.PreviousSum, refTsi.ExponentialHistogram.PreviousZeroCount = dp.Count(), dp.Sum(), dp.ZeroCount()
+						refTsi.ExponentialHistogram.UpdatePrevious(dp)
 						dp.SetStartTimestamp(refTsi.ExponentialHistogram.StartTime)
 					}
 
