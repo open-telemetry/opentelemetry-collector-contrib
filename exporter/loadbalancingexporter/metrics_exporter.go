@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/metric"
 	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
@@ -27,6 +26,8 @@ import (
 )
 
 var _ exporter.Metrics = (*metricExporterImp)(nil)
+
+type exporterMetrics map[*wrappedExporter]pmetric.Metrics
 
 type metricExporterImp struct {
 	loadBalancer *loadBalancer
@@ -119,45 +120,80 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 	// accumulated data, so merging N batches costs O(N) identity computations
 	// instead of O(N^2) — with per-stream routing keys N can easily be in the
 	// thousands per ConsumeMetrics call.
-	metricsByExporter := map[*wrappedExporter]*metrics.Merger{}
-	exporterEndpoints := map[*wrappedExporter]string{}
+	mergersByExporter := map[*wrappedExporter]*metrics.Merger{}
 
 	for routingID, mds := range batches {
-		exp, endpoint, err := e.loadBalancer.exporterAndEndpoint([]byte(routingID))
+		exp, _, err := e.loadBalancer.exporterAndEndpoint([]byte(routingID))
 		if err != nil {
 			return err
 		}
 
-		merger, ok := metricsByExporter[exp]
+		merger, ok := mergersByExporter[exp]
 		if !ok {
 			exp.consumeWG.Add(1)
 			merger = metrics.NewMerger(pmetric.NewMetrics())
-			metricsByExporter[exp] = merger
-			exporterEndpoints[exp] = endpoint
+			mergersByExporter[exp] = merger
 		}
 
 		merger.Merge(mds)
 	}
 
-	var errs error
-	for exp, merger := range metricsByExporter {
-		mds := merger.Metrics()
-		start := time.Now()
-		err := exp.ConsumeMetrics(ctx, mds)
-		duration := time.Since(start)
-
-		exp.consumeWG.Done()
-		errs = multierr.Append(errs, err)
-		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
-		if err == nil {
-			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
-		} else {
-			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
-			e.logger.Debug("failed to export metrics", zap.Error(err))
-		}
+	metricsByExporter := make(exporterMetrics, len(mergersByExporter))
+	for exp, merger := range mergersByExporter {
+		metricsByExporter[exp] = merger.Metrics()
 	}
 
-	return errs
+	return e.exportBatches(ctx, metricsByExporter)
+}
+
+// exportToBackend sends md to one backend, records per-backend telemetry, and signals the
+// exporter's consume wait group.
+func (e *metricExporterImp) exportToBackend(ctx context.Context, exp *wrappedExporter, md pmetric.Metrics) error {
+	start := time.Now()
+	err := exp.ConsumeMetrics(ctx, md)
+	duration := time.Since(start)
+	exp.consumeWG.Done()
+	e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
+	if err == nil {
+		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
+	} else {
+		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
+		e.logger.Debug("failed to export metrics", zap.Error(err))
+	}
+	return err
+}
+
+// exportBatches sends each pre-routed batch to its backend. When any backend fails with a
+// retryable error, it returns a consumererror.Metrics carrying only the retryable failed data and
+// causes, so a retry re-sends neither delivered data nor data a backend rejected permanently.
+// The permanently rejected data is dropped. When every failure is permanent, it
+// returns a permanent error wrapping a consumererror.Metrics with the failed data.
+func (e *metricExporterImp) exportBatches(ctx context.Context, batches exporterMetrics) error {
+	var retryableErrs, permanentErrs []error
+	var retryable, permanent []pmetric.Metrics
+	for exp, mds := range batches {
+		err := e.exportToBackend(ctx, exp, mds)
+		if err == nil {
+			continue
+		}
+		failed := failedMetricsFromError(err, mds)
+		if consumererror.IsPermanent(err) {
+			permanentErrs = append(permanentErrs, err)
+			permanent = append(permanent, failed)
+		} else {
+			retryableErrs = append(retryableErrs, err)
+			retryable = append(retryable, failed)
+		}
+	}
+	if len(retryableErrs) > 0 {
+		// Permanent causes must stay out of the returned error: consumererror.IsPermanent
+		// searches the whole error tree and would stop the retry of the retryable data.
+		return consumererror.NewMetrics(errors.Join(retryableErrs...), copyFailedMetrics(retryable))
+	}
+	if len(permanentErrs) > 0 {
+		return consumererror.NewPermanent(consumererror.NewMetrics(errors.Join(permanentErrs...), copyFailedMetrics(permanent)))
+	}
+	return nil
 }
 
 func splitMetricsByResourceServiceName(md pmetric.Metrics) map[string]pmetric.Metrics {
