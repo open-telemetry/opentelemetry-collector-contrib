@@ -730,3 +730,23 @@ func TestAzureScraperBatchDefinitionsDiscoveryAvoidsInvalidProbes(t *testing.T) 
 	// Without the fix, every resource type is probed with all other configured namespaces (16 invalid probes).
 	assert.Empty(t, probedCalls, "expected 0 invalid namespace probes, but got: %+v", probedCalls)
 }
+
+func TestAzureBatchScraperUsesCloudBatchEndpoint(t *testing.T) {
+	observedCore, observedLogs := observer.New(zapcore.DebugLevel)
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = zap.New(observedCore)
+
+	s := &azureBatchScraper{
+		clientOptionsResolver: newClientOptionsResolver(azureGovernmentCloud),
+		settings:              settings.TelemetrySettings,
+	}
+
+	_, err := s.GetMetricsBatchValuesClient("usgovvirginia")
+	require.NoError(t, err)
+
+	emittedLogs := observedLogs.FilterMessage("Batch Endpoint").All()
+	require.Len(t, emittedLogs, 1)
+	assert.Equal(t, map[string]any{
+		"endpoint": "https://usgovvirginia.metrics.monitor.azure.us",
+	}, emittedLogs[0].ContextMap())
+}
