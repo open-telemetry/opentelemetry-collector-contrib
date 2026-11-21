@@ -296,6 +296,23 @@ func TestReceiverLifecycle(t *testing.T) {
 	}, metricdatatest.IgnoreTimestamp())
 }
 
+func TestReceiverImmediateShutdown(t *testing.T) {
+	receiver, service, _, tt := newReceiver(t)
+	service.dialFunc = func(ctx context.Context) error {
+		<-ctx.Done()
+		return ctx.Err()
+	}
+	service.closeFunc = func(context.Context) {}
+
+	require.NoError(t, receiver.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, receiver.Shutdown(t.Context()))
+
+	runtime.Gosched()
+	metadatatest.AssertEqualSolacereceiverReceiverStatus(t, tt, []metricdata.DataPoint[int64]{
+		{Value: int64(receiverStateTerminated)},
+	}, metricdatatest.IgnoreTimestamp())
+}
+
 func TestReceiverDialFailureContinue(t *testing.T) {
 	receiver, msgService, _, tt := newReceiver(t)
 	dialErr := errors.New("Some dial error")
