@@ -80,8 +80,14 @@ boost:   deadband flushed+suspended · dedup open · traces kept
 |---|---|---|
 | `receiver/execc` | v1 working (smoke-tested) | T1b |
 | `receiver/httpjson` | v1 working (smoke-tested) | T1 |
-| `processor/deadband` | design phase | DB v1 |
-| `extension/signalstate` + `processor/eventdetector` | design phase | X1 |
+| `processor/deadband` | v1 working (tested) | DB v1 |
+| `extension/signalstate` | v1 working (tested) | X1 |
+| `processor/eventdetector` | v1 working (tested) | X1 |
 | `processor/logdedup` | design phase | LOG v1 |
 | tail-sampling policy | design phase | TR v1 |
 | `connector/textmetrics` | design phase | T2 |
+
+X1 delivered 2026-11-20: `signalstate` (shared window store) + `eventdetector`
+(OTTL rules on logs + metric datapoints opening/refreshing windows with
+anti-flap cooldown). X2 remains: wire `deadband` to read `signalstate` and
+flush/suspend on boost windows; then log `dedup` and the tail-sampling policy.
