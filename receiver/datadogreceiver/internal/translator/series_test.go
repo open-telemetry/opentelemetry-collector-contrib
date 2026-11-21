@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
 type testPoint struct {
@@ -122,6 +123,7 @@ func TestTranslateSeriesV1(t *testing.T) {
 
 				expectedAttrs := tagsToAttributes([]string{"env:tag1", "version:tag2"}, "Host1", newStringPool())
 				require.Equal(t, 1, result.ResourceMetrics().Len())
+				require.Equal(t, conventions.SchemaURL, result.ResourceMetrics().At(0).SchemaUrl())
 				requireResourceAttributes(t, result.ResourceMetrics().At(0).Resource().Attributes(), expectedAttrs.resource)
 				requireScopeMetrics(t, result, 1, 1)
 				requireScope(t, result, expectedAttrs.scope, component.NewDefaultBuildInfo().Version)
