@@ -44,6 +44,7 @@ type logsReceiver struct {
 	profile                       string
 	imdsEndpoint                  string
 	pollInterval                  time.Duration
+	settleLag                     time.Duration
 	maxEventsPerRequest           int
 	initialStartTime              time.Time
 	groupNextStartTimes           map[string]time.Time
@@ -168,6 +169,7 @@ func newLogsReceiver(cfg *Config, settings receiver.Settings, consumer consumer.
 		imdsEndpoint:        cfg.IMDSEndpoint,
 		autodiscover:        autodiscover,
 		pollInterval:        cfg.Logs.PollInterval,
+		settleLag:           cfg.Logs.SettleLag,
 		initialStartTime:    startTime,
 		groupNextStartTimes: map[string]time.Time{},
 		groupRequests:       groups,
@@ -281,7 +283,7 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 func (l *logsReceiver) poll(ctx context.Context) error {
 	var errs error
 	currentGroups := make(map[string]bool)
-	endTime := nowFunc()
+	endTime := nowFunc().Add(-l.settleLag)
 	for _, r := range l.groupRequests {
 		// Collection stopped. The groups left in this cycle were never polled, so there is
 		// nothing new to checkpoint for them.
@@ -325,6 +327,11 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 					}
 				}
 			}
+		}
+
+		// With a settle lag the window can end before it starts; wait for a later poll.
+		if l.settleLag > 0 && !endTime.After(startTime) {
+			continue
 		}
 
 		// Poll logs for the current log group

@@ -9,6 +9,12 @@ aws_cloudwatch/initial-lookback:
     poll_interval: 1m
     initial_lookback: 1h
 
+aws_cloudwatch/settle-lag:
+  region: us-west-1
+  logs:
+    poll_interval: 1m
+    settle_lag: 30s
+
 aws_cloudwatch/prefix-log-group-autodiscover:
   region: us-west-1
   logs:

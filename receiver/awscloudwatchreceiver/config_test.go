@@ -176,6 +176,23 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: errInvalidInitialLookback,
 		},
+		{
+			name: "Negative Settle Lag",
+			config: Config{
+				Region: "us-east-1",
+				Logs: LogsConfig{
+					MaxEventsPerRequest: defaultEventLimit,
+					PollInterval:        defaultPollInterval,
+					Groups: GroupConfig{
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit: defaultLogGroupLimit,
+						},
+					},
+					SettleLag: -time.Second,
+				},
+			},
+			expectedErr: errInvalidSettleLag,
+		},
 	}
 
 	for _, tc := range cases {
@@ -320,6 +337,23 @@ func TestLoadLogsConfig(t *testing.T) {
 						},
 					},
 					InitialLookback: time.Hour,
+				},
+				Metrics: defaultMetrics,
+			},
+		},
+		{
+			name: "settle-lag",
+			expectedConfig: &Config{
+				Region: "us-west-1",
+				Logs: LogsConfig{
+					PollInterval:        time.Minute,
+					MaxEventsPerRequest: defaultEventLimit,
+					Groups: GroupConfig{
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit: defaultLogGroupLimit,
+						},
+					},
+					SettleLag: 30 * time.Second,
 				},
 				Metrics: defaultMetrics,
 			},

@@ -91,6 +91,7 @@ type LogsConfig struct {
 	InitialLookback     time.Duration `mapstructure:"initial_lookback"`
 	PollInterval        time.Duration `mapstructure:"poll_interval"`
 	MaxEventsPerRequest int           `mapstructure:"max_events_per_request"`
+	SettleLag           time.Duration `mapstructure:"settle_lag"`
 	Groups              GroupConfig   `mapstructure:"groups"`
 }
 
@@ -134,6 +135,7 @@ var (
 	errCollectionIntervalLessThanPeriod = errors.New("metrics collection_interval must be greater than or equal to period")
 	errInitialLookbackAndStartFrom      = errors.New("both initial_lookback and start_from are configured, Only one or the other is permitted")
 	errInvalidInitialLookback           = errors.New("initial_lookback must be a positive duration (e.g. 1h)")
+	errInvalidSettleLag                 = errors.New("settle_lag must not be negative")
 )
 
 // Validate overrides the embedded ControllerConfig.Validate so that a zero CollectionInterval
@@ -243,6 +245,10 @@ func (c *Config) validateLogsConfig() error {
 
 	if c.Logs.InitialLookback < 0 {
 		return errInvalidInitialLookback
+	}
+
+	if c.Logs.SettleLag < 0 {
+		return errInvalidSettleLag
 	}
 
 	if c.Logs.StartFrom != "" {
