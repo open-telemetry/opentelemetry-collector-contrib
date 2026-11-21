@@ -1,0 +1,48 @@
+type: deadband
+
+github_project: open-telemetry/opentelemetry-collector-contrib
+
+status:
+  class: processor
+  stability:
+    development: [metrics]
+  distributions: [custom]
+  codeowners:
+    active: [srclosson]
+
+telemetry:
+  metrics:
+    otelcol.deadband.heartbeat:
+      enabled: true
+      stability: development
+      description: Number of last-sent values restated due to staleness bounds.
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+        async: false
+      attributes: [metric_name]
+    otelcol.deadband.series:
+      enabled: true
+      stability: development
+      description: Number of series currently tracked in deadband state.
+      unit: "1"
+      gauge:
+        value_type: int
+        async: false
+    otelcol.deadband.suppressed:
+      enabled: true
+      stability: development
+      description: Number of datapoints suppressed by the deadband processor.
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+        async: false
+      attributes: [metric_name]
+
+attributes:
+  metric_name:
+    description: Name of the metric whose datapoint was suppressed or restated.
+    type: string
+    requirement_level: recommended
