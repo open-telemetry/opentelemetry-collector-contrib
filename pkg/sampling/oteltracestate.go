@@ -6,6 +6,7 @@ package sampling // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"errors"
 	"io"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -156,8 +157,16 @@ func (otts *OpenTelemetryTraceState) UpdateTValueWithSampling(sampledThreshold T
 	// Note NeverSampleThreshold is the (exclusive) upper boundary
 	// of valid thresholds, so the test above permits never-
 	// sampled updates, in which case the TValue() here is empty.
+	newTValue := sampledThreshold.TValue()
+	origThreshold := otts.threshold
+	origTValue := otts.tvalue
 	otts.threshold = sampledThreshold
-	otts.tvalue = sampledThreshold.TValue()
+	otts.tvalue = newTValue
+	if otts.encodedLength() > hardMaxOTelLength {
+		otts.threshold = origThreshold
+		otts.tvalue = origTValue
+		return ErrTraceStateSize
+	}
 	return nil
 }
 
@@ -199,8 +208,38 @@ func (otts *OpenTelemetryTraceState) HasAnyValue() bool {
 	return otts.RValue() != "" || otts.TValue() != "" || len(otts.ExtraValues()) != 0
 }
 
-// Serialize encodes this TraceState object.
+// encodedLength returns the length of this TraceState object when serialized.
+func (otts *OpenTelemetryTraceState) encodedLength() int {
+	length := 0
+	cnt := 0
+	if otts.RValue() != "" {
+		length += len(rValueFieldName) + 1 + len(otts.RValue())
+		cnt++
+	}
+	if otts.TValue() != "" {
+		if cnt != 0 {
+			length++
+		}
+		length += len(tValueFieldName) + 1 + len(otts.TValue())
+		cnt++
+	}
+	for _, kv := range otts.ExtraValues() {
+		if cnt != 0 {
+			length++
+		}
+		length += len(kv.Key) + 1 + len(kv.Value)
+		cnt++
+	}
+	return length
+}
+
+// Serialize encodes this TraceState object.  Returns ErrTraceStateSize if the
+// encoded value would exceed hardMaxOTelLength (256) characters.
 func (otts *OpenTelemetryTraceState) Serialize(w io.StringWriter) error {
+	if otts.encodedLength() > hardMaxOTelLength {
+		return ErrTraceStateSize
+	}
+
 	ser := serializer{writer: w}
 	cnt := 0
 	sep := func() {
@@ -249,6 +288,9 @@ func isValidOTelTraceState(input string) bool {
 		return false
 	}
 
+	var keyBuf [8]string
+	keys := keyBuf[:0]
+
 	// Process each member separated by semicolons
 	for input != "" {
 		// Find next semicolon
@@ -279,6 +321,11 @@ func isValidOTelTraceState(input string) bool {
 		if !isValidOTelKey(key) || !isValidOTelValue(value) {
 			return false
 		}
+
+		if slices.Contains(keys, key) {
+			return false
+		}
+		keys = append(keys, key)
 	}
 	return true
 }

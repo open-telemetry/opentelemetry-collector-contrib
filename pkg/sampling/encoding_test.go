@@ -181,6 +181,9 @@ func TestRValueSyntax(t *testing.T) {
 
 		// bad syntax
 		{"abcdefgabcdefg", strconv.ErrSyntax},
+		{"FFFFFFFFFFFFFF", strconv.ErrSyntax},
+		{"6E6D1A75832A2F", strconv.ErrSyntax},
+		{"1234123412341A", strconv.ErrSyntax},
 	} {
 		t.Run(testName(test.in), func(t *testing.T) {
 			rnd, err := RValueToRandomness(test.in)
@@ -235,6 +238,10 @@ func TestTValueSyntax(t *testing.T) {
 		// syntax error
 		{"", ErrTValueEmpty},
 		{"g", strconv.ErrSyntax},
+		{"C", strconv.ErrSyntax},
+		{"AB", strconv.ErrSyntax},
+		{"1A", strconv.ErrSyntax},
+		{"0F", strconv.ErrSyntax},
 	} {
 		t.Run(testName(test.in), func(t *testing.T) {
 			_, err := TValueToThreshold(test.in)

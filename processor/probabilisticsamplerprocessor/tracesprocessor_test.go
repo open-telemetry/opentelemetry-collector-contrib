@@ -566,9 +566,9 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				SamplingPrecision:  0,
 			},
 			//    99/100 = .fd70a3d70a3d70a3d
-			ts: "ot=rv:FD70A3D70A3D71", // note upper case passes through, is not generated
+			ts: "ot=rv:fd70a3d70a3d71",
 			sf: func(SamplerMode) (bool, float64, string) {
-				return true, 1 / 0.01, "ot=rv:FD70A3D70A3D71;th:fd70a3d70a3d71"
+				return true, 1 / 0.01, "ot=rv:fd70a3d70a3d71;th:fd70a3d70a3d71"
 			},
 		},
 		{
@@ -580,9 +580,9 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				SamplingPercentage: 1,
 				SamplingPrecision:  4,
 			},
-			ts: "ot=rv:FD70A3D70A3D71",
+			ts: "ot=rv:fd70a3d70a3d71",
 			sf: func(SamplerMode) (bool, float64, string) {
-				return true, 1 / 0.01, "ot=rv:FD70A3D70A3D71;th:fd70a"
+				return true, 1 / 0.01, "ot=rv:fd70a3d70a3d71;th:fd70a"
 			},
 		},
 		{
@@ -594,7 +594,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				SamplingPercentage: 1,
 				SamplingPrecision:  3,
 			},
-			ts: "ot=rv:FD70A3D70A3D71",
+			ts: "ot=rv:fd70a3d70a3d71",
 			sf: func(SamplerMode) (bool, float64, string) {
 				return false, 0, ""
 			},
@@ -607,7 +607,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			// this r-value is slightly below the t-value threshold,
 			// off-by-one compared with the case above in the least-
 			// significant digit.
-			ts: "ot=rv:FD70A3D70A3D70",
+			ts: "ot=rv:fd70a3d70a3d70",
 		},
 		{
 			name: "49 percent not sampled with default tid",
@@ -621,9 +621,9 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				SamplingPercentage: 1,
 			},
 			// 99/100 = .FD70A3D70A3D70A3D
-			ts: "ot=rv:fd70B000000000",
+			ts: "ot=rv:fd70b000000000",
 			sf: func(SamplerMode) (bool, float64, string) {
-				return true, 1 / 0.01, "ot=rv:fd70B000000000;th:fd70a3d70a3d71"
+				return true, 1 / 0.01, "ot=rv:fd70b000000000;th:fd70a3d70a3d71"
 			},
 		},
 		{
@@ -969,6 +969,28 @@ func Test_tracesamplerprocessor_TraceStateErrors(t *testing.T) {
 			},
 			tid: defaultTID,
 			ts:  "ot=th:-1",
+			sf: func(SamplerMode) string {
+				return "invalid syntax"
+			},
+		},
+		{
+			name: "uppercase r-value",
+			cfg: &Config{
+				SamplingPercentage: 100,
+			},
+			tid: defaultTID,
+			ts:  "ot=rv:FD70A3D70A3D71",
+			sf: func(SamplerMode) string {
+				return "invalid syntax"
+			},
+		},
+		{
+			name: "uppercase t-value",
+			cfg: &Config{
+				SamplingPercentage: 100,
+			},
+			tid: defaultTID,
+			ts:  "ot=th:FD70A3D70A3D71",
 			sf: func(SamplerMode) string {
 				return "invalid syntax"
 			},
