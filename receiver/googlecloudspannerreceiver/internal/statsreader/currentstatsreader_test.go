@@ -52,7 +52,9 @@ func TestNewCurrentStatsReader(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 	config := ReaderConfig{
 		TopMetricsQueryMaxRows: topMetricsQueryMaxRows,
+		HideSplitStatsKeys:     true,
 		HideClientIPAddress:    true,
+		TruncateText:           true,
 	}
 
 	reader := newCurrentStatsReader(logger, database, metricsMetadata, config)
@@ -61,7 +63,9 @@ func TestNewCurrentStatsReader(t *testing.T) {
 	assert.Equal(t, logger, reader.logger)
 	assert.Equal(t, metricsMetadata, reader.metricsMetadata)
 	assert.Equal(t, topMetricsQueryMaxRows, reader.topMetricsQueryMaxRows)
+	assert.True(t, reader.hideSplitStatsKeys)
 	assert.True(t, reader.hideClientIPAddress)
+	assert.True(t, reader.truncateText)
 }
 
 func TestCurrentStatsReader_NewPullStatement(t *testing.T) {

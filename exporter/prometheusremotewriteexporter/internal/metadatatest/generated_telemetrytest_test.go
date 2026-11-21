@@ -29,6 +29,8 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ExporterPrometheusremotewriteWalReadLatency.Record(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalReads.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalReadsFailures.Add(context.Background(), 1)
+	tb.ExporterPrometheusremotewriteWalSendFailedBatches.Add(context.Background(), 1)
+	tb.ExporterPrometheusremotewriteWalSendFailedSamples.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalWriteLatency.Record(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalWrites.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteWalWritesFailures.Add(context.Background(), 1)
@@ -63,6 +65,12 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterPrometheusremotewriteWalReadsFailures(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterPrometheusremotewriteWalSendFailedBatches(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterPrometheusremotewriteWalSendFailedSamples(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterPrometheusremotewriteWalWriteLatency(t, testTel,

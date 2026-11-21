@@ -1,0 +1,62 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: service.name
+          value:
+            stringValue: unknown_service:microsoft.sql_server
+        - key: service.namespace
+          value:
+            stringValue: ""
+        - key: sqlserver.instance.name
+          value:
+            stringValue: testhost
+    scopeMetrics:
+      - metrics:
+          - description: Number of tasks currently waiting on a tempdb page latch, broken down by page type.
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: sqlserver.tempdb.allocation.page_type
+                      value:
+                        stringValue: gam
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "3"
+                  attributes:
+                    - key: sqlserver.tempdb.allocation.page_type
+                      value:
+                        stringValue: other
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "2"
+                  attributes:
+                    - key: sqlserver.tempdb.allocation.page_type
+                      value:
+                        stringValue: pfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: sqlserver.tempdb.allocation.page_type
+                      value:
+                        stringValue: sgam
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.tempdb.allocation.waiters.count
+            unit: '{waiters}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest

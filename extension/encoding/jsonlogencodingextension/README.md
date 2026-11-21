@@ -19,6 +19,9 @@
 | array_mode | Set whether JSON payloads is extracted from an array(legacy mode). Accepts a boolean.                              | true    |
 | parse_ints | Preserve integer literals within the `int64` range as `int64` when unmarshaling.                                  | false   |
 
+When unmarshaling, the observed timestamp of each log record is set to the time the payload was decoded.
+All records decoded from the same payload share the same observed timestamp.
+
 ### Mode
 
 #### body Mode

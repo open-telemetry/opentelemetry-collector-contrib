@@ -103,14 +103,6 @@ The filter processor also allows configuring an optional field, `error_mode`, wh
 | silent     | The processor ignores errors returned by conditions, does not log them, and continues on to the next condition.                        |
 | propagate  | The processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.                    |
 
-#### Feature Gate
-
-##### `processor.filter.defaultErrorModeIgnore`
-
-The `processor.filter.defaultErrorModeIgnore` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) changes the default `error_mode` of the filter processor from `propagate` to `ignore`.
-This gate is currently in `stable` (always enabled). The default `error_mode` is `ignore` and can no longer be reverted via this gate.
-The gate will be removed in v0.159.0.
-
 ### Basic Config
 
 The basic configuration style allows you to configure OTTL conditions as a flat, OR-ed list, without worrying about extra configurations.

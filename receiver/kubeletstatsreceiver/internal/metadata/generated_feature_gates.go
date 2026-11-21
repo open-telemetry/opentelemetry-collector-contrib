@@ -6,6 +6,30 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.kubelet_stats.DontEmitV0K8sConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the legacy (pre semantic conventions) version of the migrated metrics is not emitted."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50728"),
+	featuregate.WithRegisterFromVersion("v0.166.0"),
+)
+
+var ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.kubelet_stats.EmitV1K8sConventions",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, metrics that are release candidate in the K8s/container semantic conventions are emitted following the latest semantic conventions definition."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50728"),
+	featuregate.WithRegisterFromVersion("v0.166.0"),
+)
+
+var ReceiverKubeletStatsCPUUtilizationRoundingFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.kubelet_stats.cpuUtilizationRounding",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the pod and container cpu utilization metrics (*.cpu.node.utilization, *.cpu_limit_utilization and *.cpu_request_utilization) are computed from integer nanocore values and rounded to the number of significant digits justified by the inputs, removing float64 artifacts from the emitted values."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47988"),
+	featuregate.WithRegisterFromVersion("v0.165.0"),
+)
+
 var ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.kubeletstats.cpuUsageScrapeBased",
 	featuregate.StageBeta,

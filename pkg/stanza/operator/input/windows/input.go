@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
@@ -84,7 +84,7 @@ func (i *Input) defaultStartRemoteSession() error {
 	login := EvtRPCLogin{
 		Server:   windows.StringToUTF16Ptr(i.remote.Server),
 		User:     windows.StringToUTF16Ptr(i.remote.Username),
-		Password: windows.StringToUTF16Ptr(i.remote.Password),
+		Password: windows.StringToUTF16Ptr(string(i.remote.Password)),
 	}
 	if i.remote.Domain != "" {
 		login.Domain = windows.StringToUTF16Ptr(i.remote.Domain)

@@ -109,11 +109,11 @@ func Test_parse(t *testing.T) {
 								Map: &mapValue{
 									Values: []mapItem{
 										{
-											Key:   new("stringAttr"),
+											Key:   &mapKey{String: new("stringAttr")},
 											Value: &value{Pos: lexer.Position{Offset: 19, Line: 1, Column: 20}, String: new("value")},
 										},
 										{
-											Key: new("intAttr"),
+											Key: &mapKey{String: new("intAttr")},
 											Value: &value{
 												Pos: lexer.Position{Offset: 39, Line: 1, Column: 40},
 												Literal: &mathExprLiteral{
@@ -122,7 +122,7 @@ func Test_parse(t *testing.T) {
 											},
 										},
 										{
-											Key: new("floatAttr"),
+											Key: &mapKey{String: new("floatAttr")},
 											Value: &value{
 												Pos: lexer.Position{Offset: 55, Line: 1, Column: 56},
 												Literal: &mathExprLiteral{
@@ -131,7 +131,7 @@ func Test_parse(t *testing.T) {
 											},
 										},
 										{
-											Key:   new("boolAttr"),
+											Key:   &mapKey{String: new("boolAttr")},
 											Value: &value{Pos: lexer.Position{Offset: 72, Line: 1, Column: 73}, Bool: (*boolean)(new(true))},
 										},
 									},
@@ -189,7 +189,7 @@ func Test_parse(t *testing.T) {
 													Map: &mapValue{
 														Values: []mapItem{
 															{
-																Key:   new("foo"),
+																Key:   &mapKey{String: new("foo")},
 																Value: &value{Pos: lexer.Position{Offset: 24, Line: 1, Column: 25}, String: new("bar")},
 															},
 														},
@@ -221,17 +221,17 @@ func Test_parse(t *testing.T) {
 								Map: &mapValue{
 									Values: []mapItem{
 										{
-											Key: new("mapAttr"),
+											Key: &mapKey{String: new("mapAttr")},
 											Value: &value{
 												Pos: lexer.Position{Offset: 16, Line: 1, Column: 17},
 												Map: &mapValue{
 													Values: []mapItem{
 														{
-															Key:   new("foo"),
+															Key:   &mapKey{String: new("foo")},
 															Value: &value{Pos: lexer.Position{Offset: 24, Line: 1, Column: 25}, String: new("bar")},
 														},
 														{
-															Key: new("get"),
+															Key: &mapKey{String: new("get")},
 															Value: &value{
 																Pos: lexer.Position{Offset: 38, Line: 1, Column: 39},
 																Literal: &mathExprLiteral{
@@ -253,7 +253,7 @@ func Test_parse(t *testing.T) {
 															},
 														},
 														{
-															Key: new("arrayAttr"),
+															Key: &mapKey{String: new("arrayAttr")},
 															Value: &value{
 																Pos: lexer.Position{Offset: 62, Line: 1, Column: 63},
 																List: &list{
@@ -3104,9 +3104,9 @@ func Test_parseStatement(t *testing.T) {
 		wantErr           bool
 		wantErrContaining string
 	}{
-		{statement: `set(attributes["x"], {foo: "bar"})`, wantErrContaining: "1:20: statement has invalid syntax near `, {foo"},
+		{statement: `set(attributes["x"], {1: "bar"})`, wantErrContaining: "1:20: statement has invalid syntax near `, {1: \"bar"},
 		{statement: `set(attributes["x"], {fooBar: "bar"})`, wantErr: true},
-		{statement: `set(attributes["x"], {"a": {b: 1}})`, wantErr: true},
+		{statement: `set(attributes["x"], {"a": {2: 1}})`, wantErr: true},
 		{statement: `set(attributes["x"], {"foo": "bar"})`},
 		{statement: `set(`, wantErr: true},
 		{statement: `set("foo)`, wantErr: true},
@@ -3286,9 +3286,9 @@ func Test_parseValueExpression(t *testing.T) {
 		{valueExpression: `0xABCD`},
 		{valueExpression: `0xABC`, wantErrContaining: byteSliceErrorPrefix},
 		{valueExpression: `{"foo": "bar"}`},
-		{valueExpression: `{foo: "bar"}`, wantErrContaining: "1:2: expression has invalid syntax near `foo"},
+		{valueExpression: `{1: "bar"}`, wantErrContaining: "1:2: expression has invalid syntax near `1: \"bar\"}"},
 		{valueExpression: `{fooBar: "bar"}`, wantErr: true},
-		{valueExpression: `{"a": {b: 1}}`, wantErr: true},
+		{valueExpression: `{"a": {2: 1}}`, wantErr: true},
 		{valueExpression: `time_end - time_end`},
 		{valueExpression: `time_end - time_end - attributes["foo"]`},
 		{valueExpression: `Test("foo")`},
@@ -3325,9 +3325,9 @@ func Test_formatParseError(t *testing.T) {
 	}{
 		{
 			name:    "unexpected token reports position and nearby source",
-			raw:     `set(attributes["x"], {foo: "bar"})`,
+			raw:     `set(attributes["x"], {1: "bar"})`,
 			parse:   func(s string) error { _, err := parseStatement(s); return err },
-			wantErr: "1:20: statement has invalid syntax near `, {foo: \"b`: (expected \")\" Key*)",
+			wantErr: "1:20: statement has invalid syntax near `, {1: \"bar`: (expected \")\" Key*)",
 		},
 		{
 			name:    "unexpected token at end of input omits the near clause",
@@ -3337,9 +3337,9 @@ func Test_formatParseError(t *testing.T) {
 		},
 		{
 			name:    "value expression keeps its kind",
-			raw:     `{foo: "bar"}`,
+			raw:     `{1: "bar"}`,
 			parse:   func(s string) error { _, err := parseValueExpression(s); return err },
-			wantErr: "1:2: expression has invalid syntax near `foo: \"bar\"`: (expected \"}\")",
+			wantErr: "1:2: expression has invalid syntax near `1: \"bar\"}`: (expected \"}\")",
 		},
 		{
 			name:    "non-token participle errors keep their own message",
@@ -4201,4 +4201,55 @@ func (*errExpr[K]) unexported() {}
 
 func newErrExpr[K any](err error) boolExpr[K] {
 	return &errExpr[K]{err: err}
+}
+
+func Test_parseValueExpression_mapKeys(t *testing.T) {
+	tests := []struct {
+		name  string
+		expr  string
+		check func(t *testing.T, key *mapKey)
+		err   string
+	}{
+		{
+			name: "converter key",
+			expr: `{Foo("a"): 1}`,
+			check: func(t *testing.T, key *mapKey) {
+				require.NotNil(t, key.Converter)
+				assert.Equal(t, "Foo", key.Converter.Function)
+			},
+		},
+		{
+			name: "path key",
+			expr: `{attributes["a"]: 1}`,
+			check: func(t *testing.T, key *mapKey) {
+				require.NotNil(t, key.Path)
+				assert.Equal(t, "attributes", key.Path.Fields[0].Name)
+			},
+		},
+		{
+			name: "nested map with dynamic keys",
+			expr: `{"a": {name: 1}}`,
+			check: func(t *testing.T, key *mapKey) {
+				require.NotNil(t, key.String)
+			},
+		},
+		{name: "int key", expr: `{1: 1}`, err: "invalid syntax"},
+		{name: "float key", expr: `{1.5: 1}`, err: "invalid syntax"},
+		{name: "enum key", expr: `{SEVERITY_NUMBER_INFO: 1}`, err: "invalid syntax"},
+		{name: "map key", expr: `{{"a": 1}: 1}`, err: "invalid syntax"},
+		{name: "list key", expr: `{["a"]: 1}`, err: "invalid syntax"},
+		{name: "lowercase function key", expr: `{foo(): 1}`, err: "converter names must start with an uppercase letter"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parsed, err := parseValueExpression(tt.expr)
+			if tt.err != "" {
+				require.ErrorContains(t, err, tt.err)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, parsed.Map)
+			tt.check(t, parsed.Map.Values[0].Key)
+		})
+	}
 }

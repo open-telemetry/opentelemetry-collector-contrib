@@ -55,6 +55,8 @@ type BaseConfig struct {
 	Location                     string  `mapstructure:"location,omitempty"`
 	EnableOctetCounting          bool    `mapstructure:"enable_octet_counting,omitempty"`
 	AllowSkipPriHeader           bool    `mapstructure:"allow_skip_pri_header,omitempty"`
+	AllowRFC3339Timestamp        bool    `mapstructure:"allow_rfc3339_timestamp,omitempty"`
+	AllowSecondFractions         bool    `mapstructure:"allow_second_fractions,omitempty"`
 	NonTransparentFramingTrailer *string `mapstructure:"non_transparent_framing_trailer,omitempty"`
 	MaxOctets                    int     `mapstructure:"max_octets,omitempty"`
 }
@@ -89,6 +91,10 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		return nil, errors.New("non_transparent_framing is not compatible with protocol none")
 	case proto != RFC5424 && c.NonTransparentFramingTrailer != nil:
 		return nil, errors.New("non_transparent_framing is only compatible with protocol rfc5424")
+	case proto != RFC3164 && c.AllowRFC3339Timestamp:
+		return nil, errors.New("allow_rfc3339_timestamp is only compatible with protocol rfc3164")
+	case proto != RFC3164 && c.AllowSecondFractions:
+		return nil, errors.New("allow_second_fractions is only compatible with protocol rfc3164")
 	case c.NonTransparentFramingTrailer != nil:
 		if *c.NonTransparentFramingTrailer != NULTrailer && *c.NonTransparentFramingTrailer != LFTrailer {
 			return nil, fmt.Errorf("invalid non_transparent_framing_trailer '%s'. Must be either 'LF' or 'NUL'", *c.NonTransparentFramingTrailer)
@@ -110,6 +116,8 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		location:                     location,
 		enableOctetCounting:          c.EnableOctetCounting,
 		allowSkipPriHeader:           c.AllowSkipPriHeader,
+		allowRFC3339Timestamp:        c.AllowRFC3339Timestamp,
+		allowSecondFractions:         c.AllowSecondFractions,
 		nonTransparentFramingTrailer: c.NonTransparentFramingTrailer,
 		maxOctets:                    c.MaxOctets,
 	}, nil

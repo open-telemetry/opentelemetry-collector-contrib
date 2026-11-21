@@ -7,7 +7,8 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fsplunkhec%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fsplunkhec) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fsplunkhec%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fsplunkhec) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_splunkhec)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_splunkhec&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@atoulme](https://www.github.com/atoulme), [@dmitryax](https://www.github.com/dmitryax) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@atoulme](https://www.github.com/atoulme) |
+| Emeritus      | [@dmitryax](https://www.github.com/dmitryax) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -165,11 +166,11 @@ uses to identify and ingest them:
 | Attribute | Value |
 |---|---|
 | `profiling.data.format` | `pprof-gzip-base64` |
-| `profiling.data.type` | sample type (e.g. `cpu`, `wall`) |
+| `profiling.data.type` | `cpu` for supported CPU profiles and `allocation` for supported allocation profiles |
 | `profiling.instrumentation.source` | `continuous` |
 | `com.splunk.sourcetype` | `otel.profiling` |
 
-All values are fixed constants emitted by the exporter except `profiling.data.type`, which is derived from each profile's sample type.
+The exporter maps on-CPU profiles and allocation-event profiles to `cpu` and `allocation`, respectively. It preserves the pprof sample type, unit, and values, and emits periodic CPU sampling periods in milliseconds. Unsupported or ambiguous profile measurements are dropped during conversion, and counted by `otelcol_exporter_dropped_unsupported_profile_records`. Successfully exported profile records are included in the standard `otelcol_exporter_sent_log_records` counter.
 
 ### Enabling profile export
 

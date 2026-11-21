@@ -1545,10 +1545,20 @@ func (ms *SqlserverLockTimeoutRateMetricConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
+// SqlserverLockWaitCountMetricAttributeKey specifies the key of an attribute for the sqlserver.lock.wait.count metric.
+type SqlserverLockWaitCountMetricAttributeKey string
+
+const (
+	SqlserverLockWaitCountMetricAttributeKeySqlserverWorkloadGroupName SqlserverLockWaitCountMetricAttributeKey = "sqlserver.workload_group.name"
+)
+
 // SqlserverLockWaitCountMetricConfig provides config for the sqlserver.lock.wait.count metric.
 type SqlserverLockWaitCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverLockWaitCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SqlserverLockWaitCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1562,6 +1572,24 @@ func (ms *SqlserverLockWaitCountMetricConfig) Unmarshal(parser *confmap.Conf) er
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverLockWaitCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverLockWaitCountMetricAttributeKeySqlserverWorkloadGroupName:
+		default:
+			return fmt.Errorf("metric sqlserver.lock.wait.count doesn't have an attribute %v, valid attributes: [sqlserver.workload_group.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -1829,10 +1857,20 @@ func (ms *SqlserverMemoryPageCountMetricConfig) Validate() error {
 	return nil
 }
 
+// SqlserverMemoryUsageMetricAttributeKey specifies the key of an attribute for the sqlserver.memory.usage metric.
+type SqlserverMemoryUsageMetricAttributeKey string
+
+const (
+	SqlserverMemoryUsageMetricAttributeKeySqlserverResourcePoolName SqlserverMemoryUsageMetricAttributeKey = "sqlserver.resource_pool.name"
+)
+
 // SqlserverMemoryUsageMetricConfig provides config for the sqlserver.memory.usage metric.
 type SqlserverMemoryUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverMemoryUsageMetricAttributeKey `mapstructure:"attributes"`
 }
 
 func (ms *SqlserverMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1846,6 +1884,24 @@ func (ms *SqlserverMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) erro
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverMemoryUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverMemoryUsageMetricAttributeKeySqlserverResourcePoolName:
+		default:
+			return fmt.Errorf("metric sqlserver.memory.usage doesn't have an attribute %v, valid attributes: [sqlserver.resource_pool.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -2631,6 +2687,123 @@ func (ms *SqlserverTaskRateMetricConfig) Validate() error {
 	return nil
 }
 
+// SqlserverTempdbAllocationWaitersCountMetricAttributeKey specifies the key of an attribute for the sqlserver.tempdb.allocation.waiters.count metric.
+type SqlserverTempdbAllocationWaitersCountMetricAttributeKey string
+
+const (
+	SqlserverTempdbAllocationWaitersCountMetricAttributeKeySqlserverTempdbAllocationPageType SqlserverTempdbAllocationWaitersCountMetricAttributeKey = "sqlserver.tempdb.allocation.page_type"
+)
+
+// SqlserverTempdbAllocationWaitersCountMetricConfig provides config for the sqlserver.tempdb.allocation.waiters.count metric.
+type SqlserverTempdbAllocationWaitersCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverTempdbAllocationWaitersCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverTempdbAllocationWaitersCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverTempdbAllocationWaitersCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverTempdbAllocationWaitersCountMetricAttributeKeySqlserverTempdbAllocationPageType:
+		default:
+			return fmt.Errorf("metric sqlserver.tempdb.allocation.waiters.count doesn't have an attribute %v, valid attributes: [sqlserver.tempdb.allocation.page_type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverTempdbFileSizeMetricAttributeKey specifies the key of an attribute for the sqlserver.tempdb.file.size metric.
+type SqlserverTempdbFileSizeMetricAttributeKey string
+
+const (
+	SqlserverTempdbFileSizeMetricAttributeKeyFileType              SqlserverTempdbFileSizeMetricAttributeKey = "file_type"
+	SqlserverTempdbFileSizeMetricAttributeKeySqlserverTempdbFileID SqlserverTempdbFileSizeMetricAttributeKey = "sqlserver.tempdb.file.id"
+)
+
+// SqlserverTempdbFileSizeMetricConfig provides config for the sqlserver.tempdb.file.size metric.
+type SqlserverTempdbFileSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverTempdbFileSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverTempdbFileSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverTempdbFileSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverTempdbFileSizeMetricAttributeKeyFileType, SqlserverTempdbFileSizeMetricAttributeKeySqlserverTempdbFileID:
+		default:
+			return fmt.Errorf("metric sqlserver.tempdb.file.size doesn't have an attribute %v, valid attributes: [file_type, sqlserver.tempdb.file.id]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverThreadPoolTaskCountMetricConfig provides config for the sqlserver.thread_pool.task.count metric.
+type SqlserverThreadPoolTaskCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverThreadPoolTaskCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // SqlserverTransactionDelayMetricConfig provides config for the sqlserver.transaction.delay metric.
 type SqlserverTransactionDelayMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -3055,6 +3228,9 @@ type MetricsConfig struct {
 	SqlserverTableCount                                   SqlserverTableCountMetricConfig                                   `mapstructure:"sqlserver.table.count"`
 	SqlserverTaskCount                                    SqlserverTaskCountMetricConfig                                    `mapstructure:"sqlserver.task.count"`
 	SqlserverTaskRate                                     SqlserverTaskRateMetricConfig                                     `mapstructure:"sqlserver.task.rate"`
+	SqlserverTempdbAllocationWaitersCount                 SqlserverTempdbAllocationWaitersCountMetricConfig                 `mapstructure:"sqlserver.tempdb.allocation.waiters.count"`
+	SqlserverTempdbFileSize                               SqlserverTempdbFileSizeMetricConfig                               `mapstructure:"sqlserver.tempdb.file.size"`
+	SqlserverThreadPoolTaskCount                          SqlserverThreadPoolTaskCountMetricConfig                          `mapstructure:"sqlserver.thread_pool.task.count"`
 	SqlserverTransactionDelay                             SqlserverTransactionDelayMetricConfig                             `mapstructure:"sqlserver.transaction.delay"`
 	SqlserverTransactionMirrorWriteRate                   SqlserverTransactionMirrorWriteRateMetricConfig                   `mapstructure:"sqlserver.transaction.mirror_write.rate"`
 	SqlserverTransactionRate                              SqlserverTransactionRateMetricConfig                              `mapstructure:"sqlserver.transaction.rate"`
@@ -3260,7 +3436,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SqlserverLockWaitCount: SqlserverLockWaitCountMetricConfig{
-			Enabled: false,
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SqlserverLockWaitCountMetricAttributeKey{SqlserverLockWaitCountMetricAttributeKeySqlserverWorkloadGroupName},
 		},
 		SqlserverLockWaitRate: SqlserverLockWaitRateMetricConfig{
 			Enabled: true,
@@ -3296,7 +3474,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			EnabledAttributes:   []SqlserverMemoryPageCountMetricAttributeKey{SqlserverMemoryPageCountMetricAttributeKeyPagePool},
 		},
 		SqlserverMemoryUsage: SqlserverMemoryUsageMetricConfig{
-			Enabled: false,
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SqlserverMemoryUsageMetricAttributeKey{SqlserverMemoryUsageMetricAttributeKeySqlserverResourcePoolName},
 		},
 		SqlserverOsWaitDuration: SqlserverOsWaitDurationMetricConfig{
 			Enabled:             false,
@@ -3393,6 +3573,19 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []SqlserverTaskRateMetricAttributeKey{SqlserverTaskRateMetricAttributeKeyTaskResult},
 		},
+		SqlserverTempdbAllocationWaitersCount: SqlserverTempdbAllocationWaitersCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverTempdbAllocationWaitersCountMetricAttributeKey{SqlserverTempdbAllocationWaitersCountMetricAttributeKeySqlserverTempdbAllocationPageType},
+		},
+		SqlserverTempdbFileSize: SqlserverTempdbFileSizeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverTempdbFileSizeMetricAttributeKey{SqlserverTempdbFileSizeMetricAttributeKeyFileType, SqlserverTempdbFileSizeMetricAttributeKeySqlserverTempdbFileID},
+		},
+		SqlserverThreadPoolTaskCount: SqlserverThreadPoolTaskCountMetricConfig{
+			Enabled: false,
+		},
 		SqlserverTransactionDelay: SqlserverTransactionDelayMetricConfig{
 			Enabled: false,
 		},
@@ -3463,14 +3656,18 @@ func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
 
 // EventsConfig provides config for sql_server events.
 type EventsConfig struct {
-	DbServerQueryPlan    EventConfig `mapstructure:"db.server.query_plan"`
-	DbServerQuerySample  EventConfig `mapstructure:"db.server.query_sample"`
-	DbServerTopProcedure EventConfig `mapstructure:"db.server.top_procedure"`
-	DbServerTopQuery     EventConfig `mapstructure:"db.server.top_query"`
+	DbServerProcedureDefinition EventConfig `mapstructure:"db.server.procedure_definition"`
+	DbServerQueryPlan           EventConfig `mapstructure:"db.server.query_plan"`
+	DbServerQuerySample         EventConfig `mapstructure:"db.server.query_sample"`
+	DbServerTopProcedure        EventConfig `mapstructure:"db.server.top_procedure"`
+	DbServerTopQuery            EventConfig `mapstructure:"db.server.top_query"`
 }
 
 func DefaultEventsConfig() EventsConfig {
 	return EventsConfig{
+		DbServerProcedureDefinition: EventConfig{
+			Enabled: false,
+		},
 		DbServerQueryPlan: EventConfig{
 			Enabled: false,
 		},

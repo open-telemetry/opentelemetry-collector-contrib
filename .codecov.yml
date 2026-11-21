@@ -513,6 +513,10 @@ component_management:
     name: pkg_ottl_contexts_xprofile
     paths:
     - pkg/ottl/contexts/xprofile/**
+  - component_id: pkg_ottl_contexts_xspanlink
+    name: pkg_ottl_contexts_xspanlink
+    paths:
+    - pkg/ottl/contexts/xspanlink/**
   - component_id: pkg_ottl_xottl
     name: pkg_ottl_xottl
     paths:
@@ -741,10 +745,18 @@ component_management:
     name: processor_transform
     paths:
     - processor/transformprocessor/**
+  - component_id: processor_transformprocessor_xtransform
+    name: processor_transformprocessor_xtransform
+    paths:
+    - processor/transformprocessor/xtransformprocessor/**
   - component_id: processor_unroll
     name: processor_unroll
     paths:
     - processor/unrollprocessor/**
+  - component_id: processor_verify
+    name: processor_verify
+    paths:
+    - processor/verifyprocessor/**
   - component_id: receiver_activedirectoryds
     name: receiver_activedirectoryds
     paths:
@@ -1093,10 +1105,6 @@ component_management:
     name: receiver_saphana
     paths:
     - receiver/saphanareceiver/**
-  - component_id: receiver_signalfx
-    name: receiver_signalfx
-    paths:
-    - receiver/signalfxreceiver/**
   - component_id: receiver_simpleprometheus
     name: receiver_simpleprometheus
     paths:

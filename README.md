@@ -106,12 +106,14 @@ For more information about the approver role, see the [community repository](htt
 - [Douglas Camata](https://github.com/douglascamata), Coralogix
 - [Dylan Strohschein](https://github.com/dyl10s), Dynatrace
 - [George Krajcsovits](https://github.com/krajorama), Grafana Labs
+- [Himanshu Singh](https://github.com/himanshu130700), Sumo Logic
 - [James Moessis](https://github.com/jamesmoessis), Optiver
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Khushi Jain](https://github.com/khushijain21), Elastic
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
 - [Roger Coll](https://github.com/rogercoll), Elastic
+- [Satoshi Kamiyama](https://github.com/SatoshiKamiyama), MagicPod
 - [Vibhanshu Singh](https://github.com/singhvibhanshu)
 - Actively seeking contributors to triage issues
 
@@ -140,6 +142,10 @@ For more information about the emeritus role, see the [community repository](htt
 ### No Over-Representation
 
 A community member cannot be promoted to be a Collector contrib maintainer if, after their promotion, the resulting maintainers group has more than one-fourth (25%) of the members affiliated with the same employer. Job changes and similar events might result in over-representation, and no new maintainers from the same company can be promoted until representation is balanced again. In the event of confusion or concern, the OpenTelemetry Collector SIG will defer to the CNCF definition of "same employer".
+
+### SIG Meeting Attendance
+
+Before they can become a Collector contrib approver or maintainer, a community member must have attended at least one [Collector SIG meeting](https://github.com/open-telemetry/community#special-interest-groups) on camera. At least one current Collector contrib maintainer must also have attended that meeting.
 
 ## PRs and Reviews
 
