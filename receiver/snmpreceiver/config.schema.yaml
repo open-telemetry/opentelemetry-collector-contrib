@@ -204,7 +204,7 @@ properties:
     type: string
   community:
     description: 'Community is the SNMP community string to use. Only valid for versions "v1" and "v2c" Default: public'
-    type: string
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
   endpoint:
     description: 'Endpoint is the SNMP target to request data from. Must be formatted as [udp|tcp|][4|6|]://{host}:{port}. Default: udp://localhost:161 If no scheme is given, udp4 is assumed. If no port is given, 161 is assumed.'
     type: string

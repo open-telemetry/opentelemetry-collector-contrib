@@ -61,7 +61,7 @@ func (e *rabbitmqExporter) start(ctx context.Context, host component.Host) error
 			Auth: func() amqp.Authentication {
 				return &amqp.PlainAuth{
 					Username: e.config.Connection.Auth.Plain.Username,
-					Password: e.config.Connection.Auth.Plain.Password,
+					Password: string(e.config.Connection.Auth.Plain.Password),
 				}
 			},
 			ConnectionName:    e.connectionName,
