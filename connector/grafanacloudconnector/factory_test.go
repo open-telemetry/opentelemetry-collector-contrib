@@ -7,18 +7,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"gotest.tools/assert"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	assert.DeepEqual(t, &Config{
+	require.Equal(t, &Config{
 		HostIdentifiers:      []string{"k8s.node.name", "host.id", "k8s.node.uid"},
 		MetricsFlushInterval: 60 * time.Second,
 	}, cfg)
 
-	assert.NilError(t, componenttest.CheckConfigStruct(cfg))
+	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 }

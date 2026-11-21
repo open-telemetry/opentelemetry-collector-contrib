@@ -12,6 +12,9 @@ import (
 	"encoding/pem"
 	"math/big"
 	"os"
+	"reflect"
+	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,18 +36,22 @@ import (
 )
 
 // TestGetPrometheusConfigInlineTLS proves that inline PEM TLS material and the
-// server name are forwarded to the underlying prometheus receiver. Both are
-// valid confighttp.ClientConfig TLS options; dropping them silently turns a
-// TLS scrape into a misconfigured one with no error.
+// server name are forwarded to the underlying prometheus receiver and survive
+// the reload that the prometheus receiver runs. They are valid
+// confighttp.ClientConfig TLS options; dropping them silently turns a TLS
+// scrape into a misconfigured one with no error.
 func TestGetPrometheusConfigInlineTLS(t *testing.T) {
 	caPem, err := os.ReadFile("./testdata/test_cert.pem")
 	require.NoError(t, err)
+	certPem, keyPem := generateSelfSignedPEM(t)
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = "localhost:1234"
 	clientConfig.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
-			CAPem: configopaque.String(caPem),
+			CAPem:   configopaque.String(caPem),
+			CertPem: configopaque.String(certPem),
+			KeyPem:  configopaque.String(keyPem),
 		},
 		ServerName: "example.com",
 	}
@@ -57,9 +64,12 @@ func TestGetPrometheusConfigInlineTLS(t *testing.T) {
 
 	got, err := getPrometheusConfig(cfg, zap.NewNop())
 	require.NoError(t, err)
+	require.NoError(t, got.PrometheusConfig.Reload())
 
 	tlsCfg := got.PrometheusConfig.ScrapeConfigs[0].HTTPClientConfig.TLSConfig
 	assert.Equal(t, string(caPem), tlsCfg.CA, "inline CA PEM (ca_pem) must be forwarded to the prometheus scrape config")
+	assert.Equal(t, string(certPem), tlsCfg.Cert, "cert_pem must be forwarded to the prometheus scrape config")
+	assert.Equal(t, configutil.Secret(keyPem), tlsCfg.Key, "key_pem must be forwarded to the prometheus scrape config")
 	assert.Equal(t, "example.com", tlsCfg.ServerName, "server_name must be forwarded to the prometheus scrape config")
 }
 
@@ -305,4 +315,68 @@ func TestStartWarnsUnsupportedTLSSettings(t *testing.T) {
 			assert.Equal(t, tt.wantKeys, warned[0].ContextMap()["settings"])
 		})
 	}
+}
+
+// TestTLSSettingsAreClassified fails when configtls.ClientConfig gains a
+// setting that this receiver does not handle, so the setting is not silently
+// dropped.
+func TestTLSSettingsAreClassified(t *testing.T) {
+	handled := map[string]string{
+		// Forwarded to the prometheus scrape TLS config.
+		"ca_file":              "forwarded",
+		"ca_pem":               "forwarded",
+		"cert_file":            "forwarded",
+		"cert_pem":             "forwarded",
+		"key_file":             "forwarded",
+		"key_pem":              "forwarded",
+		"server_name_override": "forwarded",
+		"insecure_skip_verify": "forwarded",
+		"min_version":          "forwarded",
+		"max_version":          "forwarded",
+		// No prometheus equivalent; named in the unsupportedTLSSettings warning.
+		"cipher_suites":                  "warned",
+		"include_insecure_cipher_suites": "warned",
+		"curve_preferences":              "warned",
+		"include_system_ca_certs_pool":   "warned",
+		"tpm":                            "warned",
+		// Prometheus re-reads changed certificate, key and CA files itself.
+		"reload_interval": "covered by prometheus",
+		// Selects between an http and an https scrape.
+		"insecure": "controls scheme",
+	}
+
+	keys := configKeys(reflect.TypeFor[configtls.ClientConfig]())
+	for _, key := range keys {
+		if _, ok := handled[key]; !ok {
+			t.Errorf("tls key %q is not handled: forward it in getPrometheusConfig or add it to "+
+				"unsupportedTLSSettings, update the tls section of README.md, then add it here", key)
+		}
+	}
+	for key := range handled {
+		if !slices.Contains(keys, key) {
+			t.Errorf("tls key %q is listed here but configtls.ClientConfig no longer has it", key)
+		}
+	}
+}
+
+// configKeys returns the config keys of the struct type typ: the mapstructure
+// tag name, or the field name when the tag has none, with squashed fields
+// flattened into the parent and other unexported fields skipped.
+func configKeys(typ reflect.Type) []string {
+	var keys []string
+	for field := range typ.Fields() {
+		name, opts, _ := strings.Cut(field.Tag.Get("mapstructure"), ",")
+		if strings.Contains(opts, "squash") {
+			keys = append(keys, configKeys(field.Type)...)
+			continue
+		}
+		if !field.IsExported() {
+			continue
+		}
+		if name == "" {
+			name = field.Name
+		}
+		keys = append(keys, name)
+	}
+	return keys
 }

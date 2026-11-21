@@ -38,8 +38,11 @@ type TelemetryBuilder struct {
 	KafkaReceiverMessages                    metric.Int64Counter
 	KafkaReceiverOffsetLag                   metric.Int64ObservableGauge
 	KafkaReceiverPartitionClose              metric.Int64Counter
+	KafkaReceiverPartitionDataWait           metric.Float64Counter
+	KafkaReceiverPartitionInFlightRecords    metric.Int64UpDownCounter
 	KafkaReceiverPartitionStart              metric.Int64Counter
 	KafkaReceiverReadLatency                 metric.Float64Histogram
+	KafkaReceiverRecordProcessingDuration    metric.Float64Histogram
 	KafkaReceiverRecords                     metric.Int64Counter
 	KafkaReceiverRecordsDelay                metric.Float64Histogram
 	KafkaReceiverUnmarshalFailedLogRecords   metric.Int64Counter
@@ -184,6 +187,18 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
+	builder.KafkaReceiverPartitionDataWait, err = builder.meter.Float64Counter(
+		"otelcol_kafka_receiver_partition_data_wait",
+		metric.WithDescription("Time waiting for data with no queued batch, current batch, or active record-processing call. [Development]"),
+		metric.WithUnit("s"),
+	)
+	errs = errors.Join(errs, err)
+	builder.KafkaReceiverPartitionInFlightRecords, err = builder.meter.Int64UpDownCounter(
+		"otelcol_kafka_receiver_partition_in_flight_records",
+		metric.WithDescription("The number of active record-processing calls, including decoding, Consume, and retry backoff. [Development]"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
 	builder.KafkaReceiverPartitionStart, err = builder.meter.Int64Counter(
 		"otelcol_kafka_receiver_partition_start",
 		metric.WithDescription("Number of started partitions [Development]"),
@@ -193,6 +208,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.KafkaReceiverReadLatency, err = builder.meter.Float64Histogram(
 		"otelcol_kafka_receiver_read_latency",
 		metric.WithDescription("The time it took in seconds to receive a batch of records. [Development]"),
+		metric.WithUnit("s"),
+		metric.WithExplicitBucketBoundaries([]float64{0, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10, 25, 50, 75, 100}...),
+	)
+	errs = errors.Join(errs, err)
+	builder.KafkaReceiverRecordProcessingDuration, err = builder.meter.Float64Histogram(
+		"otelcol_kafka_receiver_record_processing_duration",
+		metric.WithDescription("The duration of each decode or Consume attempt, including failures and excluding retry backoff. [Development]"),
 		metric.WithUnit("s"),
 		metric.WithExplicitBucketBoundaries([]float64{0, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10, 25, 50, 75, 100}...),
 	)

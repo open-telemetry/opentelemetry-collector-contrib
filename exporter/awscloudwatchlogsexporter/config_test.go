@@ -78,11 +78,11 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_queue_size"),
-			errorMessage: "`queue_size` must be positive",
+			errorMessage: "queue_size",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_num_consumers"),
-			errorMessage: "`num_consumers` must be positive",
+			errorMessage: "num_consumers",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_required_field_stream"),

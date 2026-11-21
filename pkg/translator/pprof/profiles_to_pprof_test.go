@@ -9,8 +9,8 @@ import (
 	"github.com/open-telemetry/sig-profiling/profcheck"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-	commonv1 "go.opentelemetry.io/proto/otlp/common/v1"
-	otlpprofiles "go.opentelemetry.io/proto/otlp/profiles/v1development"
+	commonv1 "go.opentelemetry.io/proto/slim/otlp/common/v1"
+	otlpprofiles "go.opentelemetry.io/proto/slim/otlp/profiles/v1development"
 	"google.golang.org/protobuf/proto"
 )
 

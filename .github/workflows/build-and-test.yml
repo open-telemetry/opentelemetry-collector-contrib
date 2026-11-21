@@ -105,25 +105,6 @@ jobs:
             "^versions.yaml",
             "^cmd/otelcontribcol/"
             ]
-          ALL_TEST_GROUPS: >-
-            [
-            "receiver-0",
-            "receiver-1",
-            "receiver-2",
-            "receiver-3",
-            "processor-0",
-            "processor-1",
-            "exporter-0",
-            "exporter-1",
-            "exporter-2",
-            "exporter-3",
-            "extension",
-            "connector",
-            "internal",
-            "pkg",
-            "cmd-0",
-            "other"
-            ]
         run: ./.github/workflows/scripts/compute-ci-scope.sh
       - name: Filter matrix and derive mode
         id: post
@@ -200,29 +181,14 @@ jobs:
             false
           fi
   govulncheck:
+    needs: [setup-environment, ci-scope]
+    if: ${{ needs.ci-scope.outputs.matrix != '[]' && needs.ci-scope.outputs.matrix != '' }}
     strategy:
       fail-fast: false
       matrix:
-        group:
-          - receiver-0
-          - receiver-1
-          - receiver-2
-          - receiver-3
-          - processor-0
-          - processor-1
-          - exporter-0
-          - exporter-1
-          - exporter-2
-          - exporter-3
-          - extension
-          - connector
-          - internal
-          - pkg
-          - cmd-0
-          - other
+        group: ${{ fromJSON(needs.ci-scope.outputs.matrix) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    needs: [setup-environment]
     steps:
       - name: Checkout Repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -462,7 +428,7 @@ jobs:
           group_hash="$(printf '%s' "$normalized_group" | sha256sum | cut -d ' ' -f 1)"
           echo "key=docker-${group_hash}" >> "$GITHUB_OUTPUT"
       - name: Cache Docker images.
-        uses: AndreKurait/docker-cache@7a3887908bdb97935395833df69b060cfcca0f7f # 0.7.0
+        uses: AndreKurait/docker-cache@e1eb0120c0c16b3f1c6ff1c0ef4ebc9f67f8dc6a # 0.7.1
         with:
           key: ${{ steps.docker-cache-key.outputs.key }}
       - name: Run Integration Tests
@@ -489,7 +455,7 @@ jobs:
         with:
           go-version: oldstable
       - name: Cache Docker images.
-        uses: AndreKurait/docker-cache@7a3887908bdb97935395833df69b060cfcca0f7f # 0.7.0
+        uses: AndreKurait/docker-cache@e1eb0120c0c16b3f1c6ff1c0ef4ebc9f67f8dc6a # 0.7.1
         with:
           key: docker-${{ matrix.group }}
       - name: Run Integration Tests
@@ -582,7 +548,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: oldstable
           cache: false
@@ -711,7 +677,7 @@ jobs:
           docker run otel/opentelemetry-collector-contrib-dev:"$GITHUB_SHA" --version
           docker run otel/opentelemetry-collector-contrib-dev:latest --version
       - name: Login to Docker Hub
-        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}

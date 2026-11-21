@@ -46,7 +46,7 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 		var err error
 
 		if sqlCfg.Config.DataSource != "" {
-			dataSource = sqlCfg.Config.DataSource
+			dataSource = string(sqlCfg.Config.DataSource)
 		} else {
 			dataSource, err = sqlquery.BuildDataSourceString(sqlCfg.Config)
 			if err != nil {

@@ -6,6 +6,7 @@ package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/prometheus/otlptranslator"
@@ -77,6 +78,7 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 			scopeMetrics := scopeMetricsSlice.At(j)
 			metricSlice := scopeMetrics.Metrics()
 			scope := scopeMetrics.Scope()
+			schemaURL := scopeMetrics.SchemaUrl()
 
 			// TODO: decide if instrumentation library information should be exported as labels
 			for k := 0; k < metricSlice.Len(); k++ {
@@ -109,37 +111,37 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					if dataPoints.Len() == 0 {
 						break
 					}
-					errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, scope, settings, promName, m))
+					errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, scope, schemaURL, settings, promName, m))
 				case pmetric.MetricTypeSum:
 					dataPoints := metric.Sum().DataPoints()
 					if dataPoints.Len() == 0 {
 						break
 					}
 					if !metric.Sum().IsMonotonic() {
-						errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, scope, settings, promName, m))
+						errs = multierr.Append(errs, c.addGaugeNumberDataPoints(dataPoints, resource, scope, schemaURL, settings, promName, m))
 					} else {
-						errs = multierr.Append(errs, c.addSumNumberDataPoints(dataPoints, resource, scope, metric, settings, promName, m))
+						errs = multierr.Append(errs, c.addSumNumberDataPoints(dataPoints, resource, scope, schemaURL, metric, settings, promName, m))
 					}
 				case pmetric.MetricTypeHistogram:
 					dataPoints := metric.Histogram().DataPoints()
 					if dataPoints.Len() == 0 {
 						break
 					}
-					errs = multierr.Append(errs, c.addHistogramDataPoints(dataPoints, resource, scope, settings, promName, m))
+					errs = multierr.Append(errs, c.addHistogramDataPoints(dataPoints, resource, scope, schemaURL, settings, promName, m))
 				case pmetric.MetricTypeExponentialHistogram:
 					dataPoints := metric.ExponentialHistogram().DataPoints()
 					if dataPoints.Len() == 0 {
 						break
 					}
 					errs = multierr.Append(errs, c.addExponentialHistogramDataPoints(
-						dataPoints, resource, scope, settings, promName, m,
+						dataPoints, resource, scope, schemaURL, settings, promName, m,
 					))
 				case pmetric.MetricTypeSummary:
 					dataPoints := metric.Summary().DataPoints()
 					if dataPoints.Len() == 0 {
 						break
 					}
-					errs = multierr.Append(errs, c.addSummaryDataPoints(dataPoints, resource, scope, settings, promName, m))
+					errs = multierr.Append(errs, c.addSummaryDataPoints(dataPoints, resource, scope, schemaURL, settings, promName, m))
 				default:
 					errs = multierr.Append(errs, errors.New("unsupported metric type"))
 				}
@@ -163,6 +165,30 @@ func (c *prometheusConverterV2) timeSeries() []writev2.TimeSeries {
 		}
 	}
 	return allTS
+}
+
+// addExemplars adds exemplars for the dataPoint. For each exemplar, if it can find a bucket bound corresponding to its value,
+// the exemplar is added to the bucket bound's time series, provided that the time series' has samples.
+func (c *prometheusConverterV2) addExemplars(dataPoint pmetric.HistogramDataPoint, bucketBounds []bucketBoundsDataV2) {
+	if len(bucketBounds) == 0 {
+		return
+	}
+
+	symbolize := func(s string) uint32 { return c.symbolTable.Symbolize(s) }
+	exemplars := getPromExemplarsV2(dataPoint, symbolize)
+	if len(exemplars) == 0 {
+		return
+	}
+
+	sort.Sort(byBucketBoundsDataV2(bucketBounds))
+	for _, exemplar := range exemplars {
+		for _, bound := range bucketBounds {
+			if len(bound.ts.Samples) > 0 && exemplar.Value <= bound.bound {
+				bound.ts.Exemplars = append(bound.ts.Exemplars, exemplar)
+				break
+			}
+		}
+	}
 }
 
 func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label, metadata metadata) *writev2.TimeSeries {

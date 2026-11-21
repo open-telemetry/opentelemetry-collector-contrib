@@ -568,6 +568,22 @@ func TestBuild(t *testing.T) {
 			nil,
 		},
 		{
+			"ZeroPollInterval",
+			func(cfg *Config) {
+				cfg.PollInterval = 0
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"NegativePollInterval",
+			func(cfg *Config) {
+				cfg.PollInterval = -time.Second
+			},
+			require.Error,
+			nil,
+		},
+		{
 			"InvalidMaxBatches",
 			func(cfg *Config) {
 				cfg.MaxBatches = -1

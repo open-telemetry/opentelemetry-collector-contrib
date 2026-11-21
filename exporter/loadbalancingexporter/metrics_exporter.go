@@ -5,7 +5,6 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -13,7 +12,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -105,16 +103,7 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 
 	switch e.routingKey {
 	case svcRouting:
-		var errs []error
-		batches, errs = splitMetricsByResourceServiceName(md)
-		if len(errs) > 0 {
-			for _, ee := range errs {
-				e.logger.Error("failed to export metric", zap.Error(ee))
-			}
-			if len(batches) == 0 {
-				return consumererror.NewPermanent(errors.Join(errs...))
-			}
-		}
+		batches = splitMetricsByResourceServiceName(md)
 	case resourceRouting:
 		batches = splitMetricsByResourceID(md)
 	case metricNameRouting:
@@ -171,28 +160,28 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 	return errs
 }
 
-func splitMetricsByResourceServiceName(md pmetric.Metrics) (map[string]pmetric.Metrics, []error) {
+func splitMetricsByResourceServiceName(md pmetric.Metrics) map[string]pmetric.Metrics {
 	results := map[string]pmetric.Metrics{}
-	var errs []error
 
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rm := md.ResourceMetrics().At(i)
-
-		svc, ok := rm.Resource().Attributes().Get(string(conventions.ServiceNameKey))
-		if !ok {
-			errs = append(errs, fmt.Errorf("unable to get service name from resource metric with attributes: %v", rm.Resource().Attributes().AsRaw()))
-			continue
-		}
 
 		newMD := pmetric.NewMetrics()
 		rmClone := newMD.ResourceMetrics().AppendEmpty()
 		rm.CopyTo(rmClone)
 
-		key := svc.Str()
+		// A resource without a service name is routed by the hash of its resource
+		// attributes (as with routing_key "resource") instead of being dropped.
+		var key string
+		if svc, ok := rm.Resource().Attributes().Get(string(conventions.ServiceNameKey)); ok && svc.Str() != "" {
+			key = svc.Str()
+		} else {
+			key = identity.OfResource(rm.Resource()).String()
+		}
 		appendMetricsByKey(results, key, newMD)
 	}
 
-	return results, errs
+	return results
 }
 
 func splitMetricsByResourceID(md pmetric.Metrics) map[string]pmetric.Metrics {

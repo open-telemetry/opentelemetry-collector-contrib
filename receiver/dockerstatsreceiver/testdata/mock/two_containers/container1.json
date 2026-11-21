@@ -20,7 +20,7 @@
     "Hostname": "89d28931fd8b",
     "Image": "alpine",
     "Labels": {
-      "container.label": "container-label2"
+      "team": "container-label2"
     },
     "OnBuild": null,
     "OpenStdin": true,

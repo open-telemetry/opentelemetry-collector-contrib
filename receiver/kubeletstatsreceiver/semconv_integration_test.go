@@ -20,13 +20,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
 // semconvRegistry must match sem_conv_version in metadata.yaml.
-const semconvRegistry = "https://github.com/open-telemetry/semantic-conventions.git@v1.44.0[model]"
+const semconvRegistry = "https://github.com/open-telemetry/semantic-conventions.git@v1.45.0[model]"
 
 // semconvCompliantMetrics lists the receiver metrics whose name, type, unit
 // and attributes already match a release_candidate (or stable) definition
@@ -35,40 +36,73 @@ const semconvRegistry = "https://github.com/open-telemetry/semantic-conventions.
 // added here once they are promoted.
 var semconvCompliantMetrics = []string{
 	"container.cpu.time",
+	"k8s.node.cpu.time",
+	"k8s.pod.cpu.time",
 }
 
-// TestSemconvComplianceContainerMetrics checks the container metrics, and the
+// semconvV1CompliantMetrics lists the receiver metrics that match a
+// release_candidate (or stable) definition only when the
+// receiver.kubelet_stats.EmitV1K8sConventions feature gate is enabled.
+var semconvV1CompliantMetrics = []string{
+	"container.memory.available",
+	"container.memory.rss",
+	"container.memory.usage",
+	"container.memory.working_set",
+}
+
+// TestSemconvCompliance checks the container, pod and node metrics, and the
 // resource attributes they carry, against semantic conventions.
-func TestSemconvComplianceContainerMetrics(t *testing.T) {
-	r, err := newKubeletScraper(
-		&fakeRestClient{},
-		receivertest.NewNopSettings(metadata.Type),
-		&scraperOptions{
-			metricGroupsToCollect: map[kubelet.MetricGroup]bool{
-				kubelet.ContainerMetricGroup: true,
-			},
-		},
-		metadata.NewDefaultMetricsBuilderConfig(),
-		"worker-42",
-	)
-	require.NoError(t, err)
+func TestSemconvCompliance(t *testing.T) {
+	testSemconvCompliance(t, semconvCompliantMetrics)
+}
 
-	md, err := r.ScrapeMetrics(t.Context())
-	require.NoError(t, err)
+// TestSemconvComplianceV1 checks the metrics emitted with the
+// receiver.kubelet_stats.EmitV1K8sConventions feature gate enabled.
+func TestSemconvComplianceV1(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, true)()
+	testSemconvCompliance(t, slices.Concat(semconvCompliantMetrics, semconvV1CompliantMetrics))
+}
 
-	keepSemconvCompliantMetrics(md)
-	require.Positive(t, md.MetricCount(), "expected at least one semconv-compliant metric")
+func testSemconvCompliance(t *testing.T, compliant []string) {
+	for name, group := range map[string]kubelet.MetricGroup{
+		"container": kubelet.ContainerMetricGroup,
+		"pod":       kubelet.PodMetricGroup,
+		"node":      kubelet.NodeMetricGroup,
+	} {
+		t.Run(name, func(t *testing.T) {
+			r, err := newKubeletScraper(
+				&fakeRestClient{},
+				receivertest.NewNopSettings(metadata.Type),
+				&scraperOptions{
+					metricGroupsToCollect: map[kubelet.MetricGroup]bool{group: true},
+					// Since semconv 1.45, container.cpu.time is associated with the
+					// container entity, whose identifying attribute container.id is
+					// required. The receiver only populates it when opted in.
+					extraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
+				},
+				metadata.NewDefaultMetricsBuilderConfig(),
+				"worker-42",
+			)
+			require.NoError(t, err)
 
-	semconvtest.TestMetrics(t, md, semconvtest.WithRegistry(semconvRegistry))
+			md, err := r.ScrapeMetrics(t.Context())
+			require.NoError(t, err)
+
+			keepSemconvCompliantMetrics(md, compliant)
+			require.Positive(t, md.MetricCount(), "expected at least one semconv-compliant metric")
+
+			semconvtest.TestMetrics(t, md, semconvtest.WithRegistry(semconvRegistry))
+		})
+	}
 }
 
 // keepSemconvCompliantMetrics drops every metric that is not listed in
-// semconvCompliantMetrics, along with the scopes and resources left empty.
-func keepSemconvCompliantMetrics(md pmetric.Metrics) {
+// compliant, along with the scopes and resources left empty.
+func keepSemconvCompliantMetrics(md pmetric.Metrics, compliant []string) {
 	md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
 		rm.ScopeMetrics().RemoveIf(func(sm pmetric.ScopeMetrics) bool {
 			sm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
-				return !slices.Contains(semconvCompliantMetrics, m.Name())
+				return !slices.Contains(compliant, m.Name())
 			})
 			return sm.Metrics().Len() == 0
 		})
