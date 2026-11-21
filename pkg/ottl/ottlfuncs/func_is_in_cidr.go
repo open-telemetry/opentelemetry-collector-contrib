@@ -8,11 +8,12 @@ import (
 	"net"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/slicegetter"
 )
 
 type isInCIDRArguments[K any] struct {
 	Target   ottl.StringGetter[K]
-	Networks []ottl.StringGetter[K]
+	Networks slicegetter.SliceGetter[K, ottl.StringGetter[K]]
 }
 
 // NewIsInCIDRFactory returns a factory for the IsInCIDR OTTL function.
@@ -27,23 +28,26 @@ func createIsInCIDRFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 		return nil, errors.New("IsInCIDRFactory args must be of type *isInCIDRArguments[K]")
 	}
 
-	return isInCIDR(args.Target, args.Networks)
+	return isInCIDR(args.Target, &args.Networks)
 }
 
-func isInCIDR[K any](target ottl.StringGetter[K], networks []ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
-	// Check if all networks are literals and pre-parse them if so.
-	literalNetworks := make([]*net.IPNet, 0, len(networks))
-	for _, network := range networks {
-		literal, isLiteral := ottl.GetLiteralValue[K, string](network)
-		if !isLiteral {
-			literalNetworks = nil
-			break
+func isInCIDR[K any](target ottl.StringGetter[K], networks *slicegetter.SliceGetter[K, ottl.StringGetter[K]]) (ottl.ExprFunc[K], error) {
+	var literalNetworks []*net.IPNet
+	if literalValues, allLiteral := slicegetter.GetLiteralValues(networks, func(network ottl.StringGetter[K]) (string, bool) {
+		return ottl.GetLiteralValue[K, string](network)
+	}); allLiteral {
+		if literalValues == nil {
+			return nil, errors.New("networks cannot be nil")
 		}
-		_, subnet, err := net.ParseCIDR(literal)
-		if err != nil {
-			return nil, err
+
+		literalNetworks = make([]*net.IPNet, 0, len(literalValues))
+		for _, literal := range literalValues {
+			_, subnet, err := net.ParseCIDR(literal)
+			if err != nil {
+				return nil, err
+			}
+			literalNetworks = append(literalNetworks, subnet)
 		}
-		literalNetworks = append(literalNetworks, subnet)
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
@@ -58,30 +62,44 @@ func isInCIDR[K any](target ottl.StringGetter[K], networks []ottl.StringGetter[K
 		}
 
 		if literalNetworks != nil {
-			// Use pre-parsed networks for literal values.
 			for _, subnet := range literalNetworks {
 				if subnet.Contains(ip) {
 					return true, nil
 				}
 			}
-		} else {
-			// Parse networks at runtime for dynamic values.
-			for _, network := range networks {
-				networkValue, err := network.Get(ctx, tCtx)
-				if err != nil {
-					return nil, err
-				}
-
-				_, subnet, err := net.ParseCIDR(networkValue)
-				if err != nil {
-					return nil, err
-				}
-				if subnet.Contains(ip) {
-					return true, nil
-				}
-			}
+			return false, nil
 		}
 
-		return false, nil
+		// Resolve a dynamic network list only after the target is a valid IP address.
+		matched := false
+		var networkErr error
+		nonNil, err := networks.Range(ctx, tCtx, func(network ottl.StringGetter[K]) bool {
+			networkValue, getErr := network.Get(ctx, tCtx)
+			if getErr != nil {
+				networkErr = getErr
+				return false
+			}
+
+			_, subnet, parseErr := net.ParseCIDR(networkValue)
+			if parseErr != nil {
+				networkErr = parseErr
+				return false
+			}
+			if subnet.Contains(ip) {
+				matched = true
+				return false
+			}
+			return true
+		})
+		if err != nil {
+			return nil, err
+		}
+		if networkErr != nil {
+			return nil, networkErr
+		}
+		if !nonNil {
+			return nil, errors.New("networks cannot be nil")
+		}
+		return matched, nil
 	}, nil
 }
