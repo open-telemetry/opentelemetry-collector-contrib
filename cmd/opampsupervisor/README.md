@@ -131,6 +131,25 @@ while `telemetry.resource.detection/development` is configured.
 
 Visit [localhost:4321](http://localhost:4321) again to verify that your Collector appears in the Agents list.
 
+## Raw configuration reporting
+
+Set `agent.report_raw_config` to `true` to make the Supervisor add
+`reports_raw_config: true` to the Collector's OpAMP extension configuration.
+This option defaults to `false`. The Collector's OpAMP extension must support
+raw configuration reporting. Keep `capabilities.reports_effective_config`
+enabled so the Supervisor forwards the reported configuration to the OpAMP server.
+
+```yaml
+agent:
+  report_raw_config: true
+```
+
+The Collector reports its configuration before provider references such as
+`${env:TOKEN}` are expanded. It sends this configuration under the `raw` key
+of the effective config map. The expanded configuration stays under the empty key.
+Raw configuration can expose secrets written directly in configuration files.
+Enable this option only if you trust the OpAMP server with those contents.
+
 ## Collector crash log snippets
 
 The Supervisor can include the tail of the Collector's logs in health and remote config failure messages when the Collector process exits unexpectedly. This is disabled by default because Collector logs may contain sensitive data. To enable it, set `agent::collector_crash_log_snippet_kib` to the maximum number of log KiB to include. A value of `0` disables the feature. `4` is a reasonable starting point. The maximum value is `1024` (1 MiB).
