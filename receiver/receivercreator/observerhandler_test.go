@@ -360,6 +360,40 @@ func TestOnAddForLogsWithHints(t *testing.T) {
 	}
 }
 
+func TestOnAddWithInvalidHintsKeepsHandlingOtherEndpoints(t *testing.T) {
+	invalidHintsEndpoint := observer.Endpoint{
+		ID:     "namespace/pod-3-UID/web(80)",
+		Target: "1.2.3.5:80",
+		Details: &observer.Port{
+			Name: "web", Pod: observer.Pod{
+				Name:      "pod-3",
+				Namespace: "default",
+				UID:       "pod-3-UID",
+				Annotations: map[string]string{
+					otelMetricsHints + "/enabled": "true",
+					otelMetricsHints + "/scraper": "with_endpoint",
+					otelMetricsHints + "/config":  "int_field: [unclosed",
+				},
+			},
+			Port: 80,
+		},
+	}
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Discovery.Enabled = true
+
+	handler, mr := newObserverHandler(t, cfg, consumertest.NewNop(), consumertest.NewNop(), nil, nil)
+	handler.OnAdd([]observer.Endpoint{
+		invalidHintsEndpoint,
+		podContainerEndpointWithHints,
+	})
+
+	require.NoError(t, mr.lastError)
+	assert.Equal(t, 1, handler.receiversByEndpointID.Size())
+	assert.Empty(t, handler.receiversByEndpointID.Get(invalidHintsEndpoint.ID))
+	assert.Len(t, handler.receiversByEndpointID.Get(podContainerEndpointWithHints.ID), 1)
+}
+
 func TestOnAddForTraces(t *testing.T) {
 	for _, test := range []struct {
 		name                   string
