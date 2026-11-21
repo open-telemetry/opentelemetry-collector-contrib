@@ -132,20 +132,30 @@ func (a *Aggregator) RecordStatus(source *componentstatus.InstanceID, event *com
 	defer a.mu.Unlock()
 
 	// extensions are treated as a pseudo-pipeline
+	changed := false
 	if source.Kind() == component.KindExtension {
-		a.updateStatus(ScopeExtensions, source, event)
+		changed = a.updateStatus(ScopeExtensions, source, event)
 	} else {
 		source.AllPipelineIDs(func(id pipeline.ID) bool {
-			a.updateStatus(Scope(id.String()), source, event)
+			changed = a.updateStatus(Scope(id.String()), source, event) || changed
 			return true
 		})
+	}
+
+	// If no component status changed, the top-level aggregate cannot have changed
+	// either, so there is nothing to recompute or notify.
+	if !changed {
+		return
 	}
 
 	a.aggregateStatus.Event = a.aggregationFunc(a.aggregateStatus)
 	a.notifySubscribers(ScopeAll, a.aggregateStatus)
 }
 
-func (a *Aggregator) updateStatus(pipelineScope Scope, source *componentstatus.InstanceID, event *componentstatus.Event) {
+// updateStatus stores the event for the component and, if it changed the
+// component's contribution to the aggregate, recomputes the pipeline aggregate
+// and notifies its subscribers. It returns whether a change was recorded.
+func (a *Aggregator) updateStatus(pipelineScope Scope, source *componentstatus.InstanceID, event *componentstatus.Event) bool {
 	pipelineKey := pipelineScope.toKey()
 	pipelineStatus, ok := a.aggregateStatus.ComponentStatusMap[pipelineKey]
 	if !ok {
@@ -156,11 +166,31 @@ func (a *Aggregator) updateStatus(pipelineScope Scope, source *componentstatus.I
 	}
 
 	componentKey := strings.ToLower(source.Kind().String()) + ":" + source.ComponentID().String()
+	if prev, ok := pipelineStatus.ComponentStatusMap[componentKey]; ok && equivalent(prev.Event, event) {
+		// Nothing changed for this component, so skip the recompute and notify.
+		return false
+	}
 	pipelineStatus.ComponentStatusMap[componentKey] = &AggregateStatus{
 		Event: event,
 	}
 	pipelineStatus.Event = a.aggregationFunc(pipelineStatus)
 	a.notifySubscribers(pipelineScope, pipelineStatus)
+	return true
+}
+
+// equivalent reports whether two events have the same status, error, and
+// attributes. Timestamps are ignored so a repeated status is not treated as a change.
+func equivalent(a, b Event) bool {
+	return a.Status() == b.Status() &&
+		errString(a.Err()) == errString(b.Err()) &&
+		a.Attributes().Equal(b.Attributes())
+}
+
+func errString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }
 
 // Subscribe allows you to subscribe to a stream of events for the given scope. The scope can be
