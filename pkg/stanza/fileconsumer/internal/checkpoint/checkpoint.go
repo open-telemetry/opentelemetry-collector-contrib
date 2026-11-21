@@ -86,5 +86,8 @@ func LoadKey(ctx context.Context, persister operator.Persister, key string, logg
 		rmds = append(rmds, rmd)
 	}
 
+	logger.Warn("Loaded a legacy JSON checkpoint. Reading JSON checkpoints is deprecated and will be removed in a future release; " +
+		"the checkpoint is rewritten as protobuf on the next save. When upgrading from a collector older than v0.156.0, " +
+		"start on an intermediate version so the checkpoint is migrated before JSON support is removed.")
 	return rmds, errs
 }
