@@ -19,7 +19,6 @@ import (
 	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
 	conventionsv126 "go.opentelemetry.io/otel/semconv/v1.26.0"
 	conventionsv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
-	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/internal/metadata"
@@ -400,24 +399,14 @@ func appendMessagingConsumerAttributes(attrMap pcommon.Map) {
 }
 
 func appendGRPCClientAttributes(attrMap pcommon.Map) {
-	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventionsv138.RPCServiceKey), "PullRequestsService")
-	}
-	if metadata.InternalCoreinternalGoldendatasetEmitV1RPCConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventions.RPCMethodKey), "PullRequestsService/PullRequestByID")
-	}
+	attrMap.PutStr(string(conventions.RPCMethodKey), "PullRequestsService/PullRequestByID")
 	attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "2600:1700:1f00:11c0:4de0:c223:a800:4e87")
 	attrMap.PutInt(string(conventions.ServerPortKey), 8443)
 	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
 }
 
 func appendGRPCServerAttributes(attrMap pcommon.Map) {
-	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventionsv138.RPCServiceKey), "PullRequestsService")
-	}
-	if metadata.InternalCoreinternalGoldendatasetEmitV1RPCConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventions.RPCMethodKey), "PullRequestsService/PullRequestByID")
-	}
+	attrMap.PutStr(string(conventions.RPCMethodKey), "PullRequestsService/PullRequestByID")
 	attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "192.168.1.70")
 	attrMap.PutStr(string(conventionsv126.EnduserIDKey), "unittest")
 }
@@ -466,12 +455,7 @@ func appendMaxCountAttributes(includeStatus bool, attrMap pcommon.Map) {
 	if metadata.InternalCoreinternalGoldendatasetEmitV1HTTPConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr(string(conventions.ClientAddressKey), "2600:1700:1f00:11c0:1ced:afa5:fd77:9d01")
 	}
-	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventionsv138.PeerServiceKey), "IdentifyImageService")
-	}
-	if metadata.InternalCoreinternalGoldendatasetEmitV1RPCConventionsFeatureGate.IsEnabled() {
-		attrMap.PutStr(string(conventions.ServicePeerNameKey), "IdentifyImageService")
-	}
+	attrMap.PutStr(string(conventions.ServicePeerNameKey), "IdentifyImageService")
 	attrMap.PutStr(string(conventions.NetworkPeerAddressKey), "2600:1700:1f00:11c0:1ced:afa5:fd77:9ddc")
 	attrMap.PutInt(string(conventions.ClientPortKey), 39111)
 	attrMap.PutDouble("ai-sampler.weight", 0.07)

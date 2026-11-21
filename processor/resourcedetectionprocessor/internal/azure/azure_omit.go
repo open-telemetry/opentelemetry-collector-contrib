@@ -1,16 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build omit_detector_azure
+//go:build (remove_all_resourcedetection_detectors && !enable_detector_azure) || omit_detector_azure
 
 package azure // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 
-import (
-	"go.opentelemetry.io/collector/processor"
+import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
-)
-
-func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
-	return nil, nil
-}
+// NewDetector is unavailable when this detector is excluded at build time.
+var NewDetector internal.DetectorFactory

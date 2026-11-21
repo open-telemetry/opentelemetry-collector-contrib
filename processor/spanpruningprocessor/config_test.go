@@ -324,6 +324,46 @@ func TestConfig_Validate(t *testing.T) {
 			expectError: false,
 		},
 		{
+			name: "valid outlier analysis config (log duration transform)",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:          []string{"db.operation"},
+				EnableOutlierAnalysis:      true,
+				OutlierAnalysis: OutlierAnalysisConfig{
+					Method:                         OutlierMethodIQR,
+					DurationTransform:              DurationTransformLog,
+					IQRMultiplier:                  1.5,
+					MADMultiplier:                  3.0,
+					MinGroupSize:                   7,
+					CorrelationMinOccurrence:       0.75,
+					CorrelationMaxNormalOccurrence: 0.25,
+					MaxCorrelatedAttributes:        5,
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "invalid outlier duration_transform",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:          []string{"db.operation"},
+				EnableOutlierAnalysis:      true,
+				OutlierAnalysis: OutlierAnalysisConfig{
+					Method:                         OutlierMethodIQR,
+					DurationTransform:              "invalid",
+					IQRMultiplier:                  1.5,
+					MADMultiplier:                  3.0,
+					MinGroupSize:                   7,
+					CorrelationMinOccurrence:       0.75,
+					CorrelationMaxNormalOccurrence: 0.25,
+					MaxCorrelatedAttributes:        5,
+				},
+			},
+			expectError: true,
+		},
+		{
 			name: "invalid outlier method",
 			config: &Config{
 				MinSpansToAggregate:        2,

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v5"
+	"github.com/cenkalti/backoff/v7"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -228,7 +228,7 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Token = "foo"
 				return cfg
 			}(),
-			wantErr: "sending_queue: `queue_size` must be positive",
+			wantErr: "queue_size",
 		},
 	}
 

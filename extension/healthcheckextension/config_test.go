@@ -34,10 +34,10 @@ func TestLoadConfigLegacy(t *testing.T) {
 	}
 	serverConfig.TLS = configoptional.Some(configtls.ServerConfig{
 		Config: configtls.Config{
-			CAFile:   "/path/to/ca",
 			CertFile: "/path/to/cert",
 			KeyFile:  "/path/to/key",
 		},
+		ClientCAFile: "/path/to/ca",
 	})
 	tests := []struct {
 		id          component.ID

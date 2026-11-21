@@ -8,8 +8,6 @@ $defs:
         type: string
       computer_system_id:
         type: string
-      insecure:
-        type: boolean
       password:
         $ref: go.opentelemetry.io/collector/config/configopaque.string
       redfish:
@@ -23,6 +21,8 @@ $defs:
           $ref: resource
       timeout:
         type: string
+      tls:
+        $ref: go.opentelemetry.io/collector/config/configtls.client_config
       username:
         type: string
 type: object

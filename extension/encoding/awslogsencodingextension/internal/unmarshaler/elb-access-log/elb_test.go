@@ -9,6 +9,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func Test_convertTextToALBAccessLogRecord_unbracketedIPv6(t *testing.T) {
+	line := `https 2018-07-02T22:23:00.186641Z app/my-loadbalancer/50dc6c495c0c9188 2a02:26f7:fb08:4000:1000::b:20381 10.0.0.1:80 0.086 0.048 0.037 200 200 0 57 "GET https://www.example.com:443/ HTTP/1.1" "curl/7.46.0" ECDHE-RSA-AES128-GCM-SHA256 TLSv1.2 arn:aws:elasticloadbalancing:us-east-2:123456789012:targetgroup/my-targets/73e2d6bc24d8a067 "Root=1-58337281-1d84f3d73c47ec4e58577259" "www.example.com" "arn:aws:acm:us-east-2:123456789012:certificate/12345678-1234-1234-1234-123456789012" 1 2018-07-02T22:22:48.364000Z "authenticate,forward" "-" "-" "10.0.0.1:80" "200" "-" "-" TID_1234abcd5678ef90`
+	fields, err := extractFields(line)
+	require.NoError(t, err)
+	record, err := convertTextToALBAccessLogRecord(fields)
+	require.NoError(t, err)
+	require.Equal(t, "2a02:26f7:fb08:4000:1000::b", record.ClientIP)
+	require.Equal(t, int64(20381), record.ClientPort)
+}
+
 func Test_scanField(t *testing.T) {
 	tests := []struct {
 		name      string
