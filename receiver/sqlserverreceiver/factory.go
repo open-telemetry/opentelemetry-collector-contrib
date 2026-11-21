@@ -128,6 +128,10 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerTempDBFileQuery())
 	}
 
+	if cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseFileSize.Enabled {
+		queries = append(queries, getSQLServerDatabaseSizeQuery())
+	}
+
 	return queries
 }
 
@@ -642,6 +646,7 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverDatabaseExecutionErrors.Enabled ||
 		metrics.SqlserverDatabaseFullScanRate.Enabled ||
 		metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled ||
+		metrics.SqlserverDatabaseTransactionsActive.Enabled ||
 		metrics.SqlserverDeadlockRate.Enabled ||
 		metrics.SqlserverErrorRate.Enabled ||
 		metrics.SqlserverExtentOperationRate.Enabled ||
