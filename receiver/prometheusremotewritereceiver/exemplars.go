@@ -5,6 +5,8 @@ package prometheusremotewritereceiver // import "github.com/open-telemetry/opent
 
 import (
 	"encoding/hex"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/prometheus/prometheus/model/labels"
@@ -29,7 +31,9 @@ import (
 func collectExemplars(
 	req *writev2.Request,
 	settings receiver.Settings,
-) map[exemplarKey]pmetric.ExemplarSlice {
+	symbolValidator symbolUTF8Validator,
+) (map[exemplarKey]pmetric.ExemplarSlice, error) {
+	var errs error
 	result := make(map[exemplarKey]pmetric.ExemplarSlice)
 	builder := labels.NewScratchBuilder(0)
 	for i := range req.Timeseries {
@@ -44,9 +48,9 @@ func collectExemplars(
 			continue
 		}
 
-		// A series that validateSeriesLabels would refuse is skipped here: its exemplars are refused
-		// with the series, and the label lookups below assume a readable label set.
-		if validateSeriesLabels(ls) != nil {
+		// A series that validateSeriesLabels or UTF-8 validation would refuse is skipped here:
+		// its exemplars are refused with the series, and the label lookups below assume a readable label set.
+		if validateSeriesLabels(ls) != nil || symbolValidator.validateLabelRefs(ts.LabelsRefs) != nil {
 			continue
 		}
 
@@ -55,7 +59,7 @@ func collectExemplars(
 			settings.Logger.Warn("missing metric name in labels")
 			continue
 		}
-		if ts.Metadata.UnitRef >= uint32(len(req.Symbols)) || ts.Metadata.HelpRef >= uint32(len(req.Symbols)) {
+		if symbolValidator.validateMetadataRefs(ts.Metadata) != nil {
 			continue
 		}
 		if metadata.Name != "target_info" {
@@ -82,6 +86,12 @@ func collectExemplars(
 			promExemplar, err := ex.ToExemplar(&builder, req.Symbols)
 			if err != nil {
 				settings.Logger.Warn("error converting exemplar label refs", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+				errs = errors.Join(errs, fmt.Errorf("error converting exemplar label refs for metric %q: %w", metadata.Name, err))
+				continue
+			}
+			if err := symbolValidator.validateLabelRefs(ex.LabelsRefs); err != nil {
+				settings.Logger.Warn("invalid UTF-8 in exemplar labels", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+				errs = errors.Join(errs, fmt.Errorf("invalid exemplar labels for metric %q: %w", metadata.Name, err))
 				continue
 			}
 
@@ -96,7 +106,7 @@ func collectExemplars(
 		result[key] = slice
 	}
 
-	return result
+	return result, errs
 }
 
 // setTraceAndSpan converts the hex-encoded trace and span ID labels and reports

@@ -6,6 +6,7 @@ package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/prometheus/otlptranslator"
@@ -164,6 +165,30 @@ func (c *prometheusConverterV2) timeSeries() []writev2.TimeSeries {
 		}
 	}
 	return allTS
+}
+
+// addExemplars adds exemplars for the dataPoint. For each exemplar, if it can find a bucket bound corresponding to its value,
+// the exemplar is added to the bucket bound's time series, provided that the time series' has samples.
+func (c *prometheusConverterV2) addExemplars(dataPoint pmetric.HistogramDataPoint, bucketBounds []bucketBoundsDataV2) {
+	if len(bucketBounds) == 0 {
+		return
+	}
+
+	symbolize := func(s string) uint32 { return c.symbolTable.Symbolize(s) }
+	exemplars := getPromExemplarsV2(dataPoint, symbolize)
+	if len(exemplars) == 0 {
+		return
+	}
+
+	sort.Sort(byBucketBoundsDataV2(bucketBounds))
+	for _, exemplar := range exemplars {
+		for _, bound := range bucketBounds {
+			if len(bound.ts.Samples) > 0 && exemplar.Value <= bound.bound {
+				bound.ts.Exemplars = append(bound.ts.Exemplars, exemplar)
+				break
+			}
+		}
+	}
 }
 
 func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label, metadata metadata) *writev2.TimeSeries {

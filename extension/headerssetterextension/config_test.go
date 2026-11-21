@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 					{
 						Key:         new("User-ID"),
 						FromContext: nil,
-						Value:       new("user_id"),
+						Value:       new(configopaque.String("user_id")),
 					},
 					{
 						Key:    new("User-ID"),
@@ -75,7 +75,7 @@ func TestLoadConfig(t *testing.T) {
 				HeadersConfig: []HeaderConfig{
 					{
 						Key:    new("X-Custom-Header"),
-						Value:  new("custom-value"),
+						Value:  new(configopaque.String("custom-value")),
 						Action: UPSERT,
 					},
 				},
@@ -115,7 +115,7 @@ func TestValidateConfig(t *testing.T) {
 				{
 					Key:    new("name"),
 					Action: INSERT,
-					Value:  new("from config"),
+					Value:  new(configopaque.String("from config")),
 				},
 			},
 			nil,
@@ -136,7 +136,7 @@ func TestValidateConfig(t *testing.T) {
 			[]HeaderConfig{
 				{
 					Action: INSERT,
-					Value:  new("test"),
+					Value:  new(configopaque.String("test")),
 				},
 			},
 			errMissingHeader,
@@ -157,7 +157,7 @@ func TestValidateConfig(t *testing.T) {
 				{
 					Key:         new("name"),
 					Action:      INSERT,
-					Value:       new("from config"),
+					Value:       new(configopaque.String("from config")),
 					FromContext: new("from context"),
 				},
 			},
@@ -201,7 +201,7 @@ func TestValidateConfig(t *testing.T) {
 				{
 					Key:    new("name"),
 					Action: INSERT,
-					Value:  new("from config"),
+					Value:  new(configopaque.String("from config")),
 				},
 			},
 			nil,
@@ -211,7 +211,7 @@ func TestValidateConfig(t *testing.T) {
 			[]HeaderConfig{
 				{
 					Key:   new("name"),
-					Value: new("from config"),
+					Value: new(configopaque.String("from config")),
 				},
 			},
 			nil,

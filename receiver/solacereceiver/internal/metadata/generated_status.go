@@ -14,5 +14,5 @@ var (
 )
 
 const (
-	TracesStability = component.StabilityLevelBeta
+	TracesStability = component.StabilityLevelUnmaintained
 )

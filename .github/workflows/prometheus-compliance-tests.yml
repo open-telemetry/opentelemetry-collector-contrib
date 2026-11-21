@@ -36,7 +36,7 @@ jobs:
           path: opentelemetry-collector-contrib
           persist-credentials: false
       - run: opentelemetry-collector-contrib/.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: oldstable
           cache: false

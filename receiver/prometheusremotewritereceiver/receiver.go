@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/gogo/protobuf/proto"
 	lru "github.com/hashicorp/golang-lru/v2"
@@ -368,10 +369,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 		modifiedResourceMetric = make(map[uint64]pmetric.ResourceMetrics)
 		targetInfoModified     = make(map[uint64]bool)
 
-		// exemplarMap holds exemplars under the series key collectExemplars builds.
-		exemplarMap          = collectExemplars(req, prw.settings)
 		droppedHistogramKeys = make(map[exemplarKey]struct{})
-
 		// bucketBudget bounds what every Native Histogram in this request may expand into
 		// together, since all of it stays in memory until the request has been translated.
 		bucketBudget = histogramBucketBudget{remaining: maxExponentialHistogramBucketsPerRequest}
@@ -382,7 +380,16 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 		// sender would take the difference for a partial write and report failed samples.
 		droppedClassicHistogramSeries int64
 		droppedSummarySeries          int64
+		symbolValidator               symbolUTF8Validator
 	)
+
+	if len(req.Timeseries) > 0 {
+		symbolValidator = newSymbolUTF8Validator(req.Symbols)
+	}
+
+	// exemplarMap holds exemplars under the series key collectExemplars builds.
+	exemplarMap, exemplarErr := collectExemplars(req, prw.settings, symbolValidator)
+	badRequestErrors = errors.Join(badRequestErrors, exemplarErr)
 
 	for i := range req.Timeseries {
 		ts := &req.Timeseries[i]
@@ -395,6 +402,10 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 			badRequestErrors = errors.Join(badRequestErrors, err)
 			continue
 		}
+		if err := symbolValidator.validateLabelRefs(ts.LabelsRefs); err != nil {
+			badRequestErrors = errors.Join(badRequestErrors, err)
+			continue
+		}
 		metadata := schema.NewMetadataFromLabels(ls)
 		if metadata.Name == "" {
 			badRequestErrors = errors.Join(badRequestErrors, errors.New("missing metric name in labels"))
@@ -402,14 +413,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 		}
 
 		// The target_info branch continues without reading either reference, so these sit above it
-		// and a reference past the symbol table is refused under every metric name.
-		if ts.Metadata.UnitRef >= uint32(len(req.Symbols)) {
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unit ref %d is out of bounds of symbolsTable", ts.Metadata.UnitRef))
-			continue
-		}
-
-		if ts.Metadata.HelpRef >= uint32(len(req.Symbols)) {
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("help ref %d is out of bounds of symbolsTable", ts.Metadata.HelpRef))
+		// and a reference past the symbol table or containing invalid UTF-8 is refused under every metric name.
+		if err := symbolValidator.validateMetadataRefs(ts.Metadata); err != nil {
+			badRequestErrors = errors.Join(badRequestErrors, err)
 			continue
 		}
 
@@ -619,9 +625,80 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 	return otelMetrics, stats, commitRMCache, badRequestErrors
 }
 
+// symbolUTF8Validator validates UTF-8 across a request's symbol table once so shared symbols
+// are not re-scanned on every series and exemplar. On valid requests (the common case), invalid
+// stays nil and lookups allocate nothing. Validation is applied per referenced index rather than
+// rejecting the whole request, so valid sibling series are still forwarded when another series
+// or exemplar references a non-UTF-8 symbol (and unreferenced invalid symbols do not fail valid
+// series).
+type symbolUTF8Validator struct {
+	symbols []string
+	invalid []bool
+}
+
+func newSymbolUTF8Validator(symbols []string) symbolUTF8Validator {
+	var invalid []bool
+	for i, s := range symbols {
+		if !utf8.ValidString(s) {
+			if invalid == nil {
+				invalid = make([]bool, len(symbols))
+			}
+			invalid[i] = true
+		}
+	}
+	return symbolUTF8Validator{
+		symbols: symbols,
+		invalid: invalid,
+	}
+}
+
+func (v symbolUTF8Validator) isInvalid(ref uint32) bool {
+	return v.invalid != nil && uint64(ref) < uint64(len(v.invalid)) && v.invalid[ref]
+}
+
+// validateLabelRefs reports an error if any symbol referenced by refs is not valid UTF-8.
+// Callers invoke this after ToLabels/ToExemplar, which already verified even length and bounds.
+func (v symbolUTF8Validator) validateLabelRefs(refs []uint32) error {
+	if v.invalid == nil {
+		return nil
+	}
+	for i, ref := range refs {
+		if !v.isInvalid(ref) {
+			continue
+		}
+		if i%2 == 0 {
+			return fmt.Errorf("invalid UTF-8 in label name %q", v.symbols[ref])
+		}
+		if nameRef := refs[i-1]; uint64(nameRef) < uint64(len(v.symbols)) {
+			return fmt.Errorf("invalid UTF-8 in value for label %q", v.symbols[nameRef])
+		}
+		return fmt.Errorf("invalid UTF-8 in label value at ref %d", ref)
+	}
+	return nil
+}
+
+// validateMetadataRefs verifies that md.UnitRef and md.HelpRef are within the symbol table
+// bounds and reference valid UTF-8 strings.
+func (v symbolUTF8Validator) validateMetadataRefs(md writev2.Metadata) error {
+	if uint64(md.UnitRef) >= uint64(len(v.symbols)) {
+		return fmt.Errorf("unit ref %d is out of bounds of symbolsTable", md.UnitRef)
+	}
+	if uint64(md.HelpRef) >= uint64(len(v.symbols)) {
+		return fmt.Errorf("help ref %d is out of bounds of symbolsTable", md.HelpRef)
+	}
+	if v.isInvalid(md.UnitRef) {
+		return fmt.Errorf("unit ref %d contains invalid UTF-8", md.UnitRef)
+	}
+	if v.isInvalid(md.HelpRef) {
+		return fmt.Errorf("help ref %d contains invalid UTF-8", md.HelpRef)
+	}
+	return nil
+}
+
 // validateSeriesLabels reports what makes a label set unreadable: an empty name, which cannot
 // become an OTLP attribute key, and a duplicate name, where the set does not say which value
-// applies.
+// applies. UTF-8 validation of symbolized label strings is checked separately via
+// symbolUTF8Validator so each symbol table entry is scanned at most once per request.
 //
 // What the Prometheus data model equates with absence is normalized rather than refused: a label
 // with an empty value is dropped where it would have become an attribute, as if it were not there.

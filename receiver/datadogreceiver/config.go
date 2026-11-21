@@ -38,6 +38,19 @@ type Config struct {
 	IdleSeriesCleanupInterval time.Duration `mapstructure:"idle_series_cleanup_interval"`
 	// Logs controls log-specific receiver behavior.
 	Logs LogsConfig `mapstructure:"logs"`
+	// Traces controls trace-specific receiver behavior.
+	Traces TracesConfig `mapstructure:"traces"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// TracesConfig controls trace-specific receiver behavior.
+type TracesConfig struct {
+	// EnableV1Endpoint, when true, serves the `/v1.0/traces` endpoint and announces it, and native span events, in `/info`. Tracers that
+	// support the v1.0 trace protocol, such as recent dd-trace-go versions, then switch to it. Disabled by default.
+	// Traces in the v1 format that a Datadog Agent forwards to `/api/v0.2/traces` are always accepted.
+	EnableV1Endpoint bool `mapstructure:"enable_v1_endpoint"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

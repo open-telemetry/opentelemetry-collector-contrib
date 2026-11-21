@@ -55,6 +55,18 @@ func TestCreateOrLoadPersistentState(t *testing.T) {
 		require.FileExists(t, f)
 	})
 
+	t.Run("regenerates state if the file is empty or null", func(t *testing.T) {
+		for _, content := range []string{"", "\n", "null", "{}"} {
+			f := filepath.Join(t.TempDir(), "state.yaml")
+			require.NoError(t, os.WriteFile(f, []byte(content), 0o600))
+
+			state, err := loadOrCreatePersistentState(f, "", zap.NewNop())
+			require.NoError(t, err)
+			require.NotEqual(t, uuid.Nil, state.InstanceID)
+			require.FileExists(t, f)
+		}
+	})
+
 	t.Run("loads state from file if it exists", func(t *testing.T) {
 		f := filepath.Join(t.TempDir(), "state.yaml")
 

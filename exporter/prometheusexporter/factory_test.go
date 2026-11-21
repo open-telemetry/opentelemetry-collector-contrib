@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 )
@@ -77,4 +79,38 @@ func TestExporterHelperBatchingEnabled(t *testing.T) {
 		require.True(t, ok)
 		assert.Equal(t, enabled, b.ExporterHelperBatchingEnabled())
 	}
+}
+
+func TestCreateMetrics_SendingQueueWarning(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	cfg.QueueBatchConfig = configoptional.Some(queueCfg)
+
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	set := exportertest.NewNopSettings(metadata.Type)
+	set.Logger = zap.New(observedZapCore)
+
+	exp, err := createMetricsExporter(t.Context(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exp)
+
+	warnLogs := observedLogs.FilterMessageSnippet("sending_queue is deprecated and will be removed in a future release")
+	assert.Equal(t, 1, warnLogs.Len())
+}
+
+func TestCreateMetrics_DefaultSendingQueueNoWarning(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
+
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	set := exportertest.NewNopSettings(metadata.Type)
+	set.Logger = zap.New(observedZapCore)
+
+	exp, err := createMetricsExporter(t.Context(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exp)
+
+	warnLogs := observedLogs.FilterMessageSnippet("sending_queue is deprecated and will be removed in a future release")
+	assert.Equal(t, 0, warnLogs.Len())
 }
