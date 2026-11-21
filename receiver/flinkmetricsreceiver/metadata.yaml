@@ -56,9 +56,24 @@ attributes:
     requirement_level: required
   garbage_collector_name:
     name_override: name
-    description: The names for the parallel scavenge and garbage first garbage collectors.
+    description: The names of the JVM garbage collectors, as reported by Flink.
     type: string
-    enum: [PS_MarkSweep, PS_Scavenge, G1_Young_Generation, G1_Old_Generation]
+    enum:
+      - PS_MarkSweep
+      - PS_Scavenge
+      - G1_Young_Generation
+      - G1_Old_Generation
+      - G1_Concurrent_GC
+      - Copy
+      - MarkSweepCompact
+      - ZGC_Cycles
+      - ZGC_Pauses
+      - ZGC_Minor_Cycles
+      - ZGC_Minor_Pauses
+      - ZGC_Major_Cycles
+      - ZGC_Major_Pauses
+      - Shenandoah_Cycles
+      - Shenandoah_Pauses
     requirement_level: required
   operator_name:
     name_override: name
