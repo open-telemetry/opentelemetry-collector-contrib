@@ -2406,6 +2406,32 @@ resourceMetrics:
             stringValue: CentOS 7 Template
     scopeMetrics:
       - metrics:
+          - description: The amount of storage space used by the virtual machine on each datastore.
+            name: vcenter.vm.datastore.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "258847277056"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: available
+                    - key: vcenter.datastore.name
+                      value:
+                        stringValue: vsanDatastore
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "16311648256"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: used
+                    - key: vcenter.datastore.name
+                      value:
+                        stringValue: vsanDatastore
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
           - description: The amount of storage space used by the virtual machine.
             name: vcenter.vm.disk.usage
             sum:
@@ -2511,6 +2537,32 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.vm.cpu.utilization
             unit: '%'
+          - description: The amount of storage space used by the virtual machine on each datastore.
+            name: vcenter.vm.datastore.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "258847277056"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: available
+                    - key: vcenter.datastore.name
+                      value:
+                        stringValue: vsanDatastore
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "16311648256"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: used
+                    - key: vcenter.datastore.name
+                      value:
+                        stringValue: vsanDatastore
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
           - description: The latency of operations to the virtual machine's disk.
             gauge:
               dataPoints:
@@ -3376,6 +3428,32 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.vm.cpu.utilization
             unit: '%'
+          - description: The amount of storage space used by the virtual machine on each datastore.
+            name: vcenter.vm.datastore.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "258847277056"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: available
+                    - key: vcenter.datastore.name
+                      value:
+                        stringValue: vsanDatastore
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "16311648256"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: used
+                    - key: vcenter.datastore.name
+                      value:
+                        stringValue: vsanDatastore
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
           - description: The latency of operations to the virtual machine's disk.
             gauge:
               dataPoints:
@@ -4340,6 +4418,32 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.vm.cpu.utilization
             unit: '%'
+          - description: The amount of storage space used by the virtual machine on each datastore.
+            name: vcenter.vm.datastore.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "258847277056"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: available
+                    - key: vcenter.datastore.name
+                      value:
+                        stringValue: vsanDatastore
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "16311648256"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: used
+                    - key: vcenter.datastore.name
+                      value:
+                        stringValue: vsanDatastore
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
           - description: The latency of operations to the virtual machine's disk.
             gauge:
               dataPoints:

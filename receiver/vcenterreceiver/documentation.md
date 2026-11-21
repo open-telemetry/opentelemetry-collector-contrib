@@ -957,6 +957,21 @@ As measured over the most recent 20s interval.
 | cpu_state | CPU time spent in idle, ready or idle state. | Str: ``idle``, ``ready``, ``wait`` | Recommended | - |
 | object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
+### vcenter.vm.datastore.usage
+
+The amount of storage space used by the virtual machine on each datastore.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| vcenter.datastore.name | The name of the vCenter datastore. | Any Str | Recommended | - |
+| disk_state | The state of storage and whether it is already allocated or free. | Str: ``available``, ``used`` | Recommended | - |
+
 ### vcenter.vm.memory.granted
 
 The amount of memory that is granted to a VM.
