@@ -35,6 +35,8 @@ them from the database.
 | ----- | -------- | ------- | ----------- |
 | `directory` | yes | | Directory used to store the Pebble database files. The extension creates the directory if it does not exist and writes the database in a versioned subdirectory. |
 | `max_storage_size_mib` | no | `0` | Maximum on-disk size of the Pebble database, in MiB. `0` means no limit. See [Size limit](#size-limit). |
+| `cache_size_mib` | no | `4` | Size of the Pebble block cache, in MiB. `0` uses the default. |
+| `memtable_size_mib` | no | `8` | Size of one Pebble memtable, in MiB. Pebble keeps up to two memtables in memory before it stalls writes. `0` uses the default. |
 | `on_read_error` | no | `drop_trace` | What happens when a stored batch of a trace cannot be read or decoded. One of `drop_trace` or `return_partial`. See [Read errors](#read-errors). |
 
 ### Minimal example
@@ -191,8 +193,10 @@ extensions:
 - Size the volume for the maximum amount of pending trace data you expect. A
   rough upper bound is the incoming span volume per second multiplied by
   `decision_wait`, plus headroom for compaction.
-- Pebble keeps a block cache and a memtable in memory. Expect a baseline memory
-  cost in the range of tens of MiB for the extension itself.
+- Pebble keeps a block cache and up to two memtables in memory. With the
+  defaults (`cache_size_mib: 4`, `memtable_size_mib: 8`) the extension itself
+  costs about 20 MiB. Raise the sizes only when the operation metrics show the
+  storage is the bottleneck.
 
 ## Limitations
 
@@ -200,7 +204,9 @@ extensions:
   database in `directory` on startup and logs a warning when it finds an existing
   database. Any trace that was pending a decision when the collector stopped is
   lost. This is a temporary measure while the on-disk schema is under heavy
-  development. Treat the directory as ephemeral.
+  development. Treat the directory as ephemeral. The Pebble write-ahead log is
+  disabled for the same reason, so a crash also loses the data that was still
+  in memory.
 - **Append failures lose spans.** When an append fails, for example because the
   size limit is reached, the Tail Sampling processor logs the error and continues.
   The spans in that batch are not stored and are not exported. The trace stays

@@ -56,6 +56,20 @@ func TestConfigValidate(t *testing.T) {
 			wantErr: "directory must be set",
 		},
 		{
+			name: "valid cache and memtable sizes",
+			cfg:  Config{Directory: "test-storage", CacheSizeMiB: 64, MemTableSizeMiB: 16},
+		},
+		{
+			name:    "negative cache size",
+			cfg:     Config{Directory: "test-storage", CacheSizeMiB: -1},
+			wantErr: "cache_size_mib",
+		},
+		{
+			name:    "negative memtable size",
+			cfg:     Config{Directory: "test-storage", MemTableSizeMiB: -1},
+			wantErr: "memtable_size_mib",
+		},
+		{
 			name: "negative size",
 			cfg: Config{
 				Directory:         "test-storage",

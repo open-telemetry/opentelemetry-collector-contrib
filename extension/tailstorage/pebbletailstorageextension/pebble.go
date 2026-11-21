@@ -14,16 +14,33 @@ import (
 	"go.uber.org/zap"
 )
 
-func newPebbleDB(storageDir string, logger *zap.Logger) (db *pebble.DB, created bool, err error) {
-	cache := pebble.NewCache(16 << 20)
+const (
+	defaultCacheSizeMiB    = 4
+	defaultMemTableSizeMiB = 8
+)
+
+func newPebbleDB(storageDir string, cfg *Config, logger *zap.Logger) (db *pebble.DB, created bool, err error) {
+	cacheSizeMiB := cfg.CacheSizeMiB
+	if cacheSizeMiB <= 0 {
+		cacheSizeMiB = defaultCacheSizeMiB
+	}
+	memTableSizeMiB := cfg.MemTableSizeMiB
+	if memTableSizeMiB <= 0 {
+		memTableSizeMiB = defaultMemTableSizeMiB
+	}
+	cache := pebble.NewCache(int64(cacheSizeMiB) << 20)
 	defer cache.Unref()
 
 	opts := &pebble.Options{
 		FormatMajorVersion: pebble.FormatValueSeparation,
 		Logger:             logger.Sugar(),
-		MemTableSize:       32 << 20,
-		Comparer:           traceKeyComparer(),
-		Cache:              cache,
+		MemTableSize:       uint64(memTableSizeMiB) << 20,
+		// The extension drops all stored data on startup, so the WAL only
+		// costs write amplification and fsyncs without adding durability
+		// the extension can use.
+		DisableWAL: true,
+		Comparer:   traceKeyComparer(),
+		Cache:      cache,
 		CompactionConcurrencyRange: func() (lower, upper int) {
 			return 2, 4
 		},
