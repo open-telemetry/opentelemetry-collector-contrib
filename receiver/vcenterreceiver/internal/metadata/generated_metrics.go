@@ -737,7 +737,7 @@ var MetricsInfo = metricsInfo{
 	},
 	VcenterVMDatastoreUsage: metricInfo{
 		Name:       "vcenter.vm.datastore.usage",
-		Attributes: []string{"datastore_name", "disk_state"},
+		Attributes: []string{"vcenter.datastore.name", "disk_state"},
 	},
 	VcenterVMDiskLatencyAvg: metricInfo{
 		Name:       "vcenter.vm.disk.latency.avg",
@@ -5264,7 +5264,7 @@ func (m *metricVcenterVMDatastoreUsage) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricVcenterVMDatastoreUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, datastoreNameAttributeValue string, diskStateAttributeValue string) {
+func (m *metricVcenterVMDatastoreUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcenterDatastoreNameAttributeValue string, diskStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -5272,8 +5272,8 @@ func (m *metricVcenterVMDatastoreUsage) recordDataPoint(start pcommon.Timestamp,
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, VcenterVMDatastoreUsageMetricAttributeKeyDatastoreName) {
-		dp.Attributes().PutStr("vcenter.datastore.name", datastoreNameAttributeValue)
+	if slices.Contains(m.config.EnabledAttributes, VcenterVMDatastoreUsageMetricAttributeKeyVcenterDatastoreName) {
+		dp.Attributes().PutStr("vcenter.datastore.name", vcenterDatastoreNameAttributeValue)
 	}
 	if slices.Contains(m.config.EnabledAttributes, VcenterVMDatastoreUsageMetricAttributeKeyDiskState) {
 		dp.Attributes().PutStr("disk_state", diskStateAttributeValue)
@@ -7762,8 +7762,8 @@ func (mb *MetricsBuilder) RecordVcenterVMCPUUtilizationDataPoint(ts pcommon.Time
 }
 
 // RecordVcenterVMDatastoreUsageDataPoint adds a data point to vcenter.vm.datastore.usage metric.
-func (mb *MetricsBuilder) RecordVcenterVMDatastoreUsageDataPoint(ts pcommon.Timestamp, val int64, datastoreNameAttributeValue string, diskStateAttributeValue AttributeDiskState) {
-	mb.metricVcenterVMDatastoreUsage.recordDataPoint(mb.startTime, ts, val, datastoreNameAttributeValue, diskStateAttributeValue.String())
+func (mb *MetricsBuilder) RecordVcenterVMDatastoreUsageDataPoint(ts pcommon.Timestamp, val int64, vcenterDatastoreNameAttributeValue string, diskStateAttributeValue AttributeDiskState) {
+	mb.metricVcenterVMDatastoreUsage.recordDataPoint(mb.startTime, ts, val, vcenterDatastoreNameAttributeValue, diskStateAttributeValue.String())
 }
 
 // RecordVcenterVMDiskLatencyAvgDataPoint adds a data point to vcenter.vm.disk.latency.avg metric.

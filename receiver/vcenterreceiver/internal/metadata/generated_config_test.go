@@ -269,7 +269,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcenterVMDatastoreUsage: VcenterVMDatastoreUsageMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []VcenterVMDatastoreUsageMetricAttributeKey{VcenterVMDatastoreUsageMetricAttributeKeyDatastoreName, VcenterVMDatastoreUsageMetricAttributeKeyDiskState},
+						EnabledAttributes:   []VcenterVMDatastoreUsageMetricAttributeKey{VcenterVMDatastoreUsageMetricAttributeKeyVcenterDatastoreName, VcenterVMDatastoreUsageMetricAttributeKeyDiskState},
 					},
 					VcenterVMDiskLatencyAvg: VcenterVMDiskLatencyAvgMetricConfig{
 						Enabled:             true,
@@ -626,7 +626,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcenterVMDatastoreUsage: VcenterVMDatastoreUsageMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []VcenterVMDatastoreUsageMetricAttributeKey{VcenterVMDatastoreUsageMetricAttributeKeyDatastoreName, VcenterVMDatastoreUsageMetricAttributeKeyDiskState},
+						EnabledAttributes:   []VcenterVMDatastoreUsageMetricAttributeKey{VcenterVMDatastoreUsageMetricAttributeKeyVcenterDatastoreName, VcenterVMDatastoreUsageMetricAttributeKeyDiskState},
 					},
 					VcenterVMDiskLatencyAvg: VcenterVMDiskLatencyAvgMetricConfig{
 						Enabled:             false,

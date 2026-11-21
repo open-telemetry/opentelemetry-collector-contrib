@@ -482,11 +482,11 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordVcenterVMCPUUtilizationDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordVcenterVMDatastoreUsageDataPoint(ts, 1, "datastore_name-val", AttributeDiskStateAvailable)
+			mb.RecordVcenterVMDatastoreUsageDataPoint(ts, 1, "vcenter.datastore.name-val", AttributeDiskStateAvailable)
 			if tt.name == "reaggregate_set" {
-				mb.RecordVcenterVMDatastoreUsageDataPoint(ts, 3, "datastore_name-val-2", AttributeDiskStateUsed)
+				mb.RecordVcenterVMDatastoreUsageDataPoint(ts, 3, "vcenter.datastore.name-val-2", AttributeDiskStateUsed)
 				// a different timestamp is a different key: must not merge with the above.
-				mb.RecordVcenterVMDatastoreUsageDataPoint(ts+1, 3, "datastore_name-val-2", AttributeDiskStateUsed)
+				mb.RecordVcenterVMDatastoreUsageDataPoint(ts+1, 3, "vcenter.datastore.name-val-2", AttributeDiskStateUsed)
 				assert.Equal(t, 2, mb.metricVcenterVMDatastoreUsage.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
@@ -2519,9 +2519,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						datastoreNameAttrVal, ok := dp.Attributes().Get("vcenter.datastore.name")
+						vcenterDatastoreNameAttrVal, ok := dp.Attributes().Get("vcenter.datastore.name")
 						assert.True(t, ok)
-						assert.Equal(t, "datastore_name-val", datastoreNameAttrVal.Str())
+						assert.Equal(t, "vcenter.datastore.name-val", vcenterDatastoreNameAttrVal.Str())
 						diskStateAttrVal, ok := dp.Attributes().Get("disk_state")
 						assert.True(t, ok)
 						assert.Equal(t, "available", diskStateAttrVal.Str())

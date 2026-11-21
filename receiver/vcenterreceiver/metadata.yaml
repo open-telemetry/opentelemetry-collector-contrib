@@ -87,11 +87,6 @@ attributes:
       - "ready"
       - "wait"
     requirement_level: recommended
-  datastore_name:
-    name_override: vcenter.datastore.name
-    description: The name of the vCenter datastore.
-    type: string
-    requirement_level: recommended
   disk_direction:
     name_override: direction
     description: The direction of disk latency.
@@ -184,6 +179,10 @@ attributes:
       - "entering_maintenance"
       - "in_maintenance"
       - "unknown"
+    requirement_level: recommended
+  vcenter.datastore.name:
+    description: The name of the vCenter datastore.
+    type: string
     requirement_level: recommended
   vcenter.host.connection.state:
     description: The connection state of the host.
@@ -821,7 +820,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-    attributes: [datastore_name, disk_state]
+    attributes: [vcenter.datastore.name, disk_state]
   vcenter.vm.disk.latency.avg:
     enabled: true
     description: The latency of operations to the virtual machine's disk.

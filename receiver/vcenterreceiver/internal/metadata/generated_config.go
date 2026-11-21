@@ -2062,8 +2062,8 @@ func (ms *VcenterVMCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) e
 type VcenterVMDatastoreUsageMetricAttributeKey string
 
 const (
-	VcenterVMDatastoreUsageMetricAttributeKeyDatastoreName VcenterVMDatastoreUsageMetricAttributeKey = "vcenter.datastore.name"
-	VcenterVMDatastoreUsageMetricAttributeKeyDiskState     VcenterVMDatastoreUsageMetricAttributeKey = "disk_state"
+	VcenterVMDatastoreUsageMetricAttributeKeyVcenterDatastoreName VcenterVMDatastoreUsageMetricAttributeKey = "vcenter.datastore.name"
+	VcenterVMDatastoreUsageMetricAttributeKeyDiskState            VcenterVMDatastoreUsageMetricAttributeKey = "disk_state"
 )
 
 // VcenterVMDatastoreUsageMetricConfig provides config for the vcenter.vm.datastore.usage metric.
@@ -2092,7 +2092,7 @@ func (ms *VcenterVMDatastoreUsageMetricConfig) Unmarshal(parser *confmap.Conf) e
 func (ms *VcenterVMDatastoreUsageMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case VcenterVMDatastoreUsageMetricAttributeKeyDatastoreName, VcenterVMDatastoreUsageMetricAttributeKeyDiskState:
+		case VcenterVMDatastoreUsageMetricAttributeKeyVcenterDatastoreName, VcenterVMDatastoreUsageMetricAttributeKeyDiskState:
 		default:
 			return fmt.Errorf("metric vcenter.vm.datastore.usage doesn't have an attribute %v, valid attributes: [vcenter.datastore.name, disk_state]", val)
 		}
@@ -3258,7 +3258,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		VcenterVMDatastoreUsage: VcenterVMDatastoreUsageMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []VcenterVMDatastoreUsageMetricAttributeKey{VcenterVMDatastoreUsageMetricAttributeKeyDatastoreName, VcenterVMDatastoreUsageMetricAttributeKeyDiskState},
+			EnabledAttributes:   []VcenterVMDatastoreUsageMetricAttributeKey{VcenterVMDatastoreUsageMetricAttributeKeyVcenterDatastoreName, VcenterVMDatastoreUsageMetricAttributeKeyDiskState},
 		},
 		VcenterVMDiskLatencyAvg: VcenterVMDiskLatencyAvgMetricConfig{
 			Enabled:             true,
