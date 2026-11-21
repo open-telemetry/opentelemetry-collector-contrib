@@ -98,6 +98,10 @@ See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/
   If the specified resource attribute exists in the data,  
   its value will be used as the prefix; otherwise, `s3uploader/s3_prefix` will serve as the fallback.
 
+Data is split so that each uploaded object only contains resources with the same bucket and prefix values.
+When `sending_queue::batch` is enabled, these attributes are also added to `sending_queue::batch::partition::metadata_keys`,
+so the batcher never merges data for different buckets or prefixes.
+
 # Example Configurations
 
 Following example configuration defines to store output in 'eu-central' region and bucket named 'databucket'.
