@@ -128,6 +128,10 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerTempDBFileQuery())
 	}
 
+	if cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionLongestRunningTime.Enabled {
+		queries = append(queries, getSQLServerLongestRunningTransactionQuery())
+	}
+
 	return queries
 }
 
@@ -688,6 +692,8 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverTaskRate.Enabled ||
 		metrics.SqlserverTransactionDelay.Enabled ||
 		metrics.SqlserverTransactionMirrorWriteRate.Enabled ||
+		metrics.SqlserverTransactionVersionCleanupRate.Enabled ||
+		metrics.SqlserverTransactionVersionGenerationRate.Enabled ||
 		metrics.SqlserverUserConnectionCount.Enabled ||
 		metrics.SqlserverWorktableCacheHitRatio.Enabled
 }

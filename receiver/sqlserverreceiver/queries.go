@@ -166,6 +166,8 @@ SELECT DISTINCT
 			,'Temp Tables Creation Rate'
 			,'Temp Tables For Destruction'
 			,'Version Store Size (KB)'
+			,'Version Cleanup rate (KB/s)'
+			,'Version Generation rate (KB/s)'
 			,'Memory Grants Pending'
 			,'Memory Grants Outstanding'
 			,'Free list stalls/sec'
@@ -1489,4 +1491,32 @@ WHERE type IN (0, 1)
 
 func getSQLServerTempDBFileQuery() string {
 	return sqlServerTempDBFileQuery
+}
+
+// sqlServerLongestRunningTransactionQuery returns the age in seconds of the longest currently-open
+// transaction. Uses sys.dm_tran_active_transactions rather than the "Longest Transaction Running
+// Time" performance counter, which Microsoft documents as only incrementing under read committed
+// snapshot isolation and never logging activity under any other isolation level.
+const sqlServerLongestRunningTransactionQuery = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,8) BEGIN
+	DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:' + @@ServerName + ',Database:' + DB_NAME() + ' is not supported for sqlserver.transaction.longest_running_time.';
+	RAISERROR (@ErrorMessage,11,1)
+	RETURN
+END
+
+SELECT
+	'sqlserver_longest_running_transaction' AS [measurement],
+	REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+	ISNULL(MAX(DATEDIFF(SECOND, tat.transaction_begin_time, GETDATE())), 0) AS [longest_running_seconds]
+FROM sys.dm_tran_active_transactions AS tat WITH (NOLOCK)
+INNER JOIN sys.dm_tran_session_transactions AS st WITH (NOLOCK) ON tat.transaction_id = st.transaction_id
+INNER JOIN sys.dm_exec_sessions AS sess WITH (NOLOCK) ON st.session_id = sess.session_id
+WHERE tat.transaction_type IN (1,2,4)
+  AND tat.transaction_state IN (2,3)
+  AND sess.is_user_process = 1
+`
+
+func getSQLServerLongestRunningTransactionQuery() string {
+	return sqlServerLongestRunningTransactionQuery
 }
