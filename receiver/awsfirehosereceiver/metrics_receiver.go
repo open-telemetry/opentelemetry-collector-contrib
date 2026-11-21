@@ -68,13 +68,13 @@ func (c *metricsConsumer) Start(ctx context.Context, host component.Host) error 
 	switch encoding {
 	case cwmetricstream.TypeStr:
 		c.settings.Logger.Warn(
-			"The built-in \"cwmetrics\" encoding is deprecated and will be removed in a future version. " +
+			"The built-in \"cwmetrics\" encoding is deprecated and will be removed in v0.168.0. " +
 				"Use the \"awscloudwatchmetricstreams_encoding\" encoding extension with format \"json\" instead.",
 		)
 		c.unmarshaler = cwmetricstream.NewUnmarshaler(c.settings.Logger, c.settings.BuildInfo)
 	case "otlp_v1":
 		c.settings.Logger.Warn(
-			"The built-in \"otlp_v1\" encoding is deprecated and will be removed in a future version. " +
+			"The built-in \"otlp_v1\" encoding is deprecated and will be removed in v0.168.0. " +
 				"Use the \"awscloudwatchmetricstreams_encoding\" encoding extension with format \"opentelemetry1.0\" instead.",
 		)
 		unmarshaler, err := c.newUnmarshalerFromEncoding(ctx, encoding, "opentelemetry1.0")
