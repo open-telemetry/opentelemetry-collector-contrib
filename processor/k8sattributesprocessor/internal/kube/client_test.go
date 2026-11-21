@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -266,6 +267,32 @@ func TestKubeletPodOnlySkipsKubernetesAPIClient(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.NotNil(t, c)
+}
+
+func TestKubeletWithHPALabelsAnnotationsCreatesKubernetesAPIClient(t *testing.T) {
+	clientCreated := false
+	clientProvider := func(k8sconfig.APIConfig) (k8sconfig.ClientBundle, error) {
+		clientCreated = true
+		return newFakeAPIClientset(k8sconfig.APIConfig{})
+	}
+	rules := ExtractionRules{
+		Labels: []FieldExtractionRule{
+			{Name: "hpa_label", Key: "label1", From: MetadataFromHPA},
+		},
+		Annotations: []FieldExtractionRule{
+			{Name: "hpa_annotation", Key: "annotation1", From: MetadataFromHPA},
+		},
+	}
+	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone}, rules, Filters{Node: "node-a"}, []Association{}, Excludes{}, clientProvider, InformersFactoryList{}, false, 10*time.Second, 0, 120*time.Second, KubeletConfig{
+		Enabled:           true,
+		Endpoint:          "http://node-a:10250",
+		AllowInsecureHTTP: true,
+	})
+	require.NoError(t, err)
+	require.True(t, clientCreated)
+	wc := c.(*WatchClient)
+	assert.NotNil(t, wc.mc)
+	assert.NotNil(t, wc.hpaInformer)
 }
 
 func TestPodAdd(t *testing.T) {
@@ -2970,6 +2997,117 @@ func TestCronJobExtractionRules(t *testing.T) {
 	}
 }
 
+func TestHPAExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	hpa := &meta_v1.PartialObjectMetadata{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "k8s-hpa-example",
+			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			CreationTimestamp: meta_v1.Now(),
+			Labels: map[string]string{
+				"label1": "lv1",
+			},
+			Annotations: map[string]string{
+				"annotation1": "av1",
+			},
+		},
+	}
+
+	testCases := []struct {
+		name       string
+		rules      ExtractionRules
+		attributes map[string]string
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
+		},
+		{
+			name: "labels and annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromHPA,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromHPA,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"a1": "av1",
+			},
+		},
+		{
+			name: "all-labels",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromHPA,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.hpa.label.label1": "lv1",
+			},
+		},
+		{
+			name: "all-annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromHPA,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.hpa.annotation.annotation1": "av1",
+			},
+		},
+		{
+			name: "captured-groups-no-tag-name",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex:             regexp.MustCompile(`^(?:(label\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromHPA,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.hpa.label.label1": "lv1",
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			c.handleHPAAdd(hpa)
+			n, ok := c.GetHPA(string(hpa.UID))
+			require.True(t, ok)
+
+			assert.Len(t, tc.attributes, len(n.Attributes))
+			for k, v := range tc.attributes {
+				got, ok := n.Attributes[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
+	}
+}
+
 func TestFilters(t *testing.T) {
 	testCases := []struct {
 		name    string
@@ -3528,6 +3666,39 @@ func TestStartWaitsForKubeletPods(t *testing.T) {
 	require.NoError(t, c.Start())
 	_, ok := c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.1"))
 	assert.True(t, ok)
+}
+
+func TestStartDoesNotBlockPodsOnHPAInformerSync(t *testing.T) {
+	neverSyncedHPAInformer := func() cache.SharedInformer {
+		return &neverSyncedFakeClient{NewFakeInformer(fake.NewClientset(), "", nil, nil)}
+	}
+
+	t.Run("kubelet polling", func(t *testing.T) {
+		c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+		c.kubelet = KubeletConfig{Enabled: true, PollInterval: time.Hour}
+		c.hpaInformer = neverSyncedHPAInformer()
+		c.kubeletPods = map[string]*api_v1.Pod{}
+		c.kubeletPodLister = fakePodLister{pods: &api_v1.PodList{Items: []api_v1.Pod{
+			kubeletTestPod("uid-a", "pod-a", "ns-a", "node-a", "10.0.0.1", nil),
+		}}}
+		defer c.Stop()
+
+		require.NoError(t, c.Start())
+		assert.Eventually(t, func() bool {
+			_, ok := c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.1"))
+			return ok
+		}, 5*time.Second, 10*time.Millisecond)
+	})
+
+	t.Run("wait_for_metadata waits for HPA informer", func(t *testing.T) {
+		c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+		c.waitForMetadata = true
+		c.waitForMetadataTimeout = 200 * time.Millisecond
+		c.hpaInformer = neverSyncedHPAInformer()
+		defer c.Stop()
+
+		require.EqualError(t, c.Start(), "failed to wait for caches to sync")
+	})
 }
 
 func TestKubeletPodStartTimeUsesStatusStartTime(t *testing.T) {
@@ -4968,6 +5139,70 @@ func TestExtractCronJobLabelsAnnotations(t *testing.T) {
 	}
 }
 
+func TestExtractHPALabelsAnnotations(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	testCases := []struct {
+		name             string
+		shouldExtractHPA bool
+		rules            ExtractionRules
+	}{
+		{
+			name:             "empty-rules",
+			shouldExtractHPA: false,
+			rules:            ExtractionRules{},
+		}, {
+			name:             "pod-rules",
+			shouldExtractHPA: false,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromPod,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromPod,
+					},
+				},
+			},
+		}, {
+			name:             "hpa-rules-only-annotations",
+			shouldExtractHPA: true,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromHPA,
+					},
+				},
+			},
+		}, {
+			name:             "hpa-rules-only-labels",
+			shouldExtractHPA: true,
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromHPA,
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			assert.Equal(t, tc.shouldExtractHPA, c.extractHPALabelsAnnotations())
+		})
+	}
+}
+
 func newTestClientWithTelemetry(t *testing.T, set component.TelemetrySettings) *WatchClient {
 	c, _ := newTestClientWithSettings(t, set, Filters{})
 	return c
@@ -6081,6 +6316,76 @@ func TestHandleCronJobDelete(t *testing.T) {
 	assert.Empty(t, c.CronJobs)
 }
 
+func TestHandleHPAUpdate(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c.Rules = ExtractionRules{
+		Labels: []FieldExtractionRule{
+			{Name: "hpa_label", Key: "label1", From: MetadataFromHPA},
+		},
+		Annotations: []FieldExtractionRule{
+			{Name: "hpa_annotation", Key: "annotation1", From: MetadataFromHPA},
+		},
+	}
+
+	hpa := &meta_v1.PartialObjectMetadata{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:        "test-hpa",
+			Namespace:   "default",
+			UID:         "hpa-uid-123",
+			Labels:      map[string]string{"label1": "lv1"},
+			Annotations: map[string]string{"annotation1": "av1"},
+		},
+	}
+
+	// Add initial hpa
+	c.handleHPAAdd(hpa)
+	assert.Len(t, c.HPAs, 1)
+	h, ok := c.GetHPA(string(hpa.UID))
+	require.True(t, ok)
+	assert.Equal(t, map[string]string{"hpa_label": "lv1", "hpa_annotation": "av1"}, h.Attributes)
+
+	// Update hpa: change the label value and remove the annotation
+	updatedHPA := &meta_v1.PartialObjectMetadata{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-hpa",
+			Namespace: "default",
+			UID:       "hpa-uid-123",
+			Labels:    map[string]string{"label1": "lv2"},
+		},
+	}
+	c.handleHPAUpdate(hpa, updatedHPA)
+
+	// Verify update
+	h, ok = c.GetHPA(string(updatedHPA.UID))
+	require.True(t, ok)
+	assert.Equal(t, "test-hpa", h.Name)
+	assert.Equal(t, map[string]string{"hpa_label": "lv2"}, h.Attributes)
+}
+
+func TestHandleHPADelete(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	hpa := &meta_v1.PartialObjectMetadata{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-hpa",
+			Namespace: "default",
+			UID:       "hpa-uid-123",
+		},
+	}
+
+	// Add hpa
+	c.handleHPAAdd(hpa)
+	assert.Len(t, c.HPAs, 1)
+
+	// Delete hpa
+	c.handleHPADelete(hpa)
+
+	// Verify deletion
+	_, ok := c.GetHPA(string(hpa.UID))
+	assert.False(t, ok)
+	assert.Empty(t, c.HPAs)
+}
+
 func TestCreateRestConfigFailure(t *testing.T) {
 	// Simulate a failure in CreateRestConfig by returning nil for the informer
 	factory := InformersFactoryList{
@@ -6260,4 +6565,105 @@ func TestPodDeleteIPMissingFromDeleteEvent(t *testing.T) {
 
 	// In the fixed state, all keys associated with the pod should be successfully cleaned up from the cache.
 	assert.Empty(t, c.Pods)
+}
+
+func TestHandleUpdateEvictsReplacedUID(t *testing.T) {
+	newObj := func(uid string) *meta_v1.PartialObjectMetadata {
+		return &meta_v1.PartialObjectMetadata{
+			ObjectMeta: meta_v1.ObjectMeta{Name: "test", Namespace: "default", UID: types.UID(uid)},
+		}
+	}
+	tests := []struct {
+		name   string
+		add    func(c *WatchClient, obj any)
+		update func(c *WatchClient, oldObj, newObj any)
+		keys   func(c *WatchClient) []string
+	}{
+		{
+			name:   "deployment",
+			add:    (*WatchClient).handleDeploymentAdd,
+			update: (*WatchClient).handleDeploymentUpdate,
+			keys:   func(c *WatchClient) []string { return slices.Collect(maps.Keys(c.Deployments)) },
+		},
+		{
+			name:   "statefulset",
+			add:    (*WatchClient).handleStatefulSetAdd,
+			update: (*WatchClient).handleStatefulSetUpdate,
+			keys:   func(c *WatchClient) []string { return slices.Collect(maps.Keys(c.StatefulSets)) },
+		},
+		{
+			name:   "daemonset",
+			add:    (*WatchClient).handleDaemonSetAdd,
+			update: (*WatchClient).handleDaemonSetUpdate,
+			keys:   func(c *WatchClient) []string { return slices.Collect(maps.Keys(c.DaemonSets)) },
+		},
+		{
+			name:   "job",
+			add:    (*WatchClient).handleJobAdd,
+			update: (*WatchClient).handleJobUpdate,
+			keys:   func(c *WatchClient) []string { return slices.Collect(maps.Keys(c.Jobs)) },
+		},
+		{
+			name:   "cronjob",
+			add:    (*WatchClient).handleCronJobAdd,
+			update: (*WatchClient).handleCronJobUpdate,
+			keys:   func(c *WatchClient) []string { return slices.Collect(maps.Keys(c.CronJobs)) },
+		},
+		{
+			name:   "replicaset",
+			add:    (*WatchClient).handleReplicaSetAdd,
+			update: (*WatchClient).handleReplicaSetUpdate,
+			keys:   func(c *WatchClient) []string { return slices.Collect(maps.Keys(c.ReplicaSets)) },
+		},
+		{
+			name:   "hpa",
+			add:    (*WatchClient).handleHPAAdd,
+			update: (*WatchClient).handleHPAUpdate,
+			keys:   func(c *WatchClient) []string { return slices.Collect(maps.Keys(c.HPAs)) },
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+			oldObj := newObj("uid-old")
+			tt.add(c, oldObj)
+			require.Equal(t, []string{"uid-old"}, tt.keys(c))
+
+			// Same UID: regular update keeps the entry.
+			tt.update(c, oldObj, newObj("uid-old"))
+			assert.Equal(t, []string{"uid-old"}, tt.keys(c))
+
+			// Different UID with the same name: delete + recreate coalesced into one update.
+			tt.update(c, oldObj, newObj("uid-new"))
+			assert.Equal(t, []string{"uid-new"}, tt.keys(c))
+		})
+	}
+}
+
+func TestPodUpdateForgetsReplacedUID(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	oldPod := kubeletTestPod("uid-old", "pod-a", "ns-a", "node-a", "10.0.0.1", nil)
+	newPod := kubeletTestPod("uid-new", "pod-a", "ns-a", "node-a", "10.0.0.2", nil)
+	c.handlePodAdd(&oldPod)
+	c.handlePodUpdate(&oldPod, &newPod)
+
+	oldUID := newPodIdentifier("resource_attribute", "k8s.pod.uid", "uid-old")
+	newUID := newPodIdentifier("resource_attribute", "k8s.pod.uid", "uid-new")
+
+	// The old pod stays available during the delete grace period.
+	_, ok := c.GetPod(oldUID)
+	assert.True(t, ok)
+
+	c.deleteLoopProcessing(0)
+
+	_, ok = c.GetPod(oldUID)
+	assert.False(t, ok)
+	p, ok := c.GetPod(newUID)
+	require.True(t, ok)
+	assert.Equal(t, "uid-new", p.PodUID)
+	_, ok = c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.1"))
+	assert.False(t, ok)
+	_, ok = c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.2"))
+	assert.True(t, ok)
 }

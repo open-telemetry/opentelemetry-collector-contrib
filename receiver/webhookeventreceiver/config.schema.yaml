@@ -18,7 +18,8 @@ $defs:
       key:
         type: string
       value:
-        type: string
+        description: Value is the expected header value. It acts as a shared secret, so it is masked when the configuration is printed.
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
 description: Config defines configuration for the Generic Webhook receiver.
 type: object
 properties:
