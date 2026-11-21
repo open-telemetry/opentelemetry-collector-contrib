@@ -42,7 +42,7 @@ func newBaoKeyMaterialProviderWithAddress(ctx context.Context, cfg *BaoKeyConfig
 		return nil, fmt.Errorf("failed to create openbao client: %w", err)
 	}
 	if cfg.Token != "" {
-		client.SetToken(cfg.Token)
+		client.SetToken(string(cfg.Token))
 	}
 
 	mountPath := cfg.MountPath

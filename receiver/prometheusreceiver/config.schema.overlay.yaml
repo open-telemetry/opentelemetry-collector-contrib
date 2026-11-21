@@ -112,6 +112,7 @@ $defs:
       - PrometheusText1.0.0
       - OpenMetricsText0.0.1
       - OpenMetricsText1.0.0
+      - OpenMetricsText2.0.0
 
   prom_scrape_config:
     description: Configuration for a scrape job.
