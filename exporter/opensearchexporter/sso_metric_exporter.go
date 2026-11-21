@@ -57,7 +57,12 @@ func (m *metricExporter) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	client, err := newOpenSearchClient(m.httpSettings.Endpoint, httpClient, m.telemetry.Logger)
+	client, err := newOpenSearchClient(
+		m.httpSettings.Endpoint,
+		httpClient,
+		m.telemetry.Logger,
+		m.config,
+	)
 	if err != nil {
 		return err
 	}
