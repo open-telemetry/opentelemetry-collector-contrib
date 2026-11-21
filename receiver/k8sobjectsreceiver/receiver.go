@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"regexp"
 	"strings"
 	"sync"
@@ -21,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/wait"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 
@@ -30,6 +32,15 @@ import (
 	pullobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/pull"
 	watchobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/watch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
+)
+
+// Backoff between observer start attempts. Each attempt can itself block for up to
+// cache_sync_timeout, so the real gap between attempts is the backoff plus that timeout.
+const (
+	startRetryInterval = time.Second
+	startRetryCap      = 60 * time.Second
+	startRetryFactor   = 2
+	startRetryJitter   = 0.2
 )
 
 type k8sobjectsreceiver struct {
@@ -47,6 +58,8 @@ type k8sobjectsreceiver struct {
 	observerFunc    func(ctx context.Context, reg *informer.FactoryRegistry, object *K8sObjectsConfig) (k8sinventory.Observer, error)
 	wg              sync.WaitGroup
 	stopped         bool
+	// startRetryBackoff paces background retries of observers that failed to start under ignore/silent error_mode.
+	startRetryBackoff wait.Backoff
 }
 
 func newReceiver(params receiver.Settings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
@@ -83,6 +96,13 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 		consumer: consumer,
 		obsrecv:  obsrecv,
 		mu:       sync.Mutex{},
+		startRetryBackoff: wait.Backoff{
+			Duration: startRetryInterval,
+			Factor:   startRetryFactor,
+			Jitter:   startRetryJitter,
+			Cap:      startRetryCap,
+			Steps:    math.MaxInt32,
+		},
 	}
 
 	kr.observerFunc = getObserverFunc(kr)
@@ -403,34 +423,54 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, reg *informer.FactoryRe
 	return nil
 }
 
+// startObserver starts obs, either right away or after the pull mode initial_delay.
+// Unless error_mode is propagate, a failed start (e.g. cache sync timeout) is retried
+// in the background with backoff until it succeeds, the returned channel is closed,
+// or ctx is done.
 func (kr *k8sobjectsreceiver) startObserver(ctx context.Context, obs k8sinventory.Observer, object *K8sObjectsConfig) (chan struct{}, error) {
-	if object.Mode != k8sinventory.PullMode || object.InitialDelay <= 0 {
-		return obs.Start(ctx, &kr.wg)
+	backoff := kr.startRetryBackoff
+	var delay time.Duration
+	if object.Mode == k8sinventory.PullMode && object.InitialDelay > 0 {
+		delay = object.InitialDelay
+	} else {
+		observerStopChan, err := obs.Start(ctx, &kr.wg)
+		if err == nil || kr.config.ErrorMode == PropagateError {
+			return observerStopChan, err
+		}
+		_ = kr.handleError(err, "failed to start observer, retrying")
+		delay = backoff.Step()
 	}
 
 	stopChan := make(chan struct{})
 	kr.wg.Go(func() {
-		timer := time.NewTimer(object.InitialDelay)
-		defer timer.Stop()
+		for {
+			timer := time.NewTimer(delay)
+			select {
+			case <-timer.C:
+			case <-stopChan:
+				timer.Stop()
+				return
+			case <-ctx.Done():
+				timer.Stop()
+				return
+			}
 
-		select {
-		case <-timer.C:
-		case <-stopChan:
-			return
-		case <-ctx.Done():
-			return
-		}
-
-		observerStopChan, err := obs.Start(ctx, &kr.wg)
-		if err != nil {
-			kr.setting.Logger.Error("failed to start observer after initial delay",
-				zap.String("object", object.Name), zap.Error(err))
-			return
-		}
-		select {
-		case <-stopChan:
-			close(observerStopChan)
-		case <-ctx.Done():
+			observerStopChan, err := obs.Start(ctx, &kr.wg)
+			if err == nil {
+				select {
+				case <-stopChan:
+					close(observerStopChan)
+				case <-ctx.Done():
+				}
+				return
+			}
+			if kr.config.ErrorMode == PropagateError {
+				kr.setting.Logger.Error("failed to start observer",
+					zap.String("object", object.Name), zap.Error(err))
+				return
+			}
+			_ = kr.handleError(err, "failed to start observer, retrying")
+			delay = backoff.Step()
 		}
 	})
 
