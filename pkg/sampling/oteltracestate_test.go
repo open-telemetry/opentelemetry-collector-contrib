@@ -227,6 +227,22 @@ func TestParseOpenTelemetryTraceState(t *testing.T) {
 		// size exceeded
 		{"x:" + strings.Repeat("_", 255), ns, ns, nil, ErrTraceStateSize},
 		{"x:" + strings.Repeat("_", 254), ns, ns, []string{"x:" + strings.Repeat("_", 254)}, nil},
+
+		// uppercase hex rejected in th (spec requires lowercase)
+		{"th:C", ns, ns, nil, strconv.ErrSyntax},  // uppercase hex digit
+		{"th:AB", ns, ns, nil, strconv.ErrSyntax}, // uppercase hex digits
+		{"th:1A", ns, ns, nil, strconv.ErrSyntax}, // mixed case
+		{"th:0F", ns, ns, nil, strconv.ErrSyntax}, // mixed case
+
+		// uppercase hex rejected in rv (spec requires lowercase)
+		{"rv:6E6D1A75832A2F00", ns, ns, nil, ErrRValueSize},   // also wrong length
+		{"rv:FFFFFFFFFFFFFF", ns, ns, nil, strconv.ErrSyntax}, // correct length, uppercase
+
+		// duplicate sub-keys rejected
+		{"th:1;th:2", ns, ns, nil, strconv.ErrSyntax},
+		{"rv:abcdefabcdefab;rv:abcdefabcdefab", ns, ns, nil, strconv.ErrSyntax},
+		{"a:1;a:2", ns, ns, nil, strconv.ErrSyntax},
+		{"th:1;a:1;th:2", ns, ns, nil, strconv.ErrSyntax},
 	} {
 		t.Run(testName(test.in), func(t *testing.T) {
 			otts, err := NewOpenTelemetryTraceState(test.in)
@@ -340,4 +356,30 @@ func TestUpdateTValueWithSampling(t *testing.T) {
 			require.Equal(t, test.adjCountOut, otts.AdjustedCount())
 		})
 	}
+}
+
+// TestSerializeEnforcesLengthLimit verifies that Serialize and UpdateTValueWithSampling
+// return ErrTraceStateSize when an OpenTelemetryTraceState would exceed hardMaxOTelLength (256 chars).
+func TestSerializeEnforcesLengthLimit(t *testing.T) {
+	// 254 chars: "extra:" + 248 chars = 254 chars total.
+	input := "extra:" + strings.Repeat("x", 248)
+	otts, err := NewOpenTelemetryTraceState(input)
+	require.NoError(t, err)
+
+	// UpdateTValueWithSampling adding "th:f" would make total length 254 + 1 (;) + 4 (th:f) = 259 > 256.
+	th, err := ProbabilityToThreshold(0x1p-4)
+	require.NoError(t, err)
+	err = otts.UpdateTValueWithSampling(th)
+	require.ErrorIs(t, err, ErrTraceStateSize)
+	// Verify tvalue was not updated
+	require.Empty(t, otts.TValue())
+
+	// SetRValue does not return an error, but Serialize must reject the oversized tracestate.
+	rnd, err := RValueToRandomness("00000000000001")
+	require.NoError(t, err)
+	otts.SetRValue(rnd)
+
+	var w strings.Builder
+	err = otts.Serialize(&w)
+	require.ErrorIs(t, err, ErrTraceStateSize)
 }

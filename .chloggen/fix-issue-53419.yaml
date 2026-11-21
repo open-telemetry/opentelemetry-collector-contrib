@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: pkg/sampling
+note: Reject uppercase hex in th/rv, reject duplicate sub-keys, and enforce 256-character limit on OpenTelemetryTraceState.
+issues: [53419]
+subtext: ""
+change_logs: [api]
