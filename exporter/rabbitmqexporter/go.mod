@@ -11,6 +11,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.45.0
 	go.opentelemetry.io/collector/component v1.71.1-0.20261119222305-0c7a74cd0a4a
 	go.opentelemetry.io/collector/component/componenttest v0.165.1-0.20261119222305-0c7a74cd0a4a
+	go.opentelemetry.io/collector/config/configopaque v1.71.1-0.20261119222305-0c7a74cd0a4a
 	go.opentelemetry.io/collector/config/configoptional v1.71.1-0.20261119222305-0c7a74cd0a4a
 	go.opentelemetry.io/collector/config/configretry v1.71.1-0.20261119222305-0c7a74cd0a4a
 	go.opentelemetry.io/collector/config/configtls v1.71.1-0.20261119222305-0c7a74cd0a4a
@@ -81,7 +82,6 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.71.1-0.20261119222305-0c7a74cd0a4a // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.71.1-0.20261119222305-0c7a74cd0a4a // indirect
 	go.opentelemetry.io/collector/config/configstorage v0.165.1-0.20261119222305-0c7a74cd0a4a // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.165.1-0.20261119222305-0c7a74cd0a4a // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.165.1-0.20261119222305-0c7a74cd0a4a // indirect

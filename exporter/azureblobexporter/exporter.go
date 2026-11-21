@@ -243,7 +243,7 @@ func (e *azureBlobExporter) start(_ context.Context, host component.Host) error 
 	e.client = azblobClient
 	switch authType {
 	case ConnectionString:
-		azblobClient.client, err = azblob.NewClientFromConnectionString(e.config.Auth.ConnectionString, nil)
+		azblobClient.client, err = azblob.NewClientFromConnectionString(string(e.config.Auth.ConnectionString), nil)
 		if err != nil {
 			return fmt.Errorf("failed to create client from connection string: %w", err)
 		}
@@ -251,7 +251,7 @@ func (e *azureBlobExporter) start(_ context.Context, host component.Host) error 
 		cred, err := azidentity.NewClientSecretCredential(
 			e.config.Auth.TenantID,
 			e.config.Auth.ClientID,
-			e.config.Auth.ClientSecret,
+			string(e.config.Auth.ClientSecret),
 			nil,
 		)
 		if err != nil {

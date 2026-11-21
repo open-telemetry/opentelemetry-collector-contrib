@@ -124,7 +124,7 @@ var (
 					{
 						Key:    &headername,
 						Action: INSERT,
-						Value:  new("config value"),
+						Value:  new(configopaque.String("config value")),
 					},
 				},
 			},
@@ -175,7 +175,7 @@ var (
 					{
 						Key:    &headername,
 						Action: INSERT,
-						Value:  new(""),
+						Value:  new(configopaque.String("")),
 					},
 				},
 			},
