@@ -1,0 +1,13 @@
+type: httpjson
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+  distributions: [custom]
+  codeowners:
+    active: [srclosson]
+
+# The httpjson receiver polls an HTTP endpoint on a schedule and turns the
+# JSON response into log records — the OTel-native replacement for
+# Telegraf's http/httpjson inputs.
