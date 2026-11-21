@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -213,6 +214,7 @@ func TestFactoryCreateMetrics_ConvertSummaryToHistogram(t *testing.T) {
 	tests := []struct {
 		name          string
 		statements    []string
+		gateDisabled  bool
 		wantErrorWith string
 		want          []string
 	}{
@@ -253,6 +255,12 @@ func TestFactoryCreateMetrics_ConvertSummaryToHistogram(t *testing.T) {
 			wantErrorWith: "unknown aggregation temporality: not a temporality",
 		},
 		{
+			name:          "rejected when the experimental functions feature gate is disabled",
+			statements:    []string{`convert_summary_to_histogram("cumulative")`},
+			gateDisabled:  true,
+			wantErrorWith: "function \"convert_summary_to_histogram\" is experimental and requires the `processor.transform.enableExperimentalFunctions` feature gate to be enabled",
+		},
+		{
 			name:          "temporality is required",
 			statements:    []string{`convert_summary_to_histogram()`},
 			wantErrorWith: `error while parsing arguments for call to "convert_summary_to_histogram": incorrect number of arguments`,
@@ -260,10 +268,17 @@ func TestFactoryCreateMetrics_ConvertSummaryToHistogram(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			gate := metadata.ProcessorTransformEnableExperimentalFunctionsFeatureGate
+			original := gate.IsEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), !tt.gateDisabled))
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), original))
+			})
+
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 			oCfg := cfg.(*Config)
-			oCfg.MetricStatements = []common.ContextStatements{{Context: "metric", Statements: tt.statements}}
+			oCfg.MetricStatements = []ContextStatements{{Context: "metric", Statements: tt.statements}}
 			sink := new(consumertest.MetricsSink)
 			p, err := factory.CreateMetrics(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, sink)
 			if tt.wantErrorWith != "" {

@@ -275,7 +275,6 @@ In addition to the common OTTL functions, the processor defines its own function
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
 - [convert_summary_quantile_val_to_gauge](#convert_summary_quantile_val_to_gauge)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
-- [convert_summary_to_histogram](#convert_summary_to_histogram)
 - [copy_metric](#copy_metric)
 - [scale_metric](#scale_metric)
 - [aggregate_on_attributes](#aggregate_on_attributes)
@@ -296,7 +295,9 @@ In addition to the common OTTL functions, the processor defines its own function
 
 **Experimental functions**
 
-There are currently no experimental functions. See [Function stability](#function-stability).
+- [convert_summary_to_histogram](#convert_summary_to_histogram) (metrics)
+
+See [Function stability](#function-stability).
 
 ### convert_sum_to_gauge
 
@@ -490,6 +491,8 @@ Examples:
 
 The `convert_summary_to_histogram` function creates a new Histogram metric with a single bucket from a Summary.
 
+**NOTE:** This function is [experimental](#function-stability) and requires the [`processor.transform.enableExperimentalFunctions`](#processortransformenableexperimentalfunctions) feature gate.
+
 `aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the aggregation temporality of the new metric. Summaries carry no temporality, so choose the one that matches how the source reports them (cumulative for Prometheus summaries).
 `suffix` is an optional string that defines the suffix for the metric name. By default, it is set to `_histogram`.
 
@@ -509,9 +512,8 @@ processors:
         statements:
           - convert_summary_to_histogram("cumulative")
   filter:
-    metrics:
-      metric:
-        - metric.type == METRIC_DATA_TYPE_SUMMARY
+    metric_conditions:
+      - metric.type == METRIC_DATA_TYPE_SUMMARY
 
 service:
   pipelines:

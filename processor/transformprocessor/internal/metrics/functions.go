@@ -13,6 +13,7 @@ import (
 	xprofilefuncs "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	xottlfuncs "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 func DataPointFunctions() map[string]ottl.Factory[*ottldatapoint.TransformContext] {
@@ -49,7 +50,7 @@ func MetricFunctions() map[string]ottl.Factory[*ottlmetric.TransformContext] {
 		newconvertExponentialHistToExplicitHistFactory(),
 		newAggregateOnAttributeValueFactory(),
 		newConvertSummaryQuantileValToGaugeFactory(),
-		newConvertSummaryToHistogramFactory(),
+		common.NewExperimentalFactory(newConvertSummaryToHistogramFactory()),
 	)
 
 	maps.Copy(functions, metricFunctions)
