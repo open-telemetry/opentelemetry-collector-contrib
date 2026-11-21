@@ -4,13 +4,47 @@
 package deadband // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deadband"
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"sort"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 )
+
+
+// AdaptiveConfig wires the DB v2 boost path: while the named signalstate
+// window is open, suppression is suspended (all gauges pass through, state
+// still updates so calm-state resumes from the newest sent values) and the
+// previously suppressed series are flushed on boost entry. Fail toward
+// visibility: an unreachable extension behaves as calm state.
+type AdaptiveConfig struct {
+	Enabled              bool         `mapstructure:"enabled"`
+	SignalstateExtension *component.ID `mapstructure:"signalstate_extension"`
+	// Window is the signalstate window name that triggers the boost.
+	Window string `mapstructure:"window"`
+}
+
+func (a *AdaptiveConfig) Validate() error {
+	if !a.Enabled {
+		return nil
+	}
+	if a.SignalstateExtension == nil {
+		return fmt.Errorf("adaptive.signalstate_extension must be set when adaptive is enabled")
+	}
+	if a.Window == "" {
+		return fmt.Errorf("adaptive.window must be set when adaptive is enabled")
+	}
+	return nil
+}
+
+// boostClient is the surface deadband reads from the signalstate extension.
+type boostClient interface {
+	IsOpen(ctx context.Context, name string) bool
+	ExpiresAt(ctx context.Context, name string) time.Time
+}
 
 // Mode selects the deadband comparison function.
 type Mode string
@@ -100,13 +134,17 @@ type Config struct {
 	// "telemetry.deadband.repeated".
 	RepeatAttribute string `mapstructure:"repeat_attribute"`
 
-	State StateConfig `mapstructure:"state"`
+	State    StateConfig    `mapstructure:"state"`
+	Adaptive AdaptiveConfig `mapstructure:"adaptive"`
 }
 
 var _ confmap.Validator = (*Config)(nil)
 
 func (cfg *Config) Validate() error {
 	if err := cfg.Match.init(); err != nil {
+		return err
+	}
+	if err := cfg.Adaptive.Validate(); err != nil {
 		return err
 	}
 	switch cfg.Mode {

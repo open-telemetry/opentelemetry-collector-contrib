@@ -45,6 +45,9 @@ type deadbandProcessor struct {
 	lru     *list.List
 	flushed bool
 
+	boost      boostClient
+	boostState bool // last observed boost-window state, for transition logging
+
 	observedNow func() time.Time
 }
 
@@ -69,8 +72,98 @@ func newDeadbandProcessor(
 	}, nil
 }
 
-func (p *deadbandProcessor) Start(_ context.Context, _ component.Host) error {
+func (p *deadbandProcessor) Start(ctx context.Context, host component.Host) error {
+	if !p.cfg.Adaptive.Enabled {
+		return nil
+	}
+	exts := host.GetExtensions()
+	if exts == nil {
+		return nil
+	}
+	ext, ok := exts[*p.cfg.Adaptive.SignalstateExtension]
+	if !ok || ext == nil {
+		p.logger.Warn("deadband: adaptive extension not found; boost behavior disabled (calm state always)",
+			zap.String("extension_id", p.cfg.Adaptive.SignalstateExtension.String()))
+		return nil
+	}
+	if bc, ok := ext.(boostClient); ok {
+		p.boost = bc
+	} else {
+		p.logger.Warn("deadband: adaptive extension does not implement the boost interface; boost disabled",
+			zap.String("extension_id", p.cfg.Adaptive.SignalstateExtension.String()))
+	}
 	return nil
+}
+
+// boostActive reports whether suppression is currently suspended. Failure
+// anywhere reads as calm state (fail toward visibility).
+func (p *deadbandProcessor) boostActive(ctx context.Context) bool {
+	if p.boost == nil {
+		return false
+	}
+	return p.boost.IsOpen(ctx, p.cfg.Adaptive.Window)
+}
+
+// flushTracked emits every series' last-sent value, tagged, before boost
+// processing begins — so the highest-value moment does not start in silence.
+func (p *deadbandProcessor) flushTracked(ctx context.Context) {
+	p.mu.Lock()
+	any := len(p.state) > 0
+	out := pmetric.NewMetrics()
+	if any {
+		nsm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		nsm.Scope().SetName("otelcol/deadband")
+		nsm.Scope().SetVersion("boost-flash")
+		fm := nsm.Metrics().AppendEmpty()
+		fm.SetName("deadband.boost_flush")
+		fm.SetDescription("Restatement of all deadband-tracked series at boost-window entry.")
+		fm.SetUnit("1")
+		fg := fm.SetEmptyGauge()
+		now := p.observedNow()
+		for _, st := range p.state {
+			dp := fg.DataPoints().AppendEmpty()
+			dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
+			dp.Attributes().PutStr("metric_name", st.name)
+			dp.Attributes().PutStr(p.cfg.RepeatAttribute, "boost")
+			if st.isInt {
+				dp.SetIntValue(int64(st.lastSent))
+			} else {
+				dp.SetDoubleValue(st.lastSent)
+			}
+		}
+	}
+	p.mu.Unlock()
+	if !any {
+		return
+	}
+	if err := p.next.ConsumeMetrics(ctx, out); err != nil {
+		p.logger.Error("deadband: boost flush consumer rejected data", zap.Error(err))
+	}
+}
+
+// recordObservation updates series state under boost (values pass through
+// unsuppressed; state advances so calm-state resumes from the newest sent
+// values — otherwise the first post-boost batch would burst).
+func (p *deadbandProcessor) recordObservation(name string, dp pmetric.NumberDataPoint) {
+	v, isInt, ok := valueAsDouble(dp)
+	if !ok {
+		return
+	}
+	key := seriesKey(name, dp, p.cfg.RepeatAttribute)
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if st, ok := p.state[key]; ok {
+		st.lastSent = v
+		st.isInt = isInt
+		st.lastSentAt = p.observedNow()
+		p.lru.Remove(st.element)
+		st.element = p.lru.PushFront(key)
+		return
+	}
+	if p.cfg.State.MaxSeries > 0 && len(p.state) >= p.cfg.State.MaxSeries && !p.evictOldest() {
+		return // over cap: not tracked; passes through anyway
+	}
+	p.state[key] = &seriesState{name: name, lastSent: v, isInt: isInt, lastSentAt: p.observedNow(), element: p.lru.PushFront(key)}
 }
 
 func (p *deadbandProcessor) Capabilities() consumer.Capabilities {
@@ -121,6 +214,17 @@ func (p *deadbandProcessor) Shutdown(ctx context.Context) error {
 // subset. Non-gauge datapoint types and non-matching metrics pass through
 // untouched (DESIGN promise 6).
 func (p *deadbandProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	boost := p.boostActive(ctx)
+	if boost && !p.boostState {
+		// calm -> boost transition: flash every previously suppressed series
+		p.flushTracked(ctx)
+		p.logger.Info("deadband: boost window opened, suppression suspended")
+		p.boostState = true
+	} else if !boost && p.boostState {
+		p.logger.Info("deadband: boost window closed, suppression resumed")
+		p.boostState = false
+	}
+
 	out := pmetric.NewMetrics()
 
 	rms := md.ResourceMetrics()
@@ -139,6 +243,16 @@ func (p *deadbandProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 			for k := 0; k < ms.Len(); k++ {
 				m := ms.At(k)
 				switch {
+				case boost && p.cfg.Match.matches(m.Name()) && m.Type() == pmetric.MetricTypeGauge:
+					// boost: pass through unsuppressed, but keep state current
+					for i := 0; i < m.Gauge().DataPoints().Len(); i++ {
+						p.recordObservation(m.Name(), m.Gauge().DataPoints().At(i))
+					}
+					if mts.Len() == 0 {
+						mts = pmetric.NewMetricSlice()
+					}
+					m.CopyTo(mts.AppendEmpty())
+					smAdded = true
 				case !p.cfg.Match.matches(m.Name()):
 					m.CopyTo(mts.AppendEmpty())
 					smAdded = true

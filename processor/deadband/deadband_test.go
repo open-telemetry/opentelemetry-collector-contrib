@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
 	otelmetric "go.opentelemetry.io/otel/metric"
+	componentpkg "go.opentelemetry.io/collector/component"
 
 	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deadband/internal/metadata"
 )
@@ -246,3 +247,65 @@ var _ consumer.Metrics = &consumertest.MetricsSink{}
 var _ otelmetric.Int64Counter
 var _ attribute.KeyValue
 var _ = metadataPkg.MetricsStability
+
+// --- X2: adaptive boost wiring ---------------------------------------------
+
+type fakeBoost struct {
+	open bool
+}
+
+func (f *fakeBoost) IsOpen(_ context.Context, _ string) bool         { return f.open }
+func (f *fakeBoost) ExpiresAt(_ context.Context, _ string) time.Time { return time.Time{} }
+
+func TestBoostSuspendsSuppressionAndFlushes(t *testing.T) {
+	fc := &fakeClock{t: time.Now()}
+	sink := &consumertest.MetricsSink{}
+	boost := &fakeBoost{}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Mode = ModeAbsolute
+	cfg.Threshold = 1.0
+	cfg.Adaptive = AdaptiveConfig{Enabled: true, Window: "boost"}
+	id := componentID()
+	cfg.Adaptive.SignalstateExtension = &id
+	_ = cfg.Adaptive.Validate()
+
+	tb, err := metadataPkg.NewTelemetryBuilder(processortest.NewNopSettings(processortest.NopType).TelemetrySettings)
+	require.NoError(t, err)
+	proc := &deadbandProcessor{
+		cfg:         cfg,
+		next:        sink,
+		logger:      processortest.NewNopSettings(processortest.NopType).Logger,
+		state:       make(map[string]*seriesState),
+		lru:         list.New(),
+		observedNow: fc.time,
+		boost:       boost, // window opens mid-test
+		tel:         tb,
+	}
+
+	// calm: 10 emitted, 10.5 suppressed
+	require.NoError(t, proc.ConsumeMetrics(context.Background(), gaugeMetric("temp", 10, 10.5)))
+	assert.Equal(t, []float64{10}, collectValues(sink))
+
+	// boost window opens: 10.5 and 10.6 pass through unsuppressed AND the
+	// boost-flash batch (last-sent values) precedes them
+	boost.open = true
+	require.NoError(t, proc.ConsumeMetrics(context.Background(), gaugeMetric("temp", 10.5, 10.6)))
+
+	batches := sink.AllMetrics()
+	require.Len(t, batches, 3, "boost entry must flush tracked series, then pass the batch through")
+	fm := batches[1].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	assert.Equal(t, "deadband.boost_flush", fm.Name())
+	fds := fm.Gauge().DataPoints()
+	require.Equal(t, 1, fds.Len())
+	assert.Equal(t, float64(10), fds.At(0).DoubleValue(), "boost-flash carries the last-sent value")
+	v, ok := fds.At(0).Attributes().Get("telemetry.deadband.repeated")
+	require.True(t, ok)
+	assert.Equal(t, "boost", v.AsString())
+
+	// state advanced under boost: calm resume with the same value stays quiet
+	boost.open = false
+	require.NoError(t, proc.ConsumeMetrics(context.Background(), gaugeMetric("temp", 10.6)))
+	require.Len(t, sink.AllMetrics(), 3, "no burst after boost ends: state resumed current")
+}
+
+func componentID() componentpkg.ID { return componentpkg.MustNewID("signalstate") }
