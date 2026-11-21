@@ -33,10 +33,13 @@ type groupingFileExporter struct {
 	attribute     string
 	maxOpenFiles  int
 	dirPerm       os.FileMode
-	newFileWriter func(path string) (*fileWriter, error)
+	newFileWriter func(path string, shouldAppend bool) (*fileWriter, error)
 
 	mutex   sync.Mutex
 	writers *simplelru.LRU[string, *fileWriter]
+	// opened records every path opened since Start. A path that was evicted
+	// from writers and is opened again must be appended to, not truncated.
+	opened map[string]struct{}
 }
 
 func (e *groupingFileExporter) consumeTraces(ctx context.Context, td ptrace.Traces) error {
@@ -217,10 +220,12 @@ func (e *groupingFileExporter) getWriter(pathSegment string) (*fileWriter, error
 		return nil, err
 	}
 
-	writer, err = e.newFileWriter(fullPath)
+	_, reopen := e.opened[fullPath]
+	writer, err = e.newFileWriter(fullPath, e.conf.Append || reopen)
 	if err != nil {
 		return nil, err
 	}
+	e.opened[fullPath] = struct{}{}
 	writer.acquire()
 	e.writers.Add(fullPath, writer)
 
@@ -303,8 +308,8 @@ func (e *groupingFileExporter) Start(_ context.Context, host component.Host) err
 	e.attribute = e.conf.GroupBy.ResourceAttribute
 	e.pathSuffix = filepath.ToSlash(pathParts[1])
 	e.maxOpenFiles = e.conf.GroupBy.MaxOpenFiles
-	e.newFileWriter = func(path string) (*fileWriter, error) {
-		return newFileWriter(path, e.conf.Append, e.conf.Rotation, e.conf.FlushInterval, export, e.conf.Compression, int(e.conf.CompressionParams.Level), e.logger)
+	e.newFileWriter = func(path string, shouldAppend bool) (*fileWriter, error) {
+		return newFileWriter(path, shouldAppend, e.conf.Rotation, e.conf.FlushInterval, export, e.conf.Compression, int(e.conf.CompressionParams.Level), e.logger)
 	}
 
 	writers, err := simplelru.NewLRU(e.conf.GroupBy.MaxOpenFiles, e.onEvict)
@@ -313,6 +318,7 @@ func (e *groupingFileExporter) Start(_ context.Context, host component.Host) err
 	}
 
 	e.writers = writers
+	e.opened = make(map[string]struct{})
 
 	return nil
 }
