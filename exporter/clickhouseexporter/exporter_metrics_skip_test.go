@@ -94,7 +94,9 @@ func newSkipTestExporter(t *testing.T) (*metricsExporter, *fakeConn, *observer.O
 	t.Helper()
 	metrics.SetLogger(zap.NewNop())
 	core, logs := observer.New(zap.DebugLevel)
-	exp := newMetricsExporter(zap.New(core), withDefaultConfig())
+	cfg := withDefaultConfig()
+	cfg.buildMetricTableNames() // done by Validate in the collector
+	exp := newMetricsExporter(zap.New(core), cfg)
 	conn := &fakeConn{}
 	exp.db = conn // never call start(); no ClickHouse server involved
 	return exp, conn, logs
