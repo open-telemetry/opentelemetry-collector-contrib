@@ -54,5 +54,5 @@ feature_gates:
     stage: alpha
     description: >-
       When enabled, the prometheusremotewritereceiver will disable the splitting of the job label by '/' to derive service.namespace and service.name, instead mapping the entire job string to service.name.
-    from_version: v0.165.0
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52626
+    from_version: v0.166.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/53277

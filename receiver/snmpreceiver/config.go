@@ -93,7 +93,7 @@ type Config struct {
 	// Community is the SNMP community string to use.
 	// Only valid for versions "v1" and "v2c"
 	// Default: public
-	Community string `mapstructure:"community"`
+	Community configopaque.String `mapstructure:"community"`
 
 	// User is the SNMP User for this connection.
 	// Only valid for version “v3”

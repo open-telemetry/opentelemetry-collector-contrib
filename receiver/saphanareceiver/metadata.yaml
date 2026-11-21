@@ -12,6 +12,7 @@ status:
   distributions: [contrib]
   codeowners:
     active: [dehaansa]
+    seeking_new: true
 
 tests:
   goleak:

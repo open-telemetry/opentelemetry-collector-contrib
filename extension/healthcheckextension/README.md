@@ -50,7 +50,7 @@ extensions:
   health_check/1:
     endpoint: "localhost:13"
     tls:
-      ca_file: "/path/to/ca.crt"
+      client_ca_file: "/path/to/ca.crt"
       cert_file: "/path/to/cert.crt"
       key_file: "/path/to/key.key"
     path: "/health/status"
@@ -59,7 +59,7 @@ extensions:
       unhealthy: I'm bad!
 ```
 
-The full list of settings exposed for this exporter is documented in [LegacyConfig in config.go](../../internal/healthcheck/internal/http/config.go#L24)
+The full list of settings exposed for this exporter is documented in [LegacyConfig in config.go](../../internal/healthcheck/internal/httpserver/config.go#L24)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
 ## Backward Compatibility

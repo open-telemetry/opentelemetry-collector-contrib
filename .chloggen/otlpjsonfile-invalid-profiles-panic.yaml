@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: receiver/otlp_json_file
+note: Prevent a panic when reading invalid profiles JSON and continue processing subsequent records.
+issues: [53290]
+subtext:
+change_logs: [user]

@@ -169,7 +169,7 @@ func (s3Reader *s3TimeBasedReader) readTelemetryForTime(ctx context.Context, t t
 				}
 
 				s3Reader.logger.Debug("Retrieved telemetry", zap.String("key", *obj.Key))
-				if callbackErr := dataCallback(ctx, *obj.Key, data); callbackErr != nil {
+				if callbackErr := processS3Object(ctx, *obj.Key, data, dataCallback); callbackErr != nil {
 					return callbackErr
 				}
 
