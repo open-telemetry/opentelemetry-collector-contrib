@@ -1,0 +1,43 @@
+type: eventdetector
+
+github_project: open-telemetry/opentelemetry-collector-contrib
+
+status:
+  class: processor
+  stability:
+    development: [logs, metrics]
+  distributions: [custom]
+  codeowners:
+    active: [srclosson]
+
+telemetry:
+  metrics:
+    otelcol.eventdetector.events:
+      enabled: true
+      stability: development
+      description: Number of log records and datapoints evaluated against rules.
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+        async: false
+    otelcol.eventdetector.matches:
+      enabled: true
+      stability: development
+      description: Number of rule matches that opened or refreshed a window.
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+        async: false
+      attributes: [rule_name, window_name]
+
+attributes:
+  rule_name:
+    description: Name of the detector rule that matched.
+    type: string
+    requirement_level: recommended
+  window_name:
+    description: Name of the signalstate window opened or refreshed.
+    type: string
+    requirement_level: recommended

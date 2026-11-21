@@ -21,6 +21,7 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/azureauthextension v0.165.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.165.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.165.1
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/signalstate v0.165.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension v0.165.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension v0.165.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension v0.165.1
@@ -124,6 +125,7 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.165.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/deadband v0.165.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.165.1
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/eventdetector v0.165.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/drainprocessor v0.165.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.165.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor v0.165.1
