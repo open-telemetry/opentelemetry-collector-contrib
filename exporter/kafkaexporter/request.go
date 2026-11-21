@@ -79,6 +79,13 @@ func newRequestPusher[T any](exp *kafkaExporter[T]) xexporterhelper.RequestConsu
 				zap.Int("max_message_bytes", msgTooLarge.MaxMessageBytes),
 			)
 		}
+		if recErr, ok := errors.AsType[*kafkaclient.RecordsError](err); ok && recErr.HasPermanent() {
+			exp.logger.Error("kafka batch contained permanent record failures",
+				zap.Int("total_records", len(kr.Records())),
+				zap.Int("retryable_records", len(recErr.RetryableRecords())),
+				zap.Error(recErr),
+			)
+		}
 		return err
 	}
 }
