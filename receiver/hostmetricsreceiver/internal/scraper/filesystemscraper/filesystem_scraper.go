@@ -55,6 +55,16 @@ type filesystemsScraper struct {
 	usageInFlight map[string]struct{}
 }
 
+type usageTarget struct {
+	partition  disk.PartitionStat
+	mountpoint string // translated for rootPath
+}
+
+type usageResult struct {
+	usage *disk.UsageStat
+	err   error
+}
+
 type deviceUsage struct {
 	partition disk.PartitionStat
 	usage     *disk.UsageStat
@@ -102,6 +112,7 @@ func (s *filesystemsScraper) scrape(ctx context.Context) (pmetric.Metrics, error
 	}
 
 	usages := make([]*deviceUsage, 0, len(partitions))
+	targets := make([]usageTarget, 0, len(partitions))
 
 	type mountKey struct {
 		mountpoint string
@@ -127,14 +138,28 @@ func (s *filesystemsScraper) scrape(ctx context.Context) (pmetric.Metrics, error
 		if !s.fsFilter.includePartition(partition) {
 			continue
 		}
-		translatedMountpoint := translateMountpoint(ctx, s.config.rootPath, partition.Mountpoint)
-		usage, usageErr := s.usageWithTimeout(ctx, translatedMountpoint)
-		if usageErr != nil {
-			errors.AddPartial(0, fmt.Errorf("failed to read usage at %s: %w", translatedMountpoint, usageErr))
+		targets = append(targets, usageTarget{partition, translateMountpoint(ctx, s.config.rootPath, partition.Mountpoint)})
+	}
+
+	// Read usage for all mounts at once. Read one after another, each silent
+	// mount would add a full timeout to the scrape, and with a receiver
+	// timeout set, one silent mount would use up the shared deadline before
+	// the healthy mounts after it were read.
+	results := make([]usageResult, len(targets))
+	var wg sync.WaitGroup
+	for i, t := range targets {
+		wg.Go(func() {
+			results[i].usage, results[i].err = s.usageWithTimeout(ctx, t.mountpoint)
+		})
+	}
+	wg.Wait()
+
+	for i, t := range targets {
+		if results[i].err != nil {
+			errors.AddPartial(0, fmt.Errorf("failed to read usage at %s: %w", t.mountpoint, results[i].err))
 			continue
 		}
-
-		usages = append(usages, &deviceUsage{partition, usage})
+		usages = append(usages, &deviceUsage{t.partition, results[i].usage})
 	}
 
 	if len(usages) > 0 {

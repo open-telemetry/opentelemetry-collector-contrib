@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -629,6 +630,58 @@ func TestScrape_BlockedUsageDoesNotStallScrape(t *testing.T) {
 
 	// The second scrape must not start another call for the stuck mount.
 	assert.Equal(t, int32(1), stuckCalls.Load())
+}
+
+// With a receiver timeout, silent mounts listed first must not use up the
+// shared deadline before the healthy mounts after them are read, and the
+// scrape must wait for the deadline once, not once per silent mount.
+func TestScrape_SilentMountsDoNotStarveHealthyOnes(t *testing.T) {
+	scraper, err := newFileSystemScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+	})
+	require.NoError(t, err)
+
+	release := make(chan struct{})
+	t.Cleanup(func() { close(release) })
+
+	scraper.partitions = func(context.Context, bool) ([]disk.PartitionStat, error) {
+		return []disk.PartitionStat{
+			{Device: "nfs:/a", Mountpoint: "/mnt/stuck-a", Fstype: "nfs4"},
+			{Device: "nfs:/b", Mountpoint: "/mnt/stuck-b", Fstype: "nfs4"},
+			{Device: "/dev/sda1", Mountpoint: "/", Fstype: "ext4"},
+			{Device: "/dev/sdb1", Mountpoint: "/data", Fstype: "ext4"},
+		}, nil
+	}
+	scraper.usage = func(_ context.Context, mountpoint string) (*disk.UsageStat, error) {
+		if strings.HasPrefix(mountpoint, "/mnt/stuck") {
+			<-release // ignores ctx, like statfs in D state
+		}
+		return &disk.UsageStat{Total: 100, Used: 60, Free: 40}, nil
+	}
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+	const deadline = 300 * time.Millisecond
+	ctx, cancel := context.WithTimeout(t.Context(), deadline)
+	defer cancel()
+
+	start := time.Now()
+	md, err := scraper.scrape(ctx)
+	elapsed := time.Since(start)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "/mnt/stuck-a")
+	assert.Contains(t, err.Error(), "/mnt/stuck-b")
+	assert.NotContains(t, err.Error(), "/data")
+	assert.Less(t, elapsed, 2*deadline, "silent mounts were waited on one after another")
+
+	m, err := findMetricByName(md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics(), "system.filesystem.usage")
+	require.NoError(t, err)
+	reported := map[string]bool{}
+	for _, dp := range m.Sum().DataPoints().All() {
+		mp, _ := dp.Attributes().Get("mountpoint")
+		reported[mp.Str()] = true
+	}
+	assert.Equal(t, map[string]bool{"/": true, "/data": true}, reported)
 }
 
 func TestTranslateMountpoint(t *testing.T) {
