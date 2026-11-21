@@ -28,6 +28,8 @@ const (
 	nodesAPIResponseFile       = "get_nodes_response.json"
 	exchangesAPIResponseFile   = "get_exchanges_response.json"
 	clusterNameAPIResponseFile = "get_cluster_name_response.json"
+	connectionsAPIResponseFile = "get_connections_response.json"
+	channelsAPIResponseFile    = "get_channels_response.json"
 )
 
 func TestNewClient(t *testing.T) {
@@ -357,6 +359,140 @@ func TestGetClusterNameDetails(t *testing.T) {
 				clusterName, err := tc.GetClusterName(t.Context())
 				require.NoError(t, err)
 				require.Equal(t, expected.Name, clusterName)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, tc.testFunc)
+	}
+}
+
+func TestGetConnectionsDetails(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		testFunc func(*testing.T)
+	}{
+		{
+			desc: "Non-200 Response for GetConnections",
+			testFunc: func(t *testing.T) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					w.WriteHeader(http.StatusForbidden)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				connections, err := tc.GetConnections(t.Context())
+				require.Nil(t, connections)
+				require.EqualError(t, err, "non 200 code returned 403")
+			},
+		},
+		{
+			desc: "Bad payload returned for GetConnections",
+			testFunc: func(t *testing.T) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					_, err := w.Write([]byte("{invalid-json}"))
+					assert.NoError(t, err)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				connections, err := tc.GetConnections(t.Context())
+				require.Nil(t, connections)
+				require.ErrorContains(t, err, "failed to decode response payload")
+			},
+		},
+		{
+			desc: "Successful GetConnections call",
+			testFunc: func(t *testing.T) {
+				data := loadAPIResponseData(t, connectionsAPIResponseFile)
+
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+					assert.Equal(t, connectionsPath, req.URL.Path)
+					assert.Equal(t, connectionsColumns, req.URL.Query().Get("columns"))
+					_, err := w.Write(data)
+					assert.NoError(t, err)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				var expected []*models.Connection
+				err := json.Unmarshal(data, &expected)
+				require.NoError(t, err)
+
+				connections, err := tc.GetConnections(t.Context())
+				require.NoError(t, err)
+				require.Equal(t, expected, connections)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, tc.testFunc)
+	}
+}
+
+func TestGetChannelsDetails(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		testFunc func(*testing.T)
+	}{
+		{
+			desc: "Non-200 Response for GetChannels",
+			testFunc: func(t *testing.T) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					w.WriteHeader(http.StatusForbidden)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				channels, err := tc.GetChannels(t.Context())
+				require.Nil(t, channels)
+				require.EqualError(t, err, "non 200 code returned 403")
+			},
+		},
+		{
+			desc: "Bad payload returned for GetChannels",
+			testFunc: func(t *testing.T) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					_, err := w.Write([]byte("{invalid-json}"))
+					assert.NoError(t, err)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				channels, err := tc.GetChannels(t.Context())
+				require.Nil(t, channels)
+				require.ErrorContains(t, err, "failed to decode response payload")
+			},
+		},
+		{
+			desc: "Successful GetChannels call",
+			testFunc: func(t *testing.T) {
+				data := loadAPIResponseData(t, channelsAPIResponseFile)
+
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+					assert.Equal(t, channelsPath, req.URL.Path)
+					assert.Equal(t, channelsColumns, req.URL.Query().Get("columns"))
+					_, err := w.Write(data)
+					assert.NoError(t, err)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				var expected []*models.Channel
+				err := json.Unmarshal(data, &expected)
+				require.NoError(t, err)
+
+				channels, err := tc.GetChannels(t.Context())
+				require.NoError(t, err)
+				require.Equal(t, expected, channels)
 			},
 		},
 	}
