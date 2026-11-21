@@ -273,6 +273,10 @@ func (m mockClientOptionsResolver) GetAzMetricsClientOptions() *azmetrics.Client
 	return m.azMetricsClientOptions
 }
 
+func (mockClientOptionsResolver) GetBatchAPIEndpoint(region string) string {
+	return "https://" + region + ".metrics.monitor.azure.com"
+}
+
 // timeMock is used to mock the time.Now() function.
 type timeMock struct {
 	time time.Time

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -6564,4 +6565,105 @@ func TestPodDeleteIPMissingFromDeleteEvent(t *testing.T) {
 
 	// In the fixed state, all keys associated with the pod should be successfully cleaned up from the cache.
 	assert.Empty(t, c.Pods)
+}
+
+func TestHandleUpdateEvictsReplacedUID(t *testing.T) {
+	newObj := func(uid string) *meta_v1.PartialObjectMetadata {
+		return &meta_v1.PartialObjectMetadata{
+			ObjectMeta: meta_v1.ObjectMeta{Name: "test", Namespace: "default", UID: types.UID(uid)},
+		}
+	}
+	tests := []struct {
+		name   string
+		add    func(c *WatchClient, obj any)
+		update func(c *WatchClient, oldObj, newObj any)
+		keys   func(c *WatchClient) []string
+	}{
+		{
+			name:   "deployment",
+			add:    (*WatchClient).handleDeploymentAdd,
+			update: (*WatchClient).handleDeploymentUpdate,
+			keys:   func(c *WatchClient) []string { return slices.Collect(maps.Keys(c.Deployments)) },
+		},
+		{
+			name:   "statefulset",
+			add:    (*WatchClient).handleStatefulSetAdd,
+			update: (*WatchClient).handleStatefulSetUpdate,
+			keys:   func(c *WatchClient) []string { return slices.Collect(maps.Keys(c.StatefulSets)) },
+		},
+		{
+			name:   "daemonset",
+			add:    (*WatchClient).handleDaemonSetAdd,
+			update: (*WatchClient).handleDaemonSetUpdate,
+			keys:   func(c *WatchClient) []string { return slices.Collect(maps.Keys(c.DaemonSets)) },
+		},
+		{
+			name:   "job",
+			add:    (*WatchClient).handleJobAdd,
+			update: (*WatchClient).handleJobUpdate,
+			keys:   func(c *WatchClient) []string { return slices.Collect(maps.Keys(c.Jobs)) },
+		},
+		{
+			name:   "cronjob",
+			add:    (*WatchClient).handleCronJobAdd,
+			update: (*WatchClient).handleCronJobUpdate,
+			keys:   func(c *WatchClient) []string { return slices.Collect(maps.Keys(c.CronJobs)) },
+		},
+		{
+			name:   "replicaset",
+			add:    (*WatchClient).handleReplicaSetAdd,
+			update: (*WatchClient).handleReplicaSetUpdate,
+			keys:   func(c *WatchClient) []string { return slices.Collect(maps.Keys(c.ReplicaSets)) },
+		},
+		{
+			name:   "hpa",
+			add:    (*WatchClient).handleHPAAdd,
+			update: (*WatchClient).handleHPAUpdate,
+			keys:   func(c *WatchClient) []string { return slices.Collect(maps.Keys(c.HPAs)) },
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+			oldObj := newObj("uid-old")
+			tt.add(c, oldObj)
+			require.Equal(t, []string{"uid-old"}, tt.keys(c))
+
+			// Same UID: regular update keeps the entry.
+			tt.update(c, oldObj, newObj("uid-old"))
+			assert.Equal(t, []string{"uid-old"}, tt.keys(c))
+
+			// Different UID with the same name: delete + recreate coalesced into one update.
+			tt.update(c, oldObj, newObj("uid-new"))
+			assert.Equal(t, []string{"uid-new"}, tt.keys(c))
+		})
+	}
+}
+
+func TestPodUpdateForgetsReplacedUID(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	oldPod := kubeletTestPod("uid-old", "pod-a", "ns-a", "node-a", "10.0.0.1", nil)
+	newPod := kubeletTestPod("uid-new", "pod-a", "ns-a", "node-a", "10.0.0.2", nil)
+	c.handlePodAdd(&oldPod)
+	c.handlePodUpdate(&oldPod, &newPod)
+
+	oldUID := newPodIdentifier("resource_attribute", "k8s.pod.uid", "uid-old")
+	newUID := newPodIdentifier("resource_attribute", "k8s.pod.uid", "uid-new")
+
+	// The old pod stays available during the delete grace period.
+	_, ok := c.GetPod(oldUID)
+	assert.True(t, ok)
+
+	c.deleteLoopProcessing(0)
+
+	_, ok = c.GetPod(oldUID)
+	assert.False(t, ok)
+	p, ok := c.GetPod(newUID)
+	require.True(t, ok)
+	assert.Equal(t, "uid-new", p.PodUID)
+	_, ok = c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.1"))
+	assert.False(t, ok)
+	_, ok = c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", "10.0.0.2"))
+	assert.True(t, ok)
 }
