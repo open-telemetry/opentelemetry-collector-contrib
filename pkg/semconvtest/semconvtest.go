@@ -69,6 +69,15 @@ const (
 	// semantic-conventions Git repository, "model" sub-folder), pinned to a
 	// release tag with Weaver's @refspec syntax.
 	defaultRegistryTemplate = "https://github.com/open-telemetry/semantic-conventions.git@%s[model]"
+
+	// schemaURLPrefix is the prefix of OpenTelemetry schema URLs, which
+	// WithSchemaURL maps to semantic-conventions release registries.
+	schemaURLPrefix = "https://opentelemetry.io/schemas/"
+
+	// minRegistryVersion is the oldest semantic-conventions release Weaver
+	// can load: earlier releases use registry syntax (for example the
+	// "constraints" property) that Weaver rejects at startup.
+	minRegistryVersion = "v1.26.0"
 )
 
 // WeaverOption configures the Weaver container used for a live-check test.
@@ -88,12 +97,33 @@ func WithVersion(version string) WeaverOption {
 // release pinned in defaultRegistryVersion. Pass an empty string to restore
 // Weaver's own default: the unreleased registry on semantic-conventions main.
 func WithRegistry(registry string) WeaverOption {
-	return func(o *weaverOptions) { o.registry = registry }
+	return func(o *weaverOptions) {
+		o.registry = registry
+		o.registrySet = true
+	}
+}
+
+// WithSchemaURL selects the semantic-conventions release registry that
+// matches the given OpenTelemetry schema URL, so the live-check validates
+// against the conventions version the component declares. Pass the
+// component's schema URL constant (for example semconv.SchemaURL). Only
+// https://opentelemetry.io/schemas/<version> URLs are supported; for any
+// other registry, use WithRegistry. Combining both options fails the test.
+// Schema versions older than 1.26.0 fail: Weaver does not support those
+// registries.
+func WithSchemaURL(schemaURL string) WeaverOption {
+	return func(o *weaverOptions) {
+		o.schemaURL = schemaURL
+		o.schemaURLSet = true
+	}
 }
 
 type weaverOptions struct {
-	version  string
-	registry string
+	version      string
+	registry     string
+	registrySet  bool
+	schemaURL    string
+	schemaURLSet bool
 }
 
 // normalizeWeaverVersion converts a Docker tag into a "v"-prefixed string
@@ -122,6 +152,29 @@ func validateWeaverVersion(version string) error {
 		return fmt.Errorf("weaver version %q is not supported: this package relies on --output=http, which requires %s or newer", version, minWeaverVersion)
 	}
 	return nil
+}
+
+// registryForSchemaURL maps an OpenTelemetry schema URL (for example
+// https://opentelemetry.io/schemas/1.34.0) to the semantic-conventions
+// release registry for that version. Only opentelemetry.io schema URLs
+// have a corresponding release registry; anything else is an error, and
+// the caller should use WithRegistry instead.
+func registryForSchemaURL(schemaURL string) (string, error) {
+	version, ok := strings.CutPrefix(schemaURL, schemaURLPrefix)
+	if !ok {
+		return "", fmt.Errorf("schema URL %q is not an opentelemetry.io schema URL (%s<version>); use WithRegistry to select a custom registry", schemaURL, schemaURLPrefix)
+	}
+	// Schema versions are full MAJOR.MINOR.PATCH. Canonical rejects semver
+	// shorthand (1.34), build metadata, and invalid input; Prerelease
+	// rejects suffixes like -rc.1, which Canonical keeps.
+	v := "v" + version
+	if semver.Canonical(v) != v || semver.Prerelease(v) != "" {
+		return "", fmt.Errorf("schema URL %q does not end in a valid semantic-conventions version (MAJOR.MINOR.PATCH)", schemaURL)
+	}
+	if semver.Compare(v, minRegistryVersion) < 0 {
+		return "", fmt.Errorf("schema URL %q maps to semantic-conventions release %s, which Weaver does not support (minimum %s)", schemaURL, v, minRegistryVersion)
+	}
+	return fmt.Sprintf(defaultRegistryTemplate, v), nil
 }
 
 // weaverUsesReportEndpoint reports whether version uses the GET /report +
@@ -176,12 +229,11 @@ func TestTraces(tb testing.TB, traces ptrace.Traces, opts ...WeaverOption) []Pol
 	})
 }
 
-// runLiveCheck performs the full live-check lifecycle: start a Weaver
-// container, send telemetry, stop the listener, parse the report, and fail tb
-// for every violation-level finding. The violation findings are returned.
-func runLiveCheck(tb testing.TB, opts []WeaverOption, send func(context.Context, *pdataClients) error) []PolicyFinding {
-	tb.Helper()
-
+// resolveWeaverOptions applies the options to the defaults, validates the
+// Weaver version, and resolves a schema URL into its release registry. It
+// returns errors instead of failing a testing.TB so the resolution rules
+// are testable from the external test package.
+func resolveWeaverOptions(opts []WeaverOption) (*weaverOptions, error) {
 	options := &weaverOptions{
 		version:  defaultWeaverVersion,
 		registry: fmt.Sprintf(defaultRegistryTemplate, defaultRegistryVersion),
@@ -191,6 +243,31 @@ func runLiveCheck(tb testing.TB, opts []WeaverOption, send func(context.Context,
 	}
 
 	if err := validateWeaverVersion(options.version); err != nil {
+		return nil, err
+	}
+
+	if options.schemaURLSet {
+		if options.registrySet {
+			return nil, errors.New("WithSchemaURL and WithRegistry cannot be combined: pick one registry source")
+		}
+		registry, err := registryForSchemaURL(options.schemaURL)
+		if err != nil {
+			return nil, err
+		}
+		options.registry = registry
+	}
+
+	return options, nil
+}
+
+// runLiveCheck performs the full live-check lifecycle: start a Weaver
+// container, send telemetry, stop the listener, parse the report, and fail tb
+// for every violation-level finding. The violation findings are returned.
+func runLiveCheck(tb testing.TB, opts []WeaverOption, send func(context.Context, *pdataClients) error) []PolicyFinding {
+	tb.Helper()
+
+	options, err := resolveWeaverOptions(opts)
+	if err != nil {
 		tb.Fatal(err)
 	}
 
