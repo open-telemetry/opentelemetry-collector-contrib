@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/prometheus_simple
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Log a warning at start that names the HTTP client settings, such as `auth` and `compression`, that are accepted but not applied to the scrape.
+note: Log a debug message at start that names the HTTP client settings, such as `auth` and `compression`, that are accepted but not applied to the scrape.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [52081]

@@ -22,10 +22,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/internal/metadata"
 )
 
-// TestStartWarnsUnsupportedHTTPSettings checks that http client settings the
-// receiver does not apply to the scrape are named in a warning when the
+// TestStartLogsUnsupportedHTTPSettings checks that http client settings the
+// receiver does not apply to the scrape are named in a debug log when the
 // receiver starts.
-func TestStartWarnsUnsupportedHTTPSettings(t *testing.T) {
+func TestStartLogsUnsupportedHTTPSettings(t *testing.T) {
 	tests := []struct {
 		name     string
 		conf     map[string]any
@@ -111,7 +111,7 @@ func TestStartWarnsUnsupportedHTTPSettings(t *testing.T) {
 			require.NoError(t, confmap.NewFromStringMap(tt.conf).Unmarshal(cfg))
 			cfg.ClientConfig.Endpoint = "localhost:1234"
 
-			core, logs := observer.New(zapcore.WarnLevel)
+			core, logs := observer.New(zapcore.DebugLevel)
 			set := receivertest.NewNopSettings(metadata.Type)
 			set.Logger = zap.New(core)
 			r, err := NewFactory().CreateMetrics(t.Context(), set, cfg, consumertest.NewNop())
@@ -119,13 +119,14 @@ func TestStartWarnsUnsupportedHTTPSettings(t *testing.T) {
 			require.NoError(t, r.Start(t.Context(), componenttest.NewNopHost()))
 			require.NoError(t, r.Shutdown(t.Context()))
 
-			warned := logs.FilterMessageSnippet("http client settings").All()
+			logged := logs.FilterMessageSnippet("http client settings").All()
 			if tt.wantKeys == nil {
-				assert.Empty(t, warned)
+				assert.Empty(t, logged)
 				return
 			}
-			require.Len(t, warned, 1)
-			assert.Equal(t, tt.wantKeys, warned[0].ContextMap()["settings"])
+			require.Len(t, logged, 1)
+			assert.Equal(t, zapcore.DebugLevel, logged[0].Level)
+			assert.Equal(t, tt.wantKeys, logged[0].ContextMap()["settings"])
 		})
 	}
 }
@@ -142,20 +143,20 @@ func TestHTTPSettingsAreClassified(t *testing.T) {
 		"proxy_url": "forwarded",
 		// Forwarded or warned per setting; see TestTLSSettingsAreClassified.
 		"tls": "classified by TestTLSSettingsAreClassified",
-		// Not applied to the scrape; named in the unsupportedHTTPSettings warning.
-		"dialer_middleware":       "warned",
-		"read_buffer_size":        "warned",
-		"write_buffer_size":       "warned",
-		"auth":                    "warned",
-		"compression":             "warned",
-		"compression_params":      "warned",
-		"max_conns_per_host":      "warned",
-		"http2_read_idle_timeout": "warned",
-		"http2_ping_timeout":      "warned",
-		"cookies":                 "warned",
-		"force_attempt_http2":     "warned",
-		"middlewares":             "warned",
-		"keepalive":               "warned",
+		// Not applied to the scrape; named in the unsupportedHTTPSettings debug log.
+		"dialer_middleware":       "logged",
+		"read_buffer_size":        "logged",
+		"write_buffer_size":       "logged",
+		"auth":                    "logged",
+		"compression":             "logged",
+		"compression_params":      "logged",
+		"max_conns_per_host":      "logged",
+		"http2_read_idle_timeout": "logged",
+		"http2_ping_timeout":      "logged",
+		"cookies":                 "logged",
+		"force_attempt_http2":     "logged",
+		"middlewares":             "logged",
+		"keepalive":               "logged",
 	}
 
 	keys := configKeys(reflect.TypeFor[confighttp.ClientConfig]())

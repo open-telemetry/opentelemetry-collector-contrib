@@ -112,7 +112,7 @@ func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.C
 	}
 
 	if keys := unsupportedHTTPSettings(cfg.ClientConfig); len(keys) > 0 {
-		logger.Warn("http client settings are not applied to the prometheus scrape and are ignored",
+		logger.Debug("http client settings are not applied to the prometheus scrape and are ignored",
 			zap.Strings("settings", keys))
 	}
 
