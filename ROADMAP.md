@@ -93,3 +93,25 @@ windows with anti-flap cooldown) and `deadband` adaptive wiring (boost-entry
 flash of tracked series, suppression suspended while the window is open, state
 kept current so boost exit is burst-free). Remaining: log `dedup` and the
 tail-sampling policy.
+
+## Phase F — agent-operated, OpAMP-driven collection (parked; approved direction, not started)
+
+Collection should become *changeable at all*: configs flow through git + review
++ OpAMP in minutes, shadowed experiments on every birth of a pipeline, so any
+intelligence (human, HAL/Aiden, or fleet) can ride it:
+
+- control plane: OpAMP (supervisor is already in cmd/ of this repo; server from
+  opamp-go's example implementation) — AI authors config *PRs*, never commands
+- policy layers by blast radius: introspection auto-approved; new low-volume
+  pipelines auto + shadow dual-write; production exporter / PII-adjacent /
+  fleet-wide changes require human approval
+- schema invention: AI designs event schemas + Stanza mappings (our T-levers),
+  registered against a future schema-registry extension; data model stays OTel
+  (profiles being the ecosystem's own recently-added signal)
+- fleet-level signalstate windows as policy (incident-wide boost)
+- hard rules: telemetry content is untrusted data (prompt-injection via log
+  lines is the primary threat); LLM in the authoring seat only, never the
+  dataplane; volume budgets enforced in the config format; change-rate limits
+  + cooldowns to prevent feedback oscillation; fleet kill switch to a safe
+  baseline config
+- design discussion: 2026-11-20 session (same day as the adaptive loop demo)
