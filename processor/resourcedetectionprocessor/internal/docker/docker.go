@@ -63,7 +63,7 @@ func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 	}
 
 	// The SDK detector returns an empty resource both when the daemon is unreachable and when
-	// no container matches this process's hostname.
+	// no container matches this process's container ID or hostname.
 	if res.Attributes().Len() == 0 {
 		d.logger.Debug("docker detector: daemon unreachable or not running in a container")
 		if d.failOnMissingMetadata {

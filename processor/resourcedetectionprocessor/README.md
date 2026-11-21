@@ -178,7 +178,7 @@ processors:
     override: false
 ```
 
-> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the Docker daemon cannot be contacted. When `false` (default), failures are logged and an empty resource is returned.
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the Docker daemon cannot be contacted or no matching container is found. When `false` (default), failures are logged and an empty resource is returned.
 
 #### Migrating to the semantic convention container attributes
 
