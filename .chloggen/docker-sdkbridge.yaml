@@ -1,0 +1,13 @@
+change_type: enhancement
+
+component: processor/resource_detection
+
+note: Use the upstream `go.opentelemetry.io/contrib/detectors/docker` SDK detector for the `docker` detector.
+
+issues: [48159]
+
+subtext: |
+  `host.name` and `os.type` are no longer reported when no matching container is found, for example outside a container or with `--network=none` and a private cgroup namespace.
+  An invalid `DOCKER_HOST` or TLS environment no longer fails processor startup, and is only an error with `fail_on_missing_metadata`.
+
+change_logs: [user]

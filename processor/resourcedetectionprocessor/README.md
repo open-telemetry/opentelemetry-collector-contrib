@@ -166,7 +166,8 @@ Docker detection does not work on macOS.
 
 The detector identifies the current container by its ID from cgroup data, with `/proc/self/mountinfo`
 as a fallback, and the container hostname as a last resort. If no matching container is found, an
-empty resource is returned.
+empty resource is returned: `host.name` and `os.type` are not reported either, even when all
+`container.*` attributes are disabled.
 
 Example:
 
@@ -178,7 +179,7 @@ processors:
     override: false
 ```
 
-> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the Docker daemon cannot be contacted or no matching container is found. When `false` (default), failures are logged and an empty resource is returned.
+> **Note**: When [`fail_on_missing_metadata`](#using-the-fail_on_missing_metadata-parameter) is `true`, this detector returns an error if the Docker daemon cannot be contacted, no matching container is found, or `host.name` or `os.type` is enabled and the daemon's system information cannot be retrieved. When `false` (default), failures are logged and an empty resource is returned.
 
 #### Migrating to the semantic convention container attributes
 

@@ -8,6 +8,7 @@ package docker // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
@@ -38,21 +39,41 @@ type Detector struct {
 
 // NewDetector creates a new system metadata detector
 func NewDetector(p processor.Settings, cfg internal.DetectorConfig, failOnMissingMetadata bool) (internal.Detector, error) {
+	resourceAttributes := cfg.(Config).ResourceAttributes
+	sdkDetector := newResourceDetector()
+	if failOnMissingMetadata && (resourceAttributes.HostName.Enabled || resourceAttributes.OsType.Enabled) {
+		sdkDetector = strictDetector{sdkDetector}
+	}
 	return &Detector{
-		detector:              newResourceDetector(),
+		detector:              sdkDetector,
 		logger:                p.Logger,
-		resourceAttributes:    cfg.(Config).ResourceAttributes,
+		resourceAttributes:    resourceAttributes,
 		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
+}
+
+// strictDetector reports a partial result as a failure. The SDK detector only returns a
+// partial result when the daemon's Info call fails, and that call supplies host.name and
+// os.type, so it is used only when one of those is enabled.
+type strictDetector struct {
+	sdkresource.Detector
+}
+
+func (s strictDetector) Detect(ctx context.Context) (*sdkresource.Resource, error) {
+	res, err := s.Detector.Detect(ctx)
+	if errors.Is(err, sdkresource.ErrPartialResource) {
+		// %v rather than %w: sdkbridge keeps any result whose error wraps ErrPartialResource.
+		return nil, fmt.Errorf("docker metadata incomplete: %v", err) //nolint:errorlint
+	}
+	return res, err
 }
 
 // Detect detects system metadata and returns a resource with the available ones
 func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
 	// Detection runs unfiltered so that an empty result answers "is this process running in a
-	// Docker container?"; the configured attributes are applied afterwards. A partial result
-	// still came from a reachable daemon, so the bridge keeps what it did return.
-	// fail_on_missing_metadata covers an unusable daemon, not individual fields absent from
-	// its response.
+	// Docker container?"; the configured attributes are applied afterwards. Unless
+	// fail_on_missing_metadata is set and host.name or os.type is enabled, the bridge keeps a
+	// partial result.
 	res, schemaURL, err := sdkbridge.Detect(ctx, d.detector)
 	if err != nil {
 		d.logger.Debug("docker metadata unavailable", zap.Error(err))

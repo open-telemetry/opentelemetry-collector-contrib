@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !omit_detector_docker
+//go:build (!remove_all_resourcedetection_detectors || enable_detector_docker) && !omit_detector_docker
 
 package docker
 
@@ -19,6 +19,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker/internal/metadata"
 )
+
+const schemaURLWant = "https://opentelemetry.io/schemas/1.43.0"
 
 // ---- test stub + hook ----
 
@@ -60,7 +62,7 @@ func setEmitSemconvContainerAttributes(t *testing.T, enabled bool) {
 // fullResource mirrors what the SDK detector reports for a container it could fully
 // inspect. It already trims the leading slash from the container name.
 func fullResource() *sdkresource.Resource {
-	return sdkresource.NewSchemaless(
+	return sdkresource.NewWithAttributes(schemaURLWant,
 		attribute.String("container.name", "foo"),
 		attribute.String("container.image.name", "bar"),
 		attribute.StringSlice("container.image.tags", []string{"1.0"}),
@@ -92,8 +94,9 @@ func TestDetect_DefaultGate(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
-	res, _, err := d.Detect(t.Context())
+	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
+	require.Equal(t, schemaURLWant, schemaURL)
 
 	want := map[string]any{
 		"container.name":       "/foo",
@@ -120,14 +123,37 @@ func TestDetect(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
-	res, _, err := d.Detect(t.Context())
+	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
+	require.Equal(t, schemaURLWant, schemaURL)
 
 	want := map[string]any{
 		"container.name":       "foo",
 		"container.image.name": "bar",
 		"container.image.tags": []any{"1.0"},
 		"container.image.id":   "sha256:abc",
+		"host.name":            "hostname",
+		"os.type":              "darwin",
+	}
+	require.Equal(t, want, res.Attributes().AsRaw())
+}
+
+// With the gate off, container.image.name carries the image ID even though
+// container.image.id itself is disabled, as it is by default.
+func TestDetect_DefaultGateImageIDDisabled(t *testing.T) {
+	withFakeDetector(t, fullResource(), nil)
+
+	cfg := CreateDefaultConfig()
+	cfg.ResourceAttributes.ContainerImageName.Enabled = true
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	require.NoError(t, err)
+
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+
+	want := map[string]any{
+		"container.image.name": "sha256:abc",
 		"host.name":            "hostname",
 		"os.type":              "darwin",
 	}
@@ -219,24 +245,58 @@ func TestDetectError_FailOnMissingMetadata(t *testing.T) {
 	require.Empty(t, schemaURL)
 }
 
-// fail_on_missing_metadata covers an unusable daemon, not a field absent from an
-// otherwise good response, so a partial result still succeeds.
+// The SDK detector returns a partial result when the daemon's Info call fails, which leaves
+// out host.name and os.type. That is only a failure when fail_on_missing_metadata is set and
+// one of them is enabled.
 func TestDetectPartialMetadata(t *testing.T) {
-	partial := sdkresource.NewSchemaless(
-		attribute.String("container.name", "foo"),
-	)
-	withFakeDetector(t, partial, fmt.Errorf("%w: docker info: boom", sdkresource.ErrPartialResource))
+	tests := []struct {
+		name                  string
+		hostAttrsEnabled      bool
+		failOnMissingMetadata bool
+		wantErr               bool
+		want                  map[string]any
+	}{
+		{
+			name:                  "host attributes disabled",
+			failOnMissingMetadata: true,
+			// gate off, so the legacy leading slash is restored
+			want: map[string]any{"container.name": "/foo"},
+		},
+		{
+			name:                  "host attributes enabled",
+			hostAttrsEnabled:      true,
+			failOnMissingMetadata: true,
+			wantErr:               true,
+			want:                  map[string]any{},
+		},
+		{
+			name:             "host attributes enabled without fail_on_missing_metadata",
+			hostAttrsEnabled: true,
+			want:             map[string]any{"container.name": "/foo"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			partial := sdkresource.NewSchemaless(
+				attribute.String("container.name", "foo"),
+			)
+			withFakeDetector(t, partial, fmt.Errorf("%w: docker info: boom", sdkresource.ErrPartialResource))
 
-	cfg := CreateDefaultConfig()
-	cfg.ResourceAttributes.ContainerName.Enabled = true
+			cfg := CreateDefaultConfig()
+			cfg.ResourceAttributes.ContainerName.Enabled = true
+			cfg.ResourceAttributes.HostName.Enabled = tt.hostAttrsEnabled
+			cfg.ResourceAttributes.OsType.Enabled = tt.hostAttrsEnabled
 
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, true)
-	require.NoError(t, err)
+			d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, tt.failOnMissingMetadata)
+			require.NoError(t, err)
 
-	res, _, err := d.Detect(t.Context())
-	require.NoError(t, err)
-
-	// gate off, so the legacy leading slash is restored
-	want := map[string]any{"container.name": "/foo"}
-	require.Equal(t, want, res.Attributes().AsRaw())
+			res, _, err := d.Detect(t.Context())
+			if tt.wantErr {
+				require.ErrorContains(t, err, "docker metadata incomplete")
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, tt.want, res.Attributes().AsRaw())
+		})
+	}
 }
