@@ -134,11 +134,17 @@ func (*receiverRunner) shutdown(rcvr component.Component) error {
 
 // loadRuntimeReceiverConfig loads the given receiverTemplate merged with config values
 // that may have been discovered at runtime.
-func (*receiverRunner) loadRuntimeReceiverConfig(
+func (run *receiverRunner) loadRuntimeReceiverConfig(
 	factory rcvr.Factory,
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
 ) (component.Config, string, error) {
+	if receiver.fromHints {
+		if err := run.validateDiscoveredConfig(factory, receiver.config, receiver.discoveredEndpoint); err != nil {
+			return nil, receiver.discoveredEndpoint, fmt.Errorf("invalid configuration from annotation hints: %w", err)
+		}
+	}
+
 	// remove dynamically added "endpoint" field if not supported by receiver
 	mergedConfig, targetEndpoint, err := mergeTemplatedAndDiscoveredConfigs(factory, receiver.config, discoveredConfig)
 	if err != nil {

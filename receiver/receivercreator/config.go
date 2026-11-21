@@ -30,6 +30,12 @@ type receiverConfig struct {
 	// the "config" section. The keys and values are arbitrarily configured by the user.
 	config     userConfigMap
 	endpointID observer.EndpointID
+	// fromHints is true when config was built from Pod annotation hints rather than from a
+	// template authored in the Collector's own configuration.
+	fromHints bool
+	// discoveredEndpoint is the target reported by the observer, in <host>:<port> form. It is
+	// the only endpoint a receiver built from annotation hints may collect from.
+	discoveredEndpoint string
 }
 
 // userConfigMap is an arbitrary map of string keys to arbitrary values as specified by the user
@@ -54,6 +60,7 @@ type receiverTemplate struct {
 	ResourceAttributes map[string]any `mapstructure:"resource_attributes"`
 	rule               rule
 	signals            receiverSignals
+	fromHints          bool
 }
 
 // resourceAttributes holds a map of default resource attributes for each Endpoint type.
