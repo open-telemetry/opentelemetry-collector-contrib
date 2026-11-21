@@ -479,6 +479,7 @@ The deprecated `num_workers` and `flush` settings have been removed. Existing co
     - `sizer` (default=bytes): Size batches by bytes. Note that bytes here are based on the pdata model and not on the NDJSON docs that will constitute the bulk indexer requests. To address this discrepancy, the bulk indexers could also flush when their size exceeds the configured max_size due to size of pdata model being smaller than their corresponding NDJSON encoding.
     - `min_size` (default=1MB): Min size of the batch.
     - `max_size` (default=5MB): Max size of the batch. This value should be much lower than [Elasticsearch's `http.max_content_length`](https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-network.html#http-settings) config to avoid HTTP 413 Entity Too Large error. It is recommended to keep this value under 5MB.
+- `suppress_conflict_errors` (default=false): If `true`, document level `version_conflict_engine_exception` responses (HTTP 409) are not logged as errors. See [version_conflict_engine_exception](#version_conflict_engine_exception) under Known issues.
 
 #### Bulk indexing error response
 
