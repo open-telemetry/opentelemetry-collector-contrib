@@ -1,0 +1,5 @@
+change_type: enhancement
+component: exporter/awsemf
+note: Add a configurable export timeout while preserving the five-second default.
+issues: [52900]
+change_logs: [user, api]
