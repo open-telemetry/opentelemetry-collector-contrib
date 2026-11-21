@@ -641,6 +641,106 @@ func TestMetricTracker_ConvertExponentialHistogramPositiveBucketResetRecovery(t 
 	assert.InDelta(t, 20.0, out.ExponentialHistogramPoint.Sum, 1e-9)
 }
 
+func TestMetricTracker_ConvertExponentialHistogramZeroCountResetRecovery(t *testing.T) {
+	miExpHist := MetricIdentity{
+		Resource:               pcommon.NewResource(),
+		InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+		MetricType:             pmetric.MetricTypeExponentialHistogram,
+		MetricName:             "exp_hist",
+		Attributes:             pcommon.NewMap(),
+	}
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+	point := func(count, zeroCount uint64, posCounts []uint64) MetricPoint {
+		return MetricPoint{
+			Identity: miExpHist,
+			Value: ValuePoint{
+				ObservedTimestamp: now,
+				ExponentialHistogramValue: &ExponentialHistogramPoint{
+					Count:     count,
+					ZeroCount: zeroCount,
+					Scale:     0,
+					Positive: ExponentialBuckets{
+						Offset:       0,
+						BucketCounts: posCounts,
+					},
+				},
+			},
+		}
+	}
+
+	m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueKeep)
+
+	// Initial baseline.
+	m.Convert(point(100, 90, []uint64{10}))
+
+	// Reset: count and buckets grow but zero count shrinks; stored as new baseline.
+	_, valid, reason := m.Convert(point(110, 10, []uint64{100}))
+	require.False(t, valid)
+	assert.Equal(t, ReasonReset, reason)
+
+	// Post-reset growth: must be diffed against the reset point, not the pre-reset baseline.
+	out, valid, _ := m.Convert(point(120, 15, []uint64{105}))
+	require.True(t, valid)
+	assert.Equal(t, uint64(10), out.ExponentialHistogramPoint.Count)
+	assert.Equal(t, uint64(5), out.ExponentialHistogramPoint.ZeroCount)
+	assert.Equal(t, []uint64{5}, out.ExponentialHistogramPoint.Positive.BucketCounts)
+}
+
+func TestMetricTracker_ConvertExponentialHistogramZeroCountWithThresholdIncrease(t *testing.T) {
+	miExpHist := MetricIdentity{
+		Resource:               pcommon.NewResource(),
+		InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+		MetricType:             pmetric.MetricTypeExponentialHistogram,
+		MetricName:             "exp_hist",
+		Attributes:             pcommon.NewMap(),
+	}
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+	point := func(count, zeroCount uint64, zeroThreshold float64, offset int32, posCounts []uint64) MetricPoint {
+		return MetricPoint{
+			Identity: miExpHist,
+			Value: ValuePoint{
+				ObservedTimestamp: now,
+				ExponentialHistogramValue: &ExponentialHistogramPoint{
+					Count:         count,
+					ZeroCount:     zeroCount,
+					ZeroThreshold: zeroThreshold,
+					Scale:         0,
+					Positive: ExponentialBuckets{
+						Offset:       offset,
+						BucketCounts: posCounts,
+					},
+				},
+			},
+		}
+	}
+
+	// Baseline has zero count 2 and buckets (1,2]=3, (2,4]=4. Raising the zero threshold
+	// to 2 folds the (1,2] bucket into the zero bucket, so the comparable zero count is 5.
+	baseline := func() MetricPoint { return point(9, 2, 0, 0, []uint64{3, 4}) }
+
+	t.Run("increase after folding is not a reset", func(t *testing.T) {
+		m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueKeep)
+		m.Convert(baseline())
+
+		out, valid, _ := m.Convert(point(11, 6, 2, 1, []uint64{5}))
+		require.True(t, valid)
+		assert.Equal(t, uint64(2), out.ExponentialHistogramPoint.Count)
+		assert.Equal(t, uint64(1), out.ExponentialHistogramPoint.ZeroCount)
+		assert.Equal(t, []uint64{1}, out.ExponentialHistogramPoint.Positive.BucketCounts)
+	})
+
+	t.Run("decrease below folded zero count is a reset", func(t *testing.T) {
+		m := NewMetricTracker(t.Context(), zap.NewNop(), 0, InitialValueKeep)
+		m.Convert(baseline())
+
+		_, valid, reason := m.Convert(point(10, 4, 2, 1, []uint64{6}))
+		require.False(t, valid)
+		assert.Equal(t, ReasonReset, reason)
+	})
+}
+
 func TestMetricTracker_ConvertExponentialHistogramNegativeBucketResetRecovery(t *testing.T) {
 	miExpHist := MetricIdentity{
 		Resource:               pcommon.NewResource(),
