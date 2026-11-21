@@ -17,6 +17,9 @@ import (
 	metricnoop "go.opentelemetry.io/otel/metric/noop"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 )
@@ -45,7 +48,7 @@ func initHeartbeater(t *testing.T, metricsOverrides map[string]string, enableMet
 	config := createTestConfig(metricsOverrides, enableMetrics)
 	tb, err := metadata.NewTelemetryBuilder(component.TelemetrySettings{MeterProvider: mp})
 	require.NoError(t, err)
-	hbter := newHeartbeater(config, component.NewDefaultBuildInfo(), consumeFn, tb, mp.Meter("test"))
+	hbter := newHeartbeater(config, component.NewDefaultBuildInfo(), consumeFn, tb, mp.Meter("test"), zap.NewNop())
 	t.Cleanup(func() {
 		hbter.shutdown()
 	})
@@ -93,71 +96,125 @@ func Test_newHeartbeater_disabled(t *testing.T) {
 	require.NoError(t, err)
 	hb := newHeartbeater(config, component.NewDefaultBuildInfo(), func(_ context.Context, _ plog.Logs) error {
 		return nil
-	}, tb, metricnoop.NewMeterProvider().Meter("test"))
+	}, tb, metricnoop.NewMeterProvider().Meter("test"), zap.NewNop())
 	assert.Nil(t, hb)
 }
 
-func Test_Heartbeat_success(t *testing.T) {
+func Test_newHeartbeater_telemetryDeprecationWarning(t *testing.T) {
 	tests := []struct {
-		metricsOverrides map[string]string
-		enableMetrics    bool
+		name        string
+		telemetry   HecTelemetry
+		wantWarning bool
 	}{
 		{
-			metricsOverrides: map[string]string{},
-			enableMetrics:    false,
+			name:        "unset telemetry block does not warn",
+			telemetry:   HecTelemetry{},
+			wantWarning: false,
 		},
 		{
-			metricsOverrides: map[string]string{
-				defaultHBSentMetricsName: "app_heartbeat_success_total",
-			},
-			enableMetrics: true,
+			name:        "enabled telemetry warns",
+			telemetry:   HecTelemetry{Enabled: true},
+			wantWarning: true,
 		},
 		{
-			metricsOverrides: map[string]string{},
-			enableMetrics:    false,
+			name:        "override_metrics_names warns",
+			telemetry:   HecTelemetry{OverrideMetricsNames: map[string]string{defaultHBSentMetricsName: "custom"}},
+			wantWarning: true,
 		},
 		{
-			// No overrides: the metric defined in metadata.yaml is used.
-			metricsOverrides: map[string]string{},
-			enableMetrics:    true,
+			name:        "extra_attributes warns",
+			telemetry:   HecTelemetry{ExtraAttributes: map[string]string{"k": "v"}},
+			wantWarning: true,
 		},
 	}
 
 	for _, tt := range tests {
-		consumeLogsChan := make(chan plog.Logs, 10)
-		consumeFn := func(_ context.Context, ld plog.Logs) error {
-			select {
-			case consumeLogsChan <- ld:
-			default:
+		t.Run(tt.name, func(t *testing.T) {
+			config := NewFactory().CreateDefaultConfig().(*Config)
+			config.Heartbeat = HecHeartbeat{Interval: 10 * time.Millisecond}
+			config.Telemetry = tt.telemetry
+
+			core, logs := observer.New(zapcore.WarnLevel)
+			tb, err := metadata.NewTelemetryBuilder(component.TelemetrySettings{MeterProvider: metricnoop.NewMeterProvider()})
+			require.NoError(t, err)
+			hbter := newHeartbeater(config, component.NewDefaultBuildInfo(), func(_ context.Context, _ plog.Logs) error {
+				return nil
+			}, tb, metricnoop.NewMeterProvider().Meter("test"), zap.New(core))
+			t.Cleanup(hbter.shutdown)
+
+			warnings := logs.FilterMessageSnippet("telemetry` configuration block").All()
+			if tt.wantWarning {
+				require.Len(t, warnings, 1)
+			} else {
+				require.Empty(t, warnings)
 			}
-			return nil
-		}
-		reader := sdkmetric.NewManualReader()
-		meterProvider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
-		initHeartbeater(t, tt.metricsOverrides, true, consumeFn, meterProvider)
+		})
+	}
+}
 
-		assert.Eventually(t, func() bool {
-			return len(consumeLogsChan) != 0
-		}, time.Second, 10*time.Millisecond)
+func Test_Heartbeat_success(t *testing.T) {
+	tests := []struct {
+		name             string
+		metricsOverrides map[string]string
+		telemetryEnabled bool
+	}{
+		{
+			// The metric defined in metadata.yaml is emitted even though the
+			// deprecated telemetry.enabled flag is left at its default (false).
+			name:             "default metric name, telemetry.enabled unset",
+			metricsOverrides: map[string]string{},
+			telemetryEnabled: false,
+		},
+		{
+			name:             "default metric name, telemetry.enabled set",
+			metricsOverrides: map[string]string{},
+			telemetryEnabled: true,
+		},
+		{
+			// The deprecated override is still honored for backwards compatibility.
+			name: "overridden metric name honored for back-compat",
+			metricsOverrides: map[string]string{
+				defaultHBSentMetricsName: "app_heartbeat_success_total",
+			},
+			telemetryEnabled: true,
+		},
+	}
 
-		logs := <-consumeLogsChan
-		assertHeartbeatInfoLog(t, logs)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			consumeLogsChan := make(chan plog.Logs, 10)
+			consumeFn := func(_ context.Context, ld plog.Logs) error {
+				select {
+				case consumeLogsChan <- ld:
+				default:
+				}
+				return nil
+			}
+			reader := sdkmetric.NewManualReader()
+			meterProvider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+			initHeartbeater(t, tt.metricsOverrides, tt.telemetryEnabled, consumeFn, meterProvider)
 
-		if tt.enableMetrics {
+			assert.Eventually(t, func() bool {
+				return len(consumeLogsChan) != 0
+			}, time.Second, 10*time.Millisecond)
+
+			logs := <-consumeLogsChan
+			assertHeartbeatInfoLog(t, logs)
+
 			sentMetricsName := getMetricsName(tt.metricsOverrides, defaultHBSentMetricsName)
 			var got []int64
 			var err error
-			assert.EventuallyWithT(t, func(tt *assert.CollectT) {
+			assert.EventuallyWithT(t, func(c *assert.CollectT) {
 				got, err = getMetricValue(reader, sentMetricsName)
-				require.NoError(tt, err)
-				if assert.NotEmpty(tt, got) {
-					assert.Positive(tt, got[0], "there should be at least one success metric datapoint")
+				require.NoError(c, err)
+				if assert.NotEmpty(c, got) {
+					assert.Positive(c, got[0], "there should be at least one success metric datapoint")
 				}
 			}, time.Second, 10*time.Millisecond)
 			attrs, err := getAttributes(reader, sentMetricsName)
 			require.NoError(t, err)
 			assert.Equal(t, attribute.NewSet(attribute.String(metricLabelKey, metricLabelVal)), attrs[0])
-		}
+		})
 	}
 }
 

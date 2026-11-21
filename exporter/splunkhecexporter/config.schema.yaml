@@ -11,19 +11,19 @@ $defs:
         description: Startup is used to send heartbeat events on exporter's startup.
         type: boolean
   hec_telemetry:
-    description: HecTelemetry defines the telemetry configuration for the exporter
+    description: 'HecTelemetry defines the telemetry configuration for the exporter. Deprecated: [v0.166.0] the telemetry block will be removed in a future release; the heartbeat metrics are emitted directly from metadata.yaml.'
     type: object
     properties:
       enabled:
-        description: Enabled is the bool to enable telemetry inside splunk hec exporter
+        description: 'Deprecated: [v0.166.0] no longer has any effect; the heartbeat metrics are always emitted.'
         type: boolean
       extra_attributes:
-        description: ExtraAttributes is the extra attributes for metrics inside splunk hex exporter
+        description: 'Deprecated: [v0.166.0] attach extra attributes via a processor instead.'
         type: object
         additionalProperties:
           type: string
       override_metrics_names:
-        description: OverrideMetricsNames is the map to override metrics for internal metrics in splunk hec exporter
+        description: 'Deprecated: [v0.166.0] the heartbeat metrics have fixed names and cannot be overridden.'
         type: object
         additionalProperties:
           type: string

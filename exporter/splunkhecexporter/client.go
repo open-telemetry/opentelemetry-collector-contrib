@@ -1076,7 +1076,7 @@ func (c *client) start(ctx context.Context, host component.Host) (err error) {
 	}
 	c.telemetryBuilder = telemetryBuilder
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo), c.logger, c.telemetryBuilder}
-	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c), c.telemetryBuilder, c.meter)
+	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c), c.telemetryBuilder, c.meter, c.logger)
 	if c.config.Heartbeat.Startup {
 		if err := c.heartbeater.sendHeartbeat(c.config, c.buildInfo, getPushLogFn(c)); err != nil {
 			return fmt.Errorf("%s: heartbeat on startup failed: %w", c.exporterName, err)
