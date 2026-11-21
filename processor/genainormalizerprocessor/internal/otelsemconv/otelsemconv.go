@@ -81,6 +81,9 @@ var (
 	// gen_ai.conversation.*
 	GenAIConversationID = typed(conventions.GenAIConversationID)
 
+	// gen_ai.embeddings.*
+	GenAIEmbeddingsDimensionCount = typed(conventions.GenAIEmbeddingsDimensionCount)
+
 	// gen_ai.input.*
 	GenAIInputMessages = string(conventions.GenAIInputMessagesKey)
 
@@ -110,13 +113,17 @@ var (
 	// gen_ai.tool.*
 	GenAIToolCallArguments = string(conventions.GenAIToolCallArgumentsKey)
 	GenAIToolCallID        = typed(conventions.GenAIToolCallID)
+	GenAIToolCallResult    = string(conventions.GenAIToolCallResultKey)
 	GenAIToolDefinitions   = string(conventions.GenAIToolDefinitionsKey)
 	GenAIToolDescription   = typed(conventions.GenAIToolDescription)
 	GenAIToolName          = typed(conventions.GenAIToolName)
+	GenAIToolType          = typed(conventions.GenAIToolType)
 
 	// gen_ai.usage.*
-	GenAIUsageInputTokens  = typed(conventions.GenAIUsageInputTokens)
-	GenAIUsageOutputTokens = typed(conventions.GenAIUsageOutputTokens)
+	GenAIUsageCacheCreationInputTokens = typed(conventions.GenAIUsageCacheCreationInputTokens)
+	GenAIUsageCacheReadInputTokens     = typed(conventions.GenAIUsageCacheReadInputTokens)
+	GenAIUsageInputTokens              = typed(conventions.GenAIUsageInputTokens)
+	GenAIUsageOutputTokens             = typed(conventions.GenAIUsageOutputTokens)
 )
 
 // gen_ai.operation.name enum values, sourced from the semconv library.
