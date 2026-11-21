@@ -87,7 +87,9 @@ boost:   deadband flushed+suspended · dedup open · traces kept
 | tail-sampling policy | design phase | TR v1 |
 | `connector/textmetrics` | design phase | T2 |
 
-X1 delivered 2026-11-20: `signalstate` (shared window store) + `eventdetector`
-(OTTL rules on logs + metric datapoints opening/refreshing windows with
-anti-flap cooldown). X2 remains: wire `deadband` to read `signalstate` and
-flush/suspend on boost windows; then log `dedup` and the tail-sampling policy.
+X1 and X2 delivered 2026-11-20: `signalstate` (shared window store) +
+`eventdetector` (OTTL rules on logs + metric datapoints opening/refreshing
+windows with anti-flap cooldown) and `deadband` adaptive wiring (boost-entry
+flash of tracked series, suppression suspended while the window is open, state
+kept current so boost exit is burst-free). Remaining: log `dedup` and the
+tail-sampling policy.
