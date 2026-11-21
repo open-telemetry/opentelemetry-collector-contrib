@@ -243,7 +243,9 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 
 func populateSpanStatus(tags map[string]string, status ptrace.Status) {
 	if value, ok := tags[string(conventions.OTelStatusCodeKey)]; ok {
-		status.SetCode(ptrace.StatusCode(statusCodeValue[value]))
+		if code, found := statusCodeValue[strings.ToUpper(value)]; found {
+			status.SetCode(code)
+		}
 		delete(tags, string(conventions.OTelStatusCodeKey))
 		if value, ok := tags[string(conventions.OTelStatusDescriptionKey)]; ok {
 			status.SetMessage(value)
@@ -594,17 +596,14 @@ func unmarshalJSON(dst, src []byte) error {
 }
 
 // TODO: Find a way to avoid this duplicate code. Consider to expose this in pdata.
-var statusCodeValue = map[string]int32{
-	"STATUS_CODE_UNSET": 0,
-	"STATUS_CODE_OK":    1,
-	"STATUS_CODE_ERROR": 2,
-	// As reported in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14965
-	// The Zipkin exporter used a different set of names when serializing span state.
-	"Unset": 0,
-	"Ok":    1,
-	"Error": 2,
+var statusCodeValue = map[string]ptrace.StatusCode{
+	"STATUS_CODE_UNSET": ptrace.StatusCodeUnset,
+	"STATUS_CODE_OK":    ptrace.StatusCodeOk,
+	"STATUS_CODE_ERROR": ptrace.StatusCodeError,
 	// Per the OTel non-OTLP mapping spec, status codes MUST be "OK" or "ERROR".
-	// Added in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/53288
-	"OK":    1,
-	"ERROR": 2,
+	// Normalizing inputs with strings.ToUpper also supports legacy "Ok"/"Error"/"Unset"
+	// (https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14965).
+	"UNSET": ptrace.StatusCodeUnset,
+	"OK":    ptrace.StatusCodeOk,
+	"ERROR": ptrace.StatusCodeError,
 }

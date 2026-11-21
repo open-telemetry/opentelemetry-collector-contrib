@@ -201,6 +201,8 @@ func populateStatus(status ptrace.Status, zs *zipkinmodel.SpanModel, tags map[st
 		tags[string(conventions.OTelStatusCodeKey)] = "OK"
 	case ptrace.StatusCodeError:
 		tags[string(conventions.OTelStatusCodeKey)] = "ERROR"
+	default:
+		return
 	}
 	if status.Message() != "" {
 		tags[string(conventions.OTelStatusDescriptionKey)] = status.Message()

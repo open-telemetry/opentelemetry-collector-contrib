@@ -124,6 +124,12 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 			zs:   []*zipkinmodel.SpanModel{zipkinOneSpan(ptrace.StatusCodeUnset)},
 			err:  nil,
 		},
+		{
+			name: "oneSpanUnknownStatus",
+			td:   generateTraceOneSpanOneTraceID(ptrace.StatusCode(99)),
+			zs:   []*zipkinmodel.SpanModel{zipkinOneSpan(ptrace.StatusCode(99))},
+			err:  nil,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
