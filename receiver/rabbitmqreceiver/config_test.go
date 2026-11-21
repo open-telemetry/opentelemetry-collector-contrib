@@ -83,6 +83,65 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: nil,
 		},
+		{
+			desc: "valid queues extract arguments config",
+			cfg: &Config{
+				Username:     "otelu",
+				Password:     "otelp",
+				ClientConfig: clientConfig,
+				Queues: QueuesConfig{
+					Extract: ExtractConfig{
+						Arguments: []FieldExtractConfig{
+							{TagName: "owner", Key: "owner"},
+							{TagName: "$1", KeyRegex: "x-(.*)"},
+						},
+					},
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "queues extract arguments rule with neither key nor key_regex",
+			cfg: &Config{
+				Username:     "otelu",
+				Password:     "otelp",
+				ClientConfig: clientConfig,
+				Queues: QueuesConfig{
+					Extract: ExtractConfig{
+						Arguments: []FieldExtractConfig{{TagName: "owner"}},
+					},
+				},
+			},
+			expectedErr: fmt.Errorf(`invalid queues::extract::arguments rule (tag_name: "owner"): %w`, errFieldExtractKeyAmbiguous),
+		},
+		{
+			desc: "queues extract arguments rule with both key and key_regex",
+			cfg: &Config{
+				Username:     "otelu",
+				Password:     "otelp",
+				ClientConfig: clientConfig,
+				Queues: QueuesConfig{
+					Extract: ExtractConfig{
+						Arguments: []FieldExtractConfig{{TagName: "owner", Key: "owner", KeyRegex: "x-.*"}},
+					},
+				},
+			},
+			expectedErr: fmt.Errorf(`invalid queues::extract::arguments rule (tag_name: "owner"): %w`, errFieldExtractKeyAmbiguous),
+		},
+		{
+			desc: "queues extract arguments rule with invalid key_regex",
+			cfg: &Config{
+				Username:     "otelu",
+				Password:     "otelp",
+				ClientConfig: clientConfig,
+				Queues: QueuesConfig{
+					Extract: ExtractConfig{
+						Arguments: []FieldExtractConfig{{TagName: "owner", KeyRegex: "("}},
+					},
+				},
+			},
+			expectedErr: fmt.Errorf(`invalid queues::extract::arguments key_regex "(": %w`, errors.New("error parsing regexp: missing closing ): `^(?:()$`")),
+		},
 	}
 
 	for _, tc := range testCases {
