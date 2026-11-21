@@ -26,7 +26,7 @@ The TCP Log Receiver receives logs over TCP.
 | `attributes`              | {}                   | A map of `key: value` pairs to add to the entry's attributes. Keys must be strings, values must be strings or [expressions](../../pkg/stanza/docs/types/expression.md) that evaluate to a string. |
 | `one_log_per_packet`      | false                | Skip log tokenization, set to true if logs contains one log per record and multiline is not used.  This will improve performance.                                                 |
 | `resource`                | {}                   | A map of `key: value` pairs to add to the entry's resource. Keys must be strings, values must be strings or [expressions](../../pkg/stanza/docs/types/expression.md) that evaluate to a string. |
-| `add_attributes`          | false                | Adds `net.*` attributes according to [semantic convention](https://github.com/open-telemetry/semantic-conventions/blob/v1.42.0/docs/registry/attributes/network.md#deprecated-network-attributes) |
+| `add_attributes`          | false                | Adds network attributes to each log record. By default the deprecated `net.*` attributes are added (see [deprecated network attributes](https://github.com/open-telemetry/semantic-conventions/blob/v1.42.0/docs/registry/attributes/network.md#deprecated-network-attributes)). Enable the `pkg.stanza.tcp.useStableNetworkAttributes` feature gate to emit the [stable network attributes](https://github.com/open-telemetry/semantic-conventions/blob/v1.42.0/docs/registry/attributes/network.md#network-attributes) instead. See [Feature Gates](#feature-gates). |
 | `multiline`               |                      | A `multiline` configuration block. See below for details                                                           |
 | `encoding`                | `utf-8`              | The encoding of the file being read. See the list of supported encodings below for available options               |
 | `max_connections`         | 0                    | The maximum number of open TCP connections allowed. 0 means unlimited                                              |
@@ -141,4 +141,32 @@ receivers:
       - type: json_parser
         id: parse_json
         output: timestamp_parser
+```
+
+## Feature Gates
+
+### `pkg.stanza.tcp.useStableNetworkAttributes`
+
+When `add_attributes` is `true`, this feature gate controls which network attributes are added to
+each log record.
+
+- **Disabled (default):** the deprecated `net.*` attributes are added.
+- **Enabled:** the stable network semantic convention attributes are added instead.
+
+| Deprecated attribute | Stable attribute        |
+| ---                  | ---                     |
+| `net.transport`      | `network.transport`     |
+| `net.host.ip`        | `network.local.address` |
+| `net.host.port`      | `server.port`           |
+| `net.host.name`      | `server.address`        |
+| `net.peer.ip`        | `network.peer.address`  |
+| `net.peer.port`      | `client.port`           |
+| `net.peer.name`      | `client.address`        |
+
+The `net.transport` value `IP.TCP` is replaced by the `network.transport` value `tcp`.
+
+To enable the feature gate:
+
+```sh
+otelcol --feature-gates=pkg.stanza.tcp.useStableNetworkAttributes
 ```

@@ -27,11 +27,13 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	stanzametadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp/internal/metadatatest"
@@ -146,8 +148,15 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 	}
 }
 
-func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) {
+func tcpInputAttributesTest(input []byte, expected []string, useStableNetworkAttributes bool) func(t *testing.T) {
 	return func(t *testing.T) {
+		if useStableNetworkAttributes {
+			require.NoError(t, featuregate.GlobalRegistry().Set(stanzametadata.PkgStanzaTCPUseStableNetworkAttributesFeatureGate.ID(), true))
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(stanzametadata.PkgStanzaTCPUseStableNetworkAttributesFeatureGate.ID(), false))
+			})
+		}
+
 		cfg := NewConfigWithID("test_id")
 		cfg.ListenAddress = ":0"
 		cfg.AddAttributes = true
@@ -174,20 +183,37 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 		for _, expectedMessage := range expected {
 			select {
 			case entry := <-entryChan:
-				expectedAttributes := map[string]any{
-					"net.transport": "IP.TCP",
-				}
-				if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
-					ip := addr.IP.String()
-					expectedAttributes["net.host.ip"] = addr.IP.String()
-					expectedAttributes["net.host.port"] = strconv.FormatInt(int64(addr.Port), 10)
-					expectedAttributes["net.host.name"] = tcpInput.resolver.GetHostFromIP(ip)
-				}
-				if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
-					ip := addr.IP.String()
-					expectedAttributes["net.peer.ip"] = ip
-					expectedAttributes["net.peer.port"] = strconv.FormatInt(int64(addr.Port), 10)
-					expectedAttributes["net.peer.name"] = tcpInput.resolver.GetHostFromIP(ip)
+				expectedAttributes := map[string]any{}
+				if useStableNetworkAttributes {
+					expectedAttributes["network.transport"] = "tcp"
+					// RemoteAddr for conn is the server address
+					if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
+						ip := addr.IP.String()
+						expectedAttributes["network.local.address"] = ip
+						expectedAttributes["server.port"] = strconv.FormatInt(int64(addr.Port), 10)
+						expectedAttributes["server.address"] = tcpInput.resolver.GetHostFromIP(ip)
+					}
+					// LocalAddr for conn is the client (peer) address
+					if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
+						ip := addr.IP.String()
+						expectedAttributes["network.peer.address"] = ip
+						expectedAttributes["client.port"] = strconv.FormatInt(int64(addr.Port), 10)
+						expectedAttributes["client.address"] = tcpInput.resolver.GetHostFromIP(ip)
+					}
+				} else {
+					expectedAttributes["net.transport"] = "IP.TCP"
+					if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
+						ip := addr.IP.String()
+						expectedAttributes["net.host.ip"] = addr.IP.String()
+						expectedAttributes["net.host.port"] = strconv.FormatInt(int64(addr.Port), 10)
+						expectedAttributes["net.host.name"] = tcpInput.resolver.GetHostFromIP(ip)
+					}
+					if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
+						ip := addr.IP.String()
+						expectedAttributes["net.peer.ip"] = ip
+						expectedAttributes["net.peer.port"] = strconv.FormatInt(int64(addr.Port), 10)
+						expectedAttributes["net.peer.name"] = tcpInput.resolver.GetHostFromIP(ip)
+					}
 				}
 				require.Equal(t, expectedMessage, entry.Body)
 				require.Equal(t, expectedAttributes, entry.Attributes)
@@ -404,8 +430,13 @@ func TestTCPInput(t *testing.T) {
 }
 
 func TestTCPInputAattributes(t *testing.T) {
-	t.Run("Simple", tcpInputAttributesTest([]byte("message\n"), []string{"message"}))
-	t.Run("CarriageReturn", tcpInputAttributesTest([]byte("message\r\n"), []string{"message"}))
+	t.Run("Simple", tcpInputAttributesTest([]byte("message\n"), []string{"message"}, false))
+	t.Run("CarriageReturn", tcpInputAttributesTest([]byte("message\r\n"), []string{"message"}, false))
+}
+
+func TestTCPInputStableNetworkAttributes(t *testing.T) {
+	t.Run("Simple", tcpInputAttributesTest([]byte("message\n"), []string{"message"}, true))
+	t.Run("CarriageReturn", tcpInputAttributesTest([]byte("message\r\n"), []string{"message"}, true))
 }
 
 func TestTLSTCPInput(t *testing.T) {

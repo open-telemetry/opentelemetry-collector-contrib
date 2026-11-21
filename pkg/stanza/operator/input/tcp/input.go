@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -38,10 +39,11 @@ var errResolveAuthenticator = errors.New("failed to resolve authenticator")
 // Input is an operator that listens for log entries over tcp.
 type Input struct {
 	helper.InputOperator
-	address         string
-	MaxLogSize      int
-	addAttributes   bool
-	OneLogPerPacket bool
+	address                    string
+	MaxLogSize                 int
+	addAttributes              bool
+	useStableNetworkAttributes bool
+	OneLogPerPacket            bool
 
 	listener net.Listener
 	cancel   context.CancelFunc
@@ -296,19 +298,36 @@ func (i *Input) handleMessage(ctx context.Context, conn net.Conn, dec *encoding.
 	}
 
 	if i.addAttributes {
-		entry.AddAttribute("net.transport", "IP.TCP")
-		if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
-			ip := addr.IP.String()
-			entry.AddAttribute("net.peer.ip", ip)
-			entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
-			entry.AddAttribute("net.peer.name", i.resolver.GetHostFromIP(ip))
-		}
+		if i.useStableNetworkAttributes {
+			entry.AddAttribute(string(conventions.NetworkTransportKey), conventions.NetworkTransportTCP.Value.AsString())
+			if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
+				ip := addr.IP.String()
+				entry.AddAttribute(string(conventions.NetworkPeerAddressKey), ip)
+				entry.AddAttribute(string(conventions.ClientPortKey), strconv.FormatInt(int64(addr.Port), 10))
+				entry.AddAttribute(string(conventions.ClientAddressKey), i.resolver.GetHostFromIP(ip))
+			}
 
-		if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
-			ip := addr.IP.String()
-			entry.AddAttribute("net.host.ip", addr.IP.String())
-			entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
-			entry.AddAttribute("net.host.name", i.resolver.GetHostFromIP(ip))
+			if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
+				ip := addr.IP.String()
+				entry.AddAttribute(string(conventions.NetworkLocalAddressKey), ip)
+				entry.AddAttribute(string(conventions.ServerPortKey), strconv.FormatInt(int64(addr.Port), 10))
+				entry.AddAttribute(string(conventions.ServerAddressKey), i.resolver.GetHostFromIP(ip))
+			}
+		} else {
+			entry.AddAttribute("net.transport", "IP.TCP")
+			if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
+				ip := addr.IP.String()
+				entry.AddAttribute("net.peer.ip", ip)
+				entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
+				entry.AddAttribute("net.peer.name", i.resolver.GetHostFromIP(ip))
+			}
+
+			if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
+				ip := addr.IP.String()
+				entry.AddAttribute("net.host.ip", addr.IP.String())
+				entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
+				entry.AddAttribute("net.host.name", i.resolver.GetHostFromIP(ip))
+			}
 		}
 	}
 
