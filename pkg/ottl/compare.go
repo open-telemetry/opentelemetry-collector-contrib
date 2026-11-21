@@ -405,15 +405,24 @@ func (p *ottlValueComparator) compare(a, b any, op compareOp) bool {
 	default:
 		// If we don't know what type it is, we can't do inequalities yet. So we can fall back to the old behavior where we just
 		// use Go's standard equality.
+		// a == b panics for uncomparable dynamic types (e.g. []string), so fall back to DeepEqual for those.
 		switch op {
 		case eq:
-			return a == b
+			return equalUnknown(a, b)
 		case ne:
-			return a != b
+			return !equalUnknown(a, b)
 		default:
 			return p.invalidComparison(op)
 		}
 	}
+}
+
+func equalUnknown(a, b any) bool {
+	// a is never nil here, but b can be.
+	if b == nil || (reflect.TypeOf(a).Comparable() && reflect.TypeOf(b).Comparable()) {
+		return a == b
+	}
+	return reflect.DeepEqual(a, b)
 }
 
 func (p *ottlValueComparator) Equal(a, b any) bool {

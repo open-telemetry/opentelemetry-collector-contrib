@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: pkg/ottl
+note: Fix a panic when comparing two values of the same uncomparable type, such as the results of two `Split` calls.
+issues: [52946]
+subtext:
+change_logs: [user]
