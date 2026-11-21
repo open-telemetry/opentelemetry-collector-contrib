@@ -4,6 +4,7 @@
 package postgresqlreceiver
 
 import (
+	"database/sql/driver"
 	"errors"
 	"strings"
 	"testing"
@@ -11,7 +12,180 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
+
+func TestGetBackendsRowError(t *testing.T) {
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
+	rows := sqlmock.NewRows([]string{"datname", "count"}).
+		AddRow("db1", int64(3)).
+		AddRow("db2", int64(1)).
+		AddRow("db3", int64(4)).
+		RowError(1, errors.New("connection reset by peer"))
+	mock.ExpectQuery("SELECT datname, count(*) as count from pg_stat_activity GROUP BY datname;").
+		WillReturnRows(rows)
+
+	got, err := client.getBackends(t.Context(), nil)
+	require.ErrorContains(t, err, "connection reset by peer")
+	assert.Equal(t, map[databaseName]int64{databaseName("db1"): 3}, got)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestListDatabasesRowError(t *testing.T) {
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
+	rows := sqlmock.NewRows([]string{"datname"}).
+		AddRow("db1").
+		AddRow("db2").
+		RowError(1, errors.New("connection reset by peer"))
+	mock.ExpectQuery("SELECT datname FROM pg_database\n\tWHERE datistemplate = false;").
+		WillReturnRows(rows)
+
+	got, err := client.listDatabases(t.Context())
+	require.ErrorContains(t, err, "connection reset by peer")
+	assert.Equal(t, []string{"db1"}, got)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestQueryRowErrors(t *testing.T) {
+	rowErr := errors.New("connection reset by peer")
+	tests := []struct {
+		name  string
+		cols  int
+		lead  int
+		setup func(t *testing.T)
+		call  func(t *testing.T, client *postgreSQLClient) (int, error)
+	}{
+		{
+			name: "getDatabaseStats",
+			cols: 13,
+			lead: 1,
+			call: func(t *testing.T, client *postgreSQLClient) (int, error) {
+				got, err := client.getDatabaseStats(t.Context(), nil)
+				return len(got), err
+			},
+		},
+		{
+			name: "queryDatabaseLocks",
+			cols: 4,
+			lead: 3,
+			call: func(t *testing.T, client *postgreSQLClient) (int, error) {
+				got, err := client.queryDatabaseLocks(t.Context(), "SELECT locks")
+				return len(got), err
+			},
+		},
+		{
+			name: "getDatabaseSize",
+			cols: 2,
+			lead: 1,
+			call: func(t *testing.T, client *postgreSQLClient) (int, error) {
+				got, err := client.getDatabaseSize(t.Context(), nil)
+				return len(got), err
+			},
+		},
+		{
+			name: "getDatabaseTableMetrics",
+			cols: 11,
+			lead: 2,
+			call: func(t *testing.T, client *postgreSQLClient) (int, error) {
+				got, err := client.getDatabaseTableMetrics(t.Context(), "db1")
+				return len(got), err
+			},
+		},
+		{
+			name: "getBlocksReadByTable",
+			cols: 10,
+			lead: 2,
+			call: func(t *testing.T, client *postgreSQLClient) (int, error) {
+				got, err := client.getBlocksReadByTable(t.Context(), "db1")
+				return len(got), err
+			},
+		},
+		{
+			name: "getIndexStats",
+			cols: 5,
+			lead: 3,
+			call: func(t *testing.T, client *postgreSQLClient) (int, error) {
+				got, err := client.getIndexStats(t.Context(), "db1")
+				return len(got), err
+			},
+		},
+		{
+			name: "getFunctionStats",
+			cols: 3,
+			lead: 2,
+			call: func(t *testing.T, client *postgreSQLClient) (int, error) {
+				got, err := client.getFunctionStats(t.Context(), "db1")
+				return len(got), err
+			},
+		},
+		{
+			name: "getDeprecatedReplicationStats",
+			cols: 5,
+			lead: 1,
+			call: func(t *testing.T, client *postgreSQLClient) (int, error) {
+				got, err := client.getDeprecatedReplicationStats(t.Context())
+				return len(got), err
+			},
+		},
+		{
+			name: "getReplicationStats",
+			cols: 5,
+			lead: 1,
+			setup: func(t *testing.T) {
+				t.Cleanup(testutil.SetFeatureGateForTest(t, metadata.PostgresqlreceiverPreciselagmetricsFeatureGate, true))
+			},
+			call: func(t *testing.T, client *postgreSQLClient) (int, error) {
+				got, err := client.getReplicationStats(t.Context())
+				return len(got), err
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.setup != nil {
+				tc.setup(t)
+			}
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			t.Cleanup(func() { _ = db.Close() })
+
+			cols := make([]string, tc.cols)
+			for i := range cols {
+				cols[i] = "c"
+			}
+			row := make([]driver.Value, tc.cols)
+			for i := range row {
+				switch {
+				case i < tc.lead:
+					row[i] = "db1"
+				case tc.name == "getReplicationStats" && i > 1:
+					row[i] = float64(1)
+				default:
+					row[i] = int64(1)
+				}
+			}
+			rows := sqlmock.NewRows(cols).AddRow(row...).AddRow(row...).RowError(1, rowErr)
+			mock.ExpectQuery(".*").WillReturnRows(rows).RowsWillBeClosed()
+
+			client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
+			got, err := tc.call(t, client)
+			require.ErrorContains(t, err, "connection reset by peer")
+			assert.Equal(t, 1, got)
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
 
 func TestQuoteDatabaseList(t *testing.T) {
 	tests := []struct {
