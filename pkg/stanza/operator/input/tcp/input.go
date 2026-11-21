@@ -303,14 +303,14 @@ func (i *Input) handleMessage(ctx context.Context, conn net.Conn, dec *encoding.
 			if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
 				ip := addr.IP.String()
 				entry.AddAttribute(string(conventions.NetworkPeerAddressKey), ip)
-				entry.AddAttribute(string(conventions.ClientPortKey), strconv.FormatInt(int64(addr.Port), 10))
+				entry.Attributes[string(conventions.ClientPortKey)] = addr.Port
 				entry.AddAttribute(string(conventions.ClientAddressKey), i.resolver.GetHostFromIP(ip))
 			}
 
 			if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
 				ip := addr.IP.String()
 				entry.AddAttribute(string(conventions.NetworkLocalAddressKey), ip)
-				entry.AddAttribute(string(conventions.ServerPortKey), strconv.FormatInt(int64(addr.Port), 10))
+				entry.Attributes[string(conventions.ServerPortKey)] = addr.Port
 				entry.AddAttribute(string(conventions.ServerAddressKey), i.resolver.GetHostFromIP(ip))
 			}
 		} else {

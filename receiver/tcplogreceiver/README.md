@@ -164,6 +164,7 @@ each log record.
 | `net.peer.name`      | `client.address`        |
 
 The `net.transport` value `IP.TCP` is replaced by the `network.transport` value `tcp`.
+The `server.port` and `client.port` values are integers, while `net.host.port` and `net.peer.port` are strings.
 
 To enable the feature gate:
 

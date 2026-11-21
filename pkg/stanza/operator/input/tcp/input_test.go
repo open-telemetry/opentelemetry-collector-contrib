@@ -190,14 +190,14 @@ func tcpInputAttributesTest(input []byte, expected []string, useStableNetworkAtt
 					if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
 						ip := addr.IP.String()
 						expectedAttributes["network.local.address"] = ip
-						expectedAttributes["server.port"] = strconv.FormatInt(int64(addr.Port), 10)
+						expectedAttributes["server.port"] = addr.Port
 						expectedAttributes["server.address"] = tcpInput.resolver.GetHostFromIP(ip)
 					}
 					// LocalAddr for conn is the client (peer) address
 					if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
 						ip := addr.IP.String()
 						expectedAttributes["network.peer.address"] = ip
-						expectedAttributes["client.port"] = strconv.FormatInt(int64(addr.Port), 10)
+						expectedAttributes["client.port"] = addr.Port
 						expectedAttributes["client.address"] = tcpInput.resolver.GetHostFromIP(ip)
 					}
 				} else {
