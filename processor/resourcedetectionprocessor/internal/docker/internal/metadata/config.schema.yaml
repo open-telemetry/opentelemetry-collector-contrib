@@ -4,8 +4,22 @@ $defs:
     description: ResourceAttributesConfig provides config for resourcedetectionprocessor/docker resource attributes.
     type: object
     properties:
+      container.image.id:
+        description: ResourceAttributeConfig provides common config for a container.image.id resource attribute.
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       container.image.name:
         description: ResourceAttributeConfig provides common config for a container.image.name resource attribute.
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.image.tags:
+        description: ResourceAttributeConfig provides common config for a container.image.tags resource attribute.
         type: object
         properties:
           enabled:

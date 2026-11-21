@@ -16,7 +16,6 @@ require (
 	github.com/digitalocean/go-metadata v0.0.0-20250129100319-e3650a3df44b
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
-	github.com/moby/moby/api v1.57.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.165.1
@@ -55,6 +54,7 @@ require (
 	go.opentelemetry.io/contrib/detectors/azure/azurefunctions v0.19.0
 	go.opentelemetry.io/contrib/detectors/azure/azurevm v0.19.1-0.20261116111143-95d7d47ab65a
 	go.opentelemetry.io/contrib/detectors/consul v0.0.0-20261106092722-ca27f49bc143
+	go.opentelemetry.io/contrib/detectors/docker v0.19.1-0.20261106092722-ca27f49bc143
 	go.opentelemetry.io/contrib/detectors/dynatrace v0.0.0-20261106092722-ca27f49bc143
 	go.opentelemetry.io/contrib/detectors/hetzner v0.19.0
 	go.opentelemetry.io/contrib/detectors/ibmcloud/classic v0.0.0-20261106092722-ca27f49bc143
@@ -158,6 +158,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
+	github.com/moby/moby/api v1.57.0 // indirect
 	github.com/moby/moby/client v0.6.3 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
