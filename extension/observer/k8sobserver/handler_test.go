@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -78,6 +79,30 @@ func TestPodEndpointsRemoved(t *testing.T) {
 	th.OnAdd(podWithNamedPorts, true)
 	th.OnDelete(podWithNamedPorts)
 	assert.Empty(t, th.ListEndpoints())
+}
+
+func TestEndpointsRemovedAfterMissedDelete(t *testing.T) {
+	// An informer that missed the delete event passes the last state it knows wrapped in a
+	// cache.DeletedFinalStateUnknown value.
+	for name, object := range map[string]any{
+		"pod":     podWithNamedPorts,
+		"service": serviceWithClusterIP,
+		"ingress": ingress,
+		"node":    node1V1,
+	} {
+		t.Run(name, func(t *testing.T) {
+			th := newTestHandler()
+			th.OnAdd(object, true)
+			require.NotEmpty(t, th.ListEndpoints())
+
+			th.OnDelete(cache.DeletedFinalStateUnknown{Key: name, Obj: object})
+			assert.Empty(t, th.ListEndpoints())
+
+			th.OnAdd(object, true)
+			th.OnDelete(&cache.DeletedFinalStateUnknown{Key: name, Obj: object})
+			assert.Empty(t, th.ListEndpoints())
+		})
+	}
 }
 
 func TestPodEndpointsChanged(t *testing.T) {
