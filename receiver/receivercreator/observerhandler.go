@@ -33,6 +33,11 @@ type observerHandler struct {
 	params receiver.Settings
 	// receiversByEndpointID is a map of endpoint IDs to a receiver instance.
 	receiversByEndpointID receiverMap
+	// started is a map of endpoint IDs to the receivers started for them.
+	started map[observer.EndpointID][]startedReceiver
+	// reusable holds, while a changed endpoint is handled, the receivers that ran for it before
+	// the change.
+	reusable []startedReceiver
 	// nextLogsConsumer is the receiver_creator's own consumer
 	nextLogsConsumer consumer.Logs
 	// nextMetricsConsumer is the receiver_creator's own consumer
@@ -43,6 +48,15 @@ type observerHandler struct {
 	nextProfilesConsumer xconsumer.Profiles
 	// runner starts and stops receiver instances.
 	runner runner
+}
+
+// startedReceiver is a running receiver and what it was started with.
+type startedReceiver struct {
+	id component.ID
+	// config identifies the resolved config of the receiver.
+	config   string
+	consumer *enhancingConsumer
+	receiver component.Component
 }
 
 // shutdown all receivers started at runtime.
@@ -76,6 +90,10 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 	obs.Lock()
 	defer obs.Unlock()
 
+	obs.addEndpoints(added)
+}
+
+func (obs *observerHandler) addEndpoints(added []observer.Endpoint) {
 	for _, e := range added {
 		var env observer.EndpointEnv
 		var err error
@@ -129,22 +147,60 @@ func (obs *observerHandler) OnRemove(removed []observer.Endpoint) {
 		}
 
 		for _, rcvr := range obs.receiversByEndpointID.Get(e.ID) {
-			obs.params.Logger.Info("stopping receiver", zap.Reflect("receiver", rcvr), zap.String("endpoint_id", string(e.ID)))
-
-			if err := obs.runner.shutdown(rcvr); err != nil {
-				obs.params.Logger.Error("failed to stop receiver", zap.Reflect("receiver", rcvr), zap.Error(err))
-				continue
-			}
+			obs.stopReceiver(rcvr, e.ID)
 		}
 		obs.receiversByEndpointID.RemoveAll(e.ID)
+		delete(obs.started, e.ID)
 	}
 }
 
-// OnChange responds to endpoint change notifications.
+// OnChange responds to endpoint change notifications. A receiver whose resolved config is the
+// same after the change keeps running and only gets the new resource attributes. Any other
+// receiver of the endpoint is stopped, and the ones that match now are started.
 func (obs *observerHandler) OnChange(changed []observer.Endpoint) {
-	// TODO: optimize to only restart if effective config has changed.
-	obs.OnRemove(changed)
-	obs.OnAdd(changed)
+	obs.Lock()
+	defer obs.Unlock()
+
+	for _, e := range changed {
+		obs.reusable = obs.started[e.ID]
+		delete(obs.started, e.ID)
+		obs.receiversByEndpointID.RemoveAll(e.ID)
+
+		obs.addEndpoints([]observer.Endpoint{e})
+
+		for _, previous := range obs.reusable {
+			obs.stopReceiver(previous.receiver, e.ID)
+		}
+		obs.reusable = nil
+	}
+}
+
+func (obs *observerHandler) stopReceiver(rcvr component.Component, endpointID observer.EndpointID) {
+	obs.params.Logger.Info("stopping receiver", zap.Reflect("receiver", rcvr), zap.String("endpoint_id", string(endpointID)))
+
+	if err := obs.runner.shutdown(rcvr); err != nil {
+		obs.params.Logger.Error("failed to stop receiver", zap.Reflect("receiver", rcvr), zap.Error(err))
+	}
+}
+
+// takeReusable returns the receiver that ran from the given template before the endpoint that
+// is handled changed.
+func (obs *observerHandler) takeReusable(id component.ID) (startedReceiver, bool) {
+	for i, previous := range obs.reusable {
+		if previous.id == id {
+			obs.reusable = append(obs.reusable[:i], obs.reusable[i+1:]...)
+			return previous, true
+		}
+	}
+	return startedReceiver{}, false
+}
+
+func (obs *observerHandler) putStarted(endpointID observer.EndpointID, started startedReceiver) {
+	if obs.started == nil {
+		obs.started = map[observer.EndpointID][]startedReceiver{}
+	}
+	obs.started[endpointID] = append(obs.started[endpointID], started)
+	obs.receiversByEndpointID.Put(endpointID, started.receiver)
 }
 
 func (obs *observerHandler) startReceiver(template receiverTemplate, env observer.EndpointEnv, e observer.Endpoint) {
@@ -209,6 +265,20 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 		return
 	}
 
+	// Taken before the start, which changes the discovered config.
+	config := fmt.Sprintf("%#v %#v", resolvedConfig, discoveredConfig)
+	if previous, ok := obs.takeReusable(template.receiverConfig.id); ok {
+		if previous.config == config {
+			obs.params.Logger.Debug("keeping receiver, its config did not change",
+				zap.String("name", template.receiverConfig.id.String()),
+				zap.String("endpoint_id", string(e.ID)))
+			previous.consumer.setAttrs(consumer.attrs)
+			obs.putStarted(e.ID, previous)
+			return
+		}
+		obs.stopReceiver(previous.receiver, e.ID)
+	}
+
 	obs.params.Logger.Info("starting receiver",
 		zap.String("name", template.receiverConfig.id.String()),
 		zap.String("endpoint", e.Target),
@@ -231,7 +301,12 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 		obs.params.Logger.Error("failed to start receiver", zap.String("receiver", template.receiverConfig.id.String()), zap.Error(err))
 		return
 	}
-	obs.receiversByEndpointID.Put(e.ID, receiver)
+	obs.putStarted(e.ID, startedReceiver{
+		id:       template.receiverConfig.id,
+		config:   config,
+		consumer: consumer,
+		receiver: receiver,
+	})
 }
 
 func filterConsumerSignals(consumer *enhancingConsumer, signals receiverSignals) {
