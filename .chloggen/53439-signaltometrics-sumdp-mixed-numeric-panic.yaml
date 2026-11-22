@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: connector/signal_to_metrics
+note: Prevent panic in `sumDP` when aggregating mixed integer and float values for sum metrics
+issues: [53439]
+subtext:
+change_logs: [user]
