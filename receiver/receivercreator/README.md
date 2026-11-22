@@ -220,6 +220,7 @@ targeting it will have different variables available.
 | container_name  | container name                       | String                        |
 | container_id    | container id                         | String                        |
 | container_image | container image                      | String                        |
+| container_kind  | `"app"` or `"ephemeral"`             | String                        |
 | pod.name        | name of the owning pod               | String                        |
 | pod.namespace   | namespace of the pod                 | String                        |
 | pod.uid         | unique id of the pod                 | String                        |

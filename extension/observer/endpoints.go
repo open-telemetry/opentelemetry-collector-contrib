@@ -209,6 +209,8 @@ type PodContainer struct {
 	Image string `mapstructure:"container_image"`
 	// ContainerID is the id of the container exposing the Endpoint
 	ContainerID string `mapstructure:"container_id"`
+	// Kind tells where the pod spec declares the container: "app" or "ephemeral".
+	Kind string `mapstructure:"container_kind"`
 	// Pod is the k8s pod in which the container is running
 	Pod Pod
 }
@@ -218,6 +220,7 @@ func (p *PodContainer) Env() EndpointEnv {
 		"container_name":  p.Name,
 		"container_id":    p.ContainerID,
 		"container_image": p.Image,
+		"container_kind":  p.Kind,
 		"pod":             p.Pod.Env(),
 	}
 }

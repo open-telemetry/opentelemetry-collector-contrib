@@ -1,0 +1,14 @@
+# A running pod. The test adds an ephemeral container to it.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: k8sobserver-e2e-ephemeral
+  namespace: default
+  labels:
+    app: k8sobserver-e2e-ephemeral
+spec:
+  terminationGracePeriodSeconds: 1
+  containers:
+    - name: app
+      image: busybox:1.37.0
+      command: ["/bin/sh", "-c", "for i in 0 1 2 3 4; do echo seq=$i; done; sleep 3600"]
