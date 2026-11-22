@@ -4,9 +4,7 @@
 package k8sobserver
 
 import (
-	"context"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -14,11 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
+	fcache "k8s.io/client-go/tools/cache/testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -109,38 +104,15 @@ func TestEndpointsRemovedAfterMissedDelete(t *testing.T) {
 	}
 }
 
-// listOnlyListerWatcher makes the informer list and then watch, as an API server without
-// streaming lists does.
-type listOnlyListerWatcher struct {
-	*cache.ListWatch
-}
-
-func (listOnlyListerWatcher) IsWatchListSemanticsUnSupported() bool {
-	return true
-}
-
-// TestPodEndpointsRemovedWhenInformerMissedDelete runs an informer whose watch breaks. The pod
-// is gone when the informer lists again, so the informer never saw its delete event.
+// TestPodEndpointsRemovedWhenInformerMissedDelete deletes a pod without a delete event and
+// breaks the watch of the informer, so the informer lists again and finds the pod gone.
 func TestPodEndpointsRemovedWhenInformerMissedDelete(t *testing.T) {
-	watcher := watch.NewFake()
-	var lists atomic.Int32
-	listerWatcher := &cache.ListWatch{
-		ListWithContextFunc: func(context.Context, metav1.ListOptions) (runtime.Object, error) {
-			if lists.Add(1) == 1 {
-				return &v1.PodList{ListMeta: metav1.ListMeta{ResourceVersion: "1"}, Items: []v1.Pod{*podWithNamedPorts}}, nil
-			}
-			return &v1.PodList{ListMeta: metav1.ListMeta{ResourceVersion: "2"}}, nil
-		},
-		WatchFuncWithContext: func(context.Context, metav1.ListOptions) (watch.Interface, error) {
-			if lists.Load() == 1 {
-				return watcher, nil
-			}
-			return watch.NewFake(), nil
-		},
-	}
+	pod := podWithNamedPorts.DeepCopy()
+	source := fcache.NewFakeControllerSource()
+	source.Add(pod)
 
 	th := newTestHandler()
-	informer := cache.NewSharedInformer(listOnlyListerWatcher{listerWatcher}, &v1.Pod{}, 0)
+	informer := cache.NewSharedInformer(source, &v1.Pod{}, 0)
 	_, err := informer.AddEventHandler(th)
 	require.NoError(t, err)
 
@@ -159,8 +131,8 @@ func TestPodEndpointsRemovedWhenInformerMissedDelete(t *testing.T) {
 		return len(th.ListEndpoints()) == 3
 	}, 10*time.Second, 10*time.Millisecond, "the endpoints of the pod were not added")
 
-	// The watch ends with an error that makes the informer list again.
-	watcher.Error(&apierrors.NewResourceExpired("too old resource version").ErrStatus)
+	source.DeleteDropWatch(pod)
+	source.ResetWatch()
 
 	require.Eventually(t, func() bool {
 		return len(th.ListEndpoints()) == 0
