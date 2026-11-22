@@ -65,6 +65,10 @@ properties:
     type: integer
   metrics:
     $ref: nested_list_alias
+  min_lookback_range:
+    description: MinLookbackRange is the minimum time range queried for metric values. Some metrics, such as Microsoft.DBforPostgreSQL/flexibleServers ones, are published several minutes after their timestamp, so querying only the most recent time grains returns no values for them.
+    type: string
+    format: duration
   resource_groups:
     type: array
     items:

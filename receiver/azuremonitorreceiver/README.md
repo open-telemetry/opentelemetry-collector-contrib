@@ -43,6 +43,7 @@ The following settings are optional:
 - `append_tags_as_attributes` (default = `[]`): Controls which Azure resource tags are added as resource attributes to the metrics. Can be a list of specific tag names or `["*"]` to include all tags.
 - `use_batch_api` (default = `false`): Use the batch API to fetch metrics. This is useful when the number of subscriptions is high and the API calls are rate limited.
 - `maximum_resources_per_batch` (default = 50): If batch is enabled, the maximum number of unique resource IDs to fetch per API call, current limit is 50 (as of 06/16/2025) https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/migrate-to-batch-api?tabs=individual-response
+- `min_lookback_range` (default = `15m`): Minimum time range queried for metric values. Each query covers the last four time grains, or this range if it is longer. Increase it if some metrics are published by Azure later than this. Set it to `0s` to query only the last four time grains.
 
 Authenticating using service principal requires following additional settings:
 
@@ -263,6 +264,9 @@ Details about the metrics scraped by this receiver can be found in [Supported me
 Azure Storage Capacity metrics, including `BlobCapacity` and `UsedCapacity`, can be published with a variable delay that differs between storage accounts and can exceed an hour. Other metrics with `PT1H` or coarser time grains may behave similarly. The receiver preserves the timestamp assigned by Azure instead of replacing it with the collection time. Backends that enforce a maximum sample age or out-of-order window may therefore reject delayed data points, which can appear as gaps in the exported series.
 
 At debug log level, the receiver reports the delay for each emitted Azure metric value. The `data_point_delay` field is the difference between `collection_time` and `data_point_timestamp`; the log also includes `metric_name` and `resource_id`. Use this value when sizing a backend's accepted sample-age or out-of-order window.
+
+Each query covers the last four time grains, and at least `min_lookback_range` (15 minutes by default), so that values published a few minutes late are still collected. Values that were already emitted are not emitted again. Values published later than this window are not collected.
+
 ## Metric Units
 
 The Azure metric units ([ARM API](https://learn.microsoft.com/en-us/rest/api/monitor/metrics/list?view=rest-monitor-2023-10-01&tabs=HTTP#metricunit), [Batch API](https://learn.microsoft.com/en-us/rest/api/monitor/metrics-batch/batch?view=rest-monitor-2023-10-01&tabs=HTTP#metricunit)) are mapped to the [UCUM](https://ucum.org/ucum) values expected by OpenTelemetry.

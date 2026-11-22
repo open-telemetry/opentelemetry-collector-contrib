@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -24,13 +25,14 @@ const (
 
 var (
 	// Predefined error responses for configuration validation failures
-	errMissingTenantID        = errors.New(`"TenantID" is not specified in config`)
-	errMissingSubscriptionIDs = errors.New(`neither "SubscriptionIDs" nor "DiscoverSubscription" is specified in the config`)
-	errMissingClientID        = errors.New(`"ClientID" is not specified in config`)
-	errMissingClientSecret    = errors.New(`"ClientSecret" is not specified in config`)
-	errMissingFedTokenFile    = errors.New(`"FederatedTokenFile" is not specified in config`)
-	errInvalidCloud           = errors.New(`"Cloud" is invalid`)
-	errInvalidMaxResPerBatch  = errors.New(`"MaximumResourcesPerBatch" should be greater than 0`)
+	errMissingTenantID         = errors.New(`"TenantID" is not specified in config`)
+	errMissingSubscriptionIDs  = errors.New(`neither "SubscriptionIDs" nor "DiscoverSubscription" is specified in the config`)
+	errMissingClientID         = errors.New(`"ClientID" is not specified in config`)
+	errMissingClientSecret     = errors.New(`"ClientSecret" is not specified in config`)
+	errMissingFedTokenFile     = errors.New(`"FederatedTokenFile" is not specified in config`)
+	errInvalidCloud            = errors.New(`"Cloud" is invalid`)
+	errInvalidMaxResPerBatch   = errors.New(`"MaximumResourcesPerBatch" should be greater than 0`)
+	errInvalidMinLookbackRange = errors.New(`"min_lookback_range" must not be negative`)
 
 	monitorServices = []string{
 		"Microsoft.EventGrid/eventSubscriptions",
@@ -269,6 +271,10 @@ type Config struct {
 	UseBatchAPI                       bool                           `mapstructure:"use_batch_api"`
 	Dimensions                        DimensionsConfig               `mapstructure:"dimensions"`
 	MaximumResourcesPerBatch          int                            `mapstructure:"maximum_resources_per_batch"`
+	// MinLookbackRange is the minimum time range queried for metric values. Some metrics, such as
+	// Microsoft.DBforPostgreSQL/flexibleServers ones, are published several minutes after their
+	// timestamp, so querying only the most recent time grains returns no values for them.
+	MinLookbackRange time.Duration `mapstructure:"min_lookback_range"`
 
 	// Authentication accepts the component azureauthextension,
 	// and uses it to get an access token to make requests.
@@ -348,6 +354,10 @@ func (c Config) Validate() (err error) {
 
 	if c.UseBatchAPI && c.MaximumResourcesPerBatch < 0 {
 		err = multierr.Append(err, errInvalidMaxResPerBatch)
+	}
+
+	if c.MinLookbackRange < 0 {
+		err = multierr.Append(err, errInvalidMinLookbackRange)
 	}
 
 	for namespace, metrics := range c.TimeGrainOverrides {

@@ -324,6 +324,92 @@ func TestAzureScraperScrape_ChronologicalAndNoDuplicate(t *testing.T) {
 	assert.Equal(t, pcommon.NewTimestampFromTime(t3), dp3.Timestamp())
 }
 
+// Azure returns timestamps that have no value yet for metrics that are published with a delay.
+// Such empty timestamps must not be recorded as emitted, otherwise their value is skipped
+// once it becomes available.
+func TestAzureScraperScrape_DelayedValueIsEmitted(t *testing.T) {
+	fakeSubID := "subscriptionId1"
+	resourceID := "/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1"
+	metricName := "metric1"
+	var unit armmonitor.MetricUnit = "unit1"
+	value1 := 10.0
+	value2 := 12.0
+
+	collectionTime := time.Date(2026, 9, 27, 12, 0, 0, 0, time.UTC)
+	t1 := collectionTime.Add(-10 * time.Minute)
+	t2 := collectionTime.Add(-5 * time.Minute)
+
+	newMockMetricsValues := func(data ...*armmonitor.MetricValue) map[string]map[string]armmonitor.MetricsClientListResponse {
+		return map[string]map[string]armmonitor.MetricsClientListResponse{
+			resourceID: {
+				metricName: armmonitor.MetricsClientListResponse{
+					Response: armmonitor.Response{
+						Value: []*armmonitor.Metric{
+							{
+								Name:       &armmonitor.LocalizableString{Value: new(metricName)},
+								Unit:       &unit,
+								Timeseries: []*armmonitor.TimeSeriesElement{{Data: data}},
+							},
+						},
+					},
+				},
+			},
+		}
+	}
+	newOptionsResolver := func(data ...*armmonitor.MetricValue) ClientOptionsResolver {
+		return newMockClientOptionsResolver(
+			getSubscriptionByIDMockData(),
+			getSubscriptionsMockData(),
+			getResourcesMockData(),
+			getMetricsDefinitionsMockData(),
+			newMockMetricsValues(data...),
+			nil,
+		)
+	}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	cfg := createDefaultTestConfig()
+	cfg.SubscriptionIDs = []string{fakeSubID}
+	cfg.Metrics = NestedListAlias{
+		"namespace1": {
+			"metric1": {"Average"},
+		},
+	}
+
+	// First scrape: the value of t2 is not published yet.
+	s := &azureScraper{
+		cfg:                          cfg,
+		settings:                     settings.TelemetrySettings,
+		mb:                           metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
+		mutex:                        &sync.Mutex{},
+		time:                         &timeMock{time: collectionTime},
+		clientOptionsResolver:        newOptionsResolver(&armmonitor.MetricValue{TimeStamp: &t1, Average: &value1}, &armmonitor.MetricValue{TimeStamp: &t2}),
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
+		subscriptions:                map[string]*azureSubscription{},
+		resources:                    map[string]map[string]*azureResource{},
+	}
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, metrics.DataPointCount())
+	dp1 := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
+	assert.Equal(t, value1, dp1.DoubleValue())
+	assert.Equal(t, pcommon.NewTimestampFromTime(t1), dp1.Timestamp())
+
+	// Second scrape: the value of t2 is now published.
+	s.clientOptionsResolver = newOptionsResolver(&armmonitor.MetricValue{TimeStamp: &t1, Average: &value1}, &armmonitor.MetricValue{TimeStamp: &t2, Average: &value2})
+	mockTime := s.time.(*timeMock)
+	mockTime.time = mockTime.time.Add(time.Minute)
+	s.mb = metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)
+
+	metrics2, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, metrics2.DataPointCount())
+	dp2 := metrics2.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
+	assert.Equal(t, value2, dp2.DoubleValue())
+	assert.Equal(t, pcommon.NewTimestampFromTime(t2), dp2.Timestamp())
+}
+
 func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 	fakeSubID := "azuremonitor-receiver"
 	metricNamespace1, metricNamespace2 := "Microsoft.ServiceA/namespace1", "Microsoft.ServiceB/namespace2"
@@ -1459,4 +1545,42 @@ func TestDedupAlreadyCollectedNamespaces(t *testing.T) {
 			assert.ElementsMatch(t, tt.want, got)
 		})
 	}
+}
+
+func TestQueryLookback(t *testing.T) {
+	for _, tc := range []struct {
+		name             string
+		timeGrain        string
+		minLookbackRange time.Duration
+		expected         time.Duration
+	}{
+		{name: "PT1M", timeGrain: "PT1M", minLookbackRange: defaultMinLookbackRange, expected: 15 * time.Minute},
+		{name: "PT5M", timeGrain: "PT5M", minLookbackRange: defaultMinLookbackRange, expected: 20 * time.Minute},
+		{name: "PT15M", timeGrain: "PT15M", minLookbackRange: defaultMinLookbackRange, expected: time.Hour},
+		{name: "PT30M", timeGrain: "PT30M", minLookbackRange: defaultMinLookbackRange, expected: 2 * time.Hour},
+		{name: "PT1H", timeGrain: "PT1H", minLookbackRange: defaultMinLookbackRange, expected: 4 * time.Hour},
+		{name: "PT6H", timeGrain: "PT6H", minLookbackRange: defaultMinLookbackRange, expected: 24 * time.Hour},
+		{name: "PT12H", timeGrain: "PT12H", minLookbackRange: defaultMinLookbackRange, expected: 48 * time.Hour},
+		{name: "P1D", timeGrain: "P1D", minLookbackRange: defaultMinLookbackRange, expected: 96 * time.Hour},
+		{name: "unknown", timeGrain: "unknown", minLookbackRange: defaultMinLookbackRange, expected: 15 * time.Minute},
+		{name: "custom range", timeGrain: "PT1M", minLookbackRange: 30 * time.Minute, expected: 30 * time.Minute},
+		{name: "custom range shorter than time grains", timeGrain: "PT15M", minLookbackRange: 30 * time.Minute, expected: time.Hour},
+		{name: "zero range", timeGrain: "PT1M", minLookbackRange: 0, expected: 4 * time.Minute},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, queryLookback(tc.timeGrain, tc.minLookbackRange))
+		})
+	}
+}
+
+func TestNewResourceMetricsValuesRequestOptionsTimespan(t *testing.T) {
+	endTime := time.Date(2026, 2, 11, 9, 45, 1, 0, time.UTC)
+	startTime := endTime.Add(-queryLookback("PT1M", defaultMinLookbackRange))
+
+	opts := newResourceMetricsValuesRequestOptions([]string{"disk_queue_depth"}, "", "PT1M", "Average", "", 0, 1, 10, startTime, endTime)
+
+	require.NotNil(t, opts.Timespan)
+	assert.Equal(t, "2026-02-11T09:30:01Z/2026-02-11T09:45:01Z", *opts.Timespan)
+	require.NotNil(t, opts.Interval)
+	assert.Equal(t, "PT1M", *opts.Interval)
 }

@@ -573,7 +573,7 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 		}
 		metricsByGrain.metricsValuesUpdated = now
 
-		startTime := now.Add(time.Duration(-timeGrains[compositeKey.timeGrain]) * time.Second * 4) // times 4 because for some resources, data are missing for the very latest timestamp. The processing will keep only the latest timestamp with data.
+		startTime := now.Add(-queryLookback(compositeKey.timeGrain, s.cfg.MinLookbackRange))
 
 		for region := range s.regions[subscriptionID] {
 			clientMetrics, clientErr := s.GetMetricsBatchValuesClient(region)

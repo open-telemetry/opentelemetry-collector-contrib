@@ -61,6 +61,13 @@ const (
 	storageAccountType     = "Microsoft.Storage/storageAccounts"
 )
 
+// queryLookback returns how far back in time metric values of the given time grain are queried:
+// four time grains, and at least minLookbackRange. Values that were already emitted are skipped,
+// so a wide range does not produce duplicates.
+func queryLookback(timeGrain string, minLookbackRange time.Duration) time.Duration {
+	return max(4*time.Duration(timeGrains[timeGrain])*time.Second, minLookbackRange)
+}
+
 // azureSubscription is an extract of armsubscriptions.Subscription.
 // It designates a common structure between complex structures retrieved from the AP
 // and simple subscriptions ids that you can find in config.
@@ -642,6 +649,8 @@ func (s *azureScraper) loadMetricsValues(ctx context.Context, subscriptionID, re
 				start,
 				end,
 				s.cfg.MaximumNumberOfRecordsPerResource,
+				collectionTime.Add(-queryLookback(compositeKey.timeGrain, s.cfg.MinLookbackRange)),
+				collectionTime,
 			)
 
 			result, err := clientMetricsValues.List(
@@ -697,7 +706,9 @@ func (s *azureScraper) loadMetricsValues(ctx context.Context, subscriptionID, re
 					tsKeyPrefix := resourceID + "#" + metricName + "#" + serializeArmMetadataValues(timeseriesElement.Metadatavalues)
 
 					for _, metricValue := range timeseriesElement.Data {
-						if metricValue == nil || metricValue.TimeStamp == nil {
+						// Skip timestamps without a value: their value may be published later, and
+						// recording them as emitted would skip it.
+						if metricValue == nil || metricValue.TimeStamp == nil || !armMetricValueIsNotEmpty(metricValue) {
 							continue
 						}
 						t := *metricValue.TimeStamp
@@ -726,11 +737,13 @@ func newResourceMetricsValuesRequestOptions(
 	start int,
 	end int,
 	top int32,
+	startTime time.Time,
+	endTime time.Time,
 ) armmonitor.MetricsClientListOptions {
 	opts := armmonitor.MetricsClientListOptions{
 		Metricnames: new(strings.Join(metrics[start:end], ",")),
 		Interval:    new(timeGrain),
-		Timespan:    new(timeGrain),
+		Timespan:    new(startTime.Format(time.RFC3339) + "/" + endTime.Format(time.RFC3339)),
 		Aggregation: new(aggregationsStr),
 		Top:         new(top),
 		Filter:      buildDimensionsFilter(dimensionsStr),
@@ -739,6 +752,10 @@ func newResourceMetricsValuesRequestOptions(
 		opts.Metricnamespace = new(namespace)
 	}
 	return opts
+}
+
+func armMetricValueIsNotEmpty(metricValue *armmonitor.MetricValue) bool {
+	return metricValue.Average != nil || metricValue.Count != nil || metricValue.Maximum != nil || metricValue.Minimum != nil || metricValue.Total != nil
 }
 
 func (s *azureScraper) processTimeseriesData(
