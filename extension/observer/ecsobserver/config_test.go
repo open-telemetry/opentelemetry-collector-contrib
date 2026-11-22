@@ -6,6 +6,7 @@ package ecsobserver
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -107,6 +108,14 @@ func TestConfig_Validate(t *testing.T) {
 				DockerLabels: []DockerLabelConfig{{PortLabel: ""}},
 			},
 		},
+		{
+			reason: "zero refresh interval",
+			cfg:    Config{ClusterName: "c1"},
+		},
+		{
+			reason: "negative refresh interval",
+			cfg:    Config{ClusterName: "c1", RefreshInterval: -time.Second},
+		},
 	}
 
 	for _, tCase := range cases {
@@ -114,4 +123,9 @@ func TestConfig_Validate(t *testing.T) {
 			require.Error(t, tCase.cfg.Validate())
 		})
 	}
+
+	t.Run("valid", func(t *testing.T) {
+		cfg := Config{ClusterName: "c1", RefreshInterval: time.Second}
+		require.NoError(t, cfg.Validate())
+	})
 }
