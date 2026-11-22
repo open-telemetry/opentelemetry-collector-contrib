@@ -10,13 +10,16 @@ import (
 	"fmt"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -923,4 +926,111 @@ func Test_encodingExtensions_findExtension(t *testing.T) {
 			assert.Equalf(t, tt.want1, got1, "findExtension(%v)", tt.args.key)
 		})
 	}
+}
+
+func Test_newAWSS3Receiver_Poll(t *testing.T) {
+	ctx := t.Context()
+	cfg := &Config{
+		S3Downloader: S3DownloaderConfig{
+			S3Bucket:                   "mybucket",
+			S3PartitionFormat:          s3PartitionFormatDefault,
+			TagObjectAfterIngestion:    true,
+			SkipIngestingTaggedObjects: true,
+		},
+		Poll: &PollConfig{
+			Interval: 1 * time.Minute,
+			Lookback: 2 * time.Minute,
+		},
+	}
+	settings := receivertest.NewNopSettings(metadata.Type)
+
+	for _, telemetryType := range []string{"traces", "metrics", "logs"} {
+		t.Run(telemetryType, func(t *testing.T) {
+			r, err := newAWSS3Receiver(ctx, cfg, telemetryType, settings, nil)
+			require.NoError(t, err)
+			require.NotNil(t, r)
+			assert.Nil(t, r.notifier, "notifier must be nil for continuously polling receiver")
+			assert.IsType(t, &s3PollingReader{}, r.reader)
+		})
+	}
+}
+
+func Test_awss3Receiver_Poll_Lifecycle(t *testing.T) {
+	ctx := t.Context()
+	cfg := &Config{
+		S3Downloader: S3DownloaderConfig{
+			S3Bucket:                   "mybucket",
+			S3PartitionFormat:          s3PartitionFormatDefault,
+			TagObjectAfterIngestion:    true,
+			SkipIngestingTaggedObjects: true,
+		},
+		Poll: &PollConfig{
+			Interval: 10 * time.Millisecond,
+			Lookback: 10 * time.Millisecond,
+		},
+	}
+	settings := receivertest.NewNopSettings(metadata.Type)
+
+	factory := NewFactory()
+	for _, tc := range []struct {
+		name     string
+		createFn func() (component.Component, error)
+	}{
+		{
+			name: "traces",
+			createFn: func() (component.Component, error) {
+				return factory.CreateTraces(ctx, settings, cfg, consumertest.NewNop())
+			},
+		},
+		{
+			name: "metrics",
+			createFn: func() (component.Component, error) {
+				return factory.CreateMetrics(ctx, settings, cfg, consumertest.NewNop())
+			},
+		},
+		{
+			name: "logs",
+			createFn: func() (component.Component, error) {
+				return factory.CreateLogs(ctx, settings, cfg, consumertest.NewNop())
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			rcvr, err := tc.createFn()
+			require.NoError(t, err)
+			require.NotNil(t, rcvr)
+
+			host := componenttest.NewNopHost()
+			require.NoError(t, rcvr.Start(ctx, host))
+
+			// Verify shutdown cleanly cancels polling goroutine without deadlock
+			shutdownCtx, shutdownCancel := context.WithTimeout(t.Context(), 2*time.Second)
+			defer shutdownCancel()
+			require.NoError(t, rcvr.Shutdown(shutdownCtx))
+		})
+	}
+}
+
+func Test_awss3Receiver_Shutdown_Before_Start(t *testing.T) {
+	ctx := t.Context()
+	cfg := &Config{
+		S3Downloader: S3DownloaderConfig{
+			S3Bucket:                   "mybucket",
+			S3PartitionFormat:          s3PartitionFormatDefault,
+			TagObjectAfterIngestion:    true,
+			SkipIngestingTaggedObjects: true,
+		},
+		Poll: &PollConfig{
+			Interval: 1 * time.Minute,
+			Lookback: 2 * time.Minute,
+		},
+	}
+	settings := receivertest.NewNopSettings(metadata.Type)
+	factory := NewFactory()
+	rcvr, err := factory.CreateTraces(ctx, settings, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, rcvr)
+
+	// Shutdown called before Start must return without error or hanging
+	require.NoError(t, rcvr.Shutdown(ctx))
 }

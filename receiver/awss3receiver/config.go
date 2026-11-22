@@ -55,6 +55,15 @@ type SQSConfig struct {
 	MaxNumberOfMessages *int64 `mapstructure:"max_number_of_messages"`
 }
 
+// PollConfig holds configuration for continuous polling mode.
+type PollConfig struct {
+	// Interval specifies the duration between polling cycles.
+	Interval time.Duration `mapstructure:"interval"`
+	// Lookback specifies the duration to look back from current wall-clock time on each polling pass.
+	// Defaults to Interval if not specified (or set to 0).
+	Lookback time.Duration `mapstructure:"lookback"`
+}
+
 // Notifications groups optional notification sources.
 type Notifications struct {
 	OpAMP *component.ID `mapstructure:"opampextension"`
@@ -81,6 +90,8 @@ type Config struct {
 	Notifications Notifications      `mapstructure:"notifications"`
 	// SQS configures receiving S3 object change notifications via an SQS queue.
 	SQS *SQSConfig `mapstructure:"sqs"`
+	// Poll configures continuous polling mode for time-partitioned S3 storage.
+	Poll *PollConfig `mapstructure:"poll"`
 }
 
 const (
@@ -109,38 +120,62 @@ func (c Config) Validate() error {
 		errs = multierr.Append(errs, errors.New("bucket is required"))
 	}
 
-	// Check for valid time-based configuration
+	// Check for valid operating mode configuration
 	hasStartTime := c.StartTime != ""
 	hasEndTime := c.EndTime != ""
 	hasSQS := c.SQS != nil
+	hasPoll := c.Poll != nil
 
-	if !hasStartTime && !hasEndTime && !hasSQS {
-		errs = multierr.Append(errs, errors.New("either starttime/endtime or sqs configuration must be provided"))
+	if !hasStartTime && !hasEndTime && !hasSQS && !hasPoll {
+		errs = multierr.Append(errs, errors.New("either starttime/endtime, sqs, or poll configuration must be provided"))
 	}
 
-	// If one of StartTime/EndTime is specified, the other must also be specified
-	if hasStartTime && !hasEndTime {
-		errs = multierr.Append(errs, errors.New("when starttime is specified, endtime is required"))
-	}
-	if !hasStartTime && hasEndTime {
-		errs = multierr.Append(errs, errors.New("when endtime is specified, starttime is required"))
-	}
-
-	// StartTime and SQS cannot be specified together
-	if hasStartTime && hasSQS {
-		errs = multierr.Append(errs, errors.New("starttime/endtime and sqs configuration cannot be used together"))
-	}
-
-	// Validate StartTime format if specified
-	if hasStartTime {
-		if _, err := parseTime(c.StartTime, "starttime"); err != nil {
-			errs = multierr.Append(errs, err)
+	if hasPoll {
+		if c.Poll.Interval <= 0 {
+			errs = multierr.Append(errs, errors.New("poll.interval must be positive"))
 		}
-	}
-	// Validate EndTime format if specified
-	if hasEndTime {
-		if _, err := parseTime(c.EndTime, "endtime"); err != nil {
-			errs = multierr.Append(errs, err)
+		if c.Poll.Lookback < 0 {
+			errs = multierr.Append(errs, errors.New("poll.lookback cannot be negative"))
+		}
+		if hasSQS {
+			errs = multierr.Append(errs, errors.New("poll and sqs configuration cannot be used together"))
+		}
+		if hasEndTime {
+			errs = multierr.Append(errs, errors.New("endtime cannot be configured when poll is enabled"))
+		}
+		if !c.S3Downloader.TagObjectAfterIngestion || !c.S3Downloader.SkipIngestingTaggedObjects {
+			errs = multierr.Append(errs, errors.New("continuous polling requires both s3downloader.tag_object_after_ingestion and s3downloader.skip_ingesting_tagged_objects to be true"))
+		}
+		if hasStartTime {
+			if _, err := parseTime(c.StartTime, "starttime"); err != nil {
+				errs = multierr.Append(errs, err)
+			}
+		}
+	} else {
+		// If one of StartTime/EndTime is specified, the other must also be specified
+		if hasStartTime && !hasEndTime {
+			errs = multierr.Append(errs, errors.New("when starttime is specified, endtime is required"))
+		}
+		if !hasStartTime && hasEndTime {
+			errs = multierr.Append(errs, errors.New("when endtime is specified, starttime is required"))
+		}
+
+		// StartTime and SQS cannot be specified together
+		if hasStartTime && hasSQS {
+			errs = multierr.Append(errs, errors.New("starttime/endtime and sqs configuration cannot be used together"))
+		}
+
+		// Validate StartTime format if specified
+		if hasStartTime {
+			if _, err := parseTime(c.StartTime, "starttime"); err != nil {
+				errs = multierr.Append(errs, err)
+			}
+		}
+		// Validate EndTime format if specified
+		if hasEndTime {
+			if _, err := parseTime(c.EndTime, "endtime"); err != nil {
+				errs = multierr.Append(errs, err)
+			}
 		}
 	}
 

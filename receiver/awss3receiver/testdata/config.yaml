@@ -54,3 +54,11 @@ aws_s3/7:
     decompression: snappy
   starttime: "2024-01-31 15:00"
   endtime: "2024-02-03"
+aws_s3/8:
+  s3downloader:
+    s3_bucket: abucket
+    tag_object_after_ingestion: true
+    skip_ingesting_tagged_objects: true
+  poll:
+    interval: 5m
+    lookback: 30m

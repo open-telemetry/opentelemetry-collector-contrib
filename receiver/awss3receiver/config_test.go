@@ -7,6 +7,7 @@ import (
 	"math"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -71,6 +72,139 @@ func TestConfig_Validate_Valid(t *testing.T) {
 		}
 		assert.NoError(t, cfg.Validate())
 	})
+
+	// Valid config with Poll
+	t.Run("with poll", func(t *testing.T) {
+		cfg := Config{
+			S3Downloader: S3DownloaderConfig{
+				S3Bucket:                   "abucket",
+				TagObjectAfterIngestion:    true,
+				SkipIngestingTaggedObjects: true,
+			},
+			Poll: &PollConfig{
+				Interval: 5 * time.Minute,
+				Lookback: 15 * time.Minute,
+			},
+		}
+		assert.NoError(t, cfg.Validate())
+	})
+
+	// Valid config with Poll and StartTime for initial backfill
+	t.Run("with poll and starttime", func(t *testing.T) {
+		cfg := Config{
+			S3Downloader: S3DownloaderConfig{
+				S3Bucket:                   "abucket",
+				TagObjectAfterIngestion:    true,
+				SkipIngestingTaggedObjects: true,
+			},
+			StartTime: "2026-11-01 00:00",
+			Poll: &PollConfig{
+				Interval: 5 * time.Minute,
+				Lookback: 15 * time.Minute,
+			},
+		}
+		assert.NoError(t, cfg.Validate())
+	})
+}
+
+func TestConfig_Validate_Poll(t *testing.T) {
+	validPollCfg := func() Config {
+		return Config{
+			S3Downloader: S3DownloaderConfig{
+				S3Bucket:                   "abucket",
+				TagObjectAfterIngestion:    true,
+				SkipIngestingTaggedObjects: true,
+			},
+			Poll: &PollConfig{
+				Interval: 5 * time.Minute,
+				Lookback: 10 * time.Minute,
+			},
+		}
+	}
+
+	t.Run("zero interval", func(t *testing.T) {
+		cfg := validPollCfg()
+		cfg.Poll.Interval = 0
+		err := cfg.Validate()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "poll.interval must be positive")
+	})
+
+	t.Run("negative interval", func(t *testing.T) {
+		cfg := validPollCfg()
+		cfg.Poll.Interval = -1 * time.Minute
+		err := cfg.Validate()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "poll.interval must be positive")
+	})
+
+	t.Run("negative lookback", func(t *testing.T) {
+		cfg := validPollCfg()
+		cfg.Poll.Lookback = -1 * time.Minute
+		err := cfg.Validate()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "poll.lookback cannot be negative")
+	})
+
+	t.Run("zero lookback is valid", func(t *testing.T) {
+		cfg := validPollCfg()
+		cfg.Poll.Lookback = 0
+		assert.NoError(t, cfg.Validate())
+	})
+
+	t.Run("poll with endtime is rejected", func(t *testing.T) {
+		cfg := validPollCfg()
+		cfg.EndTime = "2026-11-06 12:00"
+		err := cfg.Validate()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "endtime cannot be configured when poll is enabled")
+	})
+
+	t.Run("poll with sqs is rejected", func(t *testing.T) {
+		cfg := validPollCfg()
+		cfg.SQS = &SQSConfig{
+			QueueURL: "https://sqs.us-east-1.amazonaws.com/123/queue",
+			Region:   "us-east-1",
+		}
+		err := cfg.Validate()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "poll and sqs configuration cannot be used together")
+	})
+
+	t.Run("poll without tag_object_after_ingestion is rejected", func(t *testing.T) {
+		cfg := validPollCfg()
+		cfg.S3Downloader.TagObjectAfterIngestion = false
+		err := cfg.Validate()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "continuous polling requires both s3downloader.tag_object_after_ingestion and s3downloader.skip_ingesting_tagged_objects to be true")
+	})
+
+	t.Run("poll without skip_ingesting_tagged_objects is rejected", func(t *testing.T) {
+		cfg := validPollCfg()
+		cfg.S3Downloader.SkipIngestingTaggedObjects = false
+		err := cfg.Validate()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "continuous polling requires both s3downloader.tag_object_after_ingestion and s3downloader.skip_ingesting_tagged_objects to be true")
+	})
+
+	t.Run("poll with invalid starttime format is rejected", func(t *testing.T) {
+		cfg := validPollCfg()
+		cfg.StartTime = "invalid-date-format"
+		err := cfg.Validate()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "unable to parse starttime")
+	})
+
+	t.Run("no mode configured error message includes poll", func(t *testing.T) {
+		cfg := Config{
+			S3Downloader: S3DownloaderConfig{
+				S3Bucket: "abucket",
+			},
+		}
+		err := cfg.Validate()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "either starttime/endtime, sqs, or poll configuration must be provided")
+	})
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -84,7 +218,7 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			id:           component.NewIDWithName(metadata.Type, ""),
-			errorMessage: "bucket is required; either starttime/endtime or sqs configuration must be provided",
+			errorMessage: "bucket is required; either starttime/endtime, sqs, or poll configuration must be provided",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "1"),
@@ -195,6 +329,25 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:           component.NewIDWithName(metadata.Type, "7"),
 			errorMessage: `unsupported decompression type "snappy", valid values are: gzip, zstd, none`,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "8"),
+			expected: &Config{
+				S3Downloader: S3DownloaderConfig{
+					Region:                         "us-east-1",
+					S3Bucket:                       "abucket",
+					S3PartitionFormat:              "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+					FilePrefixIncludeTelemetryType: true,
+					EndpointPartitionID:            "aws",
+					MaxUnmarshalSize:               defaultMaxUnmarshalSize,
+					TagObjectAfterIngestion:        true,
+					SkipIngestingTaggedObjects:     true,
+				},
+				Poll: &PollConfig{
+					Interval: 5 * time.Minute,
+					Lookback: 30 * time.Minute,
+				},
+			},
 		},
 	}
 
