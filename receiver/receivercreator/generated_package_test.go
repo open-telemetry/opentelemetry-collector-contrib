@@ -9,5 +9,5 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("github.com/SAP/go-hdb/driver.(*metrics).collect"), goleak.IgnoreTopFunction("internal/poll.runtime_pollWait"), goleak.IgnoreTopFunction("net/http.(*persistConn).writeLoop"))
+	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("github.com/SAP/go-hdb/driver.(*metrics).collect"))
 }
