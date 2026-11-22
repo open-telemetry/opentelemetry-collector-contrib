@@ -178,9 +178,10 @@ func Test_s3PollingReader_readAll_InitialPollAndRepeatedPolling(t *testing.T) {
 	tickerChan := make(chan time.Time, 1)
 
 	var (
-		ingestMu     sync.Mutex
-		ingestedKeys []string
-		listedPrefix []string
+		ingestMu      sync.Mutex
+		ingestedKeys  []string
+		listedPrefix  []string
+		taggedObjects = make(map[string]bool)
 	)
 
 	key1 := "year=2026/month=11/day=06/hour=12/minute=04/traces_1.json"
@@ -230,10 +231,21 @@ func Test_s3PollingReader_readAll_InitialPollAndRepeatedPolling(t *testing.T) {
 					Body: io.NopCloser(bytes.NewReader([]byte("dummy content"))),
 				}, nil
 			},
-			getObjectTaggingFunc: func(_ context.Context, _ *s3.GetObjectTaggingInput, _ ...func(*s3.Options)) (*s3.GetObjectTaggingOutput, error) {
-				return &s3.GetObjectTaggingOutput{TagSet: []types.Tag{}}, nil
+			getObjectTaggingFunc: func(_ context.Context, params *s3.GetObjectTaggingInput, _ ...func(*s3.Options)) (*s3.GetObjectTaggingOutput, error) {
+				ingestMu.Lock()
+				defer ingestMu.Unlock()
+				var tags []types.Tag
+				if taggedObjects[*params.Key] {
+					tags = []types.Tag{
+						{Key: aws.String(ingestedTag), Value: aws.String(ingestedStatus)},
+					}
+				}
+				return &s3.GetObjectTaggingOutput{TagSet: tags}, nil
 			},
-			putObjectTaggingFunc: func(_ context.Context, _ *s3.PutObjectTaggingInput, _ ...func(*s3.Options)) (*s3.PutObjectTaggingOutput, error) {
+			putObjectTaggingFunc: func(_ context.Context, params *s3.PutObjectTaggingInput, _ ...func(*s3.Options)) (*s3.PutObjectTaggingOutput, error) {
+				ingestMu.Lock()
+				taggedObjects[*params.Key] = true
+				ingestMu.Unlock()
 				return &s3.PutObjectTaggingOutput{}, nil
 			},
 		},
@@ -281,6 +293,7 @@ func Test_s3PollingReader_readAll_InitialPollAndRepeatedPolling(t *testing.T) {
 
 	ingestMu.Lock()
 	assert.Contains(t, ingestedKeys, key3)
+	assert.Equal(t, []string{key1, key2, key3}, ingestedKeys)
 	ingestMu.Unlock()
 
 	cancel()
