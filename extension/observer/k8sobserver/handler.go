@@ -175,9 +175,6 @@ func (h *handler) OnDelete(objectInterface any) {
 		// The informer missed the delete event and passes the last state it knows.
 		h.OnDelete(object.Obj)
 		return
-	case *cache.DeletedFinalStateUnknown:
-		h.OnDelete(object.Obj)
-		return
 	case *v1.Pod:
 		if object != nil {
 			endpoints = convertPodToEndpoints(h.idNamespace, object)
