@@ -283,6 +283,8 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 			obs.params.Logger.Debug("keeping receiver, its config did not change",
 				zap.String("name", template.receiverConfig.id.String()),
 				zap.String("endpoint_id", string(e.ID)))
+			// The receiver keeps its component ID, which names the endpoint target it was
+			// started with.
 			previous.consumer.setAttrs(consumer.attrs)
 			obs.putStarted(e.ID, previous)
 			return
