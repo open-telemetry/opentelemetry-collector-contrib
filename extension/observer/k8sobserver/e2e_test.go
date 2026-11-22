@@ -8,7 +8,6 @@ package k8sobserver
 import (
 	"context"
 	"os/exec"
-	"strings"
 	"testing"
 	"time"
 
@@ -125,7 +124,8 @@ func TestE2EMissedDelete(t *testing.T) {
 		}
 	}()
 
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, uuid.NewString()[:8], namespacedCollectorObjectsDir, map[string]string{}, "")
+	testID := uuid.NewString()[:8]
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, namespacedCollectorObjectsDir, map[string]string{}, "")
 	defer func() {
 		for _, obj := range collectorObjs {
 			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
@@ -151,14 +151,15 @@ func TestE2EMissedDelete(t *testing.T) {
 	}, 2*time.Minute, time.Second, "no receiver was started for the pod")
 
 	pods := k8sClient.DynamicClient.Resource(schema.GroupVersionResource{Version: "v1", Resource: "pods"}).Namespace("default")
-	collectors, err := pods.List(t.Context(), metav1.ListOptions{LabelSelector: "app.kubernetes.io/name=opentelemetry-collector"})
+	// The collector of this test only, the one of another test may still be terminating.
+	collectors, err := pods.List(t.Context(), metav1.ListOptions{LabelSelector: "app.kubernetes.io/instance=otelcol-" + testID})
 	require.NoError(t, err)
 	require.Len(t, collectors.Items, 1)
 	collectorIP, _, err := unstructured.NestedString(collectors.Items[0].Object, "status", "podIP")
 	require.NoError(t, err)
 	require.NotEmpty(t, collectorIP)
 
-	unblock := blockAPIServer(t, collectorIP)
+	unblock := blockAPIServer(t, k8sClient, collectorIP)
 	defer unblock()
 
 	require.NoError(t, k8stest.DeleteObjects(k8sClient, workloadObjs))
@@ -181,13 +182,18 @@ func TestE2EMissedDelete(t *testing.T) {
 	}, 4*time.Minute, time.Second, "the receiver of the deleted pod still runs")
 }
 
-// blockAPIServer drops what the given pod sends to the API server, on every node of the kind
-// clusters on this machine. The returned function removes the rules and can be called twice.
-func blockAPIServer(t *testing.T, podIP string) func() {
-	out, err := exec.CommandContext(t.Context(), "docker", "ps", "--filter", "label=io.x-k8s.kind.cluster", "--format", "{{.Names}}").Output()
-	require.NoError(t, err, "failed listing the kind nodes")
-	nodes := strings.Fields(string(out))
-	require.NotEmpty(t, nodes, "no kind node found")
+// blockAPIServer drops what the given pod sends to the API server, with an iptables rule on
+// every node of the cluster. The nodes of a kind cluster are containers named after the nodes,
+// so the rules are set with docker. The returned function removes the rules and can be called
+// twice.
+func blockAPIServer(t *testing.T, k8sClient *k8stest.K8sClient, podIP string) func() {
+	nodeList, err := k8sClient.DynamicClient.Resource(schema.GroupVersionResource{Version: "v1", Resource: "nodes"}).List(t.Context(), metav1.ListOptions{})
+	require.NoError(t, err, "failed listing the nodes")
+	require.NotEmpty(t, nodeList.Items, "the cluster has no node")
+	nodes := make([]string, 0, len(nodeList.Items))
+	for _, node := range nodeList.Items {
+		nodes = append(nodes, node.GetName())
+	}
 
 	iptables := func(action string) {
 		for _, node := range nodes {
