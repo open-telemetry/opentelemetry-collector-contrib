@@ -107,7 +107,7 @@ func (obs *observerHandler) addEndpoints(added []observer.Endpoint) {
 			subreceiverTemplate, err := builder.createReceiverTemplateFromHints(env)
 			if err != nil {
 				obs.params.Logger.Error("could not extract configurations from K8s hints' annotations", zap.Error(err))
-				break
+				continue
 			}
 			if subreceiverTemplate != nil {
 				obs.params.Logger.Debug("adding K8s hinted receiver", zap.Any("subreceiver", subreceiverTemplate))

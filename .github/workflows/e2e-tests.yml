@@ -129,6 +129,7 @@ jobs:
           - receiver/k8seventsreceiver
           - receiver/k8sobjectsreceiver
           - extension/observer/k8sobserver
+          - receiver/receivercreator
     runs-on: ubuntu-24.04
     needs: docker-build
     steps:
