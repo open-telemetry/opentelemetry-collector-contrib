@@ -582,6 +582,69 @@ func TestConfig_buildDSN(t *testing.T) {
 	}
 }
 
+func TestConfig_buildDSN_Credentials(t *testing.T) {
+	tests := []struct {
+		name         string
+		endpoint     string
+		username     string
+		password     string
+		wantUsername string
+		wantPassword string
+	}{
+		{
+			name:         "password without username",
+			endpoint:     "tcp://127.0.0.1:9000",
+			password:     "secret",
+			wantUsername: "",
+			wantPassword: "secret",
+		},
+		{
+			name:         "password keeps username from endpoint",
+			endpoint:     "tcp://otel@127.0.0.1:9000",
+			password:     "secret",
+			wantUsername: "otel",
+			wantPassword: "secret",
+		},
+		{
+			name:         "password overrides password from endpoint",
+			endpoint:     "tcp://otel:old@127.0.0.1:9000",
+			password:     "secret",
+			wantUsername: "otel",
+			wantPassword: "secret",
+		},
+		{
+			name:         "username and password override endpoint",
+			endpoint:     "tcp://otel:old@127.0.0.1:9000",
+			username:     "foo",
+			password:     "bar",
+			wantUsername: "foo",
+			wantPassword: "bar",
+		},
+		{
+			name:         "credentials from endpoint when not set in config",
+			endpoint:     "tcp://otel:old@127.0.0.1:9000",
+			wantUsername: "otel",
+			wantPassword: "old",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Endpoint = tt.endpoint
+			cfg.Username = tt.username
+			cfg.Password = configopaque.String(tt.password)
+
+			dsn, err := cfg.buildDSN()
+			require.NoError(t, err)
+
+			opts, err := clickhouse.ParseDSN(dsn)
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantUsername, opts.Auth.Username)
+			assert.Equal(t, tt.wantPassword, opts.Auth.Password)
+		})
+	}
+}
+
 func TestShouldCreateSchema(t *testing.T) {
 	t.Parallel()
 
