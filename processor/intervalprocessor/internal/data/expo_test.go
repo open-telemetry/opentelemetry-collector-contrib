@@ -22,9 +22,7 @@ func TestExpoAdd(t *testing.T) {
 	type bins = expotest.Bins
 	obs0 := expotest.Observe0
 
-	prevMaxBuckets := maxBuckets
-	maxBuckets = 8
-	defer func() { maxBuckets = prevMaxBuckets }()
+	add := Adder{MaxBuckets: 8}
 
 	cases := []struct {
 		name            string
@@ -187,8 +185,6 @@ func TestExpoAdd(t *testing.T) {
 	for _, cs := range cases {
 		run := func(dp, in, want expdp) func(t *testing.T) {
 			return func(t *testing.T) {
-				var add Adder
-
 				var (
 					dp   = dp.Into()
 					in   = in.Into()
@@ -213,8 +209,6 @@ func TestExpoAdd(t *testing.T) {
 	}
 
 	t.Run("empty-buckets", func(t *testing.T) {
-		var add Adder
-
 		t.Run("both-empty", func(t *testing.T) {
 			state := expdp{
 				Scale:  2,
