@@ -100,25 +100,29 @@ func (r *s3PollingReader) readAll(ctx context.Context, telemetryType string, dat
 
 	var (
 		backfillCompleted bool
-		currentBackfill   time.Time
+		scanProgress      time.Time
 	)
 
 	if r.startTime != nil {
-		currentBackfill = *r.startTime
+		scanProgress = truncateToPartitionBoundary(*r.startTime, r.timeStep, r.s3PartitionTimeLocation)
+	} else {
+		initialNow := r.nowFunc()
+		initialWindowStart := initialNow.Add(-r.lookback)
+		scanProgress = truncateToPartitionBoundary(initialWindowStart, r.timeStep, r.s3PartitionTimeLocation)
 	}
 
 	runBackfillPass := func() error {
 		now := r.nowFunc()
-		if !currentBackfill.Before(now) {
+		if !scanProgress.Before(now) {
 			backfillCompleted = true
 			return nil
 		}
 		r.logger.Info("Executing historical backfill",
-			zap.Time("start_time", currentBackfill),
+			zap.Time("start_time", scanProgress),
 			zap.Time("backfill_until", now),
 		)
-		err := r.scanRange(ctx, currentBackfill, now, telemetryType, dataCallback, func(completedPartition time.Time) {
-			currentBackfill = advancePartitionTime(completedPartition, r.timeStep, r.s3PartitionTimeLocation)
+		err := r.scanRange(ctx, scanProgress, now, telemetryType, dataCallback, func(completedPartition time.Time) {
+			scanProgress = advancePartitionTime(completedPartition, r.timeStep, r.s3PartitionTimeLocation)
 		})
 		if err != nil {
 			if errors.Is(err, context.Canceled) || ctx.Err() != nil {
@@ -126,7 +130,7 @@ func (r *s3PollingReader) readAll(ctx context.Context, telemetryType string, dat
 			}
 			r.logger.Error("Error during historical backfill",
 				zap.Error(err),
-				zap.Time("resuming_from", currentBackfill),
+				zap.Time("resuming_from", scanProgress),
 			)
 			return err
 		}
@@ -139,12 +143,31 @@ func (r *s3PollingReader) readAll(ctx context.Context, telemetryType string, dat
 
 	runRollingPass := func() error {
 		now := r.nowFunc()
-		windowStart := now.Add(-r.lookback)
-		if err := r.scanRange(ctx, windowStart, now, telemetryType, dataCallback, nil); err != nil {
+		rollingStart := truncateToPartitionBoundary(now.Add(-r.lookback), r.timeStep, r.s3PartitionTimeLocation)
+		start := scanProgress
+		if rollingStart.Before(start) {
+			start = rollingStart
+		}
+
+		end := now
+		currentPassProgress := start
+		err := r.scanRange(ctx, start, end, telemetryType, dataCallback, func(completedPartition time.Time) {
+			currentPassProgress = advancePartitionTime(completedPartition, r.timeStep, r.s3PartitionTimeLocation)
+			if currentPassProgress.After(scanProgress) {
+				scanProgress = currentPassProgress
+			}
+		})
+		if err != nil {
+			if currentPassProgress.Before(scanProgress) {
+				scanProgress = currentPassProgress
+			}
 			if errors.Is(err, context.Canceled) || ctx.Err() != nil {
 				return ctx.Err()
 			}
-			r.logger.Error("Error during polling pass", zap.Error(err))
+			r.logger.Error("Error during polling pass",
+				zap.Error(err),
+				zap.Time("resuming_from", scanProgress),
+			)
 			return err
 		}
 		return nil
