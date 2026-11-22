@@ -733,10 +733,10 @@ func changedPortEndpoint(change func(e *observer.Endpoint, port *observer.Port))
 	return e
 }
 
-func newOnChangeHandler(t *testing.T, ruleStr string, config userConfigMap) (*observerHandler, *mockRunner) {
+func newOnChangeHandler(t *testing.T, receiverType, ruleStr string, config userConfigMap) (*observerHandler, *mockRunner) {
 	cfg := createDefaultConfig().(*Config)
 	rcvrCfg := receiverConfig{
-		id:         component.MustNewIDWithName("with_endpoint", "some.name"),
+		id:         component.MustNewIDWithName(receiverType, "some.name"),
 		config:     config,
 		endpointID: portEndpoint.ID,
 	}
@@ -760,12 +760,14 @@ func TestOnChange(t *testing.T) {
 	staticConfig := userConfigMap{"endpoint": "some.endpoint"}
 
 	for _, test := range []struct {
-		name    string
-		rule    string
-		config  userConfigMap
-		change  func(e *observer.Endpoint, port *observer.Port)
-		restart bool
-		app     string
+		name string
+		// receiver is the type of the receiver, with_endpoint when empty.
+		receiver string
+		rule     string
+		config   userConfigMap
+		change   func(e *observer.Endpoint, port *observer.Port)
+		restart  bool
+		app      string
 	}{
 		{
 			name:   "nothing the receiver uses changed",
@@ -790,6 +792,14 @@ func TestOnChange(t *testing.T) {
 			app:     "redis",
 		},
 		{
+			name:     "the target changed and the receiver has no endpoint setting",
+			receiver: "without_endpoint",
+			rule:     anyPort,
+			config:   userConfigMap{},
+			change:   func(e *observer.Endpoint, _ *observer.Port) { e.Target = "localhost:4321" },
+			app:      "redis",
+		},
+		{
 			name:    "a value the config uses changed",
 			rule:    anyPort,
 			config:  userConfigMap{"endpoint": "`pod.labels[\"region\"]`:1234"},
@@ -799,7 +809,11 @@ func TestOnChange(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			handler, r := newOnChangeHandler(t, test.rule, test.config)
+			receiverType := test.receiver
+			if receiverType == "" {
+				receiverType = "with_endpoint"
+			}
+			handler, r := newOnChangeHandler(t, receiverType, test.rule, test.config)
 			handler.OnAdd([]observer.Endpoint{portEndpoint})
 
 			origRcvr := r.startedComponent
@@ -835,7 +849,7 @@ func TestOnChange(t *testing.T) {
 	}
 
 	t.Run("the rule stops and starts matching", func(t *testing.T) {
-		handler, r := newOnChangeHandler(t, redisPort, staticConfig)
+		handler, r := newOnChangeHandler(t, "with_endpoint", redisPort, staticConfig)
 		handler.OnAdd([]observer.Endpoint{portEndpoint})
 		origRcvr := r.startedComponent
 		require.NotNil(t, origRcvr)

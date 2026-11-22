@@ -157,7 +157,7 @@ func TestE2EReceiverKeptWhenPodChanges(t *testing.T) {
 		return received() >= minRecordsPerPod
 	}, 3*time.Minute, time.Second, "did not receive logs before the change")
 
-	_, err := podsClient(k8sClient).Patch(context.Background(), podName, types.MergePatchType,
+	_, err := podsClient(k8sClient).Patch(t.Context(), podName, types.MergePatchType,
 		[]byte(`{"metadata":{"labels":{"receivercreator-e2e-changed":"true"}}}`), metav1.PatchOptions{})
 	require.NoError(t, err, "failed changing the labels of the pod")
 
@@ -166,6 +166,9 @@ func TestE2EReceiverKeptWhenPodChanges(t *testing.T) {
 	require.Eventually(t, func() bool {
 		return received() >= afterChange
 	}, time.Minute, time.Second, "did not receive logs after the change")
+
+	// Give a receiver that was started again the time to deliver what it read again.
+	time.Sleep(duplicateCheckDelay)
 
 	pod := collectPodLogs(logsConsumer)[podName]
 	assert.Zero(t, pod.duplicates(), "lines were received again after the change")
@@ -183,11 +186,11 @@ func startWorkloadsAndCollector(t *testing.T) (*k8stest.K8sClient, *consumertest
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
 	getOrInsertDefault(t, &cfg.Protocols.GRPC).NetAddr.Endpoint = "0.0.0.0:4317"
 	logsConsumer := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, logsConsumer)
+	rcvr, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(f.Type()), cfg, logsConsumer)
 	require.NoError(t, err, "failed creating logs receiver")
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
-		assert.NoError(t, rcvr.Shutdown(context.Background()))
+		assert.NoError(t, rcvr.Shutdown(context.WithoutCancel(t.Context())))
 	})
 
 	deleteObjects := func(objs []*unstructured.Unstructured) {
@@ -202,7 +205,7 @@ func startWorkloadsAndCollector(t *testing.T) (*k8stest.K8sClient, *consumertest
 		deleteObjects(workloadObjs)
 		// The next test creates the same pods, so wait until these are gone.
 		require.Eventually(t, func() bool {
-			pods, listErr := podsClient(k8sClient).List(context.Background(), metav1.ListOptions{LabelSelector: "app=receivercreator-e2e-workload"})
+			pods, listErr := podsClient(k8sClient).List(context.WithoutCancel(t.Context()), metav1.ListOptions{LabelSelector: "app=receivercreator-e2e-workload"})
 			return listErr == nil && len(pods.Items) == 0
 		}, time.Minute, time.Second, "the workloads were not deleted")
 	})

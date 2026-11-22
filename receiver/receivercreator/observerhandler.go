@@ -265,8 +265,19 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 		return
 	}
 
-	// Taken before the start, which changes the discovered config.
-	config := fmt.Sprintf("%#v %#v", resolvedConfig, discoveredConfig)
+	rcvrConfig := receiverConfig{
+		id:         template.receiverConfig.id,
+		config:     resolvedConfig,
+		endpointID: e.ID,
+	}
+	// What the receiver is started with. The endpoint target is not part of it when the
+	// receiver has no endpoint setting.
+	effectiveConfig, err := obs.runner.effectiveConfig(rcvrConfig, discoveredConfig)
+	if err != nil {
+		obs.params.Logger.Error("unable to resolve effective config", zap.String("receiver", template.receiverConfig.id.String()), zap.Error(err))
+		return
+	}
+	config := fmt.Sprintf("%#v", effectiveConfig)
 	if previous, ok := obs.takeReusable(template.receiverConfig.id); ok {
 		if previous.config == config {
 			obs.params.Logger.Debug("keeping receiver, its config did not change",
@@ -290,11 +301,7 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 
 	var receiver component.Component
 	if receiver, err = obs.runner.start(
-		receiverConfig{
-			id:         template.receiverConfig.id,
-			config:     resolvedConfig,
-			endpointID: e.ID,
-		},
+		rcvrConfig,
 		discoveredConfig,
 		consumer,
 	); err != nil {
