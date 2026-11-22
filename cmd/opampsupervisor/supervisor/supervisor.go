@@ -2058,9 +2058,14 @@ func (s *Supervisor) runAgentProcess() {
 	configApplyTimeoutTimer := time.NewTimer(0)
 	configApplyTimeoutTimer.Stop()
 
-	// The remote config being applied. A newer remote config is applied next and
-	// reports its own result, so the result of this apply is not reported for it.
+	// The remote config being applied. A remote config that arrives while it is
+	// applied reports its own result: from the apply it queues, or at once when it is
+	// rejected. The status of an apply that a newer remote config superseded is not
+	// reported, as it would carry the newer config's hash.
 	var applyingRemoteConfig *protobufs.AgentRemoteConfig
+	superseded := func() bool {
+		return s.remoteConfig.Load() != applyingRemoteConfig
+	}
 
 	for {
 		select {
@@ -2089,11 +2094,15 @@ func (s *Supervisor) runAgentProcess() {
 				// The agent is still running its previous config, so its health must not
 				// report the new config as applied when the timer fires.
 				configApplyTimeoutTimer.Stop()
-				reportedLastWorking := s.reportActiveConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, applyErr.Error())
+				stale := superseded()
+				reportedLastWorking := false
+				if !stale {
+					reportedLastWorking = s.reportActiveConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, applyErr.Error())
+				}
 				if healthErr := s.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: applyErr.Error()}); healthErr != nil {
 					s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(healthErr))
 				}
-				if !reportedLastWorking {
+				if !stale && !reportedLastWorking {
 					s.restoreLastWorkingRemoteConfig()
 				}
 				continue
@@ -2107,7 +2116,7 @@ func (s *Supervisor) runAgentProcess() {
 			status, err := s.startAgent()
 			if err != nil {
 				s.telemetrySettings.Logger.Error("starting agent with new config failed", zap.Error(err))
-				if !s.reportActiveConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error()) && s.restoreLastWorkingRemoteConfig() {
+				if !superseded() && !s.reportActiveConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error()) && s.restoreLastWorkingRemoteConfig() {
 					continue
 				}
 				// The agent process never started, so no exit event will trigger a
@@ -2118,8 +2127,12 @@ func (s *Supervisor) runAgentProcess() {
 				// not starting agent because of nop config: clear timer, report applied status, report healthy status
 				s.telemetrySettings.Logger.Debug("No config present, nothing to apply")
 				configApplyTimeoutTimer.Stop()
-				s.configApplyPending.Store(false)
-				s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+				// Stopping the agent can take a while, and a remote config that arrived
+				// meanwhile must keep its own status.
+				if !superseded() {
+					s.configApplyPending.Store(false)
+					s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+				}
 				if err := s.SetHealth(&protobufs.ComponentHealth{Healthy: true, LastError: ""}); err != nil {
 					s.telemetrySettings.Logger.Error("Could not report healthy status to OpAMP server", zap.Error(err))
 				}
@@ -2198,7 +2211,7 @@ func (s *Supervisor) runAgentProcess() {
 			}
 
 		case <-configApplyTimeoutTimer.C:
-			if s.remoteConfig.Load() != applyingRemoteConfig {
+			if superseded() {
 				continue
 			}
 			lastHealth := s.lastHealthFromClient.Load()

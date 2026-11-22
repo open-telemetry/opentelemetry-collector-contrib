@@ -485,41 +485,7 @@ func TestSupervisorAppliesRemoteConfigAfterFailedWrite(t *testing.T) {
 				}
 				cfg.Agent.BootstrapTimeout = 5 * time.Second
 				cfg.Agent.UseHUPConfigReload = hupReload
-
-				var mu sync.Mutex
-				var statuses []*protobufs.RemoteConfigStatus
-				done := make(chan struct{})
-				var wg sync.WaitGroup
-				wg.Go(func() {
-					for {
-						select {
-						case message := <-messages:
-							if status := message.GetRemoteConfigStatus(); status != nil {
-								mu.Lock()
-								statuses = append(statuses, status)
-								mu.Unlock()
-							}
-						case <-done:
-							return
-						}
-					}
-				})
-				t.Cleanup(func() {
-					close(done)
-					wg.Wait()
-				})
-				reported := func(hash string, status protobufs.RemoteConfigStatuses) func() bool {
-					return func() bool {
-						mu.Lock()
-						defer mu.Unlock()
-						for _, rcs := range statuses {
-							if string(rcs.GetLastRemoteConfigHash()) == hash && rcs.GetStatus() == status {
-								return true
-							}
-						}
-						return false
-					}
-				}
+				reported := recordRemoteConfigStatuses(t, messages)
 
 				s, err := NewSupervisor(t.Context(), zap.NewNop(), cfg)
 				require.NoError(t, err)
@@ -548,6 +514,115 @@ func TestSupervisorAppliesRemoteConfigAfterFailedWrite(t *testing.T) {
 				require.Eventually(t, reported(retry.hash, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED), 10*time.Second, 20*time.Millisecond)
 				require.True(t, agentConfigContains(retry.receiver))
 			})
+		}
+	}
+}
+
+func TestSupervisorKeepsStatusOfRemoteConfigReceivedWhileStopping(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Relies on SIGHUP and on interrupting the agent")
+	}
+
+	for _, hupReload := range []bool{true, false} {
+		t.Run(fmt.Sprintf("hup_reload=%t", hupReload), func(t *testing.T) {
+			endpoint, messages := newConfigStatusTestServer(t)
+			stopMarker := filepath.Join(t.TempDir(), "stopping")
+			cfg := newTestSupervisorConfig(t)
+			cfg.Capabilities.AcceptsRemoteConfig = true
+			cfg.Server.Endpoint = endpoint
+			cfg.Agent.Executable = os.Args[0]
+			cfg.Agent.Env = map[string]string{
+				supervisorRestartHelperEnv: "opamp-healthy",
+				supervisorStopMarkerEnv:    stopMarker,
+				// The race detector delays the exit of the agent process by a second by
+				// default, which outlasts the stop grace period when it is restarted.
+				"GORACE": "atexit_sleep_ms=0",
+			}
+			cfg.Agent.BootstrapTimeout = 5 * time.Second
+			cfg.Agent.StopGracePeriod = 5 * time.Second
+			cfg.Agent.UseHUPConfigReload = hupReload
+			reported := recordRemoteConfigStatuses(t, messages)
+
+			s, err := NewSupervisor(t.Context(), zap.NewNop(), cfg)
+			require.NoError(t, err)
+			require.NoError(t, s.Start(t.Context()))
+			t.Cleanup(s.Shutdown)
+
+			s.onMessage(t.Context(), &types.MessageData{RemoteConfig: &protobufs.AgentRemoteConfig{
+				ConfigHash: []byte("HA"),
+				Config: &protobufs.AgentConfigMap{ConfigMap: map[string]*protobufs.AgentConfigObject{
+					"": {Body: []byte("receivers:\n  nop: {}\n")},
+				}},
+			}})
+			require.Eventually(t, reported("HA", protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED), 10*time.Second, 20*time.Millisecond)
+
+			// The empty config stops the agent, which takes a second to exit once interrupted.
+			require.NoError(t, os.RemoveAll(stopMarker))
+			s.onMessage(t.Context(), &types.MessageData{RemoteConfig: &protobufs.AgentRemoteConfig{
+				ConfigHash: []byte("HE"),
+				Config:     &protobufs.AgentConfigMap{},
+			}})
+			require.Eventually(t, func() bool {
+				_, statErr := os.Stat(stopMarker)
+				return statErr == nil
+			}, 10*time.Second, 10*time.Millisecond)
+
+			// An invalid config arrives while the agent is still stopping.
+			s.onMessage(t.Context(), &types.MessageData{RemoteConfig: &protobufs.AgentRemoteConfig{
+				ConfigHash: []byte("HB"),
+				Config: &protobufs.AgentConfigMap{ConfigMap: map[string]*protobufs.AgentConfigObject{
+					"": {Body: []byte("receivers: [\n")},
+				}},
+			}})
+			require.Eventually(t, reported("HB", protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED), 10*time.Second, 20*time.Millisecond)
+
+			// Once the agent has stopped, the empty config's result must not be reported with
+			// the invalid config's hash.
+			require.Never(t, reported("HB", protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED), 3*time.Second, 50*time.Millisecond)
+			lastStatus := s.persistentState.GetLastRemoteConfigStatus()
+			require.Equal(t, "HB", string(lastStatus.GetLastRemoteConfigHash()))
+			require.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, lastStatus.GetStatus())
+		})
+	}
+}
+
+// recordRemoteConfigStatuses collects the remote config statuses the test server
+// receives. It returns a condition reporting whether a status was received for a
+// config hash.
+func recordRemoteConfigStatuses(t *testing.T, messages <-chan *protobufs.AgentToServer) func(hash string, status protobufs.RemoteConfigStatuses) func() bool {
+	t.Helper()
+	var mu sync.Mutex
+	var statuses []*protobufs.RemoteConfigStatus
+	done := make(chan struct{})
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		for {
+			select {
+			case message := <-messages:
+				if status := message.GetRemoteConfigStatus(); status != nil {
+					mu.Lock()
+					statuses = append(statuses, status)
+					mu.Unlock()
+				}
+			case <-done:
+				return
+			}
+		}
+	})
+	t.Cleanup(func() {
+		close(done)
+		wg.Wait()
+	})
+	return func(hash string, status protobufs.RemoteConfigStatuses) func() bool {
+		return func() bool {
+			mu.Lock()
+			defer mu.Unlock()
+			for _, rcs := range statuses {
+				if string(rcs.GetLastRemoteConfigHash()) == hash && rcs.GetStatus() == status {
+					return true
+				}
+			}
+			return false
 		}
 	}
 }

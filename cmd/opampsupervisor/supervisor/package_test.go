@@ -25,6 +25,11 @@ import (
 
 const supervisorRestartHelperEnv = "OTEL_SUPERVISOR_RESTART_HELPER"
 
+// supervisorStopMarkerEnv names a file the opamp-healthy test agent creates when it is
+// interrupted, before it takes a second to exit, so that a test can act while the
+// Supervisor is still stopping the agent.
+const supervisorStopMarkerEnv = "OTEL_SUPERVISOR_STOP_MARKER"
+
 func TestMain(m *testing.M) {
 	switch os.Getenv(supervisorRestartHelperEnv) {
 	case "opamp", "opamp-healthy":
@@ -112,6 +117,12 @@ func reportHealthUntilInterrupted(opampClient client.OpAMPClient, sigCh chan os.
 		select {
 		case sig := <-sigCh:
 			if sig == os.Interrupt {
+				if marker := os.Getenv(supervisorStopMarkerEnv); marker != "" {
+					if err := os.WriteFile(marker, nil, 0o600); err != nil {
+						return err
+					}
+					time.Sleep(time.Second)
+				}
 				return nil
 			}
 		case <-ticker.C:

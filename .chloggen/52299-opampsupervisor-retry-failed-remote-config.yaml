@@ -15,7 +15,10 @@ issues: [52299]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  A result that arrives late for a configuration a newer one has replaced, such as an empty
+  configuration that is still stopping the Collector, is no longer reported with the newer
+  configuration's hash.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
