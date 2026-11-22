@@ -369,7 +369,7 @@ func TestNodeEndpointsChanged(t *testing.T) {
 
 func TestPodEndpointsEphemeralContainerAdded(t *testing.T) {
 	th := newTestHandler()
-	th.observeEphemeralContainers = true
+	th.podOptions = podEndpointOptions{ephemeralContainers: true}
 	th.OnAdd(podWithNamedPorts, true)
 	require.Len(t, th.ListEndpoints(), 3)
 

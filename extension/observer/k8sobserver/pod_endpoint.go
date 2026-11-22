@@ -21,11 +21,17 @@ const (
 	containerKindEphemeral = "ephemeral"
 )
 
+// podEndpointOptions selects the containers of a pod that get endpoints, next to its app
+// containers.
+type podEndpointOptions struct {
+	// ephemeralContainers also reports the ephemeral containers of a pod.
+	ephemeralContainers bool
+}
+
 // convertPodToEndpoints converts a pod instance into a slice of endpoints. The endpoints
 // include the pod itself as well as an endpoint for each container port that is mapped
-// to a container that is in a running state. With ephemeralContainers the ephemeral
-// containers of the pod are included.
-func convertPodToEndpoints(idNamespace string, pod *v1.Pod, ephemeralContainers bool) []observer.Endpoint {
+// to a container that is in a running state.
+func convertPodToEndpoints(idNamespace string, pod *v1.Pod, opts podEndpointOptions) []observer.Endpoint {
 	podID := observer.EndpointID(fmt.Sprintf("%s/%s", idNamespace, pod.UID))
 	podIP := pod.Status.PodIP
 
@@ -60,7 +66,7 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod, ephemeralContainers 
 
 	containers := pod.Spec.Containers
 	containerKinds := map[string]string{}
-	if ephemeralContainers {
+	if opts.ephemeralContainers {
 		for i := range pod.Status.EphemeralContainerStatuses {
 			container := &pod.Status.EphemeralContainerStatuses[i]
 			if container.State.Running != nil {

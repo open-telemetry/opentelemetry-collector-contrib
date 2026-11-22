@@ -59,7 +59,7 @@ func TestPodObjectToPortEndpoint(t *testing.T) {
 		},
 	}
 
-	endpoints := convertPodToEndpoints("namespace", podWithNamedPorts, false)
+	endpoints := convertPodToEndpoints("namespace", podWithNamedPorts, podEndpointOptions{})
 	require.Equal(t, expectedEndpoints, endpoints)
 }
 
@@ -67,7 +67,7 @@ func TestPodObjectToPortEndpointIPv6(t *testing.T) {
 	pod := podWithNamedPorts.DeepCopy()
 	pod.Status.PodIP = "2001:db8::10"
 
-	endpoints := convertPodToEndpoints("namespace", pod, false)
+	endpoints := convertPodToEndpoints("namespace", pod, podEndpointOptions{})
 	require.Len(t, endpoints, 3)
 
 	endpoint := endpoints[2]
@@ -93,10 +93,10 @@ func TestPodEndpointsEphemeralContainers(t *testing.T) {
 	}
 
 	// Without the option the ephemeral containers get no endpoint.
-	require.Len(t, convertPodToEndpoints("namespace", pod, false), 3)
+	require.Len(t, convertPodToEndpoints("namespace", pod, podEndpointOptions{}), 3)
 
 	// With it the one that runs gets a container endpoint.
-	endpoints := convertPodToEndpoints("namespace", pod, true)
+	endpoints := convertPodToEndpoints("namespace", pod, podEndpointOptions{ephemeralContainers: true})
 	require.Len(t, endpoints, 4)
 	require.Equal(t, observer.Endpoint{
 		ID:     "namespace/pod-2-UID/debugger",
