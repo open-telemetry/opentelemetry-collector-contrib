@@ -4,6 +4,7 @@
 package receivercreator
 
 import (
+	"maps"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -726,9 +727,7 @@ func changedPortEndpoint(change func(e *observer.Endpoint, port *observer.Port))
 	e := portEndpoint
 	port := *portEndpoint.Details.(*observer.Port)
 	port.Pod.Labels = map[string]string{}
-	for k, v := range pod.Labels {
-		port.Pod.Labels[k] = v
-	}
+	maps.Copy(port.Pod.Labels, pod.Labels)
 	e.Details = &port
 	change(&e, &port)
 	return e
