@@ -144,22 +144,30 @@ func (s *filesystemsScraper) scrape(ctx context.Context) (pmetric.Metrics, error
 	// Read usage for all mounts at once. Read one after another, each silent
 	// mount would add a full timeout to the scrape, and with a receiver
 	// timeout set, one silent mount would use up the shared deadline before
-	// the healthy mounts after it were read.
-	results := make([]usageResult, len(targets))
+	// the healthy mounts after it were read. Entries that share a mountpoint
+	// (e.g. an autofs placeholder and the filesystem mounted over it) get one
+	// call, since statfs on that path returns the same filesystem for both.
+	results := make(map[string]*usageResult, len(targets))
 	var wg sync.WaitGroup
-	for i, t := range targets {
+	for _, t := range targets {
+		if _, ok := results[t.mountpoint]; ok {
+			continue
+		}
+		r := &usageResult{}
+		results[t.mountpoint] = r
 		wg.Go(func() {
-			results[i].usage, results[i].err = s.usageWithTimeout(ctx, t.mountpoint)
+			r.usage, r.err = s.usageWithTimeout(ctx, t.mountpoint)
 		})
 	}
 	wg.Wait()
 
-	for i, t := range targets {
-		if results[i].err != nil {
-			errors.AddPartial(0, fmt.Errorf("failed to read usage at %s: %w", t.mountpoint, results[i].err))
+	for _, t := range targets {
+		r := results[t.mountpoint]
+		if r.err != nil {
+			errors.AddPartial(0, fmt.Errorf("failed to read usage at %s: %w", t.mountpoint, r.err))
 			continue
 		}
-		usages = append(usages, &deviceUsage{t.partition, results[i].usage})
+		usages = append(usages, &deviceUsage{t.partition, r.usage})
 	}
 
 	if len(usages) > 0 {

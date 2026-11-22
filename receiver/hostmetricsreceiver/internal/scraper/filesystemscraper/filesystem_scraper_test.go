@@ -684,6 +684,44 @@ func TestScrape_SilentMountsDoNotStarveHealthyOnes(t *testing.T) {
 	assert.Equal(t, map[string]bool{"/": true, "/data": true}, reported)
 }
 
+// Two mount-table entries can share a mountpoint, e.g. an autofs placeholder
+// and the filesystem mounted over it. Both must be reported, and the shared
+// path must not race itself in usageInFlight.
+func TestScrape_SharedMountpointReportsBothEntries(t *testing.T) {
+	scraper, err := newFileSystemScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+	})
+	require.NoError(t, err)
+
+	scraper.partitions = func(context.Context, bool) ([]disk.PartitionStat, error) {
+		return []disk.PartitionStat{
+			{Device: "systemd-1", Mountpoint: "/mnt/auto", Fstype: "autofs"},
+			{Device: "nfs:/export", Mountpoint: "/mnt/auto", Fstype: "nfs4"},
+		}, nil
+	}
+	var calls atomic.Int32
+	scraper.usage = func(context.Context, string) (*disk.UsageStat, error) {
+		calls.Add(1)
+		// Slow enough that concurrent calls for the same path would overlap.
+		time.Sleep(100 * time.Millisecond)
+		return &disk.UsageStat{Total: 100, Used: 60, Free: 40}, nil
+	}
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+	md, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, int32(1), calls.Load())
+
+	m, err := findMetricByName(md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics(), "system.filesystem.usage")
+	require.NoError(t, err)
+	devices := map[string]bool{}
+	for _, dp := range m.Sum().DataPoints().All() {
+		d, _ := dp.Attributes().Get("device")
+		devices[d.Str()] = true
+	}
+	assert.Equal(t, map[string]bool{"systemd-1": true, "nfs:/export": true}, devices)
+}
+
 func TestTranslateMountpoint(t *testing.T) {
 	tests := []struct {
 		name       string
