@@ -20,6 +20,11 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/dynamic"
 
 	k8stest "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest"
 )
@@ -33,6 +38,7 @@ const (
 	parsedByDiscovery   = "discovery-annotation"
 	minRecordsPerPod    = 3
 	duplicateCheckDelay = 5 * time.Second
+	linesAfterChange    = 5
 )
 
 // podLogs summarizes the log records received for one pod.
@@ -93,38 +99,7 @@ func collectPodLogs(sink *consumertest.LogsSink) map[string]*podLogs {
 // template selected by a Fluent Bit annotation next to annotation-based discovery, the setup
 // used while workloads move from one set of annotations to the other.
 func TestE2ELogsFromTemplatesAndDiscoveryAnnotations(t *testing.T) {
-	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
-	require.NoError(t, err)
-
-	f := otlpreceiver.NewFactory()
-	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
-	getOrInsertDefault(t, &cfg.Protocols.GRPC).NetAddr.Endpoint = "0.0.0.0:4317"
-	logsConsumer := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, logsConsumer)
-	require.NoError(t, err, "failed creating logs receiver")
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
-	defer func() {
-		assert.NoError(t, rcvr.Shutdown(context.Background()))
-	}()
-
-	// The workloads run before the collector starts, so the observer reports all of their
-	// endpoints to the receiver creator in one batch.
-	workloadObjs, err := k8stest.CreateObjects(k8sClient, filepath.Join("testdata", "e2e", e2eWorkloadsDir))
-	require.NoError(t, err, "failed creating workloads")
-	defer func() {
-		for _, obj := range workloadObjs {
-			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
-		}
-	}()
-	k8stest.WaitForCollectorToStart(t, k8sClient, "default", map[string]any{"app": "receivercreator-e2e-workload"})
-
-	testID := uuid.NewString()[:8]
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join("testdata", "e2e", e2eCollectorDir), map[string]string{}, "")
-	defer func() {
-		for _, obj := range collectorObjs {
-			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
-		}
-	}()
+	_, logsConsumer := startWorkloadsAndCollector(t)
 
 	// parsed_by value expected for each workload.
 	expectedParsedBy := map[string]string{
@@ -162,6 +137,86 @@ func TestE2ELogsFromTemplatesAndDiscoveryAnnotations(t *testing.T) {
 		assert.Zerof(t, pod.unparsed, "pod %s has records the parser did not handle", podName)
 		assert.Zerof(t, pod.duplicates(), "pod %s has lines received more than once", podName)
 	}
+}
+
+// TestE2EReceiverKeptWhenPodChanges changes the labels of a running pod. The config of the
+// file log receiver of the pod is the same after the change, so the receiver keeps running
+// and does not read the log file again from the start.
+func TestE2EReceiverKeptWhenPodChanges(t *testing.T) {
+	k8sClient, logsConsumer := startWorkloadsAndCollector(t)
+
+	podName := e2eWorkloadPrefix + "fluentbit-annotation"
+	received := func() int {
+		pod, ok := collectPodLogs(logsConsumer)[podName]
+		if !ok {
+			return 0
+		}
+		return pod.records[parsedByTemplate]
+	}
+	require.Eventually(t, func() bool {
+		return received() >= minRecordsPerPod
+	}, 3*time.Minute, time.Second, "did not receive logs before the change")
+
+	_, err := podsClient(k8sClient).Patch(context.Background(), podName, types.MergePatchType,
+		[]byte(`{"metadata":{"labels":{"receivercreator-e2e-changed":"true"}}}`), metav1.PatchOptions{})
+	require.NoError(t, err, "failed changing the labels of the pod")
+
+	// Lines written after the change arrive, so the change was handled and the pod is still read.
+	afterChange := received() + linesAfterChange
+	require.Eventually(t, func() bool {
+		return received() >= afterChange
+	}, time.Minute, time.Second, "did not receive logs after the change")
+
+	pod := collectPodLogs(logsConsumer)[podName]
+	assert.Zero(t, pod.duplicates(), "lines were received again after the change")
+	assert.Zero(t, pod.unparsed)
+}
+
+// startWorkloadsAndCollector starts a receiver for what the collector exports, the workloads and
+// then the collector. The workloads run before the collector starts, so the observer reports
+// all of their endpoints to the receiver creator in one batch.
+func startWorkloadsAndCollector(t *testing.T) (*k8stest.K8sClient, *consumertest.LogsSink) {
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+	require.NoError(t, err)
+
+	f := otlpreceiver.NewFactory()
+	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
+	getOrInsertDefault(t, &cfg.Protocols.GRPC).NetAddr.Endpoint = "0.0.0.0:4317"
+	logsConsumer := new(consumertest.LogsSink)
+	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, logsConsumer)
+	require.NoError(t, err, "failed creating logs receiver")
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		assert.NoError(t, rcvr.Shutdown(context.Background()))
+	})
+
+	deleteObjects := func(objs []*unstructured.Unstructured) {
+		for _, obj := range objs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+		}
+	}
+
+	workloadObjs, err := k8stest.CreateObjects(k8sClient, filepath.Join("testdata", "e2e", e2eWorkloadsDir))
+	require.NoError(t, err, "failed creating workloads")
+	t.Cleanup(func() {
+		deleteObjects(workloadObjs)
+		// The next test creates the same pods, so wait until these are gone.
+		require.Eventually(t, func() bool {
+			pods, listErr := podsClient(k8sClient).List(context.Background(), metav1.ListOptions{LabelSelector: "app=receivercreator-e2e-workload"})
+			return listErr == nil && len(pods.Items) == 0
+		}, time.Minute, time.Second, "the workloads were not deleted")
+	})
+	k8stest.WaitForCollectorToStart(t, k8sClient, "default", map[string]any{"app": "receivercreator-e2e-workload"})
+
+	testID := uuid.NewString()[:8]
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join("testdata", "e2e", e2eCollectorDir), map[string]string{}, "")
+	t.Cleanup(func() { deleteObjects(collectorObjs) })
+
+	return k8sClient, logsConsumer
+}
+
+func podsClient(k8sClient *k8stest.K8sClient) dynamic.ResourceInterface {
+	return k8sClient.DynamicClient.Resource(schema.GroupVersionResource{Version: "v1", Resource: "pods"}).Namespace("default")
 }
 
 // getOrInsertDefault is a helper function to get or insert a default value for a configoptional.Optional type.
