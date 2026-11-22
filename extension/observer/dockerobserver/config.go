@@ -52,11 +52,11 @@ func (config Config) Validate() error {
 			return err
 		}
 	}
-	if config.Config.Timeout == 0 {
-		return errors.New("timeout must be specified")
+	if config.Config.Timeout <= 0 {
+		return errors.New("timeout must be specified and positive")
 	}
-	if config.CacheSyncInterval == 0 {
-		return errors.New("cache_sync_interval must be specified")
+	if config.CacheSyncInterval <= 0 {
+		return errors.New("cache_sync_interval must be specified and positive")
 	}
 	return nil
 }

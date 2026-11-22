@@ -70,10 +70,16 @@ func TestValidateConfig(t *testing.T) {
 	assert.ErrorContains(t, confmap.Validate(cfg), `"api_version" 1.23 must be at least 1.44`)
 
 	cfg = &Config{Config: docker.Config{Endpoint: "someEndpoint", DockerAPIVersion: version}}
-	assert.ErrorContains(t, confmap.Validate(cfg), "timeout must be specified")
+	assert.ErrorContains(t, confmap.Validate(cfg), "timeout must be specified and positive")
+
+	cfg = &Config{Config: docker.Config{Endpoint: "someEndpoint", DockerAPIVersion: version, Timeout: -5 * time.Second}, CacheSyncInterval: 5 * time.Minute}
+	assert.ErrorContains(t, confmap.Validate(cfg), "timeout must be specified and positive")
 
 	cfg = &Config{Config: docker.Config{Endpoint: "someEndpoint", DockerAPIVersion: version, Timeout: 5 * time.Minute}}
-	assert.ErrorContains(t, confmap.Validate(cfg), "cache_sync_interval must be specified")
+	assert.ErrorContains(t, confmap.Validate(cfg), "cache_sync_interval must be specified and positive")
+
+	cfg = &Config{Config: docker.Config{Endpoint: "someEndpoint", DockerAPIVersion: version, Timeout: 5 * time.Minute}, CacheSyncInterval: -1 * time.Second}
+	assert.ErrorContains(t, confmap.Validate(cfg), "cache_sync_interval must be specified and positive")
 
 	cfg = &Config{Config: docker.Config{Endpoint: "someEndpoint", DockerAPIVersion: version, Timeout: 5 * time.Minute}, CacheSyncInterval: 5 * time.Minute}
 	assert.NoError(t, confmap.Validate(cfg))
