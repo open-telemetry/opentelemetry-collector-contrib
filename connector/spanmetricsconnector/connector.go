@@ -102,7 +102,13 @@ type connectorImp struct {
 
 	// Tracks the last TimestampUnixNano for delta metrics so that they represent an uninterrupted series. Unused for cumulative span metrics.
 	lastDeltaTimestamps *simplelru.LRU[deltaMetricKey, pcommon.Timestamp]
-	instanceID          string
+
+	// Timestamp of the previous flush; used as the delta start time by the
+	// opt-in "previous_flush" strategy so backends that read start_time_unix_nano
+	// as the point timestamp don't report returning quiet series as stale (#52824).
+	lastFlushTimestamp pcommon.Timestamp
+
+	instanceID string
 }
 
 type deltaMetricKey struct {
@@ -159,7 +165,8 @@ func newConnector(logger *zap.Logger, config component.Config, clock clockwork.C
 	}
 
 	var lastDeltaTimestamps *simplelru.LRU[deltaMetricKey, pcommon.Timestamp]
-	if cfg.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
+	if cfg.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta &&
+		cfg.GetDeltaStartTime() == deltaStartTimePreviousDataPoint {
 		lastDeltaTimestamps, err = simplelru.NewLRU(cfg.GetDeltaTimestampCacheSize(), func(k deltaMetricKey, _ pcommon.Timestamp) {
 			logger.Debug("Evicting cached delta timestamp", zap.String("key", string(k.metric)), zap.Binary("resource", k.resource[:]))
 		})
@@ -318,6 +325,9 @@ func (p *connectorImp) exportMetrics(ctx context.Context) {
 func (p *connectorImp) buildMetrics() pmetric.Metrics {
 	m := pmetric.NewMetrics()
 	timestamp := pcommon.NewTimestampFromTime(p.clock.Now())
+	previousFlushTimestamp := p.lastFlushTimestamp
+	// advance on all ticks, even empty.
+	p.lastFlushTimestamp = timestamp
 
 	p.resourceMetrics.ForEach(func(rk resourceKey, rawMetrics *resourceMetrics) {
 		rm := m.ResourceMetrics().AppendEmpty()
@@ -334,12 +344,22 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		 * - For delta metrics: (T1, T2), (T2, T3), (T3, T4) ...
 		 */
 		aggregationTemporality := p.config.GetAggregationTemporality()
+		usePreviousFlush := aggregationTemporality == pmetric.AggregationTemporalityDelta &&
+			p.config.GetDeltaStartTime() == deltaStartTimePreviousFlush
+
 		var deltaMetricKeys map[metrics.Key]bool
-		if aggregationTemporality == pmetric.AggregationTemporalityDelta {
+		if aggregationTemporality == pmetric.AggregationTemporalityDelta && !usePreviousFlush {
 			deltaMetricKeys = make(map[metrics.Key]bool)
 		}
+
 		timeStampGenerator := func(mk metrics.Key, startTime pcommon.Timestamp) pcommon.Timestamp {
 			if aggregationTemporality == pmetric.AggregationTemporalityDelta {
+				if usePreviousFlush {
+					if previousFlushTimestamp != 0 {
+						return previousFlushTimestamp
+					}
+					return startTime // first flush: no previous tick yet
+				}
 				if lastTimestamp, ok := p.lastDeltaTimestamps.Get(deltaMetricKey{resource: rk, metric: mk}); ok {
 					startTime = lastTimestamp
 				}
