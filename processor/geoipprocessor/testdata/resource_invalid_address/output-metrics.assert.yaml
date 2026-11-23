@@ -13,4 +13,4 @@ resources:
               datapoints:
                 - attributes:
                     aaa: bbb
-                  double_value: 345
+                  value: 345
