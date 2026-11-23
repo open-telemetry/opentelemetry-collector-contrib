@@ -23,6 +23,13 @@ $defs:
       api:
         description: API defines the settings for calling Datadog with the proxied requests
         $ref: /pkg/datadog/config.api_config
+  traces_config:
+    description: TracesConfig controls trace-specific receiver behavior.
+    type: object
+    properties:
+      enable_v1_endpoint:
+        description: EnableV1Endpoint, when true, serves the `/v1.0/traces` endpoint and announces it, and native span events, in `/info`. Tracers that support the v1.0 trace protocol, such as recent dd-trace-go versions, then switch to it. Disabled by default. Traces in the v1 format that a Datadog Agent forwards to `/api/v0.2/traces` are always accepted.
+        type: boolean
 type: object
 properties:
   idle_series_cleanup_interval:
@@ -46,5 +53,8 @@ properties:
   trace_id_cache_size:
     description: TraceIDCacheSize sets the cache size for the 64 bits to 128 bits mapping
     type: integer
+  traces:
+    description: Traces controls trace-specific receiver behavior.
+    $ref: traces_config
 allOf:
   - $ref: go.opentelemetry.io/collector/config/confighttp.server_config

@@ -6,7 +6,8 @@
 
 | Name | Description | Values | Enabled | Semantic Convention | Stability |
 | ---- | ----------- | ------ | ------- | ------------------- | --------- |
-| azure.resourcegroup.name | The azure.resourcegroup.name | Any Str | true | - | - |
+| azure.resource_group.name | The azure.resource_group.name. Only emitted when the processor.azuredetector.RenameResourceGroupAttribute feature gate is enabled. | Any Str | true | - | - |
+| azure.resourcegroup.name | The azure.resourcegroup.name. Deprecated, use azure.resource_group.name instead by enabling the processor.azuredetector.RenameResourceGroupAttribute feature gate. | Any Str | true | - | - |
 | azure.vm.name | The azure.vm.name | Any Str | true | - | - |
 | azure.vm.scaleset.name | The azure.vm.scaleset.name | Any Str | true | - | - |
 | azure.vm.size | The azure.vm.size | Any Str | true | - | - |
@@ -17,3 +18,13 @@
 | cloud.region | The cloud.region | Any Str | true | [cloud.region](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-region) | - |
 | host.id | The host.id | Any Str | true | [host.id](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/host.md#host-id) | - |
 | host.name | The hostname | Any Str | true | [host.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/host.md#host-name) | - |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `processor.azuredetector.RenameResourceGroupAttribute` | alpha | When enabled, the azure detector emits the azure.resource_group.name resource attribute instead of azure.resourcegroup.name, aligning with semantic convention naming. | v0.165.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49079) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

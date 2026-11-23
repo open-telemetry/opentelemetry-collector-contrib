@@ -13,4 +13,5 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [dmitryax]
+    active: [etserend]
+    emeritus: [dmitryax]

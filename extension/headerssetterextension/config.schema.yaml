@@ -21,7 +21,7 @@ $defs:
         type: string
       value:
         x-pointer: true
-        type: string
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       value_file:
         x-pointer: true
         type: string

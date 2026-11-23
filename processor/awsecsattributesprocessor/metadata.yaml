@@ -12,7 +12,8 @@ status:
     development: [logs, metrics, traces, profiles]
   distributions: []
   codeowners:
-    active: [povilasv, iblancasa, dmitryax]
+    active: [povilasv, iblancasa]
+    emeritus: [dmitryax]
 
 tests:
   config:

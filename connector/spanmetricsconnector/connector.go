@@ -46,6 +46,7 @@ const (
 	metricNameDuration = "duration"
 	metricNameCalls    = "calls"
 	metricNameEvents   = "events"
+	metricNameSelfTime = "duration_self_time"
 
 	metricAttrSamplingMethod = "sampling.method"
 
@@ -60,6 +61,10 @@ const (
 type dimensionList struct {
 	nameDimensions []utilattri.Dimension
 	globDimensions []glob.Glob
+}
+
+func (d dimensionList) empty() bool {
+	return len(d.nameDimensions) == 0 && len(d.globDimensions) == 0
 }
 
 type connectorImp struct {
@@ -95,17 +100,25 @@ type connectorImp struct {
 	durationDimensions dimensionList
 
 	events EventsConfig
+	// selfTime is true when the self-time histogram is enabled and histograms are not disabled.
+	selfTime bool
 
 	// Tracks the last TimestampUnixNano for delta metrics so that they represent an uninterrupted series. Unused for cumulative span metrics.
-	lastDeltaTimestamps *simplelru.LRU[metrics.Key, pcommon.Timestamp]
+	lastDeltaTimestamps *simplelru.LRU[deltaMetricKey, pcommon.Timestamp]
 	instanceID          string
 }
 
+type deltaMetricKey struct {
+	resource resourceKey
+	metric   metrics.Key
+}
+
 type resourceMetrics struct {
-	histograms metrics.HistogramMetrics
-	sums       metrics.SumMetrics
-	events     metrics.SumMetrics
-	attributes pcommon.Map
+	histograms         metrics.HistogramMetrics
+	selfTimeHistograms metrics.HistogramMetrics
+	sums               *metrics.SumMetrics
+	events             *metrics.SumMetrics
+	attributes         pcommon.Map
 	// lastSeen captures when the last data points for this resource were recorded.
 	lastSeen time.Time
 }
@@ -149,10 +162,10 @@ func newConnector(logger *zap.Logger, config component.Config, clock clockwork.C
 		resourceMetricsKeyAttributes[attr] = s
 	}
 
-	var lastDeltaTimestamps *simplelru.LRU[metrics.Key, pcommon.Timestamp]
+	var lastDeltaTimestamps *simplelru.LRU[deltaMetricKey, pcommon.Timestamp]
 	if cfg.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
-		lastDeltaTimestamps, err = simplelru.NewLRU(cfg.GetDeltaTimestampCacheSize(), func(k metrics.Key, _ pcommon.Timestamp) {
-			logger.Info("Evicting cached delta timestamp", zap.String("key", string(k)))
+		lastDeltaTimestamps, err = simplelru.NewLRU(cfg.GetDeltaTimestampCacheSize(), func(k deltaMetricKey, _ pcommon.Timestamp) {
+			logger.Debug("Evicting cached delta timestamp", zap.String("key", string(k.metric)), zap.Binary("resource", k.resource[:]))
 		})
 		if err != nil {
 			return nil, err
@@ -191,6 +204,7 @@ func newConnector(logger *zap.Logger, config component.Config, clock clockwork.C
 		callsDimensions:              callsDimensions,
 		durationDimensions:           durationDimensions,
 		events:                       cfg.Events,
+		selfTime:                     cfg.Histogram.SelfTime && !cfg.Histogram.Disable,
 		instanceID:                   instanceID,
 	}, nil
 }
@@ -225,6 +239,15 @@ func initHistogramMetrics(cfg Config) metrics.HistogramMetrics {
 	}
 
 	return metrics.NewExplicitHistogramMetrics(bounds, cfg.Exemplars.MaxPerDataPoint, cfg.AggregationCardinalityLimit)
+}
+
+// initSelfTimeHistogramMetrics builds a histogram aggregator for the optional
+// self-time metric using the same bucket/unit settings as duration histograms.
+func initSelfTimeHistogramMetrics(cfg Config) metrics.HistogramMetrics {
+	if !cfg.Histogram.SelfTime {
+		return nil
+	}
+	return initHistogramMetrics(cfg)
 }
 
 // unitDivider returns a unit divider to convert nanoseconds to milliseconds or seconds.
@@ -310,7 +333,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 	m := pmetric.NewMetrics()
 	timestamp := pcommon.NewTimestampFromTime(p.clock.Now())
 
-	p.resourceMetrics.ForEach(func(_ resourceKey, rawMetrics *resourceMetrics) {
+	p.resourceMetrics.ForEach(func(rk resourceKey, rawMetrics *resourceMetrics) {
 		rm := m.ResourceMetrics().AppendEmpty()
 		if !metadata.ConnectorSpanmetricsExcludeResourceMetricsFeatureGate.IsEnabled() || p.config.AddResourceAttributes {
 			rawMetrics.attributes.CopyTo(rm.Resource().Attributes())
@@ -324,10 +347,14 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		 * - For cumulative metrics: (T1, T2), (T1, T3), (T1, T4) ...
 		 * - For delta metrics: (T1, T2), (T2, T3), (T3, T4) ...
 		 */
-		deltaMetricKeys := make(map[metrics.Key]bool)
+		aggregationTemporality := p.config.GetAggregationTemporality()
+		var deltaMetricKeys map[metrics.Key]bool
+		if aggregationTemporality == pmetric.AggregationTemporalityDelta {
+			deltaMetricKeys = make(map[metrics.Key]bool)
+		}
 		timeStampGenerator := func(mk metrics.Key, startTime pcommon.Timestamp) pcommon.Timestamp {
-			if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
-				if lastTimestamp, ok := p.lastDeltaTimestamps.Get(mk); ok {
+			if aggregationTemporality == pmetric.AggregationTemporalityDelta {
+				if lastTimestamp, ok := p.lastDeltaTimestamps.Get(deltaMetricKey{resource: rk, metric: mk}); ok {
 					startTime = lastTimestamp
 				}
 				// Collect lastDeltaTimestamps keys that need to be updated. Metrics can share the same key, so defer the update.
@@ -344,26 +371,33 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		sums := rawMetrics.sums
 		metric := sm.Metrics().AppendEmpty()
 		metric.SetName(buildMetricName(metricsNamespace, metricNameCalls))
-		sums.BuildMetrics(metric, timestamp, timeStampGenerator, p.config.GetAggregationTemporality())
+		sums.BuildMetrics(metric, timestamp, timeStampGenerator, aggregationTemporality)
 
 		if !p.config.Histogram.Disable {
 			histograms := rawMetrics.histograms
 			metric = sm.Metrics().AppendEmpty()
 			metric.SetName(buildMetricName(metricsNamespace, metricNameDuration))
 			metric.SetUnit(p.config.Histogram.Unit.String())
-			histograms.BuildMetrics(metric, timestamp, timeStampGenerator, p.config.GetAggregationTemporality())
+			histograms.BuildMetrics(metric, timestamp, timeStampGenerator, aggregationTemporality)
 		}
 
 		events := rawMetrics.events
 		if p.events.Enabled {
 			metric = sm.Metrics().AppendEmpty()
 			metric.SetName(buildMetricName(metricsNamespace, metricNameEvents))
-			events.BuildMetrics(metric, timestamp, timeStampGenerator, p.config.GetAggregationTemporality())
+			events.BuildMetrics(metric, timestamp, timeStampGenerator, aggregationTemporality)
+		}
+
+		if p.selfTime && rawMetrics.selfTimeHistograms != nil {
+			metric = sm.Metrics().AppendEmpty()
+			metric.SetName(buildMetricName(metricsNamespace, metricNameSelfTime))
+			metric.SetUnit(p.config.Histogram.Unit.String())
+			rawMetrics.selfTimeHistograms.BuildMetrics(metric, timestamp, timeStampGenerator, p.config.GetAggregationTemporality())
 		}
 
 		for mk := range deltaMetricKeys {
 			// For delta metrics, cache the current data point's timestamp, which will be the start timestamp for the next data points in the series
-			p.lastDeltaTimestamps.Add(mk, timestamp)
+			p.lastDeltaTimestamps.Add(deltaMetricKey{resource: rk, metric: mk}, timestamp)
 		}
 	})
 
@@ -392,6 +426,9 @@ func (p *connectorImp) resetState() {
 				if !p.config.Histogram.Disable {
 					m.histograms.ClearExemplars()
 				}
+				if p.selfTime && m.selfTimeHistograms != nil {
+					m.selfTimeHistograms.ClearExemplars()
+				}
 			}
 
 			if p.config.SeriesExpiration > 0 {
@@ -399,6 +436,9 @@ func (p *connectorImp) resetState() {
 				m.events.ExpireSeries(p.config.SeriesExpiration, now)
 				if !p.config.Histogram.Disable {
 					m.histograms.ExpireSeries(p.config.SeriesExpiration, now)
+				}
+				if p.selfTime && m.selfTimeHistograms != nil {
+					m.selfTimeHistograms.ExpireSeries(p.config.SeriesExpiration, now)
 				}
 			}
 
@@ -426,6 +466,11 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 	// Consecutive spans from the same trace share identical tracestates.
 	adjustedCountCache := metrics.NewAdjustedCountCache()
 
+	var selfTimeBySpanID map[pcommon.SpanID]int64
+	if p.selfTime {
+		selfTimeBySpanID = computeSelfTimeBySpanID(traces)
+	}
+
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
@@ -437,6 +482,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 		rm := p.getOrCreateResourceMetrics(resourceAttr)
 		sums := rm.sums
 		histograms := rm.histograms
+		selfTimeHistograms := rm.selfTimeHistograms
 		events := rm.events
 
 		unitDivider := unitDivider(p.config.Histogram.Unit)
@@ -456,9 +502,9 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				}
 
 				adjustedCount, isAdjusted := metrics.GetStochasticAdjustedCountWithCache(&span, &adjustedCountCache)
-				key := p.buildKey(serviceName, span, p.dimensions, p.callsDimensions, resourceAttr, isAdjusted)
+				key := p.buildKey(serviceName, span, p.dimensions, p.callsDimensions, resourceAttr, nil, isAdjusted)
 				attributesFun := func() pcommon.Map {
-					return p.buildAttributes(serviceName, span, resourceAttr, p.dimensions, p.callsDimensions, ils.Scope(), isAdjusted)
+					return p.buildAttributes(serviceName, span, resourceAttr, nil, p.dimensions, p.callsDimensions, ils.Scope(), isAdjusted)
 				}
 
 				// aggregate sums metrics
@@ -471,34 +517,48 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 
 				// aggregate histogram metrics
 				if !p.config.Histogram.Disable {
-					durationKey := p.buildKey(serviceName, span, p.dimensions, p.durationDimensions, resourceAttr, isAdjusted)
-					attributesFun = func() pcommon.Map {
-						return p.buildAttributes(serviceName, span, resourceAttr, p.dimensions, p.durationDimensions, ils.Scope(), isAdjusted)
+					// Reuse the calls key/attributes when neither metric has metric-specific dimensions.
+					durationKey := key
+					durationAttributesFun := attributesFun
+					if !p.callsDimensions.empty() || !p.durationDimensions.empty() {
+						durationKey = p.buildKey(serviceName, span, p.dimensions, p.durationDimensions, resourceAttr, nil, isAdjusted)
+						durationAttributesFun = func() pcommon.Map {
+							return p.buildAttributes(serviceName, span, resourceAttr, nil, p.dimensions, p.durationDimensions, ils.Scope(), isAdjusted)
+						}
 					}
-					h, durationLimitReached := histograms.GetOrCreate(durationKey, attributesFun, startTimestamp, lastSeen)
+					h, durationLimitReached := histograms.GetOrCreate(durationKey, durationAttributesFun, startTimestamp, lastSeen)
 					if !durationLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 						p.addExemplar(span, duration, h)
 					}
 					h.ObserveN(duration, adjustedCount)
 				}
 
+				// Exclusive time computed from the parent-child tree of the
+				// consumed batch. Requires complete traces in the batch.
+				if p.selfTime && selfTimeHistograms != nil {
+					if selfTimeNS, ok := selfTimeBySpanID[span.SpanID()]; ok {
+						selfTime := float64(selfTimeNS) / float64(unitDivider)
+						selfTimeKey := p.buildKey(serviceName, span, p.dimensions, p.durationDimensions, resourceAttr, nil, isAdjusted)
+						attributesFun = func() pcommon.Map {
+							return p.buildAttributes(serviceName, span, resourceAttr, nil, p.dimensions, p.durationDimensions, ils.Scope(), isAdjusted)
+						}
+						h, selfTimeLimitReached := selfTimeHistograms.GetOrCreate(selfTimeKey, attributesFun, startTimestamp, lastSeen)
+						if !selfTimeLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
+							p.addExemplar(span, selfTime, h)
+						}
+						h.ObserveN(selfTime, adjustedCount)
+					}
+				}
+
 				// aggregate events metrics
 				if p.events.Enabled {
 					for l := 0; l < span.Events().Len(); l++ {
 						event := span.Events().At(l)
-						rscAndEventAttrs := pcommon.NewMap()
-
-						rscAndEventAttrs.EnsureCapacity(resourceAttr.Len() + event.Attributes().Len())
-						resourceAttr.CopyTo(rscAndEventAttrs)
-						// We cannot use event.Attributes().CopyTo(rscAdnEventAttrs) because it overrides the existing keys.
-						event.Attributes().Range(func(k string, v pcommon.Value) bool {
-							v.CopyTo(rscAndEventAttrs.PutEmpty(k))
-							return true
-						})
-
-						eKey := p.buildKey(serviceName, span, p.dimensions, p.eDimensions, rscAndEventAttrs, isAdjusted)
+						eventAttrs := event.Attributes()
+						eKey := p.buildKey(serviceName, span, p.dimensions, p.eDimensions, resourceAttr, &eventAttrs, isAdjusted)
 						attributesFun = func() pcommon.Map {
-							return p.buildAttributes(serviceName, span, rscAndEventAttrs, p.dimensions, p.eDimensions, ils.Scope(), isAdjusted)
+							ea := event.Attributes()
+							return p.buildAttributes(serviceName, span, resourceAttr, &ea, p.dimensions, p.eDimensions, ils.Scope(), isAdjusted)
 						}
 						e, eventLimitReached := events.GetOrCreate(eKey, attributesFun, startTimestamp, lastSeen)
 						if !eventLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
@@ -530,11 +590,12 @@ func (p *connectorImp) createResourceKey(attr pcommon.Map) resourceKey {
 		return xhash.MapHash(attr)
 	}
 	m := pcommon.NewMap()
-	attr.CopyTo(m)
-	m.RemoveIf(func(k string, _ pcommon.Value) bool {
-		_, ok := p.resourceMetricsKeyAttributes[k]
-		return !ok
-	})
+	m.EnsureCapacity(len(p.resourceMetricsKeyAttributes))
+	for k := range p.resourceMetricsKeyAttributes {
+		if v, ok := attr.Get(k); ok {
+			v.CopyTo(m.PutEmpty(k))
+		}
+	}
 	return xhash.MapHash(m)
 }
 
@@ -543,10 +604,11 @@ func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMet
 	v, ok := p.resourceMetrics.Get(key)
 	if !ok {
 		v = &resourceMetrics{
-			histograms: initHistogramMetrics(p.config),
-			sums:       metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint, p.config.AggregationCardinalityLimit),
-			events:     metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint, p.config.AggregationCardinalityLimit),
-			attributes: attr,
+			histograms:         initHistogramMetrics(p.config),
+			selfTimeHistograms: initSelfTimeHistogramMetrics(p.config),
+			sums:               metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint, p.config.AggregationCardinalityLimit),
+			events:             metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint, p.config.AggregationCardinalityLimit),
+			attributes:         attr,
 		}
 		p.resourceMetrics.Add(key, v)
 	}
@@ -563,6 +625,7 @@ func (p *connectorImp) buildAttributes(
 	serviceName string,
 	span ptrace.Span,
 	resourceAttrs pcommon.Map,
+	eventAttrs *pcommon.Map,
 	dimensions dimensionList,
 	optionalDims dimensionList,
 	instrumentationScope pcommon.InstrumentationScope,
@@ -617,8 +680,8 @@ func (p *connectorImp) buildAttributes(
 		}
 	}
 
-	addResourceAttributes(&attr, dimensions, span, resourceAttrs)
-	addResourceAttributes(&attr, optionalDims, span, resourceAttrs)
+	addResourceAttributes(&attr, dimensions, span, resourceAttrs, eventAttrs)
+	addResourceAttributes(&attr, optionalDims, span, resourceAttrs, eventAttrs)
 
 	return attr
 }
@@ -632,11 +695,22 @@ func sortedKeys(attrs pcommon.Map) []string {
 	return keys
 }
 
-// matchDimensions iterates over span and resource attributes, applying function f
-// if the attribute matches any of dimension's name or glob expression.
-func matchDimensions(dimensions dimensionList, span ptrace.Span, resourceAttrs pcommon.Map, f func(string, pcommon.Value)) {
+// matchDimensions iterates over span, optional event, and resource attributes, applying
+// function f if the attribute matches any of dimension's name or glob expression.
+// Precedence is span attributes, then event attributes (when provided), then resource attributes.
+// Glob matches are visited in sorted name order across the merged event and resource attribute
+// names so the resulting metric key is stable regardless of where each attribute came from.
+func matchDimensions(dimensions dimensionList, span ptrace.Span, resourceAttrs pcommon.Map, eventAttrs *pcommon.Map, f func(string, pcommon.Value)) {
+	spanAttrs := span.Attributes()
 	for _, d := range dimensions.nameDimensions {
-		if v, ok := utilattri.GetDimensionValue(d, span.Attributes(), resourceAttrs); ok {
+		var v pcommon.Value
+		var ok bool
+		if eventAttrs != nil {
+			v, ok = utilattri.GetDimensionValue(d, spanAttrs, *eventAttrs, resourceAttrs)
+		} else {
+			v, ok = utilattri.GetDimensionValue(d, spanAttrs, resourceAttrs)
+		}
+		if ok {
 			f(d.Name, v)
 		}
 	}
@@ -644,22 +718,59 @@ func matchDimensions(dimensions dimensionList, span ptrace.Span, resourceAttrs p
 	if len(dimensions.globDimensions) == 0 {
 		return
 	}
-	for _, n := range sortedKeys(span.Attributes()) {
+	for _, n := range sortedKeys(spanAttrs) {
 		for _, g := range dimensions.globDimensions {
 			if g.Match(n) {
-				v, _ := span.Attributes().Get(n)
+				v, _ := spanAttrs.Get(n)
 				f(n, v)
 				break
 			}
 		}
 	}
-	for _, n := range sortedKeys(resourceAttrs) {
-		if _, ok := span.Attributes().Get(n); ok {
+	if eventAttrs == nil {
+		for _, n := range sortedKeys(resourceAttrs) {
+			if _, ok := spanAttrs.Get(n); ok {
+				continue
+			}
+			for _, g := range dimensions.globDimensions {
+				if g.Match(n) {
+					v, _ := resourceAttrs.Get(n)
+					f(n, v)
+					break
+				}
+			}
+		}
+		return
+	}
+
+	// Walk the sorted event and resource attribute names as a single merged, deduplicated
+	// sequence so the visiting order (and therefore the metric key) only depends on the final
+	// attribute set, not on which names the event happens to repeat from the resource.
+	// Event attributes take precedence over resource attributes for the same name.
+	eventKeys := sortedKeys(*eventAttrs)
+	resourceKeys := sortedKeys(resourceAttrs)
+	ei, ri := 0, 0
+	for ei < len(eventKeys) || ri < len(resourceKeys) {
+		var n string
+		var attrs pcommon.Map
+		switch {
+		case ri >= len(resourceKeys) || (ei < len(eventKeys) && eventKeys[ei] < resourceKeys[ri]):
+			n, attrs = eventKeys[ei], *eventAttrs
+			ei++
+		case ei >= len(eventKeys) || resourceKeys[ri] < eventKeys[ei]:
+			n, attrs = resourceKeys[ri], resourceAttrs
+			ri++
+		default: // same name in both: the event value wins.
+			n, attrs = eventKeys[ei], *eventAttrs
+			ei++
+			ri++
+		}
+		if _, ok := spanAttrs.Get(n); ok {
 			continue
 		}
 		for _, g := range dimensions.globDimensions {
 			if g.Match(n) {
-				v, _ := resourceAttrs.Get(n)
+				v, _ := attrs.Get(n)
 				f(n, v)
 				break
 			}
@@ -667,8 +778,8 @@ func matchDimensions(dimensions dimensionList, span ptrace.Span, resourceAttrs p
 	}
 }
 
-func addResourceAttributes(attrs *pcommon.Map, dimensions dimensionList, span ptrace.Span, resourceAttrs pcommon.Map) {
-	matchDimensions(dimensions, span, resourceAttrs, func(n string, v pcommon.Value) {
+func addResourceAttributes(attrs *pcommon.Map, dimensions dimensionList, span ptrace.Span, resourceAttrs pcommon.Map, eventAttrs *pcommon.Map) {
+	matchDimensions(dimensions, span, resourceAttrs, eventAttrs, func(n string, v pcommon.Value) {
 		v.CopyTo(attrs.PutEmpty(n))
 	})
 }
@@ -683,12 +794,13 @@ func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
 // buildKey builds the metric key from the service name and span metadata such as name, kind, status_code and
 // will attempt to add any additional dimensions the user has configured that match the span's attributes
 // or resource/event attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
+// When eventAttrs is non-nil, event attributes override resource attributes for the same key.
 //
 // When enable_metrics_sampling_method is true, the sampling method (extrapolated or counted) is included in the key
 // so that spans with different tracestate produce distinct metrics.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, dimensions, optionalDims dimensionList, resourceOrEventAttrs pcommon.Map, isAdjusted bool) metrics.Key {
+func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, dimensions, optionalDims dimensionList, resourceAttrs pcommon.Map, eventAttrs *pcommon.Map, isAdjusted bool) metrics.Key {
 	p.keyBuf.Reset()
 
 	if !slices.Contains(p.config.ExcludeDimensions, serviceNameKey) {
@@ -710,10 +822,10 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, dimensions
 		}
 	}
 
-	matchDimensions(dimensions, span, resourceOrEventAttrs, func(n string, v pcommon.Value) {
+	matchDimensions(dimensions, span, resourceAttrs, eventAttrs, func(n string, v pcommon.Value) {
 		concatDimensionValue(p.keyBuf, n+":"+v.AsString(), true)
 	})
-	matchDimensions(optionalDims, span, resourceOrEventAttrs, func(n string, v pcommon.Value) {
+	matchDimensions(optionalDims, span, resourceAttrs, eventAttrs, func(n string, v pcommon.Value) {
 		concatDimensionValue(p.keyBuf, n+":"+v.AsString(), true)
 	})
 

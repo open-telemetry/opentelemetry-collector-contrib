@@ -18,6 +18,7 @@ resourceMetrics:
                     - "15"
                     - "11"
                   count: "41"
+                  sum: 840.5
                   explicitBounds:
                     - 11.1
                     - 18.8

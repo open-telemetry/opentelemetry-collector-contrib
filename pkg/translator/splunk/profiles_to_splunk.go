@@ -4,7 +4,9 @@
 package splunk // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 
 import (
+	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/pprof/profile"
@@ -17,7 +19,7 @@ const (
 	// profiling backend contract (see comment on AddProfilingPprofSampleLabels):
 	//   - sourceEventNameLabel (string) optionally names the event that triggered the sampling.
 	//   - sourceEventTimeLabel (int64) MUST be the unix time in milliseconds when the sample was taken.
-	//   - sourceEventPeriodLabel (string) holds the sampling period for cpu profiles.
+	//   - sourceEventPeriodLabel (string) holds the sampling period in milliseconds for periodic cpu profiles.
 	sourceEventNameLabel   = "source.event.name"
 	sourceEventTimeLabel   = "source.event.time"
 	sourceEventPeriodLabel = "source.event.period"
@@ -30,10 +32,20 @@ func AddProfilingPprofSampleLabels(p *profile.Profile, dict pprofile.ProfilesDic
 		profileTime = time.Now()
 	}
 
-	typeIdx := int(prof.SampleType().TypeStrindex())
-	var sampleType string
-	if typeIdx >= 0 && typeIdx < dict.StringTable().Len() {
-		sampleType = dict.StringTable().At(typeIdx)
+	periodTypeIdx := int(prof.PeriodType().TypeStrindex())
+	var periodType, periodUnit string
+	if periodTypeIdx >= 0 && periodTypeIdx < dict.StringTable().Len() {
+		periodType = strings.ToLower(dict.StringTable().At(periodTypeIdx))
+	}
+	periodUnitIdx := int(prof.PeriodType().UnitStrindex())
+	if periodUnitIdx >= 0 && periodUnitIdx < dict.StringTable().Len() {
+		periodUnit = strings.ToLower(dict.StringTable().At(periodUnitIdx))
+	}
+	var periodLabel string
+	if periodType == "cpu" {
+		if periodMillis, ok := periodInMilliseconds(prof.Period(), periodUnit); ok {
+			periodLabel = strconv.FormatFloat(periodMillis, 'f', -1, 64)
+		}
 	}
 	emittedIdx := 0
 	for srcIdx := range prof.Samples().Len() {
@@ -73,8 +85,8 @@ func AddProfilingPprofSampleLabels(p *profile.Profile, dict pprofile.ProfilesDic
 			sample.Label[sourceEventNameLabel] = []string{scope.Name()}
 			// source.event.time MUST be the unix time in milliseconds; the backend rejects other units.
 			sample.NumLabel[sourceEventTimeLabel] = []int64{eventTime.UnixMilli()}
-			if sampleType == "cpu" {
-				sample.Label[sourceEventPeriodLabel] = []string{strconv.Itoa(int(prof.Period()))}
+			if periodLabel != "" {
+				sample.Label[sourceEventPeriodLabel] = []string{periodLabel}
 			}
 
 			if li := src.LinkIndex(); li > 0 && int(li) < dict.LinkTable().Len() {
@@ -86,4 +98,27 @@ func AddProfilingPprofSampleLabels(p *profile.Profile, dict pprofile.ProfilesDic
 			emittedIdx++
 		}
 	}
+}
+
+func periodInMilliseconds(period int64, unit string) (float64, bool) {
+	if period <= 0 {
+		return 0, false
+	}
+	var milliseconds float64
+	switch unit {
+	case "ns", "nanosecond", "nanoseconds":
+		milliseconds = float64(period) / float64(time.Millisecond)
+	case "us", "µs", "microsecond", "microseconds":
+		milliseconds = float64(period) / float64(time.Microsecond)
+	case "ms", "millisecond", "milliseconds":
+		milliseconds = float64(period)
+	case "s", "sec", "second", "seconds":
+		milliseconds = float64(period) * float64(time.Second/time.Millisecond)
+	default:
+		return 0, false
+	}
+	if math.IsInf(milliseconds, 0) || math.IsNaN(milliseconds) {
+		return 0, false
+	}
+	return milliseconds, true
 }

@@ -15,6 +15,7 @@ components:
     - cmd/oteltestbedcol
     - cmd/telemetrygen
     - config/configdbauth
+    - config/xconfigunit
     - connector/count
     - connector/datadog
     - connector/exceptions
@@ -37,8 +38,8 @@ components:
     - exporter/awss3
     - exporter/awsxray
     - exporter/azure_blob
+    - exporter/azure_data_explorer
     - exporter/azure_monitor
-    - exporter/azuredataexplorer
     - exporter/bmc_helix
     - exporter/cassandra
     - exporter/clickhouse
@@ -85,7 +86,7 @@ components:
     - extension/awsproxy
     - extension/azure_auth
     - extension/azure_encoding
-    - extension/basicauth
+    - extension/basic_auth
     - extension/bearertokenauth
     - extension/cfgarden_observer
     - extension/cgroup_runtime
@@ -168,6 +169,7 @@ components:
     - pkg/otelarrow
     - pkg/ottl
     - pkg/ottl/contexts/xprofile
+    - pkg/ottl/contexts/xspanlink
     - pkg/ottl/xottl
     - pkg/pdatatest
     - pkg/prometheus
@@ -187,6 +189,7 @@ components:
     - pkg/translator/signalfx
     - pkg/translator/splunk
     - pkg/winperfcounters
+    - pkg/xcompression
     - pkg/xk8stest
     - pkg/xstreamencoding
     - pkg/zipkin
@@ -241,6 +244,7 @@ components:
     - processor/tencentcvmdetector
     - processor/transform
     - processor/transformprocessor/internal/logparsingfuncs
+    - processor/transformprocessor/xtransformprocessor
     - processor/unroll
     - processor/upclouddetector
     - processor/verify
@@ -366,6 +370,7 @@ components:
     - scraper/cpu
     - scraper/disk
     - scraper/filesystem
+    - scraper/hardware
     - scraper/interfaces
     - scraper/load
     - scraper/memory
@@ -378,4 +383,5 @@ components:
     - scraper/system
     - scraper/zookeeper
     - testbed
+    - testbed/integrationtests/elasticsearch
     - testbed/mockdatasenders/mockdatadogagentexporter

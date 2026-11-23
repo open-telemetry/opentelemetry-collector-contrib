@@ -15,26 +15,35 @@ type ClientOptionsResolver interface {
 	GetArmSubscriptionsClientOptions() *arm.ClientOptions
 	GetArmMonitorClientOptions() *arm.ClientOptions
 	GetAzMetricsClientOptions() *azmetrics.ClientOptions
+	GetBatchAPIEndpoint(region string) string
 }
 
 type clientOptionsResolver struct {
-	cloud cloud.Configuration
+	cloud          cloud.Configuration
+	batchAPIDomain string
 }
 
-// newClientOptionsResolver creates a resolver that will always return the same options.
+// newClientOptionsResolver creates a resolver that will always return the same cloud options and Batch API endpoint domain.
 // Unlike in the tests where there will be one option by API mock, here we don't need different options for each client.
 // Note the fact that it recreates the options each time. It's because the options are mutable, they can be modified by the client ctor.
 func newClientOptionsResolver(cloudStr string) ClientOptionsResolver {
 	var cloudToUse cloud.Configuration
+	var batchAPIDomainToUse string
 	switch cloudStr {
 	case azureGovernmentCloud:
 		cloudToUse = cloud.AzureGovernment
+		batchAPIDomainToUse = "metrics.monitor.azure.us"
 	case azureChinaCloud:
 		cloudToUse = cloud.AzureChina
+		batchAPIDomainToUse = "metrics.monitor.azure.cn"
 	default:
 		cloudToUse = cloud.AzurePublic
+		batchAPIDomainToUse = "metrics.monitor.azure.com"
 	}
-	return &clientOptionsResolver{cloud: cloudToUse}
+	return &clientOptionsResolver{
+		cloud:          cloudToUse,
+		batchAPIDomain: batchAPIDomainToUse,
+	}
 }
 
 func (r *clientOptionsResolver) getClientOptions() azcore.ClientOptions {
@@ -65,4 +74,8 @@ func (r *clientOptionsResolver) GetAzMetricsClientOptions() *azmetrics.ClientOpt
 	return &azmetrics.ClientOptions{
 		ClientOptions: r.getClientOptions(),
 	}
+}
+
+func (r *clientOptionsResolver) GetBatchAPIEndpoint(region string) string {
+	return "https://" + region + "." + r.batchAPIDomain
 }

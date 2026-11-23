@@ -16,6 +16,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -320,7 +322,7 @@ func TestDorisIntegrationTracesEndToEnd(t *testing.T) {
 	cfg := integrationConfig(db, 1)
 	cfg.ClientConfig.Endpoint = streamLoadEndpoint()
 	// no keep-alive: the stream-load connection would otherwise outlive the test and trip goleak
-	cfg.ClientConfig.DisableKeepAlives = true
+	cfg.ClientConfig.Keepalive = configoptional.None[confighttp.KeepaliveClientConfig]()
 	require.NoError(t, cfg.Validate())
 	logger := zaptest.NewLogger(t)
 	exp := newTracesExporter(logger, cfg, componenttest.NewNopTelemetrySettings())

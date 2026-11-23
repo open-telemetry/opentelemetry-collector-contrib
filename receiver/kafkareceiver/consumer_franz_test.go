@@ -33,12 +33,14 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadatatest"
 )
 
 func TestPartitionProcessing(t *testing.T) {
@@ -52,7 +54,7 @@ func TestPartitionProcessing(t *testing.T) {
 		defer close(blocked)
 		started := make(chan struct{}, 1)
 		healthy := make(chan struct{}, 1)
-		h.start(func(ctx context.Context, record *kgo.Record, _ attribute.Set) error {
+		h.start(func(ctx context.Context, record *kgo.Record, _ attribute.Set, _ *partitionTelemetry) error {
 			switch record.Partition {
 			case 0:
 				notify(started)
@@ -71,6 +73,10 @@ func TestPartitionProcessing(t *testing.T) {
 		// Pin partition 0 in consume before partition 1 receives work.
 		h.produce(0, "blocked")
 		waitSignal(t, started, "partition 0 did not start")
+		metadatatest.AssertEqualKafkaReceiverPartitionInFlightRecords(t, h.telemetry, []metricdata.DataPoint[int64]{
+			{Attributes: attribute.NewSet(attribute.String("topic", h.topic), attribute.Int("partition", 0)), Value: 1},
+			{Attributes: attribute.NewSet(attribute.String("topic", h.topic), attribute.Int("partition", 1))},
+		}, metricdatatest.IgnoreTimestamp())
 		h.produce(1, "healthy")
 		waitSignal(t, healthy, "partition 1 was blocked by partition 0")
 	})
@@ -87,7 +93,7 @@ func TestPartitionProcessing(t *testing.T) {
 			mu   sync.Mutex
 			seen = make(map[int64]struct{}, recordCount)
 		)
-		h.start(func(_ context.Context, record *kgo.Record, _ attribute.Set) error {
+		h.start(func(_ context.Context, record *kgo.Record, _ attribute.Set, _ *partitionTelemetry) error {
 			mu.Lock()
 			seen[record.Offset] = struct{}{}
 			mu.Unlock()
@@ -214,7 +220,7 @@ func TestPartitionProcessing(t *testing.T) {
 		started := make(chan struct{}, 1)
 		release := make(chan struct{})
 		var processed atomic.Int64
-		h.start(func(ctx context.Context, _ *kgo.Record, _ attribute.Set) error {
+		h.start(func(ctx context.Context, _ *kgo.Record, _ attribute.Set, _ *partitionTelemetry) error {
 			notify(started)
 			select {
 			case <-release:
@@ -252,7 +258,7 @@ func TestPartitionProcessing(t *testing.T) {
 		})
 		var first atomic.Pointer[kgo.Record]
 		var processed atomic.Int64
-		h.start(func(_ context.Context, record *kgo.Record, _ attribute.Set) error {
+		h.start(func(_ context.Context, record *kgo.Record, _ attribute.Set, _ *partitionTelemetry) error {
 			// Inner backoff retries the same *kgo.Record. A later PollRecords
 			// fetch allocates a new record for the same offset. Franz-go does
 			// not pool these pointers. If it did, waitAtomic would time out.
@@ -277,7 +283,7 @@ func TestPartitionProcessing(t *testing.T) {
 		started := make(chan struct{}, 1)
 		release := make(chan struct{})
 		var attempts atomic.Int64
-		h.start(func(ctx context.Context, _ *kgo.Record, _ attribute.Set) error {
+		h.start(func(ctx context.Context, _ *kgo.Record, _ attribute.Set, _ *partitionTelemetry) error {
 			attempts.Add(1)
 			notify(started)
 			select {
@@ -542,7 +548,7 @@ func newPartitionProcessingHarness(t *testing.T, partitions int, configure func(
 	}
 }
 
-func (h *partitionProcessingHarness) start(consume func(context.Context, *kgo.Record, attribute.Set) error) {
+func (h *partitionProcessingHarness) start(consume func(context.Context, *kgo.Record, attribute.Set, *partitionTelemetry) error) {
 	h.t.Helper()
 
 	settings, telemetry, _ := mustNewSettings(h.t)
@@ -677,7 +683,7 @@ func runStaleWorkerReplacement(
 	t.Helper()
 	processingStarted := make(chan struct{})
 	releaseProcessing := make(chan struct{})
-	consumer.consumeMessage = func(context.Context, *kgo.Record, attribute.Set) error {
+	consumer.consumeMessage = func(context.Context, *kgo.Record, attribute.Set, *partitionTelemetry) error {
 		close(processingStarted)
 		<-releaseProcessing
 		return consumeErr
@@ -867,7 +873,7 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 		newConsumeFunc := func() (newConsumeMessageFunc, chan<- struct{}) {
 			consuming := make(chan struct{})
 			return func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-				return func(ctx context.Context, _ *kgo.Record, _ attribute.Set) error {
+				return func(ctx context.Context, _ *kgo.Record, _ attribute.Set, _ *partitionTelemetry) error {
 					wg.Add(1)
 					defer wg.Done()
 
@@ -927,57 +933,11 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 	}
 }
 
-// TestConsumerWarnsMaxBufferedBatchesDeprecated proves Start logs the deprecation
-// warning only when the deprecated field is set.
-func TestConsumerWarnsMaxBufferedBatchesDeprecated(t *testing.T) {
-	cases := []struct {
-		name          string
-		prefetch      int
-		deprecated    int
-		deprecatedSet bool
-		wantWarning   int
-	}{
-		{
-			name:          "max_buffered_batches set",
-			deprecated:    2,
-			deprecatedSet: true,
-			prefetch:      2,
-			wantWarning:   1,
-		},
-		{
-			name:     "only max_prefetch set",
-			prefetch: 2,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			_, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, "test"))
-			cfg.PartitionProcessing.Independent = true
-			cfg.PartitionProcessing.MaxBufferedBatches = tc.deprecated
-			cfg.PartitionProcessing.maxBufferedBatchesSet = tc.deprecatedSet
-			cfg.PartitionProcessing.MaxPrefetch.Batches = tc.prefetch
-			settings, _, logs := mustNewSettings(t)
-			consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-				return func(_ context.Context, _ *kgo.Record, _ attribute.Set) error {
-					return nil
-				}, nil
-			}
-			c, err := newFranzKafkaConsumer(cfg, settings, []string{"test"}, nil, consumeFn)
-			require.NoError(t, err)
-			require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
-			defer func() { require.NoError(t, c.Shutdown(t.Context())) }()
-
-			require.Equal(t, tc.wantWarning, logs.FilterMessageSnippet("max_buffered_batches is deprecated").Len())
-		})
-	}
-}
-
 func TestConsumerShutdownNotStarted(t *testing.T) {
 	_, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, "test"))
 	settings, _, _ := mustNewSettings(t)
 	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-		return func(_ context.Context, _ *kgo.Record, _ attribute.Set) error {
+		return func(_ context.Context, _ *kgo.Record, _ attribute.Set, _ *partitionTelemetry) error {
 			return nil
 		}, nil
 	}
@@ -1019,7 +979,7 @@ func TestRaceLostVsConsume(t *testing.T) {
 
 	// Noop consume function.
 	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-		return func(context.Context, *kgo.Record, attribute.Set) error {
+		return func(context.Context, *kgo.Record, attribute.Set, *partitionTelemetry) error {
 			return nil
 		}, nil
 	}
@@ -1052,7 +1012,7 @@ func TestLost(t *testing.T) {
 	settings, _, _ := mustNewSettings(t)
 
 	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-		return func(_ context.Context, _ *kgo.Record, _ attribute.Set) error {
+		return func(_ context.Context, _ *kgo.Record, _ attribute.Set, _ *partitionTelemetry) error {
 			return nil
 		}, nil
 	}
@@ -1179,6 +1139,9 @@ func TestStaleWorkerDoesNotMutateReplacement(t *testing.T) {
 	t.Run("mark", func(t *testing.T) {
 		kafkaClient, cfg := mustNewMarkedFakeCluster(t, kfake.SeedTopics(1, topic))
 		consumer := newStaleWorkerConsumer(t, kafkaClient, cfg, topic)
+		// Without this, franz-go drops the mark and the test passes even
+		// when the stale worker is allowed to mark.
+		consumePartition(t, kafkaClient, topic)
 		batch := mailboxBatch(10)
 		batch.Topic = topic
 		batch.Records[0].Topic = topic
@@ -1209,7 +1172,7 @@ func TestLostDiscardsQueuedBatches(t *testing.T) {
 
 	processingStarted := make(chan struct{})
 	releaseProcessing := make(chan struct{})
-	consumer.consumeMessage = func(context.Context, *kgo.Record, attribute.Set) error {
+	consumer.consumeMessage = func(context.Context, *kgo.Record, attribute.Set, *partitionTelemetry) error {
 		close(processingStarted)
 		<-releaseProcessing
 		return nil
@@ -1269,7 +1232,7 @@ func TestLostLeavesRestOfBatchToNextOwner(t *testing.T) {
 	consuming := make(chan struct{}, 1)
 	settings, _, logs := mustNewSettings(t)
 	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-		return func(ctx context.Context, _ *kgo.Record, _ attribute.Set) error {
+		return func(ctx context.Context, _ *kgo.Record, _ attribute.Set, _ *partitionTelemetry) error {
 			if consumed.Add(1) == 1 {
 				notify(consuming)
 				// Block until the revocation cancels us, like an exporter
@@ -1409,7 +1372,7 @@ func TestOffsetLagMetricSuppressedOnForcedRebalance(t *testing.T) {
 
 			gates := make(chan chan struct{}, 1)
 			started := make(chan struct{}, 1)
-			h.start(func(context.Context, *kgo.Record, attribute.Set) error {
+			h.start(func(context.Context, *kgo.Record, attribute.Set, *partitionTelemetry) error {
 				notify(started)
 				gate := <-gates
 				<-gate
@@ -1496,7 +1459,7 @@ func TestOffsetLagMetricSuppressedDuringPartitionInactivity(t *testing.T) {
 
 			// mock consumer func
 			consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-				return func(_ context.Context, record *kgo.Record, _ attribute.Set) error {
+				return func(_ context.Context, record *kgo.Record, _ attribute.Set, _ *partitionTelemetry) error {
 					if record.Partition == reassignedPartition && record.Offset == 2 {
 						// trigger a terminal partition pause
 						return consumererror.NewPermanent(errors.New("permanent processing error"))
@@ -1642,7 +1605,7 @@ func TestResumePartitionsAfterRebalance(t *testing.T) {
 
 	settings, _, _ := mustNewSettings(t)
 	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-		return func(_ context.Context, _ *kgo.Record, _ attribute.Set) error {
+		return func(_ context.Context, _ *kgo.Record, _ attribute.Set, _ *partitionTelemetry) error {
 			if shouldError.Load() {
 				select {
 				case errored <- struct{}{}:
@@ -1734,7 +1697,7 @@ func TestResumePartitionsAfterBackoff(t *testing.T) {
 
 	settings, _, _ := mustNewSettings(t)
 	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-		return func(_ context.Context, _ *kgo.Record, _ attribute.Set) error {
+		return func(_ context.Context, _ *kgo.Record, _ attribute.Set, _ *partitionTelemetry) error {
 			if shouldError.Load() {
 				select {
 				case errored <- struct{}{}:
@@ -1807,7 +1770,7 @@ func TestNoResumePartitionsAfterPermanentError(t *testing.T) {
 
 	settings, _, _ := mustNewSettings(t)
 	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-		return func(_ context.Context, _ *kgo.Record, _ attribute.Set) error {
+		return func(_ context.Context, _ *kgo.Record, _ attribute.Set, _ *partitionTelemetry) error {
 			consumeCount.Add(1)
 			select {
 			case errored <- struct{}{}:
@@ -1866,7 +1829,7 @@ func TestFranzConsumer_UseLeaderEpoch_Smoke(t *testing.T) {
 	var called atomic.Int64
 	settings, _, _ := mustNewSettings(t)
 	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-		return func(_ context.Context, _ *kgo.Record, _ attribute.Set) error {
+		return func(_ context.Context, _ *kgo.Record, _ attribute.Set, _ *partitionTelemetry) error {
 			called.Add(1)
 			return nil
 		}, nil
@@ -1948,7 +1911,7 @@ func TestExcludeTopicWithRegex(t *testing.T) {
 
 	settings, _, _ := mustNewSettings(t)
 	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-		return func(_ context.Context, record *kgo.Record, _ attribute.Set) error {
+		return func(_ context.Context, record *kgo.Record, _ attribute.Set, _ *partitionTelemetry) error {
 			mu.Lock()
 			consumedTopics[record.Topic]++
 			mu.Unlock()
@@ -2046,7 +2009,7 @@ func TestFetchErrorDoesNotDropOtherPartitions(t *testing.T) {
 			var processed atomic.Int64
 			settings, _, logs := mustNewSettings(t)
 			consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-				return func(_ context.Context, r *kgo.Record, _ attribute.Set) error {
+				return func(_ context.Context, r *kgo.Record, _ attribute.Set, _ *partitionTelemetry) error {
 					if r.Partition == 1 {
 						processed.Add(1)
 					}
