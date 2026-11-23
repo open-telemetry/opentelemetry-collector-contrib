@@ -36,6 +36,10 @@ func (c concurrentSQSClient) DeleteMessage(ctx context.Context, input *sqs.Delet
 	return c.delete(ctx, input)
 }
 
+func (concurrentSQSClient) ChangeMessageVisibility(context.Context, *sqs.ChangeMessageVisibilityInput, ...func(*sqs.Options)) (*sqs.ChangeMessageVisibilityOutput, error) {
+	return nil, errors.New("unexpected ChangeMessageVisibility call")
+}
+
 func TestSQSClientConcurrency(t *testing.T) {
 	for _, concurrency := range []int{1, 3} {
 		t.Run(fmt.Sprint(concurrency), func(t *testing.T) {
