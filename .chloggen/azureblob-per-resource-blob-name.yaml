@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: exporter/azureblob
+component: exporter/azure_blob
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Add `blob_name_format::template_scope`, which can be set to `resource` to evaluate blob name templates per resource entry and upload each entry to its own blob.
