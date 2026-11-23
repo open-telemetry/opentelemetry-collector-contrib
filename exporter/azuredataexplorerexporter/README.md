@@ -47,6 +47,7 @@ The following settings can be optionally configured and have default values:
 - `logs_table_json_mapping` (optional, no default): The table mapping name to be used for the table `db_name`.`logs_table_name`
 - `traces_table_json_mapping` (optional, no default): The table mapping name to be used for the table `db_name`.`traces_table_name`
 - `ingestion_type` (possible values=`queued` / `managed`,  default = queued): ADX ingest can happen in managed [streaming](https://docs.microsoft.com/azure/data-explorer/kusto/management/streamingingestionpolicy) or [queued](https://docs.microsoft.com/azure/data-explorer/kusto/management/batchingpolicy) modes.
+- `enable_ingest_v2` (default = false): Allows queued ingestion to use Ingest V2 when the DM service prefers REST ingestion or OneLake uploads. It does not force V2. Managed ingestion remains on the legacy path. See [Ingestion V2](#ingestion-v2).
 
 > Note: [Streaming ingestion](https://docs.microsoft.com/azure/data-explorer/ingest-data-streaming?tabs=azure-portal%2Ccsharp) has to be enabled on ADX [configure the ADX cluster] in case of `streaming` option. Refer the query below to check if streaming is enabled
 
@@ -99,6 +100,42 @@ exporters:
     #   max_interval: 60s
     #   max_elapsed_time: 10m
 ```
+
+## Ingestion V2
+
+With `enable_ingest_v2: true`, queued ingestion uses V2 when the DM configuration
+prefers REST ingestion or OneLake uploads. Managed ingestion stays on the legacy
+path.
+
+```yaml
+exporters:
+  azure_data_explorer:
+    cluster_uri: "https://mycluster.kusto.windows.net"
+    use_azure_auth: true
+    db_name: "oteldb"
+    ingestion_type: "queued"
+    enable_ingest_v2: true
+    metrics_table_name: "OTELMetrics"
+    logs_table_name: "OTELLogs"
+    traces_table_name: "OTELTraces"
+    metrics_table_json_mapping: "otelmetrics_mapping"
+    logs_table_json_mapping: "otellogs_mapping"
+    traces_table_json_mapping: "oteltraces_mapping"
+```
+
+This example uses default Azure authentication. Alternatively, configure the
+existing service-principal or managed-identity settings, using exactly one
+authentication method. The database, tables, and mapping references must already
+exist.
+
+The exporter passes newline-delimited JSON to the ingestion SDK, rather than
+uploading to staging containers itself.
+The SDK handles gzip compression, staging upload, and ingestion submission.
+Database, table, and per-signal JSON mapping references are preserved.
+
+See the [Ingest V2 integration guide](docs/INGEST_V2_SPECS_AND_INTEGRATION.md)
+for endpoint selection, configuration caching, staging destinations,
+authentication, and fallback behavior.
 
 ## Attribute mapping
 
