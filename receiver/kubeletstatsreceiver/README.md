@@ -208,7 +208,7 @@ it, for example:
 ```yaml
 receivers:
   kubelet_stats:
-    collection_interval: 10s
+    collection_interval: 60s
     auth_type: "serviceAccount"
     endpoint: "${env:K8S_NODE_NAME}:10250"
     insecure_skip_verify: true
@@ -227,7 +227,7 @@ is an example, configuration to achieve this.
 ```yaml
 receivers:
   kubelet_stats:
-    collection_interval: 10s
+    collection_interval: 60s
     auth_type: "serviceAccount"
     endpoint: "${env:K8S_NODE_NAME}:10250"
     insecure_skip_verify: true
@@ -255,7 +255,7 @@ looking to collect only `node` and `pod` metrics from the receiver use the follo
 ```yaml
 receivers:
   kubelet_stats:
-    collection_interval: 10s
+    collection_interval: 60s
     auth_type: "serviceAccount"
     endpoint: "${env:K8S_NODE_NAME}:10250"
     insecure_skip_verify: true
@@ -272,7 +272,7 @@ For example, if you would like to have network IO/error metrics from all network
 ```yaml
 receivers:
   kubelet_stats:
-    collection_interval: 10s
+    collection_interval: 60s
     auth_type: "serviceAccount"
     endpoint: "${env:K8S_NODE_NAME}:10250"
     insecure_skip_verify: true
@@ -302,7 +302,7 @@ Then set `node` value to `${env:K8S_NODE_NAME}` in the receiver's configuration:
 ```yaml
 receivers:
     kubelet_stats:
-      collection_interval: 10s
+      collection_interval: 60s
       auth_type: 'serviceAccount'
       endpoint: '${env:K8S_NODE_NAME}:10250'
       node: '${env:K8S_NODE_NAME}'
@@ -334,7 +334,7 @@ receivers:
 
 The following parameters can also be specified:
 
-- `collection_interval` (default = `10s`): The interval at which to collect data.
+- `collection_interval` (default = `60s`): The interval at which to collect data.
 - `insecure_skip_verify` (default = `false`): Whether or not to skip certificate verification.
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
@@ -347,7 +347,7 @@ The Kubelet Stats Receiver supports the following configuration options. Options
 
 | Option | Description | Default |
 |---|---|---|
-| `collection_interval` | Interval between collection attempts. | `10s` |
+| `collection_interval` | Interval between collection attempts. | `60s` |
 | `initial_delay` | Delay before the first collection. Non-positive values start collection immediately. | `1s` |
 | `timeout` | Scraper-controller timeout setting. Currently not propagated to kubelet HTTP requests, so it does not cancel stalled requests. | `0` (no timeout configured) |
  | `endpoint` | Kubelet endpoint to scrape. With `tls`, `serviceAccount`, or `none`, omission uses the Collector hostname and the authentication method's default port. With `kubeConfig`, specify the node name for API-server proxy access; there is no hostname fallback. | `https://<hostname>:10250` with `tls`/`serviceAccount`; `http://<hostname>:10255` with `none`; no default with `kubeConfig` |
