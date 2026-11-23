@@ -77,6 +77,15 @@ to authenticate to the kubelet API along with the default certificate which is s
 to authenticate and use API server proxy to access the kubelet API.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 
+### Migrating from `kubeletstats`
+
+The component type was renamed from `kubeletstats` to `kubelet_stats` in v0.152.0
+([#47957](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/47957)).
+The old name is still accepted as a deprecated alias, and the Collector logs a warning at startup
+when it is used. To migrate, replace `kubeletstats` with `kubelet_stats` everywhere the component
+ID appears, including named instances (for example `kubeletstats/node` becomes
+`kubelet_stats/node`) and pipeline `receivers` lists. No other configuration changes are needed.
+
 ### TLS Example
 
 ```yaml
