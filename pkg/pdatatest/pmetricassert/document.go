@@ -6,8 +6,10 @@ package pmetricassert // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -25,6 +27,69 @@ const maxDoublePrecision = 15
 // Readers accept this exact value; bumps must be backwards compatible or
 // accompanied by a migration.
 const documentVersion = 1
+
+// Keys accepted on each assertion item; attribute maps are not listed because their keys are arbitrary.
+var (
+	documentKeys  = []string{"version", "signal", "resources", "resources/include", "resources/count"}
+	resourceKeys  = []string{"attributes", "attributes/include", "scopes", "scopes/include", "scopes/count"}
+	scopeKeys     = []string{"name", "version", "version/exists", "version/regex", "metrics", "metrics/include", "metrics/count"}
+	metricKeys    = []string{"name", "type", "unit", "temporality", "monotonic", "datapoints", "datapoints/include", "datapoints/count"}
+	datapointKeys = []string{
+		"attributes", "attributes/include", "int_value", "int_value/<op>", "double_value", "double_value/<op>",
+		doubleValuePrecisionPrefix + "<n>", "count", "sum", "explicit_bounds", "bucket_counts", "min", "max",
+	}
+)
+
+// checkKnownKeys rejects keys of raw that are neither in known nor start with one of delegatedPrefixes.
+func checkKnownKeys(raw map[string]yaml.Node, known []string, delegatedPrefixes ...string) error {
+	var unknown []string
+	for key := range raw {
+		if slices.Contains(known, key) || slices.ContainsFunc(delegatedPrefixes, func(p string) bool { return strings.HasPrefix(key, p) }) {
+			continue
+		}
+		unknown = append(unknown, key)
+	}
+	if len(unknown) == 0 {
+		return nil
+	}
+	sort.Strings(unknown)
+	return fmt.Errorf("unknown keys %q, want %q", unknown, known)
+}
+
+// validateAttributes rejects invalid operator arguments and conflicting forms of one attribute key.
+func validateAttributes(attrs map[string]any) error {
+	type form struct {
+		rawKey  string
+		numeric bool
+	}
+	seen := make(map[string]form, len(attrs))
+	for _, rawKey := range slices.Sorted(maps.Keys(attrs)) {
+		value := attrs[rawKey]
+		key, numeric := rawKey, false
+		if k, ok := strings.CutSuffix(rawKey, "/exists"); ok {
+			key = k
+			if value != true {
+				return fmt.Errorf("attribute %q/exists must be true (the only supported value)", key)
+			}
+		} else if k, ok := strings.CutSuffix(rawKey, "/regex"); ok {
+			key = k
+			if _, err := newAttributeRegexMatcher(key, value); err != nil {
+				return err
+			}
+		} else if k, op, ok := cutNumericAttributeKey(rawKey); ok {
+			key, numeric = k, true
+			if _, isNum := toFloat64(value); !isNum {
+				return fmt.Errorf("attribute %q/%s must be a numeric value", key, op)
+			}
+		}
+		// Numeric operators may be combined on one key to assert a range.
+		if other, dup := seen[key]; dup && (!numeric || !other.numeric) {
+			return fmt.Errorf("attribute %q: cannot specify both %q and %q", key, other.rawKey, rawKey)
+		}
+		seen[key] = form{rawKey: rawKey, numeric: numeric}
+	}
+	return nil
+}
 
 // attributeMode controls how an attribute map assertion is evaluated.
 type attributeMode int
@@ -269,6 +334,9 @@ func (r *resourceAssertion) UnmarshalYAML(node *yaml.Node) error {
 	if err := node.Decode(&raw); err != nil {
 		return err
 	}
+	if err := checkKnownKeys(raw, resourceKeys); err != nil {
+		return fmt.Errorf("resource assertion at line %d: %w", node.Line, err)
+	}
 	if inc, ok := raw["attributes/include"]; ok {
 		if _, dup := raw["attributes"]; dup {
 			return errors.New("resource assertion: cannot specify both 'attributes' and 'attributes/include'")
@@ -286,6 +354,9 @@ func (r *resourceAssertion) UnmarshalYAML(node *yaml.Node) error {
 		}
 		r.Attributes = attrs
 		r.AttributeMode = attributeModeExact
+	}
+	if err := validateAttributes(r.Attributes); err != nil {
+		return fmt.Errorf("resource assertion: %w", err)
 	}
 
 	scopes, match, err := decodeCollection[scopeAssertion](raw, "scopes", nil)
@@ -343,6 +414,9 @@ func (s *scopeAssertion) UnmarshalYAML(value *yaml.Node) error {
 	var keys map[string]yaml.Node
 	if err := value.Decode(&keys); err != nil {
 		return err
+	}
+	if err := checkKnownKeys(keys, scopeKeys); err != nil {
+		return fmt.Errorf("scope assertion at line %d: %w", value.Line, err)
 	}
 
 	version, err := buildVersionMatcher(raw.Version, raw.VersionExists, raw.VersionRegex)
@@ -429,6 +503,9 @@ type metricAssertion struct {
 // raw keys. metricAssertion has no UnmarshalYAML of its own, so this runs as
 // decodeCollection's per-item fixup when a metrics collection is read.
 func resolveMetricDatapoints(m *metricAssertion, raw map[string]yaml.Node) error {
+	if err := checkKnownKeys(raw, metricKeys); err != nil {
+		return fmt.Errorf("metric %q: %w", m.Name, err)
+	}
 	datapoints, match, err := decodeCollection[datapointAssertion](raw, "datapoints", nil)
 	if err != nil {
 		return fmt.Errorf("metric %q: %w", m.Name, err)
@@ -478,6 +555,9 @@ func (d *datapointAssertion) UnmarshalYAML(node *yaml.Node) error {
 	if err := node.Decode(&raw); err != nil {
 		return err
 	}
+	if err := checkKnownKeys(raw, datapointKeys, "int_value/", "double_value/"); err != nil {
+		return fmt.Errorf("datapoint assertion at line %d: %w", node.Line, err)
+	}
 	if inc, ok := raw["attributes/include"]; ok {
 		if _, dup := raw["attributes"]; dup {
 			return errors.New("datapoint assertion: cannot specify both 'attributes' and 'attributes/include'")
@@ -495,6 +575,9 @@ func (d *datapointAssertion) UnmarshalYAML(node *yaml.Node) error {
 		}
 		d.Attributes = attrs
 		d.AttributeMode = attributeModeExact
+	}
+	if err := validateAttributes(d.Attributes); err != nil {
+		return fmt.Errorf("datapoint assertion: %w", err)
 	}
 	// Decode optional value fields.
 	if v, ok := raw["int_value"]; ok {
@@ -687,6 +770,9 @@ func readDocument(path string) (*document, error) {
 	var raw map[string]yaml.Node
 	if err := yaml.Unmarshal(b, &raw); err != nil {
 		return nil, fmt.Errorf("parse assertion file %s: %w", path, err)
+	}
+	if err := checkKnownKeys(raw, documentKeys); err != nil {
+		return nil, fmt.Errorf("assertion file %s: %w", path, err)
 	}
 	resources, match, err := decodeCollection[resourceAssertion](raw, "resources", nil)
 	if err != nil {
