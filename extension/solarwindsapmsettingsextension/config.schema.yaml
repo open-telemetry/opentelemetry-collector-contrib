@@ -6,4 +6,4 @@ properties:
     type: string
     format: duration
   key:
-    type: string
+    $ref: go.opentelemetry.io/collector/config/configopaque.string

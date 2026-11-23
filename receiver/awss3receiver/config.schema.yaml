@@ -69,6 +69,11 @@ $defs:
       region:
         description: Region specifies the AWS region of the SQS queue.
         type: string
+      visibility_timeout_seconds:
+        description: 'VisibilityTimeoutSeconds sets and renews message visibility while messages are waiting or processing. Valid values: 1-43200. When unset, the queue''s visibility timeout is used without renewal.'
+        x-pointer: true
+        type: integer
+        x-customType: int64
       wait_time_seconds:
         description: WaitTimeSeconds specifies the duration (in seconds) for long polling SQS messages. Maximum is 20 seconds. Default is 20 seconds.
         x-pointer: true

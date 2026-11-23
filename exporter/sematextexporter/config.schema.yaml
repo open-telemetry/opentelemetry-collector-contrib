@@ -4,13 +4,13 @@ $defs:
     properties:
       app_token:
         description: App token is the token of Sematext Monitoring App to which you want to send the logs.
-        type: string
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
   metrics_config:
     type: object
     properties:
       app_token:
         description: App token is the token of Sematext Monitoring App to which you want to send the metrics.
-        type: string
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       payload_max_bytes:
         description: PayloadMaxBytes is the maximum number of line protocol bytes to POST in a single request.
         type: integer

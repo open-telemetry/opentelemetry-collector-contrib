@@ -13,7 +13,7 @@ status:
   distributions: [contrib, k8s]
   warnings: [Other]
   codeowners:
-    active: [TylerHelmuth, ChrsMark, jinja2]
+    active: [TylerHelmuth, ChrsMark, jinja2, PlateauGao]
     emeritus: [dmitryax]
 
 sem_conv_version: 1.45.0
