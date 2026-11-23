@@ -107,3 +107,8 @@ elasticsearch/retry_on_document_status_empty:
   retry:
     retry_on_status: [429, 500]
     retry_on_document_status: []
+elasticsearch/loadbalance_disabled:
+  endpoints:
+    - https://primary.example.com:9200
+    - https://secondary.example.com:9200
+  loadbalance: false

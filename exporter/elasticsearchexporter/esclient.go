@@ -25,8 +25,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
-var _ elastictransport.Selector = &singleSelector{}
-
 type attemptCounterKey struct{}
 
 // attemptCounter tracks the number of round-trip attempts for a single
@@ -204,6 +202,17 @@ func (e *esClient) Perform(req *http.Request) (*http.Response, error) {
 	return res, nil
 }
 
+func (e *esClient) Close(ctx context.Context) error {
+	c, ok := e.transport.(elastictransport.Closeable)
+	if !ok {
+		return nil
+	}
+	if err := c.Close(ctx); err != nil && !errors.Is(err, elastictransport.ErrAlreadyClosed) {
+		return err
+	}
+	return nil
+}
+
 func (e *esClient) doProductCheck(f func() error) error {
 	if e.productCheckSuccess.Load() {
 		return nil
@@ -250,7 +259,8 @@ func newElasticsearchClient(
 	}
 
 	var selector elastictransport.Selector
-	if !config.LoadBalance {
+
+	if !config.LoadBalance && len(endpoints) > 1 {
 		selector = &singleSelector{}
 	}
 
@@ -367,6 +377,8 @@ func httpRecoverableErrorStatus(statusCode int) bool {
 	return statusCode >= 300 && statusCode != http.StatusConflict
 }
 
+var _ elastictransport.Selector = &singleSelector{}
+
 // singleSelector always returns the same connection from the pool
 // until the connection fails in which case the next conn is selected
 type singleSelector struct{}
@@ -376,10 +388,7 @@ func (s *singleSelector) Select(conn []*elastictransport.Connection) (*elastictr
 	// Select receives a slice of live connections
 	// we always return the first element from the live list until it is marked dead
 	// dead connection are automtically removed from the live list
-
 	connection := conn[0]
-	connection.Lock()
-	defer connection.Unlock()
 
 	return connection, nil
 }

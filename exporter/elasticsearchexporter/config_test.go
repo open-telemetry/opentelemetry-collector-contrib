@@ -386,6 +386,14 @@ func TestConfig(t *testing.T) {
 				cfg.Retry.RetryOnDocumentStatus = []int{}
 			}),
 		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "loadbalance_disabled"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"https://primary.example.com:9200", "https://secondary.example.com:9200"}
+				cfg.LoadBalance = false
+			}),
+		},
 	}
 
 	for _, tt := range tests {

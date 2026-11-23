@@ -4,16 +4,21 @@
 package elasticsearchexporter
 
 import (
+	"context"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/elastic/elastic-transport-go/v8/elastictransport"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.uber.org/zap"
 )
@@ -135,4 +140,77 @@ func (tsr *testStatusReporter) Report(event *componentstatus.Event) {
 
 func (*testStatusReporter) GetExtensions() map[component.ID]component.Component {
 	return make(map[component.ID]component.Component)
+}
+
+func TestLoadBalanceDisabled(t *testing.T) {
+	t.Run("sends to first endpoint", func(t *testing.T) {
+		first, firstRequests := newCountingServer(t)
+		second, secondRequests := newCountingServer(t)
+		client := newLoadBalanceDisabledTestClient(t, []string{first.URL, second.URL})
+
+		for range 4 {
+			_, err := performBulkRequest(t, client)
+			require.NoError(t, err)
+		}
+		assert.Equal(t, int32(4), firstRequests.Load())
+		assert.Equal(t, int32(0), secondRequests.Load())
+	})
+
+	t.Run("fails over and stays on next endpoint", func(t *testing.T) {
+		down := unreachableEndpoint(t)
+		up, upRequests := newCountingServer(t)
+		client := newLoadBalanceDisabledTestClient(t, []string{down, up.URL})
+
+		for range 3 {
+			res, err := performBulkRequest(t, client)
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusOK, res.StatusCode)
+		}
+		assert.Equal(t, int32(3), upRequests.Load())
+	})
+}
+
+func newCountingServer(t *testing.T) (*httptest.Server, *atomic.Int32) {
+	t.Helper()
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests.Add(1)
+		w.Header().Set("X-Elastic-Product", "Elasticsearch")
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(server.Close)
+	return server, &requests
+}
+
+func unreachableEndpoint(t *testing.T) string {
+	t.Helper()
+	server := httptest.NewServer(http.NotFoundHandler())
+	server.Close()
+	return server.URL
+}
+
+func newLoadBalanceDisabledTestClient(t *testing.T, endpoints []string) elastictransport.Interface {
+	t.Helper()
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoints = endpoints
+	cfg.LoadBalance = false
+	cfg.Retry.InitialInterval = time.Millisecond
+	cfg.Retry.MaxInterval = time.Millisecond
+	client, err := newElasticsearchClient(t.Context(), cfg, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), "")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.(elastictransport.Closeable).Close(context.Background()))
+	})
+	return client
+}
+
+func performBulkRequest(t *testing.T, client elastictransport.Interface) (*http.Response, error) {
+	t.Helper()
+	req, err := http.NewRequest(http.MethodPost, "http://localhost/_bulk", http.NoBody)
+	require.NoError(t, err)
+	res, err := client.Perform(req)
+	if res != nil {
+		t.Cleanup(func() { res.Body.Close() })
+	}
+	return res, err
 }
