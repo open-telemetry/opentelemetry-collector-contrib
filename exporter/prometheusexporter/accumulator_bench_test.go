@@ -178,7 +178,7 @@ func BenchmarkAccumulateAndCollect(b *testing.B) {
 		accumulator.Accumulate(resourceMetrics)
 
 		// Collect after every accumulate (simulates Prometheus scrape)
-		_, _, _, _, _, _ = accumulator.Collect()
+		_, _, _, _, _, _, _ = accumulator.Collect()
 	}
 }
 
@@ -201,7 +201,7 @@ func BenchmarkMemoryGrowth(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for range 100 {
 			accumulator.Accumulate(resourceMetrics)
-			_, _, _, _, _, _ = accumulator.Collect()
+			_, _, _, _, _, _, _ = accumulator.Collect()
 		}
 
 		// Force GC after each batch

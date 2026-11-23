@@ -1202,7 +1202,7 @@ func TestAccumulateSum_RefusedNonMonotonicDelta_Logging(t *testing.T) {
 	}
 
 	// Call accumulateSum - should refuse and log
-	result := accumulator.accumulateSum(metric, "test", "", "", pcommon.NewMap(), pcommon.NewMap(), time.Now())
+	result, _ := accumulator.accumulateSum(metric, "test", "", "", pcommon.NewMap(), pcommon.NewMap(), time.Now())
 	require.Equal(t, 0, result)
 
 	// Verify debug log was written

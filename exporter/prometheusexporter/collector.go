@@ -601,9 +601,9 @@ Reporting
 func (c *collector) Collect(ch chan<- prometheus.Metric) {
 	c.logger.Debug("collect called")
 
-	inMetrics, resourceAttrs, scopeNames, scopeVersions, scopeSchemaURLs, scopeAttributes := c.accumulator.Collect()
+	inMetrics, resourceAttrs, scopeNames, scopeVersions, scopeSchemaURLs, scopeAttributes, targetInfos := c.accumulator.Collect()
 
-	targetMetrics, err := c.createTargetInfoMetrics(resourceAttrs)
+	targetMetrics, err := c.createTargetInfoMetrics(targetInfos)
 	if err != nil {
 		c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", otlptranslator.TargetInfoMetricName, err.Error()))
 	}
