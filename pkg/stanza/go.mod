@@ -113,7 +113,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/stretchr/objx v0.5.3 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.165.1-0.20261122191605-d56d0a1c98b6 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.165.1-0.20261122191605-d56d0a1c98b6
 	go.opentelemetry.io/collector/consumer/xconsumer v0.165.1-0.20261122191605-d56d0a1c98b6 // indirect
 	go.opentelemetry.io/collector/extension v1.71.1-0.20261122191605-d56d0a1c98b6 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.165.1-0.20261122191605-d56d0a1c98b6 // indirect
