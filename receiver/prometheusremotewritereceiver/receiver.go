@@ -670,9 +670,24 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 			continue
 		}
 
+		// Per the PRW 2.0 spec, TimeSeries messages must specify at least one sample, histogram,
+		// or exemplar; metadata-only TimeSeries are invalid.
+		if len(ts.Samples) == 0 && len(ts.Histograms) == 0 && len(ts.Exemplars) == 0 {
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("timeseries for metric %q must contain at least one sample, histogram, or exemplar", metadata.Name))
+			continue
+		}
+
 		// If the metric name is equal to target_info, we use its labels as attributes of the resource
 		// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1
 		if metadata.Name == "target_info" {
+			// Skip sample-less (e.g. exemplar-only) target_info series so they cannot mutate
+			// rmCache or enrich sibling metrics without a sample (including when their exemplars
+			// are rejected on a 400 response with 0/0/0 written). Valid exemplars were already
+			// collected into exemplarMap and are still counted at the end. Any ts.Histograms on
+			// target_info remain ignored (pre-existing behavior).
+			if len(ts.Samples) == 0 {
+				continue
+			}
 			rm, hashed := prw.getOrCreateRM(ls, otelMetrics, modifiedResourceMetric)
 			attrs := rm.Resource().Attributes()
 
@@ -693,7 +708,6 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 			continue
 		}
 
-		si := prw.extractScopeInfo(ls)
 		metricName := metadata.Name
 		unit := req.Symbols[ts.Metadata.UnitRef]
 		description := req.Symbols[ts.Metadata.HelpRef]
@@ -709,6 +723,13 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 				prw.logDroppedSeries(ls, "classic_histogram")
 				continue
 			}
+			// Skip histogram-less (e.g. exemplar-only) histogram series: valid exemplars were
+			// already collected into exemplarMap and are attached by sibling histograms or counted
+			// at the end.
+			if len(ts.Histograms) == 0 {
+				continue
+			}
+			si := prw.extractScopeInfo(ls)
 			if err := prw.processHistogramTimeSeries(otelMetrics, ls, ts, si, metricName, unit, description, metricCache, scopeCache, &stats, modifiedResourceMetric, exemplarMap, droppedHistogramKeys, &bucketBudget); err != nil {
 				badRequestErrors = errors.Join(badRequestErrors, err)
 			}
@@ -727,7 +748,18 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 			continue
 		}
 
+		// Skip sample-less (e.g. exemplar-only) non-histogram series: valid exemplars were already
+		// collected into exemplarMap and are attached by sample-bearing siblings or counted at the end.
+		// Proceeding without samples would mutate rmCache, emit empty metrics, overwrite sibling
+		// descriptions, or increment dropped_series even when the series's only exemplars were rejected.
+		// Any ts.Histograms attached to a typed non-histogram series remain ignored (pre-existing
+		// behavior; for SUMMARY with zero samples this also avoids incrementing dropped_series).
+		if len(ts.Samples) == 0 {
+			continue
+		}
+
 		// Handle regular metrics (gauge, counter, summary)
+		si := prw.extractScopeInfo(ls)
 		rm, _ := prw.getOrCreateRM(ls, otelMetrics, modifiedResourceMetric)
 
 		resourceID := identity.OfResource(rm.Resource())

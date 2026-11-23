@@ -1349,6 +1349,36 @@ func TestTranslateV2(t *testing.T) {
 			expectError: "unit ref 0 contains invalid UTF-8",
 		},
 		{
+			name: "metadata-only timeseries without samples, histograms, or exemplars",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "orphan_metric", "Orphan help", "count"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_COUNTER,
+							HelpRef: 3,
+							UnitRef: 4,
+						},
+						LabelsRefs: []uint32{1, 2},
+					},
+				},
+			},
+			expectError: `timeseries for metric "orphan_metric" must contain at least one sample, histogram, or exemplar`,
+		},
+		{
+			name: "metadata-only target_info without samples",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "target_info", "job", "j", "instance", "i"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					},
+				},
+			},
+			expectError: `timeseries for metric "target_info" must contain at least one sample, histogram, or exemplar`,
+		},
+		{
 			name: "accept unspecified metric type as gauge",
 			request: &writev2.Request{
 				Symbols: []string{"", "__name__", "test_metric", "job", "test_job", "instance", "test_instance"},
@@ -1725,6 +1755,7 @@ func TestTranslateV2(t *testing.T) {
 						// target_info metric
 						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
 						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 17, 18},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
 					},
 					{
 						// normal metric
@@ -1766,7 +1797,7 @@ func TestTranslateV2(t *testing.T) {
 			}(),
 			expectedStats: remote.WriteResponseStats{
 				Confirmed:  true,
-				Samples:    1,
+				Samples:    2,
 				Histograms: 0,
 				Exemplars:  0,
 			},
@@ -1844,6 +1875,7 @@ func TestTranslateV2(t *testing.T) {
 						// so it must not become a resource attribute.
 						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
 						LabelsRefs: []uint32{17, 18, 3, 4, 5, 6, 19, 20, 21, 22},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
 					},
 					{
 						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
@@ -1883,7 +1915,7 @@ func TestTranslateV2(t *testing.T) {
 			}(),
 			expectedStats: remote.WriteResponseStats{
 				Confirmed:  true,
-				Samples:    1,
+				Samples:    2,
 				Histograms: 0,
 				Exemplars:  0,
 			},
@@ -5788,6 +5820,29 @@ func TestPartialWriteOnBadRequest(t *testing.T) {
 				Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{8, 10}, Value: 1, Timestamp: 1}},
 			},
 		},
+		{
+			name: "an exemplar-only counter with invalid exemplar label refs",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+				LabelsRefs: []uint32{1, 7, 3, 11, 5, 12},
+				Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{99, 100}, Value: 1, Timestamp: 1}},
+			},
+		},
+		{
+			name: "an exemplar-only summary with invalid exemplar label refs",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_SUMMARY},
+				LabelsRefs: []uint32{1, 7, 3, 11, 5, 12},
+				Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{99, 100}, Value: 1, Timestamp: 1}},
+			},
+		},
+		{
+			name: "a metadata-only series without samples, histograms, or exemplars",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+				LabelsRefs: []uint32{1, 7, 3, 11, 5, 12},
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			sink := &consumertest.MetricsSink{}
@@ -6323,6 +6378,7 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 						{
 							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
 							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+							Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
 						},
 					},
 				},
@@ -6458,6 +6514,7 @@ func targetInfoRequest(region string) *writev2.Request {
 			{
 				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
 				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
 			},
 			{
 				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
@@ -6484,6 +6541,7 @@ func TestTargetInfoUpdatesCachedResource(t *testing.T) {
 		Timeseries: []writev2.TimeSeries{{
 			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
 			LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
+			Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
 		}},
 	}
 	for _, r := range []*writev2.Request{plain, info, plain} {
@@ -6527,6 +6585,7 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 			{
 				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
 				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
 			},
 		},
 	}
@@ -8175,6 +8234,787 @@ func TestInvalidUTF8SymbolReferences(t *testing.T) {
 				}
 			})
 		}
+	})
+}
+
+func TestMetadataOnlyTimeSeriesRejected(t *testing.T) {
+	t.Run("all metric types and target_info without data points return 400", func(t *testing.T) {
+		types := []struct {
+			name       string
+			metricName string
+			metricType writev2.Metadata_MetricType
+		}{
+			{name: "unspecified", metricName: "orphan_unspecified", metricType: writev2.Metadata_METRIC_TYPE_UNSPECIFIED},
+			{name: "counter", metricName: "orphan_counter", metricType: writev2.Metadata_METRIC_TYPE_COUNTER},
+			{name: "gauge", metricName: "orphan_gauge", metricType: writev2.Metadata_METRIC_TYPE_GAUGE},
+			{name: "histogram", metricName: "orphan_histogram", metricType: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+			{name: "gaugehistogram", metricName: "orphan_gaugehist", metricType: writev2.Metadata_METRIC_TYPE_GAUGEHISTOGRAM},
+			{name: "summary", metricName: "orphan_summary", metricType: writev2.Metadata_METRIC_TYPE_SUMMARY},
+			{name: "info", metricName: "orphan_info", metricType: writev2.Metadata_METRIC_TYPE_INFO},
+			{name: "stateset", metricName: "orphan_stateset", metricType: writev2.Metadata_METRIC_TYPE_STATESET},
+			{name: "target_info", metricName: "target_info", metricType: writev2.Metadata_METRIC_TYPE_GAUGE},
+		}
+		for _, tc := range types {
+			t.Run(tc.name, func(t *testing.T) {
+				tel := componenttest.NewTelemetry()
+				defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+
+				sink := &consumertest.MetricsSink{}
+				prw, err := NewFactory().CreateMetrics(t.Context(), metadatatest.NewSettings(tel), createDefaultConfig(), sink)
+				require.NoError(t, err)
+				writeReceiver := prw.(*prometheusRemoteWriteReceiver)
+				obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+					ReceiverID:             component.MustNewID("test"),
+					ReceiverCreateSettings: metadatatest.NewSettings(tel),
+					Transport:              "http",
+				})
+				require.NoError(t, err)
+				writeReceiver.obsrecv = obsrecv
+				defer writeReceiver.rmCache.Purge()
+
+				resp := sendPRW(t, writeReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", tc.metricName,
+						"job", "test_job",
+						"instance", "host1",
+						"Orphan help text", "seconds",
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata: writev2.Metadata{
+								Type:    tc.metricType,
+								HelpRef: 7,
+								UnitRef: 8,
+							},
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						},
+					},
+				})
+				defer resp.Body.Close()
+
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+				assert.Contains(t, string(body), fmt.Sprintf("timeseries for metric %q must contain at least one sample, histogram, or exemplar", tc.metricName))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				assert.Empty(t, sink.AllMetrics())
+				assert.Equal(t, 0, writeReceiver.rmCache.Len())
+
+				var rm metricdata.ResourceMetrics
+				require.NoError(t, tel.Reader.Collect(t.Context(), &rm))
+				assert.Empty(t, rm.ScopeMetrics)
+			})
+		}
+	})
+
+	t.Run("metadata-only target_info does not enrich valid sibling or rmCache", func(t *testing.T) {
+		for _, tc := range []struct {
+			name            string
+			targetInfoFirst bool
+		}{
+			{name: "target_info before valid", targetInfoFirst: true},
+			{name: "target_info after valid", targetInfoFirst: false},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				targetInfo := writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 2, 4, 5, 6, 7, 8, 9},
+				}
+				valid := writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 3, 4, 5, 6, 7},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				}
+				series := []writev2.TimeSeries{valid, targetInfo}
+				if tc.targetInfoFirst {
+					series = []writev2.TimeSeries{targetInfo, valid}
+				}
+
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "target_info", "normal_metric", // 1, 2, 3
+						"job", "test_job", // 4, 5
+						"instance", "host1", // 6, 7
+						"region", "should_not_appear", // 8, 9
+					},
+					Timeseries: series,
+				})
+				defer resp.Body.Close()
+
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+				assert.Contains(t, string(body), `timeseries for metric "target_info" must contain at least one sample, histogram, or exemplar`)
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				require.Len(t, sink.AllMetrics(), 1)
+				resAttrs := sink.AllMetrics()[0].ResourceMetrics().At(0).Resource().Attributes()
+				_, hasRegion := resAttrs.Get("region")
+				assert.False(t, hasRegion)
+
+				// Verify rmCache did not store the rejected target_info attributes.
+				require.Equal(t, 1, prwReceiver.rmCache.Len())
+				for _, cached := range prwReceiver.rmCache.Values() {
+					_, cachedHasRegion := cached.Resource().Attributes().Get("region")
+					assert.False(t, cachedHasRegion)
+				}
+
+				// Follow-up plain request confirms subsequent requests remain unpolluted.
+				followUp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "normal_metric",
+						"job", "test_job",
+						"instance", "host1",
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+							Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+						},
+					},
+				})
+				defer followUp.Body.Close()
+
+				assert.Equal(t, http.StatusNoContent, followUp.StatusCode)
+				require.Len(t, sink.AllMetrics(), 2)
+				_, hasRegion = sink.AllMetrics()[1].ResourceMetrics().At(0).Resource().Attributes().Get("region")
+				assert.False(t, hasRegion)
+			})
+		}
+	})
+
+	t.Run("metadata-only series does not overwrite valid sibling metric description", func(t *testing.T) {
+		for _, tc := range []struct {
+			name          string
+			metadataFirst bool
+		}{
+			{name: "metadata-only before valid", metadataFirst: true},
+			{name: "metadata-only after valid", metadataFirst: false},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				metaOnly := writev2.TimeSeries{
+					Metadata: writev2.Metadata{
+						Type:    writev2.Metadata_METRIC_TYPE_COUNTER,
+						HelpRef: 4,
+					},
+					LabelsRefs: []uint32{1, 2},
+				}
+				valid := writev2.TimeSeries{
+					Metadata: writev2.Metadata{
+						Type:    writev2.Metadata_METRIC_TYPE_COUNTER,
+						HelpRef: 3,
+					},
+					LabelsRefs: []uint32{1, 2},
+					Samples:    []writev2.Sample{{Value: 5, Timestamp: 1}},
+				}
+				series := []writev2.TimeSeries{valid, metaOnly}
+				if tc.metadataFirst {
+					series = []writev2.TimeSeries{metaOnly, valid}
+				}
+
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "test_counter",
+						"short",
+						"much longer rejected metadata-only description",
+					},
+					Timeseries: series,
+				})
+				defer resp.Body.Close()
+
+				assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				require.Len(t, sink.AllMetrics(), 1)
+				m := sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+				assert.Equal(t, "short", m.Description())
+			})
+		}
+	})
+
+	t.Run("empty request with zero timeseries still returns 204", func(t *testing.T) {
+		sink := &consumertest.MetricsSink{}
+		prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+		resp := sendPRW(t, prwReceiver, &writev2.Request{
+			Symbols: []string{""},
+		})
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+		assert.Empty(t, sink.AllMetrics())
+	})
+}
+
+func TestSamplelessExemplarOnlySeriesSkipped(t *testing.T) {
+	t.Run("valid exemplar-only counter alongside sibling emits no empty metric or extra resource", func(t *testing.T) {
+		for _, tc := range []struct {
+			name        string
+			counterRefs []uint32
+		}{
+			{
+				name:        "different resource",
+				counterRefs: []uint32{1, 3, 4, 6, 7, 9},
+			},
+			{
+				name:        "same resource different metric",
+				counterRefs: []uint32{1, 3, 4, 5, 7, 8},
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "test_gauge", "orphan_counter", // 1, 2, 3
+						"job", "test_job", "other_job", // 4, 5, 6
+						"instance", "host1", "other_inst", // 7, 8, 9
+						"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 10, 11
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+							LabelsRefs: []uint32{1, 2, 4, 5, 7, 8},
+							Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+						},
+						{
+							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+							LabelsRefs: tc.counterRefs,
+							Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{10, 11}, Value: 1, Timestamp: 1}},
+						},
+					},
+				})
+				defer resp.Body.Close()
+
+				assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				require.Len(t, sink.AllMetrics(), 1)
+				require.Equal(t, 1, sink.AllMetrics()[0].ResourceMetrics().Len())
+				require.Equal(t, 1, sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+				assert.Equal(t, "test_gauge", sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
+				assert.Equal(t, 1, prwReceiver.rmCache.Len())
+			})
+		}
+	})
+
+	t.Run("valid exemplar-only counter with same labels attaches exemplar and preserves sibling description", func(t *testing.T) {
+		for _, exemplarFirst := range []bool{true, false} {
+			order := "exemplar-only after sample"
+			if exemplarFirst {
+				order = "exemplar-only before sample"
+			}
+			t.Run(order, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				sampleSeries := writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER, HelpRef: 7},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 5, Timestamp: 1}},
+				}
+				exemplarSeries := writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER, HelpRef: 8},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{9, 10}, Value: 5, Timestamp: 1}},
+				}
+				series := []writev2.TimeSeries{sampleSeries, exemplarSeries}
+				if exemplarFirst {
+					series = []writev2.TimeSeries{exemplarSeries, sampleSeries}
+				}
+
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "test_counter", // 1, 2
+						"job", "test_job", // 3, 4
+						"instance", "host1", // 5, 6
+						"short",                                        // 7
+						"much longer exemplar-only help text",          // 8
+						"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 9, 10
+					},
+					Timeseries: series,
+				})
+				defer resp.Body.Close()
+
+				assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				require.Len(t, sink.AllMetrics(), 1)
+				m := sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+				assert.Equal(t, "short", m.Description())
+				require.Equal(t, 1, m.Sum().DataPoints().Len())
+				assert.Equal(t, 1, m.Sum().DataPoints().At(0).Exemplars().Len())
+			})
+		}
+	})
+
+	t.Run("valid exemplar-only histogram alongside sibling emits no extra resource and counts exemplar", func(t *testing.T) {
+		sink := &consumertest.MetricsSink{}
+		prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+		resp := sendPRW(t, prwReceiver, &writev2.Request{
+			Symbols: []string{
+				"",
+				"__name__", "test_gauge", "orphan_histogram", // 1, 2, 3
+				"job", "test_job", "other_job", // 4, 5, 6
+				"instance", "host1", "other_inst", // 7, 8, 9
+				"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 10, 11
+			},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 2, 4, 5, 7, 8},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				},
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+					LabelsRefs: []uint32{1, 3, 4, 6, 7, 9},
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{10, 11}, Value: 1, Timestamp: 1}},
+				},
+			},
+		})
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+		assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+		assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+		require.Len(t, sink.AllMetrics(), 1)
+		require.Equal(t, 1, sink.AllMetrics()[0].ResourceMetrics().Len())
+		assert.Equal(t, 1, prwReceiver.rmCache.Len())
+	})
+
+	t.Run("separate exemplar-only histogram with same-labels dropped native histogram suppresses exemplars", func(t *testing.T) {
+		for _, exemplarFirst := range []bool{true, false} {
+			order := "exemplar-only after dropped histogram"
+			if exemplarFirst {
+				order = "exemplar-only before dropped histogram"
+			}
+			t.Run(order, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				droppedHist := writev2.Histogram{
+					Schema:         0,
+					Count:          &writev2.Histogram_CountInt{CountInt: 1},
+					Sum:            1,
+					Timestamp:      1,
+					ResetHint:      writev2.Histogram_RESET_HINT_GAUGE,
+					PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}},
+					PositiveDeltas: []int64{1},
+				}
+				histSeries := writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Histograms: []writev2.Histogram{droppedHist},
+				}
+				exemplarSeries := writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{7, 8}, Value: 1, Timestamp: 1}},
+				}
+				series := []writev2.TimeSeries{histSeries, exemplarSeries}
+				if exemplarFirst {
+					series = []writev2.TimeSeries{exemplarSeries, histSeries}
+				}
+
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "dropped_hist", // 1, 2
+						"job", "test_job", // 3, 4
+						"instance", "host1", // 5, 6
+						"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7, 8
+					},
+					Timeseries: series,
+				})
+				defer resp.Body.Close()
+
+				assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				assert.Empty(t, sink.AllMetrics())
+				assert.Equal(t, 0, prwReceiver.rmCache.Len())
+			})
+		}
+	})
+
+	t.Run("valid exemplar-only summary counts exemplar without incrementing dropped_series", func(t *testing.T) {
+		tel := componenttest.NewTelemetry()
+		defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+
+		sink := &consumertest.MetricsSink{}
+		prw, err := NewFactory().CreateMetrics(t.Context(), metadatatest.NewSettings(tel), createDefaultConfig(), sink)
+		require.NoError(t, err)
+		writeReceiver := prw.(*prometheusRemoteWriteReceiver)
+		obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+			ReceiverID:             component.MustNewID("test"),
+			ReceiverCreateSettings: metadatatest.NewSettings(tel),
+			Transport:              "http",
+		})
+		require.NoError(t, err)
+		writeReceiver.obsrecv = obsrecv
+		defer writeReceiver.rmCache.Purge()
+
+		resp := sendPRW(t, writeReceiver, &writev2.Request{
+			Symbols: []string{
+				"",
+				"__name__", "test_summary",
+				"job", "test_job",
+				"instance", "host1",
+				"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736",
+			},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_SUMMARY},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{7, 8}, Value: 1, Timestamp: 1}},
+				},
+			},
+		})
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+		assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+		assert.Empty(t, sink.AllMetrics())
+		assert.Equal(t, 0, writeReceiver.rmCache.Len())
+
+		var rm metricdata.ResourceMetrics
+		require.NoError(t, tel.Reader.Collect(t.Context(), &rm))
+		assert.Empty(t, rm.ScopeMetrics)
+	})
+
+	t.Run("valid exemplar-only target_info does not enrich sibling or rmCache", func(t *testing.T) {
+		for _, targetInfoFirst := range []bool{true, false} {
+			order := "target_info after valid"
+			if targetInfoFirst {
+				order = "target_info before valid"
+			}
+			t.Run(order, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				targetInfo := writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 2, 4, 5, 6, 7, 8, 9},
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{10, 11}, Value: 1, Timestamp: 1}},
+				}
+				valid := writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 3, 4, 5, 6, 7},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				}
+				series := []writev2.TimeSeries{valid, targetInfo}
+				if targetInfoFirst {
+					series = []writev2.TimeSeries{targetInfo, valid}
+				}
+
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "target_info", "normal_metric", // 1, 2, 3
+						"job", "test_job", // 4, 5
+						"instance", "host1", // 6, 7
+						"region", "should_not_appear", // 8, 9
+						"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 10, 11
+					},
+					Timeseries: series,
+				})
+				defer resp.Body.Close()
+
+				assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				require.Len(t, sink.AllMetrics(), 1)
+				_, hasRegion := sink.AllMetrics()[0].ResourceMetrics().At(0).Resource().Attributes().Get("region")
+				assert.False(t, hasRegion)
+
+				require.Equal(t, 1, prwReceiver.rmCache.Len())
+				for _, cached := range prwReceiver.rmCache.Values() {
+					_, cachedHasRegion := cached.Resource().Attributes().Get("region")
+					assert.False(t, cachedHasRegion)
+				}
+
+				followUp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "normal_metric",
+						"job", "test_job",
+						"instance", "host1",
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+							Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+						},
+					},
+				})
+				defer followUp.Body.Close()
+
+				assert.Equal(t, http.StatusNoContent, followUp.StatusCode)
+				require.Len(t, sink.AllMetrics(), 2)
+				_, hasRegion = sink.AllMetrics()[1].ResourceMetrics().At(0).Resource().Attributes().Get("region")
+				assert.False(t, hasRegion)
+			})
+		}
+	})
+
+	t.Run("exemplar-only unsupported metric type still returns 400", func(t *testing.T) {
+		for _, metricType := range []writev2.Metadata_MetricType{
+			writev2.Metadata_METRIC_TYPE_GAUGEHISTOGRAM,
+			writev2.Metadata_MetricType(99),
+		} {
+			t.Run(metricType.String(), func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "test_unsupported",
+						"job", "test_job",
+						"instance", "host1",
+						"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736",
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   writev2.Metadata{Type: metricType},
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+							Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{7, 8}, Value: 1, Timestamp: 1}},
+						},
+					},
+				})
+				defer resp.Body.Close()
+
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+				assert.Contains(t, string(body), "unsupported metric type")
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				assert.Empty(t, sink.AllMetrics())
+				assert.Equal(t, 0, prwReceiver.rmCache.Len())
+			})
+		}
+	})
+
+	t.Run("same-identity counter with rejected exemplar preserves description and emits no empty metric", func(t *testing.T) {
+		for _, exemplarFirst := range []bool{true, false} {
+			order := "rejected exemplar after sample"
+			if exemplarFirst {
+				order = "rejected exemplar before sample"
+			}
+			t.Run(order, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				sampleSeries := writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER, HelpRef: 7},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 5, Timestamp: 1}},
+				}
+				exemplarSeries := writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER, HelpRef: 8},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{99, 100}, Value: 5, Timestamp: 1}},
+				}
+				series := []writev2.TimeSeries{sampleSeries, exemplarSeries}
+				if exemplarFirst {
+					series = []writev2.TimeSeries{exemplarSeries, sampleSeries}
+				}
+
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "test_counter", // 1, 2
+						"job", "test_job", // 3, 4
+						"instance", "host1", // 5, 6
+						"short", // 7
+						"much longer rejected exemplar-only help text", // 8
+					},
+					Timeseries: series,
+				})
+				defer resp.Body.Close()
+
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+				assert.Contains(t, string(body), `error converting exemplar label refs for metric "test_counter"`)
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				require.Len(t, sink.AllMetrics(), 1)
+				require.Equal(t, 1, sink.AllMetrics()[0].ResourceMetrics().Len())
+				require.Equal(t, 1, sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+				m := sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+				assert.Equal(t, "short", m.Description())
+				require.Equal(t, 1, m.Sum().DataPoints().Len())
+				assert.Equal(t, 0, m.Sum().DataPoints().At(0).Exemplars().Len())
+				assert.Equal(t, 1, prwReceiver.rmCache.Len())
+			})
+		}
+	})
+
+	t.Run("standalone exemplar-only counter and summary with rejected exemplar leave rmCache and dropped_series empty", func(t *testing.T) {
+		for _, metricType := range []writev2.Metadata_MetricType{
+			writev2.Metadata_METRIC_TYPE_COUNTER,
+			writev2.Metadata_METRIC_TYPE_SUMMARY,
+		} {
+			t.Run(metricType.String(), func(t *testing.T) {
+				tel := componenttest.NewTelemetry()
+				defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+
+				sink := &consumertest.MetricsSink{}
+				prw, err := NewFactory().CreateMetrics(t.Context(), metadatatest.NewSettings(tel), createDefaultConfig(), sink)
+				require.NoError(t, err)
+				writeReceiver := prw.(*prometheusRemoteWriteReceiver)
+				obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+					ReceiverID:             component.MustNewID("test"),
+					ReceiverCreateSettings: metadatatest.NewSettings(tel),
+					Transport:              "http",
+				})
+				require.NoError(t, err)
+				writeReceiver.obsrecv = obsrecv
+				defer writeReceiver.rmCache.Purge()
+
+				resp := sendPRW(t, writeReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "test_metric",
+						"job", "other_job",
+						"instance", "other_inst",
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   writev2.Metadata{Type: metricType},
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+							Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{99, 100}, Value: 1, Timestamp: 1}},
+						},
+					},
+				})
+				defer resp.Body.Close()
+
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+				assert.Contains(t, string(body), `error converting exemplar label refs for metric "test_metric"`)
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				assert.Empty(t, sink.AllMetrics())
+				assert.Equal(t, 0, writeReceiver.rmCache.Len())
+
+				var rm metricdata.ResourceMetrics
+				require.NoError(t, tel.Reader.Collect(t.Context(), &rm))
+				assert.Empty(t, rm.ScopeMetrics)
+			})
+		}
+	})
+
+	t.Run("exemplar-only target_info with rejected exemplar does not mutate rmCache or enrich sibling or follow-up requests", func(t *testing.T) {
+		t.Run("standalone", func(t *testing.T) {
+			sink := &consumertest.MetricsSink{}
+			prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+			resp := sendPRW(t, prwReceiver, &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "target_info", // 1, 2
+					"job", "test_job", // 3, 4
+					"instance", "host1", // 5, 6
+					"region", "poison", // 7, 8
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+						Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{99, 100}, Value: 1, Timestamp: 1}},
+					},
+				},
+			})
+			defer resp.Body.Close()
+
+			body, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+			assert.Contains(t, string(body), `error converting exemplar label refs for metric "target_info"`)
+			assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+			assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+			assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+			assert.Equal(t, 0, prwReceiver.rmCache.Len())
+			assert.Empty(t, sink.AllMetrics())
+		})
+
+		t.Run("with sibling and follow-up", func(t *testing.T) {
+			sink := &consumertest.MetricsSink{}
+			prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+			resp := sendPRW(t, prwReceiver, &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "target_info", "normal_metric", // 1, 2, 3
+					"job", "test_job", // 4, 5
+					"instance", "host1", // 6, 7
+					"region", "poison", // 8, 9
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 4, 5, 6, 7, 8, 9},
+						Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{99, 100}, Value: 1, Timestamp: 1}},
+					},
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 3, 4, 5, 6, 7},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			})
+			defer resp.Body.Close()
+
+			body, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+			assert.Contains(t, string(body), `error converting exemplar label refs for metric "target_info"`)
+			assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+			assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+			require.Len(t, sink.AllMetrics(), 1)
+			_, hasRegion := sink.AllMetrics()[0].ResourceMetrics().At(0).Resource().Attributes().Get("region")
+			assert.False(t, hasRegion)
+
+			// Follow-up plain request confirms rmCache was not polluted with "region".
+			followUp := sendPRW(t, prwReceiver, &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "normal_metric",
+					"job", "test_job",
+					"instance", "host1",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+					},
+				},
+			})
+			defer followUp.Body.Close()
+
+			assert.Equal(t, http.StatusNoContent, followUp.StatusCode)
+			require.Len(t, sink.AllMetrics(), 2)
+			_, hasRegion = sink.AllMetrics()[1].ResourceMetrics().At(0).Resource().Attributes().Get("region")
+			assert.False(t, hasRegion)
+		})
 	})
 }
 
