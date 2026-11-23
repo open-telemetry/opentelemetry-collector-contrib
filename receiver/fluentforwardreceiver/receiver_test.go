@@ -338,7 +338,7 @@ func TestEventAcknowledgmentEnqueueTimeoutClosesWithoutACK(t *testing.T) {
 func TestConnectionsBoundedByLimitListener(t *testing.T) {
 	next := new(consumertest.LogsSink)
 	connect, cancel, recv := setupServerWithConsumer(t, next, func(r *fluentReceiver) {
-		r.maxConnections = 1
+		r.conf.MaxConnections = 1
 	})
 	defer cancel()
 
@@ -372,6 +372,33 @@ func TestConnectionsBoundedByLimitListener(t *testing.T) {
 	require.NoError(t, secondConn.SetReadDeadline(time.Time{}))
 	resp := readACKResponse(t, secondConn)
 	require.Equal(t, "chunk-limited", resp["ack"])
+}
+
+func TestZeroMaxConnectionsMeansNoLimit(t *testing.T) {
+	next := new(consumertest.LogsSink)
+	connect, cancel, recv := setupServerWithConsumer(t, next, func(r *fluentReceiver) {
+		r.conf.MaxConnections = 0
+	})
+	defer cancel()
+
+	srv := recv.(*fluentReceiver).server
+
+	// Open more connections than defaultMaxConnections, the limit that applied
+	// before it was configurable. With no limit they are all accepted at once.
+	const numConns = defaultMaxConnections + 1
+	conns := make([]net.Conn, 0, numConns)
+	for range numConns {
+		conn := connect()
+		t.Cleanup(func() { _ = conn.Close() })
+		conns = append(conns, conn)
+	}
+	require.Eventually(t, func() bool { return connCount(srv) == numConns }, 5*time.Second, 10*time.Millisecond)
+
+	// The connection over the old limit is served, not left in the backlog.
+	_, err := conns[numConns-1].Write(makeSampleEventWithChunk("chunk-unlimited"))
+	require.NoError(t, err)
+	resp := readACKResponse(t, conns[numConns-1])
+	require.Equal(t, "chunk-unlimited", resp["ack"])
 }
 
 func connCount(s *server) int {
