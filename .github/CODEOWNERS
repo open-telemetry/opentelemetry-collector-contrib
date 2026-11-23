@@ -148,7 +148,7 @@ internal/coreinternal/                                           @open-telemetry
 internal/datadog/                                                @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @jade-guiton-dd @IbraheemA
 internal/datadog/e2e/                                            @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @jade-guiton-dd @IbraheemA
 internal/docker/                                                 @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
-internal/exp/metrics/                                            @open-telemetry/collector-contrib-approvers @RichieSams
+internal/exp/metrics/                                            @open-telemetry/collector-contrib-approvers @RichieSams @SatoshiKamiyama
 internal/filter/                                                 @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 internal/grpcutil/                                               @open-telemetry/collector-contrib-approvers @jmacd @lquerel
 internal/healthcheck/                                            @open-telemetry/collector-contrib-approvers @evan-bradley
@@ -210,7 +210,7 @@ processor/awsecsattributesprocessor/                             @open-telemetry
 processor/cardinalityguardianprocessor/                          @open-telemetry/collector-contrib-approvers @atoulme @YElayyat @jmacd
 processor/coralogixprocessor/                                    @open-telemetry/collector-contrib-approvers @crobert-1 @povilasv @iblancasa
 processor/cumulativetodeltaprocessor/                            @open-telemetry/collector-contrib-approvers @TylerHelmuth
-processor/deltatocumulativeprocessor/                            @open-telemetry/collector-contrib-approvers @RichieSams
+processor/deltatocumulativeprocessor/                            @open-telemetry/collector-contrib-approvers @RichieSams @SatoshiKamiyama
 processor/deltatorateprocessor/                                  @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/drainprocessor/                                        @open-telemetry/collector-contrib-approvers @MikeGoldsmith @atoulme @martinjt
 processor/filterprocessor/                                       @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta @bogdandrutu
@@ -218,7 +218,7 @@ processor/genainormalizerprocessor/                              @open-telemetry
 processor/geoipprocessor/                                        @open-telemetry/collector-contrib-approvers @andrzej-stencel @rogercoll
 processor/groupbyattrsprocessor/                                 @open-telemetry/collector-contrib-approvers @rnishtala-sumo
 processor/groupbytraceprocessor/                                 @open-telemetry/collector-contrib-approvers @iblancasa
-processor/intervalprocessor/                                     @open-telemetry/collector-contrib-approvers @RichieSams
+processor/intervalprocessor/                                     @open-telemetry/collector-contrib-approvers @RichieSams @SatoshiKamiyama
 processor/isolationforestprocessor/                              @open-telemetry/collector-contrib-approvers @atoulme @aarvee11
 processor/k8sattributesprocessor/                                @open-telemetry/collector-contrib-approvers @TylerHelmuth @ChrsMark @odubajDT @jinja2
 processor/logdedupprocessor/                                     @open-telemetry/collector-contrib-approvers @MikeGoldsmith
