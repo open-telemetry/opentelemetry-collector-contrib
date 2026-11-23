@@ -9017,6 +9017,7 @@ func TestSamplelessExemplarOnlySeriesSkipped(t *testing.T) {
 		})
 	})
 }
+
 func startTestHTTPServer(t *testing.T, modifyCfg func(*Config)) *httptest.Server {
 	t.Helper()
 
