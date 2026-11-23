@@ -152,7 +152,7 @@ func (i *Input) Start(persister operator.Persister) error {
 		subscription = NewRemoteSubscription(i.remote.Server, i.Logger())
 	}
 
-	if err := subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.path, i.bookmark); err != nil {
+	if err := subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.path, i.bookmark, i.ignoreChannelErrors); err != nil {
 		var errorString string
 		if isNonTransientError(err) {
 			if i.isRemote() {
@@ -275,7 +275,7 @@ func (i *Input) readWithRetry(maxReads int) ([]Event, error) {
 	if closeErr := i.subscription.Close(); closeErr != nil {
 		return nil, fmt.Errorf("failed to close subscription during RPC_S_INVALID_BOUND recovery: %w", closeErr)
 	}
-	if openErr := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.path, i.bookmark); openErr != nil {
+	if openErr := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.path, i.bookmark, i.ignoreChannelErrors); openErr != nil {
 		return nil, fmt.Errorf("failed to reopen subscription during RPC_S_INVALID_BOUND recovery: %w", openErr)
 	}
 	newMaxReads := max(maxReads/2, 1)
@@ -310,7 +310,7 @@ func (i *Input) readBatch(ctx context.Context) bool {
 				i.Logger().Error("Failed to re-establish remote session", zap.String("server", i.remote.Server), zap.Error(err))
 				return false
 			}
-			if err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.path, i.bookmark); err != nil {
+			if err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.path, i.bookmark, i.ignoreChannelErrors); err != nil {
 				i.Logger().Error("Failed to re-open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
 				return false
 			}
