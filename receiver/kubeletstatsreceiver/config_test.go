@@ -40,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
 				ControllerConfig: scraperhelper.ControllerConfig{
-					CollectionInterval: duration,
+					CollectionInterval: 60 * time.Second,
 					InitialDelay:       time.Second,
 				},
 				ClientConfig: kube.ClientConfig{
