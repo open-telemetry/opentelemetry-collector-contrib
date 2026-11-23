@@ -15,7 +15,9 @@ issues: [52686]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Adds `helper.NewSynchronousLogEmitterWithError` and `helper.ConsumeError`.
+subtext: |
+  Adds `helper.NewSynchronousLogEmitterWithError` and `helper.ConsumeError`.
+  The `stdin`, `generate` and `namedpipe` inputs keep reading after a failed delivery instead of stopping.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

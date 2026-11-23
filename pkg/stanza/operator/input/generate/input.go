@@ -5,6 +5,7 @@ package generate // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -46,8 +47,12 @@ func (i *Input) Start(_ operator.Persister) error {
 			}
 			err := i.Write(ctx, entry)
 			if err != nil {
-				i.Logger().Error("failed to write entry", zap.Error(err))
-				return
+				// A failed delivery is already logged by the emitter. Keep
+				// going so one rejected batch does not stop the input.
+				if _, ok := errors.AsType[*helper.ConsumeError](err); !ok {
+					i.Logger().Error("failed to write entry", zap.Error(err))
+					return
+				}
 			}
 
 			n++

@@ -86,14 +86,17 @@ func (r *receiver) consumeEntriesWithError(ctx context.Context, entries []*entry
 		scope = DefaultScopeName
 	}
 	pLogs := ConvertEntries(entries, scope, r.buildInfo.Version)
-	for _, e := range entries {
-		entry.Put(e)
-	}
 	logRecordCount := pLogs.LogRecordCount()
 
 	cErr := r.consumer.ConsumeLogs(ctx, pLogs)
 	if cErr != nil {
 		r.set.Logger.Error("ConsumeLogs() failed", zap.Error(cErr))
+	} else {
+		// On failure the entries are left to the garbage collector: operators
+		// such as router still read the entry after a failed write to log it.
+		for _, e := range entries {
+			entry.Put(e)
+		}
 	}
 	r.obsrecv.EndLogsOp(obsrecvCtx, "stanza", logRecordCount, cErr)
 	return cErr

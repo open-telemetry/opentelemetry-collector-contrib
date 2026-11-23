@@ -212,14 +212,16 @@ func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 	switch {
 	// This is the first entry in the next batch
 	case matches && t.matchFirstLine:
-		// Flush the existing batch
-		if err := t.flushSource(ctx, s, t.Write); err != nil {
-			return err
+		// Flush the existing batch. A failed write has already removed it,
+		// so the current entry must still start the next batch.
+		flushErr := t.flushSource(ctx, s, t.Write)
+		if _, kept := t.batchMap[s]; flushErr != nil && kept {
+			return flushErr
 		}
 
 		// Add the current log to the new batch
 		t.addToBatch(ctx, e, s, matches, t.Write)
-		return nil
+		return flushErr
 	// This is the last entry in a complete batch
 	case matches && !t.matchFirstLine:
 		t.addToBatch(ctx, e, s, matches, t.Write)
