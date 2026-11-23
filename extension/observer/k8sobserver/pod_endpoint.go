@@ -44,7 +44,7 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 	// Map of running containers by name.
 	runningContainers := map[string]runningContainer{}
 
-	for _, statuses := range [][]v1.ContainerStatus{pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses} {
+	for _, statuses := range [][]v1.ContainerStatus{pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses} {
 		for i := range statuses {
 			container := &statuses[i]
 			if container.State.Running != nil {
@@ -52,17 +52,17 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 			}
 		}
 	}
-	
+
 	// Native sidecars are init containers with restartPolicy Always; they run for the pod's lifetime.
-	containers := make([]*v1.Container, 0, len(pod.Spec.Containers)+len(pod.Spec.InitContainers))
-	for i := range pod.Spec.Containers {
-		containers = append(containers, &pod.Spec.Containers[i])
-	}
+	containers := make([]*v1.Container, 0, len(pod.Spec.InitContainers)+len(pod.Spec.Containers))
 	for i := range pod.Spec.InitContainers {
 		c := &pod.Spec.InitContainers[i]
 		if c.RestartPolicy != nil && *c.RestartPolicy == v1.ContainerRestartPolicyAlways {
 			containers = append(containers, c)
 		}
+	}
+	for i := range pod.Spec.Containers {
+		containers = append(containers, &pod.Spec.Containers[i])
 	}
 
 	// Create endpoint for each named container port.

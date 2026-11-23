@@ -8,6 +8,7 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 // newPod is a helper function for creating Pods for testing.
@@ -47,6 +48,87 @@ var (
 		return pod
 	}()
 )
+
+var initContainer1 = v1.Container{
+	Name:  "init-container-1",
+	Image: "init-container-image-1",
+	Ports: []v1.ContainerPort{
+		{Name: "http", HostPort: 0, ContainerPort: 1001, Protocol: v1.ProtocolTCP, HostIP: ""},
+	},
+}
+
+var initContainer2RestartPolicyNever = v1.Container{
+	Name:  "init-container-2",
+	Image: "init-container-image-2",
+	Ports: []v1.ContainerPort{
+		{Name: "http", HostPort: 0, ContainerPort: 1002, Protocol: v1.ProtocolTCP, HostIP: ""},
+	},
+	RestartPolicy: ptr.To(v1.ContainerRestartPolicyNever),
+}
+
+var initContainer3RestartPolicyAlways = v1.Container{
+	Name:  "init-container-3",
+	Image: "init-container-image-3",
+	Ports: []v1.ContainerPort{
+		{Name: "http", HostPort: 0, ContainerPort: 1003, Protocol: v1.ProtocolTCP, HostIP: ""},
+	},
+	RestartPolicy: ptr.To(v1.ContainerRestartPolicyAlways),
+}
+
+var initContainer4RestartPolicyAlways = v1.Container{
+	Name:  "init-container-4",
+	Image: "init-container-image-4",
+	Ports: []v1.ContainerPort{
+		{Name: "http", HostPort: 0, ContainerPort: 1004, Protocol: v1.ProtocolTCP, HostIP: ""},
+	},
+	RestartPolicy: ptr.To(v1.ContainerRestartPolicyAlways),
+}
+
+var initContainer1StatusRunning = v1.ContainerStatus{
+	Name: "init-container-1",
+	State: v1.ContainerState{
+		Running: &v1.ContainerStateRunning{StartedAt: metav1.Now()},
+	},
+	Ready:       true,
+	Image:       "init-container-image-1",
+	Started:     new(true),
+	ContainerID: "containerd://a808232bb4a57d421bb16f20dc9ab2a441343cb0aae8c369dc375838c7a49fd7",
+}
+
+var initContainer2StatusRunning = v1.ContainerStatus{
+	Name: "init-container-2",
+	State: v1.ContainerState{
+		Running: &v1.ContainerStateRunning{StartedAt: metav1.Now()},
+	},
+	Ready:       true,
+	Image:       "init-container-image-2",
+	Started:     new(true),
+	ContainerID: "containerd://a808232bb4a57d421bb16f20dc9ab2a441343cb0aae8c369dc375838c7a49fd7",
+}
+
+var initContainer3StatusRunning = v1.ContainerStatus{
+	Name: "init-container-3",
+	State: v1.ContainerState{
+		Running: &v1.ContainerStateRunning{StartedAt: metav1.Now()},
+	},
+	Ready:       true,
+	Image:       "init-container-image-3",
+	Started:     new(true),
+	ContainerID: "containerd://a808232bb4a57d421bb16f20dc9ab2a441343cb0aae8c369dc375838c7a49fd7",
+}
+
+var initContainer4StatusWaiting = v1.ContainerStatus{
+	Name: "init-container-4",
+	State: v1.ContainerState{
+		Waiting: &v1.ContainerStateWaiting{Reason: "waiting"},
+	},
+	Ready:        false,
+	RestartCount: 1,
+	Image:        "init-container-image-4",
+	ImageID:      "12345",
+	ContainerID:  "containerd://a808232bb4a57d421bb16f20dc9ab2a441343cb0aae8c369dc375838c7a49fd7",
+	Started:      nil,
+}
 
 var container1 = v1.Container{
 	Name:  "container-1",
@@ -92,6 +174,18 @@ var podWithNamedPorts = func() *v1.Pod {
 	pod := newPod("pod-2", "localhost")
 	pod.Labels = map[string]string{
 		"env": "prod",
+	}
+	pod.Status.InitContainerStatuses = []v1.ContainerStatus{
+		initContainer1StatusRunning,
+		initContainer2StatusRunning,
+		initContainer3StatusRunning,
+		initContainer4StatusWaiting,
+	}
+	pod.Spec.InitContainers = []v1.Container{
+		initContainer1,
+		initContainer2RestartPolicyNever,
+		initContainer3RestartPolicyAlways,
+		initContainer4RestartPolicyAlways,
 	}
 	pod.Status.ContainerStatuses = []v1.ContainerStatus{
 		container1StatusWaiting,
