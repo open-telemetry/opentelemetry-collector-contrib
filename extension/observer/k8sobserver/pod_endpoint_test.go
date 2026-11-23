@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -91,6 +92,10 @@ func TestPodObjectToPortEndpoint(t *testing.T) {
 
 	endpoints := convertPodToEndpoints("namespace", podWithNamedPorts)
 	require.Equal(t, expectedEndpoints, endpoints)
+
+	pod := podWithNamedPorts.DeepCopy()
+	pod.Status.Phase = v1.PodSucceeded
+	require.Empty(t, convertPodToEndpoints("namespace", pod))
 }
 
 func TestPodObjectToPortEndpointIPv6(t *testing.T) {
