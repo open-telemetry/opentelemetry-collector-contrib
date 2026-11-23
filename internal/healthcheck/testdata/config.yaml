@@ -2,7 +2,7 @@ healthcheckv2:
 healthcheckv2/legacyconfig:
   endpoint: "localhost:13"
   tls:
-    ca_file: "/path/to/ca"
+    client_ca_file: "/path/to/ca"
     key_file: "/path/to/key"
     cert_file: "/path/to/cert"
   check_collector_pipeline:

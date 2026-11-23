@@ -57,7 +57,7 @@ resources:
                     geo.region.iso_code: WBK
                     geo.region_name: West Berkshire
                     geo.timezone: Europe/London
-                  value: 0
+                  int_value: 0
             - name: summary.test
               type: summary
               datapoints:
@@ -91,4 +91,4 @@ resources:
                     geo.region.iso_code: WBK
                     geo.region_name: West Berkshire
                     geo.timezone: Europe/London
-                  value: 345
+                  double_value: 345

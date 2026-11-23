@@ -40,6 +40,50 @@ func TestDefaultConfig(t *testing.T) {
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
+func TestInvalidProfilesJSONDoesNotStopFollowingRecord(t *testing.T) {
+	dir := t.TempDir()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Config.Include = []string{filepath.Join(dir, "*")}
+	cfg.Config.StartAt = "beginning"
+	cfg.Config.PollInterval = 10 * time.Millisecond
+
+	valid, err := (&pprofile.JSONMarshaler{}).MarshalProfiles(testdata.GenerateProfiles(1))
+	require.NoError(t, err)
+
+	content := append([]byte("{invalid\n"), valid...)
+	content = append(content, '\n')
+
+	require.NoError(t, os.WriteFile(
+		filepath.Join(dir, "profiles.json"),
+		content,
+		0o600,
+	))
+
+	sink := new(consumertest.ProfilesSink)
+
+	receiver, err := NewFactory().(xreceiver.Factory).CreateProfiles(
+		t.Context(),
+		receivertest.NewNopSettings(metadata.Type),
+		cfg,
+		sink,
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, receiver.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, receiver.Shutdown(t.Context()))
+	})
+
+	require.Eventually(t,
+		func() bool {
+			return sink.ProfileCount() == 1
+		},
+		3*time.Second,
+		10*time.Millisecond,
+	)
+}
+
 func TestFileProfilesReceiver(t *testing.T) {
 	tempFolder := t.TempDir()
 	factory := NewFactory()
