@@ -565,7 +565,7 @@ func serializePayload(lr plog.LogRecord, includeVerification bool) ([]byte, erro
 	if !includeVerification {
 		prefixes = append(prefixes, attrVerificationPrefix)
 	}
-	opts := canonicaljson.SerializeLogRecordOptions{
+	opts := canonicaljson.SerializeOptions{
 		ExcludePrefixes: prefixes,
 	}
 	return canonicaljson.SerializeLogRecord(lr, opts)

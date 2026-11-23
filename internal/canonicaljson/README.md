@@ -27,7 +27,7 @@ Canonical JSON serialization is required for cryptographic signing and verificat
 ```go
 import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/canonicaljson"
 
-opts := canonicaljson.SerializeLogRecordOptions{
+opts := canonicaljson.SerializeOptions{
     ExcludePrefixes: []string{"audit.integrity."},
 }
 
@@ -41,14 +41,14 @@ if err != nil {
 ### Span Serialization
 
 ```go
-canonical, err := canonicaljson.SerializeSpan(span, canonicaljson.SerializeSpanOptions{
+canonical, err := canonicaljson.SerializeSpan(span, canonicaljson.SerializeOptions{
     ExcludePrefixes: []string{"audit.integrity."},
 })
 ```
 
-`SerializeLogRecordOptions` and `SerializeSpanOptions` are aliases of the shared
-`SerializeOptions` type, with the same depth and size defaults. For spans,
-`ExcludePrefixes` applies to attributes on the span, its events, and its links.
+`SerializeOptions` controls both log record and span serialization, with shared
+depth and size defaults. For spans, `ExcludePrefixes` applies to attributes on
+the span, its events, and its links.
 
 The hard-coded span schema includes non-empty `trace_id`, `span_id`,
 `parent_span_id`, `name`, and filtered `attributes`; non-zero `start_time` and
@@ -69,7 +69,7 @@ and `end_time`, and span event `timestamp`.
 ### Custom Limits
 
 ```go
-opts := canonicaljson.SerializeLogRecordOptions{
+opts := canonicaljson.SerializeOptions{
     ExcludePrefixes: []string{"audit.integrity.", "audit.verification."},
     MaxDepth:        64,  // Lower depth limit
     MaxInputBytes:   1024 * 1024, // 1 MiB size limit
@@ -82,7 +82,7 @@ opts := canonicaljson.SerializeLogRecordOptions{
 // Uses default values if not specified:
 // - MaxDepth: 128
 // - MaxInputBytes: 2 MiB (1 << 21)
-opts := canonicaljson.SerializeLogRecordOptions{
+opts := canonicaljson.SerializeOptions{
     ExcludePrefixes: []string{"audit.integrity."},
 }
 ```

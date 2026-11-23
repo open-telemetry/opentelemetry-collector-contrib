@@ -30,7 +30,7 @@ func TestInvalidUTF8Rejected_Body(t *testing.T) {
 	lr := plog.NewLogRecord()
 	lr.Body().SetStr(string([]byte{0xed, 0xa0, 0x80})) // encoded high surrogate, invalid UTF-8
 
-	opts := SerializeLogRecordOptions{}
+	opts := SerializeOptions{}
 	_, err := SerializeLogRecord(lr, opts)
 
 	require.Error(t, err, "expected error for invalid-UTF-8 body")
@@ -48,7 +48,7 @@ func TestInvalidUTF8Rejected_Attribute(t *testing.T) {
 	lr.Body().SetStr("body")
 	lr.Attributes().PutStr("key", string([]byte{0xed, 0xa0, 0x80})) // invalid UTF-8
 
-	opts := SerializeLogRecordOptions{}
+	opts := SerializeOptions{}
 	_, err := SerializeLogRecord(lr, opts)
 
 	require.Error(t, err, "expected error for invalid-UTF-8 attribute")
@@ -68,7 +68,7 @@ func TestInvalidUTF8Rejected_NestedAttribute(t *testing.T) {
 	m := lr.Attributes().PutEmptyMap("nested")
 	m.PutStr("inner", string([]byte{0xed, 0xa0, 0x80})) // invalid UTF-8
 
-	opts := SerializeLogRecordOptions{}
+	opts := SerializeOptions{}
 	_, err := SerializeLogRecord(lr, opts)
 
 	require.Error(t, err, "expected error for invalid-UTF-8 nested attribute")

@@ -54,7 +54,7 @@ func TestDepthCapIsCheckedBeforeMarshal(t *testing.T) {
 	lr := recordWithAttr(func(m pcommon.Map) {
 		nestedSliceValue(DefaultMaxDepth + 1).CopyTo(m.PutEmpty("deep"))
 	})
-	opts := SerializeLogRecordOptions{
+	opts := SerializeOptions{
 		ExcludePrefixes: []string{"audit.integrity."},
 	}
 	_, err := SerializeLogRecord(lr, opts)
@@ -76,7 +76,7 @@ func TestDepthCapIsCheckedBeforeMarshal(t *testing.T) {
 // 400 '}'. A byte scan over the marshaled JSON gets both of these wrong, in
 // opposite directions.
 func TestStringBracesAreNotStructure(t *testing.T) {
-	opts := SerializeLogRecordOptions{}
+	opts := SerializeOptions{}
 
 	// A string of 200 '{' is two levels deep, not 200
 	shallow := recordWithAttr(func(m pcommon.Map) {
@@ -101,7 +101,7 @@ func TestStringBracesAreNotStructure(t *testing.T) {
 // that differ only in which surrogate they spell out must stay distinct.
 // The unescaped byte forms are refused earlier as invalid UTF-8.
 func TestEscapedSurrogateTextDoesNotCollide(t *testing.T) {
-	opts := SerializeLogRecordOptions{}
+	opts := SerializeOptions{}
 
 	// Two different escaped surrogate texts must produce different output
 	a := recordWithAttr(func(m pcommon.Map) { m.PutStr("k", `\ud800\ud800`) })
@@ -127,7 +127,7 @@ func TestEscapedSurrogateTextDoesNotCollide(t *testing.T) {
 // and share one signature. pdata copies keys from the wire without validation,
 // so this input reaches the serializer.
 func TestKeysAndEventNameAreUTF8Checked(t *testing.T) {
-	opts := SerializeLogRecordOptions{}
+	opts := SerializeOptions{}
 	bad := "k" + string([]byte{0xff})
 
 	// An attribute key with invalid UTF-8 must be refused

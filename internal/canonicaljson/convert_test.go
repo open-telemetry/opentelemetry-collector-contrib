@@ -445,10 +445,10 @@ func TestSerializeLogRecord_Float64AdjacentValuesDistinct(t *testing.T) {
 			lr2 := plog.NewLogRecord()
 			lr2.Body().SetDouble(tc.b)
 
-			result1, err := SerializeLogRecord(lr1, SerializeLogRecordOptions{})
+			result1, err := SerializeLogRecord(lr1, SerializeOptions{})
 			require.NoError(t, err)
 
-			result2, err := SerializeLogRecord(lr2, SerializeLogRecordOptions{})
+			result2, err := SerializeLogRecord(lr2, SerializeOptions{})
 			require.NoError(t, err)
 
 			assert.NotEqual(t, result1, result2,
@@ -467,10 +467,10 @@ func TestSerializeLogRecord_Float64NegativeZeroCollision(t *testing.T) {
 	require.False(t, math.Signbit(lrPos.Body().Double()))
 	require.True(t, math.Signbit(lrNeg.Body().Double()))
 
-	resultPos, err := SerializeLogRecord(lrPos, SerializeLogRecordOptions{})
+	resultPos, err := SerializeLogRecord(lrPos, SerializeOptions{})
 	require.NoError(t, err)
 
-	resultNeg, err := SerializeLogRecord(lrNeg, SerializeLogRecordOptions{})
+	resultNeg, err := SerializeLogRecord(lrNeg, SerializeOptions{})
 	require.NoError(t, err)
 
 	// This collision is expected and spec-mandated
@@ -496,7 +496,7 @@ func TestSerializeLogRecord_Float64SpecialValuesRejected(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			lr := plog.NewLogRecord()
 			lr.Body().SetDouble(tc.value)
-			result, err := SerializeLogRecord(lr, SerializeLogRecordOptions{})
+			result, err := SerializeLogRecord(lr, SerializeOptions{})
 			require.Error(t, err, "expected error serializing %s", tc.name)
 			assert.Nil(t, result)
 		})
@@ -527,7 +527,7 @@ func TestSerializeLogRecord_Float64SerializationFormat(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			lr := plog.NewLogRecord()
 			lr.Body().SetDouble(tc.value)
-			result, err := SerializeLogRecord(lr, SerializeLogRecordOptions{})
+			result, err := SerializeLogRecord(lr, SerializeOptions{})
 			require.NoError(t, err)
 
 			assert.Equal(t, `{"body":{"doubleValue":`+tc.want+`}}`, string(result))

@@ -25,7 +25,7 @@ func TestSerializeLogRecord_BasicFields(t *testing.T) {
 	lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Unix(1234567891, 987654321)))
 	lr.Body().SetStr("test message")
 
-	opts := SerializeLogRecordOptions{
+	opts := SerializeOptions{
 		ExcludePrefixes: []string{"audit.integrity."},
 	}
 
@@ -47,7 +47,7 @@ func TestSerializeLogRecord_EventName(t *testing.T) {
 	lr.SetEventName("user.login")
 	lr.Body().SetStr("User logged in")
 
-	opts := SerializeLogRecordOptions{}
+	opts := SerializeOptions{}
 	result, err := SerializeLogRecord(lr, opts)
 	require.NoError(t, err)
 
@@ -67,7 +67,7 @@ func TestSerializeLogRecord_TraceContext(t *testing.T) {
 	lr.SetTraceID(traceID)
 	lr.SetSpanID(spanID)
 
-	opts := SerializeLogRecordOptions{}
+	opts := SerializeOptions{}
 	result, err := SerializeLogRecord(lr, opts)
 	require.NoError(t, err)
 
@@ -86,7 +86,7 @@ func TestSerializeLogRecord_Attributes(t *testing.T) {
 	lr.Attributes().PutInt("http.status_code", 200)
 	lr.Attributes().PutBool("success", true)
 
-	opts := SerializeLogRecordOptions{}
+	opts := SerializeOptions{}
 	result, err := SerializeLogRecord(lr, opts)
 	require.NoError(t, err)
 
@@ -109,7 +109,7 @@ func TestSerializeLogRecord_ExcludePrefixes(t *testing.T) {
 	lr.Attributes().PutStr("audit.verification.status", "verified")
 	lr.Attributes().PutStr("other.attr", "value2")
 
-	opts := SerializeLogRecordOptions{
+	opts := SerializeOptions{
 		ExcludePrefixes: []string{"audit.integrity.", "audit.verification."},
 	}
 	result, err := SerializeLogRecord(lr, opts)
@@ -131,7 +131,7 @@ func TestSerializeLogRecord_EmptyBody(t *testing.T) {
 	lr := plog.NewLogRecord()
 	lr.Attributes().PutStr("key", "value")
 
-	opts := SerializeLogRecordOptions{}
+	opts := SerializeOptions{}
 	result, err := SerializeLogRecord(lr, opts)
 	require.NoError(t, err)
 
@@ -147,7 +147,7 @@ func TestSerializeLogRecord_NoAttributes(t *testing.T) {
 	lr := plog.NewLogRecord()
 	lr.Body().SetStr("test message")
 
-	opts := SerializeLogRecordOptions{}
+	opts := SerializeOptions{}
 	result, err := SerializeLogRecord(lr, opts)
 	require.NoError(t, err)
 
@@ -168,7 +168,7 @@ func TestSerializeLogRecord_ComplexBody(t *testing.T) {
 	details := bodyMap.PutEmptyMap("details")
 	details.PutStr("component", "database")
 
-	opts := SerializeLogRecordOptions{}
+	opts := SerializeOptions{}
 	result, err := SerializeLogRecord(lr, opts)
 	require.NoError(t, err)
 
@@ -198,7 +198,7 @@ func TestSerializeLogRecord_Defaults(t *testing.T) {
 	current.PutStr("deep", "value")
 
 	// Test with empty options - should use defaults (MaxDepth: 128, MaxInputBytes: 2 MiB)
-	opts := SerializeLogRecordOptions{}
+	opts := SerializeOptions{}
 	result, err := SerializeLogRecord(lr, opts)
 	require.NoError(t, err)
 	assert.NotEmpty(t, result)
@@ -223,7 +223,7 @@ func TestSerializeLogRecord_ExceedsDepthLimit(t *testing.T) {
 	}
 	current.PutStr("deep", "value")
 
-	opts := SerializeLogRecordOptions{
+	opts := SerializeOptions{
 		MaxDepth: 3,
 	}
 	_, err := SerializeLogRecord(lr, opts)
@@ -238,7 +238,7 @@ func TestSerializeLogRecord_ExceedsSizeLimit(t *testing.T) {
 	largeString := strings.Repeat("a", 1000)
 	lr.Body().SetStr(largeString)
 
-	opts := SerializeLogRecordOptions{
+	opts := SerializeOptions{
 		MaxInputBytes: 100, // Very small limit
 	}
 	_, err := SerializeLogRecord(lr, opts)
@@ -251,7 +251,7 @@ func TestSerializeLogRecord_InvalidUTF8InEventName(t *testing.T) {
 	lr.SetEventName("invalid\xffutf8")
 	lr.Body().SetStr("test")
 
-	opts := SerializeLogRecordOptions{}
+	opts := SerializeOptions{}
 	_, err := SerializeLogRecord(lr, opts)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid UTF-8")
@@ -266,7 +266,7 @@ func TestSerializeLogRecord_CanonicalJSON(t *testing.T) {
 	lr.Attributes().PutStr("alpha", "a")
 	lr.Attributes().PutStr("beta", "b")
 
-	opts := SerializeLogRecordOptions{}
+	opts := SerializeOptions{}
 	result, err := SerializeLogRecord(lr, opts)
 	require.NoError(t, err)
 
@@ -303,7 +303,7 @@ func TestSerializeLogRecord_AttributeInsertionOrderDeterministic(t *testing.T) {
 	r1 := makeRecord([]string{"z.attr", "a.attr", "m.attr"})
 	r2 := makeRecord([]string{"a.attr", "m.attr", "z.attr"})
 
-	opts := SerializeLogRecordOptions{}
+	opts := SerializeOptions{}
 	b1, err := SerializeLogRecord(r1, opts)
 	require.NoError(t, err)
 	b2, err := SerializeLogRecord(r2, opts)
@@ -349,7 +349,7 @@ func TestSerializeLogRecordUint64Timestamps(t *testing.T) {
 			t.Run(field.name+"/"+tc.name, func(t *testing.T) {
 				lr := plog.NewLogRecord()
 				field.set(lr, tc.timestamp)
-				got, err := SerializeLogRecord(lr, SerializeLogRecordOptions{})
+				got, err := SerializeLogRecord(lr, SerializeOptions{})
 				require.NoError(t, err)
 				if tc.timestamp == 0 {
 					assert.Equal(t, "{}", string(got))
@@ -369,7 +369,7 @@ func TestSerializeLogRecord_Int64Timestamps(t *testing.T) {
 	lr.SetTimestamp(pcommon.Timestamp(1234567890123456789))
 	lr.SetObservedTimestamp(pcommon.Timestamp(1234567891987654321))
 
-	opts := SerializeLogRecordOptions{}
+	opts := SerializeOptions{}
 	result, err := SerializeLogRecord(lr, opts)
 	require.NoError(t, err)
 
@@ -389,7 +389,7 @@ func TestSerializeLogRecord_BodyTypes(t *testing.T) {
 	// Serialize record with no body for comparison
 	emptyLR := plog.NewLogRecord()
 	emptyLR.SetEventName("e")
-	emptyResult, err := SerializeLogRecord(emptyLR, SerializeLogRecordOptions{})
+	emptyResult, err := SerializeLogRecord(emptyLR, SerializeOptions{})
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -440,7 +440,7 @@ func TestSerializeLogRecord_BodyTypes(t *testing.T) {
 			lr.SetEventName("e")
 			tc.setBody(lr)
 
-			result, err := SerializeLogRecord(lr, SerializeLogRecordOptions{})
+			result, err := SerializeLogRecord(lr, SerializeOptions{})
 			require.NoError(t, err)
 
 			// Must differ from empty body
@@ -465,10 +465,10 @@ func TestSerializeLogRecord_BodyDistinguishesRecords(t *testing.T) {
 	lr2.SetEventName("e")
 	lr2.Body().SetEmptyMap().PutStr("action", "delete-all")
 
-	result1, err := SerializeLogRecord(lr1, SerializeLogRecordOptions{})
+	result1, err := SerializeLogRecord(lr1, SerializeOptions{})
 	require.NoError(t, err)
 
-	result2, err := SerializeLogRecord(lr2, SerializeLogRecordOptions{})
+	result2, err := SerializeLogRecord(lr2, SerializeOptions{})
 	require.NoError(t, err)
 
 	assert.NotEqual(t, result1, result2,
@@ -485,7 +485,7 @@ func TestSerializeLogRecord_EmptyBodyOmitted(t *testing.T) {
 	require.Equal(t, pcommon.ValueTypeEmpty, lr.Body().Type(),
 		"expected unset body to be ValueTypeEmpty")
 
-	result, err := SerializeLogRecord(lr, SerializeLogRecordOptions{})
+	result, err := SerializeLogRecord(lr, SerializeOptions{})
 	require.NoError(t, err)
 
 	// Body key should not appear in output
@@ -499,7 +499,7 @@ func TestSerializeLogRecord_BodyInvalidUTF8Rejected(t *testing.T) {
 	lr := plog.NewLogRecord()
 	lr.Body().SetStr(string([]byte{0xff, 0xfe}))
 
-	_, err := SerializeLogRecord(lr, SerializeLogRecordOptions{})
+	_, err := SerializeLogRecord(lr, SerializeOptions{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "UTF-8",
 		"expected UTF-8 validation error for invalid body")
@@ -516,7 +516,7 @@ func TestSerializeLogRecord_BodyNestingDepthCapped(t *testing.T) {
 		m = m.PutEmptyMap("n")
 	}
 
-	_, err := SerializeLogRecord(lr, SerializeLogRecordOptions{})
+	_, err := SerializeLogRecord(lr, SerializeOptions{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "nesting depth limit",
 		"expected depth limit error for deeply nested body")
@@ -537,10 +537,10 @@ func TestSerializeLogRecord_TimestampPrecision(t *testing.T) {
 	lr2.SetTimestamp(base + 1) // 1 nanosecond later
 	lr2.Body().SetStr("test")
 
-	result1, err := SerializeLogRecord(lr1, SerializeLogRecordOptions{})
+	result1, err := SerializeLogRecord(lr1, SerializeOptions{})
 	require.NoError(t, err)
 
-	result2, err := SerializeLogRecord(lr2, SerializeLogRecordOptions{})
+	result2, err := SerializeLogRecord(lr2, SerializeOptions{})
 	require.NoError(t, err)
 
 	assert.NotEqual(t, result1, result2,
@@ -563,10 +563,10 @@ func TestSerializeLogRecord_ObservedTimestampPrecision(t *testing.T) {
 	lr2.SetObservedTimestamp(base + 1)
 	lr2.Body().SetStr("test")
 
-	result1, err := SerializeLogRecord(lr1, SerializeLogRecordOptions{})
+	result1, err := SerializeLogRecord(lr1, SerializeOptions{})
 	require.NoError(t, err)
 
-	result2, err := SerializeLogRecord(lr2, SerializeLogRecordOptions{})
+	result2, err := SerializeLogRecord(lr2, SerializeOptions{})
 	require.NoError(t, err)
 
 	assert.NotEqual(t, result1, result2,
@@ -605,7 +605,7 @@ func TestRFC8785Vectors(t *testing.T) {
 			lr := plog.NewLogRecord()
 			value.CopyTo(lr.Attributes().PutEmpty("v"))
 
-			opts := SerializeLogRecordOptions{
+			opts := SerializeOptions{
 				ExcludePrefixes: []string{"audit.integrity."},
 			}
 			got, err := SerializeLogRecord(lr, opts)
@@ -669,21 +669,21 @@ func newCanonicalTestSpan() ptrace.Span {
 const canonicalTestSpanJSON = `{"attributes":{"gen_ai.tool.name":{"stringValue":"search"}},"end_time":"1714041600500000000","events":[{"attributes":{"choice":{"stringValue":"a"}},"name":"decision","timestamp":"1714041600250000000"}],"kind":3,"links":[{"attributes":{"link.kind":{"stringValue":"follows"}},"span_id":"0202020202020202","trace_id":"100f0e0d0c0b0a090807060504030201"}],"name":"tool.call","parent_span_id":"0807060504030201","span_id":"0102030405060708","start_time":"1714041600000000000","status":{"code":2,"message":"tool failed"},"trace_id":"0102030405060708090a0b0c0d0e0f10"}`
 
 func TestSerializeSpanFullPayload(t *testing.T) {
-	got, err := SerializeSpan(newCanonicalTestSpan(), SerializeSpanOptions{})
+	got, err := SerializeSpan(newCanonicalTestSpan(), SerializeOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, canonicalTestSpanJSON, string(got))
 }
 
 func TestSerializeSpanEmptyFields(t *testing.T) {
 	s := ptrace.NewSpan()
-	got, err := SerializeSpan(s, SerializeSpanOptions{})
+	got, err := SerializeSpan(s, SerializeOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, `{"kind":0,"status":{"code":0}}`, string(got))
 
 	// Empty elements retain their positions but omit every zero-valued field.
 	s.Events().AppendEmpty()
 	s.Links().AppendEmpty()
-	got, err = SerializeSpan(s, SerializeSpanOptions{})
+	got, err = SerializeSpan(s, SerializeOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, `{"events":[{}],"kind":0,"links":[{}],"status":{"code":0}}`, string(got))
 }
@@ -734,7 +734,7 @@ func TestSerializeSpanAttributeTypes(t *testing.T) {
 			nested := v.AppendEmpty().SetEmptyMap().PutEmptySlice("nested")
 			nested.AppendEmpty().SetDouble(2.5)
 			nested.AppendEmpty()
-			got, err := SerializeSpan(s, SerializeSpanOptions{})
+			got, err := SerializeSpan(s, SerializeOptions{})
 			require.NoError(t, err)
 			assert.Equal(t, spanAttributesJSON(level.name, wantAttrs), string(got))
 		})
@@ -743,7 +743,7 @@ func TestSerializeSpanAttributeTypes(t *testing.T) {
 
 func TestSerializeSpanExcludedFields(t *testing.T) {
 	s := newCanonicalTestSpan()
-	opts := SerializeSpanOptions{ExcludePrefixes: []string{"audit.integrity."}}
+	opts := SerializeOptions{ExcludePrefixes: []string{"audit.integrity."}}
 	before, err := SerializeSpan(s, opts)
 	require.NoError(t, err)
 	require.Equal(t, canonicalTestSpanJSON, string(before))
@@ -773,18 +773,18 @@ func TestSerializeSpanExcludePrefixes(t *testing.T) {
 			a.PutStr("audit.verification.status", "verified")
 			a.PutStr("audit.integrity", "keep") // Matching is by prefix, not namespace.
 			a.PutEmptyMap("nested").PutStr("audit.integrity.value", "nested content")
-			opts := SerializeSpanOptions{ExcludePrefixes: []string{"audit.integrity.", "audit.verification."}}
+			opts := SerializeOptions{ExcludePrefixes: []string{"audit.integrity.", "audit.verification."}}
 			got, err := SerializeSpan(s, opts)
 			require.NoError(t, err)
 			assert.Equal(t, spanAttributesJSON(level.name, `{"audit.integrity":{"stringValue":"keep"},"nested":{"audit.integrity.value":{"stringValue":"nested content"}}}`), string(got))
 
 			// The library must not implicitly filter signing attributes.
-			got, err = SerializeSpan(s, SerializeSpanOptions{})
+			got, err = SerializeSpan(s, SerializeOptions{})
 			require.NoError(t, err)
 			assert.Equal(t, spanAttributesJSON(level.name, `{"audit.integrity":{"stringValue":"keep"},"audit.integrity.value":{"stringValue":"signature"},"audit.verification.status":{"stringValue":"verified"},"nested":{"audit.integrity.value":{"stringValue":"nested content"}}}`), string(got))
 
 			// All filtered attributes are omitted, not encoded as an empty object.
-			got, err = SerializeSpan(s, SerializeSpanOptions{ExcludePrefixes: []string{""}})
+			got, err = SerializeSpan(s, SerializeOptions{ExcludePrefixes: []string{""}})
 			require.NoError(t, err)
 			want := `{"kind":0,"status":{"code":0}}`
 			switch level.name {
@@ -823,9 +823,9 @@ func TestSerializeSpanDeterministicInsertionOrder(t *testing.T) {
 		}
 		return s
 	}
-	a, err := SerializeSpan(makeSpan([]string{"z", "a", "m"}), SerializeSpanOptions{})
+	a, err := SerializeSpan(makeSpan([]string{"z", "a", "m"}), SerializeOptions{})
 	require.NoError(t, err)
-	b, err := SerializeSpan(makeSpan([]string{"m", "z", "a"}), SerializeSpanOptions{})
+	b, err := SerializeSpan(makeSpan([]string{"m", "z", "a"}), SerializeOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, a, b)
 	const nested = `{"a":{"stringValue":"a"},"m":{"stringValue":"m"},"z":{"stringValue":"z"}}`
@@ -839,18 +839,18 @@ func TestSerializeSpanPreservesEventAndLinkOrder(t *testing.T) {
 	s.Events().AppendEmpty().SetName("a")
 	s.Links().AppendEmpty().SetSpanID(pcommon.SpanID{2})
 	s.Links().AppendEmpty().SetSpanID(pcommon.SpanID{1})
-	got, err := SerializeSpan(s, SerializeSpanOptions{})
+	got, err := SerializeSpan(s, SerializeOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, `{"events":[{"name":"z"},{"name":"a"}],"kind":0,"links":[{"span_id":"0200000000000000"},{"span_id":"0100000000000000"}],"status":{"code":0}}`, string(got))
 
 	s.Events().At(0).SetName("a")
 	s.Events().At(1).SetName("z")
-	eventsReversed, err := SerializeSpan(s, SerializeSpanOptions{})
+	eventsReversed, err := SerializeSpan(s, SerializeOptions{})
 	require.NoError(t, err)
 	assert.NotEqual(t, got, eventsReversed)
 	s.Links().At(0).SetSpanID(pcommon.SpanID{1})
 	s.Links().At(1).SetSpanID(pcommon.SpanID{2})
-	linksReversed, err := SerializeSpan(s, SerializeSpanOptions{})
+	linksReversed, err := SerializeSpan(s, SerializeOptions{})
 	require.NoError(t, err)
 	assert.NotEqual(t, eventsReversed, linksReversed)
 }
@@ -868,7 +868,7 @@ func TestSerializeSpanRejectsInvalidUTF8(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			s := ptrace.NewSpan()
 			tc.set(s)
-			got, err := SerializeSpan(s, SerializeSpanOptions{})
+			got, err := SerializeSpan(s, SerializeOptions{})
 			require.ErrorContains(t, err, "invalid UTF-8")
 			assert.ErrorContains(t, err, tc.context)
 			assert.Nil(t, got)
@@ -889,7 +889,7 @@ func TestSerializeSpanRejectsInvalidUTF8(t *testing.T) {
 			t.Run(level.name+"/"+tc.name, func(t *testing.T) {
 				s := ptrace.NewSpan()
 				tc.set(level.attrs(s))
-				got, err := SerializeSpan(s, SerializeSpanOptions{})
+				got, err := SerializeSpan(s, SerializeOptions{})
 				require.ErrorContains(t, err, "invalid UTF-8")
 				assert.Nil(t, got)
 			})
@@ -905,7 +905,7 @@ func TestSerializeSpanAcceptsValidUTF8(t *testing.T) {
 	s.Attributes().PutEmptyMap("é").PutStr("決定", `\ud800`)
 	s.Events().At(0).Attributes().PutStr("é", "✓")
 	s.Links().AppendEmpty().Attributes().PutStr("é", "✓")
-	got, err := SerializeSpan(s, SerializeSpanOptions{})
+	got, err := SerializeSpan(s, SerializeOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, `{"attributes":{"é":{"決定":{"stringValue":"\\ud800"}}},"events":[{"attributes":{"é":{"stringValue":"✓"}},"name":"決定"}],"kind":0,"links":[{"attributes":{"é":{"stringValue":"✓"}}}],"name":"é<&>","status":{"code":0,"message":"✓"}}`, string(got))
 }
@@ -928,7 +928,7 @@ func TestSerializeSpanRejectsNonFiniteAttributes(t *testing.T) {
 						v = v.SetEmptySlice().AppendEmpty()
 					}
 					v.SetDouble(number.value)
-					got, err := SerializeSpan(s, SerializeSpanOptions{})
+					got, err := SerializeSpan(s, SerializeOptions{})
 					require.Error(t, err)
 					assert.Nil(t, got)
 				})
@@ -959,7 +959,7 @@ func TestSerializeSpanDepthBoundaries(t *testing.T) {
 							}
 						}
 						v.SetStr("leaf")
-						got, err := SerializeSpan(s, SerializeSpanOptions{MaxDepth: limit.configured})
+						got, err := SerializeSpan(s, SerializeOptions{MaxDepth: limit.configured})
 						if depth == limit.effective {
 							require.NoError(t, err)
 							assert.Contains(t, string(got), `{"stringValue":"leaf"}`)
@@ -988,7 +988,7 @@ func TestSerializeSpanSizeBoundaries(t *testing.T) {
 					s := ptrace.NewSpan()
 					value := strings.Repeat("a", limit.effective-overhead+extra)
 					level.attrs(s).PutStr("value", value)
-					got, err := SerializeSpan(s, SerializeSpanOptions{MaxInputBytes: limit.configured})
+					got, err := SerializeSpan(s, SerializeOptions{MaxInputBytes: limit.configured})
 					if extra == 0 {
 						require.NoError(t, err)
 						assert.Len(t, got, limit.effective)
@@ -1010,10 +1010,10 @@ func TestSerializeSpanSizeLimitBeforeCanonicalization(t *testing.T) {
 	// encoding/json escapes each HTML character as six bytes before JCS
 	// removes those escapes. The size cap applies to that larger input.
 	const rawSize = len(canonical) + 3*5
-	got, err := SerializeSpan(s, SerializeSpanOptions{MaxInputBytes: rawSize})
+	got, err := SerializeSpan(s, SerializeOptions{MaxInputBytes: rawSize})
 	require.NoError(t, err)
 	assert.Equal(t, canonical, string(got))
-	got, err = SerializeSpan(s, SerializeSpanOptions{MaxInputBytes: rawSize - 1})
+	got, err = SerializeSpan(s, SerializeOptions{MaxInputBytes: rawSize - 1})
 	require.ErrorContains(t, err, "size limit")
 	assert.Nil(t, got)
 }
@@ -1033,7 +1033,7 @@ func TestSerializeSpanUint64Timestamps(t *testing.T) {
 			s.SetStartTimestamp(tc.timestamp)
 			s.SetEndTimestamp(tc.timestamp)
 			s.Events().AppendEmpty().SetTimestamp(tc.timestamp)
-			got, err := SerializeSpan(s, SerializeSpanOptions{})
+			got, err := SerializeSpan(s, SerializeOptions{})
 			require.NoError(t, err)
 			assert.Equal(t, `{"end_time":"`+tc.decimal+`","events":[{"timestamp":"`+tc.decimal+`"}],"kind":0,"start_time":"`+tc.decimal+`","status":{"code":0}}`, string(got))
 		})
@@ -1043,12 +1043,12 @@ func TestSerializeSpanUint64Timestamps(t *testing.T) {
 func TestSerializeSpanDoesNotMutate(t *testing.T) {
 	for _, tc := range []struct {
 		name      string
-		opts      SerializeSpanOptions
+		opts      SerializeOptions
 		wantError bool
 	}{
-		{"success", SerializeSpanOptions{ExcludePrefixes: []string{"audit.integrity."}}, false},
-		{"depth error", SerializeSpanOptions{MaxDepth: 1}, true},
-		{"size error", SerializeSpanOptions{MaxInputBytes: 1}, true},
+		{"success", SerializeOptions{ExcludePrefixes: []string{"audit.integrity."}}, false},
+		{"depth error", SerializeOptions{MaxDepth: 1}, true},
+		{"size error", SerializeOptions{MaxInputBytes: 1}, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			s := newCanonicalTestSpan()

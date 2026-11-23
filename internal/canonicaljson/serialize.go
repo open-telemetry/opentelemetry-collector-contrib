@@ -36,12 +36,6 @@ type SerializeOptions struct {
 	MaxInputBytes int
 }
 
-// SerializeLogRecordOptions controls log record serialization behavior.
-type SerializeLogRecordOptions = SerializeOptions
-
-// SerializeSpanOptions controls span serialization behavior.
-type SerializeSpanOptions = SerializeOptions
-
 func (opts SerializeOptions) withDefaults() SerializeOptions {
 	if opts.MaxDepth == 0 {
 		opts.MaxDepth = DefaultMaxDepth
@@ -78,7 +72,7 @@ func (opts SerializeOptions) withDefaults() SerializeOptions {
 //   - Serialized size exceeds MaxInputBytes
 //   - Invalid UTF-8 is encountered
 //   - JCS transformation fails
-func SerializeLogRecord(lr plog.LogRecord, opts SerializeLogRecordOptions) ([]byte, error) {
+func SerializeLogRecord(lr plog.LogRecord, opts SerializeOptions) ([]byte, error) {
 	opts = opts.withDefaults()
 
 	data := make(map[string]any)
@@ -99,11 +93,11 @@ func SerializeLogRecord(lr plog.LogRecord, opts SerializeLogRecordOptions) ([]by
 	}
 
 	if lr.Timestamp() != 0 {
-		data["timestamp"] = Nanos(lr.Timestamp())
+		data["timestamp"] = nanos(lr.Timestamp())
 	}
 
 	if lr.ObservedTimestamp() != 0 {
-		data["observed_timestamp"] = Nanos(lr.ObservedTimestamp())
+		data["observed_timestamp"] = nanos(lr.ObservedTimestamp())
 	}
 
 	if !lr.TraceID().IsEmpty() {
@@ -140,7 +134,7 @@ func SerializeLogRecord(lr plog.LogRecord, opts SerializeLogRecordOptions) ([]by
 //
 // Returns an error for excessive nesting depth or serialized size, invalid
 // UTF-8, or a failed JCS transformation, as with SerializeLogRecord.
-func SerializeSpan(span ptrace.Span, opts SerializeSpanOptions) ([]byte, error) {
+func SerializeSpan(span ptrace.Span, opts SerializeOptions) ([]byte, error) {
 	opts = opts.withDefaults()
 	data := make(map[string]any)
 
@@ -161,10 +155,10 @@ func SerializeSpan(span ptrace.Span, opts SerializeSpanOptions) ([]byte, error) 
 	}
 	data["kind"] = int32(span.Kind())
 	if span.StartTimestamp() != 0 {
-		data["start_time"] = Nanos(span.StartTimestamp())
+		data["start_time"] = nanos(span.StartTimestamp())
 	}
 	if span.EndTimestamp() != 0 {
-		data["end_time"] = Nanos(span.EndTimestamp())
+		data["end_time"] = nanos(span.EndTimestamp())
 	}
 
 	if err := putAttributes(data, span.Attributes(), opts); err != nil {
@@ -183,7 +177,7 @@ func SerializeSpan(span ptrace.Span, opts SerializeSpanOptions) ([]byte, error) 
 				event["name"] = ev.Name()
 			}
 			if ev.Timestamp() != 0 {
-				event["timestamp"] = Nanos(ev.Timestamp())
+				event["timestamp"] = nanos(ev.Timestamp())
 			}
 			if err := putAttributes(event, ev.Attributes(), opts); err != nil {
 				return nil, fmt.Errorf("span event %d: %w", i, err)
@@ -272,7 +266,7 @@ func marshalJCS(v any, maxInputBytes int) ([]byte, error) {
 	return jcs.Transform(raw)
 }
 
-// Nanos converts a pcommon.Timestamp to its string representation in nanoseconds.
-func Nanos(ts pcommon.Timestamp) string {
+// nanos converts a pcommon.Timestamp to its string representation in nanoseconds.
+func nanos(ts pcommon.Timestamp) string {
 	return strconv.FormatUint(uint64(ts), 10)
 }

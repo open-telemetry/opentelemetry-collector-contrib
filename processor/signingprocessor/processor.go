@@ -120,7 +120,7 @@ func (p *signingProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error 
 //   - Flags (W3C trace-context sampling bit; observability concept, not audit-relevant;
 //     may be modified by intermediaries without breaking audit semantics)
 func (p *signingProcessor) processLogRecord(lr plog.LogRecord) error {
-	opts := canonicaljson.SerializeLogRecordOptions{
+	opts := canonicaljson.SerializeOptions{
 		ExcludePrefixes: []string{"audit.integrity."},
 		// Uses default MaxDepth (128) and MaxInputBytes (2 MiB)
 	}
@@ -166,7 +166,7 @@ func (p *signingProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 }
 
 func (p *signingProcessor) processSpan(span ptrace.Span) error {
-	opts := canonicaljson.SerializeSpanOptions{
+	opts := canonicaljson.SerializeOptions{
 		ExcludePrefixes: []string{"audit.integrity."},
 	}
 	spanData, err := canonicaljson.SerializeSpan(span, opts)

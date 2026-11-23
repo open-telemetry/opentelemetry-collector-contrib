@@ -71,7 +71,7 @@ func verifyRecord(t *testing.T, lr plog.LogRecord, pubKey *rsa.PublicKey) {
 	}
 
 	// Use canonicaljson to serialize (same as the processor does)
-	canonical, err := canonicaljson.SerializeLogRecord(lr, canonicaljson.SerializeLogRecordOptions{
+	canonical, err := canonicaljson.SerializeLogRecord(lr, canonicaljson.SerializeOptions{
 		ExcludePrefixes: []string{"audit.integrity."},
 	})
 	if err != nil {

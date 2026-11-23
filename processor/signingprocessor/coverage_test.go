@@ -64,7 +64,7 @@ import (
 // default ExcludePrefixes for testing. This ensures tests use the same
 // serialization configuration as the actual processor.
 func serializeLogRecordWithDefaults(lr plog.LogRecord) ([]byte, error) {
-	opts := canonicaljson.SerializeLogRecordOptions{
+	opts := canonicaljson.SerializeOptions{
 		ExcludePrefixes: []string{"audit.integrity."},
 	}
 	return canonicaljson.SerializeLogRecord(lr, opts)

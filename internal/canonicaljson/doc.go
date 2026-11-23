@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package canonicaljson provides RFC 8785 (JCS) canonical JSON serialization
-// for OpenTelemetry log records.
+// for OpenTelemetry log records and spans.
 //
 // This package is used internally by the signing and verify processors to
-// produce deterministic JSON representations of log records for cryptographic
+// produce deterministic JSON representations of log records and spans for cryptographic
 // signing and verification.
 //
 // The serialization excludes certain fields that should not be part of the
