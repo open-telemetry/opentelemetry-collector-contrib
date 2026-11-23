@@ -383,8 +383,7 @@ var _ elastictransport.Selector = &singleSelector{}
 // until the connection fails in which case the next conn is selected
 type singleSelector struct{}
 
-func (s *singleSelector) Select(conn []*elastictransport.Connection) (*elastictransport.Connection, error) {
-
+func (*singleSelector) Select(conn []*elastictransport.Connection) (*elastictransport.Connection, error) {
 	// Select receives a slice of live connections
 	// we always return the first element from the live list until it is marked dead
 	// dead connection are automtically removed from the live list
