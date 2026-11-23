@@ -163,6 +163,24 @@ func TestEnsureTimeseriesPointsAreSortedByTimestamp(t *testing.T) {
 					Timestamp: 999,
 				},
 			},
+			Histograms: []prompb.Histogram{
+				{
+					Sum:       10.11,
+					Timestamp: 1000,
+				},
+				{
+					Sum:       7.81,
+					Timestamp: 2,
+				},
+				{
+					Sum:       987.81,
+					Timestamp: 1,
+				},
+				{
+					Sum:       18.22,
+					Timestamp: 999,
+				},
+			},
 		},
 		{
 			Samples: []prompb.Sample{
@@ -183,11 +201,29 @@ func TestEnsureTimeseriesPointsAreSortedByTimestamp(t *testing.T) {
 					Timestamp: 8,
 				},
 			},
+			Histograms: []prompb.Histogram{
+				{
+					Sum:       99.91,
+					Timestamp: 5,
+				},
+				{
+					Sum:       4.33,
+					Timestamp: 3,
+				},
+				{
+					Sum:       47.81,
+					Timestamp: 4,
+				},
+				{
+					Sum:       18.22,
+					Timestamp: 8,
+				},
+			},
 		},
 	}
 	got := convertTimeseriesToRequest(outOfOrder)
 
-	// We must ensure that the resulting Timeseries' sample points are sorted by Timestamp.
+	// We must ensure that the resulting Timeseries' sample and histogram points are sorted by Timestamp.
 	want := &prompb.WriteRequest{
 		Timeseries: []prompb.TimeSeries{
 			{
@@ -206,6 +242,24 @@ func TestEnsureTimeseriesPointsAreSortedByTimestamp(t *testing.T) {
 					},
 					{
 						Value:     10.11,
+						Timestamp: 1000,
+					},
+				},
+				Histograms: []prompb.Histogram{
+					{
+						Sum:       987.81,
+						Timestamp: 1,
+					},
+					{
+						Sum:       7.81,
+						Timestamp: 2,
+					},
+					{
+						Sum:       18.22,
+						Timestamp: 999,
+					},
+					{
+						Sum:       10.11,
 						Timestamp: 1000,
 					},
 				},
@@ -229,13 +283,31 @@ func TestEnsureTimeseriesPointsAreSortedByTimestamp(t *testing.T) {
 						Timestamp: 8,
 					},
 				},
+				Histograms: []prompb.Histogram{
+					{
+						Sum:       4.33,
+						Timestamp: 3,
+					},
+					{
+						Sum:       47.81,
+						Timestamp: 4,
+					},
+					{
+						Sum:       99.91,
+						Timestamp: 5,
+					},
+					{
+						Sum:       18.22,
+						Timestamp: 8,
+					},
+				},
 			},
 		},
 	}
 	assert.Equal(t, want, got)
 
 	// For a full sanity/logical check, assert that EVERY
-	// Sample has a Timestamp bigger than its prior values.
+	// Sample and Histogram has a Timestamp bigger than its prior values.
 	for ti, ts := range got.Timeseries {
 		for i := range ts.Samples {
 			si := ts.Samples[i]
@@ -243,6 +315,14 @@ func TestEnsureTimeseriesPointsAreSortedByTimestamp(t *testing.T) {
 				sj := ts.Samples[j]
 				assert.LessOrEqual(t, sj.Timestamp, si.Timestamp, "Timeseries[%d]: Sample[%d].Timestamp(%d) > Sample[%d].Timestamp(%d)",
 					ti, j, sj.Timestamp, i, si.Timestamp)
+			}
+		}
+		for i := range ts.Histograms {
+			hi := ts.Histograms[i]
+			for j := range i {
+				hj := ts.Histograms[j]
+				assert.LessOrEqual(t, hj.Timestamp, hi.Timestamp, "Timeseries[%d]: Histogram[%d].Timestamp(%d) > Histogram[%d].Timestamp(%d)",
+					ti, j, hj.Timestamp, i, hi.Timestamp)
 			}
 		}
 	}

@@ -55,7 +55,7 @@ and allows you to configure a list of statements for the processor to execute. T
 - Objects, which allows users to apply configuration options to a specific list of statements. See [Advanced Config](#advanced-config) for more details.
 
 > [!NOTE]
-> Support for the `profile` signal (the `profile_statements` configuration and the `profile` context) is experimental and subject to change or removal in the future.
+> Support for the `profile` signal (the `profile_statements` configuration and the `profile` context) is in development and is controlled by the [`processor.transform.enableProfiles`](#processortransformenableprofiles) feature gate, which is enabled by default.
 
 Within each `<signal_statements>` list, only certain OTTL Path prefixes can be used:
 
@@ -831,7 +831,7 @@ The primary use case of the `set_semconv_span_name()` function is to address hig
 
 Parameters:
 
-* `semconvVersion` is the version of the Semantic Conventions used to generate the `span.name`. A set of older/deprecated semconv attributes are also supported for backward compatibility (see the table below). Versions `1.37.0` to `1.43.0` are supported.
+* `semconvVersion` is the version of the Semantic Conventions whose span name rules are used to generate the `span.name`. Versions `1.37.0` to `1.43.0` are supported. Span name rules introduced by a newer Semantic Conventions version only apply when `semconvVersion` is set to that version or later, so upgrading the Collector does not change the span names produced for a given `semconvVersion`. A set of older/deprecated semconv attributes are also supported for backward compatibility (see the table below).
 * `originalSpanNameAttribute` is the optional name of the attribute used to copy the original `span.name` if different from the name derived from semantic conventions.
 
 Sanitization examples:
@@ -872,6 +872,14 @@ Sanitization examples:
          ```
     * Span name after applying `set_semconv_span_name("1.43.0")`: `GET /api/v1/users/{id}`
 
+
+Version-specific span name rules:
+
+| Rule                                                            | Applies to `semconvVersion` |
+|-----------------------------------------------------------------|-----------------------------|
+| An `_OTHER` `rpc.method` produces `{rpc.system.name}`           | `1.39.0` and later          |
+| A missing `rpc.method` produces `{rpc.system.name}`             | `1.39.0` and later          |
+| A fully-qualified `rpc.method` is not prefixed with the service | `1.39.0` and later          |
 
 Backward compatibility: `set_semconv_span_name` will also read the following deprecated attributes, mapping each to its current equivalent:
 
@@ -1123,6 +1131,12 @@ The Transform Processor uses the [OpenTelemetry Transformation Language](https:/
 - Other: Statements that modify a higher context (`resource` or `scope`) using values from a lower context (for example, `set(resource.attributes["to"], log.attributes["from"])`) may produce unexpected results. The statement runs once per span, metric, or log record, and every record that shares the same resource or scope writes to the same shared value, so the last record processed determines the final value. For logs, the [`flatten.log`](#transformflattenlogs) option can be used to avoid this. See [#32080](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32080) for more details.
 
 ## Feature Gate
+
+### `processor.transform.enableProfiles`
+
+The `processor.transform.enableProfiles` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables support for the `profile` signal and is enabled by default. While it is disabled, configuring `profile_statements` fails validation and the processor can't be used in a profiles pipeline.
+
+To disable it, run the collector with `--feature-gates=-processor.transform.enableProfiles`.
 
 ### `transform.flatten.logs`
 

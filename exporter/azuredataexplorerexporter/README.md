@@ -135,6 +135,16 @@ This exporter maps OpenTelemetry  [trace](https://opentelemetry.io/docs/referenc
 | MetricAttributes              | Custom metric [attributes](https://opentelemetry.io/docs/reference/specification/common/#attribute) set from the application. Also contains the [instrumentation scope](https://opentelemetry.io/docs/reference/specification/common/#attribute) name and version                                                                                                         |
 | Host                          | The host.name extracted from [Host resource semantics](https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/host/). If empty , the hostname of the exporter is used                                  |
 | ResourceAttributes            | The resource attributes JSON map as specified in open telemetry [resource semantics](https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/)                                                        |
+| Exemplars                     | A JSON array of [exemplars](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#exemplars) attached to the datapoint, each `{value, timestamp, trace_id, span_id, attributes}`. The `trace_id`/`span_id` use the same hex format as the traces table, so exemplars can be joined to the traces table to go from an aggregate metric to the exact trace. Integer exemplars are preserved as integers rather than widened to floating point. Non-finite double values are written as the strings `"NaN"`, `"Infinity"` and `"-Infinity"`, since JSON cannot represent them. `value` is omitted for an exemplar that records no value. For histograms, exemplars are attached to the `_count` row. If the table has no `Exemplars` column, exemplars are not stored. To drop exemplars before export, use a [transform processor](../../processor/transformprocessor/README.md) on `datapoint.exemplars`. |
+
+#### Histogram metric rows
+
+For histogram metrics, the exporter emits multiple rows per data point:
+- `<name>_sum` — the sum of all observed values
+- `<name>_count` — the number of observations
+- `<name>_min` — the minimum observed value (only emitted when the SDK provides it, e.g., .NET SDK v1.5.0+)
+- `<name>_max` — the maximum observed value (only emitted when the SDK provides it)
+- `<name>_bucket` — one row per explicit bound (cumulative count), plus a `+Inf` bucket
 
 ### Logs
 
@@ -157,7 +167,10 @@ The following tables need to be created in the database specified in the configu
 ```kql
 .create-merge table <Logs-Table-Name> (Timestamp:datetime, ObservedTimestamp:datetime, TraceID:string, SpanID:string, SeverityText:string, SeverityNumber:int, Body:string, ResourceAttributes:dynamic, LogsAttributes:dynamic) 
 
-.create-merge table <Metrics-Table-Name> (Timestamp:datetime, MetricName:string, MetricType:string, MetricUnit:string, MetricDescription:string, MetricValue:real, Host:string, ResourceAttributes:dynamic,MetricAttributes:dynamic) 
+.create-merge table <Metrics-Table-Name> (Timestamp:datetime, MetricName:string, MetricType:string, MetricUnit:string, MetricDescription:string, MetricValue:real, Host:string, ResourceAttributes:dynamic,MetricAttributes:dynamic,Exemplars:dynamic) 
+
+// For existing metrics tables, add the Exemplars column to store metric exemplars. If `metrics_table_json_mapping` is configured, also add an Exemplars entry to that mapping.
+.alter-merge table <Metrics-Table-Name> (Exemplars:dynamic) 
 
 .create-merge table <Traces-Table-Name> (TraceID:string, SpanID:string, ParentID:string, SpanName:string, SpanStatus:string, SpanKind:string, StartTime:datetime, EndTime:datetime, ResourceAttributes:dynamic, TraceAttributes:dynamic, Events:dynamic, Links:dynamic) 
 

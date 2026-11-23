@@ -334,14 +334,12 @@ func TestSplitResourceSpansByTrace(t *testing.T) {
 	require.Equal(t, "https://example.com/scope-a", b.rss.ScopeSpans().At(0).SchemaUrl())
 	require.Equal(t, uInt64ToSpanID(2), b.rss.ScopeSpans().At(0).Spans().At(0).SpanID())
 
-	// Spans are moved out of the source; the resource and scopes are copied.
+	// The source is consumed: no span is left in it.
 	for _, ss := range rss.ScopeSpans().All() {
 		for _, span := range ss.Spans().All() {
 			require.True(t, span.SpanID().IsEmpty())
 		}
 	}
-	require.Equal(t, "frontend", rss.Resource().Attributes().AsRaw()["service.name"])
-	require.Equal(t, "lib-a", rss.ScopeSpans().At(0).Scope().Name())
 }
 
 func TestSequentialTraceArrival(t *testing.T) {
@@ -1977,6 +1975,7 @@ func TestTailStorageExtensionFromHost(t *testing.T) {
 	assert.Len(t, msp.AllTraces(), 1)
 	assert.Positive(t, host.extension.appendCount)
 	assert.Positive(t, host.extension.takeCount)
+	assert.Positive(t, host.extension.takeManyCount)
 }
 
 // TestSpanIngestPendingStorageDeletedOnDecisionWait verifies that when a trace
@@ -2247,12 +2246,14 @@ type extension struct {
 	takeErr    error
 	appendCount,
 	takeCount,
+	takeManyCount,
 	deleteCount int
 }
 
 var (
-	_ samplingpolicy.Extension         = &extension{}
-	_ tailstorageextension.TailStorage = &extension{}
+	_ samplingpolicy.Extension              = &extension{}
+	_ tailstorageextension.TailStorage      = &extension{}
+	_ tailstorageextension.BatchTailStorage = &extension{}
 )
 
 // NewEvaluator implements samplingpolicy.Extension.
@@ -2281,6 +2282,17 @@ func (e *extension) Take(traceID pcommon.TraceID) (ptrace.Traces, error) {
 		return ptrace.NewTraces(), e.takeErr
 	}
 	return e.storage.Take(traceID)
+}
+
+func (e *extension) TakeMany(traceIDs []pcommon.TraceID) ([]ptrace.Traces, []error) {
+	e.ensureStorage()
+	e.takeManyCount++
+	out := make([]ptrace.Traces, len(traceIDs))
+	errs := make([]error, len(traceIDs))
+	for i, id := range traceIDs {
+		out[i], errs[i] = e.Take(id)
+	}
+	return out, errs
 }
 
 func (e *extension) Delete(traceID pcommon.TraceID) error {
