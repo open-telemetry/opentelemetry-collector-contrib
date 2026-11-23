@@ -19,18 +19,27 @@ import (
 const rotationBenchmarkTrackerCount = 256
 
 func BenchmarkCardinalityProcessorRotate_Sparse(b *testing.B) {
-	benchmarkCardinalityProcessorRotate(b, false)
+	benchmarkCardinalityProcessorRotate(b, false, 0)
 }
 
 func BenchmarkCardinalityProcessorRotate_Dense(b *testing.B) {
-	benchmarkCardinalityProcessorRotate(b, true)
+	benchmarkCardinalityProcessorRotate(b, true, 0)
 }
 
-func benchmarkCardinalityProcessorRotate(b *testing.B, dense bool) {
+// The TopOffenders variants also measure collectShardDeltas and its estimates.
+func BenchmarkCardinalityProcessorRotate_Sparse_TopOffenders(b *testing.B) {
+	benchmarkCardinalityProcessorRotate(b, false, 10)
+}
+
+func BenchmarkCardinalityProcessorRotate_Dense_TopOffenders(b *testing.B) {
+	benchmarkCardinalityProcessorRotate(b, true, 10)
+}
+
+func benchmarkCardinalityProcessorRotate(b *testing.B, dense bool, topOffenders int) {
 	cfg := &Config{
 		MaxCardinalityDeltaPerEpoch: 1000000,
 		EpochDurationSeconds:        86400,
-		TopOffendersCount:           0,
+		TopOffendersCount:           topOffenders,
 	}
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
 	proc, err := newCardinalityProcessor(b.Context(), cfg, set, consumertest.NewNop())
@@ -90,7 +99,7 @@ func benchmarkCardinalityProcessorRotate(b *testing.B, dense bool) {
 		// benchmark after two iterations.
 		b.StopTimer()
 		for trackerIndex, tracker := range trackers {
-			tracker.insert(rotationBenchmarkHash(i, trackerIndex), 1_000_000)
+			tracker.insert(rotationBenchmarkHash(i, trackerIndex), 1_000_000, metricInfo{})
 		}
 		b.StartTimer()
 		p.rotate()
