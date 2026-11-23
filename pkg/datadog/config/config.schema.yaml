@@ -116,6 +116,12 @@ $defs:
     description: MetricsConfig defines the metrics exporter specific configuration options
     type: object
     properties:
+      compression:
+        description: Compression defines the compression algorithm for metrics payloads. Valid values are 'zlib' (default) and 'zstd'.
+        type: string
+      compression_level:
+        description: CompressionLevel defines the compression level for zstd metrics compression (1-22). If unset or 0, defaults to 3. Only supported when compression is 'zstd'.
+        type: integer
       delta_ttl:
         description: DeltaTTL defines the time that previous points of a cumulative monotonic metric are kept in memory to calculate deltas
         type: integer
@@ -129,6 +135,9 @@ $defs:
       sums:
         description: SumConfig defines the export of OTLP Sums.
         $ref: sum_config
+      v3:
+        description: V3 defines configuration for v3 metrics intakes.
+        $ref: v_3_config
     allOf:
       - $ref: go.opentelemetry.io/collector/config/confignet.tcp_addr_config
       - $ref: metrics_exporter_config
@@ -243,3 +252,18 @@ $defs:
     allOf:
       - $ref: go.opentelemetry.io/collector/config/confignet.tcp_addr_config
       - $ref: traces_config
+  v_3_config:
+    description: V3Config defines configuration for v3 intakes.
+    type: object
+    properties:
+      series:
+        description: Series defines configuration for v3 series intake.
+        $ref: v_3_series_config
+  v_3_series_config:
+    description: V3SeriesConfig defines configuration for the v3 series intake.
+    type: object
+    properties:
+      enabled:
+        description: Enabled states if v3 series intake should be used. If unset (nil), v3 is automatically used when zstd compression is active, the endpoint is an eligible Datadog site, and no proxy is configured.
+        x-pointer: true
+        type: boolean

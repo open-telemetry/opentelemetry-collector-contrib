@@ -126,25 +126,25 @@ func (c *HistogramConfig) validate() error {
 	return nil
 }
 
-func (c *MetricsConfig) validate() error {
-	if err := c.HistConfig.validate(); err != nil {
+func (mcfg *MetricsConfig) validate() error {
+	if err := mcfg.HistConfig.validate(); err != nil {
 		return err
 	}
 
-	switch c.Compression {
+	switch mcfg.Compression {
 	case "", "zlib":
-		if c.CompressionLevel != 0 {
+		if mcfg.CompressionLevel != 0 {
 			return errors.New("compression_level is only supported when compression is 'zstd'")
 		}
-		if c.V3.Series.Enabled != nil && *c.V3.Series.Enabled {
+		if mcfg.V3.Series.Enabled != nil && *mcfg.V3.Series.Enabled {
 			return errors.New("v3 series intake requires 'zstd' compression")
 		}
 	case "zstd":
-		if c.CompressionLevel != 0 && (c.CompressionLevel < 1 || c.CompressionLevel > 22) {
-			return fmt.Errorf("invalid zstd compression level %d: must be between 1 and 22", c.CompressionLevel)
+		if mcfg.CompressionLevel != 0 && (mcfg.CompressionLevel < 1 || mcfg.CompressionLevel > 22) {
+			return fmt.Errorf("invalid zstd compression level %d: must be between 1 and 22", mcfg.CompressionLevel)
 		}
 	default:
-		return fmt.Errorf("unsupported compression algorithm %q: only 'zlib' and 'zstd' are supported", c.Compression)
+		return fmt.Errorf("unsupported compression algorithm %q: only 'zlib' and 'zstd' are supported", mcfg.Compression)
 	}
 
 	return nil

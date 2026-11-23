@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	pkgconfigutils "github.com/DataDog/datadog-agent/pkg/config/utils"
 	"github.com/DataDog/datadog-agent/pkg/util/hostname/validate"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -41,7 +40,25 @@ const (
 	DefaultSite = "datadoghq.com"
 	// NonHexChars is a regex of characters that are always invalid in a Datadog API key
 	NonHexChars = "[^0-9a-fA-F]"
+	// ddDomainPattern matches known Datadog domains
+	ddDomainPattern = `datad(?:oghq|0g)\.(?:com|eu)|ddog-gov\.com`
+	// ddSitePattern matches a Datadog site: an optional datacenter subdomain followed by a known Datadog domain
+	ddSitePattern = `([a-z]{2,}\d{1,2}\.)?(` + ddDomainPattern + `)`
 )
+
+var ddSiteFromHostnameRe = regexp.MustCompile(`(?:^|\.)` + ddSitePattern + `\.?$`)
+
+func isDatadogURL(rawURL string) bool {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	hostname := strings.ToLower(strings.TrimRight(u.Hostname(), "."))
+	if hostname == "" {
+		return false
+	}
+	return ddSiteFromHostnameRe.MatchString(hostname)
+}
 
 // APIConfig defines the API configuration options
 type APIConfig struct {
@@ -436,7 +453,7 @@ func (c *Config) ShouldUseV3Series() bool {
 	if c.Metrics.V3.Series.Enabled != nil && !*c.Metrics.V3.Series.Enabled {
 		return false
 	}
-	if !pkgconfigutils.IsDatadogURL(c.Metrics.Endpoint) {
+	if !isDatadogURL(c.Metrics.Endpoint) {
 		return false
 	}
 	if c.Metrics.V3.Series.Enabled == nil && hasProxy(c) {
