@@ -4,6 +4,7 @@
 package awss3receiver
 
 import (
+	"fmt"
 	"math"
 	"path/filepath"
 	"testing"
@@ -259,6 +260,25 @@ func TestMaxUnmarshalSizeConfig(t *testing.T) {
 			require.Equal(t, tt.size, cfg.S3Downloader.MaxUnmarshalSize)
 			if tt.wantErr {
 				require.ErrorContains(t, cfg.Validate(), "s3downloader.max_unmarshal_size")
+			} else {
+				require.NoError(t, cfg.Validate())
+			}
+		})
+	}
+}
+
+func TestVisibilityTimeoutConfiguration(t *testing.T) {
+	for _, value := range []int64{-1, 0, 1, 300, 43200, 43201} {
+		t.Run(fmt.Sprint(value), func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cm := confmap.NewFromStringMap(map[string]any{
+				"s3downloader": map[string]any{"s3_bucket": "bucket"},
+				"sqs":          map[string]any{"queue_url": "queue", "region": "us-east-1", "visibility_timeout_seconds": value},
+			})
+			require.NoError(t, cm.Unmarshal(cfg))
+			require.Equal(t, value, *cfg.SQS.VisibilityTimeoutSeconds)
+			if value < 1 || value > 43200 {
+				require.ErrorContains(t, cfg.Validate(), "sqs.visibility_timeout_seconds must be between 1 and 43200")
 			} else {
 				require.NoError(t, cfg.Validate())
 			}
