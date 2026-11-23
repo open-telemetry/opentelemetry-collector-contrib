@@ -1715,16 +1715,15 @@ func (s *Supervisor) composeWithLastWorkingRemoteConfig() (bool, error) {
 	return true, nil
 }
 
-// shouldReportLastWorkingRemoteConfigStatus returns true when the active config
-// is the restored last-working config, while persistent state still tracks the
-// failed last-received config.
-func (s *Supervisor) shouldReportLastWorkingRemoteConfigStatus() bool {
+// shouldReportLastWorkingRemoteConfigStatus returns true when remoteConfig, the
+// active config, is the restored last-working config, while persistent state still
+// tracks the failed last-received config.
+func (s *Supervisor) shouldReportLastWorkingRemoteConfigStatus(remoteConfig *protobufs.AgentRemoteConfig) bool {
 	lastReceivedStatus := s.persistentState.GetLastRemoteConfigStatus()
 	if lastReceivedStatus == nil || lastReceivedStatus.Status != protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED {
 		return false
 	}
 
-	remoteConfig := s.remoteConfig.Load()
 	lastWorkingRemoteConfig := s.lastWorkingRemoteConfig.Load()
 	if remoteConfig == nil || lastWorkingRemoteConfig == nil {
 		return false
@@ -2042,13 +2041,27 @@ func (s *Supervisor) startAgent() (agentStartStatus, error) {
 }
 
 func (s *Supervisor) runAgentProcess() {
+	// The remote config the agent was last asked to run, which every status reported here
+	// is for. A remote config that arrives while it is applied reports its own result: from
+	// the apply it queues, or at once when it is rejected. Once a different remote config
+	// has arrived, a result for this one is not reported, so that it does not replace the
+	// status of the newer config.
+	applyingRemoteConfig := s.remoteConfig.Load()
+	superseded := func() bool {
+		latest := s.remoteConfig.Load()
+		// The server can send the same config again, for example after reconnecting.
+		return latest != applyingRemoteConfig && !proto.Equal(latest, applyingRemoteConfig)
+	}
+
 	if _, err := os.Stat(s.agentConfigFilePath()); err == nil {
 		// We have an effective config file saved previously. Use it to start the agent.
 		s.telemetrySettings.Logger.Debug("Effective config found, starting agent initial time")
 		_, err := s.startAgent()
 		if err != nil {
 			s.telemetrySettings.Logger.Error("starting agent failed", zap.Error(err))
-			s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+			if !superseded() {
+				s.saveAndReportConfigStatus(applyingRemoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+			}
 		}
 	}
 
@@ -2057,15 +2070,6 @@ func (s *Supervisor) runAgentProcess() {
 
 	configApplyTimeoutTimer := time.NewTimer(0)
 	configApplyTimeoutTimer.Stop()
-
-	// The remote config being applied. A remote config that arrives while it is
-	// applied reports its own result: from the apply it queues, or at once when it is
-	// rejected. The status of an apply that a newer remote config superseded is not
-	// reported, as it would carry the newer config's hash.
-	var applyingRemoteConfig *protobufs.AgentRemoteConfig
-	superseded := func() bool {
-		return s.remoteConfig.Load() != applyingRemoteConfig
-	}
 
 	for {
 		select {
@@ -2097,7 +2101,7 @@ func (s *Supervisor) runAgentProcess() {
 				stale := superseded()
 				reportedLastWorking := false
 				if !stale {
-					reportedLastWorking = s.reportActiveConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, applyErr.Error())
+					reportedLastWorking = s.reportActiveConfigStatus(applyingRemoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, applyErr.Error())
 				}
 				if healthErr := s.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: applyErr.Error()}); healthErr != nil {
 					s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(healthErr))
@@ -2116,7 +2120,7 @@ func (s *Supervisor) runAgentProcess() {
 			status, err := s.startAgent()
 			if err != nil {
 				s.telemetrySettings.Logger.Error("starting agent with new config failed", zap.Error(err))
-				if !superseded() && !s.reportActiveConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error()) && s.restoreLastWorkingRemoteConfig() {
+				if !superseded() && !s.reportActiveConfigStatus(applyingRemoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error()) && s.restoreLastWorkingRemoteConfig() {
 					continue
 				}
 				// The agent process never started, so no exit event will trigger a
@@ -2131,7 +2135,7 @@ func (s *Supervisor) runAgentProcess() {
 				// meanwhile must keep its own status.
 				if !superseded() {
 					s.configApplyPending.Store(false)
-					s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+					s.saveAndReportConfigStatus(applyingRemoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
 				}
 				if err := s.SetHealth(&protobufs.ComponentHealth{Healthy: true, LastError: ""}); err != nil {
 					s.telemetrySettings.Logger.Error("Could not report healthy status to OpAMP server", zap.Error(err))
@@ -2188,7 +2192,7 @@ func (s *Supervisor) runAgentProcess() {
 				failureMsg := fmt.Sprintf("Agent exited unexpectedly with exit code %d while applying configuration", s.commander.ExitCode())
 				// When the restored last working remote config crashes as well, skip
 				// restoring it again and retry it on the regular restart backoff.
-				if !s.reportActiveConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, s.appendCollectorCrashDetails(failureMsg)) && s.restoreLastWorkingRemoteConfig() {
+				if !superseded() && !s.reportActiveConfigStatus(applyingRemoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, s.appendCollectorCrashDetails(failureMsg)) && s.restoreLastWorkingRemoteConfig() {
 					continue
 				}
 			}
@@ -2207,7 +2211,9 @@ func (s *Supervisor) runAgentProcess() {
 			_, err := s.startAgent()
 			if err != nil {
 				s.telemetrySettings.Logger.Error("restarting agent failed", zap.Error(err))
-				s.reportActiveConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+				if !superseded() {
+					s.reportActiveConfigStatus(applyingRemoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+				}
 			}
 
 		case <-configApplyTimeoutTimer.C:
@@ -2216,13 +2222,13 @@ func (s *Supervisor) runAgentProcess() {
 			}
 			lastHealth := s.lastHealthFromClient.Load()
 			if lastHealth == nil || !lastHealth.Healthy {
-				if !s.reportActiveConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, "Config apply timeout exceeded") {
+				if !s.reportActiveConfigStatus(applyingRemoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, "Config apply timeout exceeded") {
 					s.restoreLastWorkingRemoteConfig()
 				}
 				continue
 			}
 			s.configApplyPending.Store(false)
-			s.reportActiveConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+			s.reportActiveConfigStatus(applyingRemoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
 
 		case <-s.doneChan:
 			err := s.commander.Stop(s.runCtx)
@@ -2384,7 +2390,9 @@ func (s *Supervisor) validateConfig(configContent string) error {
 
 // stopAgentApplyConfig writes the new config and stops the agent so that it starts
 // with it. The config is written first, so the agent keeps running its previous
-// config when the write fails.
+// config when the write fails. An agent that cannot be stopped also keeps running
+// its previous config, and starting it again would be a no-op that looks like a
+// successful apply.
 func (s *Supervisor) stopAgentApplyConfig() error {
 	if err := s.writeAgentConfig(); err != nil {
 		return fmt.Errorf("failed to write agent new config: %w", err)
@@ -2392,7 +2400,7 @@ func (s *Supervisor) stopAgentApplyConfig() error {
 
 	s.telemetrySettings.Logger.Debug("Stopping the agent to apply new config")
 	if err := s.commander.Stop(s.runCtx); err != nil {
-		s.telemetrySettings.Logger.Error("Could not stop agent process", zap.Error(err))
+		return fmt.Errorf("failed to stop agent: %w", err)
 	}
 	return nil
 }
@@ -2532,13 +2540,14 @@ func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.Connect
 	return os.WriteFile(filepath.Join(s.config.Storage.Directory, filePath), cfg, 0o600)
 }
 
-// saveAndReportConfigStatus saves the config status to the persistent state and reports it to the server.
-func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) {
+// saveAndReportConfigStatus saves the status of remoteConfig to the persistent state and
+// reports it to the server. The caller passes the config the status is for, since a newer
+// remote config can be stored while that config is being applied.
+func (s *Supervisor) saveAndReportConfigStatus(remoteConfig *protobufs.AgentRemoteConfig, status protobufs.RemoteConfigStatuses, errorMessage string) {
 	if !s.config.Capabilities.AcceptsRemoteConfig {
 		s.telemetrySettings.Logger.Debug("supervisor is not configured to report remote config status")
 		return
 	}
-	remoteConfig := s.remoteConfig.Load()
 	rcs := &protobufs.RemoteConfigStatus{
 		LastRemoteConfigHash: remoteConfig.GetConfigHash(),
 		Status:               status,
@@ -2559,20 +2568,20 @@ func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStat
 	}
 }
 
-// reportActiveConfigStatus reports the given status for the currently active
+// reportActiveConfigStatus reports the given status for remoteConfig, the active
 // config. When the active config is the restored last working remote config,
 // the status is reported without overwriting the persisted status of the
 // config that triggered the rollback, and true is returned.
-func (s *Supervisor) reportActiveConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) bool {
+func (s *Supervisor) reportActiveConfigStatus(remoteConfig *protobufs.AgentRemoteConfig, status protobufs.RemoteConfigStatuses, errorMessage string) bool {
 	if !s.config.Capabilities.AcceptsRemoteConfig {
 		s.telemetrySettings.Logger.Debug("supervisor is not configured to report remote config status")
 		return false
 	}
-	if s.shouldReportLastWorkingRemoteConfigStatus() {
+	if s.shouldReportLastWorkingRemoteConfigStatus(remoteConfig) {
 		s.reportLastWorkingRemoteConfigStatus(status, errorMessage)
 		return true
 	}
-	s.saveAndReportConfigStatus(status, errorMessage)
+	s.saveAndReportConfigStatus(remoteConfig, status, errorMessage)
 	return false
 }
 
@@ -2725,11 +2734,11 @@ func (s *Supervisor) processRemoteConfigMessage(ctx context.Context, msg *protob
 	s.telemetrySettings.Logger.Debug("Received remote config from server", zap.String("hash", fmt.Sprintf("%x", msg.ConfigHash)))
 
 	var err error
-	configChanged, err := s.composeMergedConfig(s.remoteConfig.Load())
+	configChanged, err := s.composeMergedConfig(clonedMsg)
 	if err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Error composing merged config. Reporting failed remote config status: %s", err.Error()))
 		s.telemetrySettings.Logger.Error("Error composing merged config. Reporting failed remote config status.", zap.Error(err))
-		s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+		s.saveAndReportConfigStatus(clonedMsg, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
 		return false
 	}
 	if !configChanged && s.configApplyPending.Load() {
@@ -2740,10 +2749,10 @@ func (s *Supervisor) processRemoteConfigMessage(ctx context.Context, msg *protob
 	if configChanged {
 		s.configApplyPending.Store(true)
 		// only report applying if the config has changed and will run agent with new config
-		s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, "")
+		s.saveAndReportConfigStatus(clonedMsg, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, "")
 	} else {
 		// if the config has not changed report applied status, we should still report a status to the server in this case
-		s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+		s.saveAndReportConfigStatus(clonedMsg, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
 	}
 
 	span.SetStatus(codes.Ok, "")

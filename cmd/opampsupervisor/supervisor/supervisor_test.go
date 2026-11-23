@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -586,24 +587,94 @@ func TestSupervisorKeepsStatusOfRemoteConfigReceivedWhileStopping(t *testing.T) 
 	}
 }
 
-// recordRemoteConfigStatuses collects the remote config statuses the test server
-// receives. It returns a condition reporting whether a status was received for a
-// config hash.
-func recordRemoteConfigStatuses(t *testing.T, messages <-chan *protobufs.AgentToServer) func(hash string, status protobufs.RemoteConfigStatuses) func() bool {
+func TestSupervisorKeepsStatusOfRemoteConfigReceivedBeforeRestart(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Relies on removing the executable of a running agent")
+	}
+
+	endpoint, messages := newConfigStatusTestServer(t)
+	// The agent runs from a copy of the test binary, so that removing the copy makes the
+	// restart after a crash fail.
+	executable := filepath.Join(t.TempDir(), "agent")
+	binary, err := os.ReadFile(os.Args[0])
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(executable, binary, 0o600))
+	require.NoError(t, os.Chmod(executable, 0o700))
+	pidFile := filepath.Join(t.TempDir(), "agent.pid")
+	cfg := newTestSupervisorConfig(t)
+	cfg.Capabilities.AcceptsRemoteConfig = true
+	cfg.Server.Endpoint = endpoint
+	cfg.Agent.Executable = executable
+	cfg.Agent.Env = map[string]string{
+		supervisorRestartHelperEnv: "opamp-healthy",
+		supervisorPIDFileEnv:       pidFile,
+		// The race detector delays the exit of the agent process by a second by
+		// default, which outlasts the stop grace period when it is restarted.
+		"GORACE": "atexit_sleep_ms=0",
+	}
+	cfg.Agent.BootstrapTimeout = 5 * time.Second
+	received := recordAgentToServer(t, messages)
+
+	s, err := NewSupervisor(t.Context(), zap.NewNop(), cfg)
+	require.NoError(t, err)
+	require.NoError(t, s.Start(t.Context()))
+	t.Cleanup(s.Shutdown)
+
+	s.onMessage(t.Context(), &types.MessageData{RemoteConfig: &protobufs.AgentRemoteConfig{
+		ConfigHash: []byte("HA"),
+		Config: &protobufs.AgentConfigMap{ConfigMap: map[string]*protobufs.AgentConfigObject{
+			"": {Body: []byte("receivers:\n  nop: {}\n")},
+		}},
+	}})
+	require.Eventually(t, received(hasRemoteConfigStatus("HA", protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED)), 10*time.Second, 20*time.Millisecond)
+
+	// An invalid config is rejected, and the agent keeps running the previous one.
+	s.onMessage(t.Context(), &types.MessageData{RemoteConfig: &protobufs.AgentRemoteConfig{
+		ConfigHash: []byte("HB"),
+		Config: &protobufs.AgentConfigMap{ConfigMap: map[string]*protobufs.AgentConfigObject{
+			"": {Body: []byte("receivers: [\n")},
+		}},
+	}})
+	require.Eventually(t, received(hasRemoteConfigStatus("HB", protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED)), 10*time.Second, 20*time.Millisecond)
+
+	// The agent crashes, and the restart after the backoff cannot start it again.
+	require.NoError(t, os.Remove(executable))
+	pid, err := os.ReadFile(pidFile)
+	require.NoError(t, err)
+	agentPID, err := strconv.Atoi(string(pid))
+	require.NoError(t, err)
+	agent, err := os.FindProcess(agentPID)
+	require.NoError(t, err)
+	require.NoError(t, agent.Kill())
+	require.Eventually(t, received(func(message *protobufs.AgentToServer) bool {
+		return strings.HasPrefix(message.GetHealth().GetLastError(), "cannot start the agent")
+	}), 15*time.Second, 50*time.Millisecond)
+
+	// The failed restart is a result for the replaced config, so the invalid config keeps
+	// its own status.
+	require.Never(t, received(func(message *protobufs.AgentToServer) bool {
+		return strings.HasPrefix(message.GetRemoteConfigStatus().GetErrorMessage(), "cannot start the agent")
+	}), 2*time.Second, 50*time.Millisecond)
+	lastStatus := s.persistentState.GetLastRemoteConfigStatus()
+	require.Equal(t, "HB", string(lastStatus.GetLastRemoteConfigHash()))
+	require.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, lastStatus.GetStatus())
+}
+
+// recordAgentToServer collects the messages the test server receives. It returns a
+// condition reporting whether a received message matches.
+func recordAgentToServer(t *testing.T, messages <-chan *protobufs.AgentToServer) func(match func(*protobufs.AgentToServer) bool) func() bool {
 	t.Helper()
 	var mu sync.Mutex
-	var statuses []*protobufs.RemoteConfigStatus
+	var received []*protobufs.AgentToServer
 	done := make(chan struct{})
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		for {
 			select {
 			case message := <-messages:
-				if status := message.GetRemoteConfigStatus(); status != nil {
-					mu.Lock()
-					statuses = append(statuses, status)
-					mu.Unlock()
-				}
+				mu.Lock()
+				received = append(received, message)
+				mu.Unlock()
 			case <-done:
 				return
 			}
@@ -613,17 +684,31 @@ func recordRemoteConfigStatuses(t *testing.T, messages <-chan *protobufs.AgentTo
 		close(done)
 		wg.Wait()
 	})
-	return func(hash string, status protobufs.RemoteConfigStatuses) func() bool {
+	return func(match func(*protobufs.AgentToServer) bool) func() bool {
 		return func() bool {
 			mu.Lock()
 			defer mu.Unlock()
-			for _, rcs := range statuses {
-				if string(rcs.GetLastRemoteConfigHash()) == hash && rcs.GetStatus() == status {
-					return true
-				}
-			}
-			return false
+			return slices.ContainsFunc(received, match)
 		}
+	}
+}
+
+// recordRemoteConfigStatuses collects the remote config statuses the test server
+// receives. It returns a condition reporting whether a status was received for a
+// config hash.
+func recordRemoteConfigStatuses(t *testing.T, messages <-chan *protobufs.AgentToServer) func(hash string, status protobufs.RemoteConfigStatuses) func() bool {
+	t.Helper()
+	received := recordAgentToServer(t, messages)
+	return func(hash string, status protobufs.RemoteConfigStatuses) func() bool {
+		return received(hasRemoteConfigStatus(hash, status))
+	}
+}
+
+// hasRemoteConfigStatus matches a message that reports status for the config with hash.
+func hasRemoteConfigStatus(hash string, status protobufs.RemoteConfigStatuses) func(*protobufs.AgentToServer) bool {
+	return func(message *protobufs.AgentToServer) bool {
+		rcs := message.GetRemoteConfigStatus()
+		return rcs != nil && string(rcs.GetLastRemoteConfigHash()) == hash && rcs.GetStatus() == status
 	}
 }
 
@@ -3090,9 +3175,18 @@ func TestSupervisor_saveAndReportConfigStatus(t *testing.T) {
 			},
 		},
 	}
-	s.remoteConfig.Store(remoteConfig)
+	// A newer remote config arrived while remoteConfig was being applied. The status is
+	// still reported, and the config saved, for the one that was applied.
+	s.remoteConfig.Store(&protobufs.AgentRemoteConfig{
+		Config: &protobufs.AgentConfigMap{
+			ConfigMap: map[string]*protobufs.AgentConfigObject{
+				"": {Body: []byte("receivers: [\n")},
+			},
+		},
+		ConfigHash: []byte("newer-hash"),
+	})
 
-	s.saveAndReportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+	s.saveAndReportConfigStatus(remoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
 
 	lastWorkingConfigBytes, err := os.ReadFile(filepath.Join(s.config.Storage.Directory, lastWorkingRemoteConfigFile))
 	require.NoError(t, err)

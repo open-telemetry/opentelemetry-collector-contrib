@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"testing"
 	"time"
@@ -29,6 +30,10 @@ const supervisorRestartHelperEnv = "OTEL_SUPERVISOR_RESTART_HELPER"
 // interrupted, before it takes a second to exit, so that a test can act while the
 // Supervisor is still stopping the agent.
 const supervisorStopMarkerEnv = "OTEL_SUPERVISOR_STOP_MARKER"
+
+// supervisorPIDFileEnv names a file the opamp test agent writes its process ID to once it
+// is connected, so that a test can kill the agent the Supervisor is running.
+const supervisorPIDFileEnv = "OTEL_SUPERVISOR_PID_FILE"
 
 func TestMain(m *testing.M) {
 	switch os.Getenv(supervisorRestartHelperEnv) {
@@ -89,6 +94,11 @@ func runOpAMPTestAgent(reportHealth bool) error {
 		InstanceUid:    types.InstanceUid(id),
 	}); err != nil {
 		return err
+	}
+	if pidFile := os.Getenv(supervisorPIDFileEnv); pidFile != "" {
+		if err := os.WriteFile(pidFile, []byte(strconv.Itoa(os.Getpid())), 0o600); err != nil {
+			return err
+		}
 	}
 
 	sigCh := make(chan os.Signal, 1)
