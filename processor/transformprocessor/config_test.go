@@ -482,8 +482,42 @@ func Test_LoadConfig_FlattenLog(t *testing.T) {
 	assert.True(t, cfg.(*Config).Flatten.Log)
 }
 
+func setProfilesFeatureGate(t *testing.T, enabled bool) {
+	original := metadata.ProcessorTransformEnableProfilesFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorTransformEnableProfilesFeatureGate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ProcessorTransformEnableProfilesFeatureGate.ID(), original))
+	})
+}
+
+func Test_LoadConfig_ProfileStatementsGateDisabled(t *testing.T) {
+	setProfilesFeatureGate(t, false)
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	cfg := NewFactory().CreateDefaultConfig()
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+	assert.ErrorIs(t, confmap.Validate(cfg), errProfileStatementsGateDisabled)
+}
+
+func Test_Validate_ProfileStatementsGateDisabledSkipsParsing(t *testing.T) {
+	setProfilesFeatureGate(t, false)
+
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.ProfileStatements = []ContextStatements{
+		{
+			Context:    "profile",
+			Statements: []string{`set(123`},
+		},
+	}
+	assert.Equal(t, errProfileStatementsGateDisabled, cfg.Validate())
+}
+
 func TestContextID_UnmarshalText(t *testing.T) {
-	valid := []ContextID{Resource, Scope, Span, SpanEvent, Metric, DataPoint, Exemplar, Log, Profile}
+	valid := []ContextID{ContextIDResource, ContextIDScope, ContextIDSpan, ContextIDSpanEvent, ContextIDMetric, ContextIDDataPoint, ContextIDExemplar, ContextIDLog, ContextIDProfile}
 	for _, want := range valid {
 		t.Run(string(want), func(t *testing.T) {
 			var got ContextID
@@ -495,7 +529,7 @@ func TestContextID_UnmarshalText(t *testing.T) {
 	t.Run("normalizes case", func(t *testing.T) {
 		var got ContextID
 		require.NoError(t, got.UnmarshalText([]byte("SPAN")))
-		assert.Equal(t, Span, got)
+		assert.Equal(t, ContextIDSpan, got)
 	})
 
 	t.Run("rejects unknown context", func(t *testing.T) {
@@ -523,7 +557,7 @@ func TestContextStatements_MatchesCommon(t *testing.T) {
 
 func TestContextStatements_toCommon(t *testing.T) {
 	cs := ContextStatements{
-		Context:     Span,
+		Context:     ContextIDSpan,
 		Conditions:  []string{"c"},
 		Statements:  []string{"s"},
 		ErrorMode:   ottl.PropagateError,

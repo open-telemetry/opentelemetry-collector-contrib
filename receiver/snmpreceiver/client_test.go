@@ -137,10 +137,10 @@ func compareConfigToClient(t *testing.T, client *snmpClient, cfg *Config) {
 	switch cfg.Version {
 	case "v1":
 		require.Equal(t, gosnmp.Version1, client.client.GetVersion())
-		require.Equal(t, cfg.Community, client.client.GetCommunity())
+		require.Equal(t, string(cfg.Community), client.client.GetCommunity())
 	case "v2c":
 		require.Equal(t, gosnmp.Version2c, client.client.GetVersion())
-		require.Equal(t, cfg.Community, client.client.GetCommunity())
+		require.Equal(t, string(cfg.Community), client.client.GetCommunity())
 	case "v3":
 		require.Equal(t, gosnmp.Version3, client.client.GetVersion())
 		securityParams := client.client.GetSecurityParameters().(*gosnmp.UsmSecurityParameters)

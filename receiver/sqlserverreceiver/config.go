@@ -97,7 +97,7 @@ type Config struct {
 	InstanceName string `mapstructure:"instance_name"`
 	ComputerName string `mapstructure:"computer_name"`
 
-	DataSource string `mapstructure:"datasource"`
+	DataSource configopaque.String `mapstructure:"datasource"`
 
 	// DBAuth optionally references a database credential provider extension.
 	// When set, the provider supplies the secret at connection time. Username

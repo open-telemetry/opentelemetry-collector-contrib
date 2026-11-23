@@ -3,6 +3,7 @@ ignored_paths:
   - cmd/telemetrygen
   - cmd/opampsupervisor
   - config/configdbauth
+  - config/xconfigunit
   - extension/observer
   - extension/encoding
   - extension/dbauth

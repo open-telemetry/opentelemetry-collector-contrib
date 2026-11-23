@@ -6,6 +6,7 @@ cmd/otelcontribcol cmd/otelcontribcol
 cmd/oteltestbedcol cmd/oteltestbedcol
 cmd/telemetrygen cmd/telemetrygen
 config/configdbauth config/configdbauth
+config/xconfigunit config/xunit
 confmap/provider/aesprovider confmap/provider/aesprovider
 confmap/provider/googlesecretmanagerprovider confmap/provider/googlesecretmanagerprovider
 confmap/provider/s3provider confmap/provider/s3provider
@@ -52,7 +53,6 @@ exporter/honeycombmarkerexporter exporter/honeycombmarker
 exporter/influxdbexporter exporter/influxdb
 exporter/kafkaexporter exporter/kafka
 exporter/loadbalancingexporter exporter/loadbalancing
-exporter/logzioexporter exporter/logzio
 exporter/natsexporter exporter/nats
 exporter/opensearchexporter exporter/opensearch
 exporter/otelarrowexporter exporter/otelarrow
@@ -238,6 +238,7 @@ processor/tailsamplingprocessor processor/tailsampling
 processor/telemetrypolicyprocessor processor/telemetrypolicy
 processor/transformprocessor processor/transform
 processor/transformprocessor/internal/logparsingfuncs processor/transform/internal/logparsingfuncs
+processor/transformprocessor/xtransformprocessor processor/transformprocessor/xtransform
 processor/unrollprocessor processor/unroll
 processor/verifyprocessor processor/verify
 receiver/activedirectorydsreceiver receiver/activedirectoryds
@@ -317,7 +318,6 @@ receiver/memcachedreceiver receiver/memcached
 receiver/mongodbatlasreceiver receiver/mongodbatlas
 receiver/mongodbreceiver receiver/mongodb
 receiver/mysqlreceiver receiver/mysql
-receiver/namedpipereceiver receiver/namedpipe
 receiver/natsreceiver receiver/nats
 receiver/netflowreceiver receiver/netflow
 receiver/nginxreceiver receiver/nginx
@@ -344,7 +344,6 @@ receiver/simpleprometheusreceiver receiver/simpleprometheus
 receiver/skywalkingreceiver receiver/skywalking
 receiver/snmpreceiver receiver/snmp
 receiver/snowflakereceiver receiver/snowflake
-receiver/solacereceiver receiver/solace
 receiver/splunkenterprisereceiver receiver/splunkenterprise
 receiver/splunkhecreceiver receiver/splunkhec
 receiver/sqlqueryreceiver receiver/sqlquery
@@ -376,5 +375,8 @@ reports/distributions/contrib.yaml reports/distributions/contrib.yaml
 reports/distributions/k8s.yaml reports/distributions/k8s.yaml
 reports/distributions/otlp.yaml reports/distributions/otlp.yaml
 exporter/logicmonitorexporter exporter/logicmonitor
+exporter/logzioexporter exporter/logzio
 extension/encoding/avrologencodingextension extension/encoding/avrologencoding
+receiver/namedpipereceiver receiver/namedpipe
 receiver/riakreceiver receiver/riak
+receiver/solacereceiver receiver/solace
