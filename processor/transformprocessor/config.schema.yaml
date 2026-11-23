@@ -1,4 +1,30 @@
 $defs:
+  context_id:
+    description: ContextID is the name of the OTTL context a group of statements runs against.
+    type: string
+  context_statements:
+    description: ContextStatements is a group of OTTL statements and conditions executed together.
+    type: object
+    properties:
+      conditions:
+        description: Conditions are OTTL conditions that must evaluate to true for the statements to run. Multiple conditions are combined with a logical OR.
+        type: array
+        items:
+          type: string
+      context:
+        description: Context is the OTTL context the statements run against. When empty, it is inferred from the statements and conditions.
+        $ref: context_id
+      error_mode:
+        description: ErrorMode determines how the processor reacts to errors that occur while processing this group of statements. When provided, it overrides the default Config ErrorMode.
+        $ref: /pkg/ottl.error_mode
+      shared_cache:
+        description: SharedCache enables sharing per-context caches between all statement groups with this option enabled in the same processor instance.
+        type: boolean
+      statements:
+        description: Statements are the OTTL statements to execute.
+        type: array
+        items:
+          type: string
   flatten_config:
     description: FlattenConfig configures which OTTL contexts the data is flattened to before the statements run.
     type: object
@@ -10,24 +36,28 @@ description: Config defines the configuration for the processor.
 type: object
 properties:
   error_mode:
-    description: ErrorMode determines how the processor reacts to errors that occur while processing a statement. Valid values are `ignore` and `propagate`. `ignore` means the processor ignores errors returned by statements and continues on to the next statement. This is the recommended mode. `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector. The default value is `ignore`.
+    description: ErrorMode determines how the processor reacts to errors that occur while processing a statement. Valid values are `ignore`, `silent` and `propagate`. `ignore` means the processor ignores errors returned by statements and continues on to the next statement. This is the recommended mode. `silent` is the same as `ignore` but the errors are not logged. `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector. The default value is `ignore`.
     $ref: /pkg/ottl.error_mode
   flatten:
+    description: Flatten configures flattening of the data before the statements run.
     $ref: flatten_config
   log_statements:
+    description: LogStatements configures the OTTL statements executed against log data.
     type: array
     items:
-      $ref: ./internal/common.context_statements
+      $ref: context_statements
   metric_statements:
+    description: MetricStatements configures the OTTL statements executed against metric data.
     type: array
     items:
-      $ref: ./internal/common.context_statements
+      $ref: context_statements
   profile_statements:
-    description: 'ProfileStatements configures the OTTL statements executed against profile data. Experimental: *NOTE* this API is subject to change or removal in the future.'
+    description: ProfileStatements configures the OTTL statements executed against profile data.
     type: array
     items:
-      $ref: ./internal/common.context_statements
+      $ref: context_statements
   trace_statements:
+    description: TraceStatements configures the OTTL statements executed against trace data.
     type: array
     items:
-      $ref: ./internal/common.context_statements
+      $ref: context_statements

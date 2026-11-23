@@ -31,8 +31,12 @@ func TranslateToTraces(ctx context.Context, payload faroTypes.Payload) (ptrace.T
 		frs := ptrace.NewResourceSpans()
 		payload.Traces.Traces.ResourceSpans().At(i).CopyTo(frs)
 		frs.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), payload.Meta.App.Name)
-		frs.Resource().Attributes().PutStr(string(conventions.ServiceVersionKey), payload.Meta.App.Version)
-		frs.Resource().Attributes().PutStr(string(conventions.DeploymentEnvironmentNameKey), payload.Meta.App.Environment)
+		if payload.Meta.App.Version != "" {
+			frs.Resource().Attributes().PutStr(string(conventions.ServiceVersionKey), payload.Meta.App.Version)
+		}
+		if payload.Meta.App.Environment != "" {
+			frs.Resource().Attributes().PutStr(string(conventions.DeploymentEnvironmentNameKey), payload.Meta.App.Environment)
+		}
 
 		if payload.Meta.App.Namespace != "" {
 			frs.Resource().Attributes().PutStr(string(conventions.ServiceNamespaceKey), payload.Meta.App.Namespace)

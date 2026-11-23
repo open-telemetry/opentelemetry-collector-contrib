@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
@@ -67,6 +69,35 @@ func TestStatsdReceiver_ShutdownBeforeStart(t *testing.T) {
 	assert.NoError(t, err)
 	r := rcv.(*statsdReceiver)
 	assert.NoError(t, r.Shutdown(ctx))
+}
+
+type statusRecordingHost struct {
+	component.Host
+	events chan *componentstatus.Event
+}
+
+func (h *statusRecordingHost) Report(ev *componentstatus.Event) {
+	h.events <- ev
+}
+
+// The collector delivers fatal errors on an unbuffered channel nobody reads during shutdown, so reporting one hangs.
+func TestStatsdReceiver_TCPShutdownReportsNoFatalError(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.NetAddr = confignet.AddrConfig{
+		Endpoint:  testutil.GetAvailableLocalNetworkAddress(t, "tcp"),
+		Transport: confignet.TransportTypeTCP,
+	}
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	host := &statusRecordingHost{Host: componenttest.NewNopHost(), events: make(chan *componentstatus.Event, 1)}
+	require.NoError(t, rcv.Start(t.Context(), host))
+
+	require.NoError(t, rcv.Shutdown(t.Context()))
+	select {
+	case ev := <-host.events:
+		t.Fatalf("unexpected status reported on shutdown: %v %v", ev.Status(), ev.Err())
+	case <-time.After(100 * time.Millisecond):
+	}
 }
 
 func TestStatsdReceiver_Flush(t *testing.T) {

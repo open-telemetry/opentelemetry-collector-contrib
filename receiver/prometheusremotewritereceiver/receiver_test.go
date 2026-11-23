@@ -5,7 +5,10 @@ package prometheusremotewritereceiver // import "github.com/open-telemetry/opent
 
 import (
 	"bytes"
+	"compress/gzip"
+	"compress/zlib"
 	"context"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -31,6 +34,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -104,94 +108,233 @@ func setupMetricsReceiver(tb testing.TB) *prometheusRemoteWriteReceiver {
 
 func TestHandlePRWContentTypeNegotiation(t *testing.T) {
 	for _, tc := range []struct {
-		name          string
-		contentType   string
-		expectedCode  int
-		expectedStats remote.WriteResponseStats
+		name         string
+		contentType  string
+		expectedCode int
 	}{
 		{
 			name:         "no content type",
 			contentType:  "",
 			expectedCode: http.StatusUnsupportedMediaType,
-			expectedStats: remote.WriteResponseStats{
-				Confirmed:  false,
-				Samples:    0,
-				Histograms: 0,
-				Exemplars:  0,
-			},
 		},
 		{
-			name:         "unsupported content type",
+			name:         "whitespace only content type",
+			contentType:  "   ",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "unsupported content type application/json",
 			contentType:  "application/json",
 			expectedCode: http.StatusUnsupportedMediaType,
-			expectedStats: remote.WriteResponseStats{
-				Confirmed:  false,
-				Samples:    0,
-				Histograms: 0,
-				Exemplars:  0,
-			},
+		},
+		{
+			name:         "unsupported content type image/png",
+			contentType:  "image/png",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "unsupported content type text/plain",
+			contentType:  "text/plain",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "malformed media type",
+			contentType:  ";invalid",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "malformed parameter",
+			contentType:  "application/x-protobuf;invalid",
+			expectedCode: http.StatusUnsupportedMediaType,
 		},
 		{
 			name:         "x-protobuf/no proto parameter",
 			contentType:  "application/x-protobuf",
 			expectedCode: http.StatusUnsupportedMediaType,
-			expectedStats: remote.WriteResponseStats{
-				Confirmed:  false,
-				Samples:    0,
-				Histograms: 0,
-				Exemplars:  0,
-			},
 		},
 		{
 			name:         "x-protobuf/v1 proto parameter",
 			contentType:  fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV1MessageType),
 			expectedCode: http.StatusUnsupportedMediaType,
-			expectedStats: remote.WriteResponseStats{
-				Confirmed:  false,
-				Samples:    0,
-				Histograms: 0,
-				Exemplars:  0,
-			},
+		},
+		{
+			name:         "unsupported proto parameter",
+			contentType:  "application/x-protobuf;proto=unsupported.Message",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "empty proto parameter",
+			contentType:  "application/x-protobuf;proto=",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "empty quoted proto parameter",
+			contentType:  `application/x-protobuf;proto=""`,
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "unknown mode parameter",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;mode=unknown",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "empty mode parameter",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;mode=",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "empty quoted mode parameter",
+			contentType:  `application/x-protobuf;proto=io.prometheus.write.v2.Request;mode=""`,
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "uppercase mode value is rejected",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;mode=STATELESS",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "mode on rw1",
+			contentType:  "application/x-protobuf;proto=prometheus.WriteRequest;mode=stateless",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "mode none on rw1",
+			contentType:  "application/x-protobuf;proto=prometheus.WriteRequest;mode=none",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "mode without proto",
+			contentType:  "application/x-protobuf;mode=stateless",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "mode none without proto",
+			contentType:  "application/x-protobuf;mode=none",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "unknown parameter alongside v2 proto",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;unknown=param",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "conflicting duplicate proto parameter",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;proto=prometheus.WriteRequest",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "conflicting duplicate mode parameter",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;mode=stateless;mode=stateless-st",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "rfc2231 unknown extended parameter rejected",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;unknown*=bad",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "rfc2231 malformed mode extended parameter rejected",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;mode*=bad",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "rfc2231 extended mode overriding bad mode rejected",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;mode=unknown;mode*=utf-8''none",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "rfc2231 extended proto overriding rw1 proto rejected",
+			contentType:  "application/x-protobuf;proto=prometheus.WriteRequest;proto*=utf-8''io.prometheus.write.v2.Request",
+			expectedCode: http.StatusUnsupportedMediaType,
 		},
 		{
 			name:         "x-protobuf/v2 proto parameter",
 			contentType:  fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType),
 			expectedCode: http.StatusNoContent,
-			expectedStats: remote.WriteResponseStats{
-				Confirmed:  true,
-				Samples:    0,
-				Histograms: 0,
-				Exemplars:  0,
-			},
+		},
+		{
+			name:         "v2 explicit mode=none",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;mode=none",
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:         "v2 mode=stateless",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;mode=stateless",
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:         "v2 mode=stateless-st",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;mode=stateless-st",
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:         "rfc9110 whitespace around parameters",
+			contentType:  "application/x-protobuf; proto=io.prometheus.write.v2.Request; mode=stateless-st",
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:         "rfc9110 uppercase media type and parameter names",
+			contentType:  "APPLICATION/X-PROTOBUF;PROTO=io.prometheus.write.v2.Request;MODE=stateless-st",
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:         "rfc9110 quoted parameter values",
+			contentType:  `application/x-protobuf;proto="io.prometheus.write.v2.Request";mode="stateless-st"`,
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:         "rfc9110 reordered parameters",
+			contentType:  "application/x-protobuf;mode=stateless-st;proto=io.prometheus.write.v2.Request",
+			expectedCode: http.StatusNoContent,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			body := writev2.Request{}
 			pBuf := proto.NewBuffer(nil)
-			err := pBuf.Marshal(&body)
-			assert.NoError(t, err)
+			require.NoError(t, pBuf.Marshal(&body))
 
-			var compressedBody []byte
-			snappy.Encode(compressedBody, pBuf.Bytes())
-
-			req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(compressedBody))
-
+			// handlePRW is called directly without confighttp middleware, so the body is uncompressed.
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewReader(pBuf.Bytes()))
 			req.Header.Set("Content-Type", tc.contentType)
-			req.Header.Set("Content-Encoding", "snappy")
 			w := httptest.NewRecorder()
 
 			prwReceiver := setupMetricsReceiver(t)
 			prwReceiver.handlePRW(w, req)
 			resp := w.Result()
+			defer func() { _ = resp.Body.Close() }()
 
 			assert.Equal(t, tc.expectedCode, resp.StatusCode)
-			if tc.expectedCode == http.StatusNoContent { // We went until the end
+			if tc.expectedCode == http.StatusUnsupportedMediaType {
+				assert.Equal(t, acceptedContentTypes, resp.Header.Get("Accept"))
+				assert.Empty(t, resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+			}
+			if tc.expectedCode == http.StatusNoContent {
 				assert.NotEmpty(t, resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
 				assert.NotEmpty(t, resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
 				assert.NotEmpty(t, resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
 			}
 		})
 	}
+
+	t.Run("multiple Content-Type header lines rejected with 415", func(t *testing.T) {
+		body := writev2.Request{}
+		pBuf := proto.NewBuffer(nil)
+		require.NoError(t, pBuf.Marshal(&body))
+
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewReader(pBuf.Bytes()))
+		req.Header.Add("Content-Type", writeV2ContentType)
+		req.Header.Add("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		prwReceiver := setupMetricsReceiver(t)
+		prwReceiver.handlePRW(w, req)
+		resp := w.Result()
+		defer func() { _ = resp.Body.Close() }()
+
+		assert.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode)
+		assert.Equal(t, acceptedContentTypes, resp.Header.Get("Accept"))
+		assert.Empty(t, resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+	})
 }
 
 // exemplarSymbols is the symbol table the histogram exemplar tests share. The histogram and its
@@ -1078,6 +1221,132 @@ func TestTranslateV2(t *testing.T) {
 				},
 			},
 			expectError: "help ref 3 is out of bounds of symbolsTable",
+		},
+		{
+			name: "invalid UTF-8 in label name",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "test", "\xff\xfe", "val"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: `invalid UTF-8 in label name "\xff\xfe"`,
+		},
+		{
+			name: "invalid UTF-8 in label name with empty value",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "test", "\xff\xfe"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 0},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: `invalid UTF-8 in label name "\xff\xfe"`,
+		},
+		{
+			name: "invalid UTF-8 in label value",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "test", "job", "\xff\xfe"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: `invalid UTF-8 in value for label "job"`,
+		},
+		{
+			name: "invalid UTF-8 in metric name",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "\xff\xfe"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: `invalid UTF-8 in value for label "__name__"`,
+		},
+		{
+			name: "invalid UTF-8 in UnitRef",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "test", "\xff\xfe"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 3},
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: "unit ref 3 contains invalid UTF-8",
+		},
+		{
+			name: "invalid UTF-8 in HelpRef",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "test", "\xff\xfe"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, HelpRef: 3},
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: "help ref 3 contains invalid UTF-8",
+		},
+		{
+			name: "invalid UTF-8 in UnitRef on target_info",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "target_info", "\xff\xfe"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 3},
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: "unit ref 3 contains invalid UTF-8",
+		},
+		{
+			name: "invalid UTF-8 in HelpRef on target_info",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "target_info", "\xff\xfe"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, HelpRef: 3},
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: "help ref 3 contains invalid UTF-8",
+		},
+		{
+			name: "invalid UTF-8 at default symbol index 0",
+			request: &writev2.Request{
+				Symbols: []string{"\xff\xfe", "__name__", "test"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: "unit ref 0 contains invalid UTF-8",
 		},
 		{
 			name: "accept unspecified metric type as gauge",
@@ -5458,6 +5727,67 @@ func TestPartialWriteOnBadRequest(t *testing.T) {
 				Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{99, 100}, Value: 1, Timestamp: 1}},
 			},
 		},
+		{
+			name: "a series with an invalid UTF-8 label name",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 7, 3, 4, 5, 6, 10, 4},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  exemplar,
+			},
+		},
+		{
+			name: "a series with an invalid UTF-8 label value",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 7, 3, 10, 5, 6},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  exemplar,
+			},
+		},
+		{
+			name: "a series with an invalid UTF-8 metric name",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 10, 3, 4, 5, 6},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  exemplar,
+			},
+		},
+		{
+			name: "a series with an invalid UTF-8 unit ref",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 10},
+				LabelsRefs: []uint32{1, 7, 3, 4, 5, 6},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  exemplar,
+			},
+		},
+		{
+			name: "a series with an invalid UTF-8 help ref",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, HelpRef: 10},
+				LabelsRefs: []uint32{1, 7, 3, 4, 5, 6},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  exemplar,
+			},
+		},
+		{
+			name: "a series with an invalid UTF-8 exemplar label name",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 7, 3, 11, 5, 12},
+				Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{10, 4}, Value: 1, Timestamp: 1}},
+			},
+		},
+		{
+			name: "a series with an invalid UTF-8 exemplar label value",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 7, 3, 11, 5, 12},
+				Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{8, 10}, Value: 1, Timestamp: 1}},
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			sink := &consumertest.MetricsSink{}
@@ -5470,6 +5800,8 @@ func TestPartialWriteOnBadRequest(t *testing.T) {
 					"instance", "107cn001", // 5, 6
 					"test_histogram",                               // 7
 					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 8, 9
+					"\xff\xfe",                // 10 (invalid UTF-8)
+					"other_job", "other_inst", // 11, 12
 				},
 				Timeseries: []writev2.TimeSeries{gauge, tc.refused},
 			})
@@ -5481,6 +5813,8 @@ func TestPartialWriteOnBadRequest(t *testing.T) {
 			assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
 			require.Len(t, sink.AllMetrics(), 1)
 			assert.Equal(t, 1, sink.AllMetrics()[0].DataPointCount())
+			require.Equal(t, 1, sink.AllMetrics()[0].ResourceMetrics().Len())
+			require.Equal(t, 1, sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 			dp := sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
 			assert.Equal(t, 1, dp.Exemplars().Len())
 			assert.Equal(t, 1, prwReceiver.rmCache.Len())
@@ -7260,4 +7594,1460 @@ func TestDroppedSeriesAreLoggedAtDebug(t *testing.T) {
 	_, _, err = writeReceiver.translateV2(t.Context(), droppedSeriesRequest(true))
 	require.NoError(t, err)
 	assert.Empty(t, infoObs.All())
+}
+
+func TestInvalidUTF8SymbolReferences(t *testing.T) {
+	t.Run("unreferenced invalid UTF-8 symbol does not reject valid series", func(t *testing.T) {
+		sink := &consumertest.MetricsSink{}
+		prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+		resp := sendPRW(t, prwReceiver, &writev2.Request{
+			Symbols: []string{
+				"",
+				"__name__", "test_gauge", // 1, 2
+				"job", "test_job", // 3, 4
+				"instance", "host1", // 5, 6
+				"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7, 8
+				"\xff\xfe", // 9 (unreferenced)
+			},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 42, Timestamp: 1}},
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{7, 8}, Value: 42, Timestamp: 1}},
+				},
+			},
+		})
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+		assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+		assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+		require.Len(t, sink.AllMetrics(), 1)
+		assert.Equal(t, 1, sink.AllMetrics()[0].DataPointCount())
+	})
+
+	t.Run("empty request with unreferenced invalid UTF-8 symbol still returns 204", func(t *testing.T) {
+		sink := &consumertest.MetricsSink{}
+		prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+		resp := sendPRW(t, prwReceiver, &writev2.Request{
+			Symbols: []string{"", "\xff\xfe"},
+		})
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+		assert.Empty(t, sink.AllMetrics())
+	})
+
+	t.Run("valid multibyte UTF-8 and invalid UTF-8 sequences", func(t *testing.T) {
+		cases := []struct {
+			name   string
+			symbol string
+			valid  bool
+		}{
+			{name: "valid multibyte and emoji", symbol: "test🚀_äöü_测试", valid: true},
+			{name: "replacement char U+FFFD", symbol: "\uFFFD", valid: true},
+			{name: "invalid raw bytes", symbol: "\xff\xfe", valid: false},
+			{name: "UTF-16 surrogate half", symbol: "\xed\xa0\x80", valid: false},
+			{name: "truncated multibyte sequence", symbol: "\xc3", valid: false},
+			{name: "overlong encoding", symbol: "\xc0\xaf", valid: false},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "test_gauge",
+						"env", tc.symbol,
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+							LabelsRefs: []uint32{1, 2, 3, 4},
+							Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+						},
+					},
+				})
+				defer resp.Body.Close()
+
+				if tc.valid {
+					assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+					assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+					require.Len(t, sink.AllMetrics(), 1)
+				} else {
+					assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+					assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+					assert.Empty(t, sink.AllMetrics())
+				}
+			})
+		}
+	})
+
+	t.Run("mixed valid and invalid UTF-8 exemplars on valid sample series", func(t *testing.T) {
+		sink := &consumertest.MetricsSink{}
+		prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+		resp := sendPRW(t, prwReceiver, &writev2.Request{
+			Symbols: []string{
+				"",
+				"__name__", "test_counter", // 1, 2
+				"job", "test_job", // 3, 4
+				"instance", "host1", // 5, 6
+				"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7, 8
+				"bad_val", "\xff\xfe", // 9, 10
+			},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 10, Timestamp: 1}},
+					Exemplars: []writev2.Exemplar{
+						{LabelsRefs: []uint32{9, 10}, Value: 1, Timestamp: 1},
+						{LabelsRefs: []uint32{7, 8}, Value: 2, Timestamp: 2},
+					},
+				},
+			},
+		})
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+		assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+		require.Len(t, sink.AllMetrics(), 1)
+		dp := sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+		require.Equal(t, 1, dp.Exemplars().Len())
+		assert.Equal(t, 2.0, dp.Exemplars().At(0).DoubleValue())
+	})
+
+	t.Run("all invalid UTF-8 exemplars on valid sample series forwards sample with zero exemplars", func(t *testing.T) {
+		sink := &consumertest.MetricsSink{}
+		prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+		resp := sendPRW(t, prwReceiver, &writev2.Request{
+			Symbols: []string{
+				"",
+				"__name__", "test_counter",
+				"bad_key", "\xff\xfe",
+			},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+					LabelsRefs: []uint32{1, 2},
+					Samples:    []writev2.Sample{{Value: 10, Timestamp: 1}},
+					Exemplars: []writev2.Exemplar{
+						{LabelsRefs: []uint32{3, 4}, Value: 1, Timestamp: 1},
+					},
+				},
+			},
+		})
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+		require.Len(t, sink.AllMetrics(), 1)
+		dp := sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+		assert.Equal(t, 0, dp.Exemplars().Len())
+	})
+
+	t.Run("rejected series with same labels does not leak exemplars onto valid sibling", func(t *testing.T) {
+		for _, tc := range []struct {
+			name string
+			meta writev2.Metadata
+		}{
+			{
+				name: "invalid UTF-8 UnitRef",
+				meta: writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER, UnitRef: 9},
+			},
+			{
+				name: "invalid UTF-8 HelpRef",
+				meta: writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER, HelpRef: 9},
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "test_counter", // 1, 2
+						"job", "test_job", // 3, 4
+						"instance", "host1", // 5, 6
+						"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7, 8
+						"\xff\xfe", // 9
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   tc.meta,
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+							Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+							Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{7, 8}, Value: 1, Timestamp: 1}},
+						},
+						{
+							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+							Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+						},
+					},
+				})
+				defer resp.Body.Close()
+
+				assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				require.Len(t, sink.AllMetrics(), 1)
+				dp := sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+				assert.Equal(t, 2.0, dp.DoubleValue())
+				assert.Equal(t, 0, dp.Exemplars().Len())
+			})
+		}
+	})
+
+	t.Run("classic histogram and summary with invalid UTF-8 refs are rejected not dropped", func(t *testing.T) {
+		for _, metricType := range []writev2.Metadata_MetricType{
+			writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+			writev2.Metadata_METRIC_TYPE_SUMMARY,
+		} {
+			for _, tc := range []struct {
+				name       string
+				ts         writev2.TimeSeries
+				wantErrStr string
+			}{
+				{
+					name: "invalid label name",
+					ts: writev2.TimeSeries{
+						Metadata:   writev2.Metadata{Type: metricType},
+						LabelsRefs: []uint32{1, 2, 3, 4},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+					wantErrStr: `invalid UTF-8 in label name "\xff\xfe"`,
+				},
+				{
+					name: "invalid label value",
+					ts: writev2.TimeSeries{
+						Metadata:   writev2.Metadata{Type: metricType},
+						LabelsRefs: []uint32{1, 2, 4, 3},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+					wantErrStr: `invalid UTF-8 in value for label "val"`,
+				},
+				{
+					name: "invalid UnitRef",
+					ts: writev2.TimeSeries{
+						Metadata:   writev2.Metadata{Type: metricType, UnitRef: 3},
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+					wantErrStr: "unit ref 3 contains invalid UTF-8",
+				},
+				{
+					name: "invalid HelpRef",
+					ts: writev2.TimeSeries{
+						Metadata:   writev2.Metadata{Type: metricType, HelpRef: 3},
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+					wantErrStr: "help ref 3 contains invalid UTF-8",
+				},
+			} {
+				t.Run(metricType.String()+"/"+tc.name, func(t *testing.T) {
+					tel := componenttest.NewTelemetry()
+					defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+
+					prw, err := NewFactory().CreateMetrics(t.Context(), metadatatest.NewSettings(tel), createDefaultConfig(), consumertest.NewNop())
+					require.NoError(t, err)
+					writeReceiver := prw.(*prometheusRemoteWriteReceiver)
+					obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+						ReceiverID:             component.MustNewID("test"),
+						ReceiverCreateSettings: metadatatest.NewSettings(tel),
+						Transport:              "http",
+					})
+					require.NoError(t, err)
+					writeReceiver.obsrecv = obsrecv
+					defer writeReceiver.rmCache.Purge()
+
+					resp := sendPRW(t, writeReceiver, &writev2.Request{
+						Symbols:    []string{"", "__name__", "test_metric", "\xff\xfe", "val"},
+						Timeseries: []writev2.TimeSeries{tc.ts},
+					})
+					defer resp.Body.Close()
+
+					body, err := io.ReadAll(resp.Body)
+					require.NoError(t, err)
+					assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+					assert.Contains(t, string(body), tc.wantErrStr)
+					assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+					assert.Equal(t, 0, writeReceiver.rmCache.Len())
+
+					var rm metricdata.ResourceMetrics
+					require.NoError(t, tel.Reader.Collect(t.Context(), &rm))
+					assert.Empty(t, rm.ScopeMetrics)
+				})
+			}
+		}
+	})
+
+	t.Run("target_info with invalid UTF-8 does not mutate rmCache or count samples", func(t *testing.T) {
+		for _, tc := range []struct {
+			name       string
+			ts         writev2.TimeSeries
+			wantErrStr string
+		}{
+			{
+				name: "invalid label name",
+				ts: writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 8, 9},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				},
+				wantErrStr: `invalid UTF-8 in label name "\xff\xfe"`,
+			},
+			{
+				name: "invalid label value",
+				ts: writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				},
+				wantErrStr: `invalid UTF-8 in value for label "region"`,
+			},
+			{
+				name: "invalid UnitRef",
+				ts: writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 8},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				},
+				wantErrStr: "unit ref 8 contains invalid UTF-8",
+			},
+			{
+				name: "invalid HelpRef",
+				ts: writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, HelpRef: 8},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				},
+				wantErrStr: "help ref 8 contains invalid UTF-8",
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "target_info", // 1, 2
+						"job", "test_job", // 3, 4
+						"instance", "host1", // 5, 6
+						"region", "\xff\xfe", "poison", // 7, 8, 9
+					},
+					Timeseries: []writev2.TimeSeries{tc.ts},
+				})
+				defer resp.Body.Close()
+
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+				assert.Contains(t, string(body), tc.wantErrStr)
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				assert.Equal(t, 0, prwReceiver.rmCache.Len())
+				assert.Empty(t, sink.AllMetrics())
+			})
+		}
+
+		t.Run("rejected target_info does not enrich sibling or follow-up requests", func(t *testing.T) {
+			for _, targetInfoFirst := range []bool{true, false} {
+				order := "target_info after valid"
+				if targetInfoFirst {
+					order = "target_info before valid"
+				}
+				t.Run(order, func(t *testing.T) {
+					sink := &consumertest.MetricsSink{}
+					prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+					badTargetInfo := writev2.TimeSeries{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, HelpRef: 10},
+						LabelsRefs: []uint32{1, 2, 4, 5, 6, 7, 8, 9},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					}
+					valid := writev2.TimeSeries{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 3, 4, 5, 6, 7},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					}
+					series := []writev2.TimeSeries{valid, badTargetInfo}
+					if targetInfoFirst {
+						series = []writev2.TimeSeries{badTargetInfo, valid}
+					}
+
+					resp := sendPRW(t, prwReceiver, &writev2.Request{
+						Symbols: []string{
+							"",
+							"__name__", "target_info", "normal_metric", // 1, 2, 3
+							"job", "test_job", // 4, 5
+							"instance", "host1", // 6, 7
+							"region", "should_not_appear", // 8, 9
+							"\xff\xfe", // 10
+						},
+						Timeseries: series,
+					})
+					defer resp.Body.Close()
+
+					body, err := io.ReadAll(resp.Body)
+					require.NoError(t, err)
+					assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+					assert.Contains(t, string(body), "help ref 10 contains invalid UTF-8")
+					assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+					require.Len(t, sink.AllMetrics(), 1)
+					_, hasRegion := sink.AllMetrics()[0].ResourceMetrics().At(0).Resource().Attributes().Get("region")
+					assert.False(t, hasRegion)
+
+					require.Equal(t, 1, prwReceiver.rmCache.Len())
+					for _, cached := range prwReceiver.rmCache.Values() {
+						_, cachedHasRegion := cached.Resource().Attributes().Get("region")
+						assert.False(t, cachedHasRegion)
+					}
+
+					followUp := sendPRW(t, prwReceiver, &writev2.Request{
+						Symbols: []string{
+							"",
+							"__name__", "normal_metric",
+							"job", "test_job",
+							"instance", "host1",
+						},
+						Timeseries: []writev2.TimeSeries{
+							{
+								Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+								LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+								Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+							},
+						},
+					})
+					defer followUp.Body.Close()
+
+					assert.Equal(t, http.StatusNoContent, followUp.StatusCode)
+					require.Len(t, sink.AllMetrics(), 2)
+					_, hasRegion = sink.AllMetrics()[1].ResourceMetrics().At(0).Resource().Attributes().Get("region")
+					assert.False(t, hasRegion)
+				})
+			}
+		})
+	})
+
+	t.Run("native histogram with invalid UTF-8 refs is rejected with zero histograms and exemplars", func(t *testing.T) {
+		for _, tc := range []struct {
+			name       string
+			ts         writev2.TimeSeries
+			wantErrStr string
+		}{
+			{
+				name: "invalid label name",
+				ts: writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+					LabelsRefs: []uint32{1, 2, 3, 4},
+					Histograms: exemplarHistogram([]int64{1, 1}),
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{5, 6}, Value: 1, Timestamp: 1}},
+				},
+				wantErrStr: `invalid UTF-8 in label name "\xff\xfe"`,
+			},
+			{
+				name: "invalid label value",
+				ts: writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+					LabelsRefs: []uint32{1, 2, 4, 3},
+					Histograms: exemplarHistogram([]int64{1, 1}),
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{5, 6}, Value: 1, Timestamp: 1}},
+				},
+				wantErrStr: `invalid UTF-8 in value for label "val"`,
+			},
+			{
+				name: "invalid UnitRef",
+				ts: writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM, UnitRef: 3},
+					LabelsRefs: []uint32{1, 2},
+					Histograms: exemplarHistogram([]int64{1, 1}),
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{5, 6}, Value: 1, Timestamp: 1}},
+				},
+				wantErrStr: "unit ref 3 contains invalid UTF-8",
+			},
+			{
+				name: "invalid HelpRef",
+				ts: writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM, HelpRef: 3},
+					LabelsRefs: []uint32{1, 2},
+					Histograms: exemplarHistogram([]int64{1, 1}),
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{5, 6}, Value: 1, Timestamp: 1}},
+				},
+				wantErrStr: "help ref 3 contains invalid UTF-8",
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "test_hist", // 1, 2
+						"\xff\xfe", "val", // 3, 4
+						"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 5, 6
+					},
+					Timeseries: []writev2.TimeSeries{tc.ts},
+				})
+				defer resp.Body.Close()
+
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+				assert.Contains(t, string(body), tc.wantErrStr)
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				assert.Empty(t, sink.AllMetrics())
+				assert.Equal(t, 0, prwReceiver.rmCache.Len())
+			})
+		}
+	})
+
+	t.Run("valid native histogram with invalid UTF-8 exemplars forwards histogram and valid exemplars", func(t *testing.T) {
+		for _, tc := range []struct {
+			name            string
+			exemplars       []writev2.Exemplar
+			wantExemplars   int
+			wantExemplarVal float64
+		}{
+			{
+				name: "mixed valid and invalid exemplars",
+				exemplars: []writev2.Exemplar{
+					{LabelsRefs: []uint32{9, 10}, Value: 1, Timestamp: 1},
+					{LabelsRefs: []uint32{7, 8}, Value: 2, Timestamp: 2},
+				},
+				wantExemplars:   1,
+				wantExemplarVal: 2.0,
+			},
+			{
+				name: "all invalid exemplars",
+				exemplars: []writev2.Exemplar{
+					{LabelsRefs: []uint32{9, 10}, Value: 1, Timestamp: 1},
+				},
+				wantExemplars: 0,
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "test_hist", // 1, 2
+						"job", "test_job", // 3, 4
+						"instance", "host1", // 5, 6
+						"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7, 8
+						"bad_val", "\xff\xfe", // 9, 10
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+							Histograms: exemplarHistogram([]int64{1, 1}),
+							Exemplars:  tc.exemplars,
+						},
+					},
+				})
+				defer resp.Body.Close()
+
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+				assert.Contains(t, string(body), `invalid UTF-8 in value for label "bad_val"`)
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+				assert.Equal(t, fmt.Sprintf("%d", tc.wantExemplars), resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				require.Len(t, sink.AllMetrics(), 1)
+				dp := sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0)
+				require.Equal(t, tc.wantExemplars, dp.Exemplars().Len())
+				if tc.wantExemplars > 0 {
+					assert.Equal(t, tc.wantExemplarVal, dp.Exemplars().At(0).DoubleValue())
+				}
+			})
+		}
+	})
+}
+
+func startTestHTTPServer(t *testing.T, modifyCfg func(*Config)) *httptest.Server {
+	t.Helper()
+
+	cfg := createDefaultConfig().(*Config)
+	if modifyCfg != nil {
+		modifyCfg(cfg)
+	}
+
+	factory := NewFactory()
+	prwReceiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             component.MustNewID("test"),
+		Transport:              "http",
+		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
+	})
+	require.NoError(t, err)
+	writeReceiver.obsrecv = obsrecv
+
+	t.Cleanup(func() {
+		writeReceiver.rmCache.Purge()
+		writeReceiver.telemetryBuilder.Shutdown()
+	})
+
+	srv, err := writeReceiver.buildHTTPServer(t.Context(), nil)
+	require.NoError(t, err)
+
+	ts := httptest.NewServer(srv.Handler)
+	t.Cleanup(ts.Close)
+	return ts
+}
+
+func marshalWriteV2Sample(t *testing.T) []byte {
+	t.Helper()
+	pBuf := proto.NewBuffer(nil)
+	require.NoError(t, pBuf.Marshal(writeV2RequestFixture))
+	return pBuf.Bytes()
+}
+
+func compressGzipBytes(t *testing.T, data []byte) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	gw := gzip.NewWriter(&buf)
+	_, err := gw.Write(data)
+	require.NoError(t, err)
+	require.NoError(t, gw.Close())
+	return buf.Bytes()
+}
+
+func compressZlibBytes(t *testing.T, data []byte) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	zw := zlib.NewWriter(&buf)
+	_, err := zw.Write(data)
+	require.NoError(t, err)
+	require.NoError(t, zw.Close())
+	return buf.Bytes()
+}
+
+func compressSnappyFramedBytes(t *testing.T, data []byte) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	sw := snappy.NewBufferedWriter(&buf)
+	_, err := sw.Write(data)
+	require.NoError(t, err)
+	require.NoError(t, sw.Close())
+	return buf.Bytes()
+}
+
+func TestHandlePRWDirectRejectsNonPostMethods(t *testing.T) {
+	prwReceiver := setupMetricsReceiver(t)
+	for _, method := range []string{http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodPatch, http.MethodHead, http.MethodOptions} {
+		t.Run(method, func(t *testing.T) {
+			req := httptest.NewRequest(method, writePath, http.NoBody)
+			req.Header.Set("Content-Type", writeV2ContentType)
+			w := httptest.NewRecorder()
+			prwReceiver.handlePRW(w, req)
+
+			resp := w.Result()
+			defer func() { _ = resp.Body.Close() }()
+			assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
+			assert.Equal(t, http.MethodPost, resp.Header.Get("Allow"))
+		})
+	}
+}
+
+func TestHTTPServerMethodAndPathConformance(t *testing.T) {
+	ts := startTestHTTPServer(t, nil)
+	raw := marshalWriteV2Sample(t)
+	snappyBlock := snappy.Encode(nil, raw)
+
+	for _, method := range []string{http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodPatch, http.MethodHead, http.MethodOptions} {
+		t.Run(method+" with valid snappy body", func(t *testing.T) {
+			req, err := http.NewRequestWithContext(t.Context(), method, ts.URL+writePath, bytes.NewReader(snappyBlock))
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", writeV2ContentType)
+			req.Header.Set("Content-Encoding", "snappy")
+
+			resp, err := ts.Client().Do(req)
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
+			assert.Equal(t, http.MethodPost, resp.Header.Get("Allow"))
+		})
+
+		t.Run(method+" without Content-Encoding header", func(t *testing.T) {
+			req, err := http.NewRequestWithContext(t.Context(), method, ts.URL+writePath, http.NoBody)
+			require.NoError(t, err)
+
+			resp, err := ts.Client().Do(req)
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
+			assert.Equal(t, http.MethodPost, resp.Header.Get("Allow"))
+		})
+
+		t.Run(method+" with corrupt snappy body", func(t *testing.T) {
+			req, err := http.NewRequestWithContext(t.Context(), method, ts.URL+writePath, bytes.NewReader([]byte("not snappy")))
+			require.NoError(t, err)
+			req.Header.Set("Content-Encoding", "snappy")
+
+			resp, err := ts.Client().Do(req)
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
+			assert.Equal(t, http.MethodPost, resp.Header.Get("Allow"))
+		})
+	}
+
+	for _, tc := range []struct {
+		name     string
+		method   string
+		path     string
+		encoding string
+		body     []byte
+	}{
+		{name: "GET unknown path without encoding", method: http.MethodGet, path: "/unknown"},
+		{name: "POST unknown path without encoding", method: http.MethodPost, path: "/unknown"},
+		{name: "POST trailing slash without encoding", method: http.MethodPost, path: writePath + "/"},
+		{name: "POST unknown path with valid snappy", method: http.MethodPost, path: "/unknown", encoding: "snappy", body: snappyBlock},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			req, err := http.NewRequestWithContext(t.Context(), tc.method, ts.URL+tc.path, bytes.NewReader(tc.body))
+			require.NoError(t, err)
+			if tc.encoding != "" {
+				req.Header.Set("Content-Encoding", tc.encoding)
+			}
+
+			resp, err := ts.Client().Do(req)
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+		})
+	}
+
+	// Verify non-canonical paths and CONNECT match http.ServeMux identically across both
+	// error-handler (missing/corrupt encoding) and decompressed-request paths.
+	noRedirectClient := ts.Client()
+	noRedirectClient.CheckRedirect = func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+	for _, tc := range []struct {
+		name           string
+		method         string
+		rawPath        string
+		expectedStatus int
+		expectLocation string
+	}{
+		{name: "POST double slash redirects", method: http.MethodPost, rawPath: "/api/v1//write", expectedStatus: http.StatusTemporaryRedirect, expectLocation: writePath},
+		{name: "POST dot segment redirects", method: http.MethodPost, rawPath: "/api/v1/./write", expectedStatus: http.StatusTemporaryRedirect, expectLocation: writePath},
+		{name: "GET double slash redirects", method: http.MethodGet, rawPath: "/api/v1//write", expectedStatus: http.StatusTemporaryRedirect, expectLocation: writePath},
+	} {
+		for _, encCase := range []struct {
+			label    string
+			encoding string
+			body     []byte
+		}{
+			{label: "without encoding"},
+			{label: "with valid snappy", encoding: "snappy", body: snappyBlock},
+		} {
+			t.Run(tc.name+" "+encCase.label, func(t *testing.T) {
+				req, err := http.NewRequestWithContext(t.Context(), tc.method, ts.URL+tc.rawPath, bytes.NewReader(encCase.body))
+				require.NoError(t, err)
+				if encCase.encoding != "" {
+					req.Header.Set("Content-Encoding", encCase.encoding)
+				}
+				resp, err := noRedirectClient.Do(req)
+				require.NoError(t, err)
+				defer func() { _ = resp.Body.Close() }()
+				assert.Equal(t, tc.expectedStatus, resp.StatusCode)
+				assert.Equal(t, tc.expectLocation, resp.Header.Get("Location"))
+			})
+		}
+	}
+
+	t.Run("percent-encoded slashes match ServeMux 404 identically on all paths", func(t *testing.T) {
+		for _, rawPath := range []string{"/api/v1%2Fwrite", "/api/v1%2fwrite", "/api%2Fv1/write"} {
+			for _, tc := range []struct {
+				label    string
+				encoding string
+				body     []byte
+			}{
+				{label: "without encoding", body: raw},
+				{label: "with corrupt snappy", encoding: "snappy", body: []byte("not snappy")},
+				{label: "with valid snappy", encoding: "snappy", body: snappyBlock},
+			} {
+				t.Run(rawPath+" "+tc.label, func(t *testing.T) {
+					req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+rawPath, bytes.NewReader(tc.body))
+					require.NoError(t, err)
+					req.Header.Set("Content-Type", writeV2ContentType)
+					if tc.encoding != "" {
+						req.Header.Set("Content-Encoding", tc.encoding)
+					}
+					resp, err := noRedirectClient.Do(req)
+					require.NoError(t, err)
+					defer func() { _ = resp.Body.Close() }()
+					assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+					assert.Empty(t, resp.Header.Get("Accept-Encoding"))
+				})
+			}
+		}
+	})
+
+	t.Run("percent-encoded non-slash segments still enforce Content-Encoding", func(t *testing.T) {
+		for _, rawPath := range []string{"/%61pi/v1/write", "/api/v1/%77rite"} {
+			t.Run(rawPath+" without encoding rejected with 415", func(t *testing.T) {
+				req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+rawPath, bytes.NewReader(raw))
+				require.NoError(t, err)
+				req.Header.Set("Content-Type", writeV2ContentType)
+				resp, err := noRedirectClient.Do(req)
+				require.NoError(t, err)
+				defer func() { _ = resp.Body.Close() }()
+				assert.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode)
+				assert.Equal(t, "snappy", resp.Header.Get("Accept-Encoding"))
+			})
+			t.Run(rawPath+" with valid snappy accepted with 204", func(t *testing.T) {
+				req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+rawPath, bytes.NewReader(snappyBlock))
+				require.NoError(t, err)
+				req.Header.Set("Content-Type", writeV2ContentType)
+				req.Header.Set("Content-Encoding", "snappy")
+				resp, err := noRedirectClient.Do(req)
+				require.NoError(t, err)
+				defer func() { _ = resp.Body.Close() }()
+				assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+			})
+		}
+	})
+
+	t.Run("asterisk request-target delegates to ServeMux 400", func(t *testing.T) {
+		prw := setupMetricsReceiver(t)
+		srv, err := prw.buildHTTPServer(t.Context(), nil)
+		require.NoError(t, err)
+		for _, method := range []string{http.MethodOptions, http.MethodPost} {
+			req := httptest.NewRequest(method, "http://example.com/", http.NoBody)
+			req.RequestURI = "*"
+			w := httptest.NewRecorder()
+			srv.Handler.ServeHTTP(w, req)
+			resp := w.Result()
+			defer func() { _ = resp.Body.Close() }()
+			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+			assert.Equal(t, "close", resp.Header.Get("Connection"))
+			assert.Empty(t, resp.Header.Get("Accept-Encoding"))
+		}
+	})
+
+	t.Run("CONNECT matches ServeMux identically on both paths", func(t *testing.T) {
+		prw := setupMetricsReceiver(t)
+		srv, err := prw.buildHTTPServer(t.Context(), nil)
+		require.NoError(t, err)
+		for _, tc := range []struct {
+			name     string
+			path     string
+			encoding string
+			body     []byte
+			wantCode int
+			wantHdr  string
+		}{
+			{name: "clean path without encoding", path: writePath, wantCode: http.StatusMethodNotAllowed, wantHdr: http.MethodPost},
+			{name: "clean path with valid snappy", path: writePath, encoding: "snappy", body: snappyBlock, wantCode: http.StatusMethodNotAllowed, wantHdr: http.MethodPost},
+			{name: "unclean path without encoding", path: "/api/v1//write", wantCode: http.StatusNotFound},
+			{name: "unclean path with valid snappy", path: "/api/v1//write", encoding: "snappy", body: snappyBlock, wantCode: http.StatusNotFound},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				req := httptest.NewRequest(http.MethodConnect, tc.path, bytes.NewReader(tc.body))
+				if tc.encoding != "" {
+					req.Header.Set("Content-Encoding", tc.encoding)
+				}
+				w := httptest.NewRecorder()
+				srv.Handler.ServeHTTP(w, req)
+				resp := w.Result()
+				defer func() { _ = resp.Body.Close() }()
+				assert.Equal(t, tc.wantCode, resp.StatusCode)
+				assert.Equal(t, tc.wantHdr, resp.Header.Get("Allow"))
+			})
+		}
+	})
+}
+
+func TestHTTPServerContentEncodingAndSnappyFormat(t *testing.T) {
+	ts := startTestHTTPServer(t, nil)
+	raw := marshalWriteV2Sample(t)
+	snappyBlock := snappy.Encode(nil, raw)
+	emptySnappyBlock := snappy.Encode(nil, nil)
+	corruptSnappy := append([]byte(nil), snappyBlock...)
+	corruptSnappy[0] = '0'
+	invalidProtoSnappy := snappy.Encode(nil, []byte("invalid protobuf wire payload \xff\xff\xff"))
+
+	tests := []struct {
+		name               string
+		contentType        string
+		contentEncoding    string
+		body               []byte
+		expectedStatus     int
+		expectedAcceptEnc  string
+		expectedAccept     string
+		expectWrittenHdrs  bool
+		expectSamples      string
+		expectBodyContains string
+	}{
+		{
+			name:              "valid snappy block payload",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "snappy",
+			body:              snappyBlock,
+			expectedStatus:    http.StatusNoContent,
+			expectWrittenHdrs: true,
+			expectSamples:     "3",
+		},
+		{
+			name:              "valid empty snappy block payload",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "snappy",
+			body:              emptySnappyBlock,
+			expectedStatus:    http.StatusNoContent,
+			expectWrittenHdrs: true,
+			expectSamples:     "0",
+		},
+		{
+			name:               "missing Content-Encoding rejected with 415",
+			contentType:        writeV2ContentType,
+			contentEncoding:    "",
+			body:               raw,
+			expectedStatus:     http.StatusUnsupportedMediaType,
+			expectedAcceptEnc:  "snappy",
+			expectBodyContains: "Content-Encoding header is required",
+		},
+		{
+			name:              "identity encoding with matching payload rejected with 415",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "identity",
+			body:              raw,
+			expectedStatus:    http.StatusUnsupportedMediaType,
+			expectedAcceptEnc: "snappy",
+		},
+		{
+			name:              "identity encoding with corrupt payload rejected with 415",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "identity",
+			body:              corruptSnappy,
+			expectedStatus:    http.StatusUnsupportedMediaType,
+			expectedAcceptEnc: "snappy",
+		},
+		{
+			name:              "gzip encoding with matching payload rejected with 415",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "gzip",
+			body:              compressGzipBytes(t, raw),
+			expectedStatus:    http.StatusUnsupportedMediaType,
+			expectedAcceptEnc: "snappy",
+		},
+		{
+			name:              "gzip encoding with corrupt payload rejected with 415",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "gzip",
+			body:              corruptSnappy,
+			expectedStatus:    http.StatusUnsupportedMediaType,
+			expectedAcceptEnc: "snappy",
+		},
+		{
+			name:              "deflate encoding with matching payload rejected with 415",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "deflate",
+			body:              compressZlibBytes(t, raw),
+			expectedStatus:    http.StatusUnsupportedMediaType,
+			expectedAcceptEnc: "snappy",
+		},
+		{
+			name:              "zstd encoding rejected with 415",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "zstd",
+			body:              corruptSnappy,
+			expectedStatus:    http.StatusUnsupportedMediaType,
+			expectedAcceptEnc: "snappy",
+		},
+		{
+			name:              "x-snappy-framed encoding rejected with 415",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "x-snappy-framed",
+			body:              compressSnappyFramedBytes(t, raw),
+			expectedStatus:    http.StatusUnsupportedMediaType,
+			expectedAcceptEnc: "snappy",
+		},
+		{
+			name:              "multiple encodings in single header rejected with 415",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "snappy, gzip",
+			body:              snappyBlock,
+			expectedStatus:    http.StatusUnsupportedMediaType,
+			expectedAcceptEnc: "snappy",
+		},
+		{
+			name:               "snappy framed stream with Content-Encoding snappy rejected with 400",
+			contentType:        writeV2ContentType,
+			contentEncoding:    "snappy",
+			body:               compressSnappyFramedBytes(t, raw),
+			expectedStatus:     http.StatusBadRequest,
+			expectBodyContains: "framed format",
+		},
+		{
+			name:            "uncompressed protobuf with Content-Encoding snappy rejected with 400",
+			contentType:     writeV2ContentType,
+			contentEncoding: "snappy",
+			body:            raw,
+			expectedStatus:  http.StatusBadRequest,
+		},
+		{
+			name:            "corrupt snappy body rejected with 400",
+			contentType:     writeV2ContentType,
+			contentEncoding: "snappy",
+			body:            corruptSnappy,
+			expectedStatus:  http.StatusBadRequest,
+		},
+		{
+			name:            "empty 0-byte body with Content-Encoding snappy rejected with 400",
+			contentType:     writeV2ContentType,
+			contentEncoding: "snappy",
+			body:            nil,
+			expectedStatus:  http.StatusBadRequest,
+		},
+		{
+			name:              "snappy block with invalid protobuf rejected with 400 and zero written headers",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "snappy",
+			body:              invalidProtoSnappy,
+			expectedStatus:    http.StatusBadRequest,
+			expectWrittenHdrs: true,
+			expectSamples:     "0",
+		},
+		{
+			name:            "rw1 content-type with corrupt snappy body rejected with 400 (rw1_compat/error_handling)",
+			contentType:     appProtoContentType,
+			contentEncoding: "snappy",
+			body:            corruptSnappy,
+			expectedStatus:  http.StatusBadRequest,
+		},
+		{
+			name:            "rw1 content-type with valid snappy body rejected with 415 and Accept header",
+			contentType:     appProtoContentType,
+			contentEncoding: "snappy",
+			body:            snappyBlock,
+			expectedStatus:  http.StatusUnsupportedMediaType,
+			expectedAccept:  acceptedContentTypes,
+		},
+		{
+			name:            "bad mode with valid snappy body rejected with 415 and Accept header",
+			contentType:     writeV2ContentType + ";mode=unknown",
+			contentEncoding: "snappy",
+			body:            snappyBlock,
+			expectedStatus:  http.StatusUnsupportedMediaType,
+			expectedAccept:  acceptedContentTypes,
+		},
+		{
+			name:              "rfc9110 uppercase quoted content-type with valid snappy body accepted with 204",
+			contentType:       `application/x-protobuf;PROTO="io.prometheus.write.v2.Request";MODE="stateless-st"`,
+			contentEncoding:   "snappy",
+			body:              snappyBlock,
+			expectedStatus:    http.StatusNoContent,
+			expectWrittenHdrs: true,
+			expectSamples:     "3",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(tc.body))
+			require.NoError(t, err)
+			if tc.contentType != "" {
+				req.Header.Set("Content-Type", tc.contentType)
+			}
+			if tc.contentEncoding != "" {
+				req.Header.Set("Content-Encoding", tc.contentEncoding)
+			}
+
+			resp, err := ts.Client().Do(req)
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			respBody, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.expectedStatus, resp.StatusCode, string(respBody))
+			assert.Equal(t, tc.expectedAcceptEnc, resp.Header.Get("Accept-Encoding"))
+			assert.Equal(t, tc.expectedAccept, resp.Header.Get("Accept"))
+			if tc.expectWrittenHdrs {
+				assert.Equal(t, tc.expectSamples, resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+			} else {
+				assert.Empty(t, resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Empty(t, resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+				assert.Empty(t, resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+			}
+			if tc.expectBodyContains != "" {
+				assert.Contains(t, string(respBody), tc.expectBodyContains)
+			}
+		})
+	}
+
+	t.Run("multiple Content-Encoding header lines rejected with 415 across all body types", func(t *testing.T) {
+		consumer := new(mockConsumer)
+		prw := setupMetricsReceiver(t)
+		prw.nextConsumer = consumer
+		srv, srvErr := prw.buildHTTPServer(t.Context(), nil)
+		require.NoError(t, srvErr)
+		multiTS := httptest.NewServer(srv.Handler)
+		defer multiTS.Close()
+
+		for _, tc := range []struct {
+			name    string
+			headers []string
+			body    []byte
+		}{
+			{
+				name:    "snappy and gzip with valid snappy body",
+				headers: []string{"snappy", "gzip"},
+				body:    snappyBlock,
+			},
+			{
+				name:    "snappy and gzip with corrupt/gzip body",
+				headers: []string{"snappy", "gzip"},
+				body:    compressGzipBytes(t, snappyBlock),
+			},
+			{
+				name:    "snappy and snappy (double compression)",
+				headers: []string{"snappy", "snappy"},
+				body:    snappyBlock,
+			},
+			{
+				name:    "gzip and deflate",
+				headers: []string{"gzip", "deflate"},
+				body:    corruptSnappy,
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, multiTS.URL+writePath, bytes.NewReader(tc.body))
+				require.NoError(t, err)
+				req.Header.Set("Content-Type", writeV2ContentType)
+				for _, h := range tc.headers {
+					req.Header.Add("Content-Encoding", h)
+				}
+
+				resp, err := multiTS.Client().Do(req)
+				require.NoError(t, err)
+				defer func() { _ = resp.Body.Close() }()
+				respBody, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+
+				assert.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode, string(respBody))
+				assert.Equal(t, "snappy", resp.Header.Get("Accept-Encoding"))
+				assert.Empty(t, resp.Header.Get("Accept"))
+				assert.Empty(t, resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Contains(t, string(respBody), "unsupported Content-Encoding:")
+				assert.NotContains(t, string(respBody), "snappy: corrupt input")
+			})
+		}
+
+		assert.Empty(t, consumer.metrics, "rejected requests must not forward metrics to consumer")
+
+		// Non-POST with multiple Content-Encoding headers must still return 405 with Allow: POST.
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, multiTS.URL+writePath, bytes.NewReader(snappyBlock))
+		require.NoError(t, err)
+		req.Header.Add("Content-Encoding", "snappy")
+		req.Header.Add("Content-Encoding", "gzip")
+		resp, err := multiTS.Client().Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
+		assert.Equal(t, http.MethodPost, resp.Header.Get("Allow"))
+	})
+}
+
+func TestHTTPServerCustomCompressionAlgorithms(t *testing.T) {
+	raw := marshalWriteV2Sample(t)
+	snappyBlock := snappy.Encode(nil, raw)
+	gzipBody := compressGzipBytes(t, raw)
+
+	t.Run("nil CompressionAlgorithms defaults to snappy without mutating config", func(t *testing.T) {
+		var receiverCfg *Config
+		ts := startTestHTTPServer(t, func(cfg *Config) {
+			cfg.ServerConfig = confighttp.NewDefaultServerConfig()
+			cfg.ServerConfig.CompressionAlgorithms = nil
+			receiverCfg = cfg
+		})
+		assert.Nil(t, receiverCfg.ServerConfig.CompressionAlgorithms)
+
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(gzipBody))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", writeV2ContentType)
+		req.Header.Set("Content-Encoding", "gzip")
+		resp, err := ts.Client().Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode)
+		assert.Equal(t, "snappy", resp.Header.Get("Accept-Encoding"))
+	})
+
+	t.Run("explicit snappy and gzip advertises both and still rejects framed snappy", func(t *testing.T) {
+		ts := startTestHTTPServer(t, func(cfg *Config) {
+			cfg.ServerConfig.CompressionAlgorithms = []string{"snappy", "gzip"}
+		})
+
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(gzipBody))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", writeV2ContentType)
+		req.Header.Set("Content-Encoding", "gzip")
+		resp, err := ts.Client().Do(req)
+		require.NoError(t, err)
+		_ = resp.Body.Close()
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+
+		req2, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(raw))
+		require.NoError(t, err)
+		req2.Header.Set("Content-Type", writeV2ContentType)
+		req2.Header.Set("Content-Encoding", "zstd")
+		resp2, err := ts.Client().Do(req2)
+		require.NoError(t, err)
+		_ = resp2.Body.Close()
+		assert.Equal(t, http.StatusUnsupportedMediaType, resp2.StatusCode)
+		assert.Equal(t, "snappy, gzip", resp2.Header.Get("Accept-Encoding"))
+
+		req3, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(compressSnappyFramedBytes(t, raw)))
+		require.NoError(t, err)
+		req3.Header.Set("Content-Type", writeV2ContentType)
+		req3.Header.Set("Content-Encoding", "snappy")
+		resp3, err := ts.Client().Do(req3)
+		require.NoError(t, err)
+		_ = resp3.Body.Close()
+		assert.Equal(t, http.StatusBadRequest, resp3.StatusCode)
+	})
+
+	t.Run("explicit gzip only does not re-enable snappy", func(t *testing.T) {
+		ts := startTestHTTPServer(t, func(cfg *Config) {
+			cfg.ServerConfig.CompressionAlgorithms = []string{"gzip"}
+		})
+
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(snappyBlock))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", writeV2ContentType)
+		req.Header.Set("Content-Encoding", "snappy")
+		resp, err := ts.Client().Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode)
+		assert.Equal(t, "gzip", resp.Header.Get("Accept-Encoding"))
+	})
+
+	t.Run("explicit empty string allows missing and identity encodings", func(t *testing.T) {
+		ts := startTestHTTPServer(t, func(cfg *Config) {
+			cfg.ServerConfig.CompressionAlgorithms = []string{"", "identity", "snappy"}
+		})
+
+		for _, enc := range []string{"", "identity"} {
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(raw))
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", writeV2ContentType)
+			if enc != "" {
+				req.Header.Set("Content-Encoding", enc)
+			}
+			resp, err := ts.Client().Do(req)
+			require.NoError(t, err)
+			_ = resp.Body.Close()
+			assert.Equal(t, http.StatusNoContent, resp.StatusCode, "encoding=%q", enc)
+		}
+
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(gzipBody))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", writeV2ContentType)
+		req.Header.Set("Content-Encoding", "gzip")
+		resp, err := ts.Client().Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode)
+		assert.Equal(t, "identity, snappy", resp.Header.Get("Accept-Encoding"))
+	})
+
+	t.Run("empty non-nil CompressionAlgorithms disables confighttp decompression", func(t *testing.T) {
+		ts := startTestHTTPServer(t, func(cfg *Config) {
+			cfg.ServerConfig.CompressionAlgorithms = []string{}
+		})
+
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(raw))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", writeV2ContentType)
+		req.Header.Add("Content-Encoding", "snappy")
+		req.Header.Add("Content-Encoding", "gzip")
+		resp, err := ts.Client().Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+	})
+
+	t.Run("uppercase CompressionAlgorithms config is normalized without mutating caller config", func(t *testing.T) {
+		orig := []string{"SNAPPY"}
+		ts := startTestHTTPServer(t, func(cfg *Config) {
+			cfg.ServerConfig.CompressionAlgorithms = orig
+		})
+		assert.Equal(t, []string{"SNAPPY"}, orig)
+
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(snappyBlock))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", writeV2ContentType)
+		req.Header.Set("Content-Encoding", "snappy")
+		resp, err := ts.Client().Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+
+		req2, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(gzipBody))
+		require.NoError(t, err)
+		req2.Header.Set("Content-Type", writeV2ContentType)
+		req2.Header.Set("Content-Encoding", "gzip")
+		resp2, err := ts.Client().Do(req2)
+		require.NoError(t, err)
+		defer func() { _ = resp2.Body.Close() }()
+		assert.Equal(t, http.StatusUnsupportedMediaType, resp2.StatusCode)
+		assert.Equal(t, "snappy", resp2.Header.Get("Accept-Encoding"))
+	})
+}
+
+type closeTrackingReadCloser struct {
+	io.Reader
+	bytesRead int
+	closed    bool
+}
+
+func (c *closeTrackingReadCloser) Read(p []byte) (int, error) {
+	n, err := c.Reader.Read(p)
+	c.bytesRead += n
+	return n, err
+}
+
+func (c *closeTrackingReadCloser) Close() error {
+	c.closed = true
+	return nil
+}
+
+func TestSnappyBlockDecoderBoundsAndClosesBody(t *testing.T) {
+	t.Run("rejects oversized decoded size over HTTP before compressed body limit", func(t *testing.T) {
+		const maxBody = 1024
+		payload := make([]byte, binary.MaxVarintLen64+maxBody+1)
+		n := binary.PutUvarint(payload, maxBody+1)
+		payload = payload[:n+maxBody+1]
+
+		ts := startTestHTTPServer(t, func(cfg *Config) {
+			cfg.ServerConfig.MaxRequestBodySize = maxBody
+		})
+
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(payload))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", writeV2ContentType)
+		req.Header.Set("Content-Encoding", "snappy")
+
+		resp, err := ts.Client().Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		assert.Contains(t, string(body), "decoded size exceeds max request body size")
+	})
+
+	exactBoundary := bytes.Repeat([]byte("a"), 1024)
+	overBoundary := bytes.Repeat([]byte("a"), 1025)
+
+	for _, tc := range []struct {
+		name         string
+		maxBody      int64
+		payload      []byte
+		wantDecoded  []byte
+		wantError    string
+		maxBytesRead int
+	}{
+		{
+			name:        "valid block closes body",
+			maxBody:     1024,
+			payload:     snappy.Encode(nil, []byte("hello world")),
+			wantDecoded: []byte("hello world"),
+		},
+		{
+			name:        "exact maxBody boundary passes",
+			maxBody:     1024,
+			payload:     snappy.Encode(nil, exactBoundary),
+			wantDecoded: exactBoundary,
+		},
+		{
+			name:         "maxBody+1 boundary fails early",
+			maxBody:      1024,
+			payload:      snappy.Encode(nil, overBoundary),
+			wantError:    "snappy: decoded size exceeds max request body size",
+			maxBytesRead: 16,
+		},
+		{
+			name:         "framed stream closes body and stops reading after header",
+			maxBody:      1024,
+			payload:      compressSnappyFramedBytes(t, bytes.Repeat([]byte("hello world "), 512)),
+			wantError:    "snappy: framed format is not supported; use snappy block format",
+			maxBytesRead: 16,
+		},
+		{
+			name:         "oversized block closes body and stops reading after header",
+			maxBody:      1024,
+			payload:      append(snappy.Encode(nil, make([]byte, 8*1024)), make([]byte, 8*1024)...),
+			wantError:    "snappy: decoded size exceeds max request body size",
+			maxBytesRead: 16,
+		},
+		{
+			name:      "empty body closes body and returns corrupt error",
+			maxBody:   1024,
+			payload:   nil,
+			wantError: snappy.ErrCorrupt.Error(),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			rc := &closeTrackingReadCloser{Reader: bytes.NewReader(tc.payload)}
+			decoded, err := newSnappyBlockDecoder(tc.maxBody)(rc)
+			assert.True(t, rc.closed, "original request body must always be closed")
+			if tc.maxBytesRead > 0 {
+				assert.LessOrEqual(t, rc.bytesRead, tc.maxBytesRead, "decoder must stop reading after peeking header")
+			}
+			if tc.wantError != "" {
+				require.EqualError(t, err, tc.wantError)
+				assert.Nil(t, decoded)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, decoded)
+			defer func() { _ = decoded.Close() }()
+			got, err := io.ReadAll(decoded)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantDecoded, got)
+		})
+	}
+}
+
+func TestHTTPErrorHandlerPassesThroughNon400(t *testing.T) {
+	prw := setupMetricsReceiver(t)
+	writeHandler := &writeRouteHandler{fn: prw.handlePRW}
+	mux := http.NewServeMux()
+	mux.Handle("POST "+writePath, writeHandler)
+	allowed, acceptEnc := compressionSettings([]string{"snappy"})
+	eh := prw.makeHTTPErrorHandler(mux, writeHandler, allowed, acceptEnc)
+
+	req := httptest.NewRequest(http.MethodGet, writePath, http.NoBody)
+	w := httptest.NewRecorder()
+	eh(w, req, "unauthorized", http.StatusUnauthorized)
+
+	resp := w.Result()
+	defer func() { _ = resp.Body.Close() }()
+	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	assert.Empty(t, resp.Header.Get("Allow"))
+	assert.Empty(t, resp.Header.Get("Accept-Encoding"))
 }

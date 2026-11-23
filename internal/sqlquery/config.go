@@ -15,7 +15,7 @@ import (
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	Driver                         string              `mapstructure:"driver"`
-	DataSource                     string              `mapstructure:"datasource"`
+	DataSource                     configopaque.String `mapstructure:"datasource"`
 	Host                           string              `mapstructure:"host"`
 	Port                           int                 `mapstructure:"port"`
 	Database                       string              `mapstructure:"database"`
