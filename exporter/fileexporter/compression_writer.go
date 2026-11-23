@@ -70,7 +70,7 @@ func (c *compressingWriter) newEncoder(w io.Writer) (*zstd.Encoder, error) {
 	switch c.compression {
 	case compressionZSTD:
 		return zstd.NewWriter(w,
-			zstd.WithEncoderLevel(zstd.EncoderLevelFromZstd(c.level)),
+			zstd.WithEncoderLevel(zstdLevel(c.level)),
 			zstd.WithEncoderConcurrency(1),
 		)
 	default:

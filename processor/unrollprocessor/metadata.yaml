@@ -10,6 +10,7 @@ status:
   stability:
     beta: [logs]
   distributions: [contrib]
+  warnings: [Other]
   codeowners:
     active: [schmikei, rnishtala-sumo]
     emeritus: [axw]
