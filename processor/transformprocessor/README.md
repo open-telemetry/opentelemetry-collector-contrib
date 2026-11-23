@@ -3,7 +3,7 @@
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: profiles   |
-|               | [beta]: traces, metrics, logs   |
+|               | [stable]: traces, metrics, logs   |
 | Distributions | [core], [contrib], [k8s] |
 | Warnings      | [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Ftransform%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Ftransform) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Ftransform%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Ftransform) |
@@ -12,7 +12,7 @@
 | Emeritus      | [@anuraaga](https://www.github.com/anuraaga), [@kentquirk](https://www.github.com/kentquirk) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
-[beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
+[stable]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#stable
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [k8s]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-k8s

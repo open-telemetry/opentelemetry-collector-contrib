@@ -5,7 +5,7 @@ status:
   class: processor
   stability:
     development: [profiles]
-    beta: [traces, metrics, logs]
+    stable: [traces, metrics, logs]
   distributions: [core, contrib, k8s]
   warnings: [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other]
   codeowners:
