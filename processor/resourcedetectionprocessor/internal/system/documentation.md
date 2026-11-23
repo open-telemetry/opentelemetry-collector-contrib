@@ -25,3 +25,5 @@
 | os.name | The os.name | Any Str | false | [os.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/os.md#os-name) | - |
 | os.type | The os.type | Any Str | true | [os.type](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/os.md#os-type) | - |
 | os.version | The os.version | Any Str | false | [os.version](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/os.md#os-version) | - |
+| system.cpu.core.id | The system.cpu.core.id | Any Str | false | - | - |
+| system.cpu.socket.id | The system.cpu.socket.id | Any Str | false | - | - |

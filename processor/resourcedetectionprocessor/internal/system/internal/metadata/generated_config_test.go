@@ -41,6 +41,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 				OsName:             ResourceAttributeConfig{Enabled: true},
 				OsType:             ResourceAttributeConfig{Enabled: true},
 				OsVersion:          ResourceAttributeConfig{Enabled: true},
+				SystemCPUCoreID:    ResourceAttributeConfig{Enabled: true},
+				SystemCPUSocketID:  ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
@@ -63,6 +65,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 				OsName:             ResourceAttributeConfig{Enabled: false},
 				OsType:             ResourceAttributeConfig{Enabled: false},
 				OsVersion:          ResourceAttributeConfig{Enabled: false},
+				SystemCPUCoreID:    ResourceAttributeConfig{Enabled: false},
+				SystemCPUSocketID:  ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

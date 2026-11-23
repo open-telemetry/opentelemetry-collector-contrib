@@ -30,6 +30,8 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetOsName("os.name-val")
 			rb.SetOsType("os.type-val")
 			rb.SetOsVersion("os.version-val")
+			rb.SetSystemCPUCoreID("system.cpu.core.id-val")
+			rb.SetSystemCPUSocketID("system.cpu.socket.id-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
@@ -38,7 +40,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 2, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 17, res.Attributes().Len())
+				assert.Equal(t, 19, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -129,6 +131,16 @@ func TestResourceBuilder(t *testing.T) {
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.Equal(t, "os.version-val", osVersionAttrVal.Str())
+			}
+			systemCPUCoreIDAttrVal, ok := res.Attributes().Get("system.cpu.core.id")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "system.cpu.core.id-val", systemCPUCoreIDAttrVal.Str())
+			}
+			systemCPUSocketIDAttrVal, ok := res.Attributes().Get("system.cpu.socket.id")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "system.cpu.socket.id-val", systemCPUSocketIDAttrVal.Str())
 			}
 		})
 	}

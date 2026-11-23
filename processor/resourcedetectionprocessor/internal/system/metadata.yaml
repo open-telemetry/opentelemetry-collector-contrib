@@ -104,3 +104,11 @@ resource_attributes:
     description: The os.version
     type: string
     enabled: false
+  system.cpu.core.id:
+    description: The system.cpu.core.id
+    type: string
+    enabled: false
+  system.cpu.socket.id:
+    description: The system.cpu.socket.id
+    type: string
+    enabled: false

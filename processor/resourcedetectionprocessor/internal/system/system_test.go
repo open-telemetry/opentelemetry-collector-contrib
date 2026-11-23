@@ -683,6 +683,24 @@ func TestDetectCPUInfoModelID(t *testing.T) {
 	}
 }
 
+func TestDetectCPUInfoSocketAndCoreID(t *testing.T) {
+	resCfg := metadata.ResourceAttributesConfig{}
+	resCfg.SystemCPUSocketID.Enabled = true
+	resCfg.SystemCPUCoreID.Enabled = true
+
+	md := &mockMetadata{}
+	md.On("CPUInfo").Return([]cpu.InfoStat{{PhysicalID: "0", CoreID: "1"}}, nil)
+	md.ExpectedCalls = append(md.ExpectedCalls, newFullMock().ExpectedCalls...)
+
+	detector := newTestDetector(md, []string{"os"}, resCfg)
+	res, _, err := detector.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{
+		"system.cpu.socket.id": "0",
+		"system.cpu.core.id":   "1",
+	}, res.Attributes().AsRaw())
+}
+
 func TestNewDetectorDefaultHostnameSources(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
