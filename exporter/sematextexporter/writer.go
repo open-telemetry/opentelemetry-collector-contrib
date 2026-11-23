@@ -64,7 +64,7 @@ func newSematextHTTPWriter(logger common.Logger, config *Config, telemetrySettin
 		payloadMaxBytes:   config.MetricsConfig.PayloadMaxBytes,
 		logger:            logger,
 		hostname:          hostname,
-		token:             config.MetricsConfig.AppToken,
+		token:             string(config.MetricsConfig.AppToken),
 	}, nil
 }
 

@@ -1,0 +1,36 @@
+version: 1
+signal: metrics
+# container.memory.* keep their names in v1 but change from gauge to a
+# non-monotonic cumulative sum. Per the semconv feature gate RFC, when the name
+# is shared the v1 type wins, so v0 (gauge) must not be emitted.
+# Only the four migrated container memory metrics are asserted; the rest of
+# the container metric set is covered by the all-groups case.
+resources/include:
+    - attributes/include:
+        k8s.namespace.name: default
+        k8s.pod.name: kubeletstats-e2e-workload
+        k8s.container.name: workload
+      scopes/include:
+        - name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+          version/exists: true
+          metrics/include:
+            - name: container.memory.available
+              type: sum
+              unit: By
+              temporality: cumulative
+              monotonic: false
+            - name: container.memory.rss
+              type: sum
+              unit: By
+              temporality: cumulative
+              monotonic: false
+            - name: container.memory.usage
+              type: sum
+              unit: By
+              temporality: cumulative
+              monotonic: false
+            - name: container.memory.working_set
+              type: sum
+              unit: By
+              temporality: cumulative
+              monotonic: false

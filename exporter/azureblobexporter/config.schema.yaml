@@ -15,10 +15,10 @@ $defs:
         description: ClientID is the AAD Application client id. It's needed when type is service principal or user managed identity
         type: string
       client_secret:
-        type: string
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       connection_string:
         description: ConnectionString to the endpoint.
-        type: string
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       federated_token_file:
         description: FederatedTokenFile is the path to the file containing the federated token. It's needed when type is workload_identity.
         type: string
