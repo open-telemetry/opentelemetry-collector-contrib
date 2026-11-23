@@ -27,13 +27,21 @@ func TestDetectorBuildTags(t *testing.T) {
 		implementation bool
 	}
 	factories := map[string][]factoryFile{}
+	// Hand-written tests use the implementation, so they must be excluded with it.
+	testFiles := map[string][]string{}
 	omitTags := map[string]string{}
 	omitPattern := regexp.MustCompile(`\bomit_detector_\w+\b`)
 	err := filepath.WalkDir("internal", func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
-		if entry.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+		if entry.IsDir() || !strings.HasSuffix(path, ".go") {
+			return nil
+		}
+		if strings.HasSuffix(path, "_test.go") {
+			if name := filepath.Base(path); !strings.HasPrefix(name, "generated_") {
+				testFiles[filepath.Dir(path)] = append(testFiles[filepath.Dir(path)], name)
+			}
 			return nil
 		}
 		file, parseErr := parser.ParseFile(token.NewFileSet(), path, nil, parser.ParseComments)
@@ -114,6 +122,11 @@ func TestDetectorBuildTags(t *testing.T) {
 							}
 						}
 						assert.Equal(t, 1, selected, "exactly one factory must compile with tags %v", ctx.BuildTags)
+						for _, name := range testFiles[dir] {
+							matches, matchErr := ctx.MatchFile(dir, name)
+							require.NoError(t, matchErr)
+							assert.Equal(t, wantImplementation, matches, "test file %s with tags %v", name, ctx.BuildTags)
+						}
 					}
 				}
 			}
