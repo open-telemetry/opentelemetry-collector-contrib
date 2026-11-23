@@ -17,6 +17,9 @@ $defs:
       url_key:
         description: URLKey is the attribute that will be used as the url. If necessary the value will be converted to a string.
         type: string
+      use_service_name:
+        description: UseServiceName uses the resource's service.name as the dataset slug when non-empty.
+        type: boolean
   rules:
     type: object
     properties:

@@ -25,6 +25,7 @@ honeycomb_marker/all_fields:
       message_key: "test message"
       url_key: "https://api.testhost.io"
       dataset_slug: "testing"
+      use_service_name: true
       rules:
         log_conditions:
           - body == "test"

@@ -52,6 +52,9 @@ type Marker struct {
 
 	// DatasetSlug is the endpoint that specifies the Honeycomb environment
 	DatasetSlug string `mapstructure:"dataset_slug"`
+
+	// UseServiceName uses the resource's service.name as the dataset slug when non-empty.
+	UseServiceName bool `mapstructure:"use_service_name"`
 }
 
 type Rules struct {

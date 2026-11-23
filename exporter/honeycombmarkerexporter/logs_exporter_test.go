@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"slices"
+	"sync"
 	"testing"
 	"time"
 
@@ -280,6 +282,63 @@ func TestExportMarkers(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
+}
+
+func TestExportMarkers_ServiceName(t *testing.T) {
+	var mu sync.Mutex
+	var requestPaths []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		requestPaths = append(requestPaths, r.URL.EscapedPath())
+		mu.Unlock()
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer server.Close()
+
+	rules := Rules{LogConditions: []string{`log.body == "test"`}}
+	cfg := Config{
+		APIKey: "test-apikey",
+		APIURL: server.URL,
+		Markers: []Marker{
+			{Type: "dynamic", Rules: rules, DatasetSlug: "fallback/dataset", UseServiceName: true},
+			{Type: "fixed", Rules: rules, DatasetSlug: "fixed/dataset"},
+		},
+	}
+	exp, err := NewFactory().CreateLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), &cfg)
+	require.NoError(t, err)
+	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
+
+	logs := plog.NewLogs()
+	for _, resource := range []struct {
+		serviceName string
+		hasName     bool
+	}{
+		{serviceName: "checkout", hasName: true},
+		{serviceName: "payments/api ?", hasName: true},
+		{},
+		{hasName: true},
+	} {
+		resourceLogs := logs.ResourceLogs().AppendEmpty()
+		if resource.hasName {
+			resourceLogs.Resource().Attributes().PutStr("service.name", resource.serviceName)
+		}
+		logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		logRecord.Body().SetStr("test")
+	}
+
+	require.NoError(t, exp.ConsumeLogs(t.Context(), logs))
+	server.Close()
+	slices.Sort(requestPaths)
+	assert.Equal(t, []string{
+		"/1/markers/checkout",
+		"/1/markers/fallback/dataset",
+		"/1/markers/fallback/dataset",
+		"/1/markers/fixed/dataset",
+		"/1/markers/fixed/dataset",
+		"/1/markers/fixed/dataset",
+		"/1/markers/fixed/dataset",
+		"/1/markers/payments%2Fapi%20%3F",
+	}, requestPaths)
 }
 
 func constructLogs(attributes map[string]string, timestamp, observedTimestamp time.Time) plog.Logs {
