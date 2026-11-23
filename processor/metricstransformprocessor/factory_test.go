@@ -114,6 +114,16 @@ func TestCreateProcessors(t *testing.T) {
 			succeed:      false,
 			errorMessage: fmt.Sprintf("%q must be in %q", submatchCaseFieldName, submatchCases),
 		},
+		{
+			configName:   "config_invalid_empty_label_set_with_keep.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("operation %v: %q and %q cannot be used together, use one or the other", 1, labelSetFieldName, keepLabelsFieldName),
+		},
+		{
+			configName:   "config_invalid_keep_labels_action.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("operation %v: %q is only valid while %q is %v", 1, keepLabelsFieldName, actionFieldName, aggregateLabels),
+		},
 	}
 
 	for _, tt := range tests {
@@ -266,6 +276,13 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 				{
 					Action:          aggregateLabels,
 					LabelSet:        nil,
+					KeepLabels:      true,
+					AggregationType: aggregateutil.Sum,
+				},
+				{
+					Action:          aggregateLabels,
+					LabelSet:        nil,
+					KeepLabels:      false,
 					AggregationType: aggregateutil.Sum,
 				},
 			},
@@ -327,9 +344,19 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 					configOperation: &operation{
 						Action:          aggregateLabels,
 						LabelSet:        nil,
+						KeepLabels:      true,
 						AggregationType: aggregateutil.Sum,
 					},
-					labelSetMap: nil,
+					labelSetMap: map[string]bool{},
+				},
+				{
+					configOperation: &operation{
+						Action:          aggregateLabels,
+						LabelSet:        nil,
+						KeepLabels:      false,
+						AggregationType: aggregateutil.Sum,
+					},
+					labelSetMap: map[string]bool{},
 				},
 			},
 		},

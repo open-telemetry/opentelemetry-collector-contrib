@@ -146,6 +146,28 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			configFile: "config_keep_labels.yaml",
+			id:         component.NewID(metadata.Type),
+			expected: &Config{
+				Transforms: []transform{
+					{
+						MetricIncludeFilter: filterConfig{
+							Include: "name",
+						},
+						Action: "update",
+						Operations: []operation{
+							{
+								Action:          "aggregate_labels",
+								AggregationType: "sum",
+								LabelSet:        nil,
+								KeepLabels:      true,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			configFile: "config_empty_label_set.yaml",
 			id:         component.NewID(metadata.Type),
 			expected: &Config{
@@ -160,6 +182,7 @@ func TestLoadConfig(t *testing.T) {
 								Action:          "aggregate_labels",
 								AggregationType: "sum",
 								LabelSet:        []string{},
+								KeepLabels:      false,
 							},
 						},
 					},
@@ -181,6 +204,7 @@ func TestLoadConfig(t *testing.T) {
 								Action:          "aggregate_labels",
 								AggregationType: "sum",
 								LabelSet:        nil,
+								KeepLabels:      false,
 							},
 						},
 					},

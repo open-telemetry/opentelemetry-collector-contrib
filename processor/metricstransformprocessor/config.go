@@ -42,6 +42,12 @@ const (
 
 	// submatchCaseFieldName is the mapstructure field name for submatchCase field
 	submatchCaseFieldName = "submatch_case"
+
+	// labelSetFieldName is the mapstructure field name for LabelSet field
+	labelSetFieldName = "label_set"
+
+	// keepLabelsFieldName is the mapstructure field name for KeepLabels field
+	keepLabelsFieldName = "keep_labels"
 )
 
 // Config defines configuration for Resource processor.
@@ -120,6 +126,10 @@ type operation struct {
 
 	// LabelSet is a list of labels to keep. All other labels are aggregated based on the AggregationType.
 	LabelSet []string `mapstructure:"label_set"`
+
+	// KeepLabels configures whether to keep all labels during aggregation. Only valid when LabelSet is absent or null.
+	// When true, data points with identical label values are aggregated but all labels are preserved.
+	KeepLabels bool `mapstructure:"keep_labels"`
 
 	// AggregationType specifies how to aggregate.
 	AggregationType aggregateutil.AggregationType `mapstructure:"aggregation_type"`

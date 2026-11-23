@@ -698,6 +698,35 @@ var standardTests = []metricsTransformTest{
 		},
 	},
 	{
+		name: "metric_label_aggregation_nil_label_set_no_keep",
+		transforms: []internalTransform{
+			{
+				MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+				Action:              Update,
+				Operations: []internalOperation{
+					{
+						configOperation: &operation{
+							Action:          aggregateLabels,
+							AggregationType: aggregateutil.Sum,
+							LabelSet:        nil,
+						},
+						labelSetMap: map[string]bool{},
+					},
+				},
+			},
+		},
+		in: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2", "label3").
+				addIntDatapoint(0, 1, 1, "a", "b", "c").
+				build(),
+		},
+		out: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeGauge, "metric1").
+				addIntDatapoint(0, 1, 1).
+				build(),
+		},
+	},
+	{
 		name: "metric_label_aggregation_ignored_for_partial_metric_match",
 		transforms: []internalTransform{
 			{
@@ -2146,7 +2175,7 @@ var standardTests = []metricsTransformTest{
 		},
 	},
 	{
-		name: "metric_label_aggregation_sum_nil_labelset",
+		name: "metric_label_aggregation_sum_keep_labels",
 		transforms: []internalTransform{
 			{
 				MetricIncludeFilter: internalFilterStrict{include: "metric1"},
@@ -2157,6 +2186,7 @@ var standardTests = []metricsTransformTest{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Sum,
 							LabelSet:        nil,
+							KeepLabels:      true,
 						},
 					},
 				},
@@ -2175,7 +2205,7 @@ var standardTests = []metricsTransformTest{
 		},
 	},
 	{
-		name: "metric_label_aggregation_mean_nil_labelset",
+		name: "metric_label_aggregation_mean_keep_labels",
 		transforms: []internalTransform{
 			{
 				MetricIncludeFilter: internalFilterStrict{include: "metric1"},
@@ -2186,6 +2216,7 @@ var standardTests = []metricsTransformTest{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Mean,
 							LabelSet:        nil,
+							KeepLabels:      true,
 						},
 					},
 				},
@@ -2204,7 +2235,7 @@ var standardTests = []metricsTransformTest{
 		},
 	},
 	{
-		name: "metric_label_aggregation_sum_nil_labelset_sum_metric",
+		name: "metric_label_aggregation_sum_keep_labels_sum_metric",
 		transforms: []internalTransform{
 			{
 				MetricIncludeFilter: internalFilterStrict{include: "metric1"},
@@ -2215,6 +2246,7 @@ var standardTests = []metricsTransformTest{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Sum,
 							LabelSet:        nil,
+							KeepLabels:      true,
 						},
 					},
 				},
@@ -2233,7 +2265,7 @@ var standardTests = []metricsTransformTest{
 		},
 	},
 	{
-		name: "metric_label_aggregation_sum_nil_labelset_no_duplicates",
+		name: "metric_label_aggregation_sum_keep_labels_no_duplicates_noop",
 		transforms: []internalTransform{
 			{
 				MetricIncludeFilter: internalFilterStrict{include: "metric1"},
@@ -2244,6 +2276,7 @@ var standardTests = []metricsTransformTest{
 							Action:          aggregateLabels,
 							AggregationType: aggregateutil.Sum,
 							LabelSet:        nil,
+							KeepLabels:      true,
 						},
 					},
 				},
@@ -2258,6 +2291,38 @@ var standardTests = []metricsTransformTest{
 			metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
 				addIntDatapoint(1, 2, 3, "label1-value1").
 				addIntDatapoint(1, 2, 5, "label1-value2").build(),
+		},
+	},
+	{
+		name: "metric_label_aggregation_sum_keep_labels_histogram",
+		transforms: []internalTransform{
+			{
+				MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+				Action:              Update,
+				Operations: []internalOperation{
+					{
+						configOperation: &operation{
+							Action:          aggregateLabels,
+							AggregationType: aggregateutil.Sum,
+							LabelSet:        nil,
+							KeepLabels:      true,
+						},
+					},
+				},
+			},
+		},
+		in: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeHistogram, "metric1", "label1", "label2").
+				addHistogramDatapoint(0, 1, 3, 6, []float64{1, 2, 3}, []uint64{0, 1, 1, 1}, "label1-value1", "label2-value1").
+				addHistogramDatapoint(0, 1, 5, 10, []float64{1, 2, 3}, []uint64{0, 2, 1, 2}, "label1-value1", "label2-value1").
+				addHistogramDatapoint(0, 1, 7, 14, []float64{1, 2, 3}, []uint64{0, 3, 1, 3}, "label1-value1", "label2-value2").
+				build(),
+		},
+		out: []pmetric.Metric{
+			metricBuilder(pmetric.MetricTypeHistogram, "metric1", "label1", "label2").
+				addHistogramDatapoint(0, 1, 8, 16, []float64{1, 2, 3}, []uint64{0, 3, 2, 3}, "label1-value1", "label2-value1").
+				addHistogramDatapoint(0, 1, 7, 14, []float64{1, 2, 3}, []uint64{0, 3, 1, 3}, "label1-value1", "label2-value2").
+				build(),
 		},
 	},
 }

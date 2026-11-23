@@ -572,7 +572,7 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) (bool, 
 		case aggregateLabels:
 			if canChangeMetric {
 				var attrs []string
-				if op.labelSetMap != nil {
+				if !op.configOperation.KeepLabels {
 					attrs = make([]string, 0, len(op.labelSetMap))
 					for k, v := range op.labelSetMap {
 						if v {
