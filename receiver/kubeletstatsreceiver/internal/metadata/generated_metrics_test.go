@@ -73,12 +73,6 @@ func TestMetricsBuilder(t *testing.T) {
 			migrationGatesPinned := true
 			migrationGatesPinned = setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, false) && migrationGatesPinned
 			migrationGatesPinned = setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, false) && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, false) && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, false) && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["k8s.container.ephemeral_storage.usage"] = mb.metricK8sContainerEphemeralStorageUsage.config.AggregationStrategy
