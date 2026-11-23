@@ -116,7 +116,8 @@ the set. If discovery fails at start, for example because no member is reachable
 warning and collects query samples from the configured host until it is restarted.
 
 Members are scraped concurrently, each within the shorter of `timeout` and `collection_interval`, so a
-member that cannot be reached only delays its own data. The receiver logs a warning when collection from a
+member that cannot be reached only delays its own data. `timeout` also bounds how long the receiver waits
+to reach a member. The receiver logs a warning when collection from a
 member starts failing and an info message when it recovers.
 
 Sharded clusters are not discovered: with a `mongos` host, only the configured host is scraped.

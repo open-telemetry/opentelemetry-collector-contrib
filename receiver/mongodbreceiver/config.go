@@ -127,11 +127,6 @@ func (c *Config) secondaryDiscoverySkipReason() string {
 	return ""
 }
 
-// memberServerSelectionTimeout bounds how long a scrape waits for an unreachable member, so one
-// member that cannot be reached does not hold up collection from the others for the driver's
-// 30 second default.
-const memberServerSelectionTimeout = 5 * time.Second
-
 func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 	if secondary {
 		// For secondary nodes, create a direct connection
@@ -147,6 +142,9 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 			// configured. The driver honors an operation's own deadline over this value, so
 			// a configured scrape timeout still wins.
 			clientOptions.SetTimeout(c.Timeout)
+			// Waiting for an unreachable member is bounded by the same timeout as its commands.
+			// Members are scraped concurrently, so the wait delays only that member's data.
+			clientOptions.SetServerSelectionTimeout(c.Timeout)
 		}
 
 		// Set up authentication if username/password are provided or if an auth mechanism is specified
@@ -155,8 +153,6 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 			credential := c.buildCredential()
 			clientOptions.SetAuth(credential)
 		}
-
-		clientOptions.SetServerSelectionTimeout(memberServerSelectionTimeout)
 
 		// Secondaries are members of the same deployment as the primary, so they need the
 		// same transport security.
