@@ -506,6 +506,7 @@ func TestDefaultDetectorRegistry(t *testing.T) {
 }
 
 func TestResolveDetection(t *testing.T) {
+	logger, _ := newObservedLogger()
 	loadConfig := func(raw map[string]any) *Config {
 		cfg := createDefaultConfig().(*Config)
 		require.NoError(t, confmap.NewFromStringMap(raw).Unmarshal(cfg), "the configuration must unmarshal")
@@ -564,7 +565,7 @@ func TestResolveDetection(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resolved := resolveDetection(tt.cfg, tt.compiled, tt.detectHostIDByDefault)
+			resolved := resolveDetection(logger, tt.cfg, tt.compiled, tt.detectHostIDByDefault)
 
 			assert.Equal(t, tt.want, resolved, "the resolved configuration must match the expected one")
 		})

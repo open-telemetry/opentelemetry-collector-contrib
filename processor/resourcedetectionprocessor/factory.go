@@ -226,7 +226,7 @@ func (f *factory) getResourceDetectionProcessor(
 
 	warnDeprecatedPerDetectorFlags(params.Logger, oCfg)
 
-	oCfg = resolveDetection(oCfg, f.compiledDetectors,
+	oCfg = resolveDetection(params.Logger, oCfg, f.compiledDetectors,
 		metadata.ProcessorResourceDetectionDetectHostIDByDefaultFeatureGate.IsEnabled())
 
 	// The deprecated per-detector fail_on_missing_metadata fields are OR'd with this
@@ -249,8 +249,12 @@ func (f *factory) getResourceDetectionProcessor(
 //
 // It returns cfg as is, unless detectHostIDByDefault is set and the processor is not configured.
 // Then it returns a copy in which the detectors follow the host.id semantic conventions priority order.
-func resolveDetection(cfg *Config, compiledDetectors []string, detectHostIDByDefault bool) *Config {
-	if cfg.configuredByUser || !detectHostIDByDefault {
+func resolveDetection(logger *zap.Logger, cfg *Config, compiledDetectors []string, detectHostIDByDefault bool) *Config {
+	if !detectHostIDByDefault {
+		return cfg
+	}
+	if cfg.configuredByUser {
+		logger.Debug("default host.id detection skipped because the processor is configured")
 		return cfg
 	}
 
