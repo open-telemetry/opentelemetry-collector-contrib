@@ -7,14 +7,14 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.165.1
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component v1.71.1-0.20261122191605-d56d0a1c98b6
+	go.opentelemetry.io/collector/component v1.72.1-0.20261123223338-1fcf8d3233e0
 	go.opentelemetry.io/collector/component/componenttest v0.165.1-0.20261122191605-d56d0a1c98b6
-	go.opentelemetry.io/collector/confmap v1.71.1-0.20261122191605-d56d0a1c98b6
-	go.opentelemetry.io/collector/consumer v1.71.1-0.20261122191605-d56d0a1c98b6
+	go.opentelemetry.io/collector/confmap v1.72.1-0.20261123223338-1fcf8d3233e0
+	go.opentelemetry.io/collector/consumer v1.72.1-0.20261123223338-1fcf8d3233e0
 	go.opentelemetry.io/collector/consumer/consumertest v0.165.1-0.20261122191605-d56d0a1c98b6
-	go.opentelemetry.io/collector/pdata v1.71.1-0.20261122191605-d56d0a1c98b6
-	go.opentelemetry.io/collector/pipeline v1.71.1-0.20261122191605-d56d0a1c98b6
-	go.opentelemetry.io/collector/receiver v1.71.1-0.20261122191605-d56d0a1c98b6
+	go.opentelemetry.io/collector/pdata v1.72.1-0.20261123223338-1fcf8d3233e0
+	go.opentelemetry.io/collector/pipeline v1.72.1-0.20261123223338-1fcf8d3233e0
+	go.opentelemetry.io/collector/receiver v1.72.1-0.20261123223338-1fcf8d3233e0
 	go.opentelemetry.io/collector/receiver/receivertest v0.165.1-0.20261122191605-d56d0a1c98b6
 	go.opentelemetry.io/collector/receiver/xreceiver v0.165.1-0.20261122191605-d56d0a1c98b6
 	go.opentelemetry.io/collector/scraper v0.165.1-0.20261122191605-d56d0a1c98b6
@@ -43,7 +43,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.165.1-0.20261122191605-d56d0a1c98b6 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.165.1-0.20261122191605-d56d0a1c98b6 // indirect
-	go.opentelemetry.io/collector/featuregate v1.71.1-0.20261122191605-d56d0a1c98b6 // indirect
+	go.opentelemetry.io/collector/featuregate v1.72.1-0.20261123223338-1fcf8d3233e0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.165.1-0.20261122191605-d56d0a1c98b6 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.165.1-0.20261122191605-d56d0a1c98b6 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.165.1-0.20261122191605-d56d0a1c98b6 // indirect

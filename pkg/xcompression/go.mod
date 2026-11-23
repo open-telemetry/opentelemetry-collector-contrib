@@ -6,7 +6,7 @@ require (
 	github.com/klauspost/compress v1.20.4
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/config/configcompression v1.71.1-0.20261122191605-d56d0a1c98b6
+	go.opentelemetry.io/collector/config/configcompression v1.72.1-0.20261123223338-1fcf8d3233e0
 	go.uber.org/goleak v1.3.0
 )
 
