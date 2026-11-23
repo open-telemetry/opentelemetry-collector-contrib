@@ -11,7 +11,7 @@ resources:
               temporality: cumulative
               monotonic: true
               datapoints:
-                - value: 16630948
+                - int_value: 16630948
             - name: nginx.connections_current
               type: sum
               unit: '{connections}'
@@ -20,27 +20,27 @@ resources:
               datapoints:
                 - attributes:
                     state: active
-                  value: 291
+                  int_value: 291
                 - attributes:
                     state: reading
-                  value: 6
+                  int_value: 6
                 - attributes:
                     state: waiting
-                  value: 106
+                  int_value: 106
                 - attributes:
                     state: writing
-                  value: 179
+                  int_value: 179
             - name: nginx.connections_handled
               type: sum
               unit: '{connections}'
               temporality: cumulative
               monotonic: true
               datapoints:
-                - value: 16630946
+                - int_value: 16630946
             - name: nginx.requests
               type: sum
               unit: '{requests}'
               temporality: cumulative
               monotonic: true
               datapoints:
-                - value: 31070465
+                - int_value: 31070465
