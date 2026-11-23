@@ -71,6 +71,23 @@ Although this configuration is still accepted by the extension, it is deprecated
 
 By default, this extension will use [OpenID Connect Discovery] to retrieve the set of public keys used to verify JWT signatures. While this data is cached, it does require the extension to be able to reach the provider endpoint at startup and periodically throughout the lifetime of the collector process.
 
+To retrieve keys directly from a remote [JWK Set] endpoint without discovery, configure `jwks_url` for the provider:
+
+```yaml
+extensions:
+  oidc:
+    providers:
+      - issuer_url: https://issuer.example.com
+        audience: account
+        jwks_url: https://auth.example.com/oauth2/keys
+```
+
+`issuer_url` identifies the expected token issuer. `issuer_ca_path` applies to the JWKS endpoint's TLS certificate. `jwks_url` and `public_keys_file` are mutually exclusive.
+
+Supported signing algorithms are `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512`, `ES256`, `ES384`, `ES512`, and `EdDSA`.
+
+Keys are fetched on demand and remain trusted for at most five minutes. Authentication fails if expired keys cannot be refreshed.
+
 Optionally, a `public_keys_file` can be configured on a per-provider basis. When configured, discovery is disabled and the provided file will be parsed as a [JWK Set]. The public keys contained in the set will be used to verify JWT signatures:
 ```yaml
 extensions:
