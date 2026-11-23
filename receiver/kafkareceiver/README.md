@@ -81,6 +81,10 @@ The following settings can be optionally configured:
 - `max_fetch_wait` (default = `250ms`): The maximum amount of time the broker should wait for `min_fetch_size` bytes to be available before returning anyway.
 - `max_partition_fetch_size` (default = `1048576`): The default number of message bytes to fetch in a request per partition, defaults to 1MB. If a single record batch is larger than this value, the broker will still return it to ensure the consumer can make progress.
 - `max_decompress_batch_bytes` (default = `1073741824`, 1 GiB): The maximum number of bytes to allow for decompressing a single Kafka record batch. This limit is applied after decompression, so it bounds the memory required for a decompressed record batch. This setting is independent of `max_fetch_size` and `max_partition_fetch_size`, which limit compressed bytes on the wire. If a record batch exceeds this decompression limit, the partition will stop making progress until the configuration is increased and the consumer is restarted.
+- `on_decompress_too_large` (default = `stall`): controls what the receiver does when a fetched record batch decompresses beyond `max_decompress_batch_bytes`.
+  - `stall`: keep polling and leave the partition blocked on the batch, which is the previous behavior.
+  - `skip`: drop the oversized batch with `SetOffsets` and continue consuming. The dropped batch is counted by the `otelcol_kafka_receiver_fetch_err_decompress_too_large` metric with the `action` attribute set to `skip`.
+  - `fatal`: report a permanent error and stop the receiver. The batch is counted by the same metric with the `action` attribute set to `fatal`.
 - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 - `auth`
   - `sasl`
