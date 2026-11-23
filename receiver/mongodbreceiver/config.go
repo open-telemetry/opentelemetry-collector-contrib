@@ -127,7 +127,15 @@ func (c *Config) secondaryDiscoverySkipReason() string {
 	return ""
 }
 
-func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
+// ClientOptions returns the driver options for the configured host, or for one discovered replica
+// set member when secondary is true. It returns an error when the TLS configuration cannot be
+// loaded, so a connection is never made with TLS settings other than the configured ones.
+func (c *Config) ClientOptions(secondary bool) (*options.ClientOptions, error) {
+	tlsConfig, err := c.ClientConfig.LoadTLSConfig(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to load TLS configuration: %w", err)
+	}
+
 	if secondary {
 		// For secondary nodes, create a direct connection
 		clientOptions := options.Client().
@@ -156,16 +164,16 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 
 		// Secondaries are members of the same deployment as the primary, so they need the
 		// same transport security.
-		if tlsConfig, err := c.ClientConfig.LoadTLSConfig(context.Background()); err == nil && tlsConfig != nil {
+		if tlsConfig != nil {
 			clientOptions.SetTLSConfig(tlsConfig)
 		} else if c.Scheme == "mongodb+srv" {
-			// The driver turns TLS on for a mongodb+srv URI even when the receiver's tls settings
-			// leave it off. Members are reached by host and port rather than through that URI, so
-			// apply the same default here instead of connecting to them in plaintext.
+			// tls.insecure is set, which leaves tlsConfig nil, but the driver turns TLS on for a
+			// mongodb+srv URI anyway. Members are reached by host and port rather than through
+			// that URI, so apply the same default here instead of connecting in plaintext.
 			clientOptions.SetTLSConfig(&tls.Config{MinVersion: tls.VersionTLS12})
 		}
 
-		return clientOptions
+		return clientOptions, nil
 	}
 	clientOptions := options.Client()
 	scheme := c.Scheme
@@ -179,8 +187,7 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 		clientOptions.SetConnectTimeout(c.Timeout)
 	}
 
-	tlsConfig, err := c.ClientConfig.LoadTLSConfig(context.Background())
-	if err == nil && tlsConfig != nil {
+	if tlsConfig != nil {
 		clientOptions.SetTLSConfig(tlsConfig)
 	}
 
@@ -199,7 +206,7 @@ func (c *Config) ClientOptions(secondary bool) *options.ClientOptions {
 		clientOptions.SetAuth(credential)
 	}
 
-	return clientOptions
+	return clientOptions, nil
 }
 
 func (c *Config) buildCredential() options.Credential {

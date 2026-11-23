@@ -1139,11 +1139,11 @@ func TestSecondaryClientOptionsInheritSRVTLS(t *testing.T) {
 	cfg.ClientConfig.Insecure = true
 	cfg.Hosts = []confignet.TCPAddrConfig{{Endpoint: "member.example.net:27017"}}
 
-	opts := cfg.ClientOptions(true)
+	opts := mustClientOptions(t, cfg, true)
 	require.NotNil(t, opts.TLSConfig, "secondary of a mongodb+srv deployment must use TLS")
 
 	cfg.Scheme = "mongodb"
-	require.Nil(t, cfg.ClientOptions(true).TLSConfig, "plain mongodb with tls.insecure stays plaintext")
+	require.Nil(t, mustClientOptions(t, cfg, true).TLSConfig, "plain mongodb with tls.insecure stays plaintext")
 }
 
 func TestSecondaryClientOptionsServerSelectionTimeout(t *testing.T) {
@@ -1151,12 +1151,12 @@ func TestSecondaryClientOptionsServerSelectionTimeout(t *testing.T) {
 	cfg.Hosts = []confignet.TCPAddrConfig{{Endpoint: "member.example.net:27017"}}
 
 	cfg.Timeout = 45 * time.Second
-	opts := cfg.ClientOptions(true)
+	opts := mustClientOptions(t, cfg, true)
 	require.NotNil(t, opts.ServerSelectionTimeout)
 	require.Equal(t, 45*time.Second, *opts.ServerSelectionTimeout, "server selection follows timeout")
 
 	cfg.Timeout = 0
-	require.Nil(t, cfg.ClientOptions(true).ServerSelectionTimeout, "without timeout the driver default applies")
+	require.Nil(t, mustClientOptions(t, cfg, true).ServerSelectionTimeout, "without timeout the driver default applies")
 }
 
 func TestShouldIncludeOperation(t *testing.T) {
