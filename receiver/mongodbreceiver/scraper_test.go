@@ -1104,6 +1104,45 @@ func TestStartDiscoversMembers(t *testing.T) {
 	}
 }
 
+func TestStartDiscoveryBoundedByTimeout(t *testing.T) {
+	for _, tc := range []struct {
+		desc         string
+		timeout      time.Duration
+		wantDeadline bool
+	}{
+		{desc: "timeout bounds hello", timeout: 3 * time.Second, wantDeadline: true},
+		{desc: "no timeout leaves the start context unchanged", timeout: 0, wantDeadline: false},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			var gotDeadline bool
+			var remaining time.Duration
+			main := &fakeClient{}
+			main.On("RunCommand", mock.Anything, "admin", bson.M{"hello": 1}).
+				Run(func(args mock.Arguments) {
+					var deadline time.Time
+					deadline, gotDeadline = args.Get(0).(context.Context).Deadline()
+					remaining = time.Until(deadline)
+				}).
+				Return(bson.M{}, context.DeadlineExceeded)
+			orig := newClient
+			t.Cleanup(func() { newClient = orig })
+			newClient = func(context.Context, *Config, *zap.Logger, bool) (client, error) { return main, nil }
+
+			cfg := createDefaultConfig().(*Config)
+			cfg.Timeout = tc.timeout
+			scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+			scraper.discoverMembers = true
+			require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+			require.Empty(t, scraper.members)
+
+			require.Equal(t, tc.wantDeadline, gotDeadline)
+			if tc.wantDeadline {
+				require.LessOrEqual(t, remaining, tc.timeout)
+			}
+		})
+	}
+}
+
 func TestScrapeLogsReportsPrimaryCurrentOpFailure(t *testing.T) {
 	core, logs := observer.New(zap.InfoLevel)
 	settings := receivertest.NewNopSettings(metadata.Type)

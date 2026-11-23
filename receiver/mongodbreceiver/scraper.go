@@ -161,7 +161,7 @@ func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
 		return nil
 	}
 
-	hosts, err := s.findMemberHosts(ctx)
+	hosts, err := s.discoverMemberHosts(ctx)
 	if err != nil {
 		s.logger.Warn("failed to discover replica set members, scraping only the configured host", zap.Error(err))
 		return nil
@@ -1093,6 +1093,17 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 
 func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName, collectionName string, errs *scrapererror.ScrapeErrors) {
 	s.recordIndexAccess(now, indexStats, databaseName, collectionName, errs)
+}
+
+// discoverMemberHosts runs findMemberHosts within the configured timeout, so a deployment with no
+// reachable primary delays start by at most timeout rather than the driver's server selection default.
+func (s *mongodbScraper) discoverMemberHosts(ctx context.Context) ([]string, error) {
+	if s.config.Timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, s.config.Timeout)
+		defer cancel()
+	}
+	return s.findMemberHosts(ctx)
 }
 
 // errNoReplicaSetConfig is returned when a node reports a replica set name but no usable member
