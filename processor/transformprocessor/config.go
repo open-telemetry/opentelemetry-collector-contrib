@@ -57,7 +57,7 @@ type Config struct {
 	logger  *zap.Logger
 
 	// resourceFunctions and scopeFunctions are nil unless they were overridden with
-	// WithResourceFunctions or WithScopeFunctions.
+	// xtransformprocessor.WithResourceFunctions or xtransformprocessor.WithScopeFunctions.
 	resourceFunctions  map[string]ottl.Factory[*ottlresource.TransformContext]
 	scopeFunctions     map[string]ottl.Factory[*ottlscope.TransformContext]
 	dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext]

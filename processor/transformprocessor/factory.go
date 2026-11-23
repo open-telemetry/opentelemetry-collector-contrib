@@ -22,8 +22,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/factoryoptions"
@@ -45,34 +43,6 @@ type transformProcessorFactory struct {
 
 // FactoryOption configures the OTTL functions registered by NewFactoryWithOptions.
 type FactoryOption func(options *factoryoptions.Options)
-
-// WithResourceFunctions will override the default OTTL resource context functions with the provided resourceFunctions in the resulting processor.
-// Subsequent uses of WithResourceFunctions will merge the provided resourceFunctions with the previously registered functions.
-// The functions apply to statements parsed in the resource context. A statement without an explicit context
-// can be inferred into a lower context, whose functions are not affected by this option.
-func WithResourceFunctions(resourceFunctions []ottl.Factory[*ottlresource.TransformContext]) FactoryOption {
-	return func(options *factoryoptions.Options) {
-		if !options.DefaultResourceFunctionsOverridden {
-			options.ResourceFunctions = map[string]ottl.Factory[*ottlresource.TransformContext]{}
-			options.DefaultResourceFunctionsOverridden = true
-		}
-		options.ResourceFunctions = factoryoptions.MergeFunctionsToMap(options.ResourceFunctions, resourceFunctions)
-	}
-}
-
-// WithScopeFunctions will override the default OTTL scope context functions with the provided scopeFunctions in the resulting processor.
-// Subsequent uses of WithScopeFunctions will merge the provided scopeFunctions with the previously registered functions.
-// The functions apply to statements parsed in the scope context. A statement without an explicit context
-// can be inferred into a lower context, whose functions are not affected by this option.
-func WithScopeFunctions(scopeFunctions []ottl.Factory[*ottlscope.TransformContext]) FactoryOption {
-	return func(options *factoryoptions.Options) {
-		if !options.DefaultScopeFunctionsOverridden {
-			options.ScopeFunctions = map[string]ottl.Factory[*ottlscope.TransformContext]{}
-			options.DefaultScopeFunctionsOverridden = true
-		}
-		options.ScopeFunctions = factoryoptions.MergeFunctionsToMap(options.ScopeFunctions, scopeFunctions)
-	}
-}
 
 // WithDataPointFunctions will override the default OTTL datapoint context functions with the provided dataPointFunctions in resulting processor.
 // Subsequent uses of WithDataPointFunctions will merge the provided dataPointFunctions with the previously registered functions.
