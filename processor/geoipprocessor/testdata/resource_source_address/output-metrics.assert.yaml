@@ -46,7 +46,7 @@ resources:
               datapoints:
                 - attributes:
                     a: AAAA
-                  value: 0
+                  int_value: 0
             - name: summary.test
               type: summary
             - name: test.gauge
@@ -54,4 +54,4 @@ resources:
               datapoints:
                 - attributes:
                     aaa: bbb
-                  value: 345
+                  double_value: 345
