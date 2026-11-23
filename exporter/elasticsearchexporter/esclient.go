@@ -26,6 +26,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
+var _ elastictransport.Selector = &singleSelector{}
+
 type attemptCounterKey struct{}
 
 // attemptCounter tracks the number of round-trip attempts for a single
@@ -271,6 +273,11 @@ func newElasticsearchClient(
 		maxRetries = config.Retry.MaxRetries
 	}
 
+	var selector elastictransport.Selector
+	if !config.LoadBalance {
+		selector = &singleSelector{}
+	}
+
 	// Convert addresses to URLs
 	urls, err := addrsToURLs(endpoints)
 	if err != nil {
@@ -322,6 +329,7 @@ func newElasticsearchClient(
 			timeoutInterceptor(httpClient.Timeout),
 			countRetriesInterceptor(),
 		},
+		Selector: selector,
 	}
 
 	tp, err := elastictransport.New(tpConfig)
@@ -387,4 +395,21 @@ func httpRecoverableErrorStatus(statusCode int) bool {
 	// state, we will still wait until we get an actual 200 OK before changing
 	// our state back).
 	return statusCode >= 300 && statusCode != http.StatusConflict
+}
+
+// singleSelector always returns the same connection from the pool
+// until the connection fails in which case the next conn is selected
+type singleSelector struct{}
+
+func (s *singleSelector) Select(conn []*elastictransport.Connection) (*elastictransport.Connection, error) {
+
+	// Select receives a slice of live connections
+	// we always return the first element from the live list until it is marked dead
+	// dead connection are automtically removed from the live list
+
+	connection := conn[0]
+	connection.Lock()
+	defer connection.Unlock()
+
+	return connection, nil
 }

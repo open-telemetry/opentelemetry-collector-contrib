@@ -129,6 +129,7 @@ func TestConfig(t *testing.T) {
 				VersionDetection: VersionDetectionSettings{
 					Enabled: true,
 				},
+				LoadBalance: true,
 			},
 		},
 		{
@@ -196,6 +197,7 @@ func TestConfig(t *testing.T) {
 				VersionDetection: VersionDetectionSettings{
 					Enabled: true,
 				},
+				LoadBalance: true,
 			},
 		},
 		{
@@ -263,6 +265,7 @@ func TestConfig(t *testing.T) {
 				VersionDetection: VersionDetectionSettings{
 					Enabled: true,
 				},
+				LoadBalance: true,
 			},
 		},
 		{

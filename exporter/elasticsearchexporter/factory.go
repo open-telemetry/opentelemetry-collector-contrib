@@ -88,6 +88,7 @@ func createDefaultConfig() component.Config {
 		VersionDetection: VersionDetectionSettings{
 			Enabled: true,
 		},
+		LoadBalance: true,
 	}
 }
 
