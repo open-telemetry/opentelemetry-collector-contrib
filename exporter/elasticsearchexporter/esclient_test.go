@@ -4,6 +4,7 @@
 package elasticsearchexporter
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -198,7 +199,7 @@ func newLoadBalanceDisabledTestClient(t *testing.T, endpoints []string) elastict
 	client, err := newElasticsearchClient(t.Context(), cfg, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), "")
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, client.(elastictransport.Closeable).Close(t.Context()))
+		require.NoError(t, client.(elastictransport.Closeable).Close(context.WithoutCancel(t.Context())))
 	})
 	return client
 }
