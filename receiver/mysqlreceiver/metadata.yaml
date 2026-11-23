@@ -172,9 +172,19 @@ attributes:
     type: string
     enum: [waits, write_requests, writes, fsyncs]
     requirement_level: recommended
+  mysql.blocking.blocker.count:
+    description: The number of concurrent InnoDB row-lock blockers currently holding a lock this session is waiting on. 0 indicates the session is not currently blocked, but also covers engines where blocking isn't measured (MariaDB, MySQL <8.0.11) -- an int can't carry that case separately. Check mysql.blocking.blocker.details to tell the two apart.
+    type: int
+  mysql.blocking.blocker.details:
+    description: A JSON array of {thread_id, session_id} tuples, one per concurrent InnoDB row-lock blocker for this session. Unordered. session_id is null when that blocker could not be resolved (e.g. it disconnected between reads). "[]" when measured and not blocked, empty string when blocking isn't measurable on this engine/version (MariaDB, MySQL <8.0.11).
+    type: string
   mysql.client.name:
     description: The client driver's self-reported identity at connection time, e.g. "MySQL Connector/J" or "libmysql". Empty if the client reported no connect attributes or the connect-attrs feature is disabled server-side.
     type: string
+  mysql.column.name:
+    description: The name of the table column.
+    type: string
+    requirement_level: recommended
   mysql.event_id:
     description: The thread associated with the event and the thread current event number when the event starts.
     type: int
@@ -388,6 +398,8 @@ events:
       - network.peer.address
       - network.peer.port
       - mysql.client.name
+      - mysql.blocking.blocker.count
+      - mysql.blocking.blocker.details
 
   db.server.top_query:
     enabled: false
@@ -958,6 +970,30 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [schema, digest, digest_text]
+  mysql.table.auto_increment.limit:
+    enabled: false
+    description: The maximum value the auto_increment column can hold for a given table, based on its declared integer type and signedness. Reported as a double; values above 2^53 (the largest BIGINT UNSIGNED values) may be off by a small amount due to floating-point precision.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [table_name, schema, mysql.column.name]
+  mysql.table.auto_increment.usage:
+    enabled: false
+    description: The current auto_increment value for a given table. Reported as a double; values above 2^53 (the largest BIGINT UNSIGNED values) may be off by a small amount due to floating-point precision.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [table_name, schema, mysql.column.name]
+  mysql.table.auto_increment.utilization:
+    enabled: false
+    description: The fraction of the auto_increment column's integer range currently in use for a given table, between 0 and 1.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [table_name, schema, mysql.column.name]
   mysql.table.average_row_length:
     enabled: false
     description: The average row length in bytes for a given table.

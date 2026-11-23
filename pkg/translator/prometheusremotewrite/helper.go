@@ -422,6 +422,12 @@ func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
 		attrs := exemplar.FilteredAttributes()
 		labelsFromAttributes := make([]prompb.Label, 0, attrs.Len())
 		for key, value := range attrs.All() {
+			if key == otlptranslator.ExemplarTraceIDKey && !exemplar.TraceID().IsEmpty() {
+				continue
+			}
+			if key == otlptranslator.ExemplarSpanIDKey && !exemplar.SpanID().IsEmpty() {
+				continue
+			}
 			val := value.AsString()
 			exemplarRunes += utf8.RuneCountInString(key) + utf8.RuneCountInString(val)
 			promLabel := prompb.Label{

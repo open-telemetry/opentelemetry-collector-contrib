@@ -40,10 +40,10 @@ func TestLoadConfig(t *testing.T) {
 	}
 	legacyConfigServerConfig.TLS = configoptional.Some(configtls.ServerConfig{
 		Config: configtls.Config{
-			CAFile:   "/path/to/ca",
 			CertFile: "/path/to/cert",
 			KeyFile:  "/path/to/key",
 		},
+		ClientCAFile: "/path/to/ca",
 	})
 
 	v2allLegacyServerConfig := confighttp.NewDefaultServerConfig()
