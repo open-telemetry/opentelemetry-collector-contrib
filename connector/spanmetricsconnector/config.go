@@ -125,6 +125,11 @@ type HistogramConfig struct {
 	Exponential configoptional.Optional[ExponentialHistogramConfig] `mapstructure:"exponential"`
 	Explicit    configoptional.Optional[ExplicitHistogramConfig]    `mapstructure:"explicit"`
 	Dimensions  []Dimension                                         `mapstructure:"dimensions"`
+	// SelfTime enables the optional self-time histogram metric. When enabled, the
+	// connector computes exclusive/self time from parent-child span timing in each
+	// trace batch and emits a separate histogram that shares the settings of the
+	// duration histogram. Complete traces must be present in each batch.
+	SelfTime bool `mapstructure:"self_time"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
