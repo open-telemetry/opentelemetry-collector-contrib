@@ -45,6 +45,7 @@ The receiver makes requests to the `sts.GetCallerIdentity` API endpoint, which i
 | `initial_lookback`       | Duration | 0                                          | How far back from the collector's startup time to begin collecting logs (e.g., `1h`). Mutually exclusive with `start_from`. |
 | `poll_interval`          | Duration | 1 minute                                   | Time to wait between log requests                                                                      |
 | `max_events_per_request` | Integer  | 1,000                                      | The maximum number of events to process per request to Cloudwatch                                      |
+| `delay`                  | Duration | 0                                          | How far back from now each poll window ends. CloudWatch Logs can make an event visible some time after its timestamp; events that become visible after their time range was polled are skipped. Set this to at least the ingestion latency of your log groups (for example `90s`). Logs reach the pipeline that much later. |
 | `groups`                 | Optional | All Log Groups and Streams                 | Configuration for Log Groups, by default all Log Groups and Log Streams will be collected.             |
 
 ### Group Parameters

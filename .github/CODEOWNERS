@@ -329,7 +329,7 @@ receiver/k8seventsreceiver/                                      @open-telemetry
 receiver/k8sobjectsreceiver/                                     @open-telemetry/collector-contrib-approvers @TylerHelmuth @ChrsMark @krisztianfekete @jinja2
 receiver/kafkametricsreceiver/                                   @open-telemetry/collector-contrib-approvers @dloucasfx
 receiver/kafkareceiver/                                          @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy @paulojmdias
-receiver/kubeletstatsreceiver/                                   @open-telemetry/collector-contrib-approvers @TylerHelmuth @ChrsMark @jinja2
+receiver/kubeletstatsreceiver/                                   @open-telemetry/collector-contrib-approvers @TylerHelmuth @ChrsMark @jinja2 @PlateauGao
 receiver/libhoneyreceiver/                                       @open-telemetry/collector-contrib-approvers @mterhar
 receiver/lokireceiver/                                           @open-telemetry/collector-contrib-approvers @mar4uk
 receiver/macosunifiedloggingreceiver/                            @open-telemetry/collector-contrib-approvers @Caleb-Hurshman @atoulme
