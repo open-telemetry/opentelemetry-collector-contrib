@@ -19,6 +19,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes/source"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
+	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -58,6 +59,18 @@ func assertGzip(t *testing.T, signal string, hdr http.Header, body []byte) {
 	require.NoErrorf(t, err, "%s: body is not a valid gzip stream", signal)
 	decoded, err := io.ReadAll(zr)
 	require.NoErrorf(t, err, "%s: failed to gunzip body", signal)
+	assert.NotEmptyf(t, decoded, "%s: decompressed body should not be empty", signal)
+}
+
+// assertZstd fails unless the request advertised zstd and its body is a valid zstd stream.
+func assertZstd(t *testing.T, signal string, hdr http.Header, body []byte) {
+	t.Helper()
+	assert.Equalf(t, "zstd", hdr.Get("Content-Encoding"), "%s: Content-Encoding must be zstd", signal)
+	zr, err := zstd.NewReader(bytes.NewReader(body))
+	require.NoErrorf(t, err, "%s: body is not a valid zstd stream", signal)
+	defer zr.Close()
+	decoded, err := io.ReadAll(zr)
+	require.NoErrorf(t, err, "%s: failed to decompress zstd body", signal)
 	assert.NotEmptyf(t, decoded, "%s: decompressed body should not be empty", signal)
 }
 
@@ -219,4 +232,46 @@ func TestSignalCompressionLogs(t *testing.T) {
 			t.Fatal("timed out waiting for a logs request")
 		}
 	}
+}
+
+func TestMetricsCompressionConfig(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*datadogconfig.Config)
+	cfg.API.Key = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	cfg.Hostname = "test-host"
+	cfg.Metrics.Compression = "zstd"
+	cfg.Metrics.CompressionLevel = 3
+	boolTrue := true
+	cfg.Metrics.V3.Series.Enabled = &boolTrue
+
+	require.NoError(t, cfg.Validate())
+	assert.True(t, cfg.ShouldUseV3Series())
+
+	set := exportertest.NewNopSettings(metadata.Type)
+	exp, err := f.CreateMetrics(t.Context(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exp)
+}
+
+func TestMetricsZstdPayloadVerification(t *testing.T) {
+	decoder, err := zstd.NewReader(nil)
+	require.NoError(t, err)
+	defer decoder.Close()
+
+	encoder, err := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedDefault))
+	require.NoError(t, err)
+	defer encoder.Close()
+
+	raw := []byte(`{"series":[{"metric":"system.cpu.user","points":[[1759241515,42.5]],"type":"gauge","host":"test-host"}]}`)
+	compressed := encoder.EncodeAll(raw, make([]byte, 0, len(raw)))
+	require.NotEmpty(t, compressed)
+
+	decompressed, err := decoder.DecodeAll(compressed, nil)
+	require.NoError(t, err)
+	assert.Equal(t, raw, decompressed)
+
+	// Verify headers and content-encoding check
+	hdr := http.Header{}
+	hdr.Set("Content-Encoding", "zstd")
+	assertZstd(t, "metrics series", hdr, compressed)
 }

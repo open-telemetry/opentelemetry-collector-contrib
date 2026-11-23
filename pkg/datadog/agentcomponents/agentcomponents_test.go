@@ -9,6 +9,8 @@ import (
 	coreconfig "github.com/DataDog/datadog-agent/comp/core/config"
 	defaultforwarderimpl "github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder/impl"
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
+	"github.com/DataDog/datadog-agent/pkg/serializer"
+	"github.com/DataDog/datadog-agent/pkg/util/compression"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -815,4 +817,140 @@ func TestNewForwarderComponent_ForwarderInterface(t *testing.T) {
 
 	// Clean up
 	forwarder.Stop()
+}
+
+func TestWithMetricsCompressionOption(t *testing.T) {
+	cfg := NewConfigComponent(WithMetricsCompression("zstd", 5))
+	assert.Equal(t, "zstd", cfg.GetString("serializer_compressor_kind"))
+	assert.Equal(t, 5, cfg.GetInt("serializer_zstd_compressor_level"))
+}
+
+func TestWithV3ConfigOption(t *testing.T) {
+	boolTrue := true
+	boolFalse := false
+
+	cfgTrue := NewConfigComponent(WithV3Config(&boolTrue))
+	assert.Equal(t, "true", cfgTrue.GetString("use_v3_api.series.enabled"))
+
+	cfgFalse := NewConfigComponent(WithV3Config(&boolFalse))
+	assert.Equal(t, "false", cfgFalse.GetString("use_v3_api.series.enabled"))
+}
+
+func TestWithMetricsConfigOption(t *testing.T) {
+	boolTrue := true
+
+	ddCfg := datadogconfig.CreateDefaultConfig().(*datadogconfig.Config)
+	ddCfg.API.Key = "12345678901234567890123456789012"
+	ddCfg.Metrics.Compression = "zstd"
+	ddCfg.Metrics.CompressionLevel = 7
+	ddCfg.Metrics.V3.Series.Enabled = &boolTrue
+
+	cfg := NewConfigComponent(WithMetricsConfig(ddCfg))
+	assert.Equal(t, "zstd", cfg.GetString("serializer_compressor_kind"))
+	assert.Equal(t, 7, cfg.GetInt("serializer_zstd_compressor_level"))
+	assert.Equal(t, "true", cfg.GetString("use_v3_api.series.enabled"))
+
+	// Default config
+	defaultDdCfg := datadogconfig.CreateDefaultConfig().(*datadogconfig.Config)
+	defaultCfg := NewConfigComponent(WithMetricsConfig(defaultDdCfg))
+	assert.Equal(t, "zlib", defaultCfg.GetString("serializer_compressor_kind"))
+	assert.Equal(t, "false", defaultCfg.GetString("use_v3_api.series.enabled"))
+}
+
+func TestNewSerializerComponent_CompressorSelection(t *testing.T) {
+	logger := zap.NewNop()
+	zlog := &ZapLogger{Logger: logger}
+
+	tests := []struct {
+		name                 string
+		options              []ConfigOption
+		wantEncoding         string
+		testCompressionRound bool
+	}{
+		{
+			name: "default zlib compressor",
+			options: []ConfigOption{
+				WithAPIConfig(&datadogconfig.Config{
+					API: datadogconfig.APIConfig{
+						Key:  configopaque.String("test-api-key"),
+						Site: "datadoghq.com",
+					},
+				}),
+				WithForwarderConfig(),
+			},
+			wantEncoding: compression.ZlibEncoding,
+		},
+		{
+			name: "explicit zstd compressor default level",
+			options: []ConfigOption{
+				WithAPIConfig(&datadogconfig.Config{
+					API: datadogconfig.APIConfig{
+						Key:  configopaque.String("test-api-key"),
+						Site: "datadoghq.com",
+					},
+				}),
+				WithForwarderConfig(),
+				WithMetricsCompression("zstd", 0),
+			},
+			wantEncoding:         compression.ZstdEncoding,
+			testCompressionRound: true,
+		},
+		{
+			name: "explicit zstd compressor custom level 1",
+			options: []ConfigOption{
+				WithAPIConfig(&datadogconfig.Config{
+					API: datadogconfig.APIConfig{
+						Key:  configopaque.String("test-api-key"),
+						Site: "datadoghq.com",
+					},
+				}),
+				WithForwarderConfig(),
+				WithMetricsCompression("zstd", 1),
+			},
+			wantEncoding:         compression.ZstdEncoding,
+			testCompressionRound: true,
+		},
+		{
+			name: "explicit zstd compressor custom level 22",
+			options: []ConfigOption{
+				WithAPIConfig(&datadogconfig.Config{
+					API: datadogconfig.APIConfig{
+						Key:  configopaque.String("test-api-key"),
+						Site: "datadoghq.com",
+					},
+				}),
+				WithForwarderConfig(),
+				WithMetricsCompression("zstd", 22),
+			},
+			wantEncoding:         compression.ZstdEncoding,
+			testCompressionRound: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := NewConfigComponent(tt.options...)
+			s := NewSerializerComponent(cfg, zlog, "test-host")
+			require.NotNil(t, s)
+
+			ds, ok := s.(*datadogSerializer)
+			require.True(t, ok)
+
+			ser, ok := ds.MetricSerializer.(*serializer.Serializer)
+			require.True(t, ok)
+
+			assert.Equal(t, tt.wantEncoding, ser.Strategy.ContentEncoding())
+
+			if tt.testCompressionRound {
+				raw := []byte("datadog-metrics-payload-verification-bytes-1234567890")
+				compressed, err := ser.Strategy.Compress(raw)
+				require.NoError(t, err)
+				require.NotEmpty(t, compressed)
+
+				decompressed, err := ser.Strategy.Decompress(compressed)
+				require.NoError(t, err)
+				assert.Equal(t, raw, decompressed)
+			}
+		})
+	}
 }

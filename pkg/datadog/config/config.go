@@ -6,10 +6,12 @@ package config // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
 
+	pkgconfigutils "github.com/DataDog/datadog-agent/pkg/config/utils"
 	"github.com/DataDog/datadog-agent/pkg/util/hostname/validate"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -20,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
+	"golang.org/x/net/http/httpproxy"
 )
 
 var (
@@ -169,7 +172,7 @@ func (c *Config) Validate() error {
 		return err
 	}
 
-	err := c.Metrics.HistConfig.validate()
+	err := c.Metrics.validate()
 	if err != nil {
 		return err
 	}
@@ -417,4 +420,47 @@ func CheckAndCastConfig(c component.Config) (*Config, error) {
 		return nil, fmt.Errorf("expected config of type *datadog.Config, got %T", c)
 	}
 	return cfg, nil
+}
+
+// ShouldUseV3Series determines whether the metrics exporter should use the v3 series intake.
+// Requirements:
+// - Compression must be 'zstd' (zlib forces v2)
+// - If v3.series.enabled is explicitly false, returns false
+// - The endpoint must be an eligible Datadog URL
+// - If v3.series.enabled is nil (auto), proxy guardrails require no proxy to be configured
+// - If v3.series.enabled is true, returns true as long as compression is zstd and endpoint is eligible
+func (c *Config) ShouldUseV3Series() bool {
+	if c.Metrics.Compression != "zstd" {
+		return false
+	}
+	if c.Metrics.V3.Series.Enabled != nil && !*c.Metrics.V3.Series.Enabled {
+		return false
+	}
+	if !pkgconfigutils.IsDatadogURL(c.Metrics.Endpoint) {
+		return false
+	}
+	if c.Metrics.V3.Series.Enabled == nil && hasProxy(c) {
+		return false
+	}
+	return true
+}
+
+func hasProxy(cfg *Config) bool {
+	if cfg.ClientConfig.ProxyURL != "" {
+		return true
+	}
+	proxyCfg := httpproxy.FromEnvironment()
+	if proxyCfg.HTTPProxy != "" || proxyCfg.HTTPSProxy != "" {
+		if cfg.Metrics.Endpoint != "" {
+			if u, err := url.Parse(cfg.Metrics.Endpoint); err == nil {
+				proxyFunc := proxyCfg.ProxyFunc()
+				if proxyURL, _ := proxyFunc(u); proxyURL != nil {
+					return true
+				}
+				return false
+			}
+		}
+		return true
+	}
+	return false
 }

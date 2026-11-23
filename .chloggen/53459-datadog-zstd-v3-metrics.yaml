@@ -1,0 +1,6 @@
+change_type: enhancement
+component: exporter/datadog
+note: Add configurable zstd compression and optional v3 series intake support.
+issues: [53459]
+subtext:
+change_logs: [user]

@@ -21,6 +21,17 @@
 
 Find the full configs of Datadog exporter and their usage in [collector.yaml](./examples/collector.yaml). More example configs can be found in the [official documentation](https://docs.datadoghq.com/opentelemetry/setup/collector_exporter/).
 
+## Metrics Compression & v3 Series Intake
+
+The Datadog exporter supports configurable compression and v3 series intake under `metrics`:
+
+- `metrics::compression`: Compression algorithm for metrics payloads (`zlib` by default, or `zstd`).
+- `metrics::compression_level`: Compression level when `zstd` is selected (1-22, default 3).
+- `metrics::v3::series::enabled`: Controls the v3 series intake (`true`, `false`, or unset).
+  - When unset, v3 series intake is automatically used if `zstd` compression is active, the metrics endpoint is an eligible Datadog site (`api.<site>`), and no proxy is configured.
+  - Set `enabled: false` to explicitly opt out and keep series traffic on the v2 intake.
+  - Setting `enabled: true` with `zlib` compression is rejected during configuration validation, as the v3 intake requires `zstd` compression.
+
 ## FAQs
 
 ### Why am I getting errors 413 - Request Entity Too Large, how do I fix it?
