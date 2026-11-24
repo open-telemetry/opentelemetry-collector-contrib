@@ -2,7 +2,7 @@ prometheus:
 prometheus/2:
   endpoint: "1.2.3.4:1234"
   tls:
-    ca_file: "certs/ca.crt"
+    client_ca_file: "certs/ca.crt"
     key_file: "certs/server.key"
     cert_file: "certs/server.crt"
   namespace: test-space
@@ -12,3 +12,9 @@ prometheus/2:
   send_timestamps: true
   metric_expiration: 60m
   add_metric_suffixes: false
+
+prometheus/3:
+  resource_constant_labels:
+    included:
+      - service.name
+      - k8s.pod.name

@@ -7,8 +7,8 @@ This extension is designed for unmarshaling logs/traces/metrics encoded in speci
 | ------------- |-----------|
 | Stability     | [alpha]  |
 | Distributions | [contrib] |
-| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fazureencoding%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fazureencoding) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fazureencoding%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fazureencoding) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@constanca-m](https://www.github.com/constanca-m) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fencoding%2Fazureencoding%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fencoding%2Fazureencoding) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fencoding%2Fazureencoding%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fencoding%2Fazureencoding) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@constanca-m](https://www.github.com/constanca-m) \| Seeking more code owners! |
 | Emeritus      | [@axw](https://www.github.com/axw) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -183,19 +183,12 @@ receivers:
 
 This extension follows Collector-native semconv migration gates for log attribute key migrations.
 
-The following feature gates control migration of legacy log keys (v0) to stable keys (v1):
+The migration of legacy log keys (v0) to stable keys (v1) is complete. The following feature gates are
+Stable and can no longer be disabled; the extension always emits `exception.message` and no longer emits
+the deprecated `error.message` attribute:
 
 - `extension.azureencoding.EmitV1LogConventions`
 - `extension.azureencoding.DontEmitV0LogConventions`
-
-Behavior matrix:
-
-| EmitV1 | DontEmitV0 | Behavior |
-| --- | --- | --- |
-| false | false | Emit v0 conventions only (default) |
-| true | false | Emit both v0 and v1 conventions |
-| true | true | Emit v1 conventions only |
-| false | true | Invalid configuration (startup error) |
 
 ### Log format identification
 

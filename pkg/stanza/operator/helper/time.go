@@ -42,6 +42,7 @@ func NewTimeParser() TimeParser {
 
 // TimeParser is a helper that parses time onto an entry.
 type TimeParser struct {
+	DropFieldConfig   `mapstructure:",squash"`
 	ParseFrom         *entry.Field      `mapstructure:"parse_from"`
 	Layout            string            `mapstructure:"layout"`
 	LayoutType        string            `mapstructure:"layout_type"`
@@ -74,6 +75,10 @@ func (t *TimeParser) IsZero() bool {
 func (t *TimeParser) Validate() error {
 	if t.ParseFrom == nil {
 		return errors.New("missing required parameter 'parse_from'")
+	}
+
+	if err := t.ValidateDropField(*t.ParseFrom); err != nil {
+		return err
 	}
 
 	if t.Layout == "" && t.LayoutType != "native" {
@@ -133,7 +138,7 @@ func (t *TimeParser) setLocation() error {
 			return fmt.Errorf("failed to load location %s: %w", t.Location, err)
 		}
 		t.location = loc
-	case strings.HasSuffix(t.Layout, "Z"):
+	case strings.HasSuffix(t.Layout, "Z") && (t.LayoutType != StrptimeKey || !strings.HasSuffix(t.Layout, "%Z")):
 		// If a timestamp ends with 'Z', it should be interpreted at Zulu (UTC) time
 		t.location = time.UTC
 	default:
@@ -220,6 +225,7 @@ func (t *TimeParser) Parse(entry *entry.Entry) error {
 		return fmt.Errorf("unsupported layout type: %s", t.LayoutType)
 	}
 
+	t.Drop(entry, *t.ParseFrom)
 	return nil
 }
 

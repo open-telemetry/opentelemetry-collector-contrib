@@ -7,6 +7,9 @@ resourceMetrics:
         - key: oracledb.instance.name
           value:
             stringValue: ""
+        - key: server.port
+          value:
+            intValue: "1521"
         - key: service.instance.id
           value:
             stringValue: ""
@@ -144,7 +147,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{deadlocks}'
+            unit: '{deadlock}'
           - description: Number of times that a process detected a potential deadlock when exchanging two buffers and raised an internal, restartable error. Index scans are the only operations that perform exchanges.
             name: oracledb.exchange_deadlocks
             sum:
@@ -154,7 +157,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{deadlocks}'
+            unit: '{deadlock}'
           - description: Total number of calls (user and recursive) that executed SQL statements
             name: oracledb.executions
             sum:
@@ -164,7 +167,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{executions}'
+            unit: '{execution}'
           - description: Number of hard parses
             name: oracledb.hard_parses
             sum:
@@ -174,7 +177,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{parses}'
+            unit: '{parse}'
           - description: Total count of LOB (large object) I/O operations.
             name: oracledb.lob.operations
             sum:
@@ -205,7 +208,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{reads}'
+            unit: '{read}'
           - description: Total CPU time spent on SQL parsing.
             name: oracledb.parse.cpu.time
             sum:
@@ -235,7 +238,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{parses}'
+            unit: '{parse}'
           - description: Session PGA (Program Global Area) memory
             name: oracledb.pga_memory
             sum:
@@ -255,7 +258,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{reads}'
+            unit: '{read}'
           - description: Maximum limit of active processes, -1 if unlimited.
             gauge:
               dataPoints:
@@ -263,7 +266,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: oracledb.processes.limit
-            unit: '{processes}'
+            unit: '{process}'
           - description: Current count of active processes.
             gauge:
               dataPoints:
@@ -271,7 +274,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: oracledb.processes.usage
-            unit: '{processes}'
+            unit: '{process}'
           - description: Total count of scan operations.
             name: oracledb.scan.count
             sum:
@@ -363,7 +366,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: oracledb.sessions.usage
-            unit: '{sessions}'
+            unit: '{session}'
           - description: Total count of sort operations.
             name: oracledb.sort.operations
             sum:
@@ -428,7 +431,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{commits}'
+            unit: '{commit}'
           - description: Number of times users manually issue the ROLLBACK statement or an error occurs during a user's transactions
             name: oracledb.user_rollbacks
             sum:

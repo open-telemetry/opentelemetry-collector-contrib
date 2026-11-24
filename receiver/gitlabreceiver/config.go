@@ -60,7 +60,7 @@ type WebHook struct {
 	RequiredHeaders map[string]configopaque.String `mapstructure:"required_headers"` // optional setting to set one or more required headers for all requests to have (except the health check)
 	GitlabHeaders   GitlabHeaders                  `mapstructure:",squash"`          // GitLab headers set by default
 
-	Secret string `mapstructure:"secret"` // secret for webhook
+	Secret configopaque.String `mapstructure:"secret"` // secret for webhook
 
 	// IncludeUserAttributes controls whether user information (commit author, pipeline actor) is included
 	// Default: false (user information is excluded by default for privacy)
@@ -80,10 +80,6 @@ func createDefaultConfig() component.Config {
 	netAddr.Transport = confignet.TransportTypeTCP
 	netAddr.Endpoint = defaultEndpoint
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = netAddr
 	serverConfig.ReadTimeout = defaultReadTimeout
 	serverConfig.WriteTimeout = defaultWriteTimeout

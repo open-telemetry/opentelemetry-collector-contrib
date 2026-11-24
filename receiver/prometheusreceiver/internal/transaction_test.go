@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -30,6 +31,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
+	mdata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 const (
@@ -43,10 +45,12 @@ var (
 	target = scrape.NewTarget(
 		labels.FromMap(map[string]string{
 			model.InstanceLabel: "localhost:8080",
+			model.AddressLabel:  "localhost:8080",
+			model.SchemeLabel:   "http",
 		}),
 		&config.ScrapeConfig{},
 		map[model.LabelName]model.LabelValue{
-			model.AddressLabel: "address:8080",
+			model.AddressLabel: "localhost:8080",
 			model.SchemeLabel:  "http",
 		},
 		nil,
@@ -146,7 +150,7 @@ func testTransactionAppendResource(t *testing.T) {
 	}), 0, time.Now().UnixMilli(), 1.0, nil, nil, storage.AOptions{})
 	assert.NoError(t, err)
 	assert.NoError(t, tr.Commit())
-	expectedResource := CreateResource("test", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http"))
+	expectedResource := CreateResource("test", "localhost:8080", "localhost:8080", "http", labels.FromStrings(model.SchemeLabel, "http"))
 	mds := sink.AllMetrics()
 	require.Len(t, mds, 1)
 	gotResource := mds[0].ResourceMetrics().At(0).Resource()
@@ -175,8 +179,8 @@ func testTransactionAppendMultipleResources(t *testing.T) {
 	assert.NoError(t, tr.Commit())
 
 	expectedResources := []pcommon.Resource{
-		CreateResource("test-1", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http")),
-		CreateResource("test-2", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http")),
+		CreateResource("test-1", "localhost:8080", "localhost:8080", "http", labels.FromStrings(model.SchemeLabel, "http")),
+		CreateResource("test-2", "localhost:8080", "localhost:8080", "http", labels.FromStrings(model.SchemeLabel, "http")),
 	}
 
 	mds := sink.AllMetrics()
@@ -215,7 +219,7 @@ func testReceiverVersionAndNameAreAttached(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, tr.Commit())
 
-	expectedResource := CreateResource("test", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http"))
+	expectedResource := CreateResource("test", "localhost:8080", "localhost:8080", "http", labels.FromStrings(model.SchemeLabel, "http"))
 	mds := sink.AllMetrics()
 	require.Len(t, mds, 1)
 	gotResource := mds[0].ResourceMetrics().At(0).Resource()
@@ -357,7 +361,7 @@ func testTransactionAppendValidAndInvalid(t *testing.T) {
 	assert.Equal(t, 1, observedLogs.FilterMessage("failed to add datapoint").Len())
 
 	assert.NoError(t, tr.Commit())
-	expectedResource := CreateResource("test", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http"))
+	expectedResource := CreateResource("test", "localhost:8080", "localhost:8080", "http", labels.FromStrings(model.SchemeLabel, "http"))
 	mds := sink.AllMetrics()
 	require.Len(t, mds, 1)
 	gotResource := mds[0].ResourceMetrics().At(0).Resource()
@@ -582,7 +586,7 @@ func TestAppendSTZeroSample(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, tr.Commit())
-	expectedResource := CreateResource("test", "0.0.0.0:8855", labels.FromStrings(model.SchemeLabel, "http"))
+	expectedResource := CreateResource("test", "0.0.0.0:8855", "", "", labels.FromStrings(model.SchemeLabel, "http"))
 	mds := sink.AllMetrics()
 	require.Len(t, mds, 1)
 	gotResource := mds[0].ResourceMetrics().At(0).Resource()
@@ -617,7 +621,7 @@ func TestAppendHistogramCTZeroSample(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, tr.Commit())
-	expectedResource := CreateResource("test", "0.0.0.0:8855", labels.FromStrings(model.SchemeLabel, "http"))
+	expectedResource := CreateResource("test", "0.0.0.0:8855", "", "", labels.FromStrings(model.SchemeLabel, "http"))
 	mds := sink.AllMetrics()
 	require.Len(t, mds, 1)
 	gotResource := mds[0].ResourceMetrics().At(0).Resource()
@@ -799,15 +803,15 @@ func TestMetricBuilderCounters(t *testing.T) {
 				e2.SetTimestamp(timestampFromMs(1663113420863))
 				e2.SetDoubleValue(1)
 				e2.FilteredAttributes().PutStr("foo", "bar")
-				e2.SetTraceID([16]byte{0x10, 0xa4, 0x73, 0x65, 0xb8, 0xaa, 0x04, 0xe0, 0x82, 0x91, 0xfa, 0xb9, 0xde, 0xca, 0x84, 0xdb})
-				e2.SetSpanID([8]byte{0x71, 0x9c, 0xee, 0x4a, 0x66, 0x9f, 0xd7, 0xd1})
+				e2.FilteredAttributes().PutStr("span_id", "719cee4a669fd7d109ff")
+				e2.FilteredAttributes().PutStr("trace_id", "10a47365b8aa04e08291fab9deca84db6170")
 
 				e3 := pt0.Exemplars().AppendEmpty()
 				e3.SetTimestamp(timestampFromMs(1663113420863))
 				e3.SetDoubleValue(1)
 				e3.FilteredAttributes().PutStr("foo", "bar")
-				e3.SetTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x17, 0x41, 0x37, 0xca, 0xb6, 0x6d, 0xc8, 0x80})
-				e3.SetSpanID([8]byte{0x00, 0x00, 0x00, 0xdf, 0xa4, 0x59, 0x7a, 0x9d})
+				e3.FilteredAttributes().PutStr("span_id", "dfa4597a9d")
+				e3.FilteredAttributes().PutStr("trace_id", "174137cab66dc880")
 
 				return []pmetric.Metrics{md0}
 			},
@@ -1035,15 +1039,15 @@ func TestMetricBuilderGauges(t *testing.T) {
 				e2.SetTimestamp(timestampFromMs(1663350815890))
 				e2.SetDoubleValue(2)
 				e2.FilteredAttributes().PutStr("foo", "bar")
-				e2.SetTraceID([16]byte{0x10, 0xa4, 0x73, 0x65, 0xb8, 0xaa, 0x04, 0xe0, 0x82, 0x91, 0xfa, 0xb9, 0xde, 0xca, 0x84, 0xdb})
-				e2.SetSpanID([8]byte{0x71, 0x9c, 0xee, 0x4a, 0x66, 0x9f, 0xd7, 0xd1})
+				e2.FilteredAttributes().PutStr("span_id", "719cee4a669fd7d109ff")
+				e2.FilteredAttributes().PutStr("trace_id", "10a47365b8aa04e08291fab9deca84db6170")
 
 				e3 := pt0.Exemplars().AppendEmpty()
 				e3.SetTimestamp(timestampFromMs(1663350815890))
 				e3.SetDoubleValue(2)
 				e3.FilteredAttributes().PutStr("foo", "bar")
-				e3.SetTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x17, 0x41, 0x37, 0xca, 0xb6, 0x6d, 0xc8, 0x80})
-				e3.SetSpanID([8]byte{0x00, 0x00, 0x00, 0xdf, 0xa4, 0x59, 0x7a, 0x9d})
+				e3.FilteredAttributes().PutStr("span_id", "dfa4597a9d")
+				e3.FilteredAttributes().PutStr("trace_id", "174137cab66dc880")
 
 				md1 := pmetric.NewMetrics()
 				mL1 := md1.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
@@ -1364,16 +1368,16 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				e2.SetTimestamp(timestampFromMs(1663113420863))
 				e2.SetDoubleValue(1)
 				e2.FilteredAttributes().PutStr("foo", "bar")
+				e2.FilteredAttributes().PutStr("span_id", "719cee4a669fd7d109ff")
+				e2.FilteredAttributes().PutStr("trace_id", "10a47365b8aa04e08291fab9deca84db6170")
 				e2.FilteredAttributes().PutStr("traceid", "e3688e1aa2961786")
-				e2.SetTraceID([16]byte{0x10, 0xa4, 0x73, 0x65, 0xb8, 0xaa, 0x04, 0xe0, 0x82, 0x91, 0xfa, 0xb9, 0xde, 0xca, 0x84, 0xdb})
-				e2.SetSpanID([8]byte{0x71, 0x9c, 0xee, 0x4a, 0x66, 0x9f, 0xd7, 0xd1})
 
 				e3 := pt0.Exemplars().AppendEmpty()
 				e3.SetTimestamp(timestampFromMs(1663113420863))
 				e3.SetDoubleValue(1)
 				e3.FilteredAttributes().PutStr("foo", "bar")
-				e3.SetTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x17, 0x41, 0x37, 0xca, 0xb6, 0x6d, 0xc8, 0x80})
-				e3.SetSpanID([8]byte{0x00, 0x00, 0x00, 0xdf, 0xa4, 0x59, 0x7a, 0x9d})
+				e3.FilteredAttributes().PutStr("span_id", "dfa4597a9d")
+				e3.FilteredAttributes().PutStr("trace_id", "174137cab66dc880")
 
 				e4 := pt0.Exemplars().AppendEmpty()
 				e4.SetTimestamp(timestampFromMs(1663113420863))
@@ -2013,7 +2017,7 @@ func TestDetectAndStoreNativeHistogramStaleness_NonHistogramReturnsFalse(t *test
 	rk := resourceKey{job: "job-a", instance: "localhost:1234"}
 	ok := tr.detectAndStoreNativeHistogramStaleness(time.Now().UnixMilli(), rk, emptyScopeID, "foo", labels.FromMap(map[string]string{
 		string(model.MetricNameLabel): "foo",
-	}))
+	}), false)
 	require.False(t, ok, "expected false when metadata type != histogram")
 }
 
@@ -2062,7 +2066,7 @@ func TestGetSeriesRef_IgnoresNotUsefulLabels(t *testing.T) {
 }
 
 func TestGetScopeID_EmptyScopeAttributesUseZeroHash(t *testing.T) {
-	scope, attrs := getScopeID(labels.FromStrings(
+	scope, attrs, _ := getScopeID(labels.FromStrings(
 		string(model.MetricNameLabel), "metric_x",
 		prometheus.ScopeNameLabelKey, "scope.with.info",
 		prometheus.ScopeVersionLabelKey, "v1.0.0",
@@ -2071,14 +2075,16 @@ func TestGetScopeID_EmptyScopeAttributesUseZeroHash(t *testing.T) {
 	require.Equal(t, "scope.with.info", scope.name)
 	require.Equal(t, "v1.0.0", scope.version)
 	require.Zero(t, scope.attrsHash)
-	require.Zero(t, attrs.Len())
+	if attrs != (pcommon.Map{}) {
+		require.Zero(t, attrs.Len())
+	}
 }
 
 func TestAddTargetInfo_DoesNotCopyJobInstanceOrMetricName(t *testing.T) {
 	tr := newTxn(t, false)
 	rk := resourceKey{job: "job-a", instance: "localhost:1234"}
 	// Prime nodeResources
-	tr.nodeResources[rk] = CreateResource(rk.job, rk.instance, labels.FromStrings(model.SchemeLabel, "http"))
+	tr.nodeResources[rk] = CreateResource(rk.job, rk.instance, "", "", labels.FromStrings(model.SchemeLabel, "http"))
 
 	ls := labels.FromStrings(
 		string(model.MetricNameLabel), "target_info",
@@ -2341,4 +2347,52 @@ func TestTransactionAppendFailedScrapeWithReason(t *testing.T) {
 	errField, ok := logs[0].ContextMap()["error"]
 	assert.True(t, ok)
 	assert.Equal(t, "connection refused", errField)
+}
+
+func TestTransactionInitWithUseTargetURLFeatureGate(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(mdata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(mdata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), false))
+	})
+
+	relabeledTarget := scrape.NewTarget(
+		labels.FromMap(map[string]string{
+			model.JobLabel:      "my-job",
+			model.InstanceLabel: "logical-instance-1",
+			model.AddressLabel:  "example.com:8443",
+			model.SchemeLabel:   "https",
+		}),
+		&config.ScrapeConfig{},
+		map[model.LabelName]model.LabelValue{
+			model.AddressLabel: "10.0.0.1:8080",
+			model.SchemeLabel:  "http",
+		},
+		nil,
+	)
+
+	ctx := scrape.ContextWithMetricMetadataStore(
+		scrape.ContextWithTarget(t.Context(), relabeledTarget),
+		testMetadataStore(testMetadata),
+	)
+
+	sink := new(consumertest.MetricsSink)
+	tr := newTransaction(ctx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
+	_, err := tr.Append(0, labels.FromMap(map[string]string{
+		model.JobLabel:        "my-job",
+		model.InstanceLabel:   "logical-instance-1",
+		model.MetricNameLabel: "counter_test",
+	}), 0, time.Now().UnixMilli(), 1.0, nil, nil, storage.AOptions{})
+	require.NoError(t, err)
+	require.NoError(t, tr.Commit())
+
+	mds := sink.AllMetrics()
+	require.Len(t, mds, 1)
+	gotAttrs := mds[0].ResourceMetrics().At(0).Resource().Attributes()
+	require.Equal(t, map[string]any{
+		"service.name":        "my-job",
+		"service.instance.id": "logical-instance-1",
+		"server.address":      "example.com",
+		"server.port":         "8443",
+		"url.scheme":          "https",
+	}, gotAttrs.AsRaw())
 }

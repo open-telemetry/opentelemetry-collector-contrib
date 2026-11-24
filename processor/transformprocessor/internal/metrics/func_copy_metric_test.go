@@ -126,12 +126,44 @@ func Test_copyMetric(t *testing.T) {
 
 			exprFunc, err := copyMetric(tt.name, tt.desc, tt.unit)
 			require.NoError(t, err)
-			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), ms, input)
+			tCtx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), ms, input)
 			defer tCtx.Close()
 			_, err = exprFunc(t.Context(), tCtx)
 			require.NoError(t, err)
 
 			require.NoError(t, pmetrictest.CompareScopeMetrics(expected, ms))
 		})
+	}
+}
+
+func BenchmarkCopyMetric(b *testing.B) {
+	template := pmetric.NewScopeMetrics()
+	input := template.Metrics().AppendEmpty()
+	input.SetName("test")
+	input.SetDescription("test")
+	input.SetUnit("test")
+	d := input.SetEmptySum().DataPoints().AppendEmpty()
+	d.SetIntValue(1)
+
+	sMetrics := pmetric.NewScopeMetrics()
+	template.CopyTo(sMetrics)
+
+	exprFunc, err := copyMetric(
+		ottl.Optional[ottl.StringGetter[*ottlmetric.TransformContext]]{},
+		ottl.Optional[ottl.StringGetter[*ottlmetric.TransformContext]]{},
+		ottl.Optional[ottl.StringGetter[*ottlmetric.TransformContext]]{},
+	)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	transformContext := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), sMetrics, sMetrics.Metrics().At(0))
+	b.Cleanup(transformContext.Close)
+	b.ReportAllocs()
+	for b.Loop() {
+		template.CopyTo(sMetrics)
+		if _, err = exprFunc(b.Context(), transformContext); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

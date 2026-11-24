@@ -3,7 +3,7 @@
 
 //go:generate make mdatagen
 
-//go:build !aix
+//go:build !solaris
 
 package datadogconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
 

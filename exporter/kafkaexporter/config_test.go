@@ -79,6 +79,7 @@ func TestLoadConfig(t *testing.T) {
 					Topic:    "spans",
 					Encoding: "otlp_proto",
 				},
+				SignalHeader:                         true,
 				PartitionTracesByID:                  true,
 				PartitionMetricsByResourceAttributes: true,
 				PartitionLogsByResourceAttributes:    true,
@@ -235,15 +236,11 @@ func TestLoadConfig(t *testing.T) {
 				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 				QueueBatchConfig: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
-					queue.Batch = configoptional.Some(func() exporterhelper.BatchConfig {
-						batch := exporterhelper.BatchConfig{
-							Sizer: exporterhelper.RequestSizerTypeBytes,
-						}
-						batch.FlushTimeout = 200 * time.Millisecond
-						batch.MinSize = 8192
-						batch.Partition.MetadataKeys = []string{"metadata_key", "another_key", "kafka_topic"}
-						return batch
-					}())
+					batch := queue.Batch.GetOrInsertDefault()
+					batch.Sizer = exporterhelper.RequestSizerTypeBytes
+					batch.FlushTimeout = 200 * time.Millisecond
+					batch.MinSize = 8192
+					batch.Partition.MetadataKeys = []string{"metadata_key", "another_key", "kafka_topic"}
 					return queue
 				}()),
 				ClientConfig: configkafka.NewDefaultClientConfig(),
@@ -405,4 +402,29 @@ func TestLoadConfigFailed(t *testing.T) {
 			assert.ErrorContains(t, err, tt.errorContains)
 		})
 	}
+}
+
+func TestSignalHeaderValidation(t *testing.T) {
+	t.Run("metadata header collision", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.SignalHeader = true
+		cfg.IncludeMetadataKeys = []string{"otelcol.signal"}
+
+		assert.ErrorContains(t, cfg.Validate(), `"otelcol.signal" is reserved when signal_header is enabled`)
+	})
+
+	t.Run("record header collision", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.SignalHeader = true
+		cfg.RecordHeaders = []kafkaclient.RecordHeader{{Name: "otelcol.signal"}}
+
+		assert.ErrorContains(t, cfg.Validate(), `"otelcol.signal" is reserved when signal_header is enabled`)
+	})
+
+	t.Run("disabled", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.RecordHeaders = []kafkaclient.RecordHeader{{Name: "otelcol.signal"}}
+
+		assert.NoError(t, cfg.Validate())
+	})
 }

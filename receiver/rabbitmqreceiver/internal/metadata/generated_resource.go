@@ -21,6 +21,13 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetRabbitmqClusterName sets provided value as "rabbitmq.cluster.name" attribute.
+func (rb *ResourceBuilder) SetRabbitmqClusterName(val string) {
+	if rb.config.RabbitmqClusterName.Enabled {
+		rb.res.Attributes().PutStr("rabbitmq.cluster.name", val)
+	}
+}
+
 // SetRabbitmqExchangeName sets provided value as "rabbitmq.exchange.name" attribute.
 func (rb *ResourceBuilder) SetRabbitmqExchangeName(val string) {
 	if rb.config.RabbitmqExchangeName.Enabled {

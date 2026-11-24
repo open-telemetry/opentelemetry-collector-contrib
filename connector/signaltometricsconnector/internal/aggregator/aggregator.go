@@ -11,12 +11,12 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/model"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // FilterAttrsFunc is a lazy function that produces a filtered attribute map.
@@ -338,7 +338,7 @@ func (a *Aggregator[K]) aggregateValueCount(
 }
 
 func (a *Aggregator[K]) getResourceID(resourceAttrs pcommon.Map) [16]byte {
-	resID := pdatautil.MapHash(resourceAttrs)
+	resID := xhash.MapHash(resourceAttrs)
 	if _, ok := a.smLookup[resID]; !ok {
 		destResourceMetric := a.result.ResourceMetrics().AppendEmpty()
 		destResAttrs := destResourceMetric.Resource().Attributes()

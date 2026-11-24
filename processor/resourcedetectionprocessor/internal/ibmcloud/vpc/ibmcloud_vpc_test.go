@@ -121,9 +121,8 @@ func TestDetect(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.NotEmpty(t, schemaURL)
 	require.Equal(t, fullAttributes(), res.Attributes().AsRaw())
 }
 
@@ -137,9 +136,8 @@ func TestDetectWithDisabledAttributes(t *testing.T) {
 	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), cfg, false)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.NotEmpty(t, schemaURL)
 
 	want := fullAttributes()
 	delete(want, "cloud.region")

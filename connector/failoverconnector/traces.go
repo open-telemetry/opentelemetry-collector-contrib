@@ -18,8 +18,8 @@ type tracesRouter struct {
 	*baseFailoverRouter[consumer.Traces]
 }
 
-func newTracesRouter(provider consumerProvider[consumer.Traces], cfg *Config) (*tracesRouter, error) {
-	failover, err := newBaseFailoverRouter(provider, cfg)
+func newTracesRouter(provider consumerProvider[consumer.Traces], cfg *Config, logger *zap.Logger) (*tracesRouter, error) {
+	failover, err := newBaseFailoverRouter(provider, cfg, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -30,10 +30,14 @@ func newTracesRouter(provider consumerProvider[consumer.Traces], cfg *Config) (*
 func (f *tracesRouter) Consume(ctx context.Context, td ptrace.Traces) error {
 	select {
 	case <-f.notifyRetry:
-		if !f.sampleRetryConsumers(ctx, td) {
+		ok, err := f.sampleRetryConsumers(ctx, td)
+		// if unable to revive any connection, use the current pipeline again
+		if !ok {
 			return f.consumeByHealthyPipeline(ctx, td)
 		}
-		return nil
+		// if connection was successful, propagate the error back
+		// It is possible for the error to be non-nil here
+		return err
 	default:
 		return f.consumeByHealthyPipeline(ctx, td)
 	}
@@ -47,9 +51,18 @@ func (f *tracesRouter) consumeByHealthyPipeline(ctx context.Context, td ptrace.T
 			return errNoValidPipeline
 		}
 
-		if err := tc.ConsumeTraces(ctx, td); err != nil {
-			f.reportConsumerError(idx)
-			continue
+		// Preserve the original data for later attempts.
+		data := td
+		if tc.Capabilities().MutatesData {
+			data = ptrace.NewTraces()
+			td.CopyTo(data)
+		}
+		if err := tc.ConsumeTraces(ctx, data); err != nil {
+			if f.shouldFailoverOnError(err) {
+				f.reportConsumerError(idx, err)
+				continue
+			}
+			return err
 		}
 
 		return nil
@@ -57,17 +70,24 @@ func (f *tracesRouter) consumeByHealthyPipeline(ctx context.Context, td ptrace.T
 }
 
 // sampleRetryConsumers iterates through all unhealthy consumers to re-establish a healthy connection
-func (f *tracesRouter) sampleRetryConsumers(ctx context.Context, td ptrace.Traces) bool {
+func (f *tracesRouter) sampleRetryConsumers(ctx context.Context, td ptrace.Traces) (bool, error) {
 	stableIndex := f.pS.CurrentPipeline()
 	for i := range stableIndex {
 		consumer := f.getConsumerAtIndex(i)
-		err := consumer.ConsumeTraces(ctx, td)
-		if err == nil {
+		data := td
+		if consumer.Capabilities().MutatesData {
+			data = ptrace.NewTraces()
+			td.CopyTo(data)
+		}
+		err := consumer.ConsumeTraces(ctx, data)
+		// if the returned error is not considered as failure
+		// reset the pipeline to healthy
+		if err == nil || !f.shouldFailoverOnError(err) {
 			f.pS.ResetHealthyPipeline(i)
-			return true
+			return true, err
 		}
 	}
-	return false
+	return false, nil
 }
 
 type tracesFailover struct {
@@ -102,7 +122,7 @@ func newTracesToTraces(set connector.Settings, cfg component.Config, traces cons
 		return nil, errors.New("consumer is not of type TracesRouter")
 	}
 
-	failover, err := newTracesRouter(tr.Consumer, config)
+	failover, err := newTracesRouter(tr.Consumer, config, set.Logger)
 	if err != nil {
 		return nil, err
 	}

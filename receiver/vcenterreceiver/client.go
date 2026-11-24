@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net/http"
 	"net/url"
 	"reflect"
 	"slices"
@@ -15,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/vmware/govmomi/fault"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/performance"
@@ -50,11 +52,42 @@ func defaultNewVcenterClient(l *zap.Logger, c *Config) *vcenterClient {
 	}
 }
 
+// applyProxy points the transport at the configured proxy. When proxy_url is
+// unset the transport keeps govmomi's default of http.ProxyFromEnvironment.
+func applyProxy(transport *http.Transport, proxyURL string) error {
+	if proxyURL == "" {
+		return nil
+	}
+
+	parsed, err := url.Parse(proxyURL)
+	if err != nil {
+		return fmt.Errorf("unable to parse proxy_url %s: %w", proxyURL, err)
+	}
+	transport.Proxy = http.ProxyURL(parsed)
+
+	// net/http hands govmomi's DialTLSContext the proxy's address when the proxy
+	// speaks https, and that hook reuses TLSClientConfig as-is, so the vCenter
+	// tls settings would be verified against the proxy's certificate. It only
+	// adds a thumbprint fallback this receiver never configures.
+	transport.DialTLSContext = nil
+
+	return nil
+}
+
 // EnsureConnection will establish a connection to the vSphere SDK if not already established
 func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	if vc.sessionManager != nil {
-		sessionActive, _ := vc.sessionManager.SessionIsActive(ctx)
-		if sessionActive {
+		// SessionIsActive needs the Sessions.ValidateSession privilege, which a read-only user
+		// lacks, and ESXi does not implement it. Reading the current session needs neither.
+		// UserSession returns no error and no session when the session has expired, and
+		// ManagedObjectNotFound when the session no longer exists on the server, as govmomi's
+		// session cache treats it. Any other error may be transient, so it is returned instead of
+		// logging in again and leaking the session.
+		userSession, err := vc.sessionManager.UserSession(ctx)
+		if err != nil && !fault.Is(err, &vt.ManagedObjectNotFound{}) {
+			return fmt.Errorf("unable to check the vSphere SDK session: %w", err)
+		}
+		if userSession != nil {
 			return nil
 		}
 	}
@@ -65,6 +98,11 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	}
 
 	soapClient := soap.NewClient(sdkURL, vc.cfg.ClientConfig.Insecure)
+	// The vSAN client below reuses this transport, so both drivers are covered.
+	if proxyErr := applyProxy(soapClient.DefaultTransport(), vc.cfg.ProxyURL); proxyErr != nil {
+		return proxyErr
+	}
+
 	tlsCfg, err := vc.cfg.ClientConfig.LoadTLSConfig(ctx)
 	if err != nil {
 		return err
@@ -139,6 +177,8 @@ func (vc *vcenterClient) Datastores(ctx context.Context, containerMoRef vt.Manag
 		"name",
 		"summary.capacity",
 		"summary.freeSpace",
+		"summary.maintenanceMode",
+		"triggeredAlarmState",
 	}, &datastores)
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve Datastores: %w", err)
@@ -182,13 +222,16 @@ func (vc *vcenterClient) HostSystems(ctx context.Context, containerMoRef vt.Mana
 	err = v.Retrieve(ctx, []string{"HostSystem"}, []string{
 		"name",
 		"runtime.powerState",
+		"runtime.connectionState",
 		"summary.hardware.memorySize",
 		"summary.hardware.numCpuCores",
 		"summary.hardware.cpuMhz",
 		"config.vsanHostConfig.clusterInfo.nodeUuid",
 		"summary.quickStats.overallMemoryUsage",
 		"summary.quickStats.overallCpuUsage",
+		"summary.quickStats.uptime",
 		"summary.overallStatus",
+		"triggeredAlarmState",
 		"vm",
 		"parent",
 	}, &hosts)
@@ -327,27 +370,73 @@ func (vc *vcenterClient) PerfMetricsQuery(
 		return &perfMetricsQueryResult{}, nil
 	}
 	vc.pm.Sort = true
-
 	batchSize := vc.batchSizeForMetrics(len(names))
 	if batchSize <= 0 || batchSize >= len(objs) {
 		batchSize = max(len(objs), 1)
 	}
 
 	resultsByRef := map[string]*performance.EntityMetric{}
-	for batch := range slices.Chunk(objs, batchSize) {
-		sample, err := vc.pm.SampleByName(ctx, spec, names, batch)
-		if err != nil {
-			return nil, err
-		}
-		result, err := vc.pm.ToMetricSeries(ctx, sample)
-		if err != nil {
-			return nil, err
-		}
+	for batchChunk := range slices.Chunk(objs, batchSize) {
+		batch := slices.Clone(batchChunk)
+		for len(batch) > 0 {
+			sample, err := vc.pm.SampleByName(ctx, spec, names, batch)
+			if err == nil {
+				result, metricErr := vc.pm.ToMetricSeries(ctx, sample)
+				if metricErr != nil {
+					return nil, metricErr
+				}
 
-		for i := range result {
-			resultsByRef[result[i].Entity.Value] = &result[i]
+				for i := range result {
+					resultsByRef[result[i].Entity.Value] = &result[i]
+				}
+				break
+			}
+
+			// Try to find if a specific object caused the batch to fail
+			var f *soap.Fault
+			for faultErr := err; faultErr != nil; faultErr = errors.Unwrap(faultErr) {
+				if soap.IsSoapFault(faultErr) {
+					f = soap.ToSoapFault(faultErr)
+					break
+				}
+			}
+
+			if f != nil && f.Detail.Fault != nil {
+				if notFound, ok := f.Detail.Fault.(*vt.ManagedObjectNotFound); ok {
+					vc.logger.Debug("Object not found during perf metric query, removing from batch and retrying", zap.String("obj", notFound.Obj.Value))
+					batch = slices.DeleteFunc(batch, func(ref vt.ManagedObjectReference) bool {
+						return ref.Value == notFound.Obj.Value
+					})
+					continue
+				}
+			}
+
+			// Batch query failed for an unhandled reason -- fall back to querying objects one at a time.
+			var errs []error
+			for _, obj := range batch {
+				singleSample, singleErr := vc.pm.SampleByName(ctx, spec, names, []vt.ManagedObjectReference{obj})
+				if singleErr != nil {
+					errs = append(errs, fmt.Errorf("failed to collect perf metric for object %s: %w", obj.Value, singleErr))
+					continue
+				}
+
+				singleResult, singleErr := vc.pm.ToMetricSeries(ctx, singleSample)
+				if singleErr != nil {
+					errs = append(errs, fmt.Errorf("failed to convert perf metric for object %s: %w", obj.Value, singleErr))
+					continue
+				}
+
+				for i := range singleResult {
+					resultsByRef[singleResult[i].Entity.Value] = &singleResult[i]
+				}
+			}
+			if len(errs) > 0 {
+				vc.logger.Debug("Batch perf metrics query failed, fell back to single queries with errors", zap.Error(errors.Join(errs...)))
+			}
+			break
 		}
 	}
+
 	return &perfMetricsQueryResult{
 		resultsByRef: resultsByRef,
 	}, nil
@@ -556,6 +645,14 @@ func (vc *vcenterClient) convertVSANResultToMetricResults(vSANResult types.VsanP
 	metricResults := vSANMetricResults{
 		UUID:          uuid,
 		MetricDetails: []*vSANMetricDetails{},
+	}
+
+	// The vSAN performance API returns an empty SampleInfo when an entity has no
+	// recent performance data (e.g. a freshly provisioned cluster or a vSAN
+	// performance service that is temporarily unavailable). Skip such entities
+	// instead of failing the whole scrape cycle trying to parse an empty timestamp.
+	if strings.TrimSpace(vSANResult.SampleInfo) == "" {
+		return &metricResults, nil
 	}
 
 	// Parse all timestamps

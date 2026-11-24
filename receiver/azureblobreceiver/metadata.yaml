@@ -8,7 +8,8 @@ status:
     alpha: [logs, traces]
   distributions: [contrib]
   codeowners:
-    active: [eedorenko, mx-psi, dyl10s]
+    active: [mx-psi, dyl10s]
+    emeritus: [eedorenko]
 
 tests:
   config:

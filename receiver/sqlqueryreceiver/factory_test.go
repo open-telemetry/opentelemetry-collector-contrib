@@ -4,8 +4,10 @@
 package sqlqueryreceiver
 
 import (
+	"database/sql"
 	"testing"
 
+	"github.com/microsoft/go-mssqldb/azuread"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -32,6 +34,16 @@ func TestNewFactory(t *testing.T) {
 		consumertest.NewNop(),
 	)
 	require.NoError(t, err)
+}
+
+func TestAzureSQLDriverRegistered(t *testing.T) {
+	t.Parallel()
+	require.Contains(t, sql.Drivers(), "azuresql")
+	_, err := azuread.NewConnector("server=sql.example.database.windows.net;fedauth=ActiveDirectoryManagedIdentity")
+	require.NoError(t, err)
+	db, err := sql.Open("azuresql", "server=sql.example.database.windows.net;fedauth=ActiveDirectoryManagedIdentity")
+	require.NoError(t, err)
+	require.NoError(t, db.Close())
 }
 
 func TestNewFactoryDataSourceFields(t *testing.T) {

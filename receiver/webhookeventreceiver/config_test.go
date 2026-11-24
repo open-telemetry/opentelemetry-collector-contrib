@@ -5,13 +5,17 @@ package webhookeventreceiver
 
 import (
 	"bufio"
+	"crypto/fips140"
+	"fmt"
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/multierr"
@@ -30,66 +34,36 @@ func TestValidateConfig(t *testing.T) {
 	errs = multierr.Append(errs, errRequiredHeader)
 
 	missingEndpointServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	missingEndpointServerConfig.WriteTimeout = 0
-	missingEndpointServerConfig.ReadHeaderTimeout = 0
-	missingEndpointServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	missingEndpointServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	missingEndpointServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "",
 	}
 
 	readTimeoutServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	readTimeoutServerConfig.WriteTimeout = 0
-	readTimeoutServerConfig.ReadHeaderTimeout = 0
-	readTimeoutServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	readTimeoutServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	readTimeoutServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
 	}
 
 	writeTimeoutServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	writeTimeoutServerConfig.WriteTimeout = 0
-	writeTimeoutServerConfig.ReadHeaderTimeout = 0
-	writeTimeoutServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	writeTimeoutServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	writeTimeoutServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
 	}
 
 	requiredHeaderKeyServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	requiredHeaderKeyServerConfig.WriteTimeout = 0
-	requiredHeaderKeyServerConfig.ReadHeaderTimeout = 0
-	requiredHeaderKeyServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	requiredHeaderKeyServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	requiredHeaderKeyServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "",
 	}
 
 	requiredHeaderValueServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	requiredHeaderValueServerConfig.WriteTimeout = 0
-	requiredHeaderValueServerConfig.ReadHeaderTimeout = 0
-	requiredHeaderValueServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	requiredHeaderValueServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	requiredHeaderValueServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "",
 	}
 
 	multipleInvalidServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	multipleInvalidServerConfig.WriteTimeout = 0
-	multipleInvalidServerConfig.ReadHeaderTimeout = 0
-	multipleInvalidServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	multipleInvalidServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	multipleInvalidServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "",
@@ -172,7 +146,7 @@ func TestValidateConfig(t *testing.T) {
 					},
 				},
 				HMACSignature: HMACSignature{
-					Secret: "mysecret",
+					Secret: "my-webhook-secret",
 					Prefix: "sha256=",
 				},
 			},
@@ -188,7 +162,7 @@ func TestValidateConfig(t *testing.T) {
 					},
 				},
 				HMACSignature: HMACSignature{
-					Secret: "mysecret",
+					Secret: "my-webhook-secret",
 					Header: "X-Hub-Signature-256",
 				},
 			},
@@ -204,10 +178,38 @@ func TestValidateConfig(t *testing.T) {
 					},
 				},
 				HMACSignature: HMACSignature{
-					Secret: "mysecret",
+					Secret: "my-webhook-secret",
 					Header: "X-Hub-Signature-256",
 					Prefix: "sha256=",
 				},
+			},
+		},
+		{
+			desc:   "Path missing leading slash",
+			expect: errPathMissingLeadingSlash,
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				Path:       "eventsource/receiver",
+				HealthPath: defaultHealthPath,
+			},
+		},
+		{
+			desc:   "HealthPath missing leading slash",
+			expect: errHealthPathMissingSlash,
+			conf: Config{
+				ServerConfig: confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Transport: confignet.TransportTypeTCP,
+						Endpoint:  "localhost:0",
+					},
+				},
+				Path:       defaultPath,
+				HealthPath: "eventreceiver/healthcheck",
 			},
 		},
 		{
@@ -227,6 +229,12 @@ func TestValidateConfig(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
+			if test.conf.Path == "" {
+				test.conf.Path = defaultPath
+			}
+			if test.conf.HealthPath == "" {
+				test.conf.HealthPath = defaultHealthPath
+			}
 			err := test.conf.Validate()
 			if test.expect != nil {
 				require.ErrorContains(t, err, test.expect.Error())
@@ -241,11 +249,6 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 	t.Parallel()
 
 	zeroBodySizeServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	zeroBodySizeServerConfig.WriteTimeout = 0
-	zeroBodySizeServerConfig.ReadHeaderTimeout = 0
-	zeroBodySizeServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	zeroBodySizeServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	zeroBodySizeServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -253,11 +256,6 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 	zeroBodySizeServerConfig.MaxRequestBodySize = 0
 
 	smallBodySizeServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	smallBodySizeServerConfig.WriteTimeout = 0
-	smallBodySizeServerConfig.ReadHeaderTimeout = 0
-	smallBodySizeServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	smallBodySizeServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	smallBodySizeServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -265,11 +263,6 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 	smallBodySizeServerConfig.MaxRequestBodySize = 10
 
 	exact64KBBodySizeServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	exact64KBBodySizeServerConfig.WriteTimeout = 0
-	exact64KBBodySizeServerConfig.ReadHeaderTimeout = 0
-	exact64KBBodySizeServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	exact64KBBodySizeServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	exact64KBBodySizeServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -277,11 +270,6 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 	exact64KBBodySizeServerConfig.MaxRequestBodySize = int64(bufio.MaxScanTokenSize)
 
 	greaterBodySizeServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	greaterBodySizeServerConfig.WriteTimeout = 0
-	greaterBodySizeServerConfig.ReadHeaderTimeout = 0
-	greaterBodySizeServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	greaterBodySizeServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	greaterBodySizeServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -289,11 +277,6 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 	greaterBodySizeServerConfig.MaxRequestBodySize = 65538
 
 	wayGreaterBodySizeServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	wayGreaterBodySizeServerConfig.WriteTimeout = 0
-	wayGreaterBodySizeServerConfig.ReadHeaderTimeout = 0
-	wayGreaterBodySizeServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	wayGreaterBodySizeServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	wayGreaterBodySizeServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:0",
@@ -344,6 +327,8 @@ func TestMaxRequestBodySizeAutoCorrection(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
+			test.conf.Path = defaultPath
+			test.conf.HealthPath = defaultHealthPath
 			err := test.conf.Validate()
 			require.NoError(t, err)
 			require.Equal(t, test.expected, test.conf.ServerConfig.MaxRequestBodySize)
@@ -363,11 +348,6 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	expectServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	expectServerConfig.WriteTimeout = 0
-	expectServerConfig.ReadHeaderTimeout = 0
-	expectServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	expectServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	expectServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:8080",
@@ -376,8 +356,8 @@ func TestLoadConfig(t *testing.T) {
 		ServerConfig: expectServerConfig,
 		ReadTimeout:  "500ms",
 		WriteTimeout: "500ms",
-		Path:         "some/path",
-		HealthPath:   "health/path",
+		Path:         "/some/path",
+		HealthPath:   "/health/path",
 		RequiredHeader: RequiredHeader{
 			Key:   "key-present",
 			Value: "value-present",
@@ -391,4 +371,59 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, confmap.Validate(conf))
 
 	require.Equal(t, expect, conf)
+}
+
+func TestRequiredHeaderValueIsMasked(t *testing.T) {
+	cfg := RequiredHeader{Key: "key-present", Value: "super-secret"}
+	assert.NotContains(t, fmt.Sprintf("%v %+v %#v", cfg, cfg, cfg), "super-secret")
+}
+
+func TestValidateHMACSecretLength(t *testing.T) {
+	tests := []struct {
+		desc        string
+		secret      string
+		fipsEnabled bool
+		expect      error
+	}{
+		{desc: "short secret outside FIPS mode", secret: "mysecret", fipsEnabled: false},
+		{desc: "short secret in FIPS mode", secret: "mysecret", fipsEnabled: true, expect: errHMACSecretTooShortFIPS},
+		{desc: "13 bytes in FIPS mode", secret: "abcdefghijklm", fipsEnabled: true, expect: errHMACSecretTooShortFIPS},
+		{desc: "14 bytes in FIPS mode", secret: "abcdefghijklmn", fipsEnabled: true},
+		{desc: "long secret in FIPS mode", secret: "my-webhook-secret", fipsEnabled: true},
+		{desc: "empty secret is reported by the required check, not here", secret: "", fipsEnabled: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			err := validateHMACSecretLength(configopaque.String(tt.secret), tt.fipsEnabled)
+			if tt.expect != nil {
+				assert.ErrorIs(t, err, tt.expect)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidateHMACSecretLengthMatchesRuntime(t *testing.T) {
+	cfg := Config{
+		ServerConfig: confighttp.ServerConfig{
+			NetAddr: confignet.AddrConfig{
+				Transport: confignet.TransportTypeTCP,
+				Endpoint:  "localhost:0",
+			},
+		},
+		Path:       defaultPath,
+		HealthPath: defaultHealthPath,
+		HMACSignature: HMACSignature{
+			Secret: "mysecret",
+			Header: "X-Hub-Signature-256",
+			Prefix: "sha256=",
+		},
+	}
+	err := cfg.Validate()
+	if fips140.Enabled() {
+		assert.ErrorIs(t, err, errHMACSecretTooShortFIPS)
+	} else {
+		assert.NoError(t, err)
+	}
 }

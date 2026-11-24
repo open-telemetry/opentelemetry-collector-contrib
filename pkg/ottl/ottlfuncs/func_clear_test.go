@@ -165,3 +165,22 @@ func Test_clear_error_setter(t *testing.T) {
 	assert.ErrorIs(t, err, expectedErr)
 	assert.Nil(t, result)
 }
+
+func BenchmarkClear(b *testing.B) {
+	target := &ottl.StandardGetSetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "test string", nil
+		},
+		Setter: func(context.Context, any, any) error {
+			return nil
+		},
+	}
+	exprFunc := clearFunc[any](target)
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

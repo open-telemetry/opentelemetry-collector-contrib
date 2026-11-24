@@ -46,7 +46,7 @@ resourceLogs:
               - key: azure.messaging.task.name
                 value:
                   stringValue: DiagnosticErrorLogsShoebox
-              - key: error.message
+              - key: exception.message
                 value:
                   stringValue: Entity not found
               - key: azure.messaging.error.count

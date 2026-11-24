@@ -33,12 +33,11 @@ func Test_FNV(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := FNVHashString[any](&ottl.StandardStringGetter[any]{
+			exprFunc := fnvHashString[any](&ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})
-			require.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			if tt.err {
 				assert.Error(t, err)
@@ -70,13 +69,12 @@ func Test_FNVError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := FNVHashString[any](&ottl.StandardStringGetter[any]{
+			exprFunc := fnvHashString[any](&ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})
-			require.NoError(t, err)
-			_, err = exprFunc(nil, nil)
+			_, err := exprFunc(nil, nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}
@@ -92,14 +90,14 @@ func Test_FnvFactory(t *testing.T) {
 		factory := NewFnvFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &FnvArguments[any]{}, args)
+		assert.IsType(t, &fnvArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Target"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewFnvFactory[any]()
 		args := factory.CreateDefaultArguments()
-		fnvArgs, ok := args.(*FnvArguments[any])
+		fnvArgs, ok := args.(*fnvArguments[any])
 		require.True(t, ok)
 		fnvArgs.Target = &ottl.StandardStringGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -114,6 +112,22 @@ func Test_FnvFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createFnvFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "FNVFactory args must be of type *FnvArguments[K]")
+		assert.ErrorContains(t, err, "FNVFactory args must be of type *fnvArguments[K]")
 	})
+}
+
+func BenchmarkFNVHashString(b *testing.B) {
+	exprFunc := fnvHashString[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return "hello world this is a benchmark string", nil
+		},
+	})
+
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

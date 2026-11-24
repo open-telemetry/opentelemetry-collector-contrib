@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/testhelper"
 )
 
@@ -863,7 +863,7 @@ func TestTsGC(t *testing.T) {
 	resourceAttr := "0"
 	resourceAttrs := pcommon.NewMap()
 	resourceAttrs.PutStr("0", resourceAttr)
-	resourceHash := pdatautil.MapHash(resourceAttrs)
+	resourceHash := xhash.MapHash(resourceAttrs)
 
 	// run round 1
 	testhelper.RunScript(t, ma, script1, resourceAttr)

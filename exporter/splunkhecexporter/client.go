@@ -12,11 +12,13 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 
 	"github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/consumererror/xconsumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -47,7 +49,7 @@ type iterState struct {
 }
 
 func (s iterState) empty() bool {
-	return s.resource == 0 && s.library == 0 && s.record == 0
+	return !s.done && s.resource == 0 && s.library == 0 && s.record == 0
 }
 
 // client sends the data to the splunk backend.
@@ -62,6 +64,7 @@ type client struct {
 	bufferPool        bufferPool
 	exporterName      string
 	meter             metric.Meter
+	telemetryBuilder  *metadata.TelemetryBuilder
 }
 
 func newClient(set exporter.Settings, cfg *Config, maxContentLength uint) *client {
@@ -167,7 +170,67 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 		}
 	}
 
-	return c.pushLogDataInBatches(ctx, ld, localHeaders)
+	return c.pushLogsWithSplitOn413(ctx, ld, localHeaders)
+}
+
+// pushLogsWithSplitOn413 sends ld via the batching path; on HTTP 413 it splits the
+// unsent logs in half and retries each half recursively, down to one record. A lone
+// record still rejected is dropped as permanent (Splunk drops events over its max
+// event size). combineSplitResults merges the two halves' outcomes.
+func (c *client) pushLogsWithSplitOn413(ctx context.Context, ld plog.Logs, headers map[string]string) error {
+	err := c.pushLogDataInBatches(ctx, ld, headers)
+	if err == nil || !errors.Is(err, errPayloadTooLarge) {
+		return err
+	}
+
+	// Unsent logs, falling back to the whole batch if none were extracted.
+	unsent := ld
+	if logsErr, ok := errors.AsType[consumererror.Logs](err); ok {
+		unsent = logsErr.Data()
+	}
+
+	if unsent.LogRecordCount() <= 1 {
+		c.logger.Warn("Dropping a log record that Splunk rejected as too large (HTTP 413); it cannot be split further")
+		return consumererror.NewPermanent(err)
+	}
+
+	head, tail := splitLogs(unsent, unsent.LogRecordCount()/2)
+	return combineSplitResults(
+		c.pushLogsWithSplitOn413(ctx, head, headers),
+		c.pushLogsWithSplitOn413(ctx, tail, headers),
+	)
+}
+
+// combineSplitResults merges the two halves' outcomes into one error, preserving
+// consumererror semantics. errors.Join would lose data: a permanent half would make
+// the whole result permanent (dropping the retryable half), and the queue sender
+// extracts only the first consumererror.Logs (dropping any later half's records).
+// So every retryable record goes into one consumererror.Logs, and permanent drops are
+// excluded from the payload without making the combined error permanent. The retryable
+// halves' errors are kept so a ThrottleRetry (Retry-After) still reaches the retry sender.
+func combineSplitResults(results ...error) error {
+	retryable := plog.NewLogs()
+	var retryableErrs, permanentErrs []error
+	for _, err := range results {
+		if err == nil {
+			continue
+		}
+		var logsErr consumererror.Logs
+		if !consumererror.IsPermanent(err) && errors.As(err, &logsErr) {
+			logsErr.Data().ResourceLogs().MoveAndAppendTo(retryable.ResourceLogs())
+			retryableErrs = append(retryableErrs, err)
+			continue
+		}
+		permanentErrs = append(permanentErrs, err)
+	}
+
+	if retryable.LogRecordCount() > 0 {
+		return consumererror.NewLogs(
+			fmt.Errorf("resending %d log record(s) Splunk did not accept: %w", retryable.LogRecordCount(), errors.Join(retryableErrs...)),
+			retryable,
+		)
+	}
+	return errors.Join(permanentErrs...)
 }
 
 func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) error {
@@ -187,44 +250,139 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 		localHeaders[authorizationHeaderName] = splunk.BuildHECAuthHeader(token)
 	}
 
-	ld, permanentErrors := buildProfilesLogs(pp)
+	ld, permanentErrors, convertedProfiles := buildProfilesLogsWithProfileRefs(pp)
+	var droppedUnsupported int64
+	for _, err := range permanentErrors {
+		if _, ok := errors.AsType[*unsupportedProfileError](err); ok {
+			droppedUnsupported++
+		}
+	}
+	if c.telemetryBuilder != nil {
+		c.telemetryBuilder.ExporterDroppedUnsupportedProfileRecords.Add(ctx, droppedUnsupported)
+	}
 
 	sendErr := c.pushLogDataInBatches(ctx, ld, localHeaders)
+	// The profiles that were converted successfully share the HEC request. If that
+	// request fails transiently, keep the send error retryable even when other
+	// profiles in the batch were permanently rejected during conversion.
+	if sendErr != nil && !consumererror.IsPermanent(sendErr) {
+		logErr := multierr.Combine(permanentErrors...)
+		if logErr != nil {
+			c.logger.Warn("Profiles were dropped during conversion while retrying the remaining profiles", zap.Error(logErr))
+		}
+		logsErr, ok := errors.AsType[consumererror.Logs](sendErr)
+		if !ok {
+			return sendErr
+		}
+		failedProfileCount := logsErr.Data().LogRecordCount()
+		if failedProfileCount == 0 || failedProfileCount > len(convertedProfiles) {
+			return sendErr
+		}
+		retryProfiles := profilesFromLogSuffix(pp, convertedProfiles, failedProfileCount)
+		return xconsumererror.NewProfiles(sendErr, retryProfiles)
+	}
 	return multierr.Combine(append(permanentErrors, sendErr)...)
 }
 
 // buildProfilesLogs converts pprofile.Profiles into a plog.Logs payload for the Splunk HEC profiling endpoint.
 // It returns permanent errors for individual profiles that fail translation or encoding.
 func buildProfilesLogs(pp pprofile.Profiles) (plog.Logs, []error) {
+	ld, permanentErrors, _ := buildProfilesLogsWithProfileRefs(pp)
+	return ld, permanentErrors
+}
+
+type profileReference struct {
+	resource int
+	scope    int
+	profile  int
+}
+
+func buildProfilesLogsWithProfileRefs(pp pprofile.Profiles) (plog.Logs, []error, []profileReference) {
 	ld := plog.NewLogs()
 	var permanentErrors []error
+	var convertedProfiles []profileReference
 
-	for _, rp := range pp.ResourceProfiles().All() {
+	for resourceIndex, rp := range pp.ResourceProfiles().All() {
 		rl := ld.ResourceLogs().AppendEmpty()
-		rp.Resource().Attributes().MoveTo(rl.Resource().Attributes())
+		rp.Resource().Attributes().CopyTo(rl.Resource().Attributes())
 
 		sl := rl.ScopeLogs().AppendEmpty()
 		sl.Scope().SetName(profilingLibraryName)
 		sl.Scope().SetVersion(profilingLibraryVersion)
 
-		for _, sp := range rp.ScopeProfiles().All() {
-			for _, prof := range sp.Profiles().All() {
+		for scopeIndex, sp := range rp.ScopeProfiles().All() {
+			for profileIndex, prof := range sp.Profiles().All() {
 				lr, err := profileToLogRecord(pp, rp, sp, prof)
 				if err != nil {
 					permanentErrors = append(permanentErrors, err)
 					continue
 				}
 				lr.MoveTo(sl.LogRecords().AppendEmpty())
+				convertedProfiles = append(convertedProfiles, profileReference{
+					resource: resourceIndex,
+					scope:    scopeIndex,
+					profile:  profileIndex,
+				})
 			}
 		}
 	}
 
-	return ld, permanentErrors
+	return ld, permanentErrors, convertedProfiles
+}
+
+// profilesFromLogSuffix returns the profiles corresponding to the failed and
+// not-yet-sent log records. HEC batches are emitted in the same order as these
+// references, and a failed Logs error carries the remaining log suffix.
+func profilesFromLogSuffix(pp pprofile.Profiles, refs []profileReference, count int) pprofile.Profiles {
+	result := pprofile.NewProfiles()
+	pp.Dictionary().CopyTo(result.Dictionary())
+
+	start := len(refs) - count
+	lastResource, lastScope := -1, -1
+	var dstRP pprofile.ResourceProfiles
+	var dstSP pprofile.ScopeProfiles
+	for _, ref := range refs[start:] {
+		srcRP := pp.ResourceProfiles().At(ref.resource)
+		if ref.resource != lastResource {
+			dstRP = result.ResourceProfiles().AppendEmpty()
+			srcRP.Resource().CopyTo(dstRP.Resource())
+			dstRP.SetSchemaUrl(srcRP.SchemaUrl())
+			lastResource, lastScope = ref.resource, -1
+		}
+		if ref.scope != lastScope {
+			srcSP := srcRP.ScopeProfiles().At(ref.scope)
+			dstSP = dstRP.ScopeProfiles().AppendEmpty()
+			srcSP.Scope().CopyTo(dstSP.Scope())
+			dstSP.SetSchemaUrl(srcSP.SchemaUrl())
+			lastScope = ref.scope
+		}
+		srcRP.ScopeProfiles().At(ref.scope).Profiles().At(ref.profile).CopyTo(dstSP.Profiles().AppendEmpty())
+	}
+	return result
 }
 
 // profileToLogRecord translates a single pprofile.Profile into a plog.LogRecord.
 // Returns a permanent error if translation or encoding fails; on error the returned record is unset.
 func profileToLogRecord(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scope pprofile.ScopeProfiles, prof pprofile.Profile) (plog.LogRecord, error) {
+	typeIdx := int(prof.SampleType().TypeStrindex())
+	stringTable := pp.Dictionary().StringTable()
+	if typeIdx < 0 || typeIdx >= stringTable.Len() {
+		return plog.LogRecord{}, consumererror.NewPermanent(fmt.Errorf("profile sample type string index %d out of range (string table len %d)", typeIdx, stringTable.Len()))
+	}
+
+	dataType, ok := normalizeProfilingDataType(pp.Dictionary(), prof)
+	if !ok {
+		unitIdx := int(prof.SampleType().UnitStrindex())
+		unit := ""
+		if unitIdx >= 0 && unitIdx < stringTable.Len() {
+			unit = stringTable.At(unitIdx)
+		}
+		return plog.LogRecord{}, consumererror.NewPermanent(&unsupportedProfileError{
+			sampleType: stringTable.At(typeIdx),
+			unit:       unit,
+		})
+	}
+
 	expanded := prepareProfilesForPprofConversion(pp, rp, scope, prof)
 	p, err := pprof.ConvertPprofileToPprof(&expanded)
 	if err != nil {
@@ -242,12 +400,7 @@ func profileToLogRecord(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scop
 	lr.Body().SetStr(base64.StdEncoding.EncodeToString(buf.Bytes()))
 	lr.SetTimestamp(prof.Time())
 	lr.Attributes().PutStr(splunk.DefaultSourceTypeLabel, profilingLibraryName)
-	typeIdx := int(prof.SampleType().TypeStrindex())
-	stringTable := pp.Dictionary().StringTable()
-	if typeIdx < 0 || typeIdx >= stringTable.Len() {
-		return plog.LogRecord{}, consumererror.NewPermanent(fmt.Errorf("profile sample type string index %d out of range (string table len %d)", typeIdx, stringTable.Len()))
-	}
-	lr.Attributes().PutStr(profilingDataTypeKey, stringTable.At(typeIdx))
+	lr.Attributes().PutStr(profilingDataTypeKey, dataType)
 	lr.Attributes().PutStr(profilingDataFormatKey, profilingDataFormatPprofGzipBase64)
 	var totalFrameCount int64
 	for _, s := range prof.Samples().All() {
@@ -257,6 +410,83 @@ func profileToLogRecord(pp pprofile.Profiles, rp pprofile.ResourceProfiles, scop
 	// TODO find whether it is continuous or snapshot
 	lr.Attributes().PutStr(profilingInstrumentationSourceKey, profilingInstrumentationSourceContinuous)
 	return lr, nil
+}
+
+type unsupportedProfileError struct {
+	sampleType string
+	unit       string
+}
+
+func (e *unsupportedProfileError) Error() string {
+	return fmt.Sprintf("unsupported profile sample type %q with unit %q", e.sampleType, e.unit)
+}
+
+// normalizeProfilingDataType maps known eBPF profile measurements to the profile types accepted by
+// Splunk AlwaysOn Profiling. The pprof sample type, unit, and values remain unchanged.
+func normalizeProfilingDataType(dict pprofile.ProfilesDictionary, prof pprofile.Profile) (string, bool) {
+	stringTable := dict.StringTable()
+	getString := func(index int32) string {
+		if index < 0 || int(index) >= stringTable.Len() {
+			return ""
+		}
+		return strings.ToLower(strings.TrimSpace(stringTable.At(int(index))))
+	}
+
+	sampleType := getString(prof.SampleType().TypeStrindex())
+	sampleUnit := getString(prof.SampleType().UnitStrindex())
+	periodType := getString(prof.PeriodType().TypeStrindex())
+	periodUnit := getString(prof.PeriodType().UnitStrindex())
+	if (sampleType == "cpu" || sampleType == "cpu_time") && isTimeUnit(sampleUnit) {
+		return profilingDataTypeCPU, true
+	}
+	if sampleType == "samples" && sampleUnit == "count" && periodType == "cpu" && isTimeUnit(periodUnit) {
+		return profilingDataTypeCPU, true
+	}
+
+	switch sampleType {
+	case "allocation":
+		if isByteUnit(sampleUnit) || isCountUnit(sampleUnit) {
+			return profilingDataTypeAllocation, true
+		}
+	case "alloc_space", "alloc_bytes", "allocation_bytes", "allocation_size", "allocated_bytes":
+		if isByteUnit(sampleUnit) {
+			return profilingDataTypeAllocation, true
+		}
+	case "alloc_objects", "alloc_count", "allocation_count", "allocated_objects":
+		if isCountUnit(sampleUnit) {
+			return profilingDataTypeAllocation, true
+		}
+	default:
+	}
+	return "", false
+}
+
+func isTimeUnit(unit string) bool {
+	switch unit {
+	case "ns", "nanosecond", "nanoseconds", "us", "µs", "microsecond", "microseconds",
+		"ms", "millisecond", "milliseconds", "s", "sec", "second", "seconds":
+		return true
+	default:
+		return false
+	}
+}
+
+func isByteUnit(unit string) bool {
+	switch unit {
+	case "b", "byte", "bytes":
+		return true
+	default:
+		return false
+	}
+}
+
+func isCountUnit(unit string) bool {
+	switch unit {
+	case "count", "counts", "object", "objects":
+		return true
+	default:
+		return false
+	}
 }
 
 // prepareProfilesForPprofConversion wraps a single OTel pprofile.Profile into a pprofile.Profiles
@@ -289,6 +519,8 @@ const (
 	profilingLibraryName                     = "otel.profiling"
 	profilingLibraryVersion                  = "0.1.0"
 	profilingDataTypeKey                     = "profiling.data.type"
+	profilingDataTypeCPU                     = "cpu"
+	profilingDataTypeAllocation              = "allocation"
 	profilingDataFormatKey                   = "profiling.data.format"
 	profilingDataFormatPprofGzipBase64       = "pprof-gzip-base64"
 	profilingDataTotalFrameCountKey          = "profiling.data.total.frame.count"
@@ -315,6 +547,9 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
 		if !buf.Empty() {
 			if err := c.postEvents(ctx, buf, headers); err != nil {
+				if permanentErr := multierr.Combine(permanentErrors...); permanentErr != nil {
+					c.logger.Warn("Log records were dropped while sending a batch", zap.Error(permanentErr))
+				}
 				return consumererror.NewLogs(err, subLogs(ld, is))
 			}
 		}
@@ -454,7 +689,7 @@ func (c *client) fillMetricsBufferMultiMetrics(events []*translator.Event, buf b
 			))
 			return iterState{
 				record: i + 1,
-				done:   i+1 != len(events),
+				done:   i+1 == len(events),
 			}, permanentErrors
 		} else if err != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
@@ -613,6 +848,75 @@ func (c *client) postEvents(ctx context.Context, buf buffer, headers map[string]
 	return c.hecWorker.send(ctx, buf, headers)
 }
 
+// iterStateAtRecord returns the iterState positioned at the nth log record (0-based),
+// or a done state if n is at or beyond the end.
+func iterStateAtRecord(ld plog.Logs, n int) iterState {
+	seen := 0
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		sls := rls.At(i).ScopeLogs()
+		for j := 0; j < sls.Len(); j++ {
+			recs := sls.At(j).LogRecords().Len()
+			if seen+recs > n {
+				return iterState{resource: i, library: j, record: n - seen}
+			}
+			seen += recs
+		}
+	}
+	// Past the end: headLogs then yields everything, subLogs nothing.
+	return iterState{resource: rls.Len(), done: true}
+}
+
+// splitLogs partitions ld into head (first n records) and tail (the rest),
+// preserving resource and scope structure.
+func splitLogs(ld plog.Logs, n int) (head, tail plog.Logs) {
+	mid := iterStateAtRecord(ld, n)
+	return headLogs(ld, mid), subLogs(ld, mid)
+}
+
+// headLogs returns the log records before end, preserving resource and scope
+// structure. It is the complement of subLogs.
+func headLogs(src plog.Logs, end iterState) plog.Logs {
+	dst := plog.NewLogs()
+	if end.empty() {
+		return dst
+	}
+	resources := src.ResourceLogs()
+	resourcesSub := dst.ResourceLogs()
+
+	for i := 0; i <= end.resource && i < resources.Len(); i++ {
+		newSub := resourcesSub.AppendEmpty()
+		resources.At(i).Resource().CopyTo(newSub.Resource())
+
+		libraries := resources.At(i).ScopeLogs()
+		librariesSub := newSub.ScopeLogs()
+
+		maxJ := libraries.Len()
+		if i == end.resource {
+			maxJ = end.library + 1
+		}
+		for j := 0; j < maxJ && j < libraries.Len(); j++ {
+			lib := libraries.At(j)
+
+			newLibSub := librariesSub.AppendEmpty()
+			lib.Scope().CopyTo(newLibSub.Scope())
+
+			logs := lib.LogRecords()
+			logsSub := newLibSub.LogRecords()
+
+			maxK := logs.Len()
+			if i == end.resource && j == end.library {
+				maxK = end.record
+			}
+			for k := 0; k < maxK && k < logs.Len(); k++ {
+				logs.At(k).CopyTo(logsSub.AppendEmpty())
+			}
+		}
+	}
+
+	return dst
+}
+
 // subLogs returns a subset of logs starting from the state.
 func subLogs(src plog.Logs, state iterState) plog.Logs {
 	if state.empty() {
@@ -746,6 +1050,9 @@ func (c *client) stop(context.Context) error {
 	if c.heartbeater != nil {
 		c.heartbeater.shutdown()
 	}
+	if c.telemetryBuilder != nil {
+		c.telemetryBuilder.Shutdown()
+	}
 	return nil
 }
 
@@ -763,8 +1070,13 @@ func (c *client) start(ctx context.Context, host component.Host) (err error) {
 		}
 	}
 	url, _ := c.config.getURL()
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo), c.logger}
-	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c), c.meter)
+	telemetryBuilder, tbErr := metadata.NewTelemetryBuilder(c.telemetrySettings)
+	if tbErr != nil {
+		return tbErr
+	}
+	c.telemetryBuilder = telemetryBuilder
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo), c.logger, c.telemetryBuilder}
+	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c), c.telemetryBuilder, c.meter)
 	if c.config.Heartbeat.Startup {
 		if err := c.heartbeater.sendHeartbeat(c.config, c.buildInfo, getPushLogFn(c)); err != nil {
 			return fmt.Errorf("%s: heartbeat on startup failed: %w", c.exporterName, err)

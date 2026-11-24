@@ -43,10 +43,15 @@ var _ Manager = (*s3manager)(nil)
 
 func NewS3Manager(logger *zap.Logger, bucket string, builder *PartitionKeyBuilder, service *s3.Client, storageClass s3types.StorageClass, opts ...ManagerOpt) Manager {
 	manager := &s3manager{
-		logger:       logger,
-		bucket:       bucket,
-		builder:      builder,
-		uploader:     transfermanager.New(service),
+		logger:  logger,
+		bucket:  bucket,
+		builder: builder,
+		uploader: transfermanager.New(service, func(o *transfermanager.Options) {
+			// transfermanager.New ignores the S3 client checksum setting and always
+			// adds a CRC32 trailer, which some S3 compatible stores reject. So we
+			// pass the client's own setting here so it is honored.
+			o.RequestChecksumCalculation = service.Options().RequestChecksumCalculation
+		}),
 		storageClass: storageClass,
 	}
 	for _, opt := range opts {

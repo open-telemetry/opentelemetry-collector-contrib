@@ -6,6 +6,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"bytes"
 	"context"
+	"crypto/fips140"
 	"crypto/sha1" //gosec:disable G505 -- SHA1 is intentionally used for generating unique identifiers
 	"encoding/base64"
 	"encoding/binary"
@@ -25,7 +26,7 @@ var communityIDProtocols = map[string]uint8{
 	"SCTP":  132,
 }
 
-type CommunityIDArguments[K any] struct {
+type communityIDArguments[K any] struct {
 	SourceIP        ottl.StringGetter[K]
 	SourcePort      ottl.IntGetter[K]
 	DestinationIP   ottl.StringGetter[K]
@@ -34,15 +35,17 @@ type CommunityIDArguments[K any] struct {
 	Seed            ottl.Optional[ottl.IntGetter[K]]
 }
 
+// NewCommunityIDFactory returns a factory for the CommunityID OTTL function.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md#communityid
 func NewCommunityIDFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("CommunityID", &CommunityIDArguments[K]{}, createCommunityIDFunction[K])
+	return ottl.NewFactory("CommunityID", &communityIDArguments[K]{}, createCommunityIDFunction[K])
 }
 
 func createCommunityIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*CommunityIDArguments[K])
+	args, ok := oArgs.(*communityIDArguments[K])
 
 	if !ok {
-		return nil, errors.New("CommunityIDFactory args must be of type *CommunityIDArguments[K]")
+		return nil, errors.New("CommunityIDFactory args must be of type *communityIDArguments[K]")
 	}
 
 	return communityID(
@@ -95,9 +98,15 @@ func (h *communityIDHash) compute() string {
 	flowTuple = binary.BigEndian.AppendUint16(flowTuple, h.srcPort)
 	flowTuple = binary.BigEndian.AppendUint16(flowTuple, h.dstPort)
 
-	// Generate the SHA1 hash
-	//gosec:disable G401 -- we are not using SHA1 for security, but for generating unique identifier, conflicts will be solved with the seed
-	hashBytes := sha1.Sum(flowTuple)
+	// Generate the SHA1 hash. The Community ID spec mandates SHA-1 and the
+	// result is a flow identifier, not a security function, so the hash runs
+	// outside strict FIPS 140-3 enforcement (GODEBUG=fips140=only). Without
+	// that, this converter would panic in FIPS 140-only mode.
+	var hashBytes [sha1.Size]byte
+	fips140.WithoutEnforcement(func() {
+		//gosec:disable G401 -- we are not using SHA1 for security, but for generating unique identifier, conflicts will be solved with the seed
+		hashBytes = sha1.Sum(flowTuple)
+	})
 
 	// Add version prefix (1) and return
 	return "1:" + base64.StdEncoding.EncodeToString(hashBytes[:])

@@ -98,7 +98,6 @@ type Capabilities struct {
 	ReportsOwnLogs                 bool `mapstructure:"reports_own_logs"`
 	ReportsOwnTraces               bool `mapstructure:"reports_own_traces"`
 	ReportsHealth                  bool `mapstructure:"reports_health"`
-	ReportsRemoteConfig            bool `mapstructure:"reports_remote_config"`
 	ReportsAvailableComponents     bool `mapstructure:"reports_available_components"`
 	ReportsHeartbeat               bool `mapstructure:"reports_heartbeat"`
 	AcceptsPackages                bool `mapstructure:"accepts_packages"`
@@ -127,12 +126,11 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnTraces
 	}
 
+	// AcceptsRemoteConfig enables both the AcceptsRemoteConfig and ReportsRemoteConfig
+	// OpAMP capabilities; accepting remote config without reporting its status is not useful.
 	if c.AcceptsRemoteConfig {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig
-	}
-
-	if c.ReportsRemoteConfig {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig |
+			protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
 	}
 
 	if c.AcceptsRestartCommand {
@@ -219,6 +217,7 @@ type Agent struct {
 	Description                 AgentDescription  `mapstructure:"description"`
 	ConfigApplyTimeout          time.Duration     `mapstructure:"config_apply_timeout"`
 	BootstrapTimeout            time.Duration     `mapstructure:"bootstrap_timeout"`
+	StopGracePeriod             time.Duration     `mapstructure:"stop_grace_period"`
 	OpAMPServerPort             int               `mapstructure:"opamp_server_port"`
 	PassthroughLogs             bool              `mapstructure:"passthrough_logs"`
 	CollectorCrashLogSnippetKiB int               `mapstructure:"collector_crash_log_snippet_kib"`
@@ -275,6 +274,10 @@ func (a Agent) Validate() error {
 		return errors.New("agent::config_apply_timeout must be valid duration")
 	}
 
+	if a.StopGracePeriod <= 0 {
+		return errors.New("agent::stop_grace_period must be positive")
+	}
+
 	for _, file := range a.ConfigFiles {
 		if !strings.HasPrefix(file, "$") {
 			continue
@@ -286,6 +289,12 @@ func (a Agent) Validate() error {
 
 	if runtime.GOOS == "windows" && a.UseHUPConfigReload {
 		return errors.New("agent::use_hup_config_reload is not supported on Windows")
+	}
+
+	// TODO: remove once the supervisor downloads and verifies packages.
+	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272
+	if a.Package.Verifier.Type != VerifierTypeNone {
+		return errors.New("agent::package::verifier is not yet supported")
 	}
 
 	if err := a.validateFallbackConfigs(); err != nil {
@@ -355,9 +364,10 @@ var SpecialConfigFiles = []SpecialConfigFile{
 }
 
 type AgentDescription struct {
-	IdentifyingAttributes     map[string]string `mapstructure:"identifying_attributes"`
-	NonIdentifyingAttributes  map[string]string `mapstructure:"non_identifying_attributes"`
-	IncludeResourceAttributes bool              `mapstructure:"include_resource_attributes"`
+	IdentifyingAttributes       map[string]string `mapstructure:"identifying_attributes"`
+	NonIdentifyingAttributes    map[string]string `mapstructure:"non_identifying_attributes"`
+	IncludeResourceAttributes   bool              `mapstructure:"include_resource_attributes"`
+	IncludeSupervisorInstanceID bool              `mapstructure:"include_supervisor_instance_id"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -445,11 +455,6 @@ func DefaultSupervisor() Supervisor {
 	}
 
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 	}
@@ -463,7 +468,6 @@ func DefaultSupervisor() Supervisor {
 			ReportsOwnLogs:                 false,
 			ReportsOwnTraces:               false,
 			ReportsHealth:                  true,
-			ReportsRemoteConfig:            false,
 			ReportsAvailableComponents:     false,
 			ReportsHeartbeat:               true,
 			AcceptsPackages:                false,
@@ -475,6 +479,7 @@ func DefaultSupervisor() Supervisor {
 			OrphanDetectionInterval:     5 * time.Second,
 			ConfigApplyTimeout:          5 * time.Second,
 			BootstrapTimeout:            3 * time.Second,
+			StopGracePeriod:             10 * time.Second,
 			PassthroughLogs:             false,
 			CollectorCrashLogSnippetKiB: 0,
 			ValidateConfig:              false,

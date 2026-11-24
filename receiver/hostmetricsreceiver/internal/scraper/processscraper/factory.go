@@ -30,6 +30,9 @@ var (
 	}
 
 	errUnsupportedPlatform = errors.New("the process scraper is unsupported on this platform")
+
+	ScraperProcessDontEmitV0SystemConventionsFeatureGate = metadata.ScraperProcessDontEmitV0SystemConventionsFeatureGate
+	ScraperProcessEmitV1SystemConventionsFeatureGate     = metadata.ScraperProcessEmitV1SystemConventionsFeatureGate
 )
 
 // NewFactory for Process scraper.

@@ -1,0 +1,60 @@
+type: resourcedetectionprocessor/azurefunctions
+sem_conv_version: 1.43.0
+
+parent: resourcedetection
+
+resource_attributes:
+  azure.resource_group.name:
+    semantic_convention:
+      ref: azure.md#azure-resource-group-name
+    description: The name of the Azure resource group the function app belongs to
+    type: string
+    enabled: true
+  cloud.account.id:
+    semantic_convention:
+      ref: cloud.md#cloud-account-id
+    description: The Azure subscription ID
+    type: string
+    enabled: true
+  cloud.platform:
+    semantic_convention:
+      ref: cloud.md#cloud-platform
+    description: The cloud.platform
+    type: string
+    enabled: true
+  cloud.provider:
+    semantic_convention:
+      ref: cloud.md#cloud-provider
+    description: The cloud.provider
+    type: string
+    enabled: true
+  cloud.region:
+    semantic_convention:
+      ref: cloud.md#cloud-region
+    description: The Azure region the function app runs in
+    type: string
+    enabled: true
+  cloud.resource_id:
+    semantic_convention:
+      ref: cloud.md#cloud-resource-id
+    description: The fully qualified Azure Resource Manager ID of the function app
+    type: string
+    enabled: true
+  deployment.environment.name:
+    semantic_convention:
+      ref: deployment.md#deployment-environment-name
+    description: The name of the function app deployment slot. Disabled to avoid incorrect default "Production" labels when deployment slots are not in use.
+    type: string
+    enabled: false
+  faas.instance:
+    semantic_convention:
+      ref: faas.md#faas-instance
+    description: The identifier of the Azure Functions instance running the app
+    type: string
+    enabled: true
+  service.name:
+    semantic_convention:
+      ref: service.md#service-name
+    description: The name of the Azure Functions site hosting the collector. If running the collector as a sidecar, overwriting this may provide more accurate metadata.
+    type: string
+    enabled: true

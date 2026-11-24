@@ -15,11 +15,14 @@ status:
   codeowners:
     active: [jamesmoessis]
     emeritus: [rmfitzpatrick]
-  unsupported_platforms: [darwin, windows]
+  unsupported_platforms: [darwin]
 
-sem_conv_version: 1.40.0
+sem_conv_version: 1.43.0
 
 tests:
+  # Start dials the Docker daemon, which the Windows CI runners do not provide.
+  # TestLifecycle in lifecycle_test.go covers start/shutdown against a mock daemon.
+  skip_lifecycle: true
   goleak:
     ignore:
       top:
@@ -67,6 +70,10 @@ attributes:
       - starting
       - healthy
       - unhealthy
+  container.state.status:
+    description: "Container State"
+    type: string
+    enum: ["created", "running", "paused", "restarting", "removing", "exited", "dead"]      
   core:
     description: "The CPU core number when utilising per-CPU metrics."
     type: string
@@ -809,6 +816,18 @@ metrics:
       monotonic: false
     attributes:
       - container.state.health.state
+
+  # Container status
+  container.state.status:
+    enabled: false
+    stability: development
+    description: "Number of containers in a given state. State is one of - created, running, paused, restarting, removing, exited and dead"
+    unit: "{status}"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [container.state.status]
 
   # Base
   container.uptime:

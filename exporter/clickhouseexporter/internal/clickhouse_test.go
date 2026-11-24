@@ -176,3 +176,39 @@ func TestGenerateTTLExpr(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateDatabaseDDL(t *testing.T) {
+	tests := []struct {
+		name       string
+		clusterStr string
+		engineStr  string
+		expected   string
+	}{
+		{
+			name:     "no cluster or engine",
+			expected: `CREATE DATABASE IF NOT EXISTS "otel"  `,
+		},
+		{
+			name:       "cluster",
+			clusterStr: "ON CLUSTER `my_cluster`",
+			expected:   "CREATE DATABASE IF NOT EXISTS \"otel\" ON CLUSTER `my_cluster` ",
+		},
+		{
+			name:      "engine",
+			engineStr: "ENGINE = Replicated('/clickhouse/databases/otel')",
+			expected:  `CREATE DATABASE IF NOT EXISTS "otel"  ENGINE = Replicated('/clickhouse/databases/otel')`,
+		},
+		{
+			name:       "cluster and engine",
+			clusterStr: "ON CLUSTER `my_cluster`",
+			engineStr:  "ENGINE = Replicated",
+			expected:   "CREATE DATABASE IF NOT EXISTS \"otel\" ON CLUSTER `my_cluster` ENGINE = Replicated",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, createDatabaseDDL("otel", tt.clusterStr, tt.engineStr))
+		})
+	}
+}

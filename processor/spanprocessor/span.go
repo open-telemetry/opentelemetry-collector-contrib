@@ -77,7 +77,7 @@ func (sp *spanProcessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				if sp.skipExpr != nil {
-					tCtx := ottlspan.NewTransformContextPtr(rs, ils, span)
+					tCtx := ottlspan.NewTransformContext(rs, ils, span)
 					skip, err := sp.skipExpr.Eval(ctx, tCtx)
 					tCtx.Close()
 					if err != nil {

@@ -42,7 +42,7 @@ shard="$1"
 case "${shard}" in
   codegen-*)
     group="${shard#codegen-}"
-    make generate GROUP="${group}"
+    make -j4 generate GROUP="${group}"
     if [[ -n $(git status -s) ]]; then
       echo "Generated code is out of date for group '${group}', please run \"make generate\" and commit the changes in this PR."
       exit 1
@@ -51,7 +51,7 @@ case "${shard}" in
   porto-and-gci)
     make -j2 goporto
     git diff --exit-code || { echo 'Porto links are out of date, please run "make goporto" and commit the changes in this PR.'; exit 1; }
-    make gogci
+    make -j4 gogci
     git diff --exit-code || { echo 'go package imports not formatted, please run "make gogci" and commit the changes in this PR.'; exit 1; }
     ;;
   go-mod-hygiene)

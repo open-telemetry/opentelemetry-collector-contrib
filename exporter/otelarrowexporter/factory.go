@@ -42,12 +42,11 @@ func createDefaultConfig() component.Config {
 	queueCfg := exporterhelper.NewDefaultQueueConfig()
 	queueCfg.BlockOnOverflow = true
 	queueCfg.Sizer = exporterhelper.RequestSizerTypeItems
-	queueCfg.Batch = configoptional.Some(exporterhelper.BatchConfig{
-		FlushTimeout: time.Second,
-		MinSize:      1000,
-		MaxSize:      1500,
-		Sizer:        exporterhelper.RequestSizerTypeItems,
-	})
+	batch := queueCfg.Batch.GetOrInsertDefault()
+	batch.FlushTimeout = time.Second
+	batch.MinSize = 1000
+	batch.MaxSize = 1500
+	batch.Sizer = exporterhelper.RequestSizerTypeItems
 	// The default is configured in items, this value represents
 	// 60-100 concurrent batches.
 	queueCfg.QueueSize = 100000

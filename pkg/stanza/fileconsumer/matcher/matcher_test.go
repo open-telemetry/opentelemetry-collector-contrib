@@ -302,6 +302,9 @@ func TestNew(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.enableMtimeFeatureGate {
 				enableSortByMTimeFeature(t)
+			} else {
+				// explicitly disable the gate, because the feature gate is always enabled as it's beta.
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogMtimeSortTypeFeatureGate.ID(), false))
 			}
 			if tc.enableRequireExplicitTopN {
 				enableRequireExplicitTopNFeature(t)

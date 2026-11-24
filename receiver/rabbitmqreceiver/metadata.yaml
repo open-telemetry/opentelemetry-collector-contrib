@@ -170,6 +170,10 @@ status:
     emeritus: [cpheps]
 
 resource_attributes:
+  rabbitmq.cluster.name:
+    description: The name of the RabbitMQ cluster.
+    enabled: false
+    type: string
   rabbitmq.exchange.name:
     description: The name of the RabbitMQ exchange.
     enabled: true

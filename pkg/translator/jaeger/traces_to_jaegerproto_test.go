@@ -400,8 +400,8 @@ func TestAppendTagsFromAttributesHTTPConventionsMigration(t *testing.T) {
 			err = featuregate.GlobalRegistry().Set("pkg.translator.jaeger.DontEmitV0HttpConventions", tc.dontEmitV0)
 			assert.NoError(t, err)
 			t.Cleanup(func() {
-				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.jaeger.DontEmitV0HttpConventions", false))
-				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.jaeger.EmitV1HttpConventions", false))
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.jaeger.DontEmitV0HttpConventions", true))
+				assert.NoError(t, featuregate.GlobalRegistry().Set("pkg.translator.jaeger.EmitV1HttpConventions", true))
 			})
 
 			attrs := pcommon.NewMap()

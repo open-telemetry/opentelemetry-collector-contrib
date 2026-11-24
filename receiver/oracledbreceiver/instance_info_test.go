@@ -5,6 +5,8 @@ package oracledbreceiver
 
 import (
 	"errors"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,6 +25,11 @@ var errQuery = errors.New("ORA-00942: table or view does not exist")
 // versionRow builds the fakeDbClient response for the v$instance version query.
 func versionRow(v string) []metricRow {
 	return []metricRow{{"VERSION": v}}
+}
+
+// versionEditionRow builds the fakeDbClient response for the v$instance version+edition query.
+func versionEditionRow(v, edition string) []metricRow {
+	return []metricRow{{"VERSION": v, colEdition: edition}}
 }
 
 // cdbRow builds the fakeDbClient response for the v$database CDB/role/open_mode query.
@@ -106,6 +113,33 @@ func TestMajorVersion(t *testing.T) {
 
 // -- detectInstanceInfo tests -------------------------------------------------
 
+func TestDetectInstanceInfo_EditionPopulated(t *testing.T) {
+	// Edition is read from the same row as version; verify it is populated.
+	info := detectInstanceInfo(t.Context(),
+		rowClient(versionEditionRow("19.0.0.0.0", "EE")),
+		rowClient(cdbRow("NO", "PRIMARY", "READ WRITE")),
+		noopClient(t), noopClient(t),
+		emptyClient(), emptyClient(), emptyClient(),
+		zap.NewNop(),
+	)
+
+	assert.Equal(t, "19.0.0.0.0", info.dbVersion)
+	assert.Equal(t, "EE", info.dbEdition)
+}
+
+func TestDetectInstanceInfo_EditionUnknownTreatedAsEmpty(t *testing.T) {
+	// Oracle returns "UNKNOWN" for edition on some releases; treat it as absent.
+	info := detectInstanceInfo(t.Context(),
+		rowClient(versionEditionRow("19.0.0.0.0", "UNKNOWN")),
+		rowClient(cdbRow("NO", "PRIMARY", "READ WRITE")),
+		noopClient(t), noopClient(t),
+		emptyClient(), emptyClient(), emptyClient(),
+		zap.NewNop(),
+	)
+	assert.Equal(t, "19.0.0.0.0", info.dbVersion)
+	assert.Empty(t, info.dbEdition)
+}
+
 func TestDetectInstanceInfo_VersionQueryFails(t *testing.T) {
 	// Version query fails: all fields stay at zero, detection stops.
 	core, logs := observer.New(zapcore.WarnLevel)
@@ -120,7 +154,7 @@ func TestDetectInstanceInfo_VersionQueryFails(t *testing.T) {
 	assert.False(t, info.isCDB)
 	assert.False(t, info.connectedToPDB)
 	assert.Empty(t, info.pdbName)
-	assert.Equal(t, 1, logs.FilterMessage("oracledbreceiver: failed to detect Oracle version; oracle.db.version attribute will not be set").Len())
+	assert.Equal(t, 1, logs.FilterMessage("failed to detect Oracle version. oracle.db.version and oracle.db.edition will not be set").Len())
 }
 
 func TestDetectInstanceInfo_Pre12c(t *testing.T) {
@@ -477,7 +511,9 @@ func TestSetupResourceBuilder_NoPDB(t *testing.T) {
 		mb:                   metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
 		metricsBuilderConfig: cfg,
 		instanceName:         "myinstance",
-		hostName:             "myhost",
+		hostName:             "myhost:51521",
+		serverAddress:        "myhost",
+		serverPort:           51521,
 		instanceInfo:         oracleInstanceInfo{dbVersion: "19.0.0.0.0", isCDB: false},
 	}
 
@@ -488,21 +524,132 @@ func TestSetupResourceBuilder_NoPDB(t *testing.T) {
 
 	name, _ := res.Attributes().Get("oracledb.instance.name")
 	assert.Equal(t, "myinstance", name.Str())
+	// host.name keeps the configured target, only the server attributes are resolved.
 	host, _ := res.Attributes().Get("host.name")
-	assert.Equal(t, "myhost", host.Str())
+	assert.Equal(t, "myhost:51521", host.Str())
 	version, _ := res.Attributes().Get("oracle.db.version")
 	assert.Equal(t, "19.0.0.0.0", version.Str())
+
+	serverAddress, ok := res.Attributes().Get("server.address")
+	require.True(t, ok)
+	assert.Equal(t, "myhost", serverAddress.Str())
+	serverPort, ok := res.Attributes().Get("server.port")
+	require.True(t, ok)
+	assert.Equal(t, int64(51521), serverPort.Int())
+}
+
+func TestSetupResourceBuilder_LoopbackResolvesServerAddressOnly(t *testing.T) {
+	localhostName, err := os.Hostname()
+	require.NoError(t, err)
+
+	const target = "localhost:1521"
+	serverAddress, serverPort, serviceInstanceID := resolveInstanceIdentity(target, target+"/XE", zap.NewNop())
+
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	scrpr := oracleScraper{
+		mb:                   metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		metricsBuilderConfig: cfg,
+		instanceName:         target + "/XE",
+		hostName:             target,
+		serverAddress:        serverAddress,
+		serverPort:           serverPort,
+		serviceInstanceID:    serviceInstanceID,
+	}
+
+	res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder()).Emit()
+
+	hostName, ok := res.Attributes().Get("host.name")
+	require.True(t, ok)
+	assert.Equal(t, target, hostName.Str(), "host.name must keep the configured target")
+
+	address, ok := res.Attributes().Get("server.address")
+	require.True(t, ok)
+	assert.Equal(t, localhostName, address.Str())
+	port, ok := res.Attributes().Get("server.port")
+	require.True(t, ok)
+	assert.Equal(t, defaultOraclePort, port.Int())
+
+	instanceID, ok := res.Attributes().Get("service.instance.id")
+	require.True(t, ok)
+	assert.Equal(t, localhostName+":1521/XE", instanceID.Str())
+}
+
+func TestSetupResourceBuilder_EmptyServerAddressNotEmitted(t *testing.T) {
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	scrpr := oracleScraper{
+		mb:                   metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		metricsBuilderConfig: cfg,
+	}
+
+	res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder()).Emit()
+
+	_, hasServerAddress := res.Attributes().Get("server.address")
+	assert.False(t, hasServerAddress, "server.address should not be emitted when the host is undetermined")
+
+	serverPort, ok := res.Attributes().Get("server.port")
+	require.True(t, ok, "server.port should always be emitted")
+	assert.Equal(t, defaultOraclePort, serverPort.Int())
+}
+
+// TestSetupResourceBuilder_UndeterminedHostNotEmitted walks the same path newScraper takes, from the
+// configured datasource through resolveInstanceIdentity, for datasources url.Parse cannot read.
+func TestSetupResourceBuilder_UndeterminedHostNotEmitted(t *testing.T) {
+	datasources := map[string]string{
+		"TNS descriptor":                         "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=XE)))",
+		"Easy Connect without the oracle prefix": "otel/password@localhost:51521/XE",
+	}
+
+	for name, datasource := range datasources {
+		t.Run(name, func(t *testing.T) {
+			hostName, hostNameErr := getHostName(datasource)
+			require.NoError(t, hostNameErr)
+			instanceName, instanceNameErr := getInstanceName(datasource)
+			require.NoError(t, instanceNameErr)
+
+			serverAddress, serverPort, serviceInstanceID := resolveInstanceIdentity(hostName, instanceName, zap.NewNop())
+
+			cfg := metadata.NewDefaultMetricsBuilderConfig()
+			scrpr := oracleScraper{
+				mb:                   metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+				metricsBuilderConfig: cfg,
+				instanceName:         instanceName,
+				hostName:             hostName,
+				serverAddress:        serverAddress,
+				serverPort:           serverPort,
+				serviceInstanceID:    serviceInstanceID,
+			}
+
+			res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder()).Emit()
+
+			address, hasServerAddress := res.Attributes().Get("server.address")
+			assert.False(t, hasServerAddress,
+				"server.address should not be emitted when the datasource cannot be parsed, got %q", address.Str())
+
+			port, ok := res.Attributes().Get("server.port")
+			require.True(t, ok, "server.port should always be emitted")
+			assert.Equal(t, defaultOraclePort, port.Int())
+
+			instanceID, ok := res.Attributes().Get("service.instance.id")
+			require.True(t, ok)
+			assert.True(t, strings.HasPrefix(instanceID.Str(), "unknown:1521"),
+				"an unparseable datasource must not identify the collector host, got %q", instanceID.Str())
+		})
+	}
 }
 
 func TestSetupResourceBuilder_AllMetadataFields(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.ResourceAttributes.OracleDbEdition.Enabled = true
 	scrpr := oracleScraper{
 		mb:                   metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
 		metricsBuilderConfig: cfg,
 		instanceName:         "myinstance",
 		hostName:             "myhost",
+		serverAddress:        "myhost",
+		serverPort:           1521,
 		instanceInfo: oracleInstanceInfo{
 			dbVersion:    "19.0.0.0.0",
+			dbEdition:    "EE",
 			databaseRole: "PRIMARY",
 			openMode:     "READ WRITE",
 			hostingType:  hostingTypeSelfManaged,
@@ -526,10 +673,22 @@ func TestSetupResourceBuilder_AllMetadataFields(t *testing.T) {
 	hostingType, ok := res.Attributes().Get("oracle.db.hosting_type")
 	require.True(t, ok)
 	assert.Equal(t, hostingTypeSelfManaged, hostingType.Str())
+
+	edition, ok := res.Attributes().Get("oracle.db.edition")
+	require.True(t, ok)
+	assert.Equal(t, "EE", edition.Str())
+
+	serverAddress, ok := res.Attributes().Get("server.address")
+	require.True(t, ok)
+	assert.Equal(t, "myhost", serverAddress.Str())
+	serverPort, ok := res.Attributes().Get("server.port")
+	require.True(t, ok)
+	assert.Equal(t, defaultOraclePort, serverPort.Int())
 }
 
 func TestSetupResourceBuilder_EmptyMetadataFieldsNotEmitted(t *testing.T) {
 	cfg := metadata.NewDefaultMetricsBuilderConfig()
+	cfg.ResourceAttributes.OracleDbEdition.Enabled = true
 	scrpr := oracleScraper{
 		mb:                   metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
 		metricsBuilderConfig: cfg,
@@ -538,7 +697,7 @@ func TestSetupResourceBuilder_EmptyMetadataFieldsNotEmitted(t *testing.T) {
 
 	res := scrpr.setupResourceBuilder(scrpr.mb.NewResourceBuilder()).Emit()
 
-	for _, attr := range []string{"oracle.db.version", "oracle.db.role", "oracle.db.open_mode", "oracle.db.hosting_type"} {
+	for _, attr := range []string{"oracle.db.version", "oracle.db.role", "oracle.db.open_mode", "oracle.db.hosting_type", "oracle.db.edition"} {
 		_, exists := res.Attributes().Get(attr)
 		assert.False(t, exists, "attribute %q should not be emitted when empty", attr)
 	}

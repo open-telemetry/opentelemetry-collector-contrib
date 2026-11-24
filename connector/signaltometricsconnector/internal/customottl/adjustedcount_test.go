@@ -32,7 +32,7 @@ func Test_AdjustedCount(t *testing.T) {
 			require.NoError(t, err)
 			span := ptrace.NewSpan()
 			span.TraceState().FromRaw(tc.tracestate)
-			tCtx := ottlspan.NewTransformContextPtr(ptrace.NewResourceSpans(), ptrace.NewScopeSpans(), span)
+			tCtx := ottlspan.NewTransformContext(ptrace.NewResourceSpans(), ptrace.NewScopeSpans(), span)
 			defer tCtx.Close()
 			result, err := exprFunc(nil, tCtx)
 			if tc.errMsg != "" {

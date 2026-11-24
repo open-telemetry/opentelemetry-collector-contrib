@@ -11,8 +11,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
 
@@ -21,7 +21,7 @@ func Test_newLogAggregator(t *testing.T) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
-	aggregator := newLogAggregator(cfg.LogCountAttribute, time.UTC, telemetryBuilder, cfg.IncludeFields)
+	aggregator := newLogAggregator(cfg.LogCountAttribute, time.UTC, telemetryBuilder, cfg.IncludeFields, cfg.TimestampMode)
 	require.Equal(t, cfg.LogCountAttribute, aggregator.logCountAttribute)
 	require.Equal(t, time.UTC, aggregator.timezone)
 	require.NotNil(t, aggregator.resources)
@@ -43,7 +43,7 @@ func Test_logAggregatorAdd(t *testing.T) {
 	require.NoError(t, err)
 
 	// Setup aggregator
-	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder, nil)
+	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder, nil, defaultTimestampMode)
 	logRecord := plog.NewLogRecord()
 
 	resource := pcommon.NewResource()
@@ -93,7 +93,7 @@ func Test_logAggregatorReset(t *testing.T) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
-	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder, nil)
+	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder, nil, defaultTimestampMode)
 	for i := range 2 {
 		resource := pcommon.NewResource()
 		resource.Attributes().PutInt("i", int64(i))
@@ -128,15 +128,17 @@ func Test_logAggregatorExport(t *testing.T) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
-	aggregator := newLogAggregator(defaultLogCountAttribute, location, telemetryBuilder, nil)
+	aggregator := newLogAggregator(defaultLogCountAttribute, location, telemetryBuilder, nil, TimestampModePreserved)
 	resource := pcommon.NewResource()
 	resource.Attributes().PutStr("one", "two")
-	expectedHash := pdatautil.MapHash(resource.Attributes())
+	expectedHash := xhash.MapHash(resource.Attributes())
 
 	scope := pcommon.NewInstrumentationScope()
 
 	// Add logRecord
-	aggregator.Add(resource, scope, generateTestLogRecord(t, "body string"))
+	originalLogRecord := generateTestLogRecord(t, "body string")
+	originalTimestamp := originalLogRecord.Timestamp()
+	aggregator.Add(resource, scope, originalLogRecord)
 
 	exportedLogs := aggregator.Export(t.Context())
 	require.Equal(t, 1, exportedLogs.LogRecordCount())
@@ -145,7 +147,7 @@ func Test_logAggregatorExport(t *testing.T) {
 	// Check resource
 	rl := exportedLogs.ResourceLogs().At(0)
 	actualAttrs := rl.Resource().Attributes()
-	actualHash := pdatautil.MapHash(actualAttrs)
+	actualHash := xhash.MapHash(actualAttrs)
 	require.Equal(t, expectedHash, actualHash)
 
 	require.Equal(t, 1, rl.ScopeLogs().Len())
@@ -161,7 +163,7 @@ func Test_logAggregatorExport(t *testing.T) {
 	require.Equal(t, expectedLogRecord.SeverityNumber(), actualLogRecord.SeverityNumber())
 	require.Equal(t, expectedLogRecord.SeverityText(), actualLogRecord.SeverityText())
 	require.Equal(t, expectedTimestamp.UnixMilli(), actualLogRecord.ObservedTimestamp().AsTime().UnixMilli())
-	require.Equal(t, expectedTimestamp.UnixMilli(), actualLogRecord.Timestamp().AsTime().UnixMilli())
+	require.Equal(t, originalTimestamp, actualLogRecord.Timestamp())
 
 	actualRawAttrs := actualLogRecord.Attributes().AsRaw()
 	for key, val := range expectedLogRecord.Attributes().AsRaw() {
@@ -182,6 +184,137 @@ func Test_logAggregatorExport(t *testing.T) {
 	actualLastObserved, ok := actualRawAttrs[lastObservedTSAttr]
 	require.True(t, ok)
 	require.Equal(t, expectedTimestampStr, actualLastObserved)
+
+	// In preserved mode, first_event_timestamp is omitted as redundant with lr.Timestamp()
+	expectedEventTS := originalTimestamp.AsTime().In(location).Format(time.RFC3339)
+	_, ok = actualRawAttrs[firstEventTSAttr]
+	require.False(t, ok)
+
+	actualLastEventTS, ok := actualRawAttrs[lastEventTSAttr]
+	require.True(t, ok)
+	require.Equal(t, expectedEventTS, actualLastEventTS)
+}
+
+func Test_logAggregatorExportTimestampModes(t *testing.T) {
+	oldTimeNow := timeNow
+	t.Cleanup(func() { timeNow = oldTimeNow })
+	location, err := time.LoadLocation("America/New_York")
+	require.NoError(t, err)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	for _, mode := range []TimestampMode{TimestampModeAggregated, TimestampModePreserved} {
+		t.Run(string(mode), func(t *testing.T) {
+			firstReceipt := time.Date(2026, 1, 2, 12, 0, 0, 0, time.UTC)
+			now := firstReceipt
+			timeNow = func() time.Time { return now }
+			aggregator := newLogAggregator(defaultLogCountAttribute, location, telemetryBuilder, nil, mode)
+			resource := pcommon.NewResource()
+			scope := pcommon.NewInstrumentationScope()
+			firstEvent := pcommon.NewTimestampFromTime(firstReceipt.Add(-time.Minute))
+			// Arrival order determines first/last, even when event timestamps go backwards.
+			lastEvent := pcommon.NewTimestampFromTime(firstReceipt.Add(-2 * time.Minute))
+			for i, timestamp := range []pcommon.Timestamp{firstEvent, lastEvent} {
+				now = firstReceipt.Add(time.Duration(i) * time.Second)
+				lr := plog.NewLogRecord()
+				lr.Body().SetStr("duplicate")
+				lr.SetTimestamp(timestamp)
+				aggregator.Add(resource, scope, lr)
+			}
+			now = firstReceipt.Add(10 * time.Second)
+			exported := aggregator.Export(t.Context())
+			require.Equal(t, 1, exported.LogRecordCount())
+			lr := exported.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+			require.Equal(t, pcommon.NewTimestampFromTime(firstReceipt), lr.ObservedTimestamp())
+			attrs := lr.Attributes().AsRaw()
+			require.Equal(t, int64(2), attrs[defaultLogCountAttribute])
+			require.Equal(t, firstReceipt.In(location).Format(time.RFC3339), attrs[firstObservedTSAttr])
+			require.Equal(t, firstReceipt.Add(time.Second).In(location).Format(time.RFC3339), attrs[lastObservedTSAttr])
+			require.Equal(t, lastEvent.AsTime().In(location).Format(time.RFC3339), attrs[lastEventTSAttr])
+			if mode == TimestampModePreserved {
+				require.Equal(t, firstEvent, lr.Timestamp())
+				require.NotContains(t, attrs, firstEventTSAttr)
+			} else {
+				require.Equal(t, pcommon.NewTimestampFromTime(now), lr.Timestamp())
+				require.Equal(t, firstEvent.AsTime().In(location).Format(time.RFC3339), attrs[firstEventTSAttr])
+			}
+		})
+	}
+}
+
+func Test_logAggregatorExportUnsetTimestamps(t *testing.T) {
+	oldTimeNow := timeNow
+	t.Cleanup(func() { timeNow = oldTimeNow })
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	eventTS := pcommon.NewTimestampFromTime(time.Date(2026, 1, 2, 11, 0, 0, 0, time.UTC))
+	testCases := []struct {
+		desc            string
+		firstTimestamp  pcommon.Timestamp
+		lastTimestamp   pcommon.Timestamp
+		expectFirstAttr bool
+		expectLastAttr  bool
+	}{
+		{
+			desc: "both unset",
+		},
+		{
+			desc:           "first unset",
+			lastTimestamp:  eventTS,
+			expectLastAttr: true,
+		},
+		{
+			desc:            "last unset",
+			firstTimestamp:  eventTS,
+			expectFirstAttr: true,
+		},
+	}
+
+	for _, mode := range []TimestampMode{TimestampModeAggregated, TimestampModePreserved} {
+		for _, tc := range testCases {
+			t.Run(string(mode)+"/"+tc.desc, func(t *testing.T) {
+				firstReceipt := time.Date(2026, 1, 2, 12, 0, 0, 0, time.UTC)
+				now := firstReceipt
+				timeNow = func() time.Time { return now }
+				aggregator := newLogAggregator(defaultLogCountAttribute, time.UTC, telemetryBuilder, nil, mode)
+				resource := pcommon.NewResource()
+				scope := pcommon.NewInstrumentationScope()
+				for _, timestamp := range []pcommon.Timestamp{tc.firstTimestamp, tc.lastTimestamp} {
+					lr := plog.NewLogRecord()
+					lr.Body().SetStr("duplicate")
+					lr.SetTimestamp(timestamp)
+					aggregator.Add(resource, scope, lr)
+				}
+				now = firstReceipt.Add(10 * time.Second)
+				exported := aggregator.Export(t.Context())
+				require.Equal(t, 1, exported.LogRecordCount())
+				lr := exported.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+				attrs := lr.Attributes().AsRaw()
+
+				require.Contains(t, attrs, firstObservedTSAttr)
+				require.Contains(t, attrs, lastObservedTSAttr)
+
+				if mode == TimestampModeAggregated && tc.expectFirstAttr {
+					require.Equal(t, eventTS.AsTime().Format(time.RFC3339), attrs[firstEventTSAttr])
+				} else {
+					require.NotContains(t, attrs, firstEventTSAttr)
+				}
+				if tc.expectLastAttr {
+					require.Equal(t, eventTS.AsTime().Format(time.RFC3339), attrs[lastEventTSAttr])
+				} else {
+					require.NotContains(t, attrs, lastEventTSAttr)
+				}
+
+				// Timestamp falls back to export time unless preserved mode has a first event timestamp.
+				if mode == TimestampModePreserved && tc.firstTimestamp != 0 {
+					require.Equal(t, tc.firstTimestamp, lr.Timestamp())
+				} else {
+					require.Equal(t, pcommon.NewTimestampFromTime(now), lr.Timestamp())
+				}
+			})
+		}
+	}
 }
 
 func Test_newResourceAggregator(t *testing.T) {
@@ -232,10 +365,13 @@ func Test_logCounterIncrement(t *testing.T) {
 
 	last := time.Now().UTC()
 	timeNow = func() time.Time { return last }
+	eventTS := pcommon.NewTimestampFromTime(last)
+	lc.lastEventTimestamp = eventTS
 	lc.Increment()
 	require.Equal(t, int64(1), lc.count)
 	require.Equal(t, first, lc.firstObservedTimestamp)
 	require.Equal(t, last, lc.lastObservedTimestamp)
+	require.Equal(t, eventTS, lc.lastEventTimestamp)
 }
 
 func Test_getLogKey(t *testing.T) {
@@ -280,12 +416,12 @@ func Test_getLogKey(t *testing.T) {
 				logRecord.Body().Map().PutStr("dedup_key", dedupValue)
 				logRecord.Attributes().PutStr("dedup_key", dedupValue)
 
-				expected := pdatautil.Hash64(
-					pdatautil.WithString(dedupValue),
+				expected := xhash.Hash64(
+					xhash.WithString(dedupValue),
 				)
-				expectedMulti := pdatautil.Hash64(
-					pdatautil.WithString(dedupValue),
-					pdatautil.WithString(dedupValue), //nolint:gocritic // Intentional: testing multi-key deduplication with same value
+				expectedMulti := xhash.Hash64(
+					xhash.WithString(dedupValue),
+					xhash.WithString(dedupValue), //nolint:gocritic // Intentional: testing multi-key deduplication with same value
 				)
 
 				require.Equal(t, expected, getLogKey(logRecord, []string{"body.dedup_key"}))
@@ -299,11 +435,11 @@ func Test_getLogKey(t *testing.T) {
 				logRecord := plog.NewLogRecord()
 				logRecord.Attributes().PutStr("str", "attr str")
 
-				expected := pdatautil.Hash64(
-					pdatautil.WithMap(logRecord.Attributes()),
-					pdatautil.WithValue(logRecord.Body()),
-					pdatautil.WithString(logRecord.SeverityNumber().String()),
-					pdatautil.WithString(logRecord.SeverityText()),
+				expected := xhash.Hash64(
+					xhash.WithMap(logRecord.Attributes()),
+					xhash.WithValue(logRecord.Body()),
+					xhash.WithString(logRecord.SeverityNumber().String()),
+					xhash.WithString(logRecord.SeverityText()),
 				)
 
 				require.Equal(t, expected, getLogKey(logRecord, []string{"body.dedup_key"}))
@@ -315,11 +451,11 @@ func Test_getLogKey(t *testing.T) {
 				logRecord := plog.NewLogRecord()
 				logRecord.Body().SetStr("hello, this is a message body string")
 
-				expected := pdatautil.Hash64(
-					pdatautil.WithMap(logRecord.Attributes()),
-					pdatautil.WithValue(logRecord.Body()),
-					pdatautil.WithString(logRecord.SeverityNumber().String()),
-					pdatautil.WithString(logRecord.SeverityText()),
+				expected := xhash.Hash64(
+					xhash.WithMap(logRecord.Attributes()),
+					xhash.WithValue(logRecord.Body()),
+					xhash.WithString(logRecord.SeverityNumber().String()),
+					xhash.WithString(logRecord.SeverityText()),
 				)
 
 				require.Equal(t, expected, getLogKey(logRecord, []string{"body.dedup_key"}))
@@ -329,6 +465,82 @@ func Test_getLogKey(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, tc.testFunc)
+	}
+}
+
+func Test_getKeyValue(t *testing.T) {
+	tests := []struct {
+		name     string
+		valueMap pcommon.Map
+		keyParts []string
+		expected string
+		ok       bool
+	}{
+		{
+			name: "gets value for existing key",
+			valueMap: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("key", "value")
+				return m
+			}(),
+			keyParts: []string{"key"},
+			expected: "value",
+			ok:       true,
+		},
+		{
+			name: "returns false when key does not exist",
+			valueMap: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("key", "value")
+				return m
+			}(),
+			keyParts: []string{"missing"},
+			ok:       false,
+		},
+		{
+			name: "gets nested value",
+			valueMap: func() pcommon.Map {
+				m := pcommon.NewMap()
+				nested := m.PutEmptyMap("parent")
+				nested.PutStr("child", "value")
+				return m
+			}(),
+			keyParts: []string{"parent", "child"},
+			expected: "value",
+			ok:       true,
+		},
+		{
+			name: "returns false when nested key does not exist",
+			valueMap: func() pcommon.Map {
+				m := pcommon.NewMap()
+				nested := m.PutEmptyMap("parent")
+				nested.PutStr("child", "value")
+				return m
+			}(),
+			keyParts: []string{"parent", "missing"},
+			ok:       false,
+		},
+		{
+			name: "returns false when intermediate value is not a map",
+			valueMap: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("parent", "value")
+				return m
+			}(),
+			keyParts: []string{"parent", "child"},
+			ok:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			value, ok := getKeyValue(tt.valueMap, tt.keyParts)
+
+			require.Equal(t, tt.ok, ok)
+			if tt.ok {
+				require.Equal(t, tt.expected, value.Str())
+			}
+		})
 	}
 }
 

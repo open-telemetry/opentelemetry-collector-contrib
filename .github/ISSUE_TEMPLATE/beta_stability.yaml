@@ -22,6 +22,7 @@ body:
       - cmd/oteltestbedcol
       - cmd/telemetrygen
       - config/configdbauth
+      - config/xconfigunit
       - confmap/provider/aesprovider
       - confmap/provider/googlesecretmanagerprovider
       - confmap/provider/s3provider
@@ -70,7 +71,7 @@ body:
       - exporter/loadbalancing
       - exporter/logicmonitor
       - exporter/logzio
-      - exporter/mezmo
+      - exporter/nats
       - exporter/opensearch
       - exporter/otelarrow
       - exporter/prometheus
@@ -109,6 +110,8 @@ body:
       - extension/encoding/skywalkingencoding
       - extension/encoding/textencoding
       - extension/encoding/zipkinencoding
+      - extension/filetelemetrypolicy
+      - extension/fleettracker/redisfleettracker
       - extension/googleclientauth
       - extension/headerssetter
       - extension/healthcheck
@@ -155,6 +158,7 @@ body:
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
+      - internal/natsclient
       - internal/otelarrow
       - internal/pdatautil
       - internal/rabbitmq
@@ -172,8 +176,10 @@ body:
       - pkg/kafka/configkafka
       - pkg/kafka/topic
       - pkg/ottl
+      - pkg/ottl/contexts/xprofile
+      - pkg/ottl/contexts/xspanlink
+      - pkg/ottl/xottl
       - pkg/pdatatest
-      - pkg/pdatautil
       - pkg/resourcetotelemetry
       - pkg/sampling
       - pkg/semconvtest
@@ -195,6 +201,7 @@ body:
       - pkg/translator/splunk
       - pkg/translator/zipkin
       - pkg/winperfcounters
+      - pkg/xcompression
       - pkg/xk8stest
       - pkg/xstreamencoding
       - processor/adaptivetailsampling
@@ -220,6 +227,7 @@ body:
       - processor/metricsgeneration
       - processor/metricstarttime
       - processor/metricstransform
+      - processor/partitioning
       - processor/probabilisticsampler
       - processor/redaction
       - processor/remotetap
@@ -239,15 +247,19 @@ body:
       - processor/resourcedetection/internal/tencent/cvm
       - processor/resourcedetection/internal/upcloud
       - processor/resourcedetection/internal/vultr
+      - processor/rollingspanlatency
       - processor/schema
       - processor/signing
       - processor/span
       - processor/spanpruning
       - processor/sumologic
       - processor/tailsampling
+      - processor/telemetrypolicy
       - processor/transform
       - processor/transform/internal/logparsingfuncs
+      - processor/transform/xtransform
       - processor/unroll
+      - processor/verify
       - receiver/activedirectoryds
       - receiver/activedirectoryinv
       - receiver/aerospike
@@ -286,6 +298,7 @@ body:
       - receiver/fluentforward
       - receiver/github
       - receiver/gitlab
+      - receiver/gnmi
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
       - receiver/googlecloudpubsubpush
@@ -295,6 +308,7 @@ body:
       - receiver/hostmetrics/internal/scraper/cpuscraper
       - receiver/hostmetrics/internal/scraper/diskscraper
       - receiver/hostmetrics/internal/scraper/filesystemscraper
+      - receiver/hostmetrics/internal/scraper/hardwarescraper
       - receiver/hostmetrics/internal/scraper/loadscraper
       - receiver/hostmetrics/internal/scraper/memoryscraper
       - receiver/hostmetrics/internal/scraper/networkscraper
@@ -324,6 +338,7 @@ body:
       - receiver/mongodbatlas
       - receiver/mysql
       - receiver/namedpipe
+      - receiver/nats
       - receiver/netflow
       - receiver/nginx
       - receiver/nsxt
@@ -346,7 +361,6 @@ body:
       - receiver/redis
       - receiver/riak
       - receiver/saphana
-      - receiver/signalfx
       - receiver/simpleprometheus
       - receiver/skywalking
       - receiver/snmp
@@ -367,7 +381,6 @@ body:
       - receiver/udplog
       - receiver/vcenter
       - receiver/vcr
-      - receiver/wavefront
       - receiver/webhookevent
       - receiver/windowseventlog
       - receiver/windowsperfcounters
@@ -377,6 +390,7 @@ body:
       - receiver/zookeeper
       - scraper/zookeeperscraper
       - testbed
+      - testbed/integrationtests/elasticsearch
       - testbed/mockdatasenders/mockdatadogagentexporter
       # End components list
   - type: checkboxes

@@ -475,7 +475,8 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 	filetest.WriteString(t, temp, string(log1)+"\n")
 
 	// Run the operator to read the first log
-	require.NoError(t, operator.Start(persister))
+	operator.persister = persister
+	operator.poll(t.Context())
 	sink.ExpectToken(t, log1)
 	require.NoError(t, operator.Stop())
 

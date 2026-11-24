@@ -70,11 +70,12 @@ func TestLoadConfig(t *testing.T) {
 					Region:                "",
 					RoleARN:               "",
 				},
-				LogGroupName:                "",
-				LogStreamName:               "",
-				DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
-				OutputDestination:           "cloudwatch",
-				Version:                     "1",
+				LogGroupName:          "",
+				LogStreamName:         "",
+				DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+				OutputDestination:     "cloudwatch",
+				Version:               "1",
+				//nolint:staticcheck // test deprecated field
 				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 				logger:                      zap.NewNop(),
 			},
@@ -134,10 +135,9 @@ func TestConfigValidate(t *testing.T) {
 			RequestTimeoutSeconds: 30,
 			MaxRetries:            1,
 		},
-		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
-		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
-		MetricDescriptors:           incorrectDescriptor,
-		logger:                      zap.NewNop(),
+		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+		MetricDescriptors:     incorrectDescriptor,
+		logger:                zap.NewNop(),
 	}
 	assert.NoError(t, confmap.Validate(cfg))
 
@@ -148,16 +148,36 @@ func TestConfigValidate(t *testing.T) {
 	}, cfg.MetricDescriptors)
 }
 
+func TestConfigValidateDropsDeclarationWithInvalidSelector(t *testing.T) {
+	cfg := &Config{
+		AWSSessionSettings: awsutil.AWSSessionSettings{
+			RequestTimeoutSeconds: 30,
+			MaxRetries:            1,
+		},
+		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+		MetricDeclarations: []*MetricDeclaration{
+			{MetricNameSelectors: []string{"[unclosed"}},
+			{MetricNameSelectors: []string{"^valid$"}},
+		},
+		logger: zap.NewNop(),
+	}
+
+	assert.NoError(t, confmap.Validate(cfg))
+
+	// The declaration with the invalid selector is dropped, the valid one is kept.
+	require.Len(t, cfg.MetricDeclarations, 1)
+	assert.Equal(t, []string{"^valid$"}, cfg.MetricDeclarations[0].MetricNameSelectors)
+}
+
 func TestRetentionValidateCorrect(t *testing.T) {
 	cfg := &Config{
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			RequestTimeoutSeconds: 30,
 			MaxRetries:            1,
 		},
-		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
-		LogRetention:                365,
-		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
-		logger:                      zap.NewNop(),
+		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+		LogRetention:          365,
+		logger:                zap.NewNop(),
 	}
 	assert.NoError(t, confmap.Validate(cfg))
 }
@@ -168,10 +188,9 @@ func TestRetentionValidateWrong(t *testing.T) {
 			RequestTimeoutSeconds: 30,
 			MaxRetries:            1,
 		},
-		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
-		LogRetention:                366,
-		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
-		logger:                      zap.NewNop(),
+		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+		LogRetention:          366,
+		logger:                zap.NewNop(),
 	}
 	assert.Error(t, confmap.Validate(wrongcfg))
 }
@@ -246,10 +265,9 @@ func TestValidateTags(t *testing.T) {
 					RequestTimeoutSeconds: 30,
 					MaxRetries:            1,
 				},
-				DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
-				Tags:                        tt.tags,
-				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
-				logger:                      zap.NewNop(),
+				DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+				Tags:                  tt.tags,
+				logger:                zap.NewNop(),
 			}
 			if tt.errorMessage != "" {
 				assert.ErrorContains(t, confmap.Validate(cfg), tt.errorMessage)
@@ -321,4 +339,22 @@ func TestIsApplicationSignalsEnabled(t *testing.T) {
 			assert.Equal(t, tc.expectedResult, cfg.isAppSignalsEnabled())
 		})
 	}
+}
+
+func TestDisableLegacyResourceToTelemetryConversionValidation(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ResourceToTelemetrySettings = resourcetotelemetry.Settings{
+		Included: []string{"service*"},
+	}
+	assert.NoError(t, cfg.Validate())
+
+	cfg.ResourceToTelemetrySettings.Enabled = true //nolint:staticcheck // ignore deprecated field
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExporterAwsemfDisableLegacyResourceToTelemetryConversionFeatureGate.ID(), true))
+	defer func() {
+		_ = featuregate.GlobalRegistry().Set(metadata.ExporterAwsemfDisableLegacyResourceToTelemetryConversionFeatureGate.ID(), false)
+	}()
+	assert.Error(t, cfg.Validate())
+
+	cfg.ResourceToTelemetrySettings.Enabled = false //nolint:staticcheck // ignore deprecated field
+	assert.NoError(t, cfg.Validate())
 }

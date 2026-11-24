@@ -55,7 +55,7 @@ func createExtension(_ context.Context, set extension.Settings, cfg component.Co
 			}))
 		},
 		func(ratio float64) (undoFunc, error) {
-			initial, err := memlimit.SetGoMemLimitWithOpts(memlimit.WithRatio(ratio))
+			initial, err := memlimit.Set(memlimit.WithRatio(ratio))
 			return func() { debug.SetMemoryLimit(initial) }, err
 		}), nil
 }

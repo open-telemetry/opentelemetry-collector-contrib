@@ -438,6 +438,14 @@ The total bytes read from and written to InnoDB data files.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | disk.io.direction | The disk IO operation direction. | Str: ``read``, ``write`` | Recommended | - |
 
+### mysql.innodb.history_list.length
+
+The length of the InnoDB history list.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {transactions} | Gauge | Int | Development |
+
 ### mysql.innodb.operation.pending
 
 The number of pending InnoDB data file operations.
@@ -451,6 +459,36 @@ The number of pending InnoDB data file operations.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | operation | The operation types. | Str: ``fsyncs``, ``reads``, ``writes`` | Recommended | - |
+
+### mysql.innodb.redo_log.checkpoint.age
+
+The difference, in bytes, between the current InnoDB redo log sequence number and the most recent checkpoint log sequence number.
+
+Only emitted for MySQL 8.0.11 and later. MySQL 8.0.11 through 8.0.29 requires SELECT and BACKUP_ADMIN. MySQL 8.0.30 and later versions do not require BACKUP_ADMIN. MariaDB is not supported for this metric.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### mysql.innodb.redo_log.lsn.checkpoint
+
+The InnoDB redo log sequence number of the most recent checkpoint.
+
+Only emitted for MySQL 8.0.11 and later. MySQL 8.0.11 through 8.0.29 requires SELECT and BACKUP_ADMIN. MySQL 8.0.30 and later versions do not require BACKUP_ADMIN. MariaDB is not supported for this metric.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### mysql.innodb.redo_log.lsn.current
+
+The current InnoDB redo log sequence number.
+
+Only emitted for MySQL 8.0.11 and later. MySQL 8.0.11 through 8.0.29 requires SELECT and BACKUP_ADMIN. MySQL 8.0.30 and later versions do not require BACKUP_ADMIN. MariaDB is not supported for this metric.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
 
 ### mysql.innodb.row_lock.wait.count
 
@@ -476,6 +514,22 @@ The maximum InnoDB row lock wait duration since server startup or last status re
 | ---- | ----------- | ---------- | --------- |
 | s | Gauge | Double | Development |
 
+### mysql.innodb.transaction.active.count
+
+The number of active InnoDB transactions.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {transaction} | Gauge | Int | Development |
+
+### mysql.innodb.transaction.active.duration.max
+
+The duration of the longest running active InnoDB transaction.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Int | Development |
+
 ### mysql.joins
 
 The number of joins that perform table scans.
@@ -497,6 +551,50 @@ Maximum number of connections used simultaneously since the server started.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | 1 | Sum | Int | Cumulative | false | Development |
+
+### mysql.myisam.key_cache.block.unused
+
+The number of unused MyISAM key cache blocks.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {block} | Gauge | Int | Development |
+
+### mysql.myisam.key_cache.block.used.max
+
+The maximum number of MyISAM key cache blocks simultaneously in use since the server started or status counters were reset.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {block} | Gauge | Int | Development |
+
+### mysql.myisam.key_cache.disk.operation
+
+The number of physical MyISAM key cache disk operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {operation} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The MyISAM key cache operation type. | Str: ``read``, ``write`` | Recommended | - |
+
+### mysql.myisam.key_cache.request
+
+The number of logical MyISAM key cache requests.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {request} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The MyISAM key cache operation type. | Str: ``read``, ``write`` | Recommended | - |
 
 ### mysql.mysqlx_worker_threads
 
@@ -537,6 +635,16 @@ The number of statements executed by the server.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | 1 | Sum | Int | Cumulative | true | Development |
+
+### mysql.query.execution.time
+
+The total execution time of SQL statements tracked by the server.
+
+This metric reports cumulative statement execution time in seconds, including statements issued by the receiver. Values reset when statement summary state is reset or the server restarts.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
 
 ### mysql.query.slow.count
 
@@ -587,6 +695,26 @@ This field is an indication of how “late” the replica is.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | s | Sum | Int | Cumulative | false | Development |
 
+### mysql.server.healthy
+
+The health status of the MySQL server.
+
+A value of '1' indicates healthy and '0' indicates unhealthy.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Int | Development |
+
+### mysql.session.active.count
+
+The number of active MySQL sessions with query text and state.
+
+Idle sessions and the receiver's own query are excluded.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {session} | Gauge | Int | Development |
+
 ### mysql.statement_event.count
 
 Summary of current and recent statement events.
@@ -619,6 +747,54 @@ The total wait time of the summarized timed events.
 | schema | The schema of the object. | Any Str | Recommended | - |
 | digest | Digest. | Any Str | Recommended | - |
 | digest_text | Text before digestion. | Any Str | Recommended | - |
+
+### mysql.table.auto_increment.limit
+
+The maximum value the auto_increment column can hold for a given table, based on its declared integer type and signedness. Reported as a double; values above 2^53 (the largest BIGINT UNSIGNED values) may be off by a small amount due to floating-point precision.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| table | Table name for event or process. | Any Str | Recommended | - |
+| schema | The schema of the object. | Any Str | Recommended | - |
+| mysql.column.name | The name of the table column. | Any Str | Recommended | - |
+
+### mysql.table.auto_increment.usage
+
+The current auto_increment value for a given table. Reported as a double; values above 2^53 (the largest BIGINT UNSIGNED values) may be off by a small amount due to floating-point precision.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| table | Table name for event or process. | Any Str | Recommended | - |
+| schema | The schema of the object. | Any Str | Recommended | - |
+| mysql.column.name | The name of the table column. | Any Str | Recommended | - |
+
+### mysql.table.auto_increment.utilization
+
+The fraction of the auto_increment column's integer range currently in use for a given table, between 0 and 1.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| table | Table name for event or process. | Any Str | Recommended | - |
+| schema | The schema of the object. | Any Str | Recommended | - |
+| mysql.column.name | The name of the table column. | Any Str | Recommended | - |
 
 ### mysql.table.average_row_length
 
@@ -780,6 +956,20 @@ events:
     enabled: true
 ```
 
+### db.server.query_plan
+
+The execution plan for a query.
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| db.system.name | The name of the database system. | Str: ``mysql`` | - |
+| mysql.query_plan.hash | This attribute is set to the same value as mysql.events_statements_summary_by_digest.digest (query digest) by design. | Any Str | - |
+| db.namespace | The name of the database the statement was executed against, or empty if not available. | Any Str | - |
+| mysql.query_plan.source | The event the plan was reported for, so plans can be routed or dropped per source event. | Str: ``db.server.top_query``, ``db.server.query_sample`` | - |
+| mysql.query_plan | The query plan for the statement, if available. | Any Str | - |
+
 ### db.server.query_sample
 
 Query sample collection enables monitoring of current running database statements.
@@ -792,7 +982,7 @@ This provides real-time visibility into active queries, helping users monitor da
 | db.system.name | The name of the database system. | Str: ``mysql`` | - |
 | mysql.threads.thread_id | The unique identifier for the thread executing the statement. | Any Int | - |
 | user.name | The user associated with a foreground thread, empty for a background thread (originally processlist_user). | Any Str | - |
-| db.namespace | The default database for the thread, or empty if none has been selected (originally processlist_db). | Any Str | - |
+| db.namespace | The name of the database the statement was executed against, or empty if not available. | Any Str | - |
 | mysql.threads.processlist_command | The type of command the thread is executing on behalf of the client for foreground threads, or `Sleep` if the session is idle. | Any Str | - |
 | mysql.threads.processlist_state | An action, event, or state that indicates what the thread is doing. | Any Str | - |
 | db.query.text | The SQL statement text for the event. | Any Str | - |
@@ -800,6 +990,8 @@ This provides real-time visibility into active queries, helping users monitor da
 | mysql.query_plan | The query plan for the statement, if available. | Any Str | - |
 | mysql.query_plan.hash | This attribute is set to the same value as mysql.events_statements_summary_by_digest.digest (query digest) by design. | Any Str | - |
 | mysql.event_id | The thread associated with the event and the thread current event number when the event starts. | Any Int | - |
+| mysql.wait_event.type | Top-level wait classification derived from the second path segment of the wait event name ('io', 'lock', 'synch'), or 'CPU'/'User sleep'/'other' when not actually waiting. Paired with mysql.wait_event.name. | Any Str | - |
+| mysql.wait_event.name | Detailed wait breakdown -- the wait event name with its category segment stripped (e.g. 'table/sql/handler', 'mutex/innodb/checkpoint_state'), or 'CPU'/'User sleep'/'other' when not actually waiting. Paired with mysql.wait_event.type. Distinct from mysql.wait_type, which reports the raw, unprocessed event name and is unchanged. | Any Str | - |
 | mysql.wait_type | The name of the instrument that produced the event. | Any Str | - |
 | mysql.session.status | Simplified session status, either 'waiting', 'running' or 'other'. | Any Str | - |
 | mysql.session.id | The unique identifier for the session associated with the event. | Any Int | - |
@@ -809,6 +1001,9 @@ This provides real-time visibility into active queries, helping users monitor da
 | client.port | TCP port used by the client. | Any Int | - |
 | network.peer.address | IP address of the peer client. | Any Str | - |
 | network.peer.port | TCP port used by the peer client. | Any Int | - |
+| mysql.client.name | The client driver's self-reported identity at connection time, e.g. "MySQL Connector/J" or "libmysql". Empty if the client reported no connect attributes or the connect-attrs feature is disabled server-side. | Any Str | - |
+| mysql.blocking.blocker.count | The number of concurrent InnoDB row-lock blockers currently holding a lock this session is waiting on. 0 indicates the session is not currently blocked, but also covers engines where blocking isn't measured (MariaDB, MySQL <8.0.11) -- an int can't carry that case separately. Check mysql.blocking.blocker.details to tell the two apart. | Any Int | - |
+| mysql.blocking.blocker.details | A JSON array of {thread_id, session_id} tuples, one per concurrent InnoDB row-lock blocker for this session. Unordered. session_id is null when that blocker could not be resolved (e.g. it disconnected between reads). "[]" when measured and not blocked, empty string when blocking isn't measurable on this engine/version (MariaDB, MySQL <8.0.11). | Any Str | - |
 
 ### db.server.top_query
 
@@ -820,12 +1015,15 @@ This provides insights into query performance and resource usage, helping users 
 | Name | Description | Values | Semantic Convention |
 | ---- | ----------- | ------ | ------------------- |
 | db.system.name | The name of the database system. | Str: ``mysql`` | - |
+| db.namespace | The name of the database the statement was executed against, or empty if not available. | Any Str | - |
 | db.query.text | The SQL statement text for the event. | Any Str | - |
 | mysql.query_plan | The query plan for the statement, if available. | Any Str | - |
 | mysql.query_plan.hash | This attribute is set to the same value as mysql.events_statements_summary_by_digest.digest (query digest) by design. | Any Str | - |
 | mysql.events_statements_summary_by_digest.digest | The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no. | Any Str | - |
 | mysql.events_statements_summary_by_digest.count_star | The number of times the statement was executed, report in delta value. | Any Int | - |
 | mysql.events_statements_summary_by_digest.sum_timer_wait | The total time spent executing the statement, report in delta seconds. | Any Double | - |
+| mysql.events_statements_summary_by_digest.examined_rows | The number of rows examined by the statement, reported as a delta value. | Any Int | - |
+| mysql.events_statements_summary_by_digest.returned_rows | The number of rows returned by the statement, reported as a delta value. | Any Int | - |
 
 ## Resource Attributes
 
@@ -834,6 +1032,8 @@ This provides insights into query performance and resource usage, helping users 
 | db.system.name | The database product of the instance. Examples include "mysql" and "mariadb". | Any Str | false | - | - |
 | db.system.version | The database version of the instance. Examples include "8.0.34" and "10.11.7-MariaDB". | Any Str | false | - | - |
 | mysql.instance.endpoint | Endpoint of the MySQL instance. | Any Str | true | - | - |
+| server.address | The address of the monitored MySQL instance. A loopback endpoint (for example localhost or 127.0.0.1) is reported as the host name of the machine running the collector, since the instance is co-located with it. With a Unix socket transport this is the socket path. | Any Str | true | - | - |
+| server.port | The port of the monitored MySQL instance. Not reported with a Unix socket transport. | Any Int | true | - | - |
 | service.instance.id | A unique identifier of the MySQL instance as a UUID v5, derived from the endpoint using the OTel namespace. | Any Str | true | - | - |
 | service.name | Logical name of the service. When enabled, defaults to unknown_service:mysql. | Any Str | false | - | - |
 | service.namespace | Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration. | Any Str | false | - | - |

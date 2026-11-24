@@ -9,11 +9,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -117,10 +119,9 @@ func TestFactory_EnabledBatchingMakesExporterMutable(t *testing.T) {
 
 	config.QueueSettings = configoptional.Some(exporterhelper.NewDefaultQueueConfig())
 	config.QueueSettings.Get().Sizer = exporterhelper.RequestSizerTypeItems
-	config.QueueSettings.Get().Batch = configoptional.Some(exporterhelper.BatchConfig{
-		FlushTimeout: 200 * time.Millisecond,
-		MinSize:      8192,
-	})
+	batch := config.QueueSettings.Get().Batch.GetOrInsertDefault()
+	batch.FlushTimeout = 200 * time.Millisecond
+	batch.MinSize = 8192
 
 	me, err = createMetricsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
@@ -148,13 +149,11 @@ func TestHecQueueSettings(t *testing.T) {
 
 	someBatch := func(keys []string) exporterhelper.QueueBatchConfig {
 		cfg := exporterhelper.NewDefaultQueueConfig()
-		batch := exporterhelper.BatchConfig{
-			FlushTimeout: 200 * time.Millisecond,
-			Sizer:        exporterhelper.RequestSizerTypeItems,
-			MinSize:      8192,
-		}
+		batch := cfg.Batch.GetOrInsertDefault()
+		batch.FlushTimeout = 200 * time.Millisecond
+		batch.Sizer = exporterhelper.RequestSizerTypeItems
+		batch.MinSize = 8192
 		batch.Partition.MetadataKeys = keys
-		cfg.Batch = configoptional.Some(batch)
 		return cfg
 	}
 
@@ -197,4 +196,36 @@ func TestHecQueueSettings(t *testing.T) {
 		_ = hecQueueSettings(configoptional.Some(orig))
 		assert.Equal(t, origKeys, orig.Batch.Get().Partition.MetadataKeys)
 	})
+}
+
+func TestFactory_ExporterHelperBatchingEnabled(t *testing.T) {
+	factory := NewFactory().(xexporter.Factory)
+	set := exportertest.NewNopSettings(metadata.Type)
+	create := map[string]func(*Config) (component.Component, error){
+		"traces":   func(cfg *Config) (component.Component, error) { return factory.CreateTraces(t.Context(), set, cfg) },
+		"metrics":  func(cfg *Config) (component.Component, error) { return factory.CreateMetrics(t.Context(), set, cfg) },
+		"logs":     func(cfg *Config) (component.Component, error) { return factory.CreateLogs(t.Context(), set, cfg) },
+		"profiles": func(cfg *Config) (component.Component, error) { return factory.CreateProfiles(t.Context(), set, cfg) },
+	}
+
+	for signal, fn := range create {
+		t.Run(signal, func(t *testing.T) {
+			for _, enabled := range []bool{true, false} {
+				cfg := factory.CreateDefaultConfig().(*Config)
+				cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
+				cfg.Token = "1234-1234"
+				if enabled {
+					cfg.QueueSettings.Get().Batch.GetOrInsertDefault()
+				} else {
+					cfg.QueueSettings.Get().Batch = configoptional.None[exporterhelper.BatchConfig]()
+				}
+
+				exp, err := fn(cfg)
+				require.NoError(t, err)
+				b, ok := exp.(interface{ ExporterHelperBatchingEnabled() bool })
+				require.True(t, ok)
+				assert.Equal(t, enabled, b.ExporterHelperBatchingEnabled())
+			}
+		})
+	}
 }

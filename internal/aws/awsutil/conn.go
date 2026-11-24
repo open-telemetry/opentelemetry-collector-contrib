@@ -17,7 +17,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"go.uber.org/zap"
-	"golang.org/x/net/http2"
 )
 
 // newHTTPClient returns new HTTP client instance with provided configuration.
@@ -36,17 +35,17 @@ func newHTTPClient(logger *zap.Logger, maxIdle, requestTimeout int, noVerify boo
 		logger.Error("unable to obtain proxy URL", zap.Error(err))
 		return nil, err
 	}
+	// HTTP/2 is not enabled by default as we configure TLSClientConfig for
+	// supporting SSL to data plane.
+	protocols := new(http.Protocols)
+	protocols.SetHTTP1(true)
+	protocols.SetHTTP2(true)
+
 	transport := &http.Transport{
 		MaxIdleConnsPerHost: maxIdle,
 		TLSClientConfig:     tls,
 		Proxy:               proxyFunc,
-	}
-
-	// is not enabled by default as we configure TLSClientConfig for supporting SSL to data plane.
-	// http2.ConfigureTransport will setup transport layer to use HTTP2
-	if err = http2.ConfigureTransport(transport); err != nil {
-		logger.Error("unable to configure http2 transport", zap.Error(err))
-		return nil, err
+		Protocols:           protocols,
 	}
 
 	http := &http.Client{

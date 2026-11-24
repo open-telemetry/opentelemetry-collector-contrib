@@ -33,55 +33,30 @@ func TestCreateNewLogReceiver(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 
 	userDefinedServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	userDefinedServerConfig.WriteTimeout = 0
-	userDefinedServerConfig.ReadHeaderTimeout = 0
-	userDefinedServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	userDefinedServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	userDefinedServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:8080",
 	}
 
 	headerRegexServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	headerRegexServerConfig.WriteTimeout = 0
-	headerRegexServerConfig.ReadHeaderTimeout = 0
-	headerRegexServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	headerRegexServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	headerRegexServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:8080",
 	}
 
 	readTimeoutServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	readTimeoutServerConfig.WriteTimeout = 0
-	readTimeoutServerConfig.ReadHeaderTimeout = 0
-	readTimeoutServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	readTimeoutServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	readTimeoutServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:8080",
 	}
 
 	writeTimeoutServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	writeTimeoutServerConfig.WriteTimeout = 0
-	writeTimeoutServerConfig.ReadHeaderTimeout = 0
-	writeTimeoutServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	writeTimeoutServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	writeTimeoutServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:8080",
 	}
 
 	regexCompileServerConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	regexCompileServerConfig.WriteTimeout = 0
-	regexCompileServerConfig.ReadHeaderTimeout = 0
-	regexCompileServerConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	regexCompileServerConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	regexCompileServerConfig.NetAddr = confignet.AddrConfig{
 		Transport: confignet.TransportTypeTCP,
 		Endpoint:  "localhost:8080",
@@ -403,14 +378,14 @@ func TestHMACSignatureSuccess(t *testing.T) {
 }
 
 func TestHMACSignatureWithFingerprintPrefix(t *testing.T) {
-	secret := "fp-secret"
+	secret := "fp-webhook-secret"
 	body := `{"requestId": "abc123"}`
 	signature := "v1=" + computeHMACSHA256(secret, body)
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.ServerConfig.NetAddr.Endpoint = "localhost:0"
 	cfg.HMACSignature = HMACSignature{
-		Secret: "fp-secret",
+		Secret: "fp-webhook-secret",
 		Header: "fpjs-event-signature",
 		Prefix: "v1=",
 	}
@@ -543,7 +518,7 @@ func TestHMACSignatureFailures(t *testing.T) {
 			desc: "Wrong secret produces signature mismatch",
 			cfg:  hmacCfg(),
 			req: func() *http.Request {
-				wrongSig := "sha256=" + computeHMACSHA256("wrong-secret", body)
+				wrongSig := "sha256=" + computeHMACSHA256("wrong-webhook-secret", body)
 				req := httptest.NewRequest(http.MethodPost, "http://localhost/events", strings.NewReader(body))
 				req.Header.Set("X-Hub-Signature-256", wrongSig)
 				return req

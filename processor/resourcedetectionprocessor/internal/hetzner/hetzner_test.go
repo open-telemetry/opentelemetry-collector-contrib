@@ -4,53 +4,69 @@
 package hetzner
 
 import (
-	"net/http"
-	"net/http/httptest"
+	"context"
+	"errors"
+	"fmt"
 	"testing"
 
-	hcloudmeta "github.com/hetznercloud/hcloud-go/v2/hcloud/metadata"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/attribute"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
-func withFakeMetaServer(t *testing.T, mux http.Handler) {
-	t.Helper()
-	srv := httptest.NewServer(mux)
-	t.Cleanup(srv.Close)
+// fakeDetector stands in for the upstream SDK detector. The SDK's hcloud
+// metadata client is not injectable, so the adapter is exercised against canned
+// SDK results instead of a fake metadata server.
+type fakeDetector struct {
+	res *sdkresource.Resource
+	err error
+}
 
-	orig := newHcloudClient
-	newHcloudClient = func() *hcloudmeta.Client {
-		return hcloudmeta.NewClient(hcloudmeta.WithEndpoint(srv.URL))
+func (f fakeDetector) Detect(context.Context) (*sdkresource.Resource, error) {
+	return f.res, f.err
+}
+
+func withFakeDetector(t *testing.T, res *sdkresource.Resource, err error) {
+	t.Helper()
+
+	orig := newResourceDetector
+	newResourceDetector = func() sdkresource.Detector {
+		return fakeDetector{res: res, err: err}
 	}
-	t.Cleanup(func() { newHcloudClient = orig })
+	t.Cleanup(func() { newResourceDetector = orig })
+}
+
+func fullResource() *sdkresource.Resource {
+	return sdkresource.NewSchemaless(
+		attribute.String("cloud.provider", "hetzner"),
+		attribute.String("cloud.platform", "hetzner.cloud_server"),
+		attribute.String("host.id", "987654321"),
+		attribute.String("host.name", "srv-123"),
+		attribute.String("cloud.region", "nbg1"),
+		attribute.String("cloud.availability_zone", "nbg1-dc3"),
+	)
 }
 
 func TestNewDetector(t *testing.T) {
 	dcfg := CreateDefaultConfig()
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), dcfg, false)
 	require.NoError(t, err)
-	assert.NotNil(t, d)
+	require.NotNil(t, d)
 }
 
 func TestHetznerDetector_Detect_OK(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/hostname", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("srv-123")) })
-	mux.HandleFunc("/instance-id", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("987654321")) })
-	mux.HandleFunc("/region", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("nbg1")) })
-	mux.HandleFunc("/availability-zone", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("nbg1-dc3")) })
-	withFakeMetaServer(t, mux)
+	withFakeDetector(t, fullResource(), nil)
 
 	cfg := CreateDefaultConfig()
 	cfg.ResourceAttributes.CloudPlatform.Enabled = true
 	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
-	res, schemaURL, err := d.Detect(t.Context())
+	res, _, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
 	want := map[string]any{
 		"cloud.provider":          TypeStr,
@@ -60,48 +76,99 @@ func TestHetznerDetector_Detect_OK(t *testing.T) {
 		"cloud.region":            "nbg1",
 		"cloud.availability_zone": "nbg1-dc3",
 	}
-	assert.Equal(t, want, res.Attributes().AsRaw())
+	require.Equal(t, want, res.Attributes().AsRaw())
+}
+
+// cloud.platform is disabled by default, so the detector must drop it even
+// though the SDK detector always reports it.
+func TestHetznerDetector_Detect_DefaultConfig(t *testing.T) {
+	withFakeDetector(t, fullResource(), nil)
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+	require.NoError(t, err)
+
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+
+	want := map[string]any{
+		"cloud.provider":          TypeStr,
+		"host.id":                 "987654321",
+		"host.name":               "srv-123",
+		"cloud.region":            "nbg1",
+		"cloud.availability_zone": "nbg1-dc3",
+	}
+	require.Equal(t, want, res.Attributes().AsRaw())
 }
 
 func TestHetznerDetector_NotOnHetzner(t *testing.T) {
-	// Set up a server so that IsHcloudServer() returns false (Hostname() errors).
-	mux := http.NewServeMux()
-	mux.HandleFunc("/hostname", func(w http.ResponseWriter, _ *http.Request) {
-		http.Error(w, "boom", http.StatusInternalServerError)
-	})
-	ts := httptest.NewServer(mux)
-	t.Cleanup(ts.Close)
+	withFakeDetector(t, sdkresource.Empty(), nil)
 
-	// Temporarily point our detector’s client factory to the test server.
-	orig := newHcloudClient
-	newHcloudClient = func() *hcloudmeta.Client {
-		return hcloudmeta.NewClient(hcloudmeta.WithEndpoint(ts.URL))
-	}
-	t.Cleanup(func() { newHcloudClient = orig })
-
-	cfg := CreateDefaultConfig()
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())
 	require.NoError(t, err)
-	assert.True(t, internal.IsEmptyResource(res))
-	assert.Empty(t, schemaURL)
+	require.True(t, internal.IsEmptyResource(res))
+	require.Empty(t, schemaURL)
 }
 
-func TestHetznerDetector_HostnameError(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/hostname", func(w http.ResponseWriter, _ *http.Request) {
-		http.Error(w, "boom", http.StatusInternalServerError)
-	})
-	withFakeMetaServer(t, mux)
+// A partial result is kept as-is when fail_on_missing_metadata is false: the
+// attributes that could not be read are omitted rather than emitted empty.
+func TestHetznerDetector_PartialMetadata(t *testing.T) {
+	partial := sdkresource.NewSchemaless(
+		attribute.String("cloud.provider", "hetzner"),
+		attribute.String("cloud.platform", "hetzner.cloud_server"),
+		attribute.String("host.name", "srv-123"),
+		attribute.String("cloud.region", "nbg1"),
+	)
+	withFakeDetector(t, partial, fmt.Errorf("%w: instance ID: boom", sdkresource.ErrPartialResource))
 
-	cfg := CreateDefaultConfig()
-	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+	require.NoError(t, err)
+
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+
+	want := map[string]any{
+		"cloud.provider": TypeStr,
+		"host.name":      "srv-123",
+		"cloud.region":   "nbg1",
+	}
+	require.Equal(t, want, res.Attributes().AsRaw())
+}
+
+// fail_on_missing_metadata covers an unusable metadata service, not a field
+// absent from an otherwise good response, so a partial result still succeeds.
+func TestHetznerDetector_PartialMetadata_FailOnMissingMetadata(t *testing.T) {
+	partial := sdkresource.NewSchemaless(
+		attribute.String("cloud.provider", "hetzner"),
+		attribute.String("cloud.platform", "hetzner.cloud_server"),
+		attribute.String("host.name", "srv-123"),
+	)
+	withFakeDetector(t, partial, fmt.Errorf("%w: instance ID: boom", sdkresource.ErrPartialResource))
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), true)
+	require.NoError(t, err)
+
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+
+	want := map[string]any{
+		"cloud.provider": TypeStr,
+		"host.name":      "srv-123",
+	}
+	require.Equal(t, want, res.Attributes().AsRaw())
+}
+
+func TestHetznerDetector_Error(t *testing.T) {
+	errBoom := errors.New("boom")
+	withFakeDetector(t, nil, errBoom)
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
 	res, schemaURL, err := d.Detect(t.Context())
-	require.NoError(t, err)
-	assert.True(t, internal.IsEmptyResource(res))
-	assert.Empty(t, schemaURL)
+	require.ErrorIs(t, err, errBoom)
+	require.True(t, internal.IsEmptyResource(res))
+	require.Empty(t, schemaURL)
 }

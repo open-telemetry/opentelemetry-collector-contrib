@@ -25,6 +25,8 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ProcessorSpanpruningBytesProcessedInput.Add(context.Background(), 1)
 	tb.ProcessorSpanpruningBytesProcessedOutput.Add(context.Background(), 1)
 	tb.ProcessorSpanpruningBytesReceived.Add(context.Background(), 1)
+	tb.ProcessorSpanpruningExemplarsSampled.Add(context.Background(), 1)
+	tb.ProcessorSpanpruningInvalidTraces.Add(context.Background(), 1)
 	tb.ProcessorSpanpruningLeafAttributeDiversityLoss.Record(context.Background(), 1)
 	tb.ProcessorSpanpruningLeafAttributeLoss.Record(context.Background(), 1)
 	tb.ProcessorSpanpruningOutliersCorrelationsDetected.Add(context.Background(), 1)
@@ -53,6 +55,12 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorSpanpruningBytesReceived(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorSpanpruningExemplarsSampled(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorSpanpruningInvalidTraces(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorSpanpruningLeafAttributeDiversityLoss(t, testTel,

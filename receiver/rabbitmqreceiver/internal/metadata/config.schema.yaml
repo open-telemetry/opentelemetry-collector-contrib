@@ -584,6 +584,23 @@ $defs:
     description: ResourceAttributesConfig provides config for rabbitmq resource attributes.
     type: object
     properties:
+      rabbitmq.cluster.name:
+        description: ResourceAttributeConfig provides common config for a rabbitmq.cluster.name resource attribute.
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          metrics_include:
+            description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          metrics_exclude:
+            description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
       rabbitmq.node.name:
         description: ResourceAttributeConfig provides common config for a rabbitmq.node.name resource attribute.
         type: object

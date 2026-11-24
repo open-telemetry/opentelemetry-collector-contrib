@@ -7,6 +7,11 @@ $defs:
         type: object
         additionalProperties:
           $ref: expr_string_config
+  auth_config:
+    description: AuthConfig configures an optional server authenticator for connection-based stanza inputs, such as the tcp input. It is meant to be embedded by operators that accept network connections so they can delegate authentication to a standard extensionauth.Server extension.
+    type: object
+    allOf:
+      - $ref: go.opentelemetry.io/collector/config/configauth.config
   basic_config:
     description: BasicConfig provides a basic implementation for an operator config.
     type: object
@@ -18,6 +23,12 @@ $defs:
   byte_size:
     type: integer
     x-customType: int64
+  drop_field_config:
+    description: DropFieldConfig provides configuration for dropping parsed fields from an entry.
+    type: object
+    properties:
+      drop_field:
+        type: boolean
   expr_string_config:
     description: ExprStringConfig is a string that represents an expression
     type: string
@@ -66,6 +77,7 @@ $defs:
         $ref: trace_parser
     allOf:
       - $ref: transformer_config
+      - $ref: drop_field_config
   scope_name_parser:
     description: ScopeNameParser is a helper that parses severity onto an entry.
     type: object
@@ -87,6 +99,8 @@ $defs:
         $ref: /pkg/stanza/entry.field
       preset:
         type: string
+    allOf:
+      - $ref: drop_field_config
   span_id_config:
     type: object
     properties:
@@ -110,6 +124,8 @@ $defs:
         type: object
         additionalProperties:
           type: string
+    allOf:
+      - $ref: drop_field_config
   trace_flags_config:
     type: object
     properties:

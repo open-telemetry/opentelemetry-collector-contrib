@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/proto"
 
@@ -29,16 +30,16 @@ import (
 	pb "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/yanggrpcreceiver/internal/proto/generated/proto"
 )
 
-// SampleTelemetryData represents a sample telemetry message for testing
-type SampleTelemetryData struct {
+// sampleTelemetryData represents a sample telemetry message for testing
+type sampleTelemetryData struct {
 	NodeID       string               `json:"node_id"`
 	Subscription string               `json:"subscription"`
 	EncodingPath string               `json:"encoding_path"`
-	Interfaces   []InterfaceTelemetry `json:"interfaces"`
+	Interfaces   []interfaceTelemetry `json:"interfaces"`
 }
 
-// InterfaceTelemetry represents telemetry data for a single interface
-type InterfaceTelemetry struct {
+// interfaceTelemetry represents telemetry data for a single interface
+type interfaceTelemetry struct {
 	Name       string            `json:"name"`
 	Statistics map[string]uint64 `json:"statistics"`
 }
@@ -50,7 +51,8 @@ func TestSampleTelemetryData(t *testing.T) {
 
 	// Create receiver configuration
 	config := createDefaultConfig().(*Config)
-	config.ServerConfig.NetAddr.Endpoint = "localhost:57404"
+	endpoint := getFreeEndpoint(t)
+	config.ServerConfig.NetAddr.Endpoint = endpoint
 	config.ServerConfig.NetAddr.Transport = "tcp"
 
 	settings := receiver.Settings{
@@ -70,23 +72,19 @@ func TestSampleTelemetryData(t *testing.T) {
 		assert.NoError(t, rcvr.Shutdown(ctx))
 	}()
 
-	// Wait until the gRPC server is ready to accept connections instead of using
-	// a fixed sleep, which is unreliable on slow or loaded CI machines.
-	require.Eventually(t, func() bool {
-		conn, err := net.DialTimeout(string(config.ServerConfig.NetAddr.Transport), config.ServerConfig.NetAddr.Endpoint, 100*time.Millisecond)
-		if err != nil {
-			return false
-		}
-		conn.Close()
-		return true
-	}, 5*time.Second, 10*time.Millisecond, "receiver did not start accepting connections in time")
+	// Wait until the gRPC server is ready to accept streams. A raw TCP dial is not
+	// sufficient because the listener accepts connections before the gRPC server
+	// starts serving; establishing a real gRPC connection and reusing it for all
+	// sends avoids the "failed to create stream: context deadline exceeded" flake.
+	conn := newReadyClientConn(t, endpoint)
+	defer conn.Close()
 
 	// Load sample data (either from file or use built-in sample)
 	sampleData := getSampleTelemetryData(t)
 
 	// Send each interface's telemetry data
 	for _, interfaceData := range sampleData.Interfaces {
-		err := sendInterfaceTelemetryData("localhost:57404", sampleData.NodeID, sampleData.Subscription, sampleData.EncodingPath, interfaceData)
+		err := sendInterfaceTelemetryData(conn, sampleData.NodeID, sampleData.Subscription, sampleData.EncodingPath, interfaceData)
 		if err != nil {
 			t.Fatalf("Failed to send telemetry for interface %s: %v", interfaceData.Name, err)
 		}
@@ -100,7 +98,7 @@ func TestSampleTelemetryData(t *testing.T) {
 }
 
 // getSampleTelemetryData returns sample telemetry data (loads from file if available, otherwise uses built-in data)
-func getSampleTelemetryData(t *testing.T) SampleTelemetryData {
+func getSampleTelemetryData(t *testing.T) sampleTelemetryData {
 	// Try to load from sample_telemetry.json file first
 	if data, err := loadSampleFromFile(filepath.Join("internal", "testdata", "sample_telemetry.json")); err == nil {
 		t.Logf("Loaded sample telemetry data from file: %d interfaces", len(data.Interfaces))
@@ -109,11 +107,11 @@ func getSampleTelemetryData(t *testing.T) SampleTelemetryData {
 
 	// Use built-in realistic sample data based on production observations
 	t.Logf("Using built-in sample telemetry data")
-	return SampleTelemetryData{
+	return sampleTelemetryData{
 		NodeID:       "PROD-SWITCH-01",
 		Subscription: "interface-stats-production",
 		EncodingPath: "Cisco-IOS-XE-interfaces-oper:interfaces/interface/statistics",
-		Interfaces: []InterfaceTelemetry{
+		Interfaces: []interfaceTelemetry{
 			{
 				Name: "GigabitEthernet1/0/1",
 				Statistics: map[string]uint64{
@@ -188,8 +186,8 @@ func getSampleTelemetryData(t *testing.T) SampleTelemetryData {
 }
 
 // loadSampleFromFile loads sample telemetry data from a JSON file
-func loadSampleFromFile(filename string) (SampleTelemetryData, error) {
-	var data SampleTelemetryData
+func loadSampleFromFile(filename string) (sampleTelemetryData, error) {
+	var data sampleTelemetryData
 
 	file, err := os.Open(filename)
 	if err != nil {
@@ -207,18 +205,12 @@ func loadSampleFromFile(filename string) (SampleTelemetryData, error) {
 }
 
 // sendInterfaceTelemetryData sends telemetry data for a specific interface
-func sendInterfaceTelemetryData(endpoint, nodeID, subscription, encodingPath string, interfaceData InterfaceTelemetry) error {
-	conn, err := grpc.NewClient(endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return fmt.Errorf("failed to connect to receiver: %w", err)
-	}
-	defer conn.Close()
-
+func sendInterfaceTelemetryData(conn *grpc.ClientConn, nodeID, subscription, encodingPath string, interfaceData interfaceTelemetry) error {
 	client := pb.NewGRPCMdtDialoutClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	stream, err := client.MdtDialout(ctx)
+	stream, err := client.MdtDialout(ctx, grpc.WaitForReady(true))
 	if err != nil {
 		return fmt.Errorf("failed to create stream: %w", err)
 	}
@@ -267,6 +259,11 @@ func sendInterfaceTelemetryData(endpoint, nodeID, subscription, encodingPath str
 	}
 
 	err = stream.Send(args)
+	if errors.Is(err, io.EOF) {
+		// The server already ended the stream; its status is only available via Recv.
+		_, err = stream.Recv()
+		return err
+	}
 	if err != nil {
 		return fmt.Errorf("failed to send telemetry data: %w", err)
 	}
@@ -285,7 +282,7 @@ func sendInterfaceTelemetryData(endpoint, nodeID, subscription, encodingPath str
 }
 
 // analyzeResults analyzes the captured metrics and provides detailed interface analysis
-func analyzeResults(t *testing.T, consumer *metricsCapture, sampleData SampleTelemetryData) {
+func analyzeResults(t *testing.T, consumer *metricsCapture, sampleData sampleTelemetryData) {
 	metrics := consumer.GetMetrics()
 	if len(metrics) == 0 {
 		t.Fatal("No metrics were captured")
@@ -414,6 +411,44 @@ func analyzeResults(t *testing.T, consumer *metricsCapture, sampleData SampleTel
 		} else {
 			t.Errorf("   FAIL %s: Missing telemetry data", expectedInterface.Name)
 		}
+	}
+}
+
+// getFreeEndpoint returns a currently-unused local TCP endpoint. Using a
+// dynamically allocated port instead of a hard-coded one prevents flaky failures
+// caused by the port already being in use.
+func getFreeEndpoint(t *testing.T) string {
+	t.Helper()
+	listener, err := net.Listen("tcp", "localhost:0")
+	require.NoError(t, err)
+	defer listener.Close()
+	return listener.Addr().String()
+}
+
+// newReadyClientConn dials the receiver and blocks until the gRPC connection is
+// actually ready to serve requests. Waiting for the READY state (rather than a
+// raw TCP dial or a fixed sleep) ensures the gRPC server has finished starting,
+// and reusing the returned connection for every send avoids per-send connection
+// setup racing the send deadline. Both previously surfaced as
+// "failed to create stream: context deadline exceeded" flakes on loaded CI.
+func newReadyClientConn(t *testing.T, endpoint string) *grpc.ClientConn {
+	t.Helper()
+	conn, err := grpc.NewClient(endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	for {
+		state := conn.GetState()
+		if state == connectivity.Ready {
+			return conn
+		}
+		if state == connectivity.Idle {
+			conn.Connect()
+		}
+		require.True(t, conn.WaitForStateChange(ctx, state),
+			"gRPC server did not become ready in time (last state: %s)", state)
 	}
 }
 

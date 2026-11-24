@@ -12,7 +12,8 @@ used when the collector is deployed as an agent.
 | Distributions | [core], [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fhostmetrics%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fhostmetrics) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fhostmetrics%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fhostmetrics) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_hostmetrics)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_hostmetrics&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@braydonk](https://www.github.com/braydonk), [@rogercoll](https://www.github.com/rogercoll) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@braydonk](https://www.github.com/braydonk), [@rogercoll](https://www.github.com/rogercoll), [@pjanotti](https://www.github.com/pjanotti) |
+| Emeritus      | [@dmitryax](https://www.github.com/dmitryax) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -47,11 +48,12 @@ host_metrics:
 The available scrapers are:
 
 | Scraper      | Supported OSs                | Description                                            |
-| ------------ | ---------------------------- | ------------------------------------------------------ |
+|--------------| ---------------------------- | ------------------------------------------------------ |
 | [cpu]        | All                          | CPU utilization metrics                                |
 | [disk]       | All                          | Disk I/O metrics                                       |
-| [load]       | All                          | CPU load metrics                                       |
 | [filesystem] | All                          | File System utilization metrics                        |
+| [hardware]   | Linux                        | Hardware sensor metrics (temperature)          |
+| [load]       | All                          | CPU load metrics                                       |
 | [memory]     | All                          | Memory utilization metrics                             |
 | [network]    | All                          | Network interface I/O metrics & TCP connection metrics |
 | [nfs]        | Linux                        | NFS server and client metrics                          |
@@ -63,6 +65,7 @@ The available scrapers are:
 [cpu]: ./internal/scraper/cpuscraper/documentation.md
 [disk]: ./internal/scraper/diskscraper/documentation.md
 [filesystem]: ./internal/scraper/filesystemscraper/documentation.md
+[hardware]: ./internal/scraper/hardwarescraper/documentation.md
 [load]: ./internal/scraper/loadscraper/documentation.md
 [memory]: ./internal/scraper/memoryscraper/documentation.md
 [network]: ./internal/scraper/networkscraper/documentation.md
@@ -142,6 +145,42 @@ The following settings are optional:
 - `mute_process_cgroup_error` (default: false): mute the error encountered when trying to read the cgroup of a process the collector does not have permission to read. This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
 - `mute_process_exe_error` (default: false): mute the error encountered when trying to read the executable path of a process the collector does not have permission to read (Linux only). This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
 - `mute_process_user_error` (default: false): mute the error encountered when trying to read a uid which doesn't exist on the system, eg. is owned by a user that only exists in a container. This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
+
+### Hardware
+
+```yaml
+hardware:
+  temperature:
+    <include|exclude>:
+      sensors: [ <sensor pattern>, ... ]
+      match_type: <strict|regexp>
+```
+
+The following settings are optional:
+
+- `temperature.include.sensors` (unset by default): when unset, all sensors are included
+
+The hardwarescraper currently supports the following sub-scrapers:
+- **Temperature** (Linux only): Collects temperature readings from hardware sensors
+  - `hw.temperature`: Current temperature readings in Celsius
+  - `hw.temperature.limit`: Temperature thresholds with `hw.limit_type` values `high.degraded`, `high.critical`, `low.degraded`, and `low.critical`
+
+**Note**: Hardware scraping is currently only supported on Linux systems that expose hardware sensors through the sysfs hwmon interface. Only temperature monitoring is implemented at this time.
+
+Hardware sensors are discovered in `/sys/class/hwmon`, respecting the receiver's `root_path` and existing `HOST_SYS` environment override. There is no separate scraper-level path setting.
+
+When collecting host hardware metrics from a container, mount the host's `/sys` tree under `root_path` (for example, `/hostfs/sys`). Entries in `/sys/class/hwmon` can be relative symlinks into `/sys/devices`; mounting only `/sys/class/hwmon` leaves their targets unavailable and may result in no sensor metrics.
+
+Known limitations, both of which come from the hwmon interface itself:
+
+- Some drivers expose `tempN_input` files for sensors they never populate. Such a
+  file reads successfully and contains `0`, which is indistinguishable from a
+  genuine 0 °C measurement, so those sensors are reported as `0 °C`. Sensors the
+  driver reports as absent (a read failing with `ENXIO`) are skipped instead.
+- On chips that use external thermistors, the hwmon interface carries millivolts
+  in the `temp*` files rather than millidegrees Celsius, and the conversion is
+  expected to happen outside the kernel. The unit is not exposed anywhere in
+  sysfs, so such readings are published as if they were temperatures.
 
 ## Advanced Configuration
 
@@ -226,4 +265,3 @@ When a Collector is not linked to glibc, it can only resolve usernames and group
 
 This manifests most often as a failure to set the `process.owner` resource attribute in the `process` scraper. One concrete example is if a process is run as a systemd service using the `DynamicUser` feature. A Collector not linked to glibc will be incapable of resolving the username for the owner of that process because the `DynamicUser` feature leverages NSS (Name Service Switch) to resolve the username dynamically at user lookup time; a Go binary that uses the pure-Go `netgo` implementation is not NSS-aware and subsequently fails the user lookup.  
 See more in the [demo repo](https://github.com/braydonk/poc-systemd-dynamic-user-netgo) created by `host_metrics` codeowner [@braydonk](https://github.com/braydonk).
-

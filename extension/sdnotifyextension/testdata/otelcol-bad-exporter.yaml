@@ -1,0 +1,19 @@
+extensions:
+  sd_notify: {}
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 127.0.0.1:4317
+
+exporters:
+  otlp/nonexistent:
+    endpoint: 127.0.0.1:65535
+
+service:
+  extensions: [sd_notify]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [otlp/nonexistent]

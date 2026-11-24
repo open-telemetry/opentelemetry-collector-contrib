@@ -54,7 +54,7 @@ func TestDetector_Detect_NotContainerApp_FailOnMissingMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	res, schemaURL, err := containerAppDetector.Detect(t.Context())
-	require.ErrorContains(t, err, "CONTAINER_APP_NAME")
+	require.ErrorContains(t, err, "azure container apps metadata unavailable")
 	assert.Empty(t, schemaURL)
 	assert.Equal(t, 0, res.Attributes().Len())
 }
@@ -71,8 +71,9 @@ func TestDetector_Detect_ContainerApp_AllAttributesDisabled_FailOnMissingMetadat
 	containerAppDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, true)
 	require.NoError(t, err)
 
-	res, _, err := containerAppDetector.Detect(t.Context())
+	res, schemaURL, err := containerAppDetector.Detect(t.Context())
 	require.NoError(t, err)
+	require.NotEmpty(t, schemaURL)
 	assert.Equal(t, 0, res.Attributes().Len())
 }
 
@@ -84,8 +85,9 @@ func TestDetect_ResourceAttributesDisabled(t *testing.T) {
 	containerAppDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
 	require.NoError(t, err)
 
-	res, _, err := containerAppDetector.Detect(t.Context())
+	res, schemaURL, err := containerAppDetector.Detect(t.Context())
 	require.NoError(t, err)
+	require.NotEmpty(t, schemaURL)
 	_, hasServiceName := res.Attributes().Get("service.name")
 	assert.False(t, hasServiceName, "service.name should be absent when disabled in config")
 	assert.Equal(t, 3, res.Attributes().Len())

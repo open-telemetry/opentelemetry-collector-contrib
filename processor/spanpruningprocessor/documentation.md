@@ -22,6 +22,22 @@ Total aggregation summary spans created
 | ---- | ----------- | ---------- | --------- | --------- |
 | {spans} | Sum | Int | true | Development |
 
+### otelcol_processor_spanpruning_exemplars_sampled
+
+Spans randomly sampled as exemplars (excluded from aggregation)
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {spans} | Sum | Int | true | Development |
+
+### otelcol_processor_spanpruning_invalid_traces
+
+Total traces left unpruned because their span structure is invalid, such as parent links forming a cycle
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {traces} | Sum | Int | true | Development |
+
 ### otelcol_processor_spanpruning_outliers_correlations_detected
 
 Groups where outliers had correlated attributes

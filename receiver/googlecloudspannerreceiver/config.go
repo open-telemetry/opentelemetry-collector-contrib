@@ -24,6 +24,8 @@ type Config struct {
 	CardinalityTotalLimit             int       `mapstructure:"cardinality_total_limit"`
 	Projects                          []Project `mapstructure:"projects"`
 	HideTopnLockstatsRowrangestartkey bool      `mapstructure:"hide_topn_lockstats_rowrangestartkey"`
+	HideSplitStatsKeys                bool      `mapstructure:"hide_split_stats_keys"`
+	HideClientIPAddress               bool      `mapstructure:"hide_client_ip_address"`
 	TruncateText                      bool      `mapstructure:"truncate_text"`
 }
 

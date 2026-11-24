@@ -27,9 +27,10 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
@@ -226,9 +227,7 @@ func expectedMetricsByEndpoint(t *testing.T, md pmetric.Metrics, routingKey stri
 	var batches map[string]pmetric.Metrics
 	switch routingKey {
 	case svcRoutingStr:
-		var errs []error
-		batches, errs = splitMetricsByResourceServiceName(md)
-		require.Empty(t, errs)
+		batches = splitMetricsByResourceServiceName(md)
 	case resourceRoutingStr:
 		batches = splitMetricsByResourceID(md)
 	case metricNameRoutingStr:
@@ -269,21 +268,32 @@ func TestSplitMetricsByResourceServiceName(t *testing.T) {
 
 			expectedOutput := loadMetricsMap(t, filepath.Join(dir, "output.yaml"))
 
-			output, errs := splitMetricsByResourceServiceName(input)
-			require.Nil(t, errs)
+			output := splitMetricsByResourceServiceName(input)
 			compareMetricsMaps(t, expectedOutput, output)
 		})
 	}
 }
 
-func TestSplitMetricsByResourceServiceNameFailsIfMissingServiceNameAttribute(t *testing.T) {
+func TestSplitMetricsByResourceServiceNameMissingServiceName(t *testing.T) {
 	t.Parallel()
 
 	input, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", "split_metrics", "missing_service_name", "input.yaml"))
 	require.NoError(t, err)
 
-	_, errs := splitMetricsByResourceServiceName(input)
-	require.NotNil(t, errs)
+	output := splitMetricsByResourceServiceName(input)
+	require.Len(t, output, 1)
+	for key, batch := range output {
+		require.Equal(t, identity.OfResource(input.ResourceMetrics().At(0).Resource()).String(), key)
+		require.Equal(t, 1, batch.ResourceMetrics().Len())
+	}
+
+	// An empty service name is treated as missing.
+	input.ResourceMetrics().At(0).Resource().Attributes().PutStr("service.name", "")
+	output = splitMetricsByResourceServiceName(input)
+	require.Len(t, output, 1)
+	for key := range output {
+		require.NotEmpty(t, key)
+	}
 }
 
 func TestSplitMetrics(t *testing.T) {
@@ -1203,6 +1213,23 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 						}
 					}
 				}
+			}
+		})
+	}
+}
+
+// BenchmarkConsumeMetricsManyResources models fleets where each pod reports as
+// its own resource (e.g. kubeletstats through a per-stream routing key): many
+// distinct resources, few metrics each. The per-exporter accumulated batch then
+// contains hundreds of ResourceMetrics, which makes repeated re-hashing of the
+// accumulated data the dominant cost.
+func BenchmarkConsumeMetricsManyResources(b *testing.B) {
+	for _, routingKey := range []string{resourceRoutingStr, streamIDRoutingStr} {
+		b.Run(routingKey, func(b *testing.B) {
+			for _, rmCount := range []int{100, 500, 1000} {
+				b.Run(fmt.Sprintf("%dRM", rmCount), func(b *testing.B) {
+					benchConsumeMetrics(b, routingKey, 5, rmCount, 1, 2, 2)
+				})
 			}
 		})
 	}

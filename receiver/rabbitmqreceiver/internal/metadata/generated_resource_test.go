@@ -13,6 +13,7 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
+			rb.SetRabbitmqClusterName("rabbitmq.cluster.name-val")
 			rb.SetRabbitmqExchangeName("rabbitmq.exchange.name-val")
 			rb.SetRabbitmqExchangeType("rabbitmq.exchange.type-val")
 			rb.SetRabbitmqNodeName("rabbitmq.node.name-val")
@@ -26,12 +27,17 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 5, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 5, res.Attributes().Len())
+				assert.Equal(t, 6, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
+			}
+			rabbitmqClusterNameAttrVal, ok := res.Attributes().Get("rabbitmq.cluster.name")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "rabbitmq.cluster.name-val", rabbitmqClusterNameAttrVal.Str())
 			}
 			rabbitmqExchangeNameAttrVal, ok := res.Attributes().Get("rabbitmq.exchange.name")
 			assert.True(t, ok)

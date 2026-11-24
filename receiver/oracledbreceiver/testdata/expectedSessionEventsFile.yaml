@@ -10,9 +10,18 @@ resourceLogs:
         - key: service.instance.id
           value:
             stringValue: oraclehost:1521/ORCL
+        - key: server.address
+          value:
+            stringValue: oraclehost
+        - key: server.port
+          value:
+            intValue: "1521"
     scopeLogs:
       - logRecords:
           - attributes:
+              - key: db.system.name
+                value:
+                  stringValue: oracle
               - key: oracledb.sid
                 value:
                   stringValue: "100"
@@ -41,6 +50,9 @@ resourceLogs:
             eventName: db.server.session.wait_sample
             timeUnixNano: "1785268070763719000"
           - attributes:
+              - key: db.system.name
+                value:
+                  stringValue: oracle
               - key: oracledb.sid
                 value:
                   stringValue: "101"
@@ -69,6 +81,9 @@ resourceLogs:
             eventName: db.server.session.wait_sample
             timeUnixNano: "1785268070763719000"
           - attributes:
+              - key: db.system.name
+                value:
+                  stringValue: oracle
               - key: oracledb.sid
                 value:
                   stringValue: "102"

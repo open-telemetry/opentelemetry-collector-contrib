@@ -111,7 +111,7 @@ func (s *mongodbScraper) scrapeTopQueryLogs(ctx context.Context) (plog.Logs, err
 		return plog.NewLogs(), fmt.Errorf("failed to get server status for top_query logs: %w", err)
 	}
 
-	serverAddress, serverPort, err := serverAddressAndPort(serverStatus)
+	serverAddress, serverPort, err := s.resolveServerAddress(serverStatus)
 	if err != nil {
 		s.logger.Debug("Failed to extract server address and port for top_query logs", zap.Error(err))
 		return plog.NewLogs(), fmt.Errorf("failed to extract server address and port for top_query logs: %w", err)
@@ -175,7 +175,7 @@ func (s *mongodbScraper) scrapeTopQueryLogs(ctx context.Context) (plog.Logs, err
 	}
 
 	rb := s.lb.NewResourceBuilder()
-	setResourceAttributes(rb, serverAddress, serverPort)
+	setResourceAttributes(rb, serverAddress, serverPort, s.mongoVersion)
 	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
 
 	s.lastScrapeTime = serverNow

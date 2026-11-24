@@ -72,6 +72,7 @@ type multiShardAggregator struct {
 	timezone          *time.Location
 	telemetryBuilder  *metadata.TelemetryBuilder
 	includeFields     []string
+	timestampMode     TimestampMode
 
 	shards map[attribute.Set]*aggregatorShard
 	// lock protects the shards map during concurrent lookups and creation.
@@ -118,7 +119,7 @@ func (m *multiShardAggregator) getOrCreateShard(info client.Info, aset attribute
 		md[k] = info.Metadata.Get(k)
 	}
 	shard = &aggregatorShard{
-		aggregator: newLogAggregator(m.logCountAttribute, m.timezone, m.telemetryBuilder, m.includeFields),
+		aggregator: newLogAggregator(m.logCountAttribute, m.timezone, m.telemetryBuilder, m.includeFields, m.timestampMode),
 		clientInfo: client.Info{
 			Metadata: client.NewMetadata(md),
 		},
@@ -127,22 +128,22 @@ func (m *multiShardAggregator) getOrCreateShard(info client.Info, aset attribute
 	return shard, nil
 }
 
-func (m *multiShardAggregator) flush(_ context.Context, nextConsumer consumer.Logs, logger *zap.Logger) {
+func (m *multiShardAggregator) flush(ctx context.Context, nextConsumer consumer.Logs, logger *zap.Logger) {
 	m.lock.Lock()
 	shards := make([]*aggregatorShard, 0, len(m.shards))
 	for _, s := range m.shards {
 		shards = append(shards, s)
 	}
+	clear(m.shards)
 	m.lock.Unlock()
 
 	for _, shard := range shards {
-		exportCtx := client.NewContext(context.Background(), shard.clientInfo)
+		exportCtx := client.NewContext(ctx, shard.clientInfo)
 		logs := shard.aggregator.Export(exportCtx)
 		if logs.LogRecordCount() > 0 {
 			if err := nextConsumer.ConsumeLogs(exportCtx, logs); err != nil {
 				logger.Error("failed to consume logs", zap.Error(err))
 			}
-			shard.aggregator.Reset()
 		}
 	}
 }
@@ -184,7 +185,7 @@ func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Se
 	var agg shardedAggregator
 	if len(metadataKeys) == 0 {
 		agg = &singleShardAggregator{
-			aggregator: newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder, cfg.IncludeFields),
+			aggregator: newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder, cfg.IncludeFields, cfg.TimestampMode),
 		}
 	} else {
 		if cfg.MetadataCardinalityLimit == 0 {
@@ -199,6 +200,7 @@ func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Se
 			timezone:                 timezone,
 			telemetryBuilder:         telemetryBuilder,
 			includeFields:            cfg.IncludeFields,
+			timestampMode:            cfg.TimestampMode,
 			shards:                   make(map[attribute.Set]*aggregatorShard),
 		}
 	}
@@ -213,8 +215,8 @@ func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Se
 }
 
 // Start starts the processor.
-func (p *logDedupProcessor) Start(ctx context.Context, _ component.Host) error {
-	ctx, cancel := context.WithCancel(ctx)
+func (p *logDedupProcessor) Start(_ context.Context, _ component.Host) error {
+	ctx, cancel := context.WithCancel(context.Background())
 	p.cancel = cancel
 
 	p.wg.Add(1)
@@ -229,11 +231,14 @@ func (*logDedupProcessor) Capabilities() consumer.Capabilities {
 }
 
 // Shutdown stops the processor.
-func (p *logDedupProcessor) Shutdown(context.Context) error {
+func (p *logDedupProcessor) Shutdown(ctx context.Context) error {
 	if p.cancel != nil {
 		// Call cancel to stop the export interval goroutine and wait for it to finish.
 		p.cancel()
 		p.wg.Wait()
+		// Flush whatever the goroutine left behind using the context we were given,
+		// so the export honors any deadline the host sets on shutdown.
+		p.exportLogs(ctx)
 	}
 	return nil
 }
@@ -260,7 +265,7 @@ func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error
 					return true
 				}
 
-				logCtx := ottllog.NewTransformContextPtr(rl, sl, logRecord)
+				logCtx := ottllog.NewTransformContext(rl, sl, logRecord)
 				defer logCtx.Close()
 				logMatch, err := p.conditions.Eval(ctx, logCtx)
 				if err != nil {
@@ -307,8 +312,8 @@ func (p *logDedupProcessor) handleExportInterval(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			// Export any remaining logs
-			p.exportLogs(ctx)
+			// Shutdown performs the final export, so it runs on the host's context
+			// rather than this cancelled one.
 			if err := ctx.Err(); err != context.Canceled {
 				p.logger.Error("context error", zap.Error(err))
 			}

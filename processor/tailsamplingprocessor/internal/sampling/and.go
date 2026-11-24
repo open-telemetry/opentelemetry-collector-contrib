@@ -32,10 +32,19 @@ func NewAnd(
 	for i, sub := range subpolicies {
 		wrapped[i] = samplingpolicy.AsThresholdEvaluator(sub)
 	}
-	return &And{
+	and := &And{
 		subpolicies: wrapped,
 		logger:      logger,
 	}
+	// Only advertise batch support when a sub-policy actually needs it
+	// (e.g. a nested rate_limiting), so plain `and` policies are not
+	// pulled into the processor's batch pre-pass.
+	for _, sub := range wrapped {
+		if _, ok := sub.(BatchEvaluator); ok {
+			return &batchAnd{And: and}
+		}
+	}
+	return and
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
@@ -73,4 +82,55 @@ func (c *And) IsStateful() bool {
 		}
 	}
 	return false
+}
+
+// batchAnd is an And that contains at least one batch sub-policy (e.g. a
+// rate_limiting policy). It only passes traces that match the non-batch
+// sub-policies to the BatchEvaluator.
+type batchAnd struct {
+	*And
+}
+
+var (
+	_ samplingpolicy.Evaluator = (*batchAnd)(nil)
+	_ BatchEvaluator           = (*batchAnd)(nil)
+)
+
+// CalculateThreshold narrows the batch to traces that pass every non-batch
+// sub-policy and forwards that subset to each nested batch sub-policy.
+func (c *batchAnd) CalculateThreshold(ctx context.Context, batch []*samplingpolicy.TraceData) {
+	candidates := make([]*samplingpolicy.TraceData, 0, len(batch))
+	for _, td := range batch {
+		if c.candidate(ctx, td) {
+			candidates = append(candidates, td)
+		}
+	}
+	for _, sub := range c.subpolicies {
+		if be, ok := sub.(BatchEvaluator); ok {
+			be.CalculateThreshold(ctx, candidates)
+		}
+	}
+}
+
+// candidate reports whether a trace passes every non-batch sub-policy, and
+// is therefore eligible to be considered by the nested batch sub-policy.
+func (c *batchAnd) candidate(ctx context.Context, td *samplingpolicy.TraceData) bool {
+	id := traceIDOf(td)
+	for _, sub := range c.subpolicies {
+		if _, ok := sub.(BatchEvaluator); ok {
+			// Decided by the batch pass below, not part of the filter.
+			continue
+		}
+		d, err := sub.Evaluate(ctx, id, td)
+		if err != nil {
+			// Mirror And: a failing sub-policy means the trace is not
+			// sampled, so it is not a candidate for the budget.
+			return false
+		}
+		//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
+		if d == samplingpolicy.NotSampled || d == samplingpolicy.InvertNotSampled {
+			return false
+		}
+	}
+	return true
 }

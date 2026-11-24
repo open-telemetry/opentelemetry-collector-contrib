@@ -1,6 +1,21 @@
 default:
 all_set:
   metrics:
+    oracledb.asm.disk.errors:
+      enabled: true
+      attributes: ["oracledb.asm.disk_group.name","oracledb.asm.disk.name","disk.io.direction"]
+    oracledb.asm.disk_group.capacity:
+      enabled: true
+      attributes: ["oracledb.asm.disk_group.name"]
+    oracledb.asm.disk_group.free:
+      enabled: true
+      attributes: ["oracledb.asm.disk_group.name"]
+    oracledb.asm.disk_group.offline_disks:
+      enabled: true
+      attributes: ["oracledb.asm.disk_group.name"]
+    oracledb.asm.disk_group.usable_free:
+      enabled: true
+      attributes: ["oracledb.asm.disk_group.name"]
     oracledb.buffer.inspected:
       enabled: true
       attributes: ["oracledb.buffer.state"]
@@ -349,14 +364,20 @@ all_set:
       enabled: true
       attributes: ["oracle.db.pdb"]
   events:
+    db.server.query_plan:
+      enabled: true
     db.server.query_sample:
       enabled: true
     db.server.session.wait_sample:
+      enabled: true
+    db.server.top_procedure:
       enabled: true
     db.server.top_query:
       enabled: true
   resource_attributes:
     host.name:
+      enabled: true
+    oracle.db.edition:
       enabled: true
     oracle.db.hosting_type:
       enabled: true
@@ -367,6 +388,10 @@ all_set:
     oracle.db.version:
       enabled: true
     oracledb.instance.name:
+      enabled: true
+    server.address:
+      enabled: true
+    server.port:
       enabled: true
     service.instance.id:
       enabled: true
@@ -376,6 +401,21 @@ all_set:
       enabled: true
 reaggregate_set:
   metrics:
+    oracledb.asm.disk.errors:
+      enabled: true
+      attributes: []
+    oracledb.asm.disk_group.capacity:
+      enabled: true
+      attributes: []
+    oracledb.asm.disk_group.free:
+      enabled: true
+      attributes: []
+    oracledb.asm.disk_group.offline_disks:
+      enabled: true
+      attributes: []
+    oracledb.asm.disk_group.usable_free:
+      enabled: true
+      attributes: []
     oracledb.buffer.inspected:
       enabled: true
       attributes: []
@@ -724,14 +764,20 @@ reaggregate_set:
       enabled: true
       attributes: []
   events:
+    db.server.query_plan:
+      enabled: true
     db.server.query_sample:
       enabled: true
     db.server.session.wait_sample:
+      enabled: true
+    db.server.top_procedure:
       enabled: true
     db.server.top_query:
       enabled: true
   resource_attributes:
     host.name:
+      enabled: true
+    oracle.db.edition:
       enabled: true
     oracle.db.hosting_type:
       enabled: true
@@ -743,6 +789,10 @@ reaggregate_set:
       enabled: true
     oracledb.instance.name:
       enabled: true
+    server.address:
+      enabled: true
+    server.port:
+      enabled: true
     service.instance.id:
       enabled: true
     service.name:
@@ -751,6 +801,21 @@ reaggregate_set:
       enabled: true
 none_set:
   metrics:
+    oracledb.asm.disk.errors:
+      enabled: false
+      attributes: ["oracledb.asm.disk_group.name","oracledb.asm.disk.name","disk.io.direction"]
+    oracledb.asm.disk_group.capacity:
+      enabled: false
+      attributes: ["oracledb.asm.disk_group.name"]
+    oracledb.asm.disk_group.free:
+      enabled: false
+      attributes: ["oracledb.asm.disk_group.name"]
+    oracledb.asm.disk_group.offline_disks:
+      enabled: false
+      attributes: ["oracledb.asm.disk_group.name"]
+    oracledb.asm.disk_group.usable_free:
+      enabled: false
+      attributes: ["oracledb.asm.disk_group.name"]
     oracledb.buffer.inspected:
       enabled: false
       attributes: ["oracledb.buffer.state"]
@@ -1099,14 +1164,20 @@ none_set:
       enabled: false
       attributes: ["oracle.db.pdb"]
   events:
+    db.server.query_plan:
+      enabled: false
     db.server.query_sample:
       enabled: false
     db.server.session.wait_sample:
+      enabled: false
+    db.server.top_procedure:
       enabled: false
     db.server.top_query:
       enabled: false
   resource_attributes:
     host.name:
+      enabled: false
+    oracle.db.edition:
       enabled: false
     oracle.db.hosting_type:
       enabled: false
@@ -1117,6 +1188,10 @@ none_set:
     oracle.db.version:
       enabled: false
     oracledb.instance.name:
+      enabled: false
+    server.address:
+      enabled: false
+    server.port:
       enabled: false
     service.instance.id:
       enabled: false
@@ -1129,6 +1204,9 @@ override_set:
     host.name:
       enabled: true
       override_value: "override-host.name"
+    oracle.db.edition:
+      enabled: true
+      override_value: "override-oracle.db.edition"
     oracle.db.hosting_type:
       enabled: true
       override_value: "override-oracle.db.hosting_type"
@@ -1144,6 +1222,12 @@ override_set:
     oracledb.instance.name:
       enabled: true
       override_value: "override-oracledb.instance.name"
+    server.address:
+      enabled: true
+      override_value: "override-server.address"
+    server.port:
+      enabled: true
+      override_value: 123
     service.instance.id:
       enabled: true
       override_value: "override-service.instance.id"
@@ -1161,6 +1245,12 @@ filter_set_include:
         - regexp: ".*"
       events_include:
         - regexp: ".*"
+    oracle.db.edition:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     oracle.db.hosting_type:
       enabled: true
       metrics_include:
@@ -1186,6 +1276,18 @@ filter_set_include:
       events_include:
         - regexp: ".*"
     oracledb.instance.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    server.address:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    server.port:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -1217,6 +1319,12 @@ filter_set_exclude:
         - strict: "host.name-val"
       events_exclude:
         - strict: "host.name-val"
+    oracle.db.edition:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracle.db.edition-val"
+      events_exclude:
+        - strict: "oracle.db.edition-val"
     oracle.db.hosting_type:
       enabled: true
       metrics_exclude:
@@ -1247,6 +1355,18 @@ filter_set_exclude:
         - strict: "oracledb.instance.name-val"
       events_exclude:
         - strict: "oracledb.instance.name-val"
+    server.address:
+      enabled: true
+      metrics_exclude:
+        - strict: "server.address-val"
+      events_exclude:
+        - strict: "server.address-val"
+    server.port:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
+      events_exclude:
+        - regexp: ".*"
     service.instance.id:
       enabled: true
       metrics_exclude:

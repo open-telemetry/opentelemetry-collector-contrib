@@ -13,7 +13,8 @@ status:
     development: [logs]
   distributions: [contrib, k8s]
   codeowners:
-    active: [dmitryax, TylerHelmuth, povilasv, ChrsMark]
+    active: [TylerHelmuth, povilasv, ChrsMark, jinja2]
+    emeritus: [dmitryax]
 
 sem_conv_version: 1.18.0
 
@@ -984,6 +985,17 @@ metrics:
     unit: "{pod}"
     stability: development
     gauge:
+      value_type: int
+    entity: k8s.statefulset
+
+  k8s.statefulset.pod.available:
+    enabled: false
+    description: The number of available pods per stateful set (the `status.availableReplicas` field). A pod is available once it has been `Ready` for at least `spec.minReadySeconds`.
+    unit: "{pod}"
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
       value_type: int
     entity: k8s.statefulset
 

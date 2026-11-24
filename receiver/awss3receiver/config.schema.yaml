@@ -20,6 +20,9 @@ $defs:
     description: S3DownloaderConfig contains aws s3 downloader related config to controls things like bucket, prefix, batching, connections, retries, etc.
     type: object
     properties:
+      decompression:
+        description: 'Decompression sets the algorithm used to decompress objects whose key does not end with a recognized compression suffix (`.gz` or `.zst`). Valid values are: `gzip`, `zstd`, `none` or no value set.'
+        $ref: go.opentelemetry.io/collector/config/configcompression.type
       endpoint:
         type: string
       endpoint_partition_id:
@@ -28,6 +31,10 @@ $defs:
         type: string
       file_prefix_include_telemetry_type:
         type: boolean
+      max_unmarshal_size:
+        description: MaxUnmarshalSize limits the decompressed bytes buffered by non-streaming decoders. Zero uses the default of 256 MiB. Streaming decoders are not subject to this limit.
+        type: integer
+        x-customType: int64
       region:
         type: string
       s3_bucket:
@@ -62,6 +69,11 @@ $defs:
       region:
         description: Region specifies the AWS region of the SQS queue.
         type: string
+      visibility_timeout_seconds:
+        description: 'VisibilityTimeoutSeconds sets and renews message visibility while messages are waiting or processing. Valid values: 1-43200. When unset, the queue''s visibility timeout is used without renewal.'
+        x-pointer: true
+        type: integer
+        x-customType: int64
       wait_time_seconds:
         description: WaitTimeSeconds specifies the duration (in seconds) for long polling SQS messages. Maximum is 20 seconds. Default is 20 seconds.
         x-pointer: true

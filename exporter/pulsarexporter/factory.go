@@ -3,7 +3,7 @@
 
 //go:generate make mdatagen
 
-//go:build !aix
+//go:build !aix && !solaris
 
 package pulsarexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
 

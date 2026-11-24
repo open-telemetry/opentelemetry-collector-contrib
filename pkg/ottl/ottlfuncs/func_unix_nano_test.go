@@ -59,8 +59,7 @@ func Test_TimeUnixNano(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := UnixNano(tt.time)
-			require.NoError(t, err)
+			exprFunc := unixNano(tt.time)
 			result, err := exprFunc(nil, nil)
 			require.NoError(t, err)
 			want := tt.expected.UnixNano()
@@ -79,14 +78,14 @@ func Test_UnixNanoFactory(t *testing.T) {
 		factory := NewUnixNanoFactory[any]()
 		args := factory.CreateDefaultArguments()
 
-		assert.IsType(t, &UnixNanoArguments[any]{}, args)
+		assert.IsType(t, &unixNanoArguments[any]{}, args)
 		assertArgumentFieldNames(t, args, []string{"Time"})
 	})
 
 	t.Run("function creation", func(t *testing.T) {
 		factory := NewUnixNanoFactory[any]()
 		args := factory.CreateDefaultArguments()
-		timeArgs, ok := args.(*UnixNanoArguments[any])
+		timeArgs, ok := args.(*unixNanoArguments[any])
 		require.True(t, ok)
 		timeArgs.Time = &ottl.StandardTimeGetter[any]{
 			Getter: func(context.Context, any) (any, error) {
@@ -101,6 +100,22 @@ func Test_UnixNanoFactory(t *testing.T) {
 
 	t.Run("invalid arguments type", func(t *testing.T) {
 		_, err := createUnixNanoFunction[any](ottl.FunctionContext{}, "invalid args")
-		assert.ErrorContains(t, err, "UnixNanoFactory args must be of type *UnixNanoArguments[K]")
+		assert.ErrorContains(t, err, "UnixNanoFactory args must be of type *unixNanoArguments[K]")
 	})
+}
+
+func BenchmarkUnixNano(b *testing.B) {
+	inputTime := time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local)
+	exprFunc := unixNano(&ottl.StandardTimeGetter[any]{
+		Getter: func(context.Context, any) (any, error) {
+			return inputTime, nil
+		},
+	})
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := exprFunc(ctx, nil); err != nil {
+			b.Fatal(err)
+		}
+	}
 }

@@ -43,10 +43,20 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 
 	optConfigs := metadata.NewDefaultMetricsBuilderConfig()
 	optConfigs.Metrics.VcenterHostMemoryCapacity.Enabled = true
+	optConfigs.Metrics.VcenterHostMemoryGranted.Enabled = true
+	optConfigs.Metrics.VcenterHostMemoryActive.Enabled = true
+	optConfigs.Metrics.VcenterHostMemoryBallooned.Enabled = true
 	optConfigs.Metrics.VcenterVMMemoryGranted.Enabled = true
 	optConfigs.Metrics.VcenterVMNetworkBroadcastPacketRate.Enabled = true
 	optConfigs.Metrics.VcenterVMNetworkMulticastPacketRate.Enabled = true
 	optConfigs.Metrics.VcenterVMCPUTime.Enabled = true
+	optConfigs.Metrics.VcenterHostPowerStatus.Enabled = true
+	optConfigs.Metrics.VcenterHostConnectionStatus.Enabled = true
+	optConfigs.Metrics.VcenterHostUptime.Enabled = true
+	optConfigs.Metrics.VcenterHostAlarmCount.Enabled = true
+	optConfigs.Metrics.VcenterDatastoreMaintenanceStatus.Enabled = true
+	optConfigs.Metrics.VcenterDatastoreAlarmCount.Enabled = true
+	optConfigs.Metrics.VcenterVMPowerStatus.Enabled = true
 
 	cfg := &Config{
 		MetricsBuilderConfig: optConfigs,

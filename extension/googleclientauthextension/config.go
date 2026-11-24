@@ -6,19 +6,19 @@ package googleclientauthextension // import "github.com/open-telemetry/opentelem
 import (
 	"fmt"
 
-	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension/internal/clientauth"
 )
 
 // Config defines configuration for the Google client auth extension.
 type Config struct {
-	Config googleclientauthextension.Config `mapstructure:",squash"`
+	Config clientauth.Config `mapstructure:",squash"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
 func (cfg *Config) Validate() error {
 	if err := cfg.Config.Validate(); err != nil {
-		return fmt.Errorf("googlecloud exporter settings are invalid :%w", err)
+		return fmt.Errorf("googleclientauth settings are invalid :%w", err)
 	}
 	return nil
 }

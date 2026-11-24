@@ -4,6 +4,7 @@
 package remotetapprocessor
 
 import (
+	"crypto/fips140"
 	"net"
 	"testing"
 	"time"
@@ -25,11 +26,6 @@ import (
 
 func TestSocketConnectionLogs(t *testing.T) {
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:12001",
@@ -52,8 +48,7 @@ func TestSocketConnectionLogs(t *testing.T) {
 	require.NoError(t, err)
 	wsConfig, err := websocket.NewConfig("http://localhost:12001", "http://localhost:12001")
 	require.NoError(t, err)
-	wsConn, err := websocket.NewClient(wsConfig, rawConn)
-	require.NoError(t, err)
+	wsConn := newTestClient(t, wsConfig, rawConn)
 	t.Cleanup(func() {
 		errWsClose := wsConn.Close()
 		require.NoError(t, errWsClose)
@@ -74,11 +69,6 @@ func TestSocketConnectionLogs(t *testing.T) {
 
 func TestSocketConnectionMetrics(t *testing.T) {
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:12002",
@@ -101,8 +91,7 @@ func TestSocketConnectionMetrics(t *testing.T) {
 	require.NoError(t, err)
 	wsConfig, err := websocket.NewConfig("http://localhost:12001", "http://localhost:12001")
 	require.NoError(t, err)
-	wsConn, err := websocket.NewClient(wsConfig, rawConn)
-	require.NoError(t, err)
+	wsConn := newTestClient(t, wsConfig, rawConn)
 	t.Cleanup(func() {
 		errWsClose := wsConn.Close()
 		require.NoError(t, errWsClose)
@@ -123,11 +112,6 @@ func TestSocketConnectionMetrics(t *testing.T) {
 
 func TestSocketConnectionTraces(t *testing.T) {
 	serverConfig := confighttp.NewDefaultServerConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	serverConfig.WriteTimeout = 0
-	serverConfig.ReadHeaderTimeout = 0
-	serverConfig.IdleTimeout = 0           //nolint:staticcheck // SA1019: see TODO above
-	serverConfig.KeepAlivesEnabled = false //nolint:staticcheck // SA1019: see TODO above
 	serverConfig.NetAddr = confignet.AddrConfig{
 		Transport: "tcp",
 		Endpoint:  "localhost:12003",
@@ -150,8 +134,7 @@ func TestSocketConnectionTraces(t *testing.T) {
 	require.NoError(t, err)
 	wsConfig, err := websocket.NewConfig("http://localhost:12001", "http://localhost:12001")
 	require.NoError(t, err)
-	wsConn, err := websocket.NewClient(wsConfig, rawConn)
-	require.NoError(t, err)
+	wsConn := newTestClient(t, wsConfig, rawConn)
 	t.Cleanup(func() {
 		errWsClose := wsConn.Close()
 		require.NoError(t, errWsClose)
@@ -168,6 +151,18 @@ func TestSocketConnectionTraces(t *testing.T) {
 		assert.Equal(tt, 100, n)
 	}, 1*time.Second, 100*time.Millisecond)
 	require.JSONEq(t, `{"resourceSpans":[{"resource":{},"scopeSpans":[{"scope":{},"spans":[{"name":"foo","status":{}}]}]}]}`, string(buf[0:100]))
+}
+
+// The x/net client checks Sec-WebSocket-Accept with SHA-1 too, so the handshake
+// runs outside strict FIPS 140-3 enforcement like the server.
+func newTestClient(t *testing.T, config *websocket.Config, rawConn net.Conn) *websocket.Conn {
+	var wsConn *websocket.Conn
+	var err error
+	fips140.WithoutEnforcement(func() {
+		wsConn, err = websocket.NewClient(config, rawConn)
+	})
+	require.NoError(t, err)
+	return wsConn
 }
 
 func requireClientWaitingForData(t *testing.T, cfg *Config) {

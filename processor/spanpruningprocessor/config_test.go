@@ -4,6 +4,7 @@
 package spanpruningprocessor
 
 import (
+	"math"
 	"path/filepath"
 	"testing"
 	"time"
@@ -71,6 +72,10 @@ func TestLoadConfig(t *testing.T) {
 					PreserveOnlyWithCorrelation:    false,
 					MinOutlierThresholdPercent:     0.1,
 				},
+				EnableExemplarSampling: false,
+				ExemplarSampling: ExemplarSamplingConfig{
+					PrecisionMultiplier: 1.0,
+				},
 			},
 		},
 		{
@@ -97,6 +102,10 @@ func TestLoadConfig(t *testing.T) {
 					MaxPreservedOutliers:           2,
 					PreserveOnlyWithCorrelation:    false,
 					MinOutlierThresholdPercent:     0.1,
+				},
+				EnableExemplarSampling: false,
+				ExemplarSampling: ExemplarSamplingConfig{
+					PrecisionMultiplier: 1.0,
 				},
 			},
 		},
@@ -313,6 +322,46 @@ func TestConfig_Validate(t *testing.T) {
 				},
 			},
 			expectError: false,
+		},
+		{
+			name: "valid outlier analysis config (log duration transform)",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:          []string{"db.operation"},
+				EnableOutlierAnalysis:      true,
+				OutlierAnalysis: OutlierAnalysisConfig{
+					Method:                         OutlierMethodIQR,
+					DurationTransform:              DurationTransformLog,
+					IQRMultiplier:                  1.5,
+					MADMultiplier:                  3.0,
+					MinGroupSize:                   7,
+					CorrelationMinOccurrence:       0.75,
+					CorrelationMaxNormalOccurrence: 0.25,
+					MaxCorrelatedAttributes:        5,
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "invalid outlier duration_transform",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:          []string{"db.operation"},
+				EnableOutlierAnalysis:      true,
+				OutlierAnalysis: OutlierAnalysisConfig{
+					Method:                         OutlierMethodIQR,
+					DurationTransform:              "invalid",
+					IQRMultiplier:                  1.5,
+					MADMultiplier:                  3.0,
+					MinGroupSize:                   7,
+					CorrelationMinOccurrence:       0.75,
+					CorrelationMaxNormalOccurrence: 0.25,
+					MaxCorrelatedAttributes:        5,
+				},
+			},
+			expectError: true,
 		},
 		{
 			name: "invalid outlier method",
@@ -588,6 +637,72 @@ func TestConfig_Validate(t *testing.T) {
 				AggregationHistogramBuckets: []time.Duration{},
 			},
 			expectError: false,
+		},
+		{
+			name: "exemplar sampling disabled skips validation",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:          []string{"db.operation"},
+				EnableExemplarSampling:     false,
+				ExemplarSampling:           ExemplarSamplingConfig{PrecisionMultiplier: -1},
+			},
+			expectError: false,
+		},
+		{
+			name: "exemplar sampling precision_multiplier positive",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:          []string{"db.operation"},
+				EnableExemplarSampling:     true,
+				ExemplarSampling:           ExemplarSamplingConfig{PrecisionMultiplier: 1.0},
+			},
+			expectError: false,
+		},
+		{
+			name: "exemplar sampling precision_multiplier zero",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:          []string{"db.operation"},
+				EnableExemplarSampling:     true,
+				ExemplarSampling:           ExemplarSamplingConfig{PrecisionMultiplier: 0},
+			},
+			expectError: true,
+		},
+		{
+			name: "exemplar sampling precision_multiplier negative",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:          []string{"db.operation"},
+				EnableExemplarSampling:     true,
+				ExemplarSampling:           ExemplarSamplingConfig{PrecisionMultiplier: -0.5},
+			},
+			expectError: true,
+		},
+		{
+			name: "exemplar sampling precision_multiplier NaN",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:          []string{"db.operation"},
+				EnableExemplarSampling:     true,
+				ExemplarSampling:           ExemplarSamplingConfig{PrecisionMultiplier: math.NaN()},
+			},
+			expectError: true,
+		},
+		{
+			name: "exemplar sampling precision_multiplier +Inf",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:          []string{"db.operation"},
+				EnableExemplarSampling:     true,
+				ExemplarSampling:           ExemplarSamplingConfig{PrecisionMultiplier: math.Inf(1)},
+			},
+			expectError: true,
 		},
 	}
 	for _, tt := range tests {

@@ -105,10 +105,6 @@ func TestStartClientAlreadySet(t *testing.T) {
 	defer mockClient.Close()
 
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = mockClient.URL
 	scraper := newScraper(
 		&Config{
@@ -123,10 +119,6 @@ func TestStartClientAlreadySet(t *testing.T) {
 
 func TestStartBadUrl(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = "\x00"
 	scraper := newScraper(
 		&Config{
@@ -142,10 +134,6 @@ func TestStartBadUrl(t *testing.T) {
 
 func TestScraperRecordNoStat(_ *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = "http://localhost"
 	scraper := newScraper(
 		&Config{
@@ -156,6 +144,20 @@ func TestScraperRecordNoStat(_ *testing.T) {
 	)
 	scraper.host = componenttest.NewNopHost()
 	scraper.recordNode(pcommon.NewTimestampFromTime(time.Now()), &nodeInfo{stats: nil})
+}
+
+func TestScraperRecordInterfaceNoStat(_ *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "http://localhost"
+	scraper := newScraper(
+		&Config{
+			ClientConfig:         clientConfig,
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		},
+		receivertest.NewNopSettings(metadata.Type),
+	)
+	scraper.host = componenttest.NewNopHost()
+	scraper.recordNodeInterface(pcommon.NewTimestampFromTime(time.Now()), dm.NodeProperties{}, interfaceInformation{stats: nil})
 }
 
 func loadTestNodeStatus(t *testing.T, nodeID string, class nodeClass) (*dm.NodeStatus, error) {

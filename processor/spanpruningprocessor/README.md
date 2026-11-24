@@ -32,6 +32,8 @@ The processor can also apply **selective pruning** with OTTL conditions so only 
 
 Optionally, the processor can detect **duration outliers** using statistical methods (IQR or MAD) and either annotate summary spans with outlier correlations or **preserve outlier subtrees** for debugging while still aggregating normal spans. Detection runs at every aggregation level, so a slow interior span (for example one slow `handler` among many) is caught and its whole subtree is kept intact.
 
+Optionally, the processor can also randomly preserve a small sub-linear number of **exemplar subtrees** at the top of each aggregation tree. Each sampled span is kept whole (with its descendants) as a sibling of the summary span.
+
 This processor is useful for reducing trace data volume while preserving meaningful information about repeated operations.
 
 ## Use Cases
@@ -116,6 +118,11 @@ processors:
       # "mad": Median Absolute Deviation method (more robust to extreme outliers)
       method: iqr
 
+      # Transform applied to durations before the method measures their spread
+      # "none" (default): the method runs over durations unchanged
+      # "log": the method runs over log durations, for heavy-tailed latency
+      duration_transform: none
+
       # IQR multiplier for outlier detection threshold (when method=iqr)
       # Outliers are spans with duration > Q3 + (iqr_multiplier * IQR)
       # Common values: 1.5 (standard), 3.0 (extreme only)
@@ -173,6 +180,21 @@ processors:
       # Range: [0.0, 1.0+]
       # Default: 0.1 (10%)
       min_outlier_threshold_percent: 0.1
+
+    # Enable random exemplar sampling. When enabled, ceil(precision_multiplier * sqrt(N))
+    # spans are sampled from the top-level group of each aggregation tree and kept as
+    # whole subtrees (siblings of the summary), with their TraceState threshold updated
+    # so consumers can extrapolate.
+    # Default: false
+    enable_exemplar_sampling: false
+
+    # Exemplar sampling configuration (optional)
+    exemplar_sampling:
+      # Multiplier applied to the sqrt(N) sample size. Standard error of cross-trace
+      # estimators scales as 1/sqrt(precision_multiplier). This is a precision knob,
+      # not a strict confidence-interval level.
+      # Default: 1.0
+      precision_multiplier: 1.0
 ```
 
 ## Configuration Options
@@ -190,6 +212,7 @@ processors:
 | `enable_bytes_metrics` | bool | false | Enable measurement of serialized trace sizes (bytes_received/bytes_processed_input/bytes_processed_output/bytes_emitted metrics) |
 | `enable_outlier_analysis` | bool | false | Enable outlier detection and correlation analysis |
 | `outlier_analysis.method` | string | "iqr" | Statistical method: "iqr" or "mad" |
+| `outlier_analysis.duration_transform` | string | "none" | Transform applied to durations before measuring spread: "none" or "log" |
 | `outlier_analysis.iqr_multiplier` | float64 | 1.5 | IQR threshold multiplier (when method=iqr) |
 | `outlier_analysis.mad_multiplier` | float64 | 3.0 | MAD threshold multiplier (when method=mad) |
 | `outlier_analysis.min_group_size` | int | 7 | Minimum group size for outlier analysis |
@@ -200,6 +223,8 @@ processors:
 | `outlier_analysis.max_preserved_outliers` | int | 2 | Max outlier subtrees to preserve per group (0=preserve all) |
 | `outlier_analysis.preserve_only_with_correlation` | bool | false | Only preserve outliers if a strong correlation is found |
 | `outlier_analysis.min_outlier_threshold_percent` | float64 | 0.1 | Minimum percentage above median required before a span is considered an outlier |
+| `enable_exemplar_sampling` | bool | false | Enable random exemplar sampling |
+| `exemplar_sampling.precision_multiplier` | float64 | 1.0 | Multiplier applied to `sqrt(N)` sample size |
 
 ### Glob Pattern Support
 
@@ -343,6 +368,23 @@ The processor supports two statistical methods for outlier detection:
 - **IQR**: Best for typical distributions with moderate outliers. Standard choice for most use cases.
 - **MAD**: Better when you have extreme outliers that would skew IQR calculations, or when you need more stable detection thresholds.
 
+#### Duration Transform
+
+`duration_transform` transforms each duration before the method above measures
+its spread.
+
+| `duration_transform` | The method runs over | Two spans are far apart when |
+|----------------------|----------------------|------------------------------|
+| `none` (default) | durations | their difference is large |
+| `log` | the natural log of each duration | their ratio is large |
+
+Use `log` for heavy-tailed latency, where durations within a group span orders
+of magnitude. Measuring spread in absolute time lets the tail inflate the
+threshold meant to exclude it, so a large share of the upper tail gets flagged.
+
+Zero-duration spans have no logarithm, so `log` leaves them out of the spread
+and classifies them as normal. They also do not count toward `min_group_size`.
+
 #### How It Works
 
 **IQR (Interquartile Range) Method:**
@@ -358,6 +400,9 @@ The processor supports two statistical methods for outlier detection:
 4. Flag spans with duration > median + (mad_multiplier × MAD × 1.4826) as outliers
 
 *Note: The 1.4826 scale factor makes MAD comparable to standard deviation for normal distributions.*
+
+Both methods apply `min_outlier_threshold_percent` as a floor; with
+`duration_transform: log` the steps above run over log durations.
 
 **Attribute Correlation** (same for both methods):
 - Compare attribute values between outliers and normal spans
@@ -483,6 +528,82 @@ handler
 - **Nested outliers**: an outlier already inside a preserved subtree is not preserved (or counted) again, since the enclosing subtree already keeps it.
 - **Skip aggregation**: if protection leaves a group below `min_spans_to_aggregate`, that group is left unchanged.
 - **Selection order**: outliers are preserved starting with the most extreme (longest duration) first, capped by `max_preserved_outliers` subtrees per group.
+
+### Random Exemplar Sampling (Optional)
+
+When `enable_exemplar_sampling: true`, the processor preserves a randomly
+selected, sub-linear sample of **exemplars** at the top of each aggregation
+tree. Sampling runs only on the top-level group (the spans closest to the root
+that would aggregate); each sampled span is kept as a whole subtree, so an
+exemplar is a complete representative tree rather than an isolated span. Lower
+groups in the same tree are not sampled separately. Exemplar roots are kept as
+siblings of the summary span (same parent) and their TraceState threshold is
+updated to reflect the additional sampling step.
+
+This is complementary to outlier preservation: outliers ensure the tail of the
+duration distribution is represented, while exemplars sample the body.
+Cross-trace consumers can then estimate properties of the aggregated-away
+population (e.g. attribute-value frequencies) by pooling exemplars across many
+traces.
+
+#### Sample Size
+
+For a top-level group of `N` spans, the processor draws
+`D = ceil(precision_multiplier * sqrt(N))` spans without replacement and keeps
+each drawn span's whole subtree. `sqrt(N)` is sub-linear in storage and gives
+bounded relative error for cross-trace analysis. The draw is taken over the full
+group (see *Interaction with outliers* below), so the number of spans that
+become exemplars may be slightly below `D` when some draws land on spans already
+preserved as outliers.
+
+#### Configuration
+
+```yaml
+processors:
+  spanpruning:
+    enable_exemplar_sampling: true
+    exemplar_sampling:
+      precision_multiplier: 1.0
+```
+
+#### Exemplar Span Attributes
+
+The root of each preserved exemplar subtree is annotated with:
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `<prefix>is_exemplar` | bool | Identifies span as a sampled exemplar (root of a kept subtree) |
+| `<prefix>summary_span_id` | string | SpanID of the associated summary span |
+
+#### Summary Span Attributes (When Sampling Exemplars)
+
+When at least one exemplar is preserved, the summary span gets:
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `<prefix>exemplar_count` | int64 | Number of exemplar subtrees preserved |
+| `<prefix>exemplar_span_ids` | []string | SpanIDs of the preserved exemplar roots |
+
+#### Behavior Notes
+
+- **Top level only**: Sampling runs once per aggregation tree, on its top-level
+  group. A group is top-level when none of its members' parents are themselves
+  aggregated into a higher group.
+- **Whole subtree**: Each sampled span keeps its entire subtree; nothing beneath
+  an exemplar is aggregated, and deeper outlier detection skips the protected
+  subtree.
+- **Parent aggregation**: The remaining (non-exemplar) top-level spans still
+  aggregate, and exemplar roots become siblings of that summary.
+- **Small groups**: For `N <= 1` no exemplars are sampled. For small `N` where
+  `D >= N`, the whole group is kept and aggregation is skipped.
+- **Interaction with outliers**: When both features are enabled, a span is kept
+  individually if it is a preserved outlier **OR** it is sampled. Outliers in the
+  top-level group are protected first; the draw is then taken over the full group
+  (outliers included), but the keep is an OR: a span that is both an outlier and
+  drawn is kept once, tagged only as an outlier, and its threshold is left
+  untouched (it is kept deterministically, so its effective keep-probability is
+  1). Non-outlier exemplars compose their threshold by `D/N` over the full group,
+  so adjusted counts remain consistent.
 
 ## Pipeline Placement
 
@@ -695,6 +816,7 @@ The processor emits the following metrics to help monitor its operation:
 | `otelcol_processor_spanpruning_aggregations_created` | Total number of aggregation summary spans created |
 | `otelcol_processor_spanpruning_traces_processed` | Total number of traces processed |
 | `otelcol_processor_spanpruning_traces_skipped` | Total traces skipped due to conditions not matching |
+| `otelcol_processor_spanpruning_invalid_traces` | Total traces left unpruned because their span structure is invalid, such as parent links forming a cycle |
 | `otelcol_processor_spanpruning_outliers_detected` | Total spans identified as outliers by analysis (when `enable_outlier_analysis: true`) |
 | `otelcol_processor_spanpruning_outliers_preserved` | Total outlier spans kept (when `preserve_outliers: true`) |
 | `otelcol_processor_spanpruning_outliers_correlations_detected` | Total aggregation groups where outliers had correlated attributes |
@@ -702,6 +824,7 @@ The processor emits the following metrics to help monitor its operation:
 | `otelcol_processor_spanpruning_bytes_processed_input` | Total bytes of serialized traces in the matched subset, measured before pruning (when `enable_bytes_metrics: true`) |
 | `otelcol_processor_spanpruning_bytes_processed_output` | Total bytes of serialized traces in the matched subset, measured after pruning (when `enable_bytes_metrics: true`) |
 | `otelcol_processor_spanpruning_bytes_emitted` | Total bytes of serialized traces emitted after pruning (when `enable_bytes_metrics: true`) |
+| `otelcol_processor_spanpruning_exemplars_sampled` | Total spans randomly sampled as exemplars (when `enable_exemplar_sampling: true`) |
 
 ### Byte metrics semantics
 
@@ -739,6 +862,7 @@ These metrics can be used to:
 - Monitor the effectiveness of span pruning (compare `spans_received` vs `spans_pruned`)
 - Track the compression ratio achieved by aggregation
 - Track condition selectivity with `traces_skipped`
+- Detect malformed traces that went out unpruned with `invalid_traces`
 - Track byte changes (`bytes_received`/`bytes_emitted` for the full batch, `bytes_processed_input`/`bytes_processed_output` for the matched subset)
 - Identify processing bottlenecks via `processing_duration`
 - Understand aggregation patterns via `aggregation_group_size`

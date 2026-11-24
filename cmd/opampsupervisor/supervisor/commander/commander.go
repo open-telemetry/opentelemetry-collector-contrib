@@ -23,6 +23,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
 
+// AgentStartedLogMsg is logged every time an Agent process is started. Each site
+// tags a "start_mode" field naming the code path (normal, passthrough, one_shot)
+// so the entries are self-describing. Tests count occurrences of the message to
+// observe how often the Agent was (re)started, so keep the message and the log
+// sites in sync.
+const AgentStartedLogMsg = "Agent process started"
+
+// passthroughOutputWaitDelay bounds how long Wait keeps copying passthrough
+// output after the agent exits, in case a child process still holds the pipes.
+const passthroughOutputWaitDelay = 5 * time.Second
+
 // Commander can start/stop/restart the Agent executable and also watch for a signal
 // for the Agent process to finish.
 type Commander struct {
@@ -36,16 +47,24 @@ type Commander struct {
 	exitCh             chan struct{}
 	outputDoneCh       chan struct{}
 	running            *atomic.Int64
+	// stopMu serializes Stop calls. The process exiting is announced once on
+	// doneCh, so concurrent Stop calls would race to consume it and the loser
+	// would never return.
+	stopMu sync.Mutex
+
+	minAgeForShutdownSignal time.Duration
+	startedAt               time.Time
 }
 
 func NewCommander(logger *zap.Logger, logFilePath string, cfg config.Agent, args ...string) (*Commander, error) {
 	return &Commander{
-		logger:       logger,
-		logFilePath:  logFilePath,
-		cfg:          cfg,
-		args:         args,
-		outputDoneCh: make(chan struct{}),
-		running:      &atomic.Int64{},
+		logger:                  logger,
+		logFilePath:             logFilePath,
+		cfg:                     cfg,
+		args:                    args,
+		outputDoneCh:            make(chan struct{}),
+		running:                 &atomic.Int64{},
+		minAgeForShutdownSignal: minAgentAgeForShutdownSignal,
 		// Buffer channels so we can send messages without blocking on listeners.
 		doneCh: make(chan struct{}, 1),
 		exitCh: make(chan struct{}, 1),
@@ -129,7 +148,12 @@ func (c *Commander) ValidateConfig(ctx context.Context, configPath string, addit
 }
 
 func (c *Commander) startNormal() error {
-	stdoutFile, err := os.Create(c.logFilePath)
+	// Opened via openAgentLogFile (per-platform - see commander_others.go /
+	// commander_windows.go) so every write lands at the file's current
+	// end-of-file, and external copytruncate-style log rotation (logrotate et
+	// al.) works correctly instead of the file's size reverting on the next
+	// write.
+	stdoutFile, err := openAgentLogFile(c.logFilePath)
 	if err != nil {
 		return fmt.Errorf("cannot create %s: %w", c.logFilePath, err)
 	}
@@ -143,8 +167,9 @@ func (c *Commander) startNormal() error {
 		stdoutFile.Close()
 		return fmt.Errorf("startNormal: %w", err)
 	}
+	c.startedAt = time.Now()
 
-	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
+	c.logger.Debug(AgentStartedLogMsg, zap.Int("pid", c.cmd.Process.Pid), zap.String("start_mode", "normal"))
 	c.running.Store(1)
 	close(c.outputDoneCh)
 
@@ -157,20 +182,18 @@ func (c *Commander) startNormal() error {
 }
 
 func (c *Commander) startWithPassthroughLogging() error {
-	// grab cmd pipes
-	stdoutPipe, err := c.cmd.StdoutPipe()
-	if err != nil {
-		return fmt.Errorf("stdoutPipe: %w", err)
-	}
-	stderrPipe, err := c.cmd.StderrPipe()
-	if err != nil {
-		return fmt.Errorf("stderrPipe: %w", err)
-	}
+	// Wait closes StdoutPipe/StderrPipe on exit, which can drop unread output.
+	stdoutPipe, stdoutWriter := io.Pipe()
+	stderrPipe, stderrWriter := io.Pipe()
+	c.cmd.Stdout = stdoutWriter
+	c.cmd.Stderr = stderrWriter
+	c.cmd.WaitDelay = passthroughOutputWaitDelay
 
 	// start agent
 	if err := c.cmd.Start(); err != nil {
 		return fmt.Errorf("start: %w", err)
 	}
+	c.startedAt = time.Now()
 	c.running.Store(1)
 
 	colLogger := c.logger.Named("collector")
@@ -220,18 +243,23 @@ func (c *Commander) startWithPassthroughLogging() error {
 		}
 	})
 
-	c.logger.Debug("Agent process started", zap.Int("pid", c.cmd.Process.Pid))
+	c.logger.Debug(AgentStartedLogMsg, zap.Int("pid", c.cmd.Process.Pid), zap.String("start_mode", "passthrough"))
 
 	go func() {
 		outputWG.Wait()
 		close(c.outputDoneCh)
 	}()
-	go c.watch()
+	go c.watch(stdoutWriter, stderrWriter)
 	return nil
 }
 
-func (c *Commander) watch() {
+// watch waits for the agent process to exit. outputWriters are closed once Wait
+// returns so the passthrough log readers see EOF after the final line.
+func (c *Commander) watch(outputWriters ...io.Closer) {
 	err := c.cmd.Wait()
+	for _, w := range outputWriters {
+		_ = w.Close()
+	}
 
 	// cmd.Wait returns an exec.ExitError when the Collector exits unsuccessfully or stops
 	// after receiving a signal. The Commander caller will handle these cases, so we filter
@@ -350,7 +378,7 @@ func (c *Commander) StartOneShot() ([]byte, []byte, error) {
 		}
 	}()
 
-	c.logger.Debug("Agent process started", zap.Int("pid", cmd.Process.Pid))
+	c.logger.Debug(AgentStartedLogMsg, zap.Int("pid", cmd.Process.Pid), zap.String("start_mode", "one_shot"))
 
 	doneCh := make(chan struct{}, 1)
 
@@ -431,32 +459,62 @@ func (c *Commander) IsRunning() bool {
 	return c.running.Load() != 0
 }
 
-// Stop the Agent process. Sends SIGTERM to the process and wait for up 10 seconds
-// and if the process does not finish kills it forcedly by sending SIGKILL.
-// Returns after the process is terminated.
+// Stop the Agent process. Signals the process to stop gracefully and kills it
+// forcibly if it has not exited within agent::stop_grace_period. Stop returns an
+// error only when the process could not be terminated at all; a failed graceful
+// shutdown alone is not an error.
+//
+// ctx's cancellation does not bound this call: Stop always runs to completion so
+// that it terminates the process even when the caller's context is already
+// cancelled, for example while the Supervisor itself is shutting down.
 func (c *Commander) Stop(ctx context.Context) error {
+	c.stopMu.Lock()
+	defer c.stopMu.Unlock()
+
 	if c.running.Load() == 0 {
 		// Not started, nothing to do.
 		return nil
 	}
 
 	pid := c.cmd.Process.Pid
-	c.logger.Debug("sending shutdown signal to agent process", zap.Int("pid", pid))
 
-	// Gracefully signal process to stop.
-	if err := sendShutdownSignal(c.cmd.Process); err != nil {
-		return err
+	if wait := c.minAgeForShutdownSignal - time.Since(c.startedAt); wait > 0 {
+		c.logger.Debug("Waiting for agent process to finish starting before sending shutdown signal",
+			zap.Int("pid", pid), zap.Duration("wait", wait))
+		select {
+		case <-c.doneCh:
+			c.running.Store(0)
+			return nil
+		case <-time.After(wait):
+		}
 	}
 
-	waitCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	c.logger.Debug("sending shutdown signal to agent process", zap.Int("pid", pid))
+
+	// Gracefully signal process to stop. A failed send is not fatal: the process
+	// still has to be terminated, so fall through to the kill deadline below
+	// instead of returning with the process left running.
+	if err := sendShutdownSignal(c.cmd.Process); err != nil {
+		c.logger.Debug("Could not send shutdown signal to agent process",
+			zap.Int("pid", pid), zap.Error(err))
+	}
+
+	// The deadline is deliberately detached from ctx's cancellation: Stop has to
+	// terminate the process even when the caller's context is already cancelled,
+	// for example while the Supervisor itself is shutting down.
+	waitCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), c.cfg.StopGracePeriod)
+	defer cancel()
 
 	// Setup a goroutine to wait a while for process to finish and send kill signal
-	// to the process if it doesn't finish.
-	var innerErr error
+	// to the process if it doesn't finish. A kill that fails is reported over
+	// killFailed so Stop can return an error instead of waiting forever for an
+	// exit that will never come.
+	killFailed := make(chan error, 1)
 	go func() {
 		<-waitCtx.Done()
 
 		if !errors.Is(waitCtx.Err(), context.DeadlineExceeded) {
+			// cancel() ran because the process exited.
 			c.logger.Debug("Agent process successfully stopped.", zap.Int("pid", pid))
 			return
 		}
@@ -466,20 +524,21 @@ func (c *Commander) Stop(ctx context.Context) error {
 			"Agent process is not responding to SIGTERM. Sending SIGKILL to kill forcibly.",
 			zap.Int("pid", pid),
 		)
-		if innerErr = c.cmd.Process.Signal(os.Kill); innerErr != nil {
-			return
+		if err := c.cmd.Process.Signal(os.Kill); err != nil && !errors.Is(err, os.ErrProcessDone) {
+			killFailed <- err
 		}
 	}()
 
 	// Wait for process to terminate
-	<-c.doneCh
+	select {
+	case <-c.doneCh:
+	case err := <-killFailed:
+		return fmt.Errorf("could not stop the agent process: %w", err)
+	}
 
 	c.running.Store(0)
 
-	// Let goroutine know process is finished.
-	cancel()
-
-	return innerErr
+	return nil
 }
 
 func envVarMapToEnvMapSlice(m map[string]string) []string {

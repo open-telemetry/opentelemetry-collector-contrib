@@ -114,7 +114,12 @@ func (mt *MetricsTranslator) TranslateSeriesV1(series SeriesList) pmetric.Metric
 			dp.SetDoubleValue(value)
 
 			stream := identity.OfStream(metricID, dp)
-			if startTs, ok := mt.trackStreamTimestamp(stream, dp.Timestamp()); ok {
+			// Prefer the declared interval; tracking is the fallback for series without one.
+			// Always advance the tracker so that fallback stays valid.
+			startTs, tracked := mt.trackStreamTimestamp(stream, dp.Timestamp())
+			if serie.Interval.IsSet() && serie.GetInterval() > 0 {
+				dp.SetStartTimestamp(dp.Timestamp() - pcommon.Timestamp(serie.GetInterval()*int64(time.Second)))
+			} else if tracked {
 				dp.SetStartTimestamp(startTs)
 			}
 		}
@@ -172,7 +177,12 @@ func (mt *MetricsTranslator) TranslateSeriesV2(series []*gogen.MetricPayload_Met
 			dp.SetDoubleValue(val)
 
 			stream := identity.OfStream(metricID, dp)
-			if startTs, ok := mt.trackStreamTimestamp(stream, dp.Timestamp()); ok {
+			// Prefer the declared interval; tracking is the fallback for series without one.
+			// Always advance the tracker so that fallback stays valid.
+			startTs, tracked := mt.trackStreamTimestamp(stream, dp.Timestamp())
+			if serie.Interval > 0 {
+				dp.SetStartTimestamp(dp.Timestamp() - pcommon.Timestamp(serie.Interval*int64(time.Second)))
+			} else if tracked {
 				dp.SetStartTimestamp(startTs)
 			}
 		}

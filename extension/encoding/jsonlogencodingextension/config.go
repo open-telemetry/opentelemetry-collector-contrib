@@ -16,6 +16,9 @@ type Config struct {
 	// Export raw log string instead of log wrapper
 	Mode      JSONEncodingMode `mapstructure:"mode,omitempty"`
 	ArrayMode bool             `mapstructure:"array_mode,omitempty"`
+	// ParseInts preserves integer literals within the int64 range as int64.
+	// Decimal, exponent, and out-of-range integer literals are converted to float64.
+	ParseInts bool `mapstructure:"parse_ints,omitempty"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

@@ -4,19 +4,28 @@
 package tcp
 
 import (
+	"bufio"
+	"bytes"
+	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"math/rand/v2"
 	"net"
 	"os"
+	"runtime"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -24,6 +33,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
@@ -80,6 +90,20 @@ BBdatHmcazlytT5KV+bANT/Ermw8y2tpWGWxMxQHveFh1zThYL8vkLi4fmZqqVCI
 zv9WEy+9p05Aet+12x3dzRu93+yRIEYbSZ35NOUWfQ+gspF5rGgpxA==
 -----END CERTIFICATE-----`
 
+// newTCPInput casts op to *Input and attaches a mock output that forwards
+// received entries to the returned channel.
+func newTCPInput(t *testing.T, op operator.Operator) (*Input, chan *entry.Entry) {
+	t.Helper()
+	tcpInput := op.(*Input)
+	mockOutput := &testutil.Operator{}
+	tcpInput.OutputOperators = []operator.Operator{mockOutput}
+	entryChan := make(chan *entry.Entry, 1)
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		entryChan <- args.Get(1).(*entry.Entry)
+	}).Return(nil)
+	return tcpInput, entryChan
+}
+
 func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 	return func(t *testing.T) {
 		cfg := NewConfigWithID("test_id")
@@ -89,14 +113,7 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 		op, err := cfg.Build(set)
 		require.NoError(t, err)
 
-		mockOutput := testutil.Operator{}
-		tcpInput := op.(*Input)
-		tcpInput.OutputOperators = []operator.Operator{&mockOutput}
-
-		entryChan := make(chan *entry.Entry, 1)
-		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
-			entryChan <- args.Get(1).(*entry.Entry)
-		}).Return(nil)
+		tcpInput, entryChan := newTCPInput(t, op)
 
 		err = tcpInput.Start(testutil.NewUnscopedMockPersister())
 		require.NoError(t, err)
@@ -139,14 +156,7 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 		op, err := cfg.Build(set)
 		require.NoError(t, err)
 
-		mockOutput := testutil.Operator{}
-		tcpInput := op.(*Input)
-		tcpInput.OutputOperators = []operator.Operator{&mockOutput}
-
-		entryChan := make(chan *entry.Entry, 1)
-		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
-			entryChan <- args.Get(1).(*entry.Entry)
-		}).Return(nil)
+		tcpInput, entryChan := newTCPInput(t, op)
 
 		err = tcpInput.Start(testutil.NewUnscopedMockPersister())
 		require.NoError(t, err)
@@ -226,14 +236,7 @@ func tlsInputTest(input []byte, expected []string) func(t *testing.T) {
 		op, err := cfg.Build(set)
 		require.NoError(t, err)
 
-		mockOutput := testutil.Operator{}
-		tcpInput := op.(*Input)
-		tcpInput.OutputOperators = []operator.Operator{&mockOutput}
-
-		entryChan := make(chan *entry.Entry, 1)
-		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
-			entryChan <- args.Get(1).(*entry.Entry)
-		}).Return(nil)
+		tcpInput, entryChan := newTCPInput(t, op)
 
 		err = tcpInput.Start(testutil.NewUnscopedMockPersister())
 		require.NoError(t, err)
@@ -433,13 +436,7 @@ func TestFailToBind(t *testing.T) {
 		set := componenttest.NewNopTelemetrySettings()
 		op, err := cfg.Build(set)
 		require.NoError(t, err)
-		mockOutput := testutil.Operator{}
-		tcpInput := op.(*Input)
-		tcpInput.OutputOperators = []operator.Operator{&mockOutput}
-		entryChan := make(chan *entry.Entry, 1)
-		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
-			entryChan <- args.Get(1).(*entry.Entry)
-		}).Return(nil)
+		tcpInput, _ := newTCPInput(t, op)
 		err = tcpInput.Start(testutil.NewUnscopedMockPersister())
 		return tcpInput, err
 	}
@@ -819,14 +816,7 @@ func TestTCPInput_OneLogPerPacket_PartialReadError(t *testing.T) {
 	op, err := cfg.Build(set)
 	require.NoError(t, err)
 
-	mockOutput := testutil.Operator{}
-	tcpInput := op.(*Input)
-	tcpInput.OutputOperators = []operator.Operator{&mockOutput}
-
-	entryChan := make(chan *entry.Entry, 1)
-	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
-		entryChan <- args.Get(1).(*entry.Entry)
-	}).Return(nil)
+	tcpInput, entryChan := newTCPInput(t, op)
 
 	err = tcpInput.Start(testutil.NewUnscopedMockPersister())
 	require.NoError(t, err)
@@ -848,5 +838,172 @@ func TestTCPInput_OneLogPerPacket_PartialReadError(t *testing.T) {
 	case entry := <-entryChan:
 		t.Errorf("expected no entry to be emitted after read error, got: %q", entry.Body)
 	case <-time.After(500 * time.Millisecond):
+	}
+}
+
+func TestTCPInput_OneLogPerPacket_TruncatesToMaxLogSize(t *testing.T) {
+	cfg := NewConfigWithID("test_id")
+	cfg.ListenAddress = ":0"
+	cfg.OneLogPerPacket = true
+	cfg.MaxLogSize = 64 * 1024
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	tcpInput, entryChan := newTCPInput(t, op)
+
+	err = tcpInput.Start(testutil.NewUnscopedMockPersister())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, tcpInput.Stop())
+	}()
+
+	payload := bytes.Repeat([]byte("a"), 32*1024*1024)
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+
+	conn, err := net.Dial("tcp", tcpInput.listener.Addr().String())
+	require.NoError(t, err)
+
+	_, err = conn.Write(payload)
+	require.NoError(t, err)
+	require.NoError(t, conn.Close())
+
+	select {
+	case e := <-entryChan:
+		require.Equal(t, strings.Repeat("a", int(cfg.MaxLogSize)), e.Body)
+	case <-time.After(5 * time.Second):
+		require.FailNow(t, "Timed out waiting for truncated entry")
+	}
+
+	runtime.ReadMemStats(&after)
+	// The data beyond max_log_size must be discarded, not buffered.
+	require.Less(t, after.TotalAlloc-before.TotalAlloc, uint64(len(payload)/4))
+}
+
+// mockAuthExtension is a minimal extensionauth.Server used for testing.
+type mockAuthExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
+	authenticate func(ctx context.Context, sources map[string][]string) (context.Context, error)
+}
+
+func (m *mockAuthExtension) Authenticate(ctx context.Context, sources map[string][]string) (context.Context, error) {
+	return m.authenticate(ctx, sources)
+}
+
+// authHost is a component.Host that exposes a fixed set of extensions.
+type authHost struct {
+	extensions map[component.ID]component.Component
+}
+
+func (h authHost) GetExtensions() map[component.ID]component.Component {
+	return h.extensions
+}
+
+func TestTCPInputAuth(t *testing.T) {
+	authID := component.MustNewID("testauth")
+
+	cases := []struct {
+		name         string
+		authenticate func(ctx context.Context, sources map[string][]string) (context.Context, error)
+		registerAuth bool
+		setHost      bool
+		wantErr      error
+		wantEntry    bool
+	}{
+		{
+			name: "authenticated connection is processed",
+			authenticate: func(ctx context.Context, _ map[string][]string) (context.Context, error) {
+				return ctx, nil
+			},
+			registerAuth: true,
+			setHost:      true,
+			wantEntry:    true,
+		},
+		{
+			name: "unauthenticated connection is rejected",
+			authenticate: func(ctx context.Context, _ map[string][]string) (context.Context, error) {
+				return ctx, errors.New("access denied")
+			},
+			registerAuth: true,
+			setHost:      true,
+		},
+		{
+			name:    "authenticator not found",
+			setHost: true,
+			wantErr: errResolveAuthenticator,
+		},
+		{
+			name:    "no host",
+			wantErr: errResolveAuthenticator,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := NewConfigWithID("test_id")
+			cfg.ListenAddress = ":0"
+			cfg.Auth = &helper.AuthConfig{Config: configauth.Config{AuthenticatorID: authID}}
+
+			op, err := cfg.Build(componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+
+			tcpInput, entryChan := newTCPInput(t, op)
+
+			var gotAddr net.Addr
+			if tc.setHost {
+				extensions := map[component.ID]component.Component{}
+				if tc.registerAuth {
+					extensions[authID] = &mockAuthExtension{
+						authenticate: func(ctx context.Context, sources map[string][]string) (context.Context, error) {
+							gotAddr = client.FromContext(ctx).Addr
+							return tc.authenticate(ctx, sources)
+						},
+					}
+				}
+				tcpInput.SetHost(authHost{extensions: extensions})
+			}
+
+			err = tcpInput.Start(testutil.NewUnscopedMockPersister())
+			if tc.wantErr != nil {
+				require.ErrorIs(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			defer func() {
+				require.NoError(t, tcpInput.Stop())
+			}()
+
+			conn, err := net.Dial("tcp", tcpInput.listener.Addr().String())
+			require.NoError(t, err)
+			defer conn.Close()
+
+			_, err = conn.Write([]byte("message\n"))
+			require.NoError(t, err)
+
+			if tc.wantEntry {
+				select {
+				case e := <-entryChan:
+					require.Equal(t, "message", e.Body)
+				case <-time.After(time.Second):
+					require.FailNow(t, "timed out waiting for message")
+				}
+				require.NotNil(t, gotAddr, "expected client address to be passed to authenticator")
+				return
+			}
+
+			select {
+			case e := <-entryChan:
+				require.FailNow(t, "unexpected entry for rejected connection", e.Body)
+			case <-time.After(200 * time.Millisecond):
+			}
+
+			// The server must have closed the rejected connection.
+			require.NoError(t, conn.SetReadDeadline(time.Now().Add(time.Second)))
+			_, err = bufio.NewReader(conn).ReadByte()
+			require.Error(t, err)
+		})
 	}
 }

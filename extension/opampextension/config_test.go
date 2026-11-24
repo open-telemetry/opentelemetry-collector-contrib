@@ -11,6 +11,7 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -42,6 +43,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				ReportsEffectiveConfig:     true,
 				ReportsHealth:              true,
 				ReportsAvailableComponents: true,
+				ReportsHeartbeat:           true,
 			},
 			PPIDPollInterval: 5 * time.Second,
 		}, cfg)
@@ -68,6 +70,7 @@ func TestUnmarshalHttpConfig(t *testing.T) {
 				ReportsEffectiveConfig:     true,
 				ReportsHealth:              true,
 				ReportsAvailableComponents: true,
+				ReportsHeartbeat:           true,
 			},
 			PPIDPollInterval: 5 * time.Second,
 		}, cfg)
@@ -214,9 +217,10 @@ func TestOpAMPServer_GetTLSConfig(t *testing.T) {
 
 func TestConfig_Validate(t *testing.T) {
 	type fields struct {
-		Server       *OpAMPServer
-		InstanceUID  string
-		Capabilities Capabilities
+		Server           *OpAMPServer
+		InstanceUID      string
+		Capabilities     Capabilities
+		ReportsRawConfig bool
 	}
 	tests := []struct {
 		name    string
@@ -340,6 +344,91 @@ func TestConfig_Validate(t *testing.T) {
 			},
 		},
 		{
+			name: "WS with unix socket is valid",
+			fields: fields{
+				Server: &OpAMPServer{
+					WS: &commonFields{
+						Endpoint: "ws://localhost/v1/opamp",
+						Socket: &confignet.AddrConfig{
+							Transport: confignet.TransportTypeUnix,
+							Endpoint:  "/run/otelcol/opamp.sock",
+						},
+					},
+				},
+				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "HTTP with unix socket is valid",
+			fields: fields{
+				Server: &OpAMPServer{
+					HTTP: &httpFields{
+						commonFields: commonFields{
+							Endpoint: "http://localhost/v1/opamp",
+							Socket: &confignet.AddrConfig{
+								Transport: confignet.TransportTypeUnix,
+								Endpoint:  "/run/otelcol/opamp.sock",
+							},
+						},
+					},
+				},
+				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "socket with npipe transport is valid",
+			fields: fields{
+				Server: &OpAMPServer{
+					WS: &commonFields{
+						Endpoint: "ws://localhost/v1/opamp",
+						Socket: &confignet.AddrConfig{
+							Transport: confignet.TransportTypeNpipe,
+							Endpoint:  `\\.\pipe\opamp`,
+						},
+					},
+				},
+				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "socket with tcp transport is rejected",
+			fields: fields{
+				Server: &OpAMPServer{
+					WS: &commonFields{
+						Endpoint: "ws://localhost/v1/opamp",
+						Socket: &confignet.AddrConfig{
+							Transport: confignet.TransportTypeTCP,
+							Endpoint:  "localhost:4320",
+						},
+					},
+				},
+				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+			},
+			wantErr: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.Equal(t, `socket::transport must be "unix" or "npipe"`, err.Error())
+			},
+		},
+		{
+			name: "socket without endpoint is rejected",
+			fields: fields{
+				Server: &OpAMPServer{
+					WS: &commonFields{
+						Endpoint: "ws://localhost/v1/opamp",
+						Socket: &confignet.AddrConfig{
+							Transport: confignet.TransportTypeUnix,
+						},
+					},
+				},
+				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+			},
+			wantErr: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.Equal(t, "socket::endpoint must be provided", err.Error())
+			},
+		},
+		{
 			name: "accepts_restart_command capability without feature gate",
 			fields: fields{
 				Capabilities: Capabilities{
@@ -358,13 +447,52 @@ func TestConfig_Validate(t *testing.T) {
 				return assert.Equal(t, "extension.opampextension.RemoteRestarts feature gate must be enabled to use the accepts_restart_command capability", err.Error())
 			},
 		},
+		{
+			name: "reports_raw_config without reports_effective_config",
+			fields: fields{
+				ReportsRawConfig: true,
+				Capabilities: Capabilities{
+					ReportsEffectiveConfig: false,
+				},
+				Server: &OpAMPServer{
+					HTTP: &httpFields{
+						commonFields: commonFields{
+							Endpoint: "https://127.0.0.1:4320/v1/opamp",
+						},
+					},
+				},
+				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+			},
+			wantErr: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.Equal(t, "reports_raw_config requires reports_effective_config to be enabled", err.Error())
+			},
+		},
+		{
+			name: "reports_raw_config with reports_effective_config",
+			fields: fields{
+				ReportsRawConfig: true,
+				Capabilities: Capabilities{
+					ReportsEffectiveConfig: true,
+				},
+				Server: &OpAMPServer{
+					HTTP: &httpFields{
+						commonFields: commonFields{
+							Endpoint: "https://127.0.0.1:4320/v1/opamp",
+						},
+					},
+				},
+				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+			},
+			wantErr: assert.NoError,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				Server:       tt.fields.Server,
-				InstanceUID:  tt.fields.InstanceUID,
-				Capabilities: tt.fields.Capabilities,
+				Server:           tt.fields.Server,
+				InstanceUID:      tt.fields.InstanceUID,
+				Capabilities:     tt.fields.Capabilities,
+				ReportsRawConfig: tt.fields.ReportsRawConfig,
 			}
 			tt.wantErr(t, cfg.Validate())
 		})
@@ -376,6 +504,7 @@ func TestCapabilities_toAgentCapabilities(t *testing.T) {
 		ReportsEffectiveConfig     bool
 		ReportsHealth              bool
 		ReportsAvailableComponents bool
+		ReportsHeartbeat           bool
 	}
 	tests := []struct {
 		name   string
@@ -388,6 +517,7 @@ func TestCapabilities_toAgentCapabilities(t *testing.T) {
 				ReportsEffectiveConfig:     false,
 				ReportsHealth:              false,
 				ReportsAvailableComponents: false,
+				ReportsHeartbeat:           false,
 			},
 			want: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
 		},
@@ -397,8 +527,19 @@ func TestCapabilities_toAgentCapabilities(t *testing.T) {
 				ReportsEffectiveConfig:     true,
 				ReportsHealth:              true,
 				ReportsAvailableComponents: true,
+				ReportsHeartbeat:           true,
 			},
-			want: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus | protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig | protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth | protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents,
+			want: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus | protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig | protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth | protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents | protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat,
+		},
+		{
+			name: "only heartbeat enabled",
+			fields: fields{
+				ReportsEffectiveConfig:     false,
+				ReportsHealth:              false,
+				ReportsAvailableComponents: false,
+				ReportsHeartbeat:           true,
+			},
+			want: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus | protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat,
 		},
 	}
 	for _, tt := range tests {
@@ -406,7 +547,8 @@ func TestCapabilities_toAgentCapabilities(t *testing.T) {
 			caps := Capabilities{
 				ReportsEffectiveConfig:     tt.fields.ReportsEffectiveConfig,
 				ReportsHealth:              tt.fields.ReportsHealth,
-				ReportsAvailableComponents: tt.fields.ReportsEffectiveConfig,
+				ReportsAvailableComponents: tt.fields.ReportsAvailableComponents,
+				ReportsHeartbeat:           tt.fields.ReportsHeartbeat,
 			}
 			assert.Equalf(t, tt.want, caps.toAgentCapabilities(), "toAgentCapabilities()")
 		})

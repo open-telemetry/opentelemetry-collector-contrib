@@ -34,25 +34,46 @@ func ExtractKey(spans []ptrace.ResourceSpans, selectors []Selector, isRoot RootM
 
 func extractSelector(spans []ptrace.ResourceSpans, sel Selector, isRoot RootMatcher) string {
 	seen := make(map[string]struct{})
+	wantResource := sel.Origin == OriginResource || sel.Origin == OriginAny
+	wantScope := sel.Origin == OriginScope || sel.Origin == OriginAny
+	wantSpan := sel.Origin == OriginSpan || sel.Origin == OriginAny
 	for _, rs := range spans {
-		if sel.Scope == ScopeResource || sel.Scope == ScopeAny {
-			collectAttrValue(rs.Resource().Attributes(), sel.Key, seen)
-			if sel.Scope == ScopeResource {
+		// Without the root prefix, resource and scope attributes are read
+		// per resource/scope regardless of the spans they carry. The root
+		// prefix instead reads them from the matched root span's resource and
+		// scope, so that collection happens inside the span loop below.
+		if !sel.Root {
+			if wantResource {
+				collectAttrValue(rs.Resource().Attributes(), sel.Key, seen)
+			}
+			if sel.Origin == OriginResource {
 				continue
 			}
 		}
 		for _, ss := range rs.ScopeSpans().All() {
-			if sel.Scope == ScopeScope || sel.Scope == ScopeAny {
-				collectAttrValue(ss.Scope().Attributes(), sel.Key, seen)
-				if sel.Scope == ScopeScope {
+			if !sel.Root {
+				if wantScope {
+					collectAttrValue(ss.Scope().Attributes(), sel.Key, seen)
+				}
+				if sel.Origin == OriginScope {
 					continue
 				}
 			}
 			for _, span := range ss.Spans().All() {
-				if sel.Scope == ScopeRoot && (isRoot == nil || !isRoot(rs, ss, span)) {
-					continue
+				if sel.Root {
+					if isRoot == nil || !isRoot(rs, ss, span) {
+						continue
+					}
+					if wantResource {
+						collectAttrValue(rs.Resource().Attributes(), sel.Key, seen)
+					}
+					if wantScope {
+						collectAttrValue(ss.Scope().Attributes(), sel.Key, seen)
+					}
 				}
-				collectAttrValue(span.Attributes(), sel.Key, seen)
+				if wantSpan {
+					collectAttrValue(span.Attributes(), sel.Key, seen)
+				}
 			}
 		}
 	}

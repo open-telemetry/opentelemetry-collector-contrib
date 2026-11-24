@@ -81,7 +81,7 @@ func TestMatcherMatches(t *testing.T) {
 			assert.NotNil(t, matcher)
 			assert.NoError(t, err)
 
-			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), test.metric)
+			tCtx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), test.metric)
 			matches, err := matcher.Eval(t.Context(), tCtx)
 			tCtx.Close()
 			assert.NoError(t, err)
@@ -184,7 +184,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 			metric := pmetric.NewMetric()
 			metric.SetName("metricA")
 
-			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
+			tCtx := ottlmetric.NewTransformContext(pmetric.NewResourceMetrics(), pmetric.NewScopeMetrics(), metric)
 			defer tCtx.Close()
 
 			boolExpr, err := NewSkipExpr(tt.include, tt.exclude)

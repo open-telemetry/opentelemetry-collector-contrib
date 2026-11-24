@@ -40,12 +40,7 @@ func newLogsConnector(
 		return nil, errUnexpectedConsumer
 	}
 
-	r, err := newRouter(
-		cfg.Table,
-		cfg.DefaultPipelines,
-		lr.Consumer,
-		set.TelemetrySettings,
-	)
+	r, err := newRouter(cfg, lr.Consumer, set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +74,7 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 				}
 			}
 		case "otelcol":
-			otx := ottlotelcol.NewTransformContextPtr()
+			otx := ottlotelcol.NewTransformContext()
 			_, isMatch, err := route.otelcolStatement.Execute(ctx, otx)
 			otx.Close()
 			if err != nil {
@@ -97,7 +92,7 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			case Copy:
 				plogutil.CopyResourcesIf(ld, matched,
 					func(rl plog.ResourceLogs) bool {
-						rtx := ottlresource.NewTransformContextPtr(rl.Resource(), rl)
+						rtx := ottlresource.NewTransformContext(rl.Resource(), rl)
 						defer rtx.Close()
 						_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
 						// If error during statement evaluation consider it as not a match.
@@ -111,7 +106,7 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			default:
 				plogutil.MoveResourcesIf(ld, matched,
 					func(rl plog.ResourceLogs) bool {
-						rtx := ottlresource.NewTransformContextPtr(rl.Resource(), rl)
+						rtx := ottlresource.NewTransformContext(rl.Resource(), rl)
 						defer rtx.Close()
 						_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
 						// If error during statement evaluation consider it as not a match.
@@ -128,7 +123,7 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			case Copy:
 				plogutil.CopyRecordsWithContextIf(ld, matched,
 					func(rl plog.ResourceLogs, sl plog.ScopeLogs, lr plog.LogRecord) bool {
-						ltx := ottllog.NewTransformContextPtr(rl, sl, lr)
+						ltx := ottllog.NewTransformContext(rl, sl, lr)
 						defer ltx.Close()
 						_, isMatch, err := route.logStatement.Execute(ctx, ltx)
 						// If error during statement evaluation consider it as not a match.
@@ -142,7 +137,7 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			default:
 				plogutil.MoveRecordsWithContextIf(ld, matched,
 					func(rl plog.ResourceLogs, sl plog.ScopeLogs, lr plog.LogRecord) bool {
-						ltx := ottllog.NewTransformContextPtr(rl, sl, lr)
+						ltx := ottllog.NewTransformContext(rl, sl, lr)
 						defer ltx.Close()
 						_, isMatch, err := route.logStatement.Execute(ctx, ltx)
 						// If error during statement evaluation consider it as not a match.

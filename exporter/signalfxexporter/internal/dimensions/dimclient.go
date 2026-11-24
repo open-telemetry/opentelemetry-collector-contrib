@@ -104,9 +104,6 @@ func NewDimensionClient(options DimensionClientOptions) *DimensionClient {
 			DialContext: (&net.Dialer{
 				Timeout:   5 * time.Second,
 				KeepAlive: 30 * time.Second,
-				// TODO: SA1019: (net.Dialer).DualStack has been deprecated since Go 1.12: Fast Fallback is enabled by default. To disable, set FallbackDelay to a negative value.
-				// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/50430
-				DualStack: true, //nolint:staticcheck
 			}).DialContext,
 			MaxConnsPerHost:     options.MaxConnsPerHost,
 			MaxIdleConns:        options.MaxIdleConns,
@@ -164,7 +161,13 @@ func (dc *DimensionClient) AcceptDimension(dimUpdate *DimensionUpdate) error {
 	defer dc.Unlock()
 
 	if delayedDimUpdate := dc.delayedSet[dimUpdate.Key()]; delayedDimUpdate != nil {
-		if !reflect.DeepEqual(delayedDimUpdate, dimUpdate) {
+		switch {
+		case reflect.DeepEqual(delayedDimUpdate, dimUpdate):
+		case dimUpdate.Replace:
+			// Replace updates carry the full dimension state, the latest one wins.
+			delayedDimUpdate.Properties = dimUpdate.Properties
+			delayedDimUpdate.Tags = dimUpdate.Tags
+		default:
 			// Merge the latest updates into existing one.
 			delayedDimUpdate.Properties = mergeProperties(delayedDimUpdate.Properties, dimUpdate.Properties)
 			delayedDimUpdate.Tags = mergeTags(delayedDimUpdate.Tags, dimUpdate.Tags)

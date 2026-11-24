@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -20,7 +21,11 @@ func testManager(t *testing.T, cfg *Config, opts ...Option) (*Manager, *emittest
 }
 
 func testManagerWithSink(t *testing.T, cfg *Config, sink *emittest.Sink, opts ...Option) *Manager {
-	return buildTestManager(t, cfg, sink, nil, opts...)
+	return testManagerWithEmit(t, cfg, sink.Callback, opts...)
+}
+
+func testManagerWithEmit(t *testing.T, cfg *Config, emitFunc emit.Callback, opts ...Option) *Manager {
+	return buildTestManager(t, cfg, emitFunc, nil, opts...)
 }
 
 // testManagerKeepFilesOpen builds a manager whose tracker keeps files open between poll
@@ -29,7 +34,7 @@ func testManagerWithSink(t *testing.T, cfg *Config, sink *emittest.Sink, opts ..
 func testManagerKeepFilesOpen(t *testing.T, cfg *Config) (*Manager, *emittest.Sink) {
 	sink := emittest.NewSink()
 	keepOpen := true
-	return buildTestManager(t, cfg, sink, &keepOpen), sink
+	return buildTestManager(t, cfg, sink.Callback, &keepOpen), sink
 }
 
 // testManagerKeepFilesClosed builds a manager whose tracker closes files immediately
@@ -37,16 +42,16 @@ func testManagerKeepFilesOpen(t *testing.T, cfg *Config) (*Manager, *emittest.Si
 func testManagerKeepFilesClosed(t *testing.T, cfg *Config) (*Manager, *emittest.Sink) {
 	sink := emittest.NewSink()
 	keepOpen := false
-	return buildTestManager(t, cfg, sink, &keepOpen), sink
+	return buildTestManager(t, cfg, sink.Callback, &keepOpen), sink
 }
 
 // buildTestManager builds a Manager and wires up its tracker for direct poll() calls in
 // tests. If keepFilesOpenOverride is non-nil, it fixes the tracker's keep-open behavior
 // for this instance (and, for tests that call Start(), survives tracker re-instantiation);
 // otherwise the build-time default from keepFilesOpenBetweenPolls is used.
-func buildTestManager(t *testing.T, cfg *Config, sink *emittest.Sink, keepFilesOpenOverride *bool, opts ...Option) *Manager {
+func buildTestManager(t *testing.T, cfg *Config, emitFunc emit.Callback, keepFilesOpenOverride *bool, opts ...Option) *Manager {
 	set := componenttest.NewNopTelemetrySettings()
-	input, err := cfg.Build(set, sink.Callback, opts...)
+	input, err := cfg.Build(set, emitFunc, opts...)
 	require.NoError(t, err)
 	if keepFilesOpenOverride != nil {
 		input.keepFilesOpen = *keepFilesOpenOverride

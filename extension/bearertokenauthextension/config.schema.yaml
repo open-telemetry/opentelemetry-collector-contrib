@@ -7,6 +7,9 @@ properties:
   header:
     description: Header specifies the auth-header for the token. Defaults to "Authorization"
     type: string
+  retry_on_failure:
+    description: RetryOnFailure configures startup retry behavior when the file referenced by Filename is not yet available. Disabled by default.
+    $ref: /extension/internal/credentialsfile.retry_on_failure_config
   scheme:
     description: Scheme specifies the auth-scheme for the token. Defaults to "Bearer"
     type: string
@@ -18,3 +21,6 @@ properties:
     type: array
     items:
       $ref: go.opentelemetry.io/collector/config/configopaque.string
+  wait_for_token_file:
+    description: WaitForTokenFile makes Start block until the token file is read successfully (respecting RetryOnFailure) instead of retrying in the background. If the file cannot be read within the retry budget, Start returns an error and collector startup fails. Disabled by default.
+    type: boolean

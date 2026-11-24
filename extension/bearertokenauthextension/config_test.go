@@ -6,6 +6,7 @@ package bearertokenauthextension
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -97,6 +99,33 @@ func TestLoadConfig(t *testing.T) {
 				BearerToken: "my-token",
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "withretryonfailure"),
+			expected: &Config{
+				Header:   defaultHeader,
+				Scheme:   "Bearer",
+				Filename: "file-containing.token",
+				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
+					Enabled:    true,
+					MaxRetries: 5,
+					Interval:   2 * time.Second,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "withwaitfortokenfile"),
+			expected: &Config{
+				Header:           defaultHeader,
+				Scheme:           "Bearer",
+				Filename:         "file-containing.token",
+				WaitForTokenFile: true,
+				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
+					Enabled:    true,
+					MaxRetries: 5,
+					Interval:   2 * time.Second,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -114,6 +143,127 @@ func TestLoadConfig(t *testing.T) {
 			}
 			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestValidate_RetryOnFailure(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name            string
+		cfg             *Config
+		wantErr         error
+		wantErrContains string
+	}{
+		{
+			name: "enabled without filename",
+			cfg: &Config{
+				BearerToken: "tok",
+				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
+					Enabled:    true,
+					MaxRetries: 1,
+					Interval:   time.Second,
+				},
+			},
+			wantErr: errRetryOnFailureNoFile,
+		},
+		{
+			name: "enabled with zero max_retries retries indefinitely",
+			cfg: &Config{
+				Filename: "file.token",
+				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
+					Enabled:  true,
+					Interval: time.Second,
+				},
+			},
+		},
+		{
+			name: "enabled with negative max_retries",
+			cfg: &Config{
+				Filename: "file.token",
+				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
+					Enabled:    true,
+					MaxRetries: -1,
+					Interval:   time.Second,
+				},
+			},
+			wantErrContains: "retry_on_failure.max_retries must be greater or equal to 0",
+		},
+		{
+			name: "enabled with zero interval",
+			cfg: &Config{
+				Filename: "file.token",
+				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
+					Enabled:    true,
+					MaxRetries: 1,
+				},
+			},
+			wantErrContains: "retry_on_failure.interval must be greater than 0",
+		},
+		{
+			name: "enabled with valid values",
+			cfg: &Config{
+				Filename: "file.token",
+				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
+					Enabled:    true,
+					MaxRetries: 3,
+					Interval:   time.Second,
+				},
+			},
+		},
+		{
+			name: "disabled ignores other fields",
+			cfg: &Config{
+				Filename: "file.token",
+				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
+					MaxRetries: 0,
+					Interval:   0,
+				},
+			},
+		},
+		{
+			name: "wait_for_token_file without filename",
+			cfg: &Config{
+				BearerToken:      "sometoken",
+				WaitForTokenFile: true,
+			},
+			wantErr: errRetryOnFailureNoFile,
+		},
+		{
+			name: "wait_for_token_file without retry enabled",
+			cfg: &Config{
+				Filename:         "file.token",
+				WaitForTokenFile: true,
+			},
+			wantErr: errWaitForTokenFileRequiresRetry,
+		},
+		{
+			name: "wait_for_token_file with retry enabled",
+			cfg: &Config{
+				Filename:         "file.token",
+				WaitForTokenFile: true,
+				RetryOnFailure: credentialsfile.RetryOnFailureConfig{
+					Enabled:    true,
+					MaxRetries: 3,
+					Interval:   time.Second,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if tt.wantErr != nil {
+				require.ErrorIs(t, err, tt.wantErr)
+				return
+			}
+			if tt.wantErrContains != "" {
+				require.ErrorContains(t, err, tt.wantErrContains)
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
 }

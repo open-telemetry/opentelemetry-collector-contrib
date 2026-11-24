@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v5"
+	"github.com/cenkalti/backoff/v7"
 	"github.com/influxdata/influxdb-observability/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,8 +32,8 @@ func TestLoadConfig(t *testing.T) {
 	content, err := os.ReadFile(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	contentStr := strings.ReplaceAll(string(content), "<METRICS_APP_TOKEN>", metricsAppToken)
-	contentStr = strings.ReplaceAll(contentStr, "<LOGS_APP_TOKEN>", logsAppToken)
+	contentStr := strings.ReplaceAll(string(content), "<METRICS_APP_TOKEN>", string(metricsAppToken))
+	contentStr = strings.ReplaceAll(contentStr, "<LOGS_APP_TOKEN>", string(logsAppToken))
 
 	tmpConfigPath := filepath.Join("testdata", "config_tmp.yaml")
 	err = os.WriteFile(tmpConfigPath, []byte(contentStr), 0o600)
@@ -43,20 +43,12 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	defaultClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	defaultClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	defaultClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	defaultClientConfig.ForceAttemptHTTP2 = false
 	defaultClientConfig.Timeout = 5 * time.Second
 	defaultClientConfig.Headers = configopaque.MapList{
 		{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
 	}
 
 	overrideClientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	overrideClientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	overrideClientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	overrideClientConfig.ForceAttemptHTTP2 = false
 	overrideClientConfig.Timeout = 500 * time.Millisecond
 	overrideClientConfig.Headers = configopaque.MapList{
 		{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},
@@ -248,4 +240,21 @@ func TestConfigValidation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateDoesNotLeakAppToken(t *testing.T) {
+	const secret = "not-a-uuid-secret-token"
+	cfg := &Config{
+		Region:        usRegion,
+		MetricsConfig: MetricsConfig{AppToken: secret},
+		LogsConfig:    LogsConfig{AppToken: secret},
+	}
+	err := cfg.Validate()
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), secret)
+
+	cfg.MetricsConfig.AppToken = metricsAppToken
+	err = cfg.Validate()
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), secret)
 }

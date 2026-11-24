@@ -46,6 +46,11 @@ kafka/max_message_bytes_exceeds_broker:
   max_message_bytes: 209715200
 kafka/max_broker_write_bytes_negative:
   max_broker_write_bytes: -1000
+kafka/max_inflight_requests_per_broker_zero:
+  max_inflight_requests_per_broker: 0
+kafka/max_inflight_requests_per_broker_with_acks_all:
+  required_acks: all
+  max_inflight_requests_per_broker: 2
 
 kafka/producer_linger:
   linger: 100ms
@@ -55,3 +60,6 @@ kafka/producer_linger_1s:
 
 kafka/custom_flush_max_messages:
   flush_max_messages: 5000
+
+kafka/custom_max_inflight_requests_per_broker:
+  max_inflight_requests_per_broker: 100
