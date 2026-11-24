@@ -12,7 +12,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/itchyny/timefmt-go v0.1.9
 	github.com/klauspost/compress v1.20.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.166.0
 	github.com/stretchr/testify v1.12.1
 	github.com/tilinna/clock v1.1.0
 	go.opentelemetry.io/collector/component v1.72.0
