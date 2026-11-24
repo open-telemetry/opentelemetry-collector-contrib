@@ -49,6 +49,7 @@ The following exporter configuration parameters are supported.
 | `retry_max_backoff`       | the max backoff delay that can occur before retrying a request if `retry_mode` is set                                                                                                                                      | 20s                                         |
 | `unique_key_func_name`    | Name of the function to use for generating a unique portion of the key name, defaults to a random integer. Only supported value is `uuidv7`.                                                                               |                                             |
 | `retry_on_failure`    | see [Retry on Failure](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#retry-on-failure) for the full set of available options.                                                                               |                                             |
+| `telemetry`               | internal telemetry of the exporter. See [telemetry](#telemetry).                                                                                                                                                           |                                             |
 
 ### Marshaler
 
@@ -97,6 +98,20 @@ See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/
   When this option is set, it dynamically overrides `s3uploader/s3_prefix`. 
   If the specified resource attribute exists in the data,  
   its value will be used as the prefix; otherwise, `s3uploader/s3_prefix` will serve as the fallback.
+
+### telemetry
+
+- `enabled` (default `false`): Emits the upload metrics of the exporter, `otelcol.awss3.upload.duration`
+  and `otelcol.awss3.uploaded.size`. See [documentation.md](./documentation.md) for their details.
+
+```yaml
+exporters:
+  awss3:
+    s3uploader:
+      s3_bucket: 'databucket'
+    telemetry:
+      enabled: true
+```
 
 # Example Configurations
 

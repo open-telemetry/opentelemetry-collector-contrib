@@ -76,12 +76,16 @@ func createLogsExporter(ctx context.Context,
 		return nil, err
 	}
 
-	s3Exporter := newS3Exporter(cfg, "logs", params)
+	s3Exporter, err := newS3Exporter(cfg, "logs", params)
+	if err != nil {
+		return nil, err
+	}
 
 	logsExporter, err := exporterhelper.NewLogs(ctx, params,
 		config,
 		s3Exporter.ConsumeLogs,
 		exporterhelper.WithStart(s3Exporter.start),
+		exporterhelper.WithShutdown(s3Exporter.shutdown),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
@@ -110,7 +114,10 @@ func createMetricsExporter(ctx context.Context,
 		return nil, err
 	}
 
-	s3Exporter := newS3Exporter(cfg, "metrics", params)
+	s3Exporter, err := newS3Exporter(cfg, "metrics", params)
+	if err != nil {
+		return nil, err
+	}
 
 	if config.(*Config).MarshalerName == SumoIC {
 		return nil, errors.New("metrics are not supported by sumo_ic output format")
@@ -120,6 +127,7 @@ func createMetricsExporter(ctx context.Context,
 		config,
 		s3Exporter.ConsumeMetrics,
 		exporterhelper.WithStart(s3Exporter.start),
+		exporterhelper.WithShutdown(s3Exporter.shutdown),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
@@ -148,7 +156,10 @@ func createTracesExporter(ctx context.Context,
 		return nil, err
 	}
 
-	s3Exporter := newS3Exporter(cfg, "traces", params)
+	s3Exporter, err := newS3Exporter(cfg, "traces", params)
+	if err != nil {
+		return nil, err
+	}
 
 	if config.(*Config).MarshalerName == SumoIC {
 		return nil, errors.New("traces are not supported by sumo_ic output format")
@@ -159,6 +170,7 @@ func createTracesExporter(ctx context.Context,
 		config,
 		s3Exporter.ConsumeTraces,
 		exporterhelper.WithStart(s3Exporter.start),
+		exporterhelper.WithShutdown(s3Exporter.shutdown),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),

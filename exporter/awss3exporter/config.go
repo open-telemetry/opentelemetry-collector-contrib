@@ -95,6 +95,15 @@ type ResourceAttrsToS3 struct {
 	_ struct{}
 }
 
+// TelemetryConfig configures the internal telemetry of the exporter.
+type TelemetryConfig struct {
+	// Enabled emits the upload metrics of the exporter, otelcol.awss3.upload.duration
+	// and otelcol.awss3.uploaded.size. Disabled by default.
+	Enabled bool `mapstructure:"enabled"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
 // Config contains the main configuration options for the s3 exporter
 type Config struct {
 	BackOffConfig configretry.BackOffConfig `mapstructure:"retry_on_failure"`
@@ -108,6 +117,9 @@ type Config struct {
 	Encoding              *component.ID     `mapstructure:"encoding"`
 	EncodingFileExtension string            `mapstructure:"encoding_file_extension"`
 	ResourceAttrsToS3     ResourceAttrsToS3 `mapstructure:"resource_attrs_to_s3"`
+
+	// Telemetry configures the internal telemetry of the exporter.
+	Telemetry TelemetryConfig `mapstructure:"telemetry"`
 }
 
 func (c *Config) Validate() error {

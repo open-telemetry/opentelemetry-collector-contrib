@@ -25,19 +25,29 @@ type s3Exporter struct {
 	uploader   upload.Manager
 	logger     *zap.Logger
 	marshaler  marshaler
+	telemetry  *upload.Telemetry
 }
 
 func newS3Exporter(
 	config *Config,
 	signalType string,
 	params exporter.Settings,
-) *s3Exporter {
+) (*s3Exporter, error) {
+	// Unless enabled in the config the telemetry stays nil, which records nothing.
+	var telemetry *upload.Telemetry
+	if config.Telemetry.Enabled {
+		var err error
+		if telemetry, err = upload.NewTelemetry(params.TelemetrySettings); err != nil {
+			return nil, err
+		}
+	}
 	s3Exporter := &s3Exporter{
 		config:     config,
 		signalType: signalType,
 		logger:     params.Logger,
+		telemetry:  telemetry,
 	}
-	return s3Exporter
+	return s3Exporter, nil
 }
 
 func (e *s3Exporter) getUploadOpts(res pcommon.Resource) *upload.UploadOptions {
@@ -75,11 +85,16 @@ func (e *s3Exporter) start(ctx context.Context, host component.Host) error {
 
 	e.marshaler = m
 
-	up, err := newUploadManager(ctx, e.config, e.logger, e.signalType, m.format(), m.compressed())
+	up, err := newUploadManager(ctx, e.config, e.logger, e.signalType, m.format(), m.compressed(), upload.WithTelemetry(e.telemetry))
 	if err != nil {
 		return err
 	}
 	e.uploader = up
+	return nil
+}
+
+func (e *s3Exporter) shutdown(context.Context) error {
+	e.telemetry.Shutdown()
 	return nil
 }
 
