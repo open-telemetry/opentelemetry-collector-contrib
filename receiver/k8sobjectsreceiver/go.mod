@@ -4,14 +4,14 @@ go 1.26.0
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.165.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.165.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.165.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory v0.165.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest v0.165.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.165.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.165.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.166.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.166.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.166.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory v0.166.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest v0.166.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.166.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.166.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.166.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.72.0
 	go.opentelemetry.io/collector/component/componenttest v0.166.0

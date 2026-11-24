@@ -10,9 +10,9 @@ require (
 	github.com/itchyny/timefmt-go v0.1.9
 	github.com/klauspost/compress v1.20.4
 	github.com/open-telemetry/opamp-go v0.25.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.165.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension v0.165.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.166.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension v0.166.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.166.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.72.0
 	go.opentelemetry.io/collector/component/componenttest v0.166.0
@@ -62,8 +62,8 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.165.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding v0.165.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.166.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding v0.166.0 // indirect
 	github.com/stretchr/objx v0.5.3 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.72.0 // indirect

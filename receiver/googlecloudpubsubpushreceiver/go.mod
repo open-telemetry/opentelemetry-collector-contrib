@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	cloud.google.com/go/storage v1.70.0
 	github.com/goccy/go-json v0.12.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.166.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/client v1.72.0
 	go.opentelemetry.io/collector/component v1.72.0
