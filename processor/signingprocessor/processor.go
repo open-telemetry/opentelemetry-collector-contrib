@@ -29,6 +29,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/canonicaljson"
 )
 
+const auditIntegrityPrefix = "audit.integrity."
+
+// signingSerializeOptions is shared by logs and spans and must not be modified.
+// Uses default MaxDepth (128) and MaxInputBytes (2 MiB).
+var signingSerializeOptions = canonicaljson.SerializeOptions{
+	ExcludePrefixes: []string{auditIntegrityPrefix},
+}
+
 type signingProcessor struct {
 	config       *Config
 	logger       *zap.Logger
@@ -120,11 +128,7 @@ func (p *signingProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error 
 //   - Flags (W3C trace-context sampling bit; observability concept, not audit-relevant;
 //     may be modified by intermediaries without breaking audit semantics)
 func (p *signingProcessor) processLogRecord(lr plog.LogRecord) error {
-	opts := canonicaljson.SerializeOptions{
-		ExcludePrefixes: []string{"audit.integrity."},
-		// Uses default MaxDepth (128) and MaxInputBytes (2 MiB)
-	}
-	logData, err := canonicaljson.SerializeLogRecord(lr, opts)
+	logData, err := canonicaljson.SerializeLogRecord(lr, signingSerializeOptions)
 	if err != nil {
 		return fmt.Errorf("failed to serialize log record: %w", err)
 	}
@@ -166,10 +170,7 @@ func (p *signingProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 }
 
 func (p *signingProcessor) processSpan(span ptrace.Span) error {
-	opts := canonicaljson.SerializeOptions{
-		ExcludePrefixes: []string{"audit.integrity."},
-	}
-	spanData, err := canonicaljson.SerializeSpan(span, opts)
+	spanData, err := canonicaljson.SerializeSpan(span, signingSerializeOptions)
 	if err != nil {
 		return fmt.Errorf("failed to serialize span: %w", err)
 	}
