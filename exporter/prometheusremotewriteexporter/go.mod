@@ -6,10 +6,10 @@ require (
 	github.com/cenkalti/backoff/v7 v7.0.3
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.165.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.165.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.165.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.165.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.166.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.166.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.166.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.166.0
 	github.com/prometheus/client_golang/exp v0.0.0-20261019101427-217707f26b14
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/prometheus/prometheus v0.316.0
@@ -98,7 +98,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.165.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.166.0 // indirect
 	github.com/pandatix/go-abnf v0.5.5 // indirect
 	github.com/pierrec/lz4/v4 v4.1.33 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
