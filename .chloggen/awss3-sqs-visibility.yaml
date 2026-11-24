@@ -1,5 +1,0 @@
-change_type: enhancement
-component: receiver/aws_s3
-note: Add optional SQS message visibility-timeout renewal with sqs.visibility_timeout_seconds.
-issues: [53139]
-change_logs: [user, api]
