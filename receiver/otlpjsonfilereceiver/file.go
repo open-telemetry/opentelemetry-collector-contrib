@@ -230,7 +230,11 @@ func createProfilesReceiver(_ context.Context, settings receiver.Settings, confi
 	}
 	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, attributes map[string]any, _ int64, _ []int64) error {
 		for _, token := range tokens {
-			p, _ := profilesUnmarshaler.UnmarshalProfiles(token)
+			p, err := profilesUnmarshaler.UnmarshalProfiles(token)
+			if err != nil {
+				settings.Logger.Warn("Failed to unmarshal profiles", zap.Error(err))
+				continue
+			}
 			if p.ResourceProfiles().Len() != 0 {
 				// Appends token.Attributes
 				dic := p.Dictionary()

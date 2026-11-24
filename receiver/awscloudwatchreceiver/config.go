@@ -33,6 +33,10 @@ type Config struct {
 	Logs         LogsConfig    `mapstructure:"logs"`
 	Metrics      MetricsConfig `mapstructure:"metrics"`
 	StorageID    *component.ID `mapstructure:"storage"`
+	// K8sLeaderElector references the k8sleaderelector extension. When set, the receiver only
+	// collects while it holds the lease, so several collector replicas can run the same
+	// configuration without duplicating CloudWatch API calls.
+	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
 }
 
 // MetricsConfig is the configuration for the metrics (GetMetricData) portion of this receiver.
@@ -87,7 +91,12 @@ type LogsConfig struct {
 	InitialLookback     time.Duration `mapstructure:"initial_lookback"`
 	PollInterval        time.Duration `mapstructure:"poll_interval"`
 	MaxEventsPerRequest int           `mapstructure:"max_events_per_request"`
-	Groups              GroupConfig   `mapstructure:"groups"`
+	// Delay shifts the end of each poll window back from now to account for CloudWatch Logs
+	// ingestion latency. Events can become visible to FilterLogEvents some time after their
+	// timestamp; without a delay, such events fall before the next poll's start time and are
+	// never read. Defaults to 0 (the window ends at now).
+	Delay  time.Duration `mapstructure:"delay"`
+	Groups GroupConfig   `mapstructure:"groups"`
 }
 
 // GroupConfig is the configuration for log group collection
@@ -121,6 +130,7 @@ var (
 	errPrefixAndPatternConfigured       = errors.New("cannot specify both prefix and pattern")
 	errInvalidMetricsPeriod             = errors.New("metrics period must be at least 1 second")
 	errInvalidMetricsDelay              = errors.New("metrics delay must be at least 1 second")
+	errInvalidLogsDelay                 = errors.New("logs delay must be at least 1 second")
 	errInvalidMetricsCollectionInterval = errors.New("metrics collection_interval must be at least 1 second")
 	errMetricMissingNamespace           = errors.New("metric must have namespace")
 	errMetricMissingName                = errors.New("metric must have metric_name")
@@ -254,6 +264,10 @@ func (c *Config) validateLogsConfig() error {
 
 	if c.Logs.PollInterval < time.Second {
 		return errInvalidPollInterval
+	}
+
+	if c.Logs.Delay != 0 && c.Logs.Delay < time.Second {
+		return errInvalidLogsDelay
 	}
 
 	return c.Logs.Groups.validate()

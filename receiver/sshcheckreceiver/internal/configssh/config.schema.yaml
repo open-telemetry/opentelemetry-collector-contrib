@@ -14,7 +14,7 @@ $defs:
         description: file path to the known_hosts
         type: string
       password:
-        type: string
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       timeout:
         type: string
         format: duration
