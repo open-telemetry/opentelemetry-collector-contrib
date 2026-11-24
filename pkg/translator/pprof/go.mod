@@ -8,8 +8,8 @@ require (
 	github.com/open-telemetry/sig-profiling/profcheck v0.0.0-20261120131622-f16d8cb17149
 	github.com/stretchr/testify v1.12.1
 	github.com/zeebo/xxh3 v1.1.0
-	go.opentelemetry.io/collector/pdata v1.71.1-0.20261122191605-d56d0a1c98b6
-	go.opentelemetry.io/collector/pdata/pprofile v0.165.1-0.20261122191605-d56d0a1c98b6
+	go.opentelemetry.io/collector/pdata v1.72.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.166.0
 	go.opentelemetry.io/otel v1.47.0
 	go.opentelemetry.io/proto/slim/otlp v1.11.1
 	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.4.1
@@ -23,7 +23,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	go.opentelemetry.io/collector/featuregate v1.71.1-0.20261122191605-d56d0a1c98b6 // indirect
+	go.opentelemetry.io/collector/featuregate v1.72.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/sys v0.48.0 // indirect

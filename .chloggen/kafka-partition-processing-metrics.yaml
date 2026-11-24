@@ -1,4 +1,0 @@
-change_type: enhancement
-component: receiver/kafka
-note: Add partition data-wait, in-flight record, and processing-stage duration metrics for independent processing.
-issues: [53176]
