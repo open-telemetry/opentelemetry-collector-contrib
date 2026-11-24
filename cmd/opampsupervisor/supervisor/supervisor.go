@@ -697,9 +697,23 @@ func (s *Supervisor) startOpAMPClient() error {
 		InstanceUid:        types.InstanceUid(s.persistentState.InstanceID),
 		RemoteConfigStatus: s.persistentState.GetLastRemoteConfigStatus(),
 		Callbacks: types.Callbacks{
-			OnConnect: s.onConnect,
-			OnConnectFailed: func(_ context.Context, err error) {
+			OnConnect: func(ctx context.Context) {
+				s.metrics.RecordOpAMPConnectAttempt(ctx)
+				s.metrics.RecordOpAMPConnect(ctx)
+				s.onConnect(ctx)
+			},
+			OnConnectFailed: func(ctx context.Context, err error) {
+				s.metrics.RecordOpAMPConnectFailed(ctx)
 				s.telemetrySettings.Logger.Error("Failed to connect to the OpAMP server", zap.Error(err))
+			},
+			OnDisconnect: func(ctx context.Context, _ error) {
+				s.metrics.RecordOpAMPDisconnect(ctx)
+			},
+			OnMessageSent: func(ctx context.Context, _ *protobufs.AgentToServer, size int) {
+				s.metrics.RecordOpAMPMessageSent(ctx, size)
+			},
+			OnMessageReceived: func(ctx context.Context, _ *protobufs.ServerToAgent, size int) {
+				s.metrics.RecordOpAMPMessageReceived(ctx, size)
 			},
 			OnError: func(_ context.Context, err *protobufs.ServerErrorResponse) {
 				s.telemetrySettings.Logger.Error("Server returned an error response", zap.String("message", err.ErrorMessage))

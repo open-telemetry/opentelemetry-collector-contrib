@@ -50,7 +50,6 @@ require (
 	github.com/cenkalti/backoff/v7 v7.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/ebitengine/purego v0.10.0 // indirect
-	github.com/elastic/proxy-connect-dialer-go v0.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20251226215517-609e4778396f // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
@@ -73,6 +72,7 @@ require (
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
 	github.com/knadh/koanf/v2 v2.3.5 // indirect
 	github.com/lufia/plan9stats v0.0.0-20260216142805-b3301c5f2a88 // indirect
+	github.com/michel-laterman/proxy-connect-dialer-go v0.1.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -303,4 +303,4 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/inte
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof => ../../pkg/translator/pprof
 
-replace github.com/open-telemetry/opamp-go => github.com/cforce/opamp-go v0.0.0-20261124130307-37e02fb97ca7
+replace github.com/open-telemetry/opamp-go => github.com/cforce/opamp-go v0.0.0-20261124143007-a01e428207aa
