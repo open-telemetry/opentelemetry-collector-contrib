@@ -217,7 +217,7 @@ func TestExtractRawAttributes(t *testing.T) {
 				Category:          "category",
 				ResultType:        &resultType,
 				ResultSignature:   &resultSignature,
-				ResultDescription: &resultDescription,
+				ResultDescription: (*stringOrNumber)(&resultDescription),
 				DurationMs:        &goodDuration,
 				CallerIPAddress:   &callerIPAddress,
 				CorrelationID:     &correlationID,
@@ -1225,4 +1225,36 @@ func TestExtractRawAttributes_EventProperties(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestUnmarshalLogsResultDescriptionNumber(t *testing.T) {
+	// A record whose resultDescription is a JSON number must not make the
+	// whole message fail to decode: every record is kept and the number is
+	// emitted as its decimal text, like a string value. The category of these
+	// records has no semantic conventions mapping, so the fields land in the body.
+	data, err := os.ReadFile(filepath.Join("testdata", "cornercases", "result_description_number.json"))
+	require.NoError(t, err)
+
+	sut := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
+	logs, err := sut.UnmarshalLogs(data)
+	require.NoError(t, err)
+	require.Equal(t, 3, logs.LogRecordCount())
+
+	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+
+	desc, ok := records.At(0).Body().Map().Get(azureResultDescription)
+	require.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeStr, desc.Type())
+	assert.Equal(t, "Success", desc.Str())
+
+	desc, ok = records.At(1).Body().Map().Get(azureResultDescription)
+	require.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeStr, desc.Type())
+	assert.Equal(t, "200", desc.Str())
+
+	_, ok = records.At(2).Body().Map().Get(azureResultDescription)
+	assert.False(t, ok)
 }

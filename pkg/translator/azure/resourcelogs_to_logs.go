@@ -49,23 +49,45 @@ type azureRecords struct {
 // the common schema:
 // https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/resource-logs-schema
 type azureLogRecord struct {
-	Time              string       `json:"time"`
-	Timestamp         string       `json:"timeStamp"`
-	ResourceID        string       `json:"resourceId"`
-	TenantID          *string      `json:"tenantId"`
-	OperationName     string       `json:"operationName"`
-	OperationVersion  *string      `json:"operationVersion"`
-	Category          string       `json:"category"`
-	ResultType        *string      `json:"resultType"`
-	ResultSignature   *string      `json:"resultSignature"`
-	ResultDescription *string      `json:"resultDescription"`
-	DurationMs        *json.Number `json:"durationMs"`
-	CallerIPAddress   *string      `json:"callerIpAddress"`
-	CorrelationID     *string      `json:"correlationId"`
-	Identity          *any         `json:"identity"`
-	Level             any          `json:"Level"`
-	Location          *string      `json:"location"`
-	Properties        *any         `json:"properties"`
+	Time              string          `json:"time"`
+	Timestamp         string          `json:"timeStamp"`
+	ResourceID        string          `json:"resourceId"`
+	TenantID          *string         `json:"tenantId"`
+	OperationName     string          `json:"operationName"`
+	OperationVersion  *string         `json:"operationVersion"`
+	Category          string          `json:"category"`
+	ResultType        *string         `json:"resultType"`
+	ResultSignature   *string         `json:"resultSignature"`
+	ResultDescription *stringOrNumber `json:"resultDescription"`
+	DurationMs        *json.Number    `json:"durationMs"`
+	CallerIPAddress   *string         `json:"callerIpAddress"`
+	CorrelationID     *string         `json:"correlationId"`
+	Identity          *any            `json:"identity"`
+	Level             any             `json:"Level"`
+	Location          *string         `json:"location"`
+	Properties        *any            `json:"properties"`
+}
+
+// stringOrNumber is a string field that some Azure services send as a JSON
+// number (for example resultDescription in Container Registry logs).
+// A number is kept as its JSON text, so the attribute stays a string.
+type stringOrNumber string
+
+func (s *stringOrNumber) UnmarshalJSON(data []byte) error {
+	if len(data) > 0 && data[0] != '"' {
+		var n json.Number
+		if err := json.Unmarshal(data, &n); err != nil {
+			return err
+		}
+		*s = stringOrNumber(n.String())
+		return nil
+	}
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
+		return err
+	}
+	*s = stringOrNumber(str)
+	return nil
 }
 
 var _ plog.Unmarshaler = (*ResourceLogsUnmarshaler)(nil)
@@ -213,7 +235,7 @@ func extractRawAttributes(log azureLogRecord) map[string]any {
 	if log.Properties != nil {
 		attrs[azureProperties] = *log.Properties
 	}
-	setIf(attrs, azureResultDescription, log.ResultDescription)
+	setIf(attrs, azureResultDescription, (*string)(log.ResultDescription))
 	setIf(attrs, azureResultSignature, log.ResultSignature)
 	setIf(attrs, azureResultType, log.ResultType)
 	setIf(attrs, azureTenantID, log.TenantID)
