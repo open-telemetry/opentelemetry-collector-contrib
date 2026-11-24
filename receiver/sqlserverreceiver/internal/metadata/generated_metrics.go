@@ -997,7 +997,7 @@ var MetricsInfo = metricsInfo{
 	},
 	SqlserverDatabaseFileSize: metricInfo{
 		Name:       "sqlserver.database.file.size",
-		Attributes: []string{"file_type", "db.namespace"},
+		Attributes: []string{"file_type"},
 	},
 	SqlserverDatabaseFullScanRate: metricInfo{
 		Name: "sqlserver.database.full_scan.rate",
@@ -2646,7 +2646,7 @@ func (m *metricSqlserverDatabaseFileSize) init() {
 	m.dpIndex = make(map[uint64]int, m.capacity)
 }
 
-func (m *metricSqlserverDatabaseFileSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, fileTypeAttributeValue string, dbNamespaceAttributeValue string) {
+func (m *metricSqlserverDatabaseFileSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, fileTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2656,9 +2656,6 @@ func (m *metricSqlserverDatabaseFileSize) recordDataPoint(start pcommon.Timestam
 	dp.SetTimestamp(ts)
 	if slices.Contains(m.config.EnabledAttributes, SqlserverDatabaseFileSizeMetricAttributeKeyFileType) {
 		dp.Attributes().PutStr("file_type", fileTypeAttributeValue)
-	}
-	if slices.Contains(m.config.EnabledAttributes, SqlserverDatabaseFileSizeMetricAttributeKeyDbNamespace) {
-		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
 	}
 
 	var s string
@@ -8919,8 +8916,8 @@ func (mb *MetricsBuilder) RecordSqlserverDatabaseExecutionErrorsDataPoint(ts pco
 }
 
 // RecordSqlserverDatabaseFileSizeDataPoint adds a data point to sqlserver.database.file.size metric.
-func (mb *MetricsBuilder) RecordSqlserverDatabaseFileSizeDataPoint(ts pcommon.Timestamp, val int64, fileTypeAttributeValue string, dbNamespaceAttributeValue string) {
-	mb.metricSqlserverDatabaseFileSize.recordDataPoint(mb.startTime, ts, val, fileTypeAttributeValue, dbNamespaceAttributeValue)
+func (mb *MetricsBuilder) RecordSqlserverDatabaseFileSizeDataPoint(ts pcommon.Timestamp, val int64, fileTypeAttributeValue string) {
+	mb.metricSqlserverDatabaseFileSize.recordDataPoint(mb.startTime, ts, val, fileTypeAttributeValue)
 }
 
 // RecordSqlserverDatabaseFullScanRateDataPoint adds a data point to sqlserver.database.full_scan.rate metric.

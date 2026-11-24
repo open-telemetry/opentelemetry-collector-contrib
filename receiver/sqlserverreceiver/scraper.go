@@ -2995,9 +2995,8 @@ func (s *sqlServerScraperHelper) recordTempDBFileMetrics(ctx context.Context) er
 
 func (s *sqlServerScraperHelper) recordDatabaseSizeMetrics(ctx context.Context) error {
 	const (
-		databaseName = "database_name"
-		fileType     = "file_type"
-		sizeBytes    = "size_bytes"
+		fileType  = "file_type"
+		sizeBytes = "size_bytes"
 	)
 
 	rows, err := s.client.QueryRows(ctx)
@@ -3011,14 +3010,18 @@ func (s *sqlServerScraperHelper) recordDatabaseSizeMetrics(ctx context.Context) 
 	var errs []error
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for i, row := range rows {
+		if !s.databaseFilter.allows(row[databaseNameKey]) {
+			continue
+		}
 		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+		rb.SetSqlserverDatabaseName(row[databaseNameKey])
 
 		val, parseErr := retrieveInt(row, sizeBytes)
 		if parseErr != nil {
 			errs = append(errs, fmt.Errorf("failed to parse %s for row %d: %w", sizeBytes, i, parseErr))
 			continue
 		}
-		s.mb.RecordSqlserverDatabaseFileSizeDataPoint(now, val.(int64), row[fileType], row[databaseName])
+		s.mb.RecordSqlserverDatabaseFileSizeDataPoint(now, val.(int64), row[fileType])
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 

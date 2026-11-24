@@ -203,11 +203,11 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverDatabaseExecutionErrorsDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSqlserverDatabaseFileSizeDataPoint(ts, 1, "file_type-val", "db.namespace-val")
+			mb.RecordSqlserverDatabaseFileSizeDataPoint(ts, 1, "file_type-val")
 			if tt.name == "reaggregate_set" {
-				mb.RecordSqlserverDatabaseFileSizeDataPoint(ts, 3, "file_type-val-2", "db.namespace-val-2")
+				mb.RecordSqlserverDatabaseFileSizeDataPoint(ts, 3, "file_type-val-2")
 				// a different timestamp is a different key: must not merge with the above.
-				mb.RecordSqlserverDatabaseFileSizeDataPoint(ts+1, 3, "file_type-val-2", "db.namespace-val-2")
+				mb.RecordSqlserverDatabaseFileSizeDataPoint(ts+1, 3, "file_type-val-2")
 				assert.Equal(t, 2, mb.metricSqlserverDatabaseFileSize.data.Gauge().DataPoints().Len())
 			}
 
@@ -1157,9 +1157,6 @@ func TestMetricsBuilder(t *testing.T) {
 						fileTypeAttrVal, ok := dp.Attributes().Get("file_type")
 						assert.True(t, ok)
 						assert.Equal(t, "file_type-val", fileTypeAttrVal.Str())
-						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
-						assert.True(t, ok)
-						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["sqlserver.database.file.size"], "Found a duplicate in the metrics slice: sqlserver.database.file.size")
 						validatedMetrics["sqlserver.database.file.size"] = true
@@ -1184,8 +1181,6 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
 						_, ok := dp.Attributes().Get("file_type")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
 					}
 				case "sqlserver.database.full_scan.rate":

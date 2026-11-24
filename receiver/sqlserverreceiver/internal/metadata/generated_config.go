@@ -559,8 +559,7 @@ func (ms *SqlserverDatabaseExecutionErrorsMetricConfig) Unmarshal(parser *confma
 type SqlserverDatabaseFileSizeMetricAttributeKey string
 
 const (
-	SqlserverDatabaseFileSizeMetricAttributeKeyFileType    SqlserverDatabaseFileSizeMetricAttributeKey = "file_type"
-	SqlserverDatabaseFileSizeMetricAttributeKeyDbNamespace SqlserverDatabaseFileSizeMetricAttributeKey = "db.namespace"
+	SqlserverDatabaseFileSizeMetricAttributeKeyFileType SqlserverDatabaseFileSizeMetricAttributeKey = "file_type"
 )
 
 // SqlserverDatabaseFileSizeMetricConfig provides config for the sqlserver.database.file.size metric.
@@ -589,9 +588,9 @@ func (ms *SqlserverDatabaseFileSizeMetricConfig) Unmarshal(parser *confmap.Conf)
 func (ms *SqlserverDatabaseFileSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SqlserverDatabaseFileSizeMetricAttributeKeyFileType, SqlserverDatabaseFileSizeMetricAttributeKeyDbNamespace:
+		case SqlserverDatabaseFileSizeMetricAttributeKeyFileType:
 		default:
-			return fmt.Errorf("metric sqlserver.database.file.size doesn't have an attribute %v, valid attributes: [file_type, db.namespace]", val)
+			return fmt.Errorf("metric sqlserver.database.file.size doesn't have an attribute %v, valid attributes: [file_type]", val)
 		}
 	}
 
@@ -3337,7 +3336,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverDatabaseFileSize: SqlserverDatabaseFileSizeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SqlserverDatabaseFileSizeMetricAttributeKey{SqlserverDatabaseFileSizeMetricAttributeKeyFileType, SqlserverDatabaseFileSizeMetricAttributeKeyDbNamespace},
+			EnabledAttributes:   []SqlserverDatabaseFileSizeMetricAttributeKey{SqlserverDatabaseFileSizeMetricAttributeKeyFileType},
 		},
 		SqlserverDatabaseFullScanRate: SqlserverDatabaseFullScanRateMetricConfig{
 			Enabled: false,

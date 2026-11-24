@@ -100,7 +100,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverDatabaseFileSize: SqlserverDatabaseFileSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverDatabaseFileSizeMetricAttributeKey{SqlserverDatabaseFileSizeMetricAttributeKeyFileType, SqlserverDatabaseFileSizeMetricAttributeKeyDbNamespace},
+						EnabledAttributes:   []SqlserverDatabaseFileSizeMetricAttributeKey{SqlserverDatabaseFileSizeMetricAttributeKeyFileType},
 					},
 					SqlserverDatabaseFullScanRate: SqlserverDatabaseFullScanRateMetricConfig{
 						Enabled: true,
@@ -507,7 +507,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverDatabaseFileSize: SqlserverDatabaseFileSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SqlserverDatabaseFileSizeMetricAttributeKey{SqlserverDatabaseFileSizeMetricAttributeKeyFileType, SqlserverDatabaseFileSizeMetricAttributeKeyDbNamespace},
+						EnabledAttributes:   []SqlserverDatabaseFileSizeMetricAttributeKey{SqlserverDatabaseFileSizeMetricAttributeKeyFileType},
 					},
 					SqlserverDatabaseFullScanRate: SqlserverDatabaseFullScanRateMetricConfig{
 						Enabled: false,
@@ -912,7 +912,7 @@ func TestSqlserverDatabaseFileSizeMetricsConfig_Validate(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	cfg.EnabledAttributes = []SqlserverDatabaseFileSizeMetricAttributeKey{"invalid"}
-	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.database.file.size doesn't have an attribute invalid, valid attributes: [file_type, db.namespace]")
+	require.ErrorContains(t, cfg.Validate(), "metric sqlserver.database.file.size doesn't have an attribute invalid, valid attributes: [file_type]")
 
 	cfg = DefaultMetricsConfig().SqlserverDatabaseFileSize
 	cfg.AggregationStrategy = "invalid"

@@ -125,7 +125,7 @@ SELECT
 	''sqlserver_database_file_size'' AS [measurement]
 	,REPLACE(@@SERVERNAME,''\'','':'') AS [sql_instance]
 	,' + @DatabaseNameColumn + N' AS [database_name]
-	,LOWER(mf.[type_desc]) AS [file_type]
+	,mf.[type_desc] AS [file_type]
 	,SUM(CAST(mf.[size] AS BIGINT) * 8 * 1024) AS [size_bytes]'
 	+ @FromClause + @WhereClause + @GroupByClause;
 

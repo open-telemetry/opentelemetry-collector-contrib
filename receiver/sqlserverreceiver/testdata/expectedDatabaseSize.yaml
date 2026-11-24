@@ -19,6 +19,9 @@ resourceMetrics:
         - key: service.namespace
           value:
             stringValue: ""
+        - key: sqlserver.database.name
+          value:
+            stringValue: testdb
         - key: sqlserver.instance.name
           value:
             stringValue: testhost
@@ -29,12 +32,9 @@ resourceMetrics:
               dataPoints:
                 - asInt: "134217728"
                   attributes:
-                    - key: db.namespace
-                      value:
-                        stringValue: testdb
                     - key: file_type
                       value:
-                        stringValue: rows
+                        stringValue: ROWS
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.database.file.size
@@ -62,6 +62,9 @@ resourceMetrics:
         - key: service.namespace
           value:
             stringValue: ""
+        - key: sqlserver.database.name
+          value:
+            stringValue: testdb
         - key: sqlserver.instance.name
           value:
             stringValue: testhost
@@ -72,12 +75,9 @@ resourceMetrics:
               dataPoints:
                 - asInt: "67108864"
                   attributes:
-                    - key: db.namespace
-                      value:
-                        stringValue: testdb
                     - key: file_type
                       value:
-                        stringValue: log
+                        stringValue: LOG
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.database.file.size
@@ -105,6 +105,9 @@ resourceMetrics:
         - key: service.namespace
           value:
             stringValue: ""
+        - key: sqlserver.database.name
+          value:
+            stringValue: testdb
         - key: sqlserver.instance.name
           value:
             stringValue: testhost
@@ -115,12 +118,9 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: db.namespace
-                      value:
-                        stringValue: testdb
                     - key: file_type
                       value:
-                        stringValue: filestream
+                        stringValue: FILESTREAM
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.database.file.size
