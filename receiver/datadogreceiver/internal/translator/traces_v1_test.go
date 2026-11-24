@@ -4,6 +4,7 @@
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 
 import (
+	"encoding/binary"
 	"net/http"
 	"testing"
 
@@ -256,4 +257,250 @@ func TestToTracesV1ChunkFields(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestToTracesV1SamplingThreshold(t *testing.T) {
+	enableSamplingThreshold(t)
+	type attrs struct {
+		numbers map[string]float64
+		strings map[string]string
+	}
+	// Each chunk has a root (span 1) and a child (span 2).
+	tests := []struct {
+		name      string
+		priority  int32
+		mechanism uint32
+		chunk     attrs
+		root      attrs
+		child     attrs
+		want      map[uint64]string
+	}{
+		{
+			name:     "the agent rate is preferred over the Knuth rate on another span",
+			priority: int32(ddsampler.PriorityAutoKeep),
+			root:     attrs{numbers: map[string]float64{"_dd.agent_psr": 0.5}},
+			child:    attrs{strings: map[string]string{"_dd.p.ksr": "0.25"}},
+			want:     map[uint64]string{1: "ot=rv:" + rvID2 + ";th:8", 2: "ot=rv:" + rvID2 + ";th:8"},
+		},
+		{
+			name:     "the Knuth rate as a string or a number on one span applies to the whole chunk",
+			priority: int32(ddsampler.PriorityAutoKeep),
+			child:    attrs{strings: map[string]string{"_dd.p.ksr": "0.25"}},
+			want:     map[uint64]string{1: "ot=rv:" + rvID2 + ";th:c", 2: "ot=rv:" + rvID2 + ";th:c"},
+		},
+		{
+			name:     "the Knuth rate as a number",
+			priority: int32(ddsampler.PriorityAutoKeep),
+			child:    attrs{numbers: map[string]float64{"_dd.p.ksr": 0.25}},
+			want:     map[uint64]string{1: "ot=rv:" + rvID2 + ";th:c", 2: "ot=rv:" + rvID2 + ";th:c"},
+		},
+		{
+			name:     "the rate can be an attribute of the chunk",
+			priority: int32(ddsampler.PriorityAutoKeep),
+			chunk:    attrs{strings: map[string]string{"_dd.p.ksr": "0.25"}},
+			want:     map[uint64]string{1: "ot=rv:" + rvID2 + ";th:c", 2: "ot=rv:" + rvID2 + ";th:c"},
+		},
+		{
+			name:     "the Knuth rate is preferred over the rule rate",
+			priority: int32(ddsampler.PriorityAutoKeep),
+			root:     attrs{numbers: map[string]float64{"_dd.rule_psr": 0.5}, strings: map[string]string{"_dd.p.ksr": "0.25"}},
+			want:     map[uint64]string{1: "ot=rv:" + rvID2 + ";th:c", 2: "ot=rv:" + rvID2 + ";th:c"},
+		},
+		{
+			name:     "the rule rate is multiplied by the limit rate",
+			priority: int32(ddsampler.PriorityAutoKeep),
+			root:     attrs{numbers: map[string]float64{"_dd.rule_psr": 0.5, "_dd.limit_psr": 0.5}},
+			want:     map[uint64]string{1: "ot=th:c", 2: "ot=th:c"},
+		},
+		{
+			name:     "a user keep is not decided by a rate",
+			priority: int32(ddsampler.PriorityUserKeep),
+			root:     attrs{numbers: map[string]float64{"_dd.agent_psr": 0.5}},
+			want:     map[uint64]string{1: "", 2: ""},
+		},
+		{
+			name:      "a user keep by a sampling rule of the tracer is decided by its rate",
+			priority:  int32(ddsampler.PriorityUserKeep),
+			mechanism: 3,
+			root:      attrs{numbers: map[string]float64{"_dd.rule_psr": 0.5, "_dd.limit_psr": 100}},
+			want:      map[uint64]string{1: "ot=th:8", 2: "ot=th:8"},
+		},
+		{
+			name:      "the Knuth rate is multiplied by the limiter rate, which can be on another span",
+			priority:  int32(ddsampler.PriorityUserKeep),
+			mechanism: 3,
+			root:      attrs{numbers: map[string]float64{"_dd.rule_psr": 0.5, "_dd.limit_psr": 0.5}},
+			child:     attrs{strings: map[string]string{"_dd.p.ksr": "0.5"}},
+			want:      map[uint64]string{1: "ot=th:c", 2: "ot=th:c"},
+		},
+		{
+			name:      "the Knuth rate is not multiplied by the limit of a tracer that sets the configured limit",
+			priority:  int32(ddsampler.PriorityUserKeep),
+			mechanism: 3,
+			root:      attrs{numbers: map[string]float64{"_dd.rule_psr": 0.5, "_dd.limit_psr": 100}},
+			child:     attrs{strings: map[string]string{"_dd.p.ksr": "0.5"}},
+			want:      map[uint64]string{1: "ot=rv:" + rvID2 + ";th:8", 2: "ot=rv:" + rvID2 + ";th:8"},
+		},
+		{
+			name:      "a manual keep is not decided by a rate, even when it has one",
+			priority:  int32(ddsampler.PriorityUserKeep),
+			mechanism: 4,
+			root:      attrs{numbers: map[string]float64{"_dd.agent_psr": 0.5}},
+			want:      map[uint64]string{1: "", 2: ""},
+		},
+		{
+			name:      "a drop is not decided by a rate, whatever the decision maker",
+			priority:  int32(ddsampler.PriorityUserDrop),
+			mechanism: 3,
+			root:      attrs{numbers: map[string]float64{"_dd.rule_psr": 0.5}},
+			want:      map[uint64]string{1: "", 2: ""},
+		},
+		{
+			name:      "the rate of the probabilistic sampler of the Agent",
+			priority:  int32(ddsampler.PriorityAutoKeep),
+			mechanism: 9,
+			root:      attrs{numbers: map[string]float64{"_dd.prob_sr": 0.25}},
+			want:      map[uint64]string{1: "ot=th:c", 2: "ot=th:c"},
+		},
+		{
+			name:      "the probabilistic sampler of the Agent overrides the agent rate of the tracer, and has no randomness value",
+			priority:  int32(ddsampler.PriorityAutoKeep),
+			mechanism: 9,
+			root:      attrs{numbers: map[string]float64{"_dd.agent_psr": 0.5, "_dd.prob_sr": 0.25}},
+			want:      map[uint64]string{1: "ot=th:c", 2: "ot=th:c"},
+		},
+		{
+			name:     "the tracestate of an upstream sampler is used as it arrived",
+			priority: int32(ddsampler.PriorityAutoKeep),
+			root:     attrs{strings: map[string]string{"tracestate": "vendor=x,ot=rv:123456789abcde;th:e6666666666668"}},
+			want:     map[uint64]string{1: "ot=rv:123456789abcde;th:e6666666666668,vendor=x", 2: "ot=rv:123456789abcde;th:e6666666666668,vendor=x"},
+		},
+		{
+			name:     "the upstream tracestate can be an attribute of the chunk",
+			priority: int32(ddsampler.PriorityAutoKeep),
+			chunk:    attrs{strings: map[string]string{"tracestate": "ot=th:8"}},
+			want:     map[uint64]string{1: "ot=th:8", 2: "ot=th:8"},
+		},
+		{
+			name:     "the upstream threshold replaces the Datadog rate",
+			priority: int32(ddsampler.PriorityAutoKeep),
+			root:     attrs{numbers: map[string]float64{"_dd.agent_psr": 0.25}, strings: map[string]string{"tracestate": "ot=th:8"}},
+			want:     map[uint64]string{1: "ot=th:8", 2: "ot=th:8"},
+		},
+		{
+			name:      "the upstream threshold of a trace that is kept by a manual keep",
+			priority:  int32(ddsampler.PriorityUserKeep),
+			mechanism: 4,
+			root:      attrs{strings: map[string]string{"tracestate": "ot=th:8"}},
+			want:      map[uint64]string{1: "ot=th:8", 2: "ot=th:8"},
+		},
+		{
+			name:     "the Datadog rate is added to an upstream tracestate without a threshold, which keeps its randomness",
+			priority: int32(ddsampler.PriorityAutoKeep),
+			root:     attrs{numbers: map[string]float64{"_dd.agent_psr": 0.5}, strings: map[string]string{"tracestate": "ot=rv:123456789abcde,vendor=x"}},
+			want:     map[uint64]string{1: "ot=rv:123456789abcde;th:8,vendor=x", 2: "ot=rv:123456789abcde;th:8,vendor=x"},
+		},
+		{
+			name:     "an upstream tracestate without a threshold is kept when there is no Datadog rate",
+			priority: int32(ddsampler.PriorityAutoKeep),
+			root:     attrs{strings: map[string]string{"tracestate": "vendor=x"}},
+			want:     map[uint64]string{1: "vendor=x", 2: "vendor=x"},
+		},
+		{
+			name:     "an upstream tracestate is kept on a dropped chunk, which gets no Datadog rate",
+			priority: int32(ddsampler.PriorityAutoDrop),
+			root:     attrs{numbers: map[string]float64{"_dd.agent_psr": 0.5}, strings: map[string]string{"tracestate": "ot=rv:123456789abcde,vendor=x"}},
+			want:     map[uint64]string{1: "ot=rv:123456789abcde,vendor=x", 2: "ot=rv:123456789abcde,vendor=x"},
+		},
+		{
+			name:     "a dropped chunk, kept for its error, is not decided by a rate",
+			priority: int32(ddsampler.PriorityAutoDrop),
+			root:     attrs{numbers: map[string]float64{"_dd.agent_psr": 0.5}},
+			want:     map[uint64]string{1: "", 2: ""},
+		},
+		{
+			name:     "no priority",
+			priority: int32(ddsampler.PriorityNone),
+			root:     attrs{numbers: map[string]float64{"_dd.agent_psr": 0.5}},
+			want:     map[uint64]string{1: "", 2: ""},
+		},
+		{
+			name:     "no rate",
+			priority: int32(ddsampler.PriorityAutoKeep),
+			want:     map[uint64]string{1: "", 2: ""},
+		},
+		{
+			name:     "rates that are not a probability are ignored",
+			priority: int32(ddsampler.PriorityAutoKeep),
+			root:     attrs{numbers: map[string]float64{"_dd.agent_psr": 1.5, "_dd.rule_psr": 0}},
+			child:    attrs{strings: map[string]string{"_dd.p.ksr": "not a number"}},
+			want:     map[uint64]string{1: "", 2: ""},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			strs := idx.NewStringTable()
+			newSpan := func(id, parent uint64, a attrs) *idx.InternalSpan {
+				span := idx.NewInternalSpan(strs, &idx.Span{ServiceRef: strs.Add("svc"), SpanID: id, ParentID: parent})
+				for k, v := range a.numbers {
+					span.SetFloat64Attribute(k, v)
+				}
+				for k, v := range a.strings {
+					span.SetStringAttribute(k, v)
+				}
+				return span
+			}
+			chunkAttrs := map[uint32]*idx.AnyValue{}
+			for k, v := range tt.chunk.strings {
+				chunkAttrs[strs.Add(k)] = &idx.AnyValue{Value: &idx.AnyValue_StringValueRef{StringValueRef: strs.Add(v)}}
+			}
+			spans := []*idx.InternalSpan{newSpan(2, 1, tt.child), newSpan(1, 0, tt.root)}
+			payload := &idx.InternalTracerPayload{
+				Strings: strs,
+				Chunks:  []*idx.InternalTraceChunk{idx.NewInternalTraceChunk(strs, tt.priority, "", chunkAttrs, spans, false, traceIDWithLowBits(2), tt.mechanism)},
+			}
+
+			traces, err := ToTracesV1(zap.NewNop(), payload, &http.Request{Header: http.Header{}})
+			require.NoError(t, err)
+			got := map[uint64]string{}
+			for _, rs := range traces.ResourceSpans().All() {
+				for _, ss := range rs.ScopeSpans().All() {
+					for _, span := range ss.Spans().All() {
+						got[spanIDToUint64(span.SpanID())] = span.TraceState().AsRaw()
+					}
+				}
+			}
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+// traceIDWithLowBits returns a 128-bit trace id with the given lower 64 bits and a nonzero upper half, which the
+// sampling decision ignores.
+func traceIDWithLowBits(low uint64) []byte {
+	id := make([]byte, 16)
+	binary.BigEndian.PutUint64(id[:8], 0x1122334455667788)
+	binary.BigEndian.PutUint64(id[8:], low)
+	return id
+}
+
+func TestToTracesV1SamplingThresholdFeatureGate(t *testing.T) {
+	strs := idx.NewStringTable()
+	span := idx.NewInternalSpan(strs, &idx.Span{ServiceRef: strs.Add("svc"), SpanID: 1})
+	span.SetFloat64Attribute("_dd.agent_psr", 0.5)
+	payload := &idx.InternalTracerPayload{
+		Strings: strs,
+		Chunks: []*idx.InternalTraceChunk{
+			idx.NewInternalTraceChunk(strs, int32(ddsampler.PriorityAutoKeep), "", nil, []*idx.InternalSpan{span}, false, traceIDWithLowBits(2), 0),
+		},
+	}
+	tracestate := func() string {
+		traces, err := ToTracesV1(zap.NewNop(), payload, &http.Request{Header: http.Header{}})
+		require.NoError(t, err)
+		return traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceState().AsRaw()
+	}
+	assert.Empty(t, tracestate(), "the feature gate is off by default")
+
+	enableSamplingThreshold(t)
+	assert.Equal(t, "ot=rv:"+rvID2+";th:8", tracestate())
 }
