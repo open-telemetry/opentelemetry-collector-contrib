@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -51,6 +52,20 @@ func TestMetricsWithErrorCondition(t *testing.T) {
 	assert.Equal(t, 1, f.failover.TestGetCurrentConsumerIndex())
 	require.NoError(t, f.ConsumeMetrics(t.Context(), data))
 	assert.Len(t, second.AllMetrics(), 2)
+}
+
+type metricsCountingConsumer struct {
+	err   error
+	calls int
+}
+
+func (*metricsCountingConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+func (c *metricsCountingConsumer) ConsumeMetrics(context.Context, pmetric.Metrics) error {
+	c.calls++
+	return c.err
 }
 
 func TestMetricsRegisterConsumers(t *testing.T) {
@@ -158,6 +173,112 @@ func TestMetricsWithFailoverError(t *testing.T) {
 	md := sampleMetric()
 
 	assert.EqualError(t, conn.ConsumeMetrics(t.Context(), md), "All provided pipelines return errors")
+}
+
+func TestMetricsPermanentErrorFailover(t *testing.T) {
+	metricsFirst := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/first")
+	metricsSecond := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/second")
+
+	testcases := []struct {
+		name                    string
+		cfg                     *Config
+		err                     error
+		wantErr                 bool
+		wantPermanentErr        bool
+		wantCurrentPipeline     int
+		wantSecondConsumerCalls int
+		wantPermanentCondition  *bool
+	}{
+		{
+			name: "default config fails over on permanent errors",
+			cfg: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.QueueSettings = configoptional.None[exporterhelper.QueueBatchConfig]()
+				cfg.PipelinePriority = [][]pipeline.ID{{metricsFirst}, {metricsSecond}}
+				cfg.RetryInterval = 50 * time.Millisecond
+				return cfg
+			}(),
+			err:                     consumererror.NewPermanent(errMetricsConsumer),
+			wantCurrentPipeline:     1,
+			wantSecondConsumerCalls: 1,
+		},
+		{
+			name: "permanent condition false returns permanent error",
+			cfg: &Config{
+				PipelinePriority: [][]pipeline.ID{{metricsFirst}, {metricsSecond}},
+				RetryInterval:    50 * time.Millisecond,
+				Condition: configoptional.Some(ConditionsConfig{
+					ErrorCond: &ErrorCondition{
+						Contains:  []string{"error from"},
+						Permanent: new(bool),
+					},
+				}),
+			},
+			err:                     consumererror.NewPermanent(errMetricsConsumer),
+			wantErr:                 true,
+			wantPermanentErr:        true,
+			wantCurrentPipeline:     0,
+			wantSecondConsumerCalls: 0,
+			wantPermanentCondition:  new(bool),
+		},
+		{
+			name: "permanent condition false still fails over on retryable errors",
+			cfg: &Config{
+				PipelinePriority: [][]pipeline.ID{{metricsFirst}, {metricsSecond}},
+				RetryInterval:    50 * time.Millisecond,
+				Condition: configoptional.Some(ConditionsConfig{
+					ErrorCond: &ErrorCondition{
+						Contains:  []string{"error from"},
+						Permanent: new(bool),
+					},
+				}),
+			},
+			err:                     errMetricsConsumer,
+			wantCurrentPipeline:     1,
+			wantSecondConsumerCalls: 1,
+			wantPermanentCondition:  new(bool),
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			first := &metricsCountingConsumer{err: tc.err}
+			second := &metricsCountingConsumer{}
+			router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
+				metricsFirst:  first,
+				metricsSecond: second,
+			})
+
+			conn, err := NewFactory().CreateMetricsToMetrics(t.Context(),
+				connectortest.NewNopSettings(metadata.Type), tc.cfg, router.(consumer.Metrics))
+			require.NoError(t, err)
+
+			failoverConnector := conn.(*metricsFailover)
+			defer func() {
+				assert.NoError(t, failoverConnector.Shutdown(t.Context()))
+			}()
+
+			err = conn.ConsumeMetrics(t.Context(), sampleMetric())
+			if tc.wantErr {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, errMetricsConsumer)
+				assert.Equal(t, tc.wantPermanentErr, consumererror.IsPermanent(err))
+			} else {
+				require.NoError(t, err)
+			}
+			if tc.wantPermanentCondition == nil {
+				require.False(t, tc.cfg.Condition.HasValue())
+			} else {
+				require.True(t, tc.cfg.Condition.HasValue())
+				require.NotNil(t, tc.cfg.Condition.Get().ErrorCond)
+				require.NotNil(t, tc.cfg.Condition.Get().ErrorCond.Permanent)
+				assert.Equal(t, *tc.wantPermanentCondition, *tc.cfg.Condition.Get().ErrorCond.Permanent)
+			}
+			assert.Equal(t, tc.wantCurrentPipeline, failoverConnector.failover.TestGetCurrentConsumerIndex())
+			assert.Equal(t, 1, first.calls)
+			assert.Equal(t, tc.wantSecondConsumerCalls, second.calls)
+		})
+	}
 }
 
 func TestMetricsWithQueue(t *testing.T) {

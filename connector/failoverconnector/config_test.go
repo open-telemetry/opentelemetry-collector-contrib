@@ -74,7 +74,8 @@ func TestLoadConfig(t *testing.T) {
 				RetryInterval: 5 * time.Minute,
 				Condition: configoptional.Some(ConditionsConfig{
 					ErrorCond: &ErrorCondition{
-						Contains: []string{"network failure", "connection refused"},
+						Contains:  []string{"network failure", "connection refused"},
+						Permanent: new(bool),
 					},
 				}),
 			},

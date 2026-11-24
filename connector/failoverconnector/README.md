@@ -41,6 +41,7 @@ The following settings are available:
 - `condition`: Conditional statements that decide when the connector should failover. Currently supports below types
     - `error`: 
        - `contains`: ["network failure", "connection refused"] (required list of non-empty, case-insensitive substrings)
+       - `permanent`: whether errors classified by `consumererror.IsPermanent` can trigger failover. Default value is `true` for backward compatibility, in which case permanent errors are matched against `contains` like any other error. When set to `false`, permanent errors are returned immediately and the current priority level remains healthy.
 
   Only errors whose message contains any configured string trigger failover. Non-matching errors are returned
   to the upstream caller without failing over, and they do not mark the pipeline level unhealthy during
