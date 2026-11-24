@@ -63,6 +63,7 @@ require (
 	go.opentelemetry.io/contrib/detectors/openshift v0.19.0
 	go.opentelemetry.io/contrib/detectors/openstack/nova v0.0.0-20261106092722-ca27f49bc143
 	go.opentelemetry.io/contrib/detectors/scaleway v0.0.0-20261106092722-ca27f49bc143
+	go.opentelemetry.io/contrib/detectors/tencent/cvm v0.0.0-20261123093453-857c9bedc28f
 	go.opentelemetry.io/contrib/detectors/vultr v0.19.0
 	go.opentelemetry.io/otel v1.47.0
 	go.opentelemetry.io/otel/metric v1.47.0
@@ -213,7 +214,6 @@ require (
 	golang.org/x/exp v0.0.0-20261014143641-f0251eb4aa3e // indirect
 	golang.org/x/net v0.63.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
-	golang.org/x/sync v0.25.0 // indirect
 	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/term v0.48.0 // indirect
 	golang.org/x/text v0.44.0 // indirect
