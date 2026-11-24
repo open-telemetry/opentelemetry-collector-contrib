@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracle
 go 1.26.0
 
 require (
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.85.4
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.86.0
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/jcmturner/gokrb5/v8 v8.4.4
@@ -34,8 +34,8 @@ require (
 
 require (
 	github.com/DataDog/datadog-go/v5 v5.9.1 // indirect
-	github.com/DataDog/go-sqllexer v0.2.4 // indirect
-	github.com/Microsoft/go-winio v0.6.2 // indirect
+	github.com/DataDog/go-sqllexer v0.2.6 // indirect
+	github.com/Microsoft/go-winio v0.6.4 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dustin/go-humanize v1.1.0 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
