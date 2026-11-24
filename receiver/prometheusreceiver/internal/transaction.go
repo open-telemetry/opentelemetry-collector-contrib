@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 	"strings"
 
 	"github.com/prometheus/common/model"
@@ -36,6 +37,11 @@ type resourceKey struct {
 	instance string
 }
 
+type timestampedEntityInfo struct {
+	info      prometheus.EntityInfo
+	timestamp int64
+}
+
 // The name of the metric family doesn't include magic suffixes (e.g. _bucket),
 // so for a classic histgram and a native histogram of the same family, the
 // metric family will be the same. To be able to tell them apart, we need to
@@ -57,6 +63,7 @@ type transaction struct {
 	sink                  consumer.Metrics
 	externalLabels        labels.Labels
 	nodeResources         map[resourceKey]pcommon.Resource
+	entityInfos           map[resourceKey][]timestampedEntityInfo
 	scopeAttributes       map[resourceKey]map[scopeID]pcommon.Map
 	logger                *zap.Logger
 	buildInfo             component.BuildInfo
@@ -147,6 +154,12 @@ func (t *transaction) addSampleDatapoint(rKey resourceKey, ls labels.Labels, met
 	// For the `target_info` metric we need to convert it to resource attributes.
 	if metricName == prometheus.TargetInfoMetricName {
 		t.AddTargetInfo(rKey, ls)
+		return 0, nil, 0
+	}
+
+	// For the `otel_entity_info` metric we convert it to resource entity_refs.
+	if metricName == prometheus.EntityInfoMetricName && t.isEntityInfoMetric(metricName) {
+		t.AddEntityInfo(rKey, ls, atMs, val)
 		return 0, nil, 0
 	}
 
@@ -439,6 +452,24 @@ func (t *transaction) getMetrics() (pmetric.Metrics, error) {
 		}
 		rms := md.ResourceMetrics().AppendEmpty()
 		resource.CopyTo(rms.Resource())
+		if infos := t.entityInfos[rKey]; len(infos) > 0 {
+			sorted := make([]timestampedEntityInfo, len(infos))
+			copy(sorted, infos)
+			slices.SortStableFunc(sorted, func(a, b timestampedEntityInfo) int {
+				if a.timestamp < b.timestamp {
+					return -1
+				}
+				if a.timestamp > b.timestamp {
+					return 1
+				}
+				return 0
+			})
+			ordered := make([]prometheus.EntityInfo, len(sorted))
+			for i, item := range sorted {
+				ordered[i] = item.info
+			}
+			prometheus.ApplyEntityInfos(rms.Resource(), ordered)
+		}
 		rms.ScopeMetrics().EnsureCapacity(len(families))
 
 		for scope, mfs := range families {
@@ -642,6 +673,51 @@ func (t *transaction) AddTargetInfo(key resourceKey, ls labels.Labels) {
 			attrs.PutStr(lbl.Name, lbl.Value)
 		})
 	}
+}
+
+func (t *transaction) isEntityInfoMetric(metricName string) bool {
+	if t.mc == nil {
+		return true
+	}
+	md, _ := metadataForMetric(metricName, t.mc)
+	switch md.Type {
+	case model.MetricTypeInfo, model.MetricTypeGauge, model.MetricTypeUnknown, "":
+		return true
+	default:
+		return false
+	}
+}
+
+func (t *transaction) AddEntityInfo(key resourceKey, ls labels.Labels, atMs int64, val float64) {
+	t.addingNativeHistogram = false
+	t.addingNHCB = false
+	if value.IsStaleNaN(val) {
+		return
+	}
+	var entityType, schemaURL, rawIDKeys, rawDescKeys string
+	ls.Range(func(lbl labels.Label) {
+		switch lbl.Name {
+		case prometheus.EntityTypeLabelKey:
+			entityType = lbl.Value
+		case prometheus.EntitySchemaURLLabelKey:
+			schemaURL = lbl.Value
+		case prometheus.EntityIDKeysLabelKey:
+			rawIDKeys = lbl.Value
+		case prometheus.EntityDescriptionKeysLabelKey:
+			rawDescKeys = lbl.Value
+		}
+	})
+	info, ok := prometheus.ParseEntityInfo(entityType, schemaURL, rawIDKeys, rawDescKeys)
+	if !ok {
+		return
+	}
+	if t.entityInfos == nil {
+		t.entityInfos = make(map[resourceKey][]timestampedEntityInfo, 1)
+	}
+	t.entityInfos[key] = append(t.entityInfos[key], timestampedEntityInfo{
+		info:      info,
+		timestamp: atMs,
+	})
 }
 
 func getSeriesRefWithoutScopeLabels(bytes []byte, ls labels.Labels, mtype pmetric.MetricType) (uint64, []byte) {

@@ -644,6 +644,7 @@ func (c *prometheusConverter) addResourceTargetInfo(resource pcommon.Resource, s
 		Timestamp: convertTimeStamp(timestamp),
 	}
 	c.addSample(sample, labels)
+	recordEntityTarget(&c.entityTargets, resource, labels, timestamp)
 	return nil
 }
 

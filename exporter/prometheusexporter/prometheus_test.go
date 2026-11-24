@@ -792,7 +792,7 @@ func TestPrometheusExporter_BackgroundCleanup(t *testing.T) {
 		staleMetric.SetName("stale_accumulated")
 		a.registeredMetrics.Store("stale_acc_key", &accumulatedValue{
 			value:           staleMetric,
-			resourceAttrs:   pcommon.NewMap(),
+			resource:        pcommon.NewResource(),
 			scopeAttributes: pcommon.NewMap(),
 			updated:         time.Now().Add(-10 * time.Minute),
 		})
@@ -800,7 +800,7 @@ func TestPrometheusExporter_BackgroundCleanup(t *testing.T) {
 		freshMetric.SetName("fresh_accumulated")
 		a.registeredMetrics.Store("fresh_acc_key", &accumulatedValue{
 			value:           freshMetric,
-			resourceAttrs:   pcommon.NewMap(),
+			resource:        pcommon.NewResource(),
 			scopeAttributes: pcommon.NewMap(),
 			updated:         time.Now().Add(time.Hour),
 		})

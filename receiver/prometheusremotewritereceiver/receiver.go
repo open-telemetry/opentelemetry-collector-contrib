@@ -13,6 +13,7 @@ import (
 	"math"
 	"mime"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -82,7 +83,7 @@ func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsume
 	if err != nil {
 		return nil, fmt.Errorf("failed to create telemetry builder: %w", err)
 	}
-	cache, err := lru.NewWithEvict(cfg.ResourceCacheSize, func(uint64, pmetric.ResourceMetrics) {
+	cache, err := lru.NewWithEvict(cfg.ResourceCacheSize, func(uint64, cachedResourceMetrics) {
 		// The cache does not carry a request context, and evictions are counted
 		// regardless of which request triggered them.
 		telemetryBuilder.ReceiverPrometheusremotewriteResourceCacheEvictions.Add(context.Background(), 1)
@@ -113,7 +114,8 @@ type prometheusRemoteWriteReceiver struct {
 	server *http.Server
 	wg     sync.WaitGroup
 
-	rmCache          *lru.Cache[uint64, pmetric.ResourceMetrics]
+	rmCache          *lru.Cache[uint64, cachedResourceMetrics]
+	rmCacheMu        sync.Mutex
 	obsrecv          *receiverhelper.ObsReport
 	telemetryBuilder *metadata.TelemetryBuilder
 
@@ -570,11 +572,7 @@ func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMe
 	// on every call (which happens once per time series).
 	job := ls.Get("job")
 	instance := ls.Get("instance")
-	h := identity.Resource{}.Hash()
-	h.Write([]byte(job))
-	h.Write(sep)
-	h.Write([]byte(instance))
-	hashedLabels := h.Sum64()
+	hashedLabels := hashJobAndInstance(job, instance)
 
 	if rm, ok := reqRM[hashedLabels]; ok {
 		return rm, hashedLabels
@@ -619,6 +617,10 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 		// Updates to prw.rmCache are deferred to commitRMCache so that a failed request or failed ConsumeMetrics call does not mutate the cache.
 		modifiedResourceMetric = make(map[uint64]pmetric.ResourceMetrics)
 		targetInfoModified     = make(map[uint64]bool)
+		targetInfoDelta        = make(map[uint64]pcommon.Map)
+		reqEntities            = make(map[uint64][]cachedEntityEntry)
+		reqStaleEntities       = make(map[uint64]map[uint64]int64)
+		reqJobInstance         = make(map[uint64][2]string)
 
 		droppedHistogramKeys = make(map[exemplarKey]struct{})
 		// bucketBudget bounds what every Native Histogram in this request may expand into
@@ -689,7 +691,13 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 				continue
 			}
 			rm, hashed := prw.getOrCreateRM(ls, otelMetrics, modifiedResourceMetric)
+			reqJobInstance[hashed] = [2]string{ls.Get("job"), ls.Get("instance")}
 			attrs := rm.Resource().Attributes()
+			delta, hasDelta := targetInfoDelta[hashed]
+			if !hasDelta {
+				delta = pcommon.NewMap()
+				targetInfoDelta[hashed] = delta
+			}
 
 			// Add the remaining labels as resource attributes. Labels with an empty value are skipped
 			// here for the same reason as in extractAttributes: the data model treats them as absent,
@@ -698,6 +706,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 			ls.Range(func(l labels.Label) {
 				if l.Value != "" && l.Name != "job" && l.Name != "instance" && !schema.IsMetadataLabel(l.Name) {
 					attrs.PutStr(l.Name, l.Value)
+					delta.PutStr(l.Name, l.Value)
 				}
 			})
 
@@ -705,6 +714,42 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 			// target_info is not stored as a metric but PRW requires the response
 			// to report all received samples, including target_info, to avoid a stats mismatch
 			stats.Samples += len(ts.Samples)
+			continue
+		}
+
+		// If the metric name is otel_entity_info with an info/gauge/unknown type,
+		// use its labels to populate Resource.entity_refs for the matching (job, instance).
+		if metadata.Name == prometheus.EntityInfoMetricName && isEntityInfoMetricType(ts) {
+			if len(ts.Samples) == 0 {
+				continue
+			}
+			// Count samples as written just like target_info to avoid a PRW stats mismatch.
+			stats.Samples += len(ts.Samples)
+
+			latest := latestSample(ts.Samples)
+			job := ls.Get("job")
+			instance := ls.Get("instance")
+			hashed := hashJobAndInstance(job, instance)
+			seriesHash := ls.WithoutEmpty().Hash()
+
+			if value.IsStaleNaN(latest.Value) {
+				if reqStaleEntities[hashed] == nil {
+					reqStaleEntities[hashed] = make(map[uint64]int64)
+				}
+				if prev, ok := reqStaleEntities[hashed][seriesHash]; !ok || latest.Timestamp > prev {
+					reqStaleEntities[hashed][seriesHash] = latest.Timestamp
+				}
+				continue
+			}
+
+			if info, ok := parseEntityInfoFromLabels(ls); ok {
+				reqEntities[hashed] = append(reqEntities[hashed], cachedEntityEntry{
+					info:       info,
+					seriesHash: seriesHash,
+					timestamp:  latest.Timestamp,
+				})
+				reqJobInstance[hashed] = [2]string{job, instance}
+			}
 			continue
 		}
 
@@ -871,36 +916,124 @@ func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context
 		prw.telemetryBuilder.ReceiverPrometheusremotewriteDroppedSeries.Add(ctx, droppedSummarySeries, droppedSummaryAttrs)
 	}
 
-	// Snapshot newly created or target_info-modified resource attributes before returning
-	// otelMetrics so commitRMCache never reads from otelMetrics after ownership is transferred
-	// to nextConsumer.ConsumeMetrics. Cache hits without target_info only need their LRU
-	// recency updated via Get on commit.
-	type stagedRMEntry struct {
-		snapshot           pmetric.ResourceMetrics
-		hasSnapshot        bool
-		targetInfoModified bool
+	// Reconcile cached and current-request otel_entity_info entries, apply them
+	// to this request's ResourceMetrics, and stage detached per-request deltas for
+	// commitRMCache so commit never reads from otelMetrics after ownership is
+	// transferred to nextConsumer.ConsumeMetrics and concurrent requests merge
+	// their updates under rmCacheMu without clobbering each other.
+	type stagedRMDelta struct {
+		hasRM         bool
+		hasTargetInfo bool
+		targetAttrs   pcommon.Map
+		initAttrs     pcommon.Map
+		hasInitAttrs  bool
+		reqActive     []cachedEntityEntry
+		reqStale      map[uint64]int64
+		job           string
+		instance      string
 	}
-	stagedRMCache := make(map[uint64]stagedRMEntry, len(modifiedResourceMetric))
-	for hashed, rm := range modifiedResourceMetric {
-		entry := stagedRMEntry{
-			targetInfoModified: targetInfoModified[hashed],
-		}
-		if entry.targetInfoModified || !prw.rmCache.Contains(hashed) {
-			entry.snapshot = pmetric.NewResourceMetrics()
-			rm.Resource().Attributes().CopyTo(entry.snapshot.Resource().Attributes())
-			entry.hasSnapshot = true
-		}
-		stagedRMCache[hashed] = entry
+	touchedResources := make(map[uint64]struct{}, len(modifiedResourceMetric)+len(reqEntities)+len(reqStaleEntities))
+	for hashed := range modifiedResourceMetric {
+		touchedResources[hashed] = struct{}{}
 	}
+	for hashed := range reqEntities {
+		touchedResources[hashed] = struct{}{}
+	}
+	for hashed := range reqStaleEntities {
+		touchedResources[hashed] = struct{}{}
+	}
+
+	stagedDeltas := make(map[uint64]stagedRMDelta, len(touchedResources))
+	for hashed := range touchedResources {
+		rm, hasRM := modifiedResourceMetric[hashed]
+		existing, inCache := prw.rmCache.Peek(hashed)
+		hasTargetInfo := existing.hasTargetInfo || targetInfoModified[hashed]
+
+		var currentAttrs pcommon.Map
+		switch {
+		case hasRM:
+			currentAttrs = rm.Resource().Attributes()
+		case inCache:
+			currentAttrs = existing.Resource().Attributes()
+		default:
+			currentAttrs = pcommon.NewMap()
+			ji := reqJobInstance[hashed]
+			parseJobAndInstance(currentAttrs, ji[0], ji[1])
+		}
+
+		mergedEntities, _ := mergeEntityEntries(existing.entities, reqEntities[hashed], reqStaleEntities[hashed], currentAttrs, hasTargetInfo)
+		if hasRM && len(mergedEntities) > 0 {
+			infos := make([]prometheus.EntityInfo, len(mergedEntities))
+			for i, e := range mergedEntities {
+				infos[i] = e.info
+			}
+			prometheus.ApplyEntityInfos(rm.Resource(), infos)
+		}
+
+		ji := reqJobInstance[hashed]
+		delta := stagedRMDelta{
+			hasRM:         hasRM,
+			hasTargetInfo: targetInfoModified[hashed],
+			targetAttrs:   targetInfoDelta[hashed],
+			reqActive:     reqEntities[hashed],
+			reqStale:      reqStaleEntities[hashed],
+			job:           ji[0],
+			instance:      ji[1],
+		}
+		if hasRM {
+			delta.initAttrs = pcommon.NewMap()
+			rm.Resource().Attributes().CopyTo(delta.initAttrs)
+			delta.hasInitAttrs = true
+		}
+		stagedDeltas[hashed] = delta
+	}
+
 	commitRMCache := func() {
-		for hashed, entry := range stagedRMCache {
-			if entry.targetInfoModified {
-				prw.rmCache.Add(hashed, entry.snapshot)
+		prw.rmCacheMu.Lock()
+		defer prw.rmCacheMu.Unlock()
+
+		for hashed, delta := range stagedDeltas {
+			latest, inCache := prw.rmCache.Peek(hashed)
+			hasTargetInfo := latest.hasTargetInfo || delta.hasTargetInfo
+
+			// Fast path: cache hit with no target_info or entity mutations only needs LRU touch.
+			if inCache && !delta.hasTargetInfo && len(delta.reqActive) == 0 && len(delta.reqStale) == 0 {
+				if delta.hasRM {
+					prw.rmCache.Get(hashed)
+				}
 				continue
 			}
-			// Touch existing entry to update LRU recency, or add the detached snapshot on cache miss.
-			if _, ok := prw.rmCache.Get(hashed); !ok && entry.hasSnapshot {
-				prw.rmCache.Add(hashed, entry.snapshot)
+
+			mergedAttrs := pcommon.NewMap()
+			switch {
+			case inCache:
+				latest.Resource().Attributes().CopyTo(mergedAttrs)
+			case delta.hasInitAttrs:
+				delta.initAttrs.CopyTo(mergedAttrs)
+			default:
+				parseJobAndInstance(mergedAttrs, delta.job, delta.instance)
+			}
+			if delta.hasTargetInfo {
+				for k, v := range delta.targetAttrs.All() {
+					v.CopyTo(mergedAttrs.PutEmpty(k))
+				}
+			}
+
+			mergedEntities, entitiesChanged := mergeEntityEntries(latest.entities, delta.reqActive, delta.reqStale, mergedAttrs, hasTargetInfo)
+			replaceCache := delta.hasTargetInfo || entitiesChanged
+			if replaceCache || (delta.hasRM && !inCache) {
+				snapshot := cachedResourceMetrics{
+					ResourceMetrics: pmetric.NewResourceMetrics(),
+					entities:        slices.Clone(mergedEntities),
+					hasTargetInfo:   hasTargetInfo,
+				}
+				mergedAttrs.CopyTo(snapshot.Resource().Attributes())
+				prw.rmCache.Add(hashed, snapshot)
+				continue
+			}
+			if delta.hasRM {
+				// Touch existing entry to update LRU recency.
+				prw.rmCache.Get(hashed)
 			}
 		}
 	}

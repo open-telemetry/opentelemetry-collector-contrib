@@ -42,4 +42,16 @@ const (
 	// It originates from OpenMetrics:
 	// https://github.com/OpenObservability/OpenMetrics/blob/1386544931307dff279688f332890c31b6c5de36/specification/OpenMetrics.md#supporting-target-metadata-in-both-push-based-and-pull-based-systems
 	TargetInfoMetricName = "target_info"
+	// EntityInfoMetricName is the name of the metric used to preserve OpenTelemetry
+	// entity metadata in Prometheus format:
+	// https://github.com/open-telemetry/opentelemetry-specification/pull/5462
+	EntityInfoMetricName = "otel_entity_info"
+	// EntityTypeLabelKey is the label key for the entity's type on otel_entity_info.
+	EntityTypeLabelKey = "otel_entity_type"
+	// EntitySchemaURLLabelKey is the label key for the entity's schema URL on otel_entity_info.
+	EntitySchemaURLLabelKey = "otel_entity_schema_url"
+	// EntityIDKeysLabelKey is the label key for the JSON array of identifying attribute keys on otel_entity_info.
+	EntityIDKeysLabelKey = "otel_entity_id_keys"
+	// EntityDescriptionKeysLabelKey is the label key for the JSON array of descriptive attribute keys on otel_entity_info.
+	EntityDescriptionKeysLabelKey = "otel_entity_description_keys"
 )

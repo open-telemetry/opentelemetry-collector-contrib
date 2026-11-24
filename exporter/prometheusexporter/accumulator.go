@@ -43,8 +43,8 @@ type accumulatedValue struct {
 	// value contains a metric with exactly one aggregated datapoint.
 	value pmetric.Metric
 
-	// resourceAttrs contain the resource attributes. They are used to output instance and job labels.
-	resourceAttrs pcommon.Map
+	// resource contains the resource attributes and entities. They are used to output instance, job, target_info, and otel_entity_info labels.
+	resource pcommon.Resource
 
 	// updated indicates when metric was last changed.
 	updated time.Time
@@ -59,9 +59,9 @@ type accumulatedValue struct {
 type accumulator interface {
 	// Accumulate stores aggregated metric values
 	Accumulate(resourceMetrics pmetric.ResourceMetrics) (processed int)
-	// Collect returns a slice with relevant aggregated metrics and their resource attributes.
-	// The number or metrics and attributes returned will be the same.
-	Collect() (metrics []pmetric.Metric, resourceAttrs []pcommon.Map, scopeNames, scopeVersions, scopeSchemaURLs []string, scopeAttributes []pcommon.Map)
+	// Collect returns a slice with relevant aggregated metrics and their resources.
+	// The number of metrics and resources returned will be the same.
+	Collect() (metrics []pmetric.Metric, resources []pcommon.Resource, scopeNames, scopeVersions, scopeSchemaURLs []string, scopeAttributes []pcommon.Map)
 	// cleanupExpired removes registered metrics whose last update exceeds the
 	// configured expiration, independently of Collect.
 	cleanupExpired()
@@ -90,34 +90,34 @@ func newAccumulator(logger *zap.Logger, metricExpiration time.Duration) accumula
 func (a *lastValueAccumulator) Accumulate(rm pmetric.ResourceMetrics) (n int) {
 	now := time.Now()
 	ilms := rm.ScopeMetrics()
-	resourceAttrs := rm.Resource().Attributes()
+	resource := rm.Resource()
 
 	for i := 0; i < ilms.Len(); i++ {
 		ilm := ilms.At(i)
 
 		metrics := ilm.Metrics()
 		for j := 0; j < metrics.Len(); j++ {
-			n += a.addMetric(metrics.At(j), ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), resourceAttrs, now)
+			n += a.addMetric(metrics.At(j), ilm.Scope().Name(), ilm.Scope().Version(), ilm.SchemaUrl(), ilm.Scope().Attributes(), resource, now)
 		}
 	}
 
 	return n
 }
 
-func (a *lastValueAccumulator) addMetric(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes, resourceAttrs pcommon.Map, now time.Time) int {
+func (a *lastValueAccumulator) addMetric(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map, resource pcommon.Resource, now time.Time) int {
 	a.logger.Debug(fmt.Sprintf("accumulating metric: %s", metric.Name()))
 
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
-		return a.accumulateGauge(metric, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, resourceAttrs, now)
+		return a.accumulateGauge(metric, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, resource, now)
 	case pmetric.MetricTypeSum:
-		return a.accumulateSum(metric, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, resourceAttrs, now)
+		return a.accumulateSum(metric, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, resource, now)
 	case pmetric.MetricTypeHistogram:
-		return a.accumulateHistogram(metric, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, resourceAttrs, now)
+		return a.accumulateHistogram(metric, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, resource, now)
 	case pmetric.MetricTypeSummary:
-		return a.accumulateSummary(metric, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, resourceAttrs, now)
+		return a.accumulateSummary(metric, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, resource, now)
 	case pmetric.MetricTypeExponentialHistogram:
-		return a.accumulateExponentialHistogram(metric, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, resourceAttrs, now)
+		return a.accumulateExponentialHistogram(metric, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes, resource, now)
 	default:
 		a.logger.With(
 			zap.String("data_type", metric.Type().String()),
@@ -128,8 +128,9 @@ func (a *lastValueAccumulator) addMetric(metric pmetric.Metric, scopeName, scope
 	return 0
 }
 
-func (a *lastValueAccumulator) accumulateSummary(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes, resourceAttrs pcommon.Map, now time.Time) (n int) {
+func (a *lastValueAccumulator) accumulateSummary(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map, resource pcommon.Resource, now time.Time) (n int) {
 	dps := metric.Summary().DataPoints()
+	resourceAttrs := resource.Attributes()
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
@@ -150,15 +151,16 @@ func (a *lastValueAccumulator) accumulateSummary(metric pmetric.Metric, scopeNam
 
 		m := copyMetricMetadata(metric)
 		ip.CopyTo(m.SetEmptySummary().DataPoints().AppendEmpty())
-		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resource: resource, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 		n++
 	}
 
 	return n
 }
 
-func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes, resourceAttrs pcommon.Map, now time.Time) (n int) {
+func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map, resource pcommon.Resource, now time.Time) (n int) {
 	dps := metric.Gauge().DataPoints()
+	resourceAttrs := resource.Attributes()
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
@@ -172,7 +174,7 @@ func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, scopeName,
 		if !ok {
 			m := copyMetricMetadata(metric)
 			ip.CopyTo(m.SetEmptyGauge().DataPoints().AppendEmpty())
-			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resource: resource, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 			n++
 			continue
 		}
@@ -185,14 +187,15 @@ func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, scopeName,
 
 		m := copyMetricMetadata(metric)
 		ip.CopyTo(m.SetEmptyGauge().DataPoints().AppendEmpty())
-		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resource: resource, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 		n++
 	}
 	return n
 }
 
-func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes, resourceAttrs pcommon.Map, now time.Time) (n int) {
+func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map, resource pcommon.Resource, now time.Time) (n int) {
 	doubleSum := metric.Sum()
+	resourceAttrs := resource.Attributes()
 
 	// Drop metrics with unspecified aggregations
 	if doubleSum.AggregationTemporality() == pmetric.AggregationTemporalityUnspecified {
@@ -224,7 +227,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName, s
 			m.SetEmptySum().SetIsMonotonic(metric.Sum().IsMonotonic())
 			m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			ip.CopyTo(m.Sum().DataPoints().AppendEmpty())
-			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resource: resource, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 			n++
 			continue
 		}
@@ -250,16 +253,17 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName, s
 		m.SetEmptySum().SetIsMonotonic(metric.Sum().IsMonotonic())
 		m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		ip.CopyTo(m.Sum().DataPoints().AppendEmpty())
-		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resource: resource, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 		n++
 	}
 	return n
 }
 
-func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes, resourceAttrs pcommon.Map, now time.Time) (n int) {
+func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map, resource pcommon.Resource, now time.Time) (n int) {
 	histogram := metric.Histogram()
 	a.logger.Debug("Accumulate histogram.....")
 	dps := histogram.DataPoints()
+	resourceAttrs := resource.Attributes()
 
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
@@ -276,7 +280,7 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, scopeN
 			m := copyMetricMetadata(metric)
 			ip.CopyTo(m.SetEmptyHistogram().DataPoints().AppendEmpty())
 			m.Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resource: resource, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 			n++
 			continue
 		}
@@ -319,16 +323,17 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, scopeN
 			// unsupported temporality
 			continue
 		}
-		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resource: resource, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 		n++
 	}
 	return n
 }
 
-func (a *lastValueAccumulator) accumulateExponentialHistogram(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes, resourceAttrs pcommon.Map, now time.Time) (n int) {
+func (a *lastValueAccumulator) accumulateExponentialHistogram(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes pcommon.Map, resource pcommon.Resource, now time.Time) (n int) {
 	expHistogram := metric.ExponentialHistogram()
 	a.logger.Debug("Accumulate native histogram.....")
 	dps := expHistogram.DataPoints()
+	resourceAttrs := resource.Attributes()
 
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
@@ -344,7 +349,7 @@ func (a *lastValueAccumulator) accumulateExponentialHistogram(metric pmetric.Met
 			m := copyMetricMetadata(metric)
 			ip.CopyTo(m.SetEmptyExponentialHistogram().DataPoints().AppendEmpty())
 			m.ExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resource: resource, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 			n++
 			continue
 		}
@@ -389,19 +394,19 @@ func (a *lastValueAccumulator) accumulateExponentialHistogram(metric pmetric.Met
 		}
 
 		// Store the updated metric and advance count
-		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
+		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resource: resource, scopeName: scopeName, scopeVersion: scopeVersion, scopeSchemaURL: scopeSchemaURL, scopeAttributes: scopeAttributes, updated: now})
 		n++
 	}
 
 	return n
 }
 
-// Collect returns a slice with relevant aggregated metrics and their resource attributes.
-func (a *lastValueAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []string, []string, []string, []pcommon.Map) {
+// Collect returns a slice with relevant aggregated metrics and their resources.
+func (a *lastValueAccumulator) Collect() ([]pmetric.Metric, []pcommon.Resource, []string, []string, []string, []pcommon.Map) {
 	a.logger.Debug("Accumulator collect called")
 
 	var metrics []pmetric.Metric
-	var resourceAttrs []pcommon.Map
+	var resources []pcommon.Resource
 	var scopeNames []string
 	var scopeVersions []string
 	var scopeSchemaURLs []string
@@ -417,7 +422,7 @@ func (a *lastValueAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []str
 		}
 
 		metrics = append(metrics, v.value)
-		resourceAttrs = append(resourceAttrs, v.resourceAttrs)
+		resources = append(resources, v.resource)
 		scopeNames = append(scopeNames, v.scopeName)
 		scopeVersions = append(scopeVersions, v.scopeVersion)
 		scopeSchemaURLs = append(scopeSchemaURLs, v.scopeSchemaURL)
@@ -425,7 +430,7 @@ func (a *lastValueAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []str
 		return true
 	})
 
-	return metrics, resourceAttrs, scopeNames, scopeVersions, scopeSchemaURLs, scopeAttributes
+	return metrics, resources, scopeNames, scopeVersions, scopeSchemaURLs, scopeAttributes
 }
 
 // cleanupExpired removes registered metrics that have exceeded the expiration

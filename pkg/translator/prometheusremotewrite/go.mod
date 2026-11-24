@@ -13,6 +13,7 @@ require (
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/featuregate v1.72.0
 	go.opentelemetry.io/collector/pdata v1.72.0
+	go.opentelemetry.io/collector/pdata/xpdata v0.166.0
 	go.opentelemetry.io/otel v1.47.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0

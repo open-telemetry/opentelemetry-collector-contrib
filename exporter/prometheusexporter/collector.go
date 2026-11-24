@@ -504,95 +504,169 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 	return m, nil
 }
 
-func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prometheus.Metric, error) {
-	var lastErr error
+func (c *collector) createTargetInfoMetric(rAttributes pcommon.Map) (metric prometheus.Metric, fatalErr, err error) {
+	// map ensures no duplicate label name
+	labels := make(map[string]string, rAttributes.Len()+2) // +2 for job and instance labels.
 
-	// deduplicate resourceAttrs by job and instance
-	deduplicatedResourceAttrs := make([]pcommon.Map, 0, len(resourceAttrs))
+	// Use resource attributes as labels for the target info metric.
+	attributes := pcommon.NewMap()
+	rAttributes.CopyTo(attributes)
+	if !prometheustranslator.KeepIdentifyingResourceAttributesGate.IsEnabled() {
+		attributes.RemoveIf(func(k string, _ pcommon.Value) bool {
+			switch k {
+			case string(conventions.ServiceNameKey), string(conventions.ServiceNamespaceKey), string(conventions.ServiceInstanceIDKey):
+				// Remove resource attributes used for job + instance
+				return true
+			default:
+				return false
+			}
+		})
+	}
+
+	var multiErrs error
+	for k, v := range attributes.All() {
+		finalKey, buildErr := c.labelNamer.Build(k)
+		if buildErr != nil {
+			multiErrs = multierr.Append(multiErrs, buildErr)
+			continue
+		}
+		if existingVal, ok := labels[finalKey]; ok {
+			labels[finalKey] = existingVal + ";" + v.AsString()
+		} else {
+			labels[finalKey] = v.AsString()
+		}
+	}
+	if multiErrs != nil {
+		return nil, multiErrs, nil
+	}
+
+	// Map service.name + service.namespace to job
+	if job, ok := extractJob(rAttributes); ok {
+		labels[model.JobLabel] = job
+	}
+	// Map service.instance.id to instance
+	if instance, ok := extractInstance(rAttributes); ok {
+		labels[model.InstanceLabel] = instance
+	}
+
+	name := prometheustranslator.TargetInfoMetricName
+	if c.namespace != "" {
+		name = c.namespace + "_" + name
+	}
+
+	keys := make([]string, 0, len(labels))
+	values := make([]string, 0, len(labels))
+	for key, value := range labels {
+		keys = append(keys, key)
+		values = append(values, value)
+	}
+
+	metric, err = prometheus.NewConstMetric(
+		prometheus.NewDesc(name, "Target metadata", keys, nil),
+		prometheus.GaugeValue,
+		1,
+		values...,
+	)
+	return metric, nil, err
+}
+
+func (c *collector) createTargetAndEntityInfoMetrics(resources []pcommon.Resource) (targetMetrics, entityMetrics []prometheus.Metric, targetErr, entityErr error) {
+	// Deduplicate resources by job and instance once so target_info and
+	// otel_entity_info always correspond to the same resource.
+	deduplicated := make([]pcommon.Resource, 0, len(resources))
 	seenResource := map[string]struct{}{}
-	for _, attrs := range resourceAttrs {
-		sig := resourceSignature(attrs)
+	for _, res := range resources {
+		sig := resourceSignature(res.Attributes())
 		if sig == "" {
 			continue
 		}
 		if _, ok := seenResource[sig]; !ok {
 			seenResource[sig] = struct{}{}
-			deduplicatedResourceAttrs = append(deduplicatedResourceAttrs, attrs)
+			deduplicated = append(deduplicated, res)
 		}
 	}
 
-	metrics := make([]prometheus.Metric, 0, len(deduplicatedResourceAttrs))
-	for _, rAttributes := range deduplicatedResourceAttrs {
-		// map ensures no duplicate label name
-		labels := make(map[string]string, rAttributes.Len()+2) // +2 for job and instance labels.
+	targetMetrics = make([]prometheus.Metric, 0, len(deduplicated))
+	for _, res := range deduplicated {
+		tm, fatalErr, err := c.createTargetInfoMetric(res.Attributes())
+		if fatalErr != nil {
+			return nil, nil, fatalErr, nil
+		}
+		if err != nil {
+			targetErr = err
+			continue
+		}
+		targetMetrics = append(targetMetrics, tm)
 
-		// Use resource attributes as labels for the target info metric.
-		attributes := pcommon.NewMap()
-		rAttributes.CopyTo(attributes)
-		if !prometheustranslator.KeepIdentifyingResourceAttributesGate.IsEnabled() {
-			attributes.RemoveIf(func(k string, _ pcommon.Value) bool {
-				switch k {
-				case string(conventions.ServiceNameKey), string(conventions.ServiceNamespaceKey), string(conventions.ServiceInstanceIDKey):
-					// Remove resource attributes used for job + instance
-					return true
-				default:
-					return false
-				}
-			})
+		ems, err := c.createEntityInfoMetrics(res)
+		if err != nil {
+			entityErr = multierr.Append(entityErr, err)
+		}
+		entityMetrics = append(entityMetrics, ems...)
+	}
+	return targetMetrics, entityMetrics, targetErr, entityErr
+}
+
+func (c *collector) createEntityInfoMetrics(res pcommon.Resource) ([]prometheus.Metric, error) {
+	infos, err := prometheustranslator.BuildEntityInfos(res, c.labelNamer.Build)
+	if err != nil || len(infos) == 0 {
+		return nil, err
+	}
+
+	rAttributes := res.Attributes()
+	job, hasJob := extractJob(rAttributes)
+	instance, hasInstance := extractInstance(rAttributes)
+
+	metrics := make([]prometheus.Metric, 0, len(infos))
+	var errs error
+	for _, info := range infos {
+		encodedIDKeys, encErr := prometheustranslator.EncodeEntityKeys(info.IDKeys)
+		if encErr != nil {
+			errs = multierr.Append(errs, encErr)
+			continue
 		}
 
-		var multiErrs error
-		for k, v := range attributes.All() {
-			finalKey, err := c.labelNamer.Build(k)
-			if err != nil {
-				multiErrs = multierr.Append(multiErrs, err)
+		keys := make([]string, 0, 6)
+		values := make([]string, 0, 6)
+		if hasJob {
+			keys = append(keys, model.JobLabel)
+			values = append(values, job)
+		}
+		if hasInstance {
+			keys = append(keys, model.InstanceLabel)
+			values = append(values, instance)
+		}
+		keys = append(keys, prometheustranslator.EntityTypeLabelKey)
+		values = append(values, info.Type)
+		if info.SchemaURL != "" {
+			keys = append(keys, prometheustranslator.EntitySchemaURLLabelKey)
+			values = append(values, info.SchemaURL)
+		}
+		keys = append(keys, prometheustranslator.EntityIDKeysLabelKey)
+		values = append(values, encodedIDKeys)
+		if len(info.DescriptionKeys) > 0 {
+			encodedDescKeys, encErr := prometheustranslator.EncodeEntityKeys(info.DescriptionKeys)
+			if encErr != nil {
+				errs = multierr.Append(errs, encErr)
 				continue
 			}
-			if existingVal, ok := labels[finalKey]; ok {
-				labels[finalKey] = existingVal + ";" + v.AsString()
-			} else {
-				labels[finalKey] = v.AsString()
-			}
-		}
-		if multiErrs != nil {
-			return nil, multiErrs
+			keys = append(keys, prometheustranslator.EntityDescriptionKeysLabelKey)
+			values = append(values, encodedDescKeys)
 		}
 
-		// Map service.name + service.namespace to job
-		if job, ok := extractJob(rAttributes); ok {
-			labels[model.JobLabel] = job
-		}
-		// Map service.instance.id to instance
-		if instance, ok := extractInstance(rAttributes); ok {
-			labels[model.InstanceLabel] = instance
-		}
-
-		name := prometheustranslator.TargetInfoMetricName
-		if c.namespace != "" {
-			name = c.namespace + "_" + name
-		}
-
-		keys := make([]string, 0, len(labels))
-		values := make([]string, 0, len(labels))
-		for key, value := range labels {
-			keys = append(keys, key)
-			values = append(values, value)
-		}
-
-		metric, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(name, "Target metadata", keys, nil),
+		metric, metricErr := prometheus.NewConstMetric(
+			prometheus.NewDesc(prometheustranslator.EntityInfoMetricName, "Entity metadata", keys, nil),
 			prometheus.GaugeValue,
 			1,
 			values...,
 		)
-		if err != nil {
-			lastErr = err
+		if metricErr != nil {
+			errs = multierr.Append(errs, metricErr)
 			continue
 		}
-
 		metrics = append(metrics, metric)
 	}
-	return metrics, lastErr
+	return metrics, errs
 }
 
 /*
@@ -601,20 +675,27 @@ Reporting
 func (c *collector) Collect(ch chan<- prometheus.Metric) {
 	c.logger.Debug("collect called")
 
-	inMetrics, resourceAttrs, scopeNames, scopeVersions, scopeSchemaURLs, scopeAttributes := c.accumulator.Collect()
+	inMetrics, resources, scopeNames, scopeVersions, scopeSchemaURLs, scopeAttributes := c.accumulator.Collect()
 
-	targetMetrics, err := c.createTargetInfoMetrics(resourceAttrs)
-	if err != nil {
-		c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", otlptranslator.TargetInfoMetricName, err.Error()))
+	targetMetrics, entityMetrics, targetErr, entityErr := c.createTargetAndEntityInfoMetrics(resources)
+	if targetErr != nil {
+		c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", otlptranslator.TargetInfoMetricName, targetErr.Error()))
+	}
+	if entityErr != nil {
+		c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", prometheustranslator.EntityInfoMetricName, entityErr.Error()))
 	}
 	for _, m := range targetMetrics {
+		ch <- m
+		c.logger.Debug(fmt.Sprintf("metric served: %s", m.Desc().String()))
+	}
+	for _, m := range entityMetrics {
 		ch <- m
 		c.logger.Debug(fmt.Sprintf("metric served: %s", m.Desc().String()))
 	}
 
 	for i := range inMetrics {
 		pMetric := inMetrics[i]
-		rAttr := resourceAttrs[i]
+		rAttr := resources[i].Attributes()
 
 		m, err := c.convertMetric(pMetric, rAttr, scopeNames[i], scopeVersions[i], scopeSchemaURLs[i], scopeAttributes[i])
 		if err != nil {

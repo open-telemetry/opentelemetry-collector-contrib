@@ -35,8 +35,11 @@ func TestCollectorTargetInfoLabelSanitization(t *testing.T) {
 
 	t.Run("preserves multiple underscores in target_info", func(t *testing.T) {
 		c := newCollector(&Config{}, zap.NewNop())
-		metrics, err := c.createTargetInfoMetrics([]pcommon.Map{resourceAttrs})
+		res := pcommon.NewResource()
+		resourceAttrs.CopyTo(res.Attributes())
+		metrics, _, err, entityErr := c.createTargetAndEntityInfoMetrics([]pcommon.Resource{res})
 		require.NoError(t, err)
+		require.NoError(t, entityErr)
 		require.Len(t, metrics, 1)
 
 		desc := metrics[0].Desc().String()

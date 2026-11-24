@@ -46,8 +46,9 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (map[string]*prompb.Time
 
 // prometheusConverter converts from OTel write format to Prometheus write format.
 type prometheusConverter struct {
-	unique    map[uint64]*prompb.TimeSeries
-	conflicts map[uint64][]*prompb.TimeSeries
+	unique        map[uint64]*prompb.TimeSeries
+	conflicts     map[uint64][]*prompb.TimeSeries
+	entityTargets map[entityTargetKey]entityTarget
 
 	metricNamer otlptranslator.MetricNamer
 	labelNamer  otlptranslator.LabelNamer
@@ -176,6 +177,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 		}
 		errs = multierr.Append(errs, c.addResourceTargetInfo(resource, settings, mostRecentTimestamp))
 	}
+	errs = multierr.Append(errs, c.addResourceEntityInfos())
 
 	return errs
 }

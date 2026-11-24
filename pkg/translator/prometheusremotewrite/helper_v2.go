@@ -91,6 +91,7 @@ func (c *prometheusConverterV2) addResourceTargetInfoV2(resource pcommon.Resourc
 		Type: writev2.Metadata_METRIC_TYPE_GAUGE,
 		Help: "Target metadata",
 	})
+	recordEntityTarget(&c.entityTargets, resource, labels, timestamp)
 	return nil
 }
 

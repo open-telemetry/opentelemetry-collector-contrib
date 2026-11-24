@@ -40,21 +40,25 @@ func (*mockAccumulator) Accumulate(pmetric.ResourceMetrics) (n int) {
 
 func (*mockAccumulator) cleanupExpired() {}
 
-func (a *mockAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []string, []string, []string, []pcommon.Map) {
-	rAttrs := make([]pcommon.Map, len(a.metrics))
+func (a *mockAccumulator) Collect() ([]pmetric.Metric, []pcommon.Resource, []string, []string, []string, []pcommon.Map) {
+	res := pcommon.NewResource()
+	if a.resourceAttributes != (pcommon.Map{}) {
+		a.resourceAttributes.CopyTo(res.Attributes())
+	}
+	resources := make([]pcommon.Resource, len(a.metrics))
 	scopeNames := make([]string, len(a.metrics))
 	scopeVersions := make([]string, len(a.metrics))
 	scopeSchemaURLs := make([]string, len(a.metrics))
 	scopeAttributes := make([]pcommon.Map, len(a.metrics))
-	for i := range rAttrs {
-		rAttrs[i] = a.resourceAttributes
+	for i := range resources {
+		resources[i] = res
 		scopeNames[i] = a.scopeNames[i]
 		scopeVersions[i] = a.scopeVersions[i]
 		scopeSchemaURLs[i] = a.scopeSchemaURLs[i]
 		scopeAttributes[i] = a.scopeAttributes[i]
 	}
 
-	return a.metrics, rAttrs, scopeNames, scopeVersions, scopeSchemaURLs, scopeAttributes
+	return a.metrics, resources, scopeNames, scopeVersions, scopeSchemaURLs, scopeAttributes
 }
 
 func TestConvertInvalidDataType(t *testing.T) {
@@ -1300,8 +1304,11 @@ func TestTargetInfoIdentifyingResourceAttributes(t *testing.T) {
 							}
 						}
 						c := newCollector(&Config{TranslationStrategy: strategy}, zap.NewNop())
-						metrics, err := c.createTargetInfoMetrics([]pcommon.Map{attrs})
+						res := pcommon.NewResource()
+						attrs.CopyTo(res.Attributes())
+						metrics, _, err, entityErr := c.createTargetAndEntityInfoMetrics([]pcommon.Resource{res})
 						require.NoError(t, err)
+						require.NoError(t, entityErr)
 						require.Len(t, metrics, 1)
 						var metric io_prometheus_client.Metric
 						require.NoError(t, metrics[0].Write(&metric))

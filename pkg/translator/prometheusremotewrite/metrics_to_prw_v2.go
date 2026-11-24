@@ -40,6 +40,7 @@ type prometheusConverterV2 struct {
 	// conflictCount is used to track the number of conflicts that were encountered.
 	conflictCount int
 	symbolTable   writev2.SymbolsTable
+	entityTargets map[entityTargetKey]entityTarget
 
 	metricNamer otlptranslator.MetricNamer
 	labelNamer  otlptranslator.LabelNamer
@@ -149,6 +150,7 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 		}
 		errs = multierr.Append(errs, c.addResourceTargetInfoV2(resource, settings, mostRecentTimestamp))
 	}
+	errs = multierr.Append(errs, c.addResourceEntityInfosV2())
 
 	return errs
 }
