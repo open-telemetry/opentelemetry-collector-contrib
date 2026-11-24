@@ -325,6 +325,52 @@ func TestAzureScraperBatchScrape_NoDuplicateOnRescrape(t *testing.T) {
 		"second scrape must not re-emit Azure data points (would cause 409 duplicate sample for timestamp on Prometheus remote write backends)")
 }
 
+// Refreshing the metrics definitions cache must not emit again the values that were already emitted.
+func TestAzureScraperBatchScrape_NoDuplicateAfterDefinitionsRefresh(t *testing.T) {
+	cfg := createDefaultTestConfig()
+	cfg.MaximumNumberOfMetricsInACall = 2
+	cfg.AppendTagsAsAttributes = []string{}
+	cfg.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
+	// Refresh the metrics definitions on every scrape.
+	cfg.CacheResourcesDefinitions = 0
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+
+	optionsResolver := newMockClientOptionsResolver(
+		getSubscriptionByIDMockData(),
+		getSubscriptionsMockData(),
+		getResourcesMockData(),
+		getMetricsDefinitionsMockData(),
+		nil,
+		getMetricsQueryResponseMockData(),
+	)
+
+	s := &azureBatchScraper{
+		cfg:                          cfg,
+		mbs:                          newConcurrentMapImpl[*metadata.MetricsBuilder](),
+		mutex:                        &sync.Mutex{},
+		time:                         getTimeMock(),
+		clientOptionsResolver:        optionsResolver,
+		receiverSettings:             settings,
+		settings:                     settings.TelemetrySettings,
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
+
+		subscriptions: map[string]*azureSubscription{},
+		resources:     map[string]map[string]*azureResource{},
+		regions:       map[string]map[string]struct{}{},
+		resourceTypes: map[string]map[string]*azureType{},
+	}
+
+	first, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Positive(t, first.DataPointCount(), "first scrape should emit at least one data point")
+
+	// The refresh resets the anti-duplicate guard, so Azure returns the same values again.
+	second, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 0, second.DataPointCount(), "values already emitted must not be emitted again after a definitions refresh")
+}
+
 func TestAzureScraperBatchScrape_ChronologicalAndNoDuplicate(t *testing.T) {
 	cfg := createDefaultTestConfig()
 	cfg.SubscriptionIDs = []string{"subscriptionId1"}

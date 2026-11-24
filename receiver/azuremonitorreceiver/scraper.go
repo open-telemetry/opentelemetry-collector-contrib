@@ -497,6 +497,7 @@ func (s *azureScraper) loadMetricsDefinitions(ctx context.Context, subscriptionI
 	}
 
 	// Prepare the map of metrics by composite key.
+	previousMetrics := s.resources[subscriptionID][resourceID].metricsByCompositeKey
 	s.resources[subscriptionID][resourceID].metricsByCompositeKey = map[metricsCompositeKey]*azureResourceMetrics{}
 
 	clientMetricsDefinitions, clientErr := armmonitor.NewMetricDefinitionsClient(subscriptionID, s.cred, s.clientOptionsResolver.GetArmMonitorClientOptions())
@@ -529,6 +530,7 @@ func (s *azureScraper) loadMetricsDefinitions(ctx context.Context, subscriptionI
 		s.collectMetricDefinitions(ctx, subscriptionID, resourceID, clientMetricsDefinitions, opts, nil)
 	}
 
+	keepLastEmittedTimestamps(previousMetrics, s.resources[subscriptionID][resourceID].metricsByCompositeKey)
 	s.resources[subscriptionID][resourceID].metricsDefinitionsUpdated = time.Now()
 	s.settings.Logger.Info("Loaded the list of Azure Metrics Definitions",
 		zap.Int("metrics_definitions_count", len(s.resources[subscriptionID][resourceID].metricsByCompositeKey)),
@@ -752,6 +754,16 @@ func newResourceMetricsValuesRequestOptions(
 		opts.Metricnamespace = new(namespace)
 	}
 	return opts
+}
+
+// keepLastEmittedTimestamps copies the emitted timestamps of the metrics definitions loaded
+// before a refresh to the refreshed ones, so values that were already emitted are not emitted again.
+func keepLastEmittedTimestamps(previous, refreshed map[metricsCompositeKey]*azureResourceMetrics) {
+	for compositeKey, metrics := range refreshed {
+		if previousMetrics, ok := previous[compositeKey]; ok {
+			metrics.lastEmittedTimestamps = previousMetrics.lastEmittedTimestamps
+		}
+	}
 }
 
 func armMetricValueIsNotEmpty(metricValue *armmonitor.MetricValue) bool {

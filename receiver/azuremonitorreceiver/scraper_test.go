@@ -410,6 +410,82 @@ func TestAzureScraperScrape_DelayedValueIsEmitted(t *testing.T) {
 	assert.Equal(t, pcommon.NewTimestampFromTime(t2), dp2.Timestamp())
 }
 
+// Refreshing the metrics definitions cache must not emit again the values that were already emitted.
+func TestAzureScraperScrape_NoDuplicateAfterDefinitionsRefresh(t *testing.T) {
+	fakeSubID := "subscriptionId1"
+	resourceID := "/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1"
+	metricName := "metric1"
+	var unit armmonitor.MetricUnit = "unit1"
+	value1 := 10.0
+	value2 := 12.0
+
+	collectionTime := time.Date(2026, 9, 27, 12, 0, 0, 0, time.UTC)
+	t1 := collectionTime.Add(-10 * time.Minute)
+	t2 := collectionTime.Add(-5 * time.Minute)
+
+	mockMetricsValues := map[string]map[string]armmonitor.MetricsClientListResponse{
+		resourceID: {
+			metricName: armmonitor.MetricsClientListResponse{
+				Response: armmonitor.Response{
+					Value: []*armmonitor.Metric{
+						{
+							Name: &armmonitor.LocalizableString{Value: new(metricName)},
+							Unit: &unit,
+							Timeseries: []*armmonitor.TimeSeriesElement{{Data: []*armmonitor.MetricValue{
+								{TimeStamp: &t1, Average: &value1},
+								{TimeStamp: &t2, Average: &value2},
+							}}},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	cfg := createDefaultTestConfig()
+	cfg.SubscriptionIDs = []string{fakeSubID}
+	cfg.Metrics = NestedListAlias{
+		"namespace1": {
+			"metric1": {"Average"},
+		},
+	}
+	// Refresh the metrics definitions on every scrape.
+	cfg.CacheResourcesDefinitions = 0
+
+	s := &azureScraper{
+		cfg:      cfg,
+		settings: settings.TelemetrySettings,
+		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
+		mutex:    &sync.Mutex{},
+		time:     &timeMock{time: collectionTime},
+		clientOptionsResolver: newMockClientOptionsResolver(
+			getSubscriptionByIDMockData(),
+			getSubscriptionsMockData(),
+			getResourcesMockData(),
+			getMetricsDefinitionsMockData(),
+			mockMetricsValues,
+			nil,
+		),
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
+		subscriptions:                map[string]*azureSubscription{},
+		resources:                    map[string]map[string]*azureResource{},
+	}
+
+	metrics, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 2, metrics.DataPointCount())
+
+	// Azure returns the same values, which are still in the queried time range.
+	mockTime := s.time.(*timeMock)
+	mockTime.time = mockTime.time.Add(time.Minute)
+	s.mb = metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)
+
+	metrics2, err := s.scrape(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 0, metrics2.DataPointCount(), "values already emitted must not be emitted again after a definitions refresh")
+}
+
 func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 	fakeSubID := "azuremonitor-receiver"
 	metricNamespace1, metricNamespace2 := "Microsoft.ServiceA/namespace1", "Microsoft.ServiceB/namespace2"
