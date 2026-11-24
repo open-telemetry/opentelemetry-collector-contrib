@@ -58,6 +58,9 @@ type pReceiver struct {
 
 // New creates a new prometheus.Receiver reference.
 func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Metrics) (*pReceiver, error) {
+	if cfg.PrometheusConfig == nil {
+		return nil, errors.New("prometheus config cannot be nil")
+	}
 	if err := cfg.PrometheusConfig.Reload(); err != nil {
 		return nil, fmt.Errorf("failed to reload Prometheus config: %w", err)
 	}
@@ -221,6 +224,7 @@ func (r *pReceiver) initScrapeOptions(o prometheusScrapeTestOptions) *scrape.Opt
 			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
 		},
 		EnableStartTimestampZeroIngestion: metadata.ReceiverPrometheusreceiverEnableCreatedTimestampZeroIngestionFeatureGate.IsEnabled(),
+		EnableOpenMetrics2:                metadata.ReceiverPrometheusEnableOpenMetrics2FeatureGate.IsEnabled(),
 		ScrapeOnShutdown:                  r.cfg.ScrapeOnShutdown,
 		DiscoveryReloadOnStartup:          r.cfg.DiscoveryReloadOnStartup,
 		InitialScrapeOffset:               r.cfg.InitialScrapeOffset,

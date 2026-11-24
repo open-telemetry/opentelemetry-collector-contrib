@@ -32,8 +32,8 @@ func TestLoadConfig(t *testing.T) {
 	content, err := os.ReadFile(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	contentStr := strings.ReplaceAll(string(content), "<METRICS_APP_TOKEN>", metricsAppToken)
-	contentStr = strings.ReplaceAll(contentStr, "<LOGS_APP_TOKEN>", logsAppToken)
+	contentStr := strings.ReplaceAll(string(content), "<METRICS_APP_TOKEN>", string(metricsAppToken))
+	contentStr = strings.ReplaceAll(contentStr, "<LOGS_APP_TOKEN>", string(logsAppToken))
 
 	tmpConfigPath := filepath.Join("testdata", "config_tmp.yaml")
 	err = os.WriteFile(tmpConfigPath, []byte(contentStr), 0o600)
@@ -240,4 +240,21 @@ func TestConfigValidation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateDoesNotLeakAppToken(t *testing.T) {
+	const secret = "not-a-uuid-secret-token"
+	cfg := &Config{
+		Region:        usRegion,
+		MetricsConfig: MetricsConfig{AppToken: secret},
+		LogsConfig:    LogsConfig{AppToken: secret},
+	}
+	err := cfg.Validate()
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), secret)
+
+	cfg.MetricsConfig.AppToken = metricsAppToken
+	err = cfg.Validate()
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), secret)
 }

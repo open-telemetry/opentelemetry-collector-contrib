@@ -223,6 +223,10 @@ func (c Config) validate() error {
 		return errors.New("'max_log_size' must be positive")
 	}
 
+	if c.PollInterval <= 0 {
+		return errors.New("'poll_interval' must be positive")
+	}
+
 	if c.MaxConcurrentFiles < 1 {
 		return errors.New("'max_concurrent_files' must be positive")
 	}

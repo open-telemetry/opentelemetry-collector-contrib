@@ -16,7 +16,7 @@ components:
         - otelarrow
     extension:
         - ack
-        - basicauth
+        - basic_auth
         - bearertokenauth
         - cgroup_runtime
         - file_storage
@@ -69,6 +69,7 @@ components:
         - cpu
         - disk
         - filesystem
+        - hardware
         - load
         - memory
         - network

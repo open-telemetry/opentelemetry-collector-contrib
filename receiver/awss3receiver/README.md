@@ -44,12 +44,15 @@ The following exporter configuration parameters are supported.
 | `endpoint`              | overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                                       |             | Optional |
 | `endpoint_partition_id` | partition id to use if `endpoint` is specified.                                                                                            | "aws"       | Optional |
 | `s3_force_path_style`   | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html) | false       | Optional |
+| `max_unmarshal_size`   | Maximum decompressed bytes buffered by a non-streaming decoder. Zero uses the default; negative values are invalid. Streaming decoders are not subject to this limit. | 268435456 (256 MiB) | Optional |
+| `decompression`         | Algorithm used to decompress objects whose key does not end with `.gz` or `.zst`. See [Decompression](#decompression).                    | none        | Optional |
 | `sqs:`                  |                                                                                                                                            |             |          |
 | `queue_url`             | The URL of the SQS queue that receives S3 bucket notifications                                                                             |             | Required if fetching by SQS notification |
 | `region`                | AWS region of the SQS queue                                                                                                                |             | Required if fetching by SQS notification |
 | `endpoint`              | Custom endpoint for the SQS service                                                                                                        |             | Optional |
 | `max_number_of_messages`          | Maximum number of messages to retrieve in a single SQS request                                                                             | 10          | Optional |
 | `wait_time_seconds`             | Wait time in seconds for long polling SQS requests                                                                                         | 20          | Optional |
+| `visibility_timeout_seconds` | Sets the SQS visibility timeout and renews it while received messages are waiting or processing. Valid values: 1–43200. Requires `sqs:ChangeMessageVisibility`. | Queue default, without renewal | Optional |
 | `encodings:`            | An array of entries with the following properties:                                                                                         |             | Optional |
 | `extension`             | Extension to use for decoding a key with a matching suffix.                                                                                |             | Required |
 | `suffix`                | Key suffix to match against.                                                                                                               |             | Required |
@@ -78,6 +81,16 @@ sqs:
 **Note:** You must configure your S3 bucket to send event notifications to the SQS queue.
 Time-based configuration (`starttime`/`endtime`) and SQS configuration cannot be used together.
 
+Set `sqs.visibility_timeout_seconds` to renew message visibility during long-running downloads or
+pipeline processing. Renewal also covers messages waiting behind another message in the same poll.
+For example, `visibility_timeout_seconds: 300` sets a five-minute timeout, renewed before it expires.
+When this option is omitted, the receiver uses the queue's visibility timeout without renewing it.
+
+A renewal failure cancels processing of the affected message and leaves it available for retry after
+its visibility timeout. Previously accepted data may be delivered again. Renewal cannot extend
+visibility beyond SQS's 12-hour limit from the original receive request. SQS provides at-least-once
+delivery, so renewal does not eliminate all possible duplicates.
+
 ### Time format for `starttime` and `endtime`
 The `starttime` and `endtime` fields are used to specify the time range for which to retrieve data.
 The time format is either RFC3339,`YYYY-MM-DD HH:MM` or simply `YYYY-MM-DD`, in which case the time is assumed to be `00:00`.
@@ -88,6 +101,40 @@ By default, the receiver understands the following encodings:
 - otlp_proto (OpenTelemetry Protocol format represented as Protocol Buffers) with a suffix of `.binpb`
 
 The `encodings` options allows you to specify Encoding Extensions to use to decode keys with matching suffixes.
+
+### Streaming
+
+In both retrieval modes, encoding extensions that implement streaming log or metric decoding
+(such as `text_encoding`) receive the S3 response body directly and emit batches while the object
+is downloaded. Gzip and zstd decompression also stream. Batch sizes follow the encoding extension's
+defaults, typically 1,000 records or 1 MiB. Memory use depends on the decoder, individual record
+sizes, and downstream buffering, rather than requiring the entire object in memory.
+
+Built-in OTLP JSON/Protocol Buffers decoding, traces, and encoding extensions without streaming
+support still buffer the decompressed object before decoding. These paths reject objects larger
+than `s3downloader.max_unmarshal_size` (256 MiB by default), measured after decompression.
+Increase this limit if you need to decode larger objects and have sufficient memory. A rejected
+object is not tagged as ingested and its SQS message is not deleted. The limit does not apply to
+streaming decoders; configure their record and batch size limits to control memory use.
+
+An object is tagged as ingested, and its SQS message is deleted, only after the entire object has
+been read and all batches accepted by the pipeline. A failure after some batches have been accepted
+leaves the SQS message available for retry; retrying the object can duplicate those batches.
+Pipeline acceptance does not imply delivery to an exporter’s destination when asynchronous
+processors or exporter queues are enabled.
+
+### Decompression
+Objects with a key ending in `.gz` or `.zst` are always decompressed with gzip or zstd respectively, and the
+compression suffix is removed before the encoding is selected.
+
+The `s3downloader::decompression` option sets the algorithm used to decompress all other objects, for example objects
+that were compressed but written without a compression suffix:
+- `none` (default): No decompression is applied.
+- `gzip`: Objects are decompressed with gzip.
+- `zstd`: Objects are decompressed with zstd.
+
+When `decompression` is set, every object without a `.gz` or `.zst` suffix must be compressed with the configured
+algorithm. An object that fails to decompress is handled the same as any other object that fails to be processed.
 
 
 ### Example Configuration

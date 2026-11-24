@@ -1,0 +1,4 @@
+change_type: deprecation
+component: extension/basic_auth
+note: Rename the 'basicauth' extension to 'basic_auth'. The old 'basicauth' type remains available as a deprecated alias.
+issues: [45339]

@@ -45,7 +45,29 @@ func TestConfigBuildFailure(t *testing.T) {
 func TestParserStringFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse("invalid")
-	require.ErrorContains(t, err, "expected { character for map value")
+	require.ErrorContains(t, err, "invalid character 'i' looking for beginning of value")
+}
+
+func TestParserParseIntsOutOfRange(t *testing.T) {
+	config := NewConfigWithID("test")
+	config.ParseInts = true
+	op, err := config.Build(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	parser := op.(*Parser)
+
+	for _, input := range []string{
+		`{"overflow":1e400}`,
+		`{"overflow":-1e400}`,
+		`{"nested":{"overflow":1e400}}`,
+		`{"array":[1,1e400]}`,
+		`{"array":[[1e400]]}`,
+		`{"array":[{"overflow":1e400}]}`,
+	} {
+		t.Run(input, func(t *testing.T) {
+			_, err := parser.parse(input)
+			require.ErrorContains(t, err, "value out of range")
+		})
+	}
 }
 
 func TestParserByteFailure(t *testing.T) {
@@ -244,6 +266,27 @@ func TestParser(t *testing.T) {
 					"array": []any{int64(3), int64(4)},
 				},
 				Body: `{"int":1,"float":1.0,"nested":{"int":2,"float":2.0,"array":[1,2]},"array":[3,4]}`,
+			},
+		},
+		{
+			"drop_field_from_subfield",
+			func(p *Config) {
+				p.ParseFrom = entry.NewBodyField("raw_json")
+				p.DropField = true
+			},
+			&entry.Entry{
+				Body: map[string]any{
+					"raw_json": `{"superkey":"superval"}`,
+					"other":    "value",
+				},
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"superkey": "superval",
+				},
+				Body: map[string]any{
+					"other": "value",
+				},
 			},
 		},
 	}
