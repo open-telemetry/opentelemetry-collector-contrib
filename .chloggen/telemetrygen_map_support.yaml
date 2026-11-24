@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: cmd/telemetrygen
+
+note: Support map values in Resource and Telemetry attributes.
+
+issues: [53561]
+
+change_logs: [user]
