@@ -568,6 +568,7 @@ $defs:
       - PrometheusText1.0.0
       - OpenMetricsText0.0.1
       - OpenMetricsText1.0.0
+      - OpenMetricsText2.0.0
     type: string
   prom_static_config:
     description: Statically configured scrape targets.

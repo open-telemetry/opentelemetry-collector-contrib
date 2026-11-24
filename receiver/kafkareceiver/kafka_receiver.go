@@ -7,6 +7,7 @@ import (
 	"context"
 	"iter"
 	"strconv"
+	"time"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -36,7 +37,7 @@ import (
 
 const transport = "kafka"
 
-type consumeMessageFunc func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error
+type consumeMessageFunc func(ctx context.Context, record *kgo.Record, attrs attribute.Set, stages *partitionTelemetry) error
 
 type newConsumeMessageFunc func(host component.Host, obsrecv *receiverhelper.ObsReport,
 	telBldr *metadata.TelemetryBuilder,
@@ -83,7 +84,7 @@ func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consume
 
 		headerAttrKeys := buildHeaderAttrKeys(config)
 		propagator := traceContextPropagator()
-		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error {
+		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set, stages *partitionTelemetry) error {
 			return processMessage(ctx, record, config, set.Logger, telBldr,
 				&logsHandler{
 					decode:   decode,
@@ -92,6 +93,7 @@ func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consume
 					encoding: config.Logs.Encoding,
 				},
 				attrs,
+				stages,
 				headerAttrKeys,
 				propagator,
 			)
@@ -112,7 +114,7 @@ func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer cons
 
 		headerAttrKeys := buildHeaderAttrKeys(config)
 		propagator := traceContextPropagator()
-		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error {
+		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set, stages *partitionTelemetry) error {
 			return processMessage(ctx, record, config, set.Logger, telBldr,
 				&metricsHandler{
 					decode:   decode,
@@ -121,6 +123,7 @@ func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer cons
 					encoding: config.Metrics.Encoding,
 				},
 				attrs,
+				stages,
 				headerAttrKeys,
 				propagator,
 			)
@@ -141,7 +144,7 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 
 		headerAttrKeys := buildHeaderAttrKeys(config)
 		propagator := traceContextPropagator()
-		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error {
+		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set, stages *partitionTelemetry) error {
 			return processMessage(ctx, record, config, set.Logger, telBldr,
 				&tracesHandler{
 					decode:   decode,
@@ -150,6 +153,7 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 					encoding: config.Traces.Encoding,
 				},
 				attrs,
+				stages,
 				headerAttrKeys,
 				propagator,
 			)
@@ -170,7 +174,7 @@ func newProfilesReceiver(config *Config, set receiver.Settings, nextConsumer xco
 
 		headerAttrKeys := buildHeaderAttrKeys(config)
 		propagator := traceContextPropagator()
-		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error {
+		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set, stages *partitionTelemetry) error {
 			return processMessage(ctx, record, config, set.Logger, telBldr,
 				&profilesHandler{
 					decode:   decode,
@@ -179,6 +183,7 @@ func newProfilesReceiver(config *Config, set receiver.Settings, nextConsumer xco
 					encoding: config.Profiles.Encoding,
 				},
 				attrs,
+				stages,
 				headerAttrKeys,
 				propagator,
 			)
@@ -360,6 +365,7 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 	telBldr *metadata.TelemetryBuilder,
 	handler messageHandler[T],
 	attrs attribute.Set,
+	stages *partitionTelemetry,
 	headerAttrKeys map[string]string,
 	propagator propagation.TextMapPropagator,
 ) error {
@@ -379,7 +385,12 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 	}
 
 	obsCtx := handler.startObsReport(ctx)
+	stageStart := time.Now()
 	data, n, err := handler.unmarshalData(obsCtx, record.Value)
+	if stages != nil {
+		telBldr.KafkaReceiverRecordProcessingDuration.Record(ctx, time.Since(stageStart).Seconds(),
+			stages.decodeOptions[:]...)
+	}
 	if err != nil {
 		handler.getUnmarshalFailureCounter(telBldr).Add(ctx, 1, metric.WithAttributeSet(attrs))
 		logger.Error("failed to unmarshal message", zap.Error(err))
@@ -399,7 +410,12 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 		}
 	}
 
+	stageStart = time.Now()
 	err = handler.consumeData(obsCtx, data)
+	if stages != nil {
+		telBldr.KafkaReceiverRecordProcessingDuration.Record(ctx, time.Since(stageStart).Seconds(),
+			stages.consumeOptions[:]...)
+	}
 	handler.endObsReport(obsCtx, n, err)
 	return err
 }

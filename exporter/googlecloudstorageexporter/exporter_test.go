@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/api/googleapi"
@@ -46,6 +47,15 @@ func TestNewStorageExporter(t *testing.T) {
 				},
 			},
 			signal: signalTypeLogs,
+		},
+		"metrics signal type": {
+			cfg: &Config{
+				Bucket: bucketConfig{
+					ProjectID: "test",
+					Region:    "test",
+				},
+			},
+			signal: signalTypeMetrics,
 		},
 		"region missing and provider works": {
 			getZone: func(_ context.Context) (string, error) {
@@ -179,6 +189,7 @@ func TestStart(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, &plog.JSONMarshaler{}, gcsExporter.logsMarshaler)
 		require.Equal(t, &ptrace.JSONMarshaler{}, gcsExporter.tracesMarshaler)
+		require.Equal(t, &pmetric.JSONMarshaler{}, gcsExporter.metricsMarshaler)
 	})
 
 	gcsExporter.cfg.Encoding = &id
@@ -201,8 +212,9 @@ func TestStart(t *testing.T) {
 		err := gcsExporter.Start(t.Context(), mHost)
 		require.NoError(t, err)
 		require.IsType(t, &mockLogMarshaler{}, gcsExporter.logsMarshaler)
-		// Traces marshaler remains default JSON since this is a logs exporter
+		// Traces and metrics marshalers remain default JSON since this is a logs exporter
 		require.Equal(t, &ptrace.JSONMarshaler{}, gcsExporter.tracesMarshaler)
+		require.Equal(t, &pmetric.JSONMarshaler{}, gcsExporter.metricsMarshaler)
 	})
 
 	id = component.MustNewID(encodingSucceedsID)
@@ -433,7 +445,7 @@ func TestAttributePartition(t *testing.T) {
 		{
 			name:     "attribute absent",
 			attrKey:  "service.name",
-			setAttr:  func(pcommon.Resource) {},
+			setAttr:  func(_ pcommon.Resource) {},
 			expected: "",
 		},
 		{
@@ -496,11 +508,13 @@ func TestConsumeLogs(t *testing.T) {
 	encodingSucceedsID := "id_success"
 	encodingFailsID := "id_fail"
 	encodingLogsOnlyID := "id_logs_only"
+	encodingMetricsFailID := "id_metrics_fail"
 	mHost := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewID(encodingSucceedsID): &mockBothMarshaler{},
-			component.MustNewID(encodingFailsID):    &mockLogMarshaler{shouldFail: true},
-			component.MustNewID(encodingLogsOnlyID): &mockLogMarshaler{},
+			component.MustNewID(encodingSucceedsID):    &mockBothMarshaler{},
+			component.MustNewID(encodingFailsID):       &mockLogMarshaler{shouldFail: true},
+			component.MustNewID(encodingLogsOnlyID):    &mockLogMarshaler{},
+			component.MustNewID(encodingMetricsFailID): &mockMetricMarshaler{shouldFail: true},
 		},
 	}
 
@@ -518,9 +532,10 @@ func TestConsumeLogs(t *testing.T) {
 			expectsConsumeErr: "failed to marshal logs",
 		},
 		{
-			name:   "logs encoding succeeds",
-			id:     encodingSucceedsID,
-			signal: signalTypeLogs,
+			name:              "logs encoding succeeds",
+			id:                encodingSucceedsID,
+			signal:            signalTypeLogs,
+			expectedMarshaler: &mockBothMarshaler{},
 		},
 		{
 			name:              "traces with logs-only encoding falls back to JSON",
@@ -529,9 +544,28 @@ func TestConsumeLogs(t *testing.T) {
 			expectedMarshaler: &ptrace.JSONMarshaler{},
 		},
 		{
-			name:   "traces encoding succeeds",
-			id:     encodingSucceedsID,
-			signal: signalTypeTraces,
+			name:              "traces encoding succeeds",
+			id:                encodingSucceedsID,
+			signal:            signalTypeTraces,
+			expectedMarshaler: &mockBothMarshaler{},
+		},
+		{
+			name:              "metrics with logs-only encoding falls back to JSON",
+			id:                encodingLogsOnlyID,
+			signal:            signalTypeMetrics,
+			expectedMarshaler: &pmetric.JSONMarshaler{},
+		},
+		{
+			name:              "metrics encoding succeeds",
+			id:                encodingSucceedsID,
+			signal:            signalTypeMetrics,
+			expectedMarshaler: &mockBothMarshaler{},
+		},
+		{
+			name:              "metrics encoding fails",
+			id:                encodingMetricsFailID,
+			signal:            signalTypeMetrics,
+			expectsConsumeErr: "failed to marshal metrics",
 		},
 	}
 
@@ -550,17 +584,23 @@ func TestConsumeLogs(t *testing.T) {
 			require.NoError(t, errStart)
 
 			if tt.expectedMarshaler != nil {
-				if tt.signal == signalTypeTraces {
+				switch tt.signal {
+				case signalTypeTraces:
 					require.IsType(t, tt.expectedMarshaler, gcsExporter.tracesMarshaler)
-				} else {
+				case signalTypeMetrics:
+					require.IsType(t, tt.expectedMarshaler, gcsExporter.metricsMarshaler)
+				default:
 					require.IsType(t, tt.expectedMarshaler, gcsExporter.logsMarshaler)
 				}
 			}
 
 			var err error
-			if tt.signal == signalTypeTraces {
+			switch tt.signal {
+			case signalTypeTraces:
 				err = gcsExporter.ConsumeTraces(t.Context(), ptrace.NewTraces())
-			} else {
+			case signalTypeMetrics:
+				err = gcsExporter.ConsumeMetrics(t.Context(), pmetric.NewMetrics())
+			default:
 				err = gcsExporter.ConsumeLogs(t.Context(), plog.NewLogs())
 			}
 
@@ -799,6 +839,22 @@ func (*mockTraceMarshaler) MarshalTraces(_ ptrace.Traces) ([]byte, error) {
 
 var _ ptrace.Marshaler = (*mockTraceMarshaler)(nil)
 
+type mockMetricMarshaler struct {
+	extension.Extension
+	shouldFail bool
+	called     bool
+}
+
+func (m *mockMetricMarshaler) MarshalMetrics(_ pmetric.Metrics) ([]byte, error) {
+	m.called = true
+	if m.shouldFail {
+		return nil, errors.New("marshaling failed")
+	}
+	return []byte("mock-metric-content"), nil
+}
+
+var _ pmetric.Marshaler = (*mockMetricMarshaler)(nil)
+
 type mockBothMarshaler struct {
 	extension.Extension
 }
@@ -811,7 +867,12 @@ func (*mockBothMarshaler) MarshalTraces(_ ptrace.Traces) ([]byte, error) {
 	return nil, nil
 }
 
+func (*mockBothMarshaler) MarshalMetrics(_ pmetric.Metrics) ([]byte, error) {
+	return nil, nil
+}
+
 var (
-	_ plog.Marshaler   = (*mockBothMarshaler)(nil)
-	_ ptrace.Marshaler = (*mockBothMarshaler)(nil)
+	_ plog.Marshaler    = (*mockBothMarshaler)(nil)
+	_ ptrace.Marshaler  = (*mockBothMarshaler)(nil)
+	_ pmetric.Marshaler = (*mockBothMarshaler)(nil)
 )

@@ -74,11 +74,11 @@ type Athenz struct {
 }
 
 type OAuth2 struct {
-	IssuerURL  string `mapstructure:"issuer_url"`
-	ClientID   string `mapstructure:"client_id"`
-	Audience   string `mapstructure:"audience"`
-	PrivateKey string `mapstructure:"private_key"`
-	Scope      string `mapstructure:"scope"`
+	IssuerURL  string              `mapstructure:"issuer_url"`
+	ClientID   string              `mapstructure:"client_id"`
+	Audience   string              `mapstructure:"audience"`
+	PrivateKey configopaque.String `mapstructure:"private_key"`
+	Scope      string              `mapstructure:"scope"`
 }
 
 // Producer defines configuration for producer
@@ -122,7 +122,7 @@ func (cfg *Config) auth() pulsar.Authentication {
 			"clientId":   oauth2Cfg.ClientID,
 			"audience":   oauth2Cfg.Audience,
 			"scope":      oauth2Cfg.Scope,
-			"privateKey": oauth2Cfg.PrivateKey,
+			"privateKey": string(oauth2Cfg.PrivateKey),
 		})
 	}
 	if authentication.Athenz.HasValue() {
