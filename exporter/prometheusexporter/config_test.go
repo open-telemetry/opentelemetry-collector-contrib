@@ -115,19 +115,43 @@ func TestConfigValidate(t *testing.T) {
 }
 
 func TestConfigValidate_SendingQueue(t *testing.T) {
+	// Default config (HasValue() == false) must be valid when the feature gate is enabled by default.
 	cfg := createDefaultConfig().(*Config)
-	assert.NoError(t, cfg.Validate())
+	require.NoError(t, cfg.Validate())
 
-	// Setting sending_queue explicitly should be valid when the feature gate is disabled
+	// Explicitly disabling sending_queue in YAML leaves HasValue() == false and remains valid.
+	disabledQueueCfg := createDefaultConfig().(*Config)
+	cmDisabled := confmap.NewFromStringMap(map[string]any{
+		"sending_queue": map[string]any{"enabled": false},
+	})
+	require.NoError(t, cmDisabled.Unmarshal(disabledQueueCfg))
+	require.NoError(t, disabledQueueCfg.Validate())
+
+	// Setting sending_queue explicitly must fail when the feature gate is enabled by default.
 	queueCfg := exporterhelper.NewDefaultQueueConfig()
 	cfg.QueueBatchConfig = configoptional.Some(queueCfg)
-	assert.NoError(t, cfg.Validate())
+	require.ErrorContains(t, cfg.Validate(), "sending_queue is disabled by the exporter.prometheus.DisableSendingQueue feature gate")
 
-	// Setting sending_queue explicitly must fail when the feature gate is enabled
-	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusDisableSendingQueueFeatureGate, true)()
-	assert.ErrorContains(t, cfg.Validate(), "sending_queue is disabled by the exporter.prometheus.DisableSendingQueue feature gate")
+	enabledQueueCfg := createDefaultConfig().(*Config)
+	cmEnabled := confmap.NewFromStringMap(map[string]any{
+		"sending_queue": map[string]any{"enabled": true},
+	})
+	require.NoError(t, cmEnabled.Unmarshal(enabledQueueCfg))
+	require.ErrorContains(t, enabledQueueCfg.Validate(), "sending_queue is disabled by the exporter.prometheus.DisableSendingQueue feature gate")
 
-	// Default config (HasValue() == false) must remain valid even when the feature gate is enabled
+	emptyQueueCfg := createDefaultConfig().(*Config)
+	cmEmpty := confmap.NewFromStringMap(map[string]any{
+		"sending_queue": map[string]any{},
+	})
+	require.NoError(t, cmEmpty.Unmarshal(emptyQueueCfg))
+	require.ErrorContains(t, emptyQueueCfg.Validate(), "sending_queue is disabled by the exporter.prometheus.DisableSendingQueue feature gate")
+
+	// Disabling the feature gate allows explicitly setting sending_queue again.
+	defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusDisableSendingQueueFeatureGate, false)()
+	require.NoError(t, cfg.Validate())
+	require.NoError(t, enabledQueueCfg.Validate())
+	require.NoError(t, emptyQueueCfg.Validate())
+
 	defaultCfg := createDefaultConfig().(*Config)
-	assert.NoError(t, defaultCfg.Validate())
+	require.NoError(t, defaultCfg.Validate())
 }

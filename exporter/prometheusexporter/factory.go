@@ -50,13 +50,21 @@ func createMetricsExporter(
 ) (exporter.Metrics, error) {
 	pcfg := cfg.(*Config)
 
-	if pcfg.QueueBatchConfig.HasValue() {
-		set.Logger.Warn("sending_queue is deprecated and will be removed in a future release; the Prometheus exporter is pull-based and does not support queuing")
-	}
-
 	prometheus, err := newPrometheusExporter(pcfg, set)
 	if err != nil {
 		return nil, err
+	}
+
+	opts := []exporterhelper.Option{
+		exporterhelper.WithStart(prometheus.Start),
+		exporterhelper.WithShutdown(prometheus.Shutdown),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+	}
+	if !metadata.ExporterPrometheusDisableSendingQueueFeatureGate.IsEnabled() {
+		if pcfg.QueueBatchConfig.HasValue() {
+			set.Logger.Warn("sending_queue is deprecated and will be removed in a future release; the Prometheus exporter is pull-based and does not support queuing")
+		}
+		opts = append(opts, exporterhelper.WithQueue(pcfg.QueueBatchConfig))
 	}
 
 	exporter, err := exporterhelper.NewMetrics(
@@ -64,10 +72,7 @@ func createMetricsExporter(
 		set,
 		cfg,
 		prometheus.ConsumeMetrics,
-		exporterhelper.WithStart(prometheus.Start),
-		exporterhelper.WithShutdown(prometheus.Shutdown),
-		exporterhelper.WithQueue(pcfg.QueueBatchConfig),
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+		opts...,
 	)
 	if err != nil {
 		return nil, err
