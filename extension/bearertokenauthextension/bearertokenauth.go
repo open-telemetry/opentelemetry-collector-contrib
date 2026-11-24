@@ -167,15 +167,24 @@ func (b *bearerTokenAuth) updateAuthorizationValues() {
 	scanner := bufio.NewScanner(bytes.NewReader([]byte(tokenData)))
 	for scanner.Scan() {
 		line := scanner.Text()
+
 		// Split by whitespace (spaces, tabs, etc.)
 		// strings.Fields handles leading/trailing whitespace and multiple spaces automatically.
 		parts := strings.Fields(line)
 
-		// If the line has at least one part, the first part is the token.
-		// Everything else is treated as a comment/ignored.
-		if len(parts) > 0 {
-			validTokens = append(validTokens, parts[0])
+		// If the line was empty, skip it.
+		if len(parts) == 0 {
+			continue
 		}
+
+		// If the line began with a comment token, the entire line is treated as a comment.
+		if strings.HasPrefix(parts[0], "#") {
+			b.logger.Debug("bearer token file comment line detected", zap.String("line", line))
+			continue
+		}
+		// Otherwise, the first part of the line is treated as the token.
+		// Everything else is treated as a comment/ignored.
+		validTokens = append(validTokens, parts[0])
 	}
 	b.setAuthorizationValues(validTokens)
 }

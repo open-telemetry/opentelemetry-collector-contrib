@@ -123,8 +123,8 @@ github.com/golang/protobuf v1.5.4 h1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek
 github.com/golang/protobuf v1.5.4/go.mod h1:lnTiLA8Wa4RWRcIUkrtSVa5nRhsEGBg48fD6rSs7xps=
 github.com/golang/snappy v1.0.0 h1:Oy607GVXHs7RtbggtPBnr2RmDArIsAefDwvrdWvRhGs=
 github.com/golang/snappy v1.0.0/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=
-github.com/google/cadvisor v0.61.0 h1:28ZTJOleOqZJn5L/qTItdZjzzrR0pXOWK9+4BStj15Y=
-github.com/google/cadvisor v0.61.0/go.mod h1:m+enI5EJ9sRiyXFY631cdLT9tQhW2nyoUHA40ZipbRc=
+github.com/google/cadvisor v0.61.1 h1:Me4mywP1SZ1TUDZmrkNdArnLlA/0b+52SdmP/egMFCw=
+github.com/google/cadvisor v0.61.1/go.mod h1:bKA938AAbtwKn/QNM5msuxUOu0ifnRv1YQ0hkdb0yjk=
 github.com/google/cadvisor/lib v0.61.0 h1:3WJ3atigyUIYnUhjNZVsm4ifUO+ZNV0CL7BI9PuMJ9Q=
 github.com/google/cadvisor/lib v0.61.0/go.mod h1:1JPPc2D6g5jMEOuT0/RfOGcQKyn7rvsB2Lxh1alwniw=
 github.com/google/gnostic-models v0.7.0 h1:qwTtogB15McXDaNqTZdzPJRHvaVJlAl+HVQnLmJEJxo=
@@ -179,8 +179,8 @@ github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee h1:W5t00kpgFd
 github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
-github.com/opencontainers/cgroups v0.0.6 h1:tfZFWTIIGaUUFImTyuTg+Mr5x8XRiSdZESgEBW7UxuI=
-github.com/opencontainers/cgroups v0.0.6/go.mod h1:oWVzJsKK0gG9SCRBfTpnn16WcGEqDI8PAcpMGbqWxcs=
+github.com/opencontainers/cgroups v0.1.1 h1:cDpVgO8TtSMUeXnv90RqRUpotYErQ3gctHUEqUjbB84=
+github.com/opencontainers/cgroups v0.1.1/go.mod h1:poXtN186fXDk0JyEZpB7wUaxMg83TYwp1Xreeq/eu+8=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.1 h1:y0fUlFfIZhPF1W537XOLg0/fcx6zcHCJwooC2xJA040=
