@@ -480,6 +480,7 @@ require (
 	go.opentelemetry.io/contrib/detectors/azure/azurefunctions v0.19.0 // indirect
 	go.opentelemetry.io/contrib/detectors/azure/azurevm v0.19.1-0.20261116111143-95d7d47ab65a // indirect
 	go.opentelemetry.io/contrib/detectors/consul v0.0.0-20261106092722-ca27f49bc143 // indirect
+	go.opentelemetry.io/contrib/detectors/docker v0.19.1-0.20261106092722-ca27f49bc143 // indirect
 	go.opentelemetry.io/contrib/detectors/dynatrace v0.0.0-20261106092722-ca27f49bc143 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.47.0 // indirect
 	go.opentelemetry.io/contrib/detectors/hetzner v0.19.0 // indirect
