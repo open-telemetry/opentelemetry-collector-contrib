@@ -2144,10 +2144,7 @@ func TestOnDecompressTooLarge(t *testing.T) {
 		c, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, consumeFn)
 		require.NoError(t, err)
 		require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
-		t.Cleanup(func() {
-			// Cleanup runs after t.Context() is canceled. Shutdown needs a live context.
-			require.NoError(t, c.Shutdown(t.Context()))
-		})
+		defer func() { require.NoError(t, c.Shutdown(t.Context())) }()
 
 		// Wait until the partition is assigned, otherwise the offset change
 		// has nowhere to go.
