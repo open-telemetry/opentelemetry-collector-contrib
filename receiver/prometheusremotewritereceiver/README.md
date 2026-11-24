@@ -48,7 +48,7 @@ receivers:
     endpoint: 0.0.0.0:9090
 ```
 
-In addition to the `confighttp` server settings, the following settings are available:
+In addition to the `confighttp` server settings, the following settings are available (per Prometheus Remote Write 2.0, `compression_algorithms` defaults to `["snappy"]`, and the `snappy` decoder accepts Snappy block format only; framed streams require `x-snappy-framed`):
 
 | Setting | Default | Description |
 |---------|---------|-------------|

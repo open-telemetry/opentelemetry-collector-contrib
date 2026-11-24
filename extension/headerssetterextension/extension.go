@@ -161,7 +161,7 @@ func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (*headerSetterEx
 		switch {
 		case h.Value != nil:
 			s = &source.StaticSource{
-				Value: *h.Value,
+				Value: string(*h.Value),
 			}
 		case h.ValueFile != nil:
 			resolver, err := credentialsfile.NewValueResolver("", *h.ValueFile, logger)

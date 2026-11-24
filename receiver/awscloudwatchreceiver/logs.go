@@ -44,6 +44,7 @@ type logsReceiver struct {
 	profile                       string
 	imdsEndpoint                  string
 	pollInterval                  time.Duration
+	delay                         time.Duration
 	maxEventsPerRequest           int
 	initialStartTime              time.Time
 	groupNextStartTimes           map[string]time.Time
@@ -168,6 +169,7 @@ func newLogsReceiver(cfg *Config, settings receiver.Settings, consumer consumer.
 		imdsEndpoint:        cfg.IMDSEndpoint,
 		autodiscover:        autodiscover,
 		pollInterval:        cfg.Logs.PollInterval,
+		delay:               cfg.Logs.Delay,
 		initialStartTime:    startTime,
 		groupNextStartTimes: map[string]time.Time{},
 		groupRequests:       groups,
@@ -281,7 +283,9 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 func (l *logsReceiver) poll(ctx context.Context) error {
 	var errs error
 	currentGroups := make(map[string]bool)
-	endTime := nowFunc()
+	// Shift the window end back by delay so events that CloudWatch makes visible late are
+	// still inside the window when it is queried.
+	endTime := nowFunc().Add(-l.delay)
 	for _, r := range l.groupRequests {
 		// Collection stopped. The groups left in this cycle were never polled, so there is
 		// nothing new to checkpoint for them.
@@ -325,6 +329,13 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 					}
 				}
 			}
+		}
+
+		// With a delay, the window end can be at or before the start (for example right
+		// after startup). Skip the group this cycle and keep its start time.
+		if !endTime.After(startTime) {
+			l.groupNextStartTimes[groupName] = startTime
+			continue
 		}
 
 		// Poll logs for the current log group

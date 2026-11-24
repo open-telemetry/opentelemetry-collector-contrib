@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
@@ -39,33 +40,37 @@ type poolItem interface {
 type signalType string
 
 const (
-	signalTypeLogs   signalType = "logs"
-	signalTypeTraces signalType = "traces"
+	signalTypeLogs    signalType = "logs"
+	signalTypeTraces  signalType = "traces"
+	signalTypeMetrics signalType = "metrics"
 )
 
 var (
-	errNotLogsMarshaler   = errors.New("extension is not a logs marshaler")
-	errNotTracesMarshaler = errors.New("extension is not a traces marshaler")
+	errNotLogsMarshaler    = errors.New("extension is not a logs marshaler")
+	errNotTracesMarshaler  = errors.New("extension is not a traces marshaler")
+	errNotMetricsMarshaler = errors.New("extension is not a metrics marshaler")
 )
 
-var validSignals = []signalType{signalTypeLogs, signalTypeTraces}
+var validSignals = []signalType{signalTypeLogs, signalTypeTraces, signalTypeMetrics}
 
 type storageExporter struct {
-	cfg             *Config
-	logsMarshaler   plog.Marshaler
-	tracesMarshaler ptrace.Marshaler
-	storageClient   *storage.Client
-	bucketHandle    *storage.BucketHandle
-	logger          *zap.Logger
-	partitionFormat *strftime.Strftime
-	gzipWriterPool  *sync.Pool
-	zstdWriterPool  *sync.Pool
-	signal          signalType
+	cfg              *Config
+	logsMarshaler    plog.Marshaler
+	tracesMarshaler  ptrace.Marshaler
+	metricsMarshaler pmetric.Marshaler
+	storageClient    *storage.Client
+	bucketHandle     *storage.BucketHandle
+	logger           *zap.Logger
+	partitionFormat  *strftime.Strftime
+	gzipWriterPool   *sync.Pool
+	zstdWriterPool   *sync.Pool
+	signal           signalType
 }
 
 var (
-	_ exporter.Logs   = (*storageExporter)(nil)
-	_ exporter.Traces = (*storageExporter)(nil)
+	_ exporter.Logs    = (*storageExporter)(nil)
+	_ exporter.Traces  = (*storageExporter)(nil)
+	_ exporter.Metrics = (*storageExporter)(nil)
 )
 
 func newGCSExporter(
@@ -94,7 +99,7 @@ func newStorageExporter(
 ) (*storageExporter, error) {
 	// Validate signal type
 	switch signal {
-	case signalTypeLogs, signalTypeTraces: // valid
+	case signalTypeLogs, signalTypeTraces, signalTypeMetrics: // valid
 	default:
 		return nil, fmt.Errorf("signal type %q not recognized, valid values are %v", signal, validSignals)
 	}
@@ -159,6 +164,7 @@ func (s *storageExporter) Start(ctx context.Context, host component.Host) error 
 	// Initialize default marshalers
 	s.logsMarshaler = &plog.JSONMarshaler{}
 	s.tracesMarshaler = &ptrace.JSONMarshaler{}
+	s.metricsMarshaler = &pmetric.JSONMarshaler{}
 
 	// Load encoding extension if configured
 	if s.cfg.Encoding != nil {
@@ -178,6 +184,16 @@ func (s *storageExporter) Start(ctx context.Context, host component.Host) error 
 				s.logger.Warn("Configured encoding extension does not support traces, falling back to JSON marshaler", zap.String("encoding", s.cfg.Encoding.String()))
 			} else {
 				s.tracesMarshaler = tracesEncoding
+			}
+		case signalTypeMetrics:
+			metricsEncoding, err := loadExtension[pmetric.Marshaler](host, *s.cfg.Encoding, "metrics marshaler", errNotMetricsMarshaler)
+			if err != nil {
+				if !errors.Is(err, errNotMetricsMarshaler) {
+					return fmt.Errorf("failed to load metrics extension: %w", err)
+				}
+				s.logger.Warn("Configured encoding extension does not support metrics, falling back to JSON marshaler", zap.String("encoding", s.cfg.Encoding.String()))
+			} else {
+				s.metricsMarshaler = metricsEncoding
 			}
 		}
 	}
@@ -262,6 +278,23 @@ func (s *storageExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 
 	if err = s.uploadFile(ctx, buf, attributePartition); err != nil {
 		return fmt.Errorf("failed to upload traces: %w", err)
+	}
+	return nil
+}
+
+func (s *storageExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	buf, err := s.metricsMarshaler.MarshalMetrics(md)
+	if err != nil {
+		return fmt.Errorf("failed to marshal metrics: %w", err)
+	}
+
+	attributePartition := ""
+	if md.ResourceMetrics().Len() > 0 {
+		attributePartition = s.attributePartition(md.ResourceMetrics().At(0).Resource())
+	}
+
+	if err = s.uploadFile(ctx, buf, attributePartition); err != nil {
+		return fmt.Errorf("failed to upload metrics: %w", err)
 	}
 	return nil
 }
