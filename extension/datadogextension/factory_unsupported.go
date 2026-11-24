@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build aix || freebsd || solaris
+//go:build freebsd || solaris
 
 package datadogextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension"
 
@@ -41,5 +41,5 @@ func NewFactoryWithOptions(...Option) extension.Factory {
 }
 
 func createUnsupported(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
-	return nil, errors.New("datadogextension is not supported on aix, freebsd, or solaris")
+	return nil, errors.New("datadogextension is not supported on freebsd or solaris")
 }
