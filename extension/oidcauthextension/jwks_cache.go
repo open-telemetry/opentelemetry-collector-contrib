@@ -43,7 +43,6 @@ type expiringRemoteKeySet struct {
 	logger   *zap.Logger
 	now      func() time.Time
 	snapshot atomic.Pointer[jwksSnapshot]
-	ready    chan struct{}
 	mu       sync.Mutex
 	inflight *jwksRefresh
 	stopped  bool
@@ -52,10 +51,7 @@ type expiringRemoteKeySet struct {
 
 func newExpiringRemoteKeySet(ctx context.Context, url string, client *http.Client, logger *zap.Logger) *expiringRemoteKeySet {
 	ctx, cancel := context.WithCancel(context.WithoutCancel(ctx))
-	s := &expiringRemoteKeySet{ctx: ctx, cancel: cancel, url: url, client: client, logger: logger, now: time.Now, ready: make(chan struct{})}
-	s.wg.Add(1)
-	go s.run()
-	return s
+	return &expiringRemoteKeySet{ctx: ctx, cancel: cancel, url: url, client: client, logger: logger, now: time.Now}
 }
 
 func (s *expiringRemoteKeySet) stop() {
@@ -67,12 +63,6 @@ func (s *expiringRemoteKeySet) stop() {
 }
 
 func (s *expiringRemoteKeySet) run() {
-	defer s.wg.Done()
-	select {
-	case <-s.ctx.Done():
-		return
-	case <-s.ready:
-	}
 	timer := time.NewTimer(jwksRefreshInterval)
 	defer timer.Stop()
 	for {
@@ -98,8 +88,12 @@ func (s *expiringRemoteKeySet) VerifySignature(ctx context.Context, token string
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
+	signed, err := jose.ParseSignedCompact(token, allSupportedAlgorithms)
+	if err != nil {
+		return nil, err
+	}
 	if snapshot := s.snapshot.Load(); snapshot != nil && s.now().Before(snapshot.expiresAt) {
-		if payload, err := verifyJWKS(snapshot.keys, token); err == nil {
+		if payload, err := verifyJWKS(snapshot.keys, signed); err == nil {
 			return payload, nil
 		}
 	}
@@ -112,7 +106,7 @@ func (s *expiringRemoteKeySet) VerifySignature(ctx context.Context, token string
 	if snapshot == nil || !s.now().Before(snapshot.expiresAt) {
 		return nil, errors.New("JWKS cache expired")
 	}
-	return verifyJWKS(snapshot.keys, token)
+	return verifyJWKS(snapshot.keys, signed)
 }
 
 func (s *expiringRemoteKeySet) refresh(ctx context.Context) error {
@@ -150,7 +144,8 @@ func (s *expiringRemoteKeySet) fetchAndPublish(call *jwksRefresh) {
 		initial := s.snapshot.Load() == nil
 		s.snapshot.Store(&jwksSnapshot{keys: keys, expiresAt: s.now().Add(jwksCacheTTL)})
 		if initial {
-			close(s.ready)
+			// Register the worker under the same lock stop uses before waiting.
+			s.wg.Go(s.run)
 		}
 	}
 	call.err = err
@@ -210,11 +205,7 @@ func (s *expiringRemoteKeySet) fetch() ([]jose.JSONWebKey, error) {
 	return keys, nil
 }
 
-func verifyJWKS(keys []jose.JSONWebKey, token string) ([]byte, error) {
-	signed, err := jose.ParseSignedCompact(token, allSupportedAlgorithms)
-	if err != nil {
-		return nil, err
-	}
+func verifyJWKS(keys []jose.JSONWebKey, signed *jose.JSONWebSignature) ([]byte, error) {
 	keyID := signed.Signatures[0].Header.KeyID
 	for i := range keys {
 		if keyID == "" || keys[i].KeyID == keyID {
