@@ -5,11 +5,13 @@ package coralogixexporter
 
 import (
 	"errors"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -17,6 +19,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -38,8 +43,8 @@ func TestSignalExporter_CanSend_AfterRateLimitTimeout(t *testing.T) {
 	require.NoError(t, err)
 
 	// Add two rate limit errors
-	exp.EnableRateLimit()
-	exp.EnableRateLimit()
+	exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
+	exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
 
 	assert.False(t, exp.canSend())
 
@@ -65,8 +70,8 @@ func TestSignalExporter_CanSend_FeatureDisabled(t *testing.T) {
 	exp, err := newSignalExporter(cfg, exportertest.NewNopSettings(exportertest.NopType), "", nil)
 	require.NoError(t, err)
 
-	exp.EnableRateLimit()
-	exp.EnableRateLimit()
+	exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
+	exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
 
 	assert.True(t, exp.canSend())
 }
@@ -86,8 +91,8 @@ func TestSignalExporter_CanSend_BeforeRateLimitTimeout(t *testing.T) {
 	require.NoError(t, err)
 
 	// Add two rate limit errors
-	exp.EnableRateLimit()
-	exp.EnableRateLimit()
+	exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
+	exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
 
 	// Mock the time to be before the rate limit timeout (30 seconds ago)
 	now := time.Now().Add(-30 * time.Second)
@@ -131,14 +136,19 @@ func TestProcessError(t *testing.T) {
 		},
 		{
 			name: "throttled error returns throttle retry",
-			err:  status.Error(codes.ResourceExhausted, "resource exhausted"),
-			expected: func() error {
+			err: func() error {
 				st := status.New(codes.ResourceExhausted, "resource exhausted")
 				st, _ = st.WithDetails(&errdetails.RetryInfo{
 					RetryDelay: durationpb.New(time.Second),
 				})
-				return exporterhelper.NewThrottleRetry(st.Err(), time.Second)
+				return st.Err()
 			}(),
+			expected: exporterhelper.NewThrottleRetry(status.Error(codes.ResourceExhausted, "resource exhausted"), time.Second),
+		},
+		{
+			name:     "unauthenticated wraps as authentication failed",
+			err:      status.Error(codes.Unauthenticated, "bad key"),
+			expected: consumererror.NewPermanent(errors.New("authentication failed (private key rotated or invalid)")),
 		},
 	}
 
@@ -147,6 +157,17 @@ func TestProcessError(t *testing.T) {
 			exp := &signalExporter{
 				config: &Config{
 					Protocol: grpcProtocol,
+					RateLimiter: RateLimiterConfig{
+						Enabled:   true,
+						Threshold: 10,
+						Duration:  time.Minute,
+					},
+				},
+				settings: componenttest.NewNopTelemetrySettings(),
+				rateError: rateError{
+					enabled:   true,
+					threshold: 10,
+					duration:  time.Minute,
 				},
 			}
 			err := exp.processError(tt.err)
@@ -156,12 +177,317 @@ func TestProcessError(t *testing.T) {
 				assert.Error(t, err)
 				if consumererror.IsPermanent(err) {
 					assert.True(t, consumererror.IsPermanent(err))
+					if tt.name == "unauthenticated wraps as authentication failed" {
+						assert.Contains(t, err.Error(), "authentication failed (private key rotated or invalid)")
+						assert.NotContains(t, err.Error(), "rate limit exceeded")
+					}
 				} else {
 					assert.Contains(t, err.Error(), tt.expected.Error())
 				}
 			}
 		})
 	}
+}
+
+func TestFakeBadSituations_LogMessages(t *testing.T) {
+	cases := []struct {
+		name            string
+		protocol        string
+		threshold       int
+		inject          func(*signalExporter)
+		wantOpenMsg     string
+		wantStatus      string
+		wantReason      string
+		wantHint        bool
+		wantErrSubstr   string
+		forbidErrSubstr string
+	}{
+		{
+			name:      "grpc_unauthenticated",
+			protocol:  grpcProtocol,
+			threshold: 2,
+			inject: func(e *signalExporter) {
+				err := status.Error(codes.Unauthenticated, "bad key")
+				for range e.rateError.threshold {
+					_ = e.processError(err)
+				}
+			},
+			wantOpenMsg:     "Authentication with Coralogix failed; dropping data until the key is fixed",
+			wantStatus:      "Unauthenticated",
+			wantReason:      "authentication",
+			wantHint:        true,
+			wantErrSubstr:   "authentication failed (private key rotated or invalid)",
+			forbidErrSubstr: "rate limit exceeded",
+		},
+		{
+			name:      "grpc_permission_denied",
+			protocol:  grpcProtocol,
+			threshold: 2,
+			inject: func(e *signalExporter) {
+				err := status.Error(codes.PermissionDenied, "no access")
+				for range e.rateError.threshold {
+					_ = e.processError(err)
+				}
+			},
+			wantOpenMsg:     "Authentication with Coralogix failed; dropping data until the key is fixed",
+			wantStatus:      "PermissionDenied",
+			wantReason:      "authentication",
+			wantHint:        true,
+			wantErrSubstr:   "authentication failed (private key rotated or invalid)",
+			forbidErrSubstr: "rate limit exceeded",
+		},
+		{
+			name:      "http_401",
+			protocol:  httpProtocol,
+			threshold: 2,
+			inject: func(e *signalExporter) {
+				err := &httpError{StatusCode: http.StatusUnauthorized, Message: "unauthorized"}
+				for range e.rateError.threshold {
+					_ = e.processError(err)
+				}
+			},
+			wantOpenMsg:     "Authentication with Coralogix failed; dropping data until the key is fixed",
+			wantStatus:      "401 Unauthorized",
+			wantReason:      "authentication",
+			wantHint:        true,
+			wantErrSubstr:   "authentication failed (private key rotated or invalid)",
+			forbidErrSubstr: "rate limit exceeded",
+		},
+		{
+			name:      "http_403",
+			protocol:  httpProtocol,
+			threshold: 2,
+			inject: func(e *signalExporter) {
+				err := &httpError{StatusCode: http.StatusForbidden, Message: "forbidden"}
+				for range e.rateError.threshold {
+					_ = e.processError(err)
+				}
+			},
+			wantOpenMsg:     "Authentication with Coralogix failed; dropping data until the key is fixed",
+			wantStatus:      "403 Forbidden",
+			wantReason:      "authentication",
+			wantHint:        true,
+			wantErrSubstr:   "authentication failed (private key rotated or invalid)",
+			forbidErrSubstr: "rate limit exceeded",
+		},
+		{
+			name:      "grpc_quota_resource_exhausted",
+			protocol:  grpcProtocol,
+			threshold: 2,
+			inject: func(e *signalExporter) {
+				err := status.Error(codes.ResourceExhausted, "quota")
+				for range e.rateError.threshold {
+					_ = e.processError(err)
+				}
+			},
+			wantOpenMsg:     "Coralogix quota exceeded; dropping data",
+			wantStatus:      "ResourceExhausted",
+			wantReason:      "quota",
+			wantHint:        false,
+			wantErrSubstr:   "quota exceeded",
+			forbidErrSubstr: "rate limit exceeded",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			core, logs := observer.New(zapcore.InfoLevel)
+			settings := componenttest.NewNopTelemetrySettings()
+			settings.Logger = zap.New(core)
+
+			exp := &signalExporter{
+				config: &Config{
+					Protocol: tc.protocol,
+					RateLimiter: RateLimiterConfig{
+						Enabled:   true,
+						Threshold: tc.threshold,
+						Duration:  time.Minute,
+					},
+				},
+				settings: settings,
+				rateError: rateError{
+					enabled:   true,
+					threshold: tc.threshold,
+					duration:  time.Minute,
+				},
+			}
+
+			tc.inject(exp)
+			require.False(t, exp.canSend())
+
+			windowErr := exp.rateError.GetError()
+			require.Error(t, windowErr)
+			assert.Contains(t, windowErr.Error(), tc.wantErrSubstr)
+			assert.NotContains(t, windowErr.Error(), tc.forbidErrSubstr)
+
+			errorLogs := logs.FilterLevelExact(zapcore.ErrorLevel).All()
+			require.Len(t, errorLogs, 1)
+			assert.Equal(t, tc.wantOpenMsg, errorLogs[0].Message)
+			fields := errorLogs[0].ContextMap()
+			assert.Equal(t, tc.wantReason, fields["reason"])
+			assert.Equal(t, tc.wantStatus, fields["status"])
+			if tc.wantHint {
+				assert.Equal(t, "check private_key and restart the collector after a key rotation", fields["hint"])
+			} else {
+				_, hasHint := fields["hint"]
+				assert.False(t, hasHint)
+			}
+
+			t.Logf("open_log msg=%q fields=%v", errorLogs[0].Message, fields)
+			t.Logf("window_err=%q", windowErr.Error())
+
+			past := time.Now().Add(-2 * time.Minute)
+			exp.rateError.timestamp.Store(&past)
+			require.True(t, exp.canSend())
+			closeLogs := logs.FilterMessage("Drop window closed; resuming sends to Coralogix").All()
+			require.Len(t, closeLogs, 1)
+			assert.Equal(t, tc.wantReason, closeLogs[0].ContextMap()["reason"])
+			t.Logf("close_log msg=%q fields=%v", closeLogs[0].Message, closeLogs[0].ContextMap())
+		})
+	}
+}
+
+func TestProcessError_DefaultProtocolIsGRPC(t *testing.T) {
+	exp := &signalExporter{
+		config: &Config{
+			Protocol: "", // collector default when protocol is omitted
+			RateLimiter: RateLimiterConfig{
+				Enabled:   true,
+				Threshold: 1,
+				Duration:  time.Minute,
+			},
+		},
+		settings: componenttest.NewNopTelemetrySettings(),
+		rateError: rateError{
+			enabled:   true,
+			threshold: 1,
+			duration:  time.Minute,
+		},
+	}
+
+	err := exp.processError(status.Error(codes.Unauthenticated, "bad key"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "authentication failed (private key rotated or invalid)")
+	assert.True(t, exp.rateError.isRateLimited(), "empty protocol must still open the rate limiter window")
+}
+
+func TestProcessError_AuthOpensDropWindowAndLogsOnce(t *testing.T) {
+	core, logs := observer.New(zapcore.InfoLevel)
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.Logger = zap.New(core)
+
+	exp := &signalExporter{
+		config: &Config{
+			Protocol: grpcProtocol,
+			RateLimiter: RateLimiterConfig{
+				Enabled:   true,
+				Threshold: 3,
+				Duration:  time.Minute,
+			},
+		},
+		settings: settings,
+		rateError: rateError{
+			enabled:   true,
+			threshold: 3,
+			duration:  time.Minute,
+		},
+	}
+
+	authErr := status.Error(codes.Unauthenticated, "bad key")
+	for range exp.rateError.threshold {
+		err := exp.processError(authErr)
+		require.Error(t, err)
+		assert.True(t, consumererror.IsPermanent(err))
+		assert.Contains(t, err.Error(), "authentication failed (private key rotated or invalid)")
+		assert.NotContains(t, err.Error(), "rate limit exceeded")
+	}
+
+	assert.False(t, exp.canSend())
+	windowErr := exp.rateError.GetError()
+	require.Error(t, windowErr)
+	assert.Contains(t, windowErr.Error(), "authentication failed")
+	assert.NotContains(t, windowErr.Error(), "rate limit")
+
+	errorLogs := logs.FilterLevelExact(zapcore.ErrorLevel).All()
+	require.Len(t, errorLogs, 1)
+	assert.Equal(t, "Authentication with Coralogix failed; dropping data until the key is fixed", errorLogs[0].Message)
+	fields := errorLogs[0].ContextMap()
+	assert.Equal(t, "authentication", fields["reason"])
+	assert.Equal(t, "Unauthenticated", fields["status"])
+	assert.Equal(t, "check private_key and restart the collector after a key rotation", fields["hint"])
+}
+
+func TestProcessError_HTTPAuthOpensDropWindowAndLogsOnce(t *testing.T) {
+	core, logs := observer.New(zapcore.InfoLevel)
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.Logger = zap.New(core)
+
+	exp := &signalExporter{
+		config: &Config{
+			Protocol: httpProtocol,
+			RateLimiter: RateLimiterConfig{
+				Enabled:   true,
+				Threshold: 2,
+				Duration:  time.Minute,
+			},
+		},
+		settings: settings,
+		rateError: rateError{
+			enabled:   true,
+			threshold: 2,
+			duration:  time.Minute,
+		},
+	}
+
+	authErr := &httpError{
+		StatusCode: http.StatusUnauthorized,
+		Message:    "unauthorized",
+	}
+	for range exp.rateError.threshold {
+		err := exp.processError(authErr)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "authentication failed (private key rotated or invalid)")
+		assert.NotContains(t, err.Error(), "rate limit exceeded")
+	}
+
+	assert.False(t, exp.canSend())
+	errorLogs := logs.FilterLevelExact(zapcore.ErrorLevel).All()
+	require.Len(t, errorLogs, 1)
+	assert.Equal(t, "Authentication with Coralogix failed; dropping data until the key is fixed", errorLogs[0].Message)
+	fields := errorLogs[0].ContextMap()
+	assert.Equal(t, "authentication", fields["reason"])
+	assert.Equal(t, "401 Unauthorized", fields["status"])
+}
+
+func TestSignalExporter_CanSend_LogsClose(t *testing.T) {
+	core, logs := observer.New(zapcore.InfoLevel)
+	settings := component.TelemetrySettings{Logger: zap.New(core)}
+
+	cfg := &Config{
+		Domain:     "test.domain.com",
+		PrivateKey: "test-key",
+		RateLimiter: RateLimiterConfig{
+			Enabled:   true,
+			Threshold: 1,
+			Duration:  time.Minute,
+		},
+	}
+
+	exp, err := newSignalExporter(cfg, exportertest.NewNopSettings(exportertest.NopType), "", nil)
+	require.NoError(t, err)
+	exp.settings = settings
+
+	exp.EnableRateLimit(dropReasonAuth, "Unauthenticated")
+	assert.False(t, exp.canSend())
+
+	past := time.Now().Add(-2 * time.Minute)
+	exp.rateError.timestamp.Store(&past)
+
+	assert.True(t, exp.canSend())
+	infoLogs := logs.FilterLevelExact(zapcore.InfoLevel).All()
+	require.Len(t, infoLogs, 1)
+	assert.Equal(t, "Drop window closed; resuming sends to Coralogix", infoLogs[0].Message)
+	assert.Equal(t, "authentication", infoLogs[0].ContextMap()["reason"])
 }
 
 func TestSignalExporter_AuthorizationHeader(t *testing.T) {

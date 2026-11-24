@@ -119,6 +119,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					FlinkJobID:         ResourceAttributeConfig{Enabled: true},
 					FlinkJobName:       ResourceAttributeConfig{Enabled: true},
 					FlinkResourceType:  ResourceAttributeConfig{Enabled: true},
 					FlinkSubtaskIndex:  ResourceAttributeConfig{Enabled: true},
@@ -225,6 +226,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
+					FlinkJobID:         ResourceAttributeConfig{Enabled: false},
 					FlinkJobName:       ResourceAttributeConfig{Enabled: false},
 					FlinkResourceType:  ResourceAttributeConfig{Enabled: false},
 					FlinkSubtaskIndex:  ResourceAttributeConfig{Enabled: false},
@@ -290,6 +292,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
+				FlinkJobID:         ResourceAttributeConfig{Enabled: true},
 				FlinkJobName:       ResourceAttributeConfig{Enabled: true},
 				FlinkResourceType:  ResourceAttributeConfig{Enabled: true},
 				FlinkSubtaskIndex:  ResourceAttributeConfig{Enabled: true},
@@ -301,6 +304,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
+				FlinkJobID:         ResourceAttributeConfig{Enabled: false},
 				FlinkJobName:       ResourceAttributeConfig{Enabled: false},
 				FlinkResourceType:  ResourceAttributeConfig{Enabled: false},
 				FlinkSubtaskIndex:  ResourceAttributeConfig{Enabled: false},

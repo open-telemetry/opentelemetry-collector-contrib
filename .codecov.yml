@@ -513,6 +513,10 @@ component_management:
     name: pkg_ottl_contexts_xprofile
     paths:
     - pkg/ottl/contexts/xprofile/**
+  - component_id: pkg_ottl_contexts_xspanlink
+    name: pkg_ottl_contexts_xspanlink
+    paths:
+    - pkg/ottl/contexts/xspanlink/**
   - component_id: pkg_ottl_xottl
     name: pkg_ottl_xottl
     paths:
@@ -741,6 +745,10 @@ component_management:
     name: processor_transform
     paths:
     - processor/transformprocessor/**
+  - component_id: processor_transformprocessor_xtransform
+    name: processor_transformprocessor_xtransform
+    paths:
+    - processor/transformprocessor/xtransformprocessor/**
   - component_id: processor_unroll
     name: processor_unroll
     paths:

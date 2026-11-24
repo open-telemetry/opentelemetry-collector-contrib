@@ -234,30 +234,29 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			require.Equal(t, 0, obs.Len())
 			require.NoError(t, err)
 
-			var actualMetrics pmetric.Metrics
-			require.EventuallyWithT(t, func(c *assert.CollectT) {
-				actualMetrics, err = scraper.scrape(t.Context())
-				assert.NoError(c, err)
-			}, 20*time.Second, 1*time.Second)
+			defer func() {
+				require.NoError(t, scraper.shutdown(t.Context()))
+			}()
 
-			err = scraper.shutdown(t.Context())
-
-			require.NoError(t, err)
 			expectedMetrics, err := golden.ReadMetrics(test.expectedMetricPath)
 			require.NoError(t, err)
 
-			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-				// Scraping test host means static values, timestamps and instance counts are unreliable. ScopeMetrics order is also unpredictable.
-				// The check only takes the first instance of multi-instance counters and assumes that the other instances would be included.
-				pmetrictest.IgnoreSubsequentDataPoints("cpu.idle"),
-				pmetrictest.IgnoreSubsequentDataPoints("processor.time"),
-				pmetrictest.IgnoreMetricAttributeValue("instance", "processor.time"),
-				pmetrictest.IgnoreMetricsOrder(),
-				pmetrictest.IgnoreScopeMetricsOrder(),
-				pmetrictest.IgnoreResourceMetricsOrder(),
-				pmetrictest.IgnoreMetricValues(),
-				pmetrictest.IgnoreTimestamp(),
-			))
+			require.EventuallyWithT(t, func(c *assert.CollectT) {
+				actualMetrics, err := scraper.scrape(t.Context())
+				assert.NoError(c, err)
+				assert.NoError(c, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+					// Scraping test host means static values, timestamps and instance counts are unreliable. ScopeMetrics order is also unpredictable.
+					// The check only takes the first instance of multi-instance counters and assumes that the other instances would be included.
+					pmetrictest.IgnoreSubsequentDataPoints("cpu.idle"),
+					pmetrictest.IgnoreSubsequentDataPoints("processor.time"),
+					pmetrictest.IgnoreMetricAttributeValue("instance", "processor.time"),
+					pmetrictest.IgnoreMetricsOrder(),
+					pmetrictest.IgnoreScopeMetricsOrder(),
+					pmetrictest.IgnoreResourceMetricsOrder(),
+					pmetrictest.IgnoreMetricValues(),
+					pmetrictest.IgnoreTimestamp(),
+				))
+			}, 20*time.Second, 1*time.Second)
 		})
 	}
 }

@@ -674,7 +674,7 @@ func TestValidate(t *testing.T) {
 			expectedErrorFunc: simpleError("healthcheck::endpoint must contain a valid port number, got -1"),
 		},
 		{
-			name: "Package with unsupported verifier type (cosign not yet supported)",
+			name: "Package with unsupported verifier type",
 			config: Supervisor{
 				Server: OpAMPServer{
 					Endpoint: "wss://localhost:9090/opamp",
@@ -687,7 +687,7 @@ func TestValidate(t *testing.T) {
 					BootstrapTimeout:        5 * time.Second,
 					StopGracePeriod:         10 * time.Second,
 					Package: AgentPackage{
-						Verifier: Verifier{Type: "cosign"},
+						Verifier: Verifier{Type: "gpg"},
 					},
 				},
 				Capabilities: Capabilities{AcceptsRemoteConfig: true},
@@ -695,6 +695,92 @@ func TestValidate(t *testing.T) {
 				HealthCheck:  defaultHealthCheck,
 			},
 			expectedErrorFunc: simpleError("unsupported verifier type"),
+		},
+		{
+			name: "Package with cosign identity specifying both subject and subject_regex",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					TLS:      tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
+					Package: AgentPackage{
+						Verifier: Verifier{
+							Type: VerifierTypeCosign,
+							Cosign: CosignSignatureVerifier{
+								Identities: []AgentSignatureIdentity{{
+									Issuer:        "https://token.actions.githubusercontent.com",
+									Subject:       "https://github.com/example/repo/.github/workflows/release.yaml@refs/tags/v1.0.0",
+									SubjectRegExp: "^https://github.com/example/.*$",
+								}},
+							},
+						},
+					},
+				},
+				Capabilities: Capabilities{AcceptsRemoteConfig: true},
+				Storage:      Storage{Directory: "/etc/opamp-supervisor/storage"},
+				HealthCheck:  defaultHealthCheck,
+			},
+			expectedErrorFunc: simpleError("agent::package::verifier::cosign::identities::0: cannot specify both subject and subject_regex"),
+		},
+		{
+			name: "Package with cosign verifier and no identities",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					TLS:      tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
+					Package: AgentPackage{
+						Verifier: Verifier{Type: VerifierTypeCosign},
+					},
+				},
+				Capabilities: Capabilities{AcceptsRemoteConfig: true},
+				Storage:      Storage{Directory: "/etc/opamp-supervisor/storage"},
+				HealthCheck:  defaultHealthCheck,
+			},
+			expectedErrorFunc: simpleError("agent::package::verifier: cosign::identities must not be empty"),
+		},
+		{
+			name: "Package with valid cosign verifier is not yet supported",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					TLS:      tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+					StopGracePeriod:         10 * time.Second,
+					Package: AgentPackage{
+						Verifier: Verifier{
+							Type: VerifierTypeCosign,
+							Cosign: CosignSignatureVerifier{
+								Identities: []AgentSignatureIdentity{{
+									Issuer:  "https://token.actions.githubusercontent.com",
+									Subject: "https://github.com/example/repo/.github/workflows/release.yaml@refs/tags/v1.0.0",
+								}},
+							},
+						},
+					},
+				},
+				Capabilities: Capabilities{AcceptsRemoteConfig: true},
+				Storage:      Storage{Directory: "/etc/opamp-supervisor/storage"},
+				HealthCheck:  defaultHealthCheck,
+			},
+			expectedErrorFunc: simpleError("agent::package::verifier is not yet supported"),
 		},
 	}
 
@@ -1031,11 +1117,6 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig,
 		},
 		{
-			name:                      "Deprecated ReportsRemoteConfig has no effect",
-			capabilities:              Capabilities{ReportsRemoteConfig: true},
-			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
-		},
-		{
 			name: "Many capabilities",
 			capabilities: Capabilities{
 				AcceptsRemoteConfig:            true,
@@ -1046,7 +1127,6 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				ReportsOwnLogs:                 true,
 				ReportsOwnTraces:               true,
 				ReportsHealth:                  true,
-				ReportsRemoteConfig:            true,
 				ReportsAvailableComponents:     true,
 				ReportsHeartbeat:               true,
 				AcceptsPackages:                true,
@@ -1073,16 +1153,6 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 			require.Equal(t, tc.expectedAgentCapabilities, tc.capabilities.SupportedCapabilities())
 		})
 	}
-}
-
-func TestCapabilities_Validate(t *testing.T) {
-	require.NoError(t, Capabilities{AcceptsRemoteConfig: true}.Validate())
-	require.ErrorContains(t, Capabilities{ReportsRemoteConfig: true}.Validate(), "reports_remote_config is deprecated")
-
-	// confmap.Validate at the supervisor-config root surfaces the error so NewSupervisor fails.
-	cfg := DefaultSupervisor()
-	cfg.Capabilities.ReportsRemoteConfig = true
-	require.ErrorContains(t, confmap.Validate(cfg), "reports_remote_config is deprecated")
 }
 
 func TestLoad(t *testing.T) {
@@ -1151,7 +1221,6 @@ capabilities:
   reports_own_metrics: false
   reports_health: false
   accepts_remote_config: true
-  reports_remote_config: true
   accepts_restart_command: true
   accepts_opamp_connection_settings: true
   reports_heartbeat: true
@@ -1163,6 +1232,7 @@ agent:
   executable: %s
   description:
     include_resource_attributes: true
+    include_supervisor_instance_id: true
     identifying_attributes:
       "service.name": "io.opentelemetry.collector"
     non_identifying_attributes:
@@ -1201,7 +1271,6 @@ telemetry:
 						ReportsOwnTraces:               false,
 						ReportsHealth:                  false,
 						AcceptsRemoteConfig:            true,
-						ReportsRemoteConfig:            true,
 						AcceptsRestartCommand:          true,
 						AcceptsOpAMPConnectionSettings: true,
 						ReportsHeartbeat:               true,
@@ -1212,7 +1281,8 @@ telemetry:
 					Agent: Agent{
 						Executable: executablePath,
 						Description: AgentDescription{
-							IncludeResourceAttributes: true,
+							IncludeResourceAttributes:   true,
+							IncludeSupervisorInstanceID: true,
 							IdentifyingAttributes: map[string]string{
 								"service.name": "io.opentelemetry.collector",
 							},
@@ -1290,6 +1360,25 @@ agent:
 			desc: "Empty Config Filepath",
 			testFunc: func(t *testing.T) {
 				runSupervisorConfigLoadTest(t, "", Supervisor{}, errors.New("path to config file cannot be empty"))
+			},
+		},
+		{
+			desc: "Removed reports_remote_config Key",
+			testFunc: func(t *testing.T) {
+				config := `
+server:
+  endpoint: ws://localhost/v1/opamp
+
+capabilities:
+  reports_remote_config: true
+
+agent:
+  executable: %s
+`
+				config = fmt.Sprintf(config, executablePath)
+
+				cfgPath := setupSupervisorConfigFile(t, tmpDir, config)
+				runSupervisorConfigLoadTest(t, cfgPath, Supervisor{}, errors.New("has invalid keys: reports_remote_config"))
 			},
 		},
 		{

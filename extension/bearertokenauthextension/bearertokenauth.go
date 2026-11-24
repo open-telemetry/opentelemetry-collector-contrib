@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 	"google.golang.org/grpc/credentials"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile"
@@ -54,6 +55,9 @@ type bearerTokenAuth struct {
 	header                    string
 	scheme                    string
 	authorizationValuesAtomic atomic.Value
+	// tokensAtomic holds the same tokens as authorizationValuesAtomic, without
+	// the scheme prefix, for consumers that need the bare token.
+	tokensAtomic atomic.Value
 
 	tokenResolver credentialsfile.ValueResolver
 	logger        *zap.Logger
@@ -163,15 +167,24 @@ func (b *bearerTokenAuth) updateAuthorizationValues() {
 	scanner := bufio.NewScanner(bytes.NewReader([]byte(tokenData)))
 	for scanner.Scan() {
 		line := scanner.Text()
+
 		// Split by whitespace (spaces, tabs, etc.)
 		// strings.Fields handles leading/trailing whitespace and multiple spaces automatically.
 		parts := strings.Fields(line)
 
-		// If the line has at least one part, the first part is the token.
-		// Everything else is treated as a comment/ignored.
-		if len(parts) > 0 {
-			validTokens = append(validTokens, parts[0])
+		// If the line was empty, skip it.
+		if len(parts) == 0 {
+			continue
 		}
+
+		// If the line began with a comment token, the entire line is treated as a comment.
+		if strings.HasPrefix(parts[0], "#") {
+			b.logger.Debug("bearer token file comment line detected", zap.String("line", line))
+			continue
+		}
+		// Otherwise, the first part of the line is treated as the token.
+		// Everything else is treated as a comment/ignored.
+		validTokens = append(validTokens, parts[0])
 	}
 	b.setAuthorizationValues(validTokens)
 }
@@ -186,6 +199,7 @@ func (b *bearerTokenAuth) setAuthorizationValues(tokens []string) {
 		}
 	}
 	b.authorizationValuesAtomic.Store(values)
+	b.tokensAtomic.Store(tokens)
 }
 
 // authorizationValues returns the Authorization header/metadata values
@@ -202,6 +216,17 @@ func (b *bearerTokenAuth) authorizationValue() string {
 		return values[0] // Return the first token
 	}
 	return ""
+}
+
+// Token returns the first configured token, without the scheme, so the extension
+// can be used as an OAuth2 token source (e.g. Kafka `oauthbearer_token_source`).
+// It implements oauth2clientauthextension.ContextTokenSource interface.
+func (b *bearerTokenAuth) Token(context.Context) (*oauth2.Token, error) {
+	tokens, _ := b.tokensAtomic.Load().([]string)
+	if len(tokens) == 0 || tokens[0] == "" {
+		return nil, errors.New("no bearer token available")
+	}
+	return &oauth2.Token{AccessToken: tokens[0]}, nil
 }
 
 // Shutdown of BearerTokenAuth does nothing and returns nil

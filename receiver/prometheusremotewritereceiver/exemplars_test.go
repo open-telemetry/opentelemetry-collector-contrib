@@ -6,13 +6,14 @@ package prometheusremotewritereceiver // import "github.com/open-telemetry/opent
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
-	promremote "github.com/prometheus/prometheus/storage/remote"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
@@ -29,6 +30,7 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 		req               *writev2.Request
 		expectedExemplars int
 		expectedGroups    int
+		expectedErr       string
 		expectedWarnMsgs  []string
 	}{
 		{
@@ -56,6 +58,7 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 			},
 			expectedExemplars: 0,
 			expectedGroups:    1,
+			expectedErr:       `error converting exemplar label refs for metric "request_duration_ms"`,
 			expectedWarnMsgs: []string{
 				"error converting exemplar label refs",
 			},
@@ -138,6 +141,127 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 			expectedWarnMsgs:  nil,
 		},
 		{
+			// A series that validateSeriesLabels would refuse is not written, so its exemplars
+			// are not collected either.
+			name: "series with an empty label name is skipped",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+					"http_method", "GET",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						LabelsRefs: []uint32{1, 2, 0, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1, LabelsRefs: []uint32{3, 4}},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    0,
+			expectedWarnMsgs:  nil,
+		},
+		{
+			name: "series with a duplicate label name is skipped",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+					"http_method", "GET",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						LabelsRefs: []uint32{1, 2, 1, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1, LabelsRefs: []uint32{3, 4}},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    0,
+			expectedWarnMsgs:  nil,
+		},
+		{
+			name: "series with out-of-bounds UnitRef is skipped",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+							UnitRef: 99,
+						},
+						LabelsRefs: []uint32{1, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    0,
+			expectedWarnMsgs:  nil,
+		},
+		{
+			name: "series with out-of-bounds HelpRef is skipped",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+							HelpRef: 99,
+						},
+						LabelsRefs: []uint32{1, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    0,
+			expectedWarnMsgs:  nil,
+		},
+		{
+			name: "series with unsupported metric type is skipped",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_MetricType(99),
+						},
+						LabelsRefs: []uint32{1, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    0,
+			expectedWarnMsgs:  nil,
+		},
+		{
 			name: "mixed valid and invalid exemplars logs once and keeps valid",
 			req: &writev2.Request{
 				Symbols: []string{
@@ -172,9 +296,256 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 			},
 			expectedExemplars: 1,
 			expectedGroups:    1,
+			expectedErr:       `error converting exemplar label refs for metric "request_duration_ms"`,
 			expectedWarnMsgs: []string{
 				"error converting exemplar label refs",
 			},
+		},
+		{
+			name: "series with invalid UTF-8 label name is skipped",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+					"\xff\xfe", "val",
+					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1, LabelsRefs: []uint32{5, 6}},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    0,
+			expectedWarnMsgs:  nil,
+		},
+		{
+			name: "series with invalid UTF-8 label value is skipped",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+					"job", "\xff\xfe",
+					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1, LabelsRefs: []uint32{5, 6}},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    0,
+			expectedWarnMsgs:  nil,
+		},
+		{
+			name: "series with invalid UTF-8 UnitRef is skipped",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+					"\xff\xfe",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+							UnitRef: 3,
+						},
+						LabelsRefs: []uint32{1, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    0,
+			expectedWarnMsgs:  nil,
+		},
+		{
+			name: "series with invalid UTF-8 HelpRef is skipped",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+					"\xff\xfe",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+							HelpRef: 3,
+						},
+						LabelsRefs: []uint32{1, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    0,
+			expectedWarnMsgs:  nil,
+		},
+		{
+			name: "exemplar with invalid UTF-8 label name returns error and logs warning",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+					"\xff\xfe", "val",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1, LabelsRefs: []uint32{3, 4}},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    1,
+			expectedErr:       `invalid exemplar labels for metric "request_duration_ms": invalid UTF-8 in label name "\xff\xfe"`,
+			expectedWarnMsgs: []string{
+				"invalid UTF-8 in exemplar labels",
+			},
+		},
+		{
+			name: "exemplar with invalid UTF-8 label value returns error and logs warning",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+					"trace_id", "\xff\xfe",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1, LabelsRefs: []uint32{3, 4}},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    1,
+			expectedErr:       `invalid exemplar labels for metric "request_duration_ms": invalid UTF-8 in value for label "trace_id"`,
+			expectedWarnMsgs: []string{
+				"invalid UTF-8 in exemplar labels",
+			},
+		},
+		{
+			name: "exemplar with empty label name and invalid UTF-8 value returns error",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+					"\xff\xfe",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1, LabelsRefs: []uint32{0, 3}},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    1,
+			expectedErr:       `invalid exemplar labels for metric "request_duration_ms": invalid UTF-8 in value for label ""`,
+			expectedWarnMsgs: []string{
+				"invalid UTF-8 in exemplar labels",
+			},
+		},
+		{
+			name: "exemplar with invalid UTF-8 label name and empty value returns error",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+					"\xff\xfe",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1, LabelsRefs: []uint32{3, 0}},
+						},
+					},
+				},
+			},
+			expectedExemplars: 0,
+			expectedGroups:    1,
+			expectedErr:       `invalid exemplar labels for metric "request_duration_ms": invalid UTF-8 in label name "\xff\xfe"`,
+			expectedWarnMsgs: []string{
+				"invalid UTF-8 in exemplar labels",
+			},
+		},
+		{
+			name: "mixed valid and invalid UTF-8 exemplars keeps valid and returns error",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736",
+					"bad_key", "\xff\xfe",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1, LabelsRefs: []uint32{5, 6}},
+							{Value: 2, Timestamp: 2, LabelsRefs: []uint32{3, 4}},
+						},
+					},
+				},
+			},
+			expectedExemplars: 1,
+			expectedGroups:    1,
+			expectedErr:       `invalid exemplar labels for metric "request_duration_ms": invalid UTF-8 in value for label "bad_key"`,
+			expectedWarnMsgs: []string{
+				"invalid UTF-8 in exemplar labels",
+			},
+		},
+		{
+			name: "unreferenced invalid UTF-8 symbol does not reject valid exemplar",
+			req: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms",
+					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736",
+					"\xff\xfe", // unreferenced
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2},
+						Exemplars: []writev2.Exemplar{
+							{Value: 1, Timestamp: 1, LabelsRefs: []uint32{3, 4}},
+						},
+					},
+				},
+			},
+			expectedExemplars: 1,
+			expectedGroups:    1,
+			expectedWarnMsgs:  nil,
 		},
 	}
 
@@ -182,16 +553,24 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			obs.TakeAll() // clear logs between subtests
 
-			stats := &promremote.WriteResponseStats{}
 			settings := receiver.Settings{
 				TelemetrySettings: component.TelemetrySettings{
 					Logger: logger,
 				},
 			}
 
-			result := collectExemplars(tt.req, settings, stats)
+			result, err := collectExemplars(tt.req, settings, newSymbolUTF8Validator(tt.req.Symbols))
+			if tt.expectedErr != "" {
+				require.ErrorContains(t, err, tt.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
 
-			assert.Equal(t, tt.expectedExemplars, stats.Exemplars)
+			gotExemplars := 0
+			for _, slice := range result {
+				gotExemplars += slice.Len()
+			}
+			assert.Equal(t, tt.expectedExemplars, gotExemplars)
 			assert.Len(t, result, tt.expectedGroups)
 
 			warns := obs.FilterLevelExact(zapcore.WarnLevel).All()
@@ -202,6 +581,48 @@ func TestCollectExemplars_ErrorsAndEdgeCases(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCollectExemplars_DropsEmptyLabelNames(t *testing.T) {
+	// The exemplar label name resolves to symbol 0, the empty string the writev2 symbol table
+	// starts with, so the name is empty without the request being malformed on its face. Such a
+	// label has no attribute key to land under; the rest of the exemplar is kept.
+	t.Run("empty label name is dropped", func(t *testing.T) {
+		req := &writev2.Request{
+			Symbols: []string{"", "__name__", "request_duration_ms", "orphan_value", "http_method", "GET"},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+					LabelsRefs: []uint32{1, 2},
+					Exemplars: []writev2.Exemplar{
+						{
+							Value:      2.5,
+							Timestamp:  1,
+							LabelsRefs: []uint32{0, 3, 4, 5},
+						},
+					},
+				},
+			},
+		}
+
+		settings := receiver.Settings{
+			TelemetrySettings: component.TelemetrySettings{
+				Logger: zap.NewNop(),
+			},
+		}
+
+		result, err := collectExemplars(req, settings, newSymbolUTF8Validator(req.Symbols))
+		require.NoError(t, err)
+
+		// The exemplar stays filed under the series it arrived with, and only the empty-named label
+		// is gone: the value, the timestamp and the labels around it are kept.
+		exemplars, ok := result[makeExemplarKey(labels.FromStrings("__name__", "request_duration_ms"))]
+		require.True(t, ok, "the exemplar stays under its own series")
+		require.Equal(t, 1, exemplars.Len())
+		assert.Equal(t, map[string]any{"http_method": "GET"}, exemplars.At(0).FilteredAttributes().AsRaw())
+		assert.Equal(t, 2.5, exemplars.At(0).DoubleValue())
+		assert.Equal(t, pcommon.Timestamp(int64(time.Millisecond)), exemplars.At(0).Timestamp())
+	})
 }
 
 func TestSetTraceAndSpan(t *testing.T) {
@@ -293,6 +714,20 @@ func TestSetTraceAndSpan(t *testing.T) {
 			wantTraceID:       validTraceID,
 			wantSpanID:        "",
 			wantFilteredAttrs: map[string]any{"span_id": strings.Repeat("0", 16)},
+		},
+		{
+			name:              "empty label values are dropped, as an empty label means an absent one",
+			labels:            labels.FromStrings("http_method", "GET", "empty_label", "", "trace_id", "", "span_id", ""),
+			wantTraceID:       "",
+			wantSpanID:        "",
+			wantFilteredAttrs: map[string]any{"http_method": "GET"},
+		},
+		{
+			name:              "a label with an empty name is dropped, as it cannot become an attribute key",
+			labels:            labels.FromStrings("", "orphan_value", "http_method", "GET"),
+			wantTraceID:       "",
+			wantSpanID:        "",
+			wantFilteredAttrs: map[string]any{"http_method": "GET"},
 		},
 	}
 

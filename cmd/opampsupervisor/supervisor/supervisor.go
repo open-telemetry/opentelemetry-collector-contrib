@@ -46,8 +46,8 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	gyaml "go.yaml.in/yaml/v3"
 	"google.golang.org/protobuf/proto"
-	gyaml "gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
@@ -87,6 +87,8 @@ const (
 )
 
 const maxBufferedCustomMessages = 10
+
+const configApplyInterruptedMessage = "Remote configuration application was interrupted by a Supervisor restart"
 
 type configState struct {
 	// Supervisor-assembled config to be given to the Collector.
@@ -386,6 +388,16 @@ func (s *Supervisor) Start(ctx context.Context) error {
 	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFilePath(), s.config.Agent.InstanceID, s.telemetrySettings.Logger)
 	if err != nil {
 		return err
+	}
+	// Complete the interrupted request before callbacks can replace it with a new config.
+	// The persisted failure is sent on connect and participates in normal startup rollback.
+	lastRemoteConfigStatus := s.persistentState.GetLastRemoteConfigStatus()
+	if s.config.Capabilities.AcceptsRemoteConfig && lastRemoteConfigStatus.GetStatus() == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING {
+		lastRemoteConfigStatus.Status = protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED
+		lastRemoteConfigStatus.ErrorMessage = configApplyInterruptedMessage
+		if saveErr := s.persistentState.SetLastRemoteConfigStatus(lastRemoteConfigStatus); saveErr != nil {
+			s.telemetrySettings.Logger.Error("Could not save last remote config status", zap.Error(saveErr))
+		}
 	}
 
 	if s.config.Capabilities.AcceptsPackages {
@@ -1114,19 +1126,30 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 	if settings.Headers != nil {
 		newServerConfig.Headers = s.getHeadersFromSettings(settings.Headers)
 	}
+	// Per the OpAMP spec, TLS settings only change when an offer includes the tls field,
+	// which the Supervisor doesn't support, so the configured settings are kept.
+	// https://github.com/open-telemetry/opamp-spec/blob/61372c6916c4be08eb0409f7e1001e25cedb891f/specification.md?plain=1#L2303-L2311
+	newServerConfig.TLS = s.config.Server.TLS
+	// An offer without a certificate means no client certificate, and an offered certificate
+	// replaces the previous one, so the client certificate is always reset. cert_file and
+	// key_file can only come from the startup config, and clearing them lets the offered
+	// PEMs take effect since configtls doesn't allow both a file and a PEM.
+	// https://github.com/open-telemetry/opamp-spec/blob/61372c6916c4be08eb0409f7e1001e25cedb891f/specification.md?plain=1#L2109-L2116
+	newServerConfig.TLS.CertFile = ""
+	newServerConfig.TLS.CertPem = ""
+	newServerConfig.TLS.KeyFile = ""
+	newServerConfig.TLS.KeyPem = ""
+	newServerConfig.TLS.TPMConfig = configtls.TPMConfig{}
 	if settings.Certificate != nil {
-		if len(settings.Certificate.CaCert) != 0 {
-			newServerConfig.TLS.CAPem = configopaque.String(settings.Certificate.CaCert)
-		}
 		if len(settings.Certificate.Cert) != 0 {
 			newServerConfig.TLS.CertPem = configopaque.String(settings.Certificate.Cert)
 		}
 		if len(settings.Certificate.PrivateKey) != 0 {
 			newServerConfig.TLS.KeyPem = configopaque.String(settings.Certificate.PrivateKey)
 		}
-	} else {
-		newServerConfig.TLS = configtls.NewDefaultClientConfig()
-		newServerConfig.TLS.InsecureSkipVerify = true
+		// settings.Certificate.CaCert is ignored. It's the CA that signed the client certificate, not a CA
+		// for verifying the server, and the proto says not to accept it as an authority for any purposes.
+		// https://github.com/open-telemetry/opamp-spec/blob/61372c6916c4be08eb0409f7e1001e25cedb891f/proto/opamp/v1/opamp.proto#L498-L503
 	}
 
 	if err := newServerConfig.Validate(); err != nil {
@@ -1295,6 +1318,11 @@ func (s *Supervisor) composeExtraTelemetryConfig() []byte {
 	for _, attr := range ad.NonIdentifyingAttributes {
 		resourceAttrs[attr.Key] = attr.Value.GetStringValue()
 	}
+	if s.config.Agent.Description.IncludeSupervisorInstanceID {
+		if instanceID, ok := s.supervisorServiceInstanceID(); ok {
+			resourceAttrs["supervisor.service.instance.id"] = instanceID
+		}
+	}
 	attrNames := make([]string, 0, len(resourceAttrs))
 	for name := range resourceAttrs {
 		attrNames = append(attrNames, name)
@@ -1324,17 +1352,34 @@ func (s *Supervisor) composeExtraTelemetryConfig() []byte {
 	return cfg.Bytes()
 }
 
+func (s *Supervisor) supervisorServiceInstanceID() (string, bool) {
+	instanceID, ok := s.telemetrySettings.Resource.Attributes().Get("service.instance.id")
+	if !ok {
+		return "", false
+	}
+	return instanceID.AsString(), true
+}
+
 func (s *Supervisor) composeRequiredResourceAttributesConfig() []byte {
+	attributes := []map[string]any{
+		{
+			"name":  "service.instance.id",
+			"value": s.persistentState.InstanceID.String(),
+		},
+	}
+	if s.config.Agent.Description.IncludeSupervisorInstanceID {
+		if instanceID, ok := s.supervisorServiceInstanceID(); ok {
+			attributes = append(attributes, map[string]any{
+				"name":  "supervisor.service.instance.id",
+				"value": instanceID,
+			})
+		}
+	}
 	cfg, err := gyaml.Marshal(map[string]any{
 		"service": map[string]any{
 			"telemetry": map[string]any{
 				"resource": map[string]any{
-					"attributes": []map[string]any{
-						{
-							"name":  "service.instance.id",
-							"value": s.persistentState.InstanceID.String(),
-						},
-					},
+					"attributes": attributes,
 				},
 			},
 		},

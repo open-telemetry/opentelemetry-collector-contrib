@@ -7,12 +7,14 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"slices"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/DeRuina/timberjack"
@@ -20,12 +22,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -674,6 +678,8 @@ func decompress(src []byte) ([]byte, error) {
 }
 
 func TestConcurrentlyCompress(t *testing.T) {
+	zstdCompress, buildErr := buildCompressor(compressionZSTD, 0)
+	require.NoError(t, buildErr)
 	wg := sync.WaitGroup{}
 	wg.Add(4)
 	var (
@@ -801,17 +807,18 @@ func TestFlushing(t *testing.T) {
 
 	// Start the flusher.
 	ctx := t.Context()
+	compressor, err := buildCompressor(fe.conf.Compression, int(fe.conf.CompressionParams.Level))
+	require.NoError(t, err)
 	fe.marshaller = &marshaller{
 		formatType:       fe.conf.FormatType,
 		tracesMarshaler:  tracesMarshalers[fe.conf.FormatType],
 		metricsMarshaler: metricsMarshalers[fe.conf.FormatType],
 		logsMarshaler:    logsMarshalers[fe.conf.FormatType],
 		compression:      fe.conf.Compression,
-		compressor:       buildCompressor(fe.conf.Compression),
+		compressor:       compressor,
 	}
-	export := buildExportFunc(fe.conf)
-	var err error
-	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export, fe.conf.Compression, int(fe.conf.CompressionParams.Level))
+	export := buildExportFunc(fe.conf, false)
+	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export, fe.conf.Compression, int(fe.conf.CompressionParams.Level), fe.logger)
 	assert.NoError(t, err)
 	err = fe.writer.file.Close()
 	assert.NoError(t, err)
@@ -837,6 +844,111 @@ func TestFlushing(t *testing.T) {
 	assert.NoError(t, fe.Shutdown(ctx))
 }
 
+type flushTestWriter struct {
+	err   error
+	calls int
+}
+
+func (*flushTestWriter) Write(p []byte) (int, error) {
+	return len(p), nil
+}
+
+func (*flushTestWriter) Close() error {
+	return nil
+}
+
+func (w *flushTestWriter) flush() error {
+	w.calls++
+	return w.err
+}
+
+func newFlushTestWriter(t *testing.T, grouped bool, logger *zap.Logger, flushErr error) (*fileWriter, *flushTestWriter) {
+	t.Helper()
+
+	dir := t.TempDir()
+	cfg := &Config{
+		Path:       filepath.Join(dir, "out.json"),
+		FormatType: formatTypeJSON,
+	}
+	if grouped {
+		cfg.Path = filepath.Join(dir, "*.json")
+		cfg.GroupBy = &GroupBy{
+			Enabled:           true,
+			ResourceAttribute: "service.name",
+			MaxOpenFiles:      10,
+		}
+	}
+
+	e := newFileExporter(cfg, logger)
+	require.NoError(t, e.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, e.Shutdown(t.Context()))
+	})
+
+	var writer *fileWriter
+	if grouped {
+		var err error
+		writer, err = e.(*groupingFileExporter).getWriter("test")
+		require.NoError(t, err)
+		require.NoError(t, writer.release())
+	} else {
+		writer = e.(*fileExporter).writer
+	}
+
+	require.NoError(t, writer.file.Close())
+	sink := &flushTestWriter{err: flushErr}
+	writer.file = sink
+	writer.flushInterval = time.Second
+	writer.start()
+
+	return writer, sink
+}
+
+func TestPeriodicFlushLogsFirstErrorOnly(t *testing.T) {
+	for _, grouped := range []bool{false, true} {
+		name := "single"
+		if grouped {
+			name = "grouped"
+		}
+
+		t.Run(name, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				core, logs := observer.New(zap.ErrorLevel)
+				firstErr := errors.New("disk full")
+				writer, sink := newFlushTestWriter(t, grouped, zap.New(core), firstErr)
+
+				time.Sleep(time.Second)
+				synctest.Wait()
+
+				require.Equal(t, 1, logs.Len())
+				require.Equal(t, zap.ErrorLevel, logs.All()[0].Level)
+				require.Equal(t, "Failed to flush file. Buffered data may be lost and subsequent writes may fail.", logs.All()[0].Message)
+				require.Equal(t, writer.path, logs.All()[0].ContextMap()["path"])
+				require.Equal(t, firstErr.Error(), logs.All()[0].ContextMap()["error"])
+
+				time.Sleep(3 * time.Second)
+				synctest.Wait()
+
+				require.Equal(t, 4, sink.calls)
+				require.Equal(t, 1, logs.Len(), "later flush failures must not log again")
+			})
+		})
+	}
+}
+
+func TestPeriodicFlushSuccessDoesNotLog(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		core, logs := observer.New(zap.ErrorLevel)
+		_, sink := newFlushTestWriter(t, false, zap.New(core), nil)
+
+		time.Sleep(3 * time.Second)
+		synctest.Wait()
+
+		require.Equal(t, 3, sink.calls)
+		require.Empty(t, logs.All())
+	})
+}
+
 func TestAppend(t *testing.T) {
 	cfg := &Config{
 		Path:          tempFileName(t),
@@ -856,17 +968,18 @@ func TestAppend(t *testing.T) {
 
 	// Start the flusher.
 	ctx := t.Context()
+	compressor, err := buildCompressor(fe.conf.Compression, int(fe.conf.CompressionParams.Level))
+	require.NoError(t, err)
 	fe.marshaller = &marshaller{
 		formatType:       fe.conf.FormatType,
 		tracesMarshaler:  tracesMarshalers[fe.conf.FormatType],
 		metricsMarshaler: metricsMarshalers[fe.conf.FormatType],
 		logsMarshaler:    logsMarshalers[fe.conf.FormatType],
 		compression:      fe.conf.Compression,
-		compressor:       buildCompressor(fe.conf.Compression),
+		compressor:       compressor,
 	}
-	export := buildExportFunc(fe.conf)
-	var err error
-	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export, fe.conf.Compression, int(fe.conf.CompressionParams.Level))
+	export := buildExportFunc(fe.conf, false)
+	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export, fe.conf.Compression, int(fe.conf.CompressionParams.Level), fe.logger)
 	assert.NoError(t, err)
 	err = fe.writer.file.Close()
 	assert.NoError(t, err)
@@ -892,7 +1005,7 @@ func TestAppend(t *testing.T) {
 	assert.NoError(t, fe.Shutdown(ctx))
 
 	// Restart the exporter
-	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export, fe.conf.Compression, int(fe.conf.CompressionParams.Level))
+	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Append, fe.conf.Rotation, fe.conf.FlushInterval, export, fe.conf.Compression, int(fe.conf.CompressionParams.Level), fe.logger)
 	assert.NoError(t, err)
 	err = fe.writer.file.Close()
 	assert.NoError(t, err)
@@ -1040,7 +1153,8 @@ func TestFileAppendLogsExporter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := tt.args.conf
 			fe := &fileExporter{
-				conf: conf,
+				conf:   conf,
+				logger: zap.NewNop(),
 			}
 			require.NotNil(t, fe)
 
@@ -1079,4 +1193,96 @@ func TestFileAppendLogsExporter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLegacyCompressionLevel(t *testing.T) {
+	setNativeCompressionFeatureGate(t, false)
+
+	ld := plog.NewLogs()
+	lrs := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+	for i := range 2000 {
+		lrs.AppendEmpty().Body().SetStr(fmt.Sprintf("request %d served by host-%d in %dms", i, i%7, i%250))
+	}
+
+	compress := func(level int) []byte {
+		conf := &Config{FormatType: formatTypeJSON, Compression: compressionZSTD}
+		conf.CompressionParams.Level = configcompression.Level(level)
+		m, err := newMarshaller(conf, componenttest.NewNopHost())
+		require.NoError(t, err)
+		buf, err := m.marshalLogs(ld)
+		require.NoError(t, err)
+		return buf
+	}
+
+	raw, err := logsMarshalers[formatTypeJSON].MarshalLogs(ld)
+	require.NoError(t, err)
+
+	fastest, best := compress(1), compress(11)
+	// Output size ordering between levels depends on the data, so only check that the level is applied.
+	assert.NotEqual(t, fastest, best, "compression_params.level must change the encoder output")
+	for _, c := range [][]byte{fastest, best} {
+		got, decErr := decompress(c)
+		require.NoError(t, decErr)
+		assert.Equal(t, raw, got)
+	}
+
+	// An unset level must keep producing the same output as the zstd defaults.
+	defaultEncoder, err := zstd.NewWriter(nil)
+	require.NoError(t, err)
+	assert.Equal(t, defaultEncoder.EncodeAll(raw, nil), compress(0))
+}
+
+func TestFileExporterShutdown(t *testing.T) {
+	tests := []struct {
+		name          string
+		flushInterval time.Duration
+	}{
+		{
+			name: "without flush interval",
+		},
+		{
+			name:          "with flush interval",
+			flushInterval: 10 * time.Millisecond,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				Path:          tempFileName(t),
+				FormatType:    formatTypeJSON,
+				FlushInterval: tt.flushInterval,
+			}
+			feI := newFileExporter(cfg, zap.NewNop())
+			require.IsType(t, &fileExporter{}, feI)
+			fe := feI.(*fileExporter)
+
+			require.NoError(t, fe.Start(t.Context(), componenttest.NewNopHost()))
+
+			td := testdata.GenerateTracesTwoSpansSameResource()
+			require.NoError(t, fe.consumeTraces(t.Context(), td))
+
+			require.NoError(t, fe.Shutdown(t.Context()))
+
+			assert.NoError(t, fe.Shutdown(t.Context()))
+
+			// Export after shutdown returns io.ErrClosedPipe.
+			assert.ErrorIs(t, fe.consumeTraces(t.Context(), td), io.ErrClosedPipe)
+			assert.ErrorIs(t, fe.consumeMetrics(t.Context(), testdata.GenerateMetricsTwoMetrics()), io.ErrClosedPipe)
+			assert.ErrorIs(t, fe.consumeLogs(t.Context(), testdata.GenerateLogsTwoLogRecordsSameResource()), io.ErrClosedPipe)
+			assert.ErrorIs(t, fe.consumeProfiles(t.Context(), testdata.GenerateProfilesTwoProfilesSameResource()), io.ErrClosedPipe)
+		})
+	}
+}
+
+func TestFileExporterShutdownBeforeStart(t *testing.T) {
+	cfg := &Config{
+		Path:       tempFileName(t),
+		FormatType: formatTypeJSON,
+	}
+	feI := newFileExporter(cfg, zap.NewNop())
+	require.IsType(t, &fileExporter{}, feI)
+	fe := feI.(*fileExporter)
+
+	assert.NoError(t, fe.Shutdown(t.Context()))
 }

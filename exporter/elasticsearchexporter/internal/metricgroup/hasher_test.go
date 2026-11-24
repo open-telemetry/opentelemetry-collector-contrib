@@ -117,6 +117,36 @@ func TestECSDataPointHasher_HashKey(t *testing.T) {
 	}
 }
 
+func TestOTelDataPointHasher_Temporality(t *testing.T) {
+	ts := pcommon.NewTimestampFromTime(time.Unix(1_700_000_000, 0))
+
+	newHist := func(temporality pmetric.AggregationTemporality) datapoints.DataPoint {
+		metric := pmetric.NewMetric()
+		metric.SetName("histogram")
+		dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
+		dp.SetTimestamp(ts)
+		dp.SetSum(10)
+		dp.SetCount(20)
+		metric.Histogram().SetAggregationTemporality(temporality)
+		return datapoints.NewHistogram(metric, dp, datapoints.HistogramMappingExponential)
+	}
+
+	hash := func(dp datapoints.DataPoint) HashKey {
+		h := &OTelDataPointHasher{}
+		h.UpdateResource(pcommon.NewResource())
+		h.UpdateScope(pcommon.NewInstrumentationScope())
+		h.UpdateDataPoint(dp)
+		return h.HashKey()
+	}
+
+	cumulative := hash(newHist(pmetric.AggregationTemporalityCumulative))
+	cumulative2 := hash(newHist(pmetric.AggregationTemporalityCumulative))
+	delta := hash(newHist(pmetric.AggregationTemporalityDelta))
+
+	require.NotEqual(t, cumulative, delta)
+	require.Equal(t, cumulative, cumulative2)
+}
+
 func newNumberDP(ts pcommon.Timestamp, attrs map[string]string) datapoints.DataPoint {
 	metric := pmetric.NewMetric()
 	metric.SetName("m")

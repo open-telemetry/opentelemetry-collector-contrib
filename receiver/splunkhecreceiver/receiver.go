@@ -17,7 +17,6 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
@@ -135,7 +134,7 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 		return nil
 	}
 
-	mx := mux.NewRouter()
+	mx := http.NewServeMux()
 	// set up the ack API handler if the ack extension is present
 	if r.config.Ack.Extension != nil {
 		ext, found := host.GetExtensions()[*r.config.Ack.Extension]
@@ -143,15 +142,15 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 			return fmt.Errorf("specified ack extension with id %q could not be found", *r.config.Ack.Extension)
 		}
 		r.ackExt = ext.(ackextension.AckExtension)
-		mx.NewRoute().Path(r.config.Ack.Path).HandlerFunc(r.handleAck)
+		mx.HandleFunc(r.config.Ack.Path, r.handleAck)
 	}
 
-	mx.NewRoute().Path(r.config.HealthPath).HandlerFunc(r.handleHealthReq)
-	mx.NewRoute().Path(r.config.HealthPath + "/1.0").HandlerFunc(r.handleHealthReq).Methods(http.MethodGet)
+	mx.HandleFunc(r.config.HealthPath, r.handleHealthReq)
+	mx.HandleFunc(http.MethodGet+" "+r.config.HealthPath+"/1.0", r.handleHealthReq)
 	if r.logsConsumer != nil {
-		mx.NewRoute().Path(r.config.RawPath).HandlerFunc(r.handleRawReq)
+		mx.HandleFunc(r.config.RawPath, r.handleRawReq)
 	}
-	mx.NewRoute().HandlerFunc(r.handleReq)
+	mx.HandleFunc("/", r.handleReq)
 	// set up the listener
 	ln, err := r.config.ServerConfig.ToListener(ctx)
 	if err != nil {

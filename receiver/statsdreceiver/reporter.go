@@ -47,10 +47,10 @@ func (r *reporter) OnDebugf(template string, args ...any) {
 	}
 }
 
-func (r *reporter) RecordParseFailure() {
+func (r *reporter) RecordParseFailure(count int64) {
 	r.telemetryBuilder.ReceiverReceivedStatsdMetrics.Add(
 		context.Background(),
-		1,
+		count,
 		metric.WithAttributes(
 			r.receiverAttr,
 			parseFailureAttr,

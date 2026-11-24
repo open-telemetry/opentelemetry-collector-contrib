@@ -9,7 +9,7 @@
     "Image": "alpine",
     "ImageID": "sha256:e66264b98777e12192600bf9b4d663655c98a090072e1bab49e233d7531d1294",
     "Labels": {
-      "container.label": "container-label2"
+      "team": "container-label2"
     },
     "Mounts": [],
     "Names": [
@@ -61,7 +61,7 @@
     "Image": "ubuntu",
     "ImageID": "sha256:27941809078cc9b2802deb2b0bb6feed6c236cde01e487f200e24653533701ee",
     "Labels": {
-      "container.label": "container-label"
+      "team": "container-label"
     },
     "Mounts": [],
     "Names": [

@@ -25,6 +25,7 @@ type TelemetryBuilder struct {
 	meter                                               metric.Meter
 	mu                                                  sync.Mutex
 	registrations                                       []metric.Registration
+	ReceiverPrometheusremotewriteDroppedSeries          metric.Int64Counter
 	ReceiverPrometheusremotewriteResourceCacheEvictions metric.Int64Counter
 }
 
@@ -57,6 +58,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.ReceiverPrometheusremotewriteDroppedSeries, err = builder.meter.Int64Counter(
+		"otelcol_receiver_prometheusremotewrite_dropped_series",
+		metric.WithDescription("Number of classic histogram and summary series dropped because the receiver does not support them. Their samples are still reported as written. [Development]"),
+		metric.WithUnit("{series}"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ReceiverPrometheusremotewriteResourceCacheEvictions, err = builder.meter.Int64Counter(
 		"otelcol_receiver_prometheusremotewrite_resource_cache_evictions",
 		metric.WithDescription("Number of job/instance entries evicted from the resource metrics cache because it was full. [Development]"),
