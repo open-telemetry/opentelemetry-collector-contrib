@@ -19,6 +19,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile/ottlprofile"
@@ -54,6 +56,10 @@ type Config struct {
 	Flatten FlattenConfig `mapstructure:"flatten"`
 	logger  *zap.Logger
 
+	// resourceFunctions and scopeFunctions are nil unless they were overridden with
+	// xtransformprocessor.WithResourceFunctions or xtransformprocessor.WithScopeFunctions.
+	resourceFunctions  map[string]ottl.Factory[*ottlresource.TransformContext]
+	scopeFunctions     map[string]ottl.Factory[*ottlscope.TransformContext]
 	dataPointFunctions map[string]ottl.Factory[*ottldatapoint.TransformContext]
 	exemplarFunctions  map[string]ottl.Factory[*ottlexemplar.TransformContext]
 	logFunctions       map[string]ottl.Factory[*ottllog.TransformContext]
@@ -231,7 +237,7 @@ func (c *Config) Validate() error {
 	var errors error
 
 	if len(c.TraceStatements) > 0 {
-		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(c.spanFunctions), common.WithSpanEventParser(c.spanEventFunctions))
+		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(c.spanFunctions), common.WithSpanEventParser(c.spanEventFunctions), common.WithTraceCommonParsers(c.resourceFunctions, c.scopeFunctions))
 		if err != nil {
 			return err
 		}
@@ -244,7 +250,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.MetricStatements) > 0 {
-		pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(c.metricFunctions), common.WithDataPointParser(c.dataPointFunctions), common.WithExemplarParser(c.exemplarFunctions))
+		pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(c.metricFunctions), common.WithDataPointParser(c.dataPointFunctions), common.WithExemplarParser(c.exemplarFunctions), common.WithMetricCommonParsers(c.resourceFunctions, c.scopeFunctions))
 		if err != nil {
 			return err
 		}
@@ -257,7 +263,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.LogStatements) > 0 {
-		pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(c.logFunctions))
+		pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(c.logFunctions), common.WithLogCommonParsers(c.resourceFunctions, c.scopeFunctions))
 		if err != nil {
 			return err
 		}
@@ -273,7 +279,7 @@ func (c *Config) Validate() error {
 		if !metadata.ProcessorTransformEnableProfilesFeatureGate.IsEnabled() {
 			errors = multierr.Append(errors, errProfileStatementsGateDisabled)
 		} else {
-			pc, err := common.NewProfileParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithProfileParser(c.profileFunctions))
+			pc, err := common.NewProfileParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithProfileParser(c.profileFunctions), common.WithProfileCommonParsers(c.resourceFunctions, c.scopeFunctions))
 			if err != nil {
 				return err
 			}

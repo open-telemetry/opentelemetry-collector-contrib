@@ -217,13 +217,24 @@ type baseContext interface {
 	ProfilesConsumer
 }
 
-func withCommonContextParsers[R any]() ottl.ParserCollectionOption[R] {
+// withCommonContextParsers registers the resource and scope context parsers, which are common to all signals.
+// A nil functions map registers the default functions of that context.
+func withCommonContextParsers[R any](
+	resourceFunctions map[string]ottl.Factory[*ottlresource.TransformContext],
+	scopeFunctions map[string]ottl.Factory[*ottlscope.TransformContext],
+) ottl.ParserCollectionOption[R] {
 	return func(pc *ottl.ParserCollection[R]) error {
-		rp, err := ottlresource.NewParser(ResourceFunctions(), pc.Settings(), ottlresource.EnablePathContextNames())
+		if resourceFunctions == nil {
+			resourceFunctions = ResourceFunctions()
+		}
+		if scopeFunctions == nil {
+			scopeFunctions = ScopeFunctions()
+		}
+		rp, err := ottlresource.NewParser(resourceFunctions, pc.Settings(), ottlresource.EnablePathContextNames())
 		if err != nil {
 			return err
 		}
-		sp, err := ottlscope.NewParser(ScopeFunctions(), pc.Settings(), ottlscope.EnablePathContextNames())
+		sp, err := ottlscope.NewParser(scopeFunctions, pc.Settings(), ottlscope.EnablePathContextNames())
 		if err != nil {
 			return err
 		}
