@@ -32,6 +32,9 @@ const (
 	ephemeralCollectorObjectsDir  = "./testdata/e2e/ephemeral/collector/"
 	ephemeralWorkloadsDir         = "./testdata/e2e/ephemeral/workloads/"
 	ephemeralPod                  = "k8sobserver-e2e-ephemeral"
+	initCollectorObjectsDir       = "./testdata/e2e/init/collector/"
+	initWorkloadsDir              = "./testdata/e2e/init/workloads/"
+	initPod                       = "k8sobserver-e2e-init"
 )
 
 // getOrInsertDefault is a helper function to get or insert a default value for a configoptional.Optional type.
@@ -188,6 +191,64 @@ func TestE2EEphemeralContainers(t *testing.T) {
 
 	received := receivedContainerLogs(logsConsumer, ephemeralPod)
 	for container, kind := range map[string]string{"app": "app", "debugger": "ephemeral"} {
+		got := received[container]
+		require.NotNilf(t, got, "container %s", container)
+		assert.Lenf(t, got.lines, 5, "lines of %s", container)
+		assert.Equalf(t, kind, got.kind, "kind of %s", container)
+		for line, times := range got.lines {
+			assert.Equalf(t, 1, times, "line %s of %s was received %d times", line, container, times)
+		}
+	}
+}
+
+// TestE2EInitContainers collects the logs of an init container, a native sidecar and an app
+// container with file log receivers that the receiver creator starts for the endpoints of the
+// containers. The collector runs before the pod, as the init container is reported while it runs.
+func TestE2EInitContainers(t *testing.T) {
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+	require.NoError(t, err)
+
+	f := otlpreceiver.NewFactory()
+	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
+	getOrInsertDefault(t, &cfg.Protocols.GRPC).NetAddr.Endpoint = "0.0.0.0:4317"
+	logsConsumer := new(consumertest.LogsSink)
+	rcvr, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(f.Type()), cfg, logsConsumer)
+	require.NoError(t, err, "failed creating logs receiver")
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, rcvr.Shutdown(context.WithoutCancel(t.Context())))
+	}()
+
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, uuid.NewString()[:8], initCollectorObjectsDir, map[string]string{}, "")
+	defer func() {
+		for _, obj := range collectorObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+		}
+	}()
+
+	workloadObjs, err := k8stest.CreateObjects(k8sClient, initWorkloadsDir)
+	require.NoError(t, err, "failed creating the workload")
+	defer func() {
+		assert.NoError(t, k8stest.DeleteObjects(k8sClient, workloadObjs))
+	}()
+
+	expected := map[string]string{"init": "init", "sidecar": "init", "app": "app"}
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		received := receivedContainerLogs(logsConsumer, initPod)
+		for container := range expected {
+			got, ok := received[container]
+			if assert.Truef(c, ok, "no logs received for %s", container) {
+				assert.Lenf(c, got.lines, 5, "lines of %s", container)
+			}
+		}
+	}, 3*time.Minute, time.Second, "did not receive the logs of every container")
+
+	// Give a receiver that was started a second time for a container the time to show.
+	time.Sleep(10 * time.Second)
+
+	received := receivedContainerLogs(logsConsumer, initPod)
+	for container, kind := range expected {
 		got := received[container]
 		require.NotNilf(t, got, "container %s", container)
 		assert.Lenf(t, got.lines, 5, "lines of %s", container)

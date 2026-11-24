@@ -123,3 +123,119 @@ func TestPodEndpointsEphemeralContainers(t *testing.T) {
 	// The spec of the pod is not changed.
 	require.Len(t, pod.Spec.Containers, len(podWithNamedPorts.Spec.Containers))
 }
+
+func endpointIDs(endpoints []observer.Endpoint) []string {
+	ids := make([]string, 0, len(endpoints))
+	for _, e := range endpoints {
+		ids = append(ids, string(e.ID))
+	}
+	return ids
+}
+
+func containerStatus(name, containerID string, state v1.ContainerState) v1.ContainerStatus {
+	return v1.ContainerStatus{Name: name, ContainerID: containerID, State: state}
+}
+
+var (
+	stateRunning    = v1.ContainerState{Running: &v1.ContainerStateRunning{}}
+	stateTerminated = v1.ContainerState{Terminated: &v1.ContainerStateTerminated{ExitCode: 1}}
+	stateWaiting    = v1.ContainerState{Waiting: &v1.ContainerStateWaiting{Reason: "PodInitializing"}}
+)
+
+// podWithInitContainers has an init container that finished, a native sidecar that runs and an
+// app container that runs.
+func podWithInitContainers() *v1.Pod {
+	pod := newPod("pod-3", "localhost")
+	pod.Spec.InitContainers = []v1.Container{
+		{Name: "init", Image: "init-image"},
+		{Name: "sidecar", Image: "sidecar-image", Ports: []v1.ContainerPort{{Name: "metrics", ContainerPort: 9090, Protocol: v1.ProtocolTCP}}},
+	}
+	pod.Spec.Containers = []v1.Container{{Name: "app", Image: "app-image"}}
+	pod.Status.InitContainerStatuses = []v1.ContainerStatus{
+		containerStatus("init", "containerd://init-id", stateTerminated),
+		containerStatus("sidecar", "containerd://sidecar-id", stateRunning),
+	}
+	pod.Status.ContainerStatuses = []v1.ContainerStatus{
+		containerStatus("app", "containerd://app-id", stateRunning),
+	}
+	return pod
+}
+
+func TestPodEndpointsWithoutOptionsSkipInitContainers(t *testing.T) {
+	endpoints := convertPodToEndpoints("namespace", podWithInitContainers(), podEndpointOptions{})
+	require.Equal(t, []string{
+		"namespace/pod-3-UID",
+		"namespace/pod-3-UID/app",
+	}, endpointIDs(endpoints))
+}
+
+func TestPodEndpointsInitContainers(t *testing.T) {
+	opts := podEndpointOptions{initContainers: true}
+
+	// The init container that finished is not reported, as with the other containers.
+	endpoints := convertPodToEndpoints("namespace", podWithInitContainers(), opts)
+	require.Equal(t, []string{
+		"namespace/pod-3-UID",
+		"namespace/pod-3-UID/sidecar",
+		"namespace/pod-3-UID/metrics(9090)",
+		"namespace/pod-3-UID/app",
+	}, endpointIDs(endpoints))
+	require.Equal(t, &observer.PodContainer{
+		Name:        "sidecar",
+		Image:       "sidecar-image",
+		ContainerID: "sidecar-id",
+		Kind:        "init",
+		Pod: observer.Pod{
+			Name:      "pod-3",
+			Namespace: "default",
+			UID:       "pod-3-UID",
+			Labels:    map[string]string{"env": "prod"},
+		},
+	}, endpoints[1].Details)
+	require.Equal(t, "app", endpoints[3].Details.(*observer.PodContainer).Kind)
+
+	env, err := endpoints[1].Env()
+	require.NoError(t, err)
+	require.Equal(t, "init", env["container_kind"])
+}
+
+func TestPodEndpointsInitContainersOfPendingPod(t *testing.T) {
+	// While the init containers run the pod is still pending.
+	pending := podWithInitContainers()
+	pending.Status.Phase = v1.PodPending
+	pending.Status.InitContainerStatuses[0].State = stateRunning
+	pending.Status.InitContainerStatuses[1] = containerStatus("sidecar", "", stateWaiting)
+	pending.Status.ContainerStatuses[0] = containerStatus("app", "", stateWaiting)
+
+	require.Empty(t, convertPodToEndpoints("namespace", pending, podEndpointOptions{}))
+	require.Equal(t, []string{"namespace/pod-3-UID/init"},
+		endpointIDs(convertPodToEndpoints("namespace", pending, podEndpointOptions{initContainers: true})))
+}
+
+func TestPodEndpointsInitContainersOfFinishedPod(t *testing.T) {
+	// The status of a native sidecar can still say running for a moment after the pod finished.
+	for _, phase := range []v1.PodPhase{v1.PodSucceeded, v1.PodFailed} {
+		finished := podWithInitContainers()
+		finished.Status.Phase = phase
+		require.Empty(t, convertPodToEndpoints("namespace", finished, podEndpointOptions{initContainers: true}), phase)
+	}
+}
+
+func TestPodEndpointsPortsNeedPodIP(t *testing.T) {
+	// A native sidecar runs while the pod is pending. Its port gets an endpoint only once the
+	// pod has an address.
+	pod := podWithInitContainers()
+	pod.Status.Phase = v1.PodPending
+	pod.Status.ContainerStatuses[0] = containerStatus("app", "", stateWaiting)
+	opts := podEndpointOptions{initContainers: true}
+
+	require.Equal(t, []string{
+		"namespace/pod-3-UID/sidecar",
+		"namespace/pod-3-UID/metrics(9090)",
+	}, endpointIDs(convertPodToEndpoints("namespace", pod, opts)))
+
+	pod.Status.PodIP = ""
+	endpoints := convertPodToEndpoints("namespace", pod, opts)
+	require.Equal(t, []string{"namespace/pod-3-UID/sidecar"}, endpointIDs(endpoints))
+	require.Empty(t, endpoints[0].Target)
+}

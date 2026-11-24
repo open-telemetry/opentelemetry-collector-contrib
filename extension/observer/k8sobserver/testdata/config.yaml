@@ -8,6 +8,13 @@ k8s_observer/observe-all:
   observe_pods: true
   observe_services: true
   observe_ingresses: true
+k8s_observer/init-containers:
+  observe_pods: true
+  observe_init_containers: true
+k8s_observer/invalid_init_without_pods:
+  observe_pods: false
+  observe_nodes: true
+  observe_init_containers: true
 k8s_observer/ephemeral-containers:
   auth_type: none
   observe_ephemeral_containers: true

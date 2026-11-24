@@ -49,6 +49,18 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "init-containers"),
+			expected: &Config{
+				APIConfig:             k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ObservePods:           true,
+				ObserveInitContainers: true,
+			},
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_init_without_pods"),
+			expectedErr: "observe_init_containers requires observe_pods",
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "ephemeral-containers"),
 			expected: &Config{
 				APIConfig:                  k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},

@@ -395,3 +395,44 @@ func TestPodEndpointsEphemeralContainerAdded(t *testing.T) {
 	th.OnDelete(exited)
 	require.Empty(t, th.ListEndpoints())
 }
+
+func TestPodEndpointsInitContainerOfStartingPod(t *testing.T) {
+	th := newTestHandler()
+	th.podOptions = podEndpointOptions{initContainers: true}
+
+	// The init container runs while the pod is pending.
+	pending := podWithInitContainers()
+	pending.Status.Phase = v1.PodPending
+	pending.Status.InitContainerStatuses[0].State = stateRunning
+	pending.Status.InitContainerStatuses[1] = containerStatus("sidecar", "", stateWaiting)
+	pending.Status.ContainerStatuses[0] = containerStatus("app", "", stateWaiting)
+	th.OnAdd(pending, true)
+	require.Equal(t, []string{"test-1/pod-3-UID/init"}, endpointIDs(th.ListEndpoints()))
+
+	// It finishes and the pod starts: its endpoint goes, the ones of the pod come.
+	started := podWithInitContainers()
+	th.OnUpdate(pending, started)
+	require.ElementsMatch(t, []string{
+		"test-1/pod-3-UID",
+		"test-1/pod-3-UID/sidecar",
+		"test-1/pod-3-UID/metrics(9090)",
+		"test-1/pod-3-UID/app",
+	}, endpointIDs(th.ListEndpoints()))
+
+	th.OnDelete(started)
+	require.Empty(t, th.ListEndpoints())
+}
+
+func TestPodEndpointsAppPortKeptOverInitContainerPort(t *testing.T) {
+	th := newTestHandler()
+	th.podOptions = podEndpointOptions{initContainers: true}
+
+	// A native sidecar and the app container declare the same port.
+	pod := podWithInitContainers()
+	pod.Spec.Containers[0].Ports = pod.Spec.InitContainers[1].Ports
+	th.OnAdd(pod, true)
+
+	port, ok := th.endpoints.Load(observer.EndpointID("test-1/pod-3-UID/metrics(9090)"))
+	require.True(t, ok)
+	require.Equal(t, "app", port.(observer.Endpoint).Details.(*observer.Port).ContainerName)
+}
