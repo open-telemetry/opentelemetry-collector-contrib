@@ -57,6 +57,7 @@ The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Time before timer handling for a trace. When `sampling_strategy` is `trace-complete`, this controls decision timing. When `sampling_strategy` is `span-ingest`, this controls pending cleanup finalization timing.
 - `decision_wait_after_root_received` (default = 0s): Additional root-span-based acceleration for timer handling. When `sampling_strategy` is `trace-complete`, this can make decisions earlier. When `sampling_strategy` is `span-ingest`, this can finalize pending traces earlier on cleanup. `0s` disables it.
 - `num_traces` (default = 50000): Number of traces kept in memory.
+- `block_on_overflow` (default = false): Behavior when `num_traces` is reached. If `true`, the processor waits for space before accepting new traces; if `false`, the oldest traces are evicted to make room.
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
 - `decision_cache`: Options for configuring caches for sampling decisions. You may want to vary the size of these caches
   depending on how many "keep" vs "drop" decisions you expect from your policies. For example, you may allocate a

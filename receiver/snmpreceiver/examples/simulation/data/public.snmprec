@@ -1,0 +1,4 @@
+1.3.6.1.2.1.1.1.0|4|OpenTelemetry SNMP simulation
+1.3.6.1.2.1.1.3.0|67|123456
+1.3.6.1.2.1.1.5.0|4|sim-device
+1.3.6.1.4.1.8072.9999.1.0|2:notification|op=set,version=2c,community=public,host=127.0.0.1,port=1620,ntftype=trap,trapoid=1.3.6.1.6.3.1.1.5.1,uptime=123456,varbinds=1.3.6.1.2.1.1.5.0:s:sim-v2c-trap,value=0

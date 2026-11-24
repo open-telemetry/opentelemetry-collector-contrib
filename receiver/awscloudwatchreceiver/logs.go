@@ -31,12 +31,20 @@ const (
 	maxLogGroupsPerDiscovery = int32(50)
 )
 
+// errLeaderElectionWithoutStorage rejects leader election for logs without shared
+// checkpoints: a new leader would restart from the configured start time, which
+// duplicates or skips events on every failover.
+var errLeaderElectionWithoutStorage = errors.New(
+	"logs collection with k8s_leader_elector requires a storage extension that several collectors can use at the same time",
+)
+
 type logsReceiver struct {
 	settings                      receiver.Settings
 	region                        string
 	profile                       string
 	imdsEndpoint                  string
 	pollInterval                  time.Duration
+	delay                         time.Duration
 	maxEventsPerRequest           int
 	initialStartTime              time.Time
 	groupNextStartTimes           map[string]time.Time
@@ -45,10 +53,17 @@ type logsReceiver struct {
 	client                        client
 	consumer                      consumer.Logs
 	wg                            *sync.WaitGroup
-	doneChan                      chan bool
 	storageID                     *component.ID
 	cloudwatchCheckpointPersister *cloudwatchCheckpointPersister
 	accountID                     string
+	k8sLeaderElector              *component.ID
+
+	// mu guards the polling lifecycle, which leader election may stop and start repeatedly.
+	mu         sync.Mutex
+	pollCancel context.CancelFunc
+	// shutdown stops leadership callbacks from starting a new loop after Shutdown. The
+	// extension keeps them registered, and extensions shut down after receivers.
+	shutdown bool
 }
 
 type client interface {
@@ -154,12 +169,13 @@ func newLogsReceiver(cfg *Config, settings receiver.Settings, consumer consumer.
 		imdsEndpoint:        cfg.IMDSEndpoint,
 		autodiscover:        autodiscover,
 		pollInterval:        cfg.Logs.PollInterval,
+		delay:               cfg.Logs.Delay,
 		initialStartTime:    startTime,
 		groupNextStartTimes: map[string]time.Time{},
 		groupRequests:       groups,
 		wg:                  &sync.WaitGroup{},
-		doneChan:            make(chan bool),
 		storageID:           cfg.StorageID,
+		k8sLeaderElector:    cfg.K8sLeaderElector,
 	}
 }
 
@@ -173,16 +189,57 @@ func (l *logsReceiver) Start(ctx context.Context, host component.Host) error {
 		l.cloudwatchCheckpointPersister = newCloudwatchCheckpointPersister(storageClient, l.settings.Logger)
 	}
 
+	if l.k8sLeaderElector != nil {
+		elector, err := getLeaderElector(host, *l.k8sLeaderElector)
+		if err != nil {
+			return err
+		}
+		if l.storageID == nil {
+			return errLeaderElectionWithoutStorage
+		}
+		// The extension invokes the start callback inline when this instance is already the leader.
+		elector.SetCallBackFuncs(l.startCollecting, l.stopCollecting)
+		return nil
+	}
+
+	l.startCollecting(ctx)
+	return nil
+}
+
+// startCollecting polls until leadership is lost or the receiver is shut down. The context is
+// recreated per term, so leadership regained after a loss starts a clean polling loop.
+func (l *logsReceiver) startCollecting(ctx context.Context) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.shutdown || l.pollCancel != nil || ctx.Err() != nil {
+		return
+	}
+
+	pollCtx, cancel := context.WithCancel(ctx)
+	l.pollCancel = cancel
+
 	l.settings.Logger.Debug("starting to poll for Cloudwatch logs")
 	l.wg.Add(1)
-	go l.startPolling(ctx)
-	return nil
+	go l.startPolling(pollCtx)
+}
+
+func (l *logsReceiver) stopCollecting() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.pollCancel == nil {
+		return
+	}
+	l.pollCancel()
+	l.pollCancel = nil
+	l.wg.Wait()
 }
 
 func (l *logsReceiver) Shutdown(ctx context.Context) error {
 	l.settings.Logger.Debug("shutting down logs receiver")
-	close(l.doneChan)
-	l.wg.Wait()
+	l.mu.Lock()
+	l.shutdown = true
+	l.mu.Unlock()
+	l.stopCollecting()
 
 	if l.cloudwatchCheckpointPersister != nil {
 		if err := l.cloudwatchCheckpointPersister.Shutdown(ctx); err != nil {
@@ -198,24 +255,25 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 	defer l.wg.Done()
 
 	t := time.NewTicker(l.pollInterval)
+	defer t.Stop()
 	for {
 		select {
 		case <-ctx.Done():
-			return
-		case <-l.doneChan:
 			return
 		case <-t.C:
 			if l.autodiscover != nil {
 				group, err := l.discoverGroups(ctx, l.autodiscover)
 				if err != nil {
-					l.settings.Logger.Error("unable to perform discovery of log groups", zap.Error(err))
+					if ctx.Err() == nil {
+						l.settings.Logger.Error("unable to perform discovery of log groups", zap.Error(err))
+					}
 					continue
 				}
 				l.groupRequests = group
 			}
 
-			err := l.poll(ctx)
-			if err != nil {
+			// A poll canceled because collection is stopping is not an error worth reporting.
+			if err := l.poll(ctx); err != nil && ctx.Err() == nil {
 				l.settings.Logger.Error("there was an error during the poll", zap.Error(err))
 			}
 		}
@@ -225,8 +283,16 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 func (l *logsReceiver) poll(ctx context.Context) error {
 	var errs error
 	currentGroups := make(map[string]bool)
-	endTime := nowFunc()
+	// Shift the window end back by delay so events that CloudWatch makes visible late are
+	// still inside the window when it is queried.
+	endTime := nowFunc().Add(-l.delay)
 	for _, r := range l.groupRequests {
+		// Collection stopped. The groups left in this cycle were never polled, so there is
+		// nothing new to checkpoint for them.
+		if ctx.Err() != nil {
+			return errs
+		}
+
 		groupName := r.groupName()
 		currentGroups[groupName] = true
 		startTime, ok := l.groupNextStartTimes[groupName]
@@ -238,6 +304,11 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 		if l.cloudwatchCheckpointPersister != nil {
 			logGroup := r.groupName()
 			checkpoint, err := l.cloudwatchCheckpointPersister.GetCheckpoint(ctx, logGroup)
+			if err != nil && ctx.Err() != nil {
+				// Collection stopped before the stored position was known. Continuing would
+				// write the configured start time over it.
+				return errs
+			}
 			if err == nil && checkpoint != "" {
 				parsedTime, parseErr := time.Parse(time.RFC3339, checkpoint)
 				if parseErr == nil && parsedTime.After(startTime) {
@@ -260,6 +331,13 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 			}
 		}
 
+		// With a delay, the window end can be at or before the start (for example right
+		// after startup). Skip the group this cycle and keep its start time.
+		if !endTime.After(startTime) {
+			l.groupNextStartTimes[groupName] = startTime
+			continue
+		}
+
 		// Poll logs for the current log group
 		nextStartTime, err := l.pollForLogs(ctx, r, startTime, endTime)
 		if err != nil {
@@ -270,7 +348,10 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 		if l.cloudwatchCheckpointPersister != nil {
 			logGroup := r.groupName()
 			newCheckpoint := nextStartTime.UTC().Format(time.RFC3339Nano)
-			err := l.cloudwatchCheckpointPersister.SetCheckpoint(ctx, logGroup, newCheckpoint)
+			// The checkpoint covers events already sent downstream, so it has to be written
+			// even when the poll was cut short by leadership loss or shutdown. A storage
+			// extension that honors cancellation, such as redis_storage, would reject it.
+			err := l.cloudwatchCheckpointPersister.SetCheckpoint(context.WithoutCancel(ctx), logGroup, newCheckpoint)
 			if err != nil {
 				l.settings.Logger.Error("failed to persist timestamp checkpoint",
 					zap.String("logGroup", logGroup),
@@ -306,10 +387,8 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 
 	for nextToken != nil {
 		select {
-		case _, ok := <-l.doneChan:
-			if !ok {
-				return nextStartTime, nil
-			}
+		case <-ctx.Done():
+			return nextStartTime, nil
 		default:
 			input := pc.request(l.maxEventsPerRequest, *nextToken, &startTime, &endTime)
 			resp, err := l.client.FilterLogEvents(ctx, input)
@@ -326,7 +405,9 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 			observedTime := pcommon.NewTimestampFromTime(nowFunc())
 			logs := l.processEvents(observedTime, logGroup, resp)
 			if logs.LogRecordCount() > 0 {
-				if err = l.consumer.ConsumeLogs(ctx, logs); err != nil {
+				// A page already read is delivered even when collection stops mid-export, as
+				// scraperhelper does for scrapes. Canceling it would drop the page.
+				if err = l.consumer.ConsumeLogs(context.WithoutCancel(ctx), logs); err != nil {
 					l.settings.Logger.Error("unable to consume logs",
 						zap.String("logGroup", logGroup),
 						zap.Error(err))
@@ -508,9 +589,11 @@ func (l *logsReceiver) ensureSession() error {
 	l.client = cloudwatchlogs.NewFromConfig(cfg)
 
 	stsClient := sts.NewFromConfig(cfg)
-	stsResult, _ := stsClient.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{})
-	if stsClient != nil && *stsResult.Account != "" {
-		l.accountID = *stsResult.Account
+	stsResult, stsErr := stsClient.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{})
+	if stsErr != nil {
+		l.settings.Logger.Warn("unable to get AWS account ID", zap.Error(stsErr))
+	} else if stsResult != nil {
+		l.accountID = aws.ToString(stsResult.Account)
 	}
 
 	return err

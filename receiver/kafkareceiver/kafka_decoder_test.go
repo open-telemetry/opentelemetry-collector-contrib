@@ -120,7 +120,7 @@ func TestReceiver_MessageDecoderContext(t *testing.T) {
 								{Key: "tag", Value: []byte("first-" + id)},
 								{Key: "tag", Value: []byte("second-" + id)},
 							},
-						}, attribute.NewSet())
+						}, attribute.NewSet(), nil)
 					}()
 				}
 				for range 2 {
@@ -187,7 +187,7 @@ func TestReceiver_MessageDecoderSelectsFormatFromHeader(t *testing.T) {
 			require.NoError(t, r.(*franzConsumer).consumeMessage(t.Context(), &kgo.Record{
 				Topic: "messages", Value: payload,
 				Headers: []kgo.RecordHeader{{Key: "format", Value: []byte(tc.format)}},
-			}, attribute.NewSet()))
+			}, attribute.NewSet(), nil))
 
 			allMetrics := next.AllMetrics()
 			require.Len(t, allMetrics, i+1)
@@ -217,7 +217,7 @@ func TestReceiver_MessageDecoderPreferredOverLegacy(t *testing.T) {
 			ext := &messageAndLegacyExtension{}
 			require.NoError(t, r.Start(t.Context(), extensionsHost{component.MustNewID("context"): ext}))
 			t.Cleanup(func() { assert.NoError(t, r.Shutdown(context.Background())) }) //nolint:usetesting
-			require.NoError(t, r.(*franzConsumer).consumeMessage(t.Context(), &kgo.Record{Topic: "messages", Value: []byte("message payload")}, attribute.NewSet()))
+			require.NoError(t, r.(*franzConsumer).consumeMessage(t.Context(), &kgo.Record{Topic: "messages", Value: []byte("message payload")}, attribute.NewSet(), nil))
 			result := awaitDecoderValue(t, received)
 			assert.Equal(t, "message payload", result.resources[0]["decoded.payload"])
 			assert.Zero(t, ext.legacyCalls)
@@ -234,7 +234,7 @@ func TestReceiver_MessageDecoderError(t *testing.T) {
 			decodeErr := errors.New("invalid encoded message")
 			require.NoError(t, r.Start(t.Context(), extensionsHost{component.MustNewID("context"): &messageContextExtension{err: decodeErr}}))
 			t.Cleanup(func() { assert.NoError(t, r.Shutdown(context.Background())) }) //nolint:usetesting
-			err := r.(*franzConsumer).consumeMessage(t.Context(), &kgo.Record{Topic: "messages", Value: []byte("payload")}, attribute.NewSet())
+			err := r.(*franzConsumer).consumeMessage(t.Context(), &kgo.Record{Topic: "messages", Value: []byte("payload")}, attribute.NewSet(), nil)
 			require.ErrorIs(t, err, decodeErr)
 			assert.True(t, consumererror.IsPermanent(err))
 			assert.Empty(t, received, "a decoder result returned with an error must not be consumed")
@@ -252,7 +252,7 @@ func TestReceiver_LegacyUnmarshaler(t *testing.T) {
 			t.Cleanup(func() { assert.NoError(t, r.Shutdown(context.Background())) }) //nolint:usetesting
 			require.NoError(t, r.(*franzConsumer).consumeMessage(t.Context(), &kgo.Record{
 				Topic: "messages", Value: []byte("valid"),
-			}, attribute.NewSet()))
+			}, attribute.NewSet(), nil))
 			message := awaitDecoderValue(t, received)
 			wantCount := 1
 			if signal == "metrics" {
