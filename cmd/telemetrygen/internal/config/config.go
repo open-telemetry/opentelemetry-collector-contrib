@@ -241,6 +241,34 @@ func (c *Config) Endpoint() string {
 	return defaultGRPCEndpoint
 }
 
+// toValue converts an interface{} to an attribute.Value, returning a boolean indicating success.
+func toValue(v any) (attribute.Value, bool) {
+	switch v := v.(type) {
+	case string:
+		return attribute.StringValue(v), true
+	case bool:
+		return attribute.BoolValue(v), true
+	case int:
+		return attribute.IntValue(v), true
+	case []string:
+		return attribute.StringSliceValue(v), true
+	case []bool:
+		return attribute.BoolSliceValue(v), true
+	case []int:
+		return attribute.IntSliceValue(v), true
+	case map[string]any:
+		kvs := make([]attribute.KeyValue, 0, len(v))
+		for k, inner := range v {
+			if val, ok := toValue(inner); ok {
+				kvs = append(kvs, attribute.KeyValue{Key: attribute.Key(k), Value: val})
+			}
+		}
+		return attribute.MapValue(kvs...), true
+	default:
+		return attribute.Value{}, false
+	}
+}
+
 func (c *Config) GetAttributes() []attribute.KeyValue {
 	var attributes []attribute.KeyValue
 
@@ -248,19 +276,8 @@ func (c *Config) GetAttributes() []attribute.KeyValue {
 	attributes = append(attributes, conventions.ServiceNameKey.String(c.ServiceName))
 	if len(c.ResourceAttributes) > 0 {
 		for k, t := range c.ResourceAttributes {
-			switch v := t.(type) {
-			case string:
-				attributes = append(attributes, attribute.String(k, v))
-			case bool:
-				attributes = append(attributes, attribute.Bool(k, v))
-			case int:
-				attributes = append(attributes, attribute.Int(k, v))
-			case []string:
-				attributes = append(attributes, attribute.StringSlice(k, v))
-			case []bool:
-				attributes = append(attributes, attribute.BoolSlice(k, v))
-			case []int:
-				attributes = append(attributes, attribute.IntSlice(k, v))
+			if val, ok := toValue(t); ok {
+				attributes = append(attributes, attribute.KeyValue{Key: attribute.Key(k), Value: val})
 			}
 		}
 	}
@@ -272,19 +289,8 @@ func (c *Config) GetTelemetryAttributes() []attribute.KeyValue {
 
 	if len(c.TelemetryAttributes) > 0 {
 		for k, t := range c.TelemetryAttributes {
-			switch v := t.(type) {
-			case string:
-				attributes = append(attributes, attribute.String(k, v))
-			case bool:
-				attributes = append(attributes, attribute.Bool(k, v))
-			case int:
-				attributes = append(attributes, attribute.Int(k, v))
-			case []string:
-				attributes = append(attributes, attribute.StringSlice(k, v))
-			case []bool:
-				attributes = append(attributes, attribute.BoolSlice(k, v))
-			case []int:
-				attributes = append(attributes, attribute.IntSlice(k, v))
+			if val, ok := toValue(t); ok {
+				attributes = append(attributes, attribute.KeyValue{Key: attribute.Key(k), Value: val})
 			}
 		}
 	}
