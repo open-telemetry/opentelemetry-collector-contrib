@@ -1,0 +1,50 @@
+extensions:
+  signalstate:
+
+receivers:
+  otlp:
+    protocols:
+      http: { endpoint: 127.0.0.1:14317 }
+  execc:
+    schedule:
+      interval: 8s
+    command: /bin/sh
+    args: ["-c", "echo tick; [ -f /tmp/demo-anom ] && echo ERROR-anomaly-detected"]
+
+processors:
+  eventdetector:
+    signalstate_extension: signalstate
+    log_rules:
+      - name: err-spike
+        window: boost
+        conditions: ['body == "ERROR-anomaly-detected"']
+        ttl: 25s
+        cooldown: 3s
+  deadband:
+    threshold: 0.01
+    stale_after: 5s
+    adaptive:
+      enabled: true
+      signalstate_extension: signalstate
+      window: boost
+
+exporters:
+  debug/info:
+    verbosity: basic
+    sampling_initial: 60
+    sampling_thereafter: 60
+
+service:
+  telemetry:
+    logs:
+      level: debug
+  extensions: [signalstate]
+  pipelines:
+    logs:
+      receivers: [execc]
+      processors: [eventdetector]
+      exporters: [debug/info]
+    metrics:
+      receivers: [otlp]
+      processors: [deadband]
+      exporters: [debug/info]

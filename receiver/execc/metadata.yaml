@@ -1,0 +1,13 @@
+type: execc
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+  distributions: [custom]
+  codeowners:
+    active: [srclosson]
+
+# The execc receiver runs a configured command on a schedule and emits each
+# line of its stdout as a log record — the OTel-native replacement for
+# Telegraf's exec input.

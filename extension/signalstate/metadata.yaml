@@ -1,0 +1,22 @@
+type: signalstate
+
+github_project: open-telemetry/opentelemetry-collector-contrib
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: [custom]
+  codeowners:
+    active: [srclosson]
+
+telemetry:
+  metrics:
+    otelcol.signalstate.windows:
+      enabled: true
+      stability: development
+      description: Number of named windows currently open.
+      unit: "1"
+      gauge:
+        value_type: int
+        async: false
