@@ -129,8 +129,60 @@ func TestUnmarshal(t *testing.T) {
 					return cfg
 				}(),
 			},
+			{
+				Name: "rfc3164_timestamp_options",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.Protocol = RFC3164
+					cfg.AllowRFC3339Timestamp = true
+					cfg.AllowSecondFractions = true
+					return cfg
+				}(),
+			},
 		},
 	}.Run(t)
+}
+
+func TestRFC3164TimestampOptions(t *testing.T) {
+	testCases := []struct {
+		desc        string
+		base        BaseConfig
+		errContents string
+	}{
+		{
+			desc: "RFC3339 timestamp with RFC3164",
+			base: BaseConfig{Protocol: RFC3164, AllowRFC3339Timestamp: true},
+		},
+		{
+			desc: "Second fractions with RFC3164 and octet counting",
+			base: BaseConfig{Protocol: RFC3164, AllowSecondFractions: true, EnableOctetCounting: true},
+		},
+		{
+			desc:        "RFC3339 timestamp with RFC5424",
+			base:        BaseConfig{Protocol: RFC5424, AllowRFC3339Timestamp: true},
+			errContents: "allow_rfc3339_timestamp is only compatible with protocol rfc3164",
+		},
+		{
+			desc:        "Second fractions with none",
+			base:        BaseConfig{Protocol: None, AllowSecondFractions: true},
+			errContents: "allow_second_fractions is only compatible with protocol rfc3164",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			cfg := &Config{
+				ParserConfig: helper.NewParserConfig(operatorType, operatorType),
+				BaseConfig:   tc.base,
+			}
+			_, err := cfg.Build(componenttest.NewNopTelemetrySettings())
+			if tc.errContents != "" {
+				require.ErrorContains(t, err, tc.errContents)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestParserMissingProtocol(t *testing.T) {

@@ -222,7 +222,7 @@ func getDataSource(cfg Config) string {
 			// Config validation guarantees the data source carries no
 			// username/password and no conflicting AUTH TYPE, so we only need to
 			// add the marker that makes go-ora perform the Kerberos handshake.
-			if u, err := url.Parse(cfg.DataSource); err == nil {
+			if u, err := url.Parse(string(cfg.DataSource)); err == nil {
 				q := u.Query()
 				q.Set("AUTH TYPE", "KERBEROS")
 				u.RawQuery = q.Encode()
@@ -231,7 +231,7 @@ func getDataSource(cfg Config) string {
 			// Validate already parsed the data source, so an error here is
 			// unexpected; fall back to the raw value.
 		}
-		return cfg.DataSource
+		return string(cfg.DataSource)
 	}
 
 	// Don't need to worry about errors here as config validation already checked.
@@ -246,7 +246,7 @@ func getDataSource(cfg Config) string {
 		})
 	}
 
-	return go_ora.BuildUrl(host, int(port), cfg.Service, cfg.Username, cfg.Password, nil)
+	return go_ora.BuildUrl(host, int(port), cfg.Service, cfg.Username, string(cfg.Password), nil)
 }
 
 func getInstanceName(datasource string) (string, error) {

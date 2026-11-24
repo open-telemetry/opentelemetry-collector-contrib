@@ -28,7 +28,7 @@ var _ storage.Extension = (*databaseStorage)(nil)
 func newDBStorage(logger *zap.Logger, config *Config) (extension.Extension, error) {
 	return &databaseStorage{
 		driverName:     config.DriverName,
-		datasourceName: config.DataSource,
+		datasourceName: string(config.DataSource),
 		logger:         logger,
 	}, nil
 }

@@ -37,6 +37,14 @@ Number of eBPF profile records dropped during conversion because their measureme
 | ---- | ----------- | ---------- | --------- | --------- |
 | {record} | Sum | Int | true | Development |
 
+### otelcol_exporter_splunkhec_approaching_capacity
+
+Number of accepted requests for which Splunk HEC reported its queue or ack channel is approaching capacity (response codes 24 and 25).
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {request} | Sum | Int | true | Development |
+
 ### otelcol_exporter_splunkhec_heartbeats_failed
 
 Number of heartbeats failed by the Splunk HEC exporter.

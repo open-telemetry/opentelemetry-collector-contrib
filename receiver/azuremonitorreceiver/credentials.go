@@ -43,7 +43,7 @@ func loadCredentials(logger *zap.Logger, cfg *Config, host component.Host) (azco
 			return nil, err
 		}
 	case servicePrincipal:
-		if cred, err = azidentity.NewClientSecretCredential(cfg.TenantID, cfg.ClientID, cfg.ClientSecret, nil); err != nil {
+		if cred, err = azidentity.NewClientSecretCredential(cfg.TenantID, cfg.ClientID, string(cfg.ClientSecret), nil); err != nil {
 			return nil, err
 		}
 	case workloadIdentity:

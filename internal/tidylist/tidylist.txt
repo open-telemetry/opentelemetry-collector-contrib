@@ -14,6 +14,7 @@ internal/common
 cmd/telemetrygen/internal/e2etest
 extension/dbauth
 config/configdbauth
+config/xconfigunit
 confmap/provider/aesprovider
 confmap/provider/googlesecretmanagerprovider
 confmap/provider/s3provider
@@ -215,6 +216,7 @@ internal/tools
 pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki
+pkg/xcompression
 processor/attributesprocessor
 processor/awsecsattributesprocessor
 processor/cardinalityguardianprocessor
@@ -246,6 +248,7 @@ processor/spanprocessor
 processor/spanpruningprocessor
 processor/sumologicprocessor
 processor/telemetrypolicyprocessor
+processor/transformprocessor/xtransformprocessor
 processor/unrollprocessor
 processor/verifyprocessor
 receiver/activedirectorydsreceiver

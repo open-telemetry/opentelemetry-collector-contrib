@@ -6,6 +6,8 @@ package dbstorage // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"errors"
 	"fmt"
+
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 const (
@@ -16,8 +18,8 @@ const (
 
 // Config defines configuration for dbstorage extension.
 type Config struct {
-	DriverName string `mapstructure:"driver,omitempty"`
-	DataSource string `mapstructure:"datasource,omitempty"`
+	DriverName string              `mapstructure:"driver,omitempty"`
+	DataSource configopaque.String `mapstructure:"datasource,omitempty"`
 }
 
 func (cfg *Config) Validate() error {

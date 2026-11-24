@@ -40,7 +40,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: azure_metric1_maximum
-            unit: Percent
+            unit: "%"
           - gauge:
               dataPoints:
                 - asDouble: 1
@@ -72,7 +72,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: azure_metric1_total
-            unit: Percent
+            unit: "%"
           - gauge:
               dataPoints:
                 - asDouble: 1
@@ -104,7 +104,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: azure_metric2_average
-            unit: Count
+            unit: "{count}"
           - gauge:
               dataPoints:
                 - asDouble: 1
@@ -136,7 +136,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: azure_metric2_maximum
-            unit: Count
+            unit: "{count}"
           - gauge:
               dataPoints:
                 - asDouble: 1
@@ -168,7 +168,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: azure_metric2_minimum
-            unit: Count
+            unit: "{count}"
           - gauge:
               dataPoints:
                 - asDouble: 1
@@ -200,7 +200,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: azure_metric2_total
-            unit: Count
+            unit: "{count}"
           - gauge:
               dataPoints:
                 - asDouble: 1
@@ -232,7 +232,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: azure_metric1_minimum
-            unit: Percent
+            unit: "%"
           - gauge:
               dataPoints:
                 - asDouble: 1
@@ -264,7 +264,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: azure_metric2_count
-            unit: Count
+            unit: "{count}"
           - gauge:
               dataPoints:
                 - asDouble: 1
@@ -290,7 +290,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: azure_metric3_average
-            unit: Bytes
+            unit: By
           - gauge:
               dataPoints:
                 - asDouble: 1
@@ -322,7 +322,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: azure_metric1_average
-            unit: Percent
+            unit: "%"
           - gauge:
               dataPoints:
                 - asDouble: 1
@@ -348,7 +348,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: azure_metric3_count
-            unit: Bytes
+            unit: By
           - gauge:
               dataPoints:
                 - asDouble: 1
@@ -374,7 +374,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: azure_metric3_total
-            unit: Bytes
+            unit: By
           - gauge:
               dataPoints:
                 - asDouble: 1
@@ -406,7 +406,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: azure_metric1_count
-            unit: Percent
+            unit: "%"
           - gauge:
               dataPoints:
                 - asDouble: 1
@@ -432,7 +432,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: azure_metric3_maximum
-            unit: Bytes
+            unit: By
           - gauge:
               dataPoints:
                 - asDouble: 1
@@ -458,7 +458,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: azure_metric3_minimum
-            unit: Bytes
+            unit: By
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver
           version: latest
@@ -497,7 +497,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: azure_metric7_total
-            unit: BitsPerSecond
+            unit: bit/s
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver
           version: latest

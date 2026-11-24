@@ -14,7 +14,8 @@ import (
 // partitionMailbox stores fetched batches waiting for one partition worker.
 // It also coordinates rewinds so fetched batches are not skipped.
 type partitionMailbox struct {
-	ctx context.Context
+	ctx       context.Context
+	telemetry *partitionTelemetry
 
 	mu sync.Mutex
 	// batches is the bounded FIFO queue of batches waiting for the worker.
@@ -73,6 +74,7 @@ func (m *partitionMailbox) enqueue(batch kgo.FetchTopicPartition, pause func(par
 	}
 
 	m.batches = append(m.batches, queuedBatch{batch: batch, size: size})
+	m.telemetry.setWaiting(false)
 	m.queuedBytes += size
 	m.notifyLocked()
 	// Pause when the mailbox fills so franz-go discards any additional records it
@@ -116,6 +118,7 @@ func (m *partitionMailbox) requestRewind(record *kgo.Record, clearQueue bool, pa
 
 // requestRewindLocked updates rewind state while the caller holds m.mu.
 func (m *partitionMailbox) requestRewindLocked(record *kgo.Record, clearQueue bool) {
+	m.telemetry.setWaiting(false)
 	if clearQueue {
 		m.clearLocked()
 	}
@@ -162,6 +165,7 @@ func (m *partitionMailbox) resumeAfterOffsetChange(resume func()) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	resume()
+	m.telemetry.resume()
 }
 
 // discard releases all queued and pending work.
@@ -170,7 +174,16 @@ func (m *partitionMailbox) discard() {
 	defer m.mu.Unlock()
 
 	m.clearLocked()
+	m.telemetry.setWaiting(false)
 	m.pendingRewind = nil
+}
+
+// waitForData checks under the queue lock so enqueue cannot leave an idle
+// timer running after data arrives. Rewind notifications are not data waits.
+func (m *partitionMailbox) waitForData() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.telemetry.setWaiting(m.ctx.Err() == nil && len(m.batches) == 0 && m.pendingRewind == nil)
 }
 
 // clearLocked drops every waiting batch while the caller holds m.mu.

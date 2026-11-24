@@ -28,7 +28,7 @@ type Config struct {
 type HeaderConfig struct {
 	Action        ActionValue          `mapstructure:"action"`
 	Key           *string              `mapstructure:"key"`
-	Value         *string              `mapstructure:"value"`
+	Value         *configopaque.String `mapstructure:"value"`
 	ValueFile     *string              `mapstructure:"value_file"`
 	FromContext   *string              `mapstructure:"from_context"`
 	FromAttribute *string              `mapstructure:"from_attribute"`

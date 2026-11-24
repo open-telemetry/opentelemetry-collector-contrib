@@ -70,7 +70,7 @@ type azureBatchScraper struct {
 }
 
 func (s *azureBatchScraper) GetMetricsBatchValuesClient(region string) (*azmetrics.Client, error) {
-	endpoint := "https://" + region + ".metrics.monitor.azure.com"
+	endpoint := s.clientOptionsResolver.GetBatchAPIEndpoint(region)
 	s.settings.Logger.Info("Batch Endpoint", zap.String("endpoint", endpoint))
 	return azmetrics.NewClient(endpoint, s.cred, s.clientOptionsResolver.GetAzMetricsClientOptions())
 }
@@ -450,12 +450,9 @@ func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Con
 	// The Azure Monitor MetricDefinitions API only returns custom metric namespace
 	// definitions (e.g. "azure.vm.linux.guestmetrics" published by AMA/MetricsExtension)
 	// when the metricnamespace query parameter is set explicitly. Make additional calls
-	// for each namespace configured in the metrics filter that was not already returned
+	// only for namespaces applicable to this resource that were not already returned
 	// by the default call above.
-	for configNamespace := range s.cfg.Metrics {
-		if _, found := discoveredNamespaces[strings.ToLower(configNamespace)]; found {
-			continue
-		}
+	for _, configNamespace := range dedupAlreadyCollectedNamespaces(s.cfg.Metrics, discoveredNamespaces, resourceType) {
 		opts := &armmonitor.MetricDefinitionsClientListOptions{
 			Metricnamespace: new(configNamespace),
 		}
@@ -681,7 +678,7 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 									t := *metricValue.TimeStamp
 									lastTime, exists := metricsByGrain.lastEmittedTimestamps[tsKeyPrefix]
 									if !exists || t.After(lastTime) {
-										s.processQueryTimeseriesData(mb, resID, metric, metricValue, attributes)
+										s.processQueryTimeseriesData(mb, resID, metric, metricValue, attributes, now)
 										metricsByGrain.lastEmittedTimestamps[tsKeyPrefix] = t
 									}
 								}
@@ -731,11 +728,15 @@ func (s *azureBatchScraper) processQueryTimeseriesData(
 	metric azmetrics.Metric,
 	metricValue azmetrics.MetricValue,
 	attributes map[string]*string,
+	collectionTime time.Time,
 ) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	ts := pcommon.NewTimestampFromTime(*metricValue.TimeStamp)
+	dataPointTimestamp := *metricValue.TimeStamp
+	ts := pcommon.NewTimestampFromTime(dataPointTimestamp)
+	metricName := *metric.Name.Value
+	loggedDelay := false
 
 	aggregationsData := []struct {
 		name  string
@@ -749,11 +750,15 @@ func (s *azureBatchScraper) processQueryTimeseriesData(
 	}
 	for _, aggregation := range aggregationsData {
 		if aggregation.value != nil {
+			if !loggedDelay {
+				logDataPointDelay(s.settings.Logger, resourceID, metricName, collectionTime, dataPointTimestamp)
+				loggedDelay = true
+			}
 			mb.AddDataPoint(
 				resourceID,
-				*metric.Name.Value,
+				metricName,
 				aggregation.name,
-				string(*metric.Unit),
+				convertUnitToUCUM(string(*metric.Unit)),
 				attributes,
 				ts,
 				*aggregation.value,

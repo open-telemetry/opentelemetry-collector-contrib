@@ -23,7 +23,7 @@ runs:
         ./.github/workflows/scripts/free-disk-space.sh
 
     - name: Setup Go
-      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version: ${{ inputs.go-version }}
         # Caching is handled below instead of via setup-go's built-in cache
