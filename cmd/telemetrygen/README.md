@@ -167,14 +167,9 @@ Custom attributes can be added at two different levels, using two different flag
 
 Because `service.name` is a resource attribute, `--otlp-attributes service.name="my-service"` overrides the `--service` flag.
 
-Both flags accept the same value formats: `key="value"`, `key=true`, `key=false`, `key=<integer>`, `key=["value1", "value2", ...]` for slices, and `key={a="x", b=1, ...}` for maps. All items of a slice must have the same type. Map supports the same types
-
-
-
 Both flags accept the same value formats: `key="value"`, `key=true`, `key=false`, `key=<integer>`, `key=["value1", "value2", ...]` for slices and `key={a="x", b=1, ...}` for maps.
 
 All items of a slice must have the same type. Map accepts nested maps and slices. Both flags may be repeated to set multiple attributes
-
 
 String values must keep their double quotes when they reach `telemetrygen`, so escape them (or wrap the whole argument in single quotes) to prevent the shell from removing them:
 
