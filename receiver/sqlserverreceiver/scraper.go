@@ -776,6 +776,7 @@ func isPerformanceCounterRate(counterType, counterName string) bool {
 		"Page Deallocations/sec",
 		"Page lookups/sec",
 		"Page reads/sec",
+		"Page Splits/sec",
 		"Page writes/sec",
 		"Pages Allocated/sec",
 		"Pages Compressed/sec",
@@ -960,6 +961,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const pageLifeExpectancy = "Page life expectancy"
 	const pageLookupsPerSec = "Page lookups/sec"
 	const pageReadsPerSec = "Page reads/sec"
+	const pageSplitsPerSec = "Page Splits/sec"
 	const pageWritesPerSec = "Page writes/sec"
 	const pagesAllocatedPerSec = "Pages Allocated/sec"
 	const pagesCompressedPerSec = "Pages Compressed/sec"
@@ -1625,6 +1627,14 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverPageOperationRateDataPoint(now, val.(float64), metadata.AttributePageOperationsRead)
+			}
+		case pageSplitsPerSec:
+			val, err := retrieveFloat(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, pageSplitsPerSec)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverPageSplitRateDataPoint(now, val.(float64))
 			}
 		case pageWritesPerSec:
 			val, err := retrieveFloat(row, valueKey)

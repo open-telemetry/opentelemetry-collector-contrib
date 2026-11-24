@@ -116,8 +116,6 @@ This metric is available when running on Windows via PDH or when the receiver is
 
 Number of pages split as a result of overflowing index pages.
 
-This metric is only available when running on Windows.
-
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {pages}/s | Gauge | Double | Development |
