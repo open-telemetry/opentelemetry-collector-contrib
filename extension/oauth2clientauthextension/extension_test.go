@@ -815,3 +815,49 @@ func TestJwtOAuth(t *testing.T) {
 	_, err = client.Do(req)
 	assert.NoError(t, err)
 }
+
+func TestJwtOAuthClientIDFile(t *testing.T) {
+	var gotSub, gotIss string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		jwtParts := strings.Split(r.FormValue("assertion"), ".")
+		if len(jwtParts) != 3 {
+			http.Error(w, "expected JWT to have 3 parts", http.StatusBadRequest)
+			return
+		}
+		payload, err := base64.RawURLEncoding.DecodeString(jwtParts[1])
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		var claims struct {
+			Sub string `json:"sub"`
+			Iss string `json:"iss"`
+		}
+		if err := json.Unmarshal(payload, &claims); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		gotSub, gotIss = claims.Sub, claims.Iss
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"access_token":"abc","token_type":"Bearer"}`))
+	}))
+	defer server.Close()
+
+	oauth2Authenticator, err := newClientAuthenticator(&Config{
+		ClientIDFile:             "testdata/test-cred.txt",
+		ClientCertificateKeyFile: "testdata/client.key",
+		GrantType:                grantTypeJWTBearer,
+		TokenURL:                 server.URL,
+	}, zap.NewNop())
+	require.NoError(t, err)
+
+	_, err = oauth2Authenticator.Token(context.Background())
+	require.NoError(t, err)
+
+	assert.Equal(t, "testcreds", gotIss)
+	assert.Equal(t, "testcreds", gotSub)
+}
