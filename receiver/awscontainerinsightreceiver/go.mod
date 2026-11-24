@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.48.0
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.9
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.347.0
-	github.com/google/cadvisor v0.61.0
+	github.com/google/cadvisor v0.61.1
 	github.com/google/cadvisor/lib v0.61.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.165.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.165.1
@@ -110,7 +110,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.165.1 // indirect
-	github.com/opencontainers/cgroups v0.0.6 // indirect
+	github.com/opencontainers/cgroups v0.1.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/opencontainers/runtime-spec v1.3.0 // indirect
