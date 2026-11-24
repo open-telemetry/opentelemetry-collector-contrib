@@ -8,6 +8,7 @@ package namedpipe // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -125,6 +126,12 @@ func (i *Input) process(ctx context.Context, pipe *os.File) error {
 		}
 
 		if err := i.sendEntry(ctx, line); err != nil {
+			// A failed delivery is already logged by the emitter. Returning
+			// would drop the lines the scanner has buffered, and a pipe
+			// cannot be read again.
+			if _, ok := errors.AsType[*helper.ConsumeError](err); ok {
+				continue
+			}
 			return fmt.Errorf("failed to send entry: %w", err)
 		}
 	}

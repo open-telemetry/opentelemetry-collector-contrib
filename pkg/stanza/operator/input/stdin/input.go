@@ -6,6 +6,7 @@ package stdin // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -62,6 +63,11 @@ func (i *Input) Start(_ operator.Persister) error {
 			e.Body = scanner.Text()
 			err = i.Write(ctx, e)
 			if err != nil {
+				// A failed delivery is already logged by the emitter. Keep
+				// reading so one rejected batch does not stop the input.
+				if _, ok := errors.AsType[*helper.ConsumeError](err); ok {
+					continue
+				}
 				i.Logger().Error("failed to write entry", zap.Error(err))
 				return
 			}

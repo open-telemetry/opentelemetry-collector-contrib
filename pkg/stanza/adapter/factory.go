@@ -87,7 +87,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 
 		var emitter helper.LogEmitter
 		if metadata.StanzaSynchronousLogEmitterFeatureGate.IsEnabled() {
-			emitter = helper.NewSynchronousLogEmitter(params.TelemetrySettings, rcv.consumeEntries)
+			emitter = helper.NewSynchronousLogEmitterWithError(params.TelemetrySettings, rcv.consumeEntriesWithError)
 		} else {
 			emitter = helper.NewBatchingLogEmitter(params.TelemetrySettings, rcv.consumeEntries, emitterOpts...)
 		}

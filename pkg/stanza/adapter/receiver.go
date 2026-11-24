@@ -65,23 +65,41 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
+// consumeEntries is the callback of the batching emitter. The batching emitter
+// flushes from its own goroutine, so there is no caller to return the error to.
 func (r *receiver) consumeEntries(ctx context.Context, entries []*entry.Entry) {
+	_ = r.consumeEntriesWithError(ctx, entries)
+}
+
+// consumeEntriesWithError converts the entries, sends them to the next
+// consumer, and returns the consumer's error.
+func (r *receiver) consumeEntriesWithError(ctx context.Context, entries []*entry.Entry) error {
+	// Operators call WriteBatch even when every entry was dropped or filtered
+	// out. Sending an empty batch could report a ConsumeError for entries that
+	// were never meant to be delivered.
+	if len(entries) == 0 {
+		return nil
+	}
 	obsrecvCtx := r.obsrecv.StartLogsOp(ctx)
 	scope := r.scopeName
 	if scope == "" {
 		scope = DefaultScopeName
 	}
 	pLogs := ConvertEntries(entries, scope, r.buildInfo.Version)
-	for _, e := range entries {
-		entry.Put(e)
-	}
 	logRecordCount := pLogs.LogRecordCount()
 
 	cErr := r.consumer.ConsumeLogs(ctx, pLogs)
 	if cErr != nil {
 		r.set.Logger.Error("ConsumeLogs() failed", zap.Error(cErr))
+	} else {
+		// On failure the entries are left to the garbage collector: operators
+		// such as router still read the entry after a failed write to log it.
+		for _, e := range entries {
+			entry.Put(e)
+		}
 	}
 	r.obsrecv.EndLogsOp(obsrecvCtx, "stanza", logRecordCount, cErr)
+	return cErr
 }
 
 // Shutdown is invoked during service shutdown

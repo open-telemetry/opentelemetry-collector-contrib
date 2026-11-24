@@ -1463,3 +1463,42 @@ func TestIfFieldSkipsNonMatchingEntries(t *testing.T) {
 	fake.ExpectEntry(t, expectSkip)
 	fake.ExpectEntry(t, expectRecombined)
 }
+
+// TestFailedFlushKeepsFirstEntryOfNextLog checks that when flushing the previous
+// log fails, the entry that starts the next log is not lost.
+func TestFailedFlushKeepsFirstEntryOfNextLog(t *testing.T) {
+	cfg := NewConfig()
+	cfg.CombineField = entry.NewBodyField()
+	cfg.IsFirstEntry = "body matches '^START'"
+	cfg.OutputIDs = []string{"fake"}
+
+	op, err := cfg.Build(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	var written []any
+	output := &testutil.Operator{}
+	output.On("ID").Return("fake")
+	output.On("CanProcess").Return(true)
+	output.On("Process", mock.Anything, mock.Anything).Return(errors.New("write error")).Once()
+	output.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		written = append(written, args.Get(1).(*entry.Entry).Body)
+	}).Return(nil)
+	require.NoError(t, op.SetOutputs([]operator.Operator{output}))
+	require.NoError(t, op.Start(nil))
+	defer func() { require.NoError(t, op.Stop()) }()
+
+	for _, body := range []string{"START 1", "START 2", "line", "START 3"} {
+		e := entry.New()
+		e.Body = body
+		e.ObservedTimestamp = time.Now()
+		err = op.Process(t.Context(), e)
+		if body == "START 2" {
+			require.Error(t, err, "the failed flush of the first log is returned")
+		} else {
+			require.NoError(t, err)
+		}
+	}
+
+	// "START 1" was rejected downstream. "START 2" must still begin the second log.
+	require.Equal(t, []any{"START 2\nline"}, written)
+}
