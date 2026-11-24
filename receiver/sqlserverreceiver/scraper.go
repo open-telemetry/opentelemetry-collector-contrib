@@ -1912,7 +1912,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, versionCleanupRate)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverTransactionVersionCleanupRateDataPoint(now, val.(float64))
+				s.mb.RecordSqlserverDatabaseTempdbVersionStoreCleanupRateDataPoint(now, val.(float64))
 			}
 		case versionGenerationRate:
 			val, err := retrieveFloat(row, valueKey)
@@ -1920,7 +1920,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, versionGenerationRate)
 				errs = append(errs, err)
 			} else {
-				s.mb.RecordSqlserverTransactionVersionGenerationRateDataPoint(now, val.(float64))
+				s.mb.RecordSqlserverDatabaseTempdbVersionStoreGenerationRateDataPoint(now, val.(float64))
 			}
 		case versionStoreSize:
 			val, err := retrieveFloat(row, valueKey)

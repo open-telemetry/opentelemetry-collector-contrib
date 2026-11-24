@@ -776,6 +776,46 @@ func (ms *SqlserverDatabaseTempdbSpaceMetricConfig) Validate() error {
 	return nil
 }
 
+// SqlserverDatabaseTempdbVersionStoreCleanupRateMetricConfig provides config for the sqlserver.database.tempdb.version_store.cleanup.rate metric.
+type SqlserverDatabaseTempdbVersionStoreCleanupRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverDatabaseTempdbVersionStoreCleanupRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverDatabaseTempdbVersionStoreGenerationRateMetricConfig provides config for the sqlserver.database.tempdb.version_store.generation.rate metric.
+type SqlserverDatabaseTempdbVersionStoreGenerationRateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SqlserverDatabaseTempdbVersionStoreGenerationRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // SqlserverDatabaseTempdbVersionStoreSizeMetricConfig provides config for the sqlserver.database.tempdb.version_store.size metric.
 type SqlserverDatabaseTempdbVersionStoreSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -2828,46 +2868,6 @@ func (ms *SqlserverTransactionRateMetricConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-// SqlserverTransactionVersionCleanupRateMetricConfig provides config for the sqlserver.transaction.version_cleanup.rate metric.
-type SqlserverTransactionVersionCleanupRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *SqlserverTransactionVersionCleanupRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// SqlserverTransactionVersionGenerationRateMetricConfig provides config for the sqlserver.transaction.version_generation.rate metric.
-type SqlserverTransactionVersionGenerationRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
-}
-
-func (ms *SqlserverTransactionVersionGenerationRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-
-	err := parser.Unmarshal(ms)
-	if err != nil {
-		return err
-	}
-
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
 // SqlserverTransactionWriteRateMetricConfig provides config for the sqlserver.transaction.write.rate metric.
 type SqlserverTransactionWriteRateMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -3171,6 +3171,8 @@ type MetricsConfig struct {
 	SqlserverDatabaseLatency                              SqlserverDatabaseLatencyMetricConfig                              `mapstructure:"sqlserver.database.latency"`
 	SqlserverDatabaseOperations                           SqlserverDatabaseOperationsMetricConfig                           `mapstructure:"sqlserver.database.operations"`
 	SqlserverDatabaseTempdbSpace                          SqlserverDatabaseTempdbSpaceMetricConfig                          `mapstructure:"sqlserver.database.tempdb.space"`
+	SqlserverDatabaseTempdbVersionStoreCleanupRate        SqlserverDatabaseTempdbVersionStoreCleanupRateMetricConfig        `mapstructure:"sqlserver.database.tempdb.version_store.cleanup.rate"`
+	SqlserverDatabaseTempdbVersionStoreGenerationRate     SqlserverDatabaseTempdbVersionStoreGenerationRateMetricConfig     `mapstructure:"sqlserver.database.tempdb.version_store.generation.rate"`
 	SqlserverDatabaseTempdbVersionStoreSize               SqlserverDatabaseTempdbVersionStoreSizeMetricConfig               `mapstructure:"sqlserver.database.tempdb.version_store.size"`
 	SqlserverDeadlockRate                                 SqlserverDeadlockRateMetricConfig                                 `mapstructure:"sqlserver.deadlock.rate"`
 	SqlserverDiskIo                                       SqlserverDiskIoMetricConfig                                       `mapstructure:"sqlserver.disk.io"`
@@ -3239,8 +3241,6 @@ type MetricsConfig struct {
 	SqlserverTransactionLongestRunningTime                SqlserverTransactionLongestRunningTimeMetricConfig                `mapstructure:"sqlserver.transaction.longest_running_time"`
 	SqlserverTransactionMirrorWriteRate                   SqlserverTransactionMirrorWriteRateMetricConfig                   `mapstructure:"sqlserver.transaction.mirror_write.rate"`
 	SqlserverTransactionRate                              SqlserverTransactionRateMetricConfig                              `mapstructure:"sqlserver.transaction.rate"`
-	SqlserverTransactionVersionCleanupRate                SqlserverTransactionVersionCleanupRateMetricConfig                `mapstructure:"sqlserver.transaction.version_cleanup.rate"`
-	SqlserverTransactionVersionGenerationRate             SqlserverTransactionVersionGenerationRateMetricConfig             `mapstructure:"sqlserver.transaction.version_generation.rate"`
 	SqlserverTransactionWriteRate                         SqlserverTransactionWriteRateMetricConfig                         `mapstructure:"sqlserver.transaction.write.rate"`
 	SqlserverTransactionLogFlushDataRate                  SqlserverTransactionLogFlushDataRateMetricConfig                  `mapstructure:"sqlserver.transaction_log.flush.data.rate"`
 	SqlserverTransactionLogFlushRate                      SqlserverTransactionLogFlushRateMetricConfig                      `mapstructure:"sqlserver.transaction_log.flush.rate"`
@@ -3348,6 +3348,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []SqlserverDatabaseTempdbSpaceMetricAttributeKey{SqlserverDatabaseTempdbSpaceMetricAttributeKeyTempdbState},
+		},
+		SqlserverDatabaseTempdbVersionStoreCleanupRate: SqlserverDatabaseTempdbVersionStoreCleanupRateMetricConfig{
+			Enabled: false,
+		},
+		SqlserverDatabaseTempdbVersionStoreGenerationRate: SqlserverDatabaseTempdbVersionStoreGenerationRateMetricConfig{
+			Enabled: false,
 		},
 		SqlserverDatabaseTempdbVersionStoreSize: SqlserverDatabaseTempdbVersionStoreSizeMetricConfig{
 			Enabled: false,
@@ -3600,12 +3606,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SqlserverTransactionRate: SqlserverTransactionRateMetricConfig{
 			Enabled: true,
-		},
-		SqlserverTransactionVersionCleanupRate: SqlserverTransactionVersionCleanupRateMetricConfig{
-			Enabled: false,
-		},
-		SqlserverTransactionVersionGenerationRate: SqlserverTransactionVersionGenerationRateMetricConfig{
-			Enabled: false,
 		},
 		SqlserverTransactionWriteRate: SqlserverTransactionWriteRateMetricConfig{
 			Enabled: true,

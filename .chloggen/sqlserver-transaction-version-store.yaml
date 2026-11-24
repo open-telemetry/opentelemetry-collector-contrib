@@ -2,7 +2,7 @@ change_type: enhancement
 
 component: receiver/sql_server
 
-note: "Add `sqlserver.transaction.longest_running_time`, `sqlserver.transaction.version_cleanup.rate`, and `sqlserver.transaction.version_generation.rate` metrics."
+note: "Add `sqlserver.transaction.longest_running_time`, `sqlserver.database.tempdb.version_store.cleanup.rate`, and `sqlserver.database.tempdb.version_store.generation.rate` metrics."
 
 issues: [52637]
 

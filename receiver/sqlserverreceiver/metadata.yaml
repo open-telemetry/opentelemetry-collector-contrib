@@ -849,6 +849,24 @@ metrics:
       value_type: int
     attributes: [tempdb.state]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.database.tempdb.version_store.cleanup.rate:
+    enabled: false
+    description: Rate at which row versions are removed from the snapshot isolation version store in tempdb.
+    stability: development
+    unit: kBy/s
+    gauge:
+      value_type: double
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.database.tempdb.version_store.generation.rate:
+    enabled: false
+    description: Rate at which new row versions are added to the snapshot isolation version store in tempdb.
+    stability: development
+    unit: kBy/s
+    gauge:
+      value_type: double
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.database.tempdb.version_store.size:
     enabled: false
     description: TempDB version store size.
@@ -1461,24 +1479,6 @@ metrics:
     gauge:
       value_type: double
     extended_documentation: This metric is available when running on Windows via PDH or when the receiver is configured to directly connect to SQL Server.
-  sqlserver.transaction.version_cleanup.rate:
-    enabled: false
-    description: Rate at which row versions are removed from the snapshot isolation version store in tempdb.
-    stability: development
-    unit: kBy/s
-    gauge:
-      value_type: double
-    attributes: []
-    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
-  sqlserver.transaction.version_generation.rate:
-    enabled: false
-    description: Rate at which new row versions are added to the snapshot isolation version store in tempdb.
-    stability: development
-    unit: kBy/s
-    gauge:
-      value_type: double
-    attributes: []
-    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.transaction.write.rate:
     enabled: true
     description: Number of transactions that wrote to the database and committed.

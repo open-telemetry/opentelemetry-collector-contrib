@@ -692,8 +692,8 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverTaskRate.Enabled ||
 		metrics.SqlserverTransactionDelay.Enabled ||
 		metrics.SqlserverTransactionMirrorWriteRate.Enabled ||
-		metrics.SqlserverTransactionVersionCleanupRate.Enabled ||
-		metrics.SqlserverTransactionVersionGenerationRate.Enabled ||
+		metrics.SqlserverDatabaseTempdbVersionStoreCleanupRate.Enabled ||
+		metrics.SqlserverDatabaseTempdbVersionStoreGenerationRate.Enabled ||
 		metrics.SqlserverUserConnectionCount.Enabled ||
 		metrics.SqlserverWorktableCacheHitRatio.Enabled
 }

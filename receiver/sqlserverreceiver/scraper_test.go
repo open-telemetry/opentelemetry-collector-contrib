@@ -128,8 +128,8 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionLongestRunningTime.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionMirrorWriteRate.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionRate.Enabled = enabled
-	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionVersionCleanupRate.Enabled = enabled
-	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionVersionGenerationRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbVersionStoreCleanupRate.Enabled = enabled
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbVersionStoreGenerationRate.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionWriteRate.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverUserConnectionCount.Enabled = enabled
 	cfg.MetricsBuilderConfig.Metrics.SqlserverHostMemoryLimit.Enabled = enabled
@@ -2574,11 +2574,11 @@ func TestIsPerfCounterQueryEnabledForVersionStoreRateMetrics(t *testing.T) {
 	metrics := &metadata.MetricsConfig{}
 	assert.False(t, isPerfCounterQueryEnabled(metrics))
 
-	metrics.SqlserverTransactionVersionCleanupRate.Enabled = true
+	metrics.SqlserverDatabaseTempdbVersionStoreCleanupRate.Enabled = true
 	assert.True(t, isPerfCounterQueryEnabled(metrics))
 
-	metrics.SqlserverTransactionVersionCleanupRate.Enabled = false
-	metrics.SqlserverTransactionVersionGenerationRate.Enabled = true
+	metrics.SqlserverDatabaseTempdbVersionStoreCleanupRate.Enabled = false
+	metrics.SqlserverDatabaseTempdbVersionStoreGenerationRate.Enabled = true
 	assert.True(t, isPerfCounterQueryEnabled(metrics))
 }
 

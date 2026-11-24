@@ -1513,7 +1513,7 @@ FROM sys.dm_tran_active_transactions AS tat WITH (NOLOCK)
 INNER JOIN sys.dm_tran_session_transactions AS st WITH (NOLOCK) ON tat.transaction_id = st.transaction_id
 INNER JOIN sys.dm_exec_sessions AS sess WITH (NOLOCK) ON st.session_id = sess.session_id
 WHERE tat.transaction_type IN (1,2,4)
-  AND tat.transaction_state IN (2,3)
+  AND tat.transaction_state NOT IN (0,1,6,8)
   AND sess.is_user_process = 1
 `
 

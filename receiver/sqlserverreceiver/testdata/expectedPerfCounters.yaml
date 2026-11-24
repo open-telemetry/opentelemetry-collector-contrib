@@ -2620,7 +2620,7 @@ resourceMetrics:
                 - asDouble: 128
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-            name: sqlserver.transaction.version_cleanup.rate
+            name: sqlserver.database.tempdb.version_store.cleanup.rate
             unit: kBy/s
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
@@ -2656,7 +2656,7 @@ resourceMetrics:
                 - asDouble: 256
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-            name: sqlserver.transaction.version_generation.rate
+            name: sqlserver.database.tempdb.version_store.generation.rate
             unit: kBy/s
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver

@@ -241,6 +241,12 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
+			mb.RecordSqlserverDatabaseTempdbVersionStoreCleanupRateDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverDatabaseTempdbVersionStoreGenerationRateDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordSqlserverDatabaseTempdbVersionStoreSizeDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -587,12 +593,6 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSqlserverTransactionRateDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordSqlserverTransactionVersionCleanupRateDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordSqlserverTransactionVersionGenerationRateDataPoint(ts, 1)
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSqlserverTransactionWriteRateDataPoint(ts, 1)
@@ -1377,6 +1377,30 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("tempdb.state")
 						assert.False(t, ok)
 					}
+				case "sqlserver.database.tempdb.version_store.cleanup.rate":
+					assert.False(t, validatedMetrics["sqlserver.database.tempdb.version_store.cleanup.rate"], "Found a duplicate in the metrics slice: sqlserver.database.tempdb.version_store.cleanup.rate")
+					validatedMetrics["sqlserver.database.tempdb.version_store.cleanup.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Rate at which row versions are removed from the snapshot isolation version store in tempdb.", mi.Description())
+					assert.Equal(t, "kBy/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.database.tempdb.version_store.generation.rate":
+					assert.False(t, validatedMetrics["sqlserver.database.tempdb.version_store.generation.rate"], "Found a duplicate in the metrics slice: sqlserver.database.tempdb.version_store.generation.rate")
+					validatedMetrics["sqlserver.database.tempdb.version_store.generation.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Rate at which new row versions are added to the snapshot isolation version store in tempdb.", mi.Description())
+					assert.Equal(t, "kBy/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "sqlserver.database.tempdb.version_store.size":
 					assert.False(t, validatedMetrics["sqlserver.database.tempdb.version_store.size"], "Found a duplicate in the metrics slice: sqlserver.database.tempdb.version_store.size")
 					validatedMetrics["sqlserver.database.tempdb.version_store.size"] = true
@@ -3057,30 +3081,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of transactions started for the database (not including XTP-only transactions).", mi.Description())
 					assert.Equal(t, "{transactions}/s", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "sqlserver.transaction.version_cleanup.rate":
-					assert.False(t, validatedMetrics["sqlserver.transaction.version_cleanup.rate"], "Found a duplicate in the metrics slice: sqlserver.transaction.version_cleanup.rate")
-					validatedMetrics["sqlserver.transaction.version_cleanup.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Rate at which row versions are removed from the snapshot isolation version store in tempdb.", mi.Description())
-					assert.Equal(t, "kBy/s", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "sqlserver.transaction.version_generation.rate":
-					assert.False(t, validatedMetrics["sqlserver.transaction.version_generation.rate"], "Found a duplicate in the metrics slice: sqlserver.transaction.version_generation.rate")
-					validatedMetrics["sqlserver.transaction.version_generation.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Rate at which new row versions are added to the snapshot isolation version store in tempdb.", mi.Description())
-					assert.Equal(t, "kBy/s", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

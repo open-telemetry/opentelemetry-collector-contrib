@@ -502,6 +502,26 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | tempdb.state | The tempdb space usage category. The values are mutually exclusive and partition total tempdb space. | Str: ``free``, ``user_objects``, ``internal_objects``, ``version_store``, ``mixed_extents`` | Recommended | - |
 
+### sqlserver.database.tempdb.version_store.cleanup.rate
+
+Rate at which row versions are removed from the snapshot isolation version store in tempdb.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| kBy/s | Gauge | Double | Development |
+
+### sqlserver.database.tempdb.version_store.generation.rate
+
+Rate at which new row versions are added to the snapshot isolation version store in tempdb.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| kBy/s | Gauge | Double | Development |
+
 ### sqlserver.database.tempdb.version_store.size
 
 TempDB version store size.
@@ -1251,26 +1271,6 @@ Total number of mirror write transactions.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | {transactions}/s | Gauge | Double | Development |
-
-### sqlserver.transaction.version_cleanup.rate
-
-Rate at which row versions are removed from the snapshot isolation version store in tempdb.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| kBy/s | Gauge | Double | Development |
-
-### sqlserver.transaction.version_generation.rate
-
-Rate at which new row versions are added to the snapshot isolation version store in tempdb.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| kBy/s | Gauge | Double | Development |
 
 ### sqlserver.worker.request.count
 
