@@ -60,7 +60,7 @@ func newWriteAttributeMatchers(opts writeOptions) (writeAttributeMatchers, error
 	return matchers, nil
 }
 
-func applyWriteAttributeMatchers(doc *document, opts writeOptions) error {
+func applyWriteAttributeMatchers(snap *snapshot, opts writeOptions) error {
 	if len(opts.attributeExists) == 0 && len(opts.attributeRegex) == 0 {
 		return nil
 	}
@@ -68,8 +68,8 @@ func applyWriteAttributeMatchers(doc *document, opts writeOptions) error {
 	if err != nil {
 		return err
 	}
-	for i := range doc.Resources {
-		resource := &doc.Resources[i]
+	for i := range snap.Resources {
+		resource := &snap.Resources[i]
 		if err := matchers.apply(resource.Attributes); err != nil {
 			return fmt.Errorf("resource attributes: %w", err)
 		}

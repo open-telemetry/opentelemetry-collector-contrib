@@ -187,7 +187,7 @@ resources:
 
 // WriteAssertionFile only ever emits the default exact form, so a written file
 // never contains an operator suffix.
-func TestWriteDocument_EmitsDefaultExactCollections(t *testing.T) {
+func TestWriteAssertionFile_EmitsDefaultExactCollections(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "metrics.assert.yaml")
 	require.NoError(t, WriteAssertionFile(t, path, buildSampleMetrics()))
 

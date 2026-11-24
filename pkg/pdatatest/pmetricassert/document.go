@@ -239,7 +239,7 @@ func decodeItems[T any](node yaml.Node, usedKey string, fixup func(*T, map[strin
 	return out, nil
 }
 
-// document is the YAML-serializable form of a metrics assertion snapshot.
+// document is a parsed assertion file: the expected side of a comparison. It is read-only.
 //
 // The schema implements the identity-only subset of the grammar proposed in
 // issue #48079: default-exact matching, order-insensitive collections,
@@ -328,8 +328,6 @@ type scopeAssertionYAML struct {
 	Version       *string `yaml:"version,omitempty"`
 	VersionExists *bool   `yaml:"version/exists,omitempty"`
 	VersionRegex  *string `yaml:"version/regex,omitempty"`
-
-	Metrics []metricAssertion `yaml:"metrics"`
 }
 
 // UnmarshalYAML decodes a scope, resolving the version operator keys into a
@@ -391,28 +389,6 @@ func buildVersionMatcher(exact *string, exists *bool, regex *string) (versionMat
 	default:
 		return versionMatcher{op: matchExact}, nil
 	}
-}
-
-// MarshalYAML encodes a scope, rendering an exact version as a plain `version:`
-// scalar (not a suffixed key) so WriteAssertionFile output matches the pre-operator layout.
-func (s scopeAssertion) MarshalYAML() (any, error) {
-	out := scopeAssertionYAML{Name: s.Name, Metrics: s.Metrics}
-
-	switch s.Version.op {
-	case matchExists:
-		t := true
-		out.VersionExists = &t
-	case matchRegex:
-		v := s.Version.value
-		out.VersionRegex = &v
-	case matchExact:
-		if s.Version.value != "" {
-			v := s.Version.value
-			out.Version = &v
-		}
-	}
-
-	return out, nil
 }
 
 type metricAssertion struct {
@@ -752,42 +728,4 @@ func (m collectionMatch) effective(itemsOmitted, parentIncluded bool) collection
 		return collectionModeInclude
 	}
 	return m.mode
-}
-
-func writeDocument(path string, doc *document) error {
-	compactShorthand(doc)
-	b, err := yaml.Marshal(doc)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(path, b, 0o600)
-}
-
-// compactShorthand is the inverse of expandShorthand: it drops an explicit
-// single empty-attribute datapoint so the emitted YAML reads as "metric with
-// no dimensioning attributes" rather than "metric with one empty datapoint".
-func compactShorthand(doc *document) {
-	for i := range doc.Resources {
-		for j := range doc.Resources[i].Scopes {
-			for k := range doc.Resources[i].Scopes[j].Metrics {
-				m := &doc.Resources[i].Scopes[j].Metrics[k]
-				if len(m.Datapoints) == 1 && isEmptyDatapointAssertion(m.Datapoints[0]) {
-					m.Datapoints = nil
-				}
-			}
-		}
-	}
-}
-
-func isEmptyDatapointAssertion(dp datapointAssertion) bool {
-	return len(dp.Attributes) == 0 &&
-		dp.IntValue == nil &&
-		dp.DoubleValue == nil &&
-		dp.Count == nil &&
-		dp.Sum == nil &&
-		dp.ExplicitBounds == nil &&
-		len(dp.BucketCounts) == 0 &&
-		dp.Min == nil &&
-		dp.Max == nil &&
-		len(dp.valueConstraints) == 0
 }
