@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelar
 go 1.26.0
 
 require (
-	github.com/klauspost/compress v1.20.4
+	github.com/klauspost/compress v1.20.5
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter v0.166.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver v0.166.0
-	github.com/open-telemetry/otel-arrow/go v0.60.2
+	github.com/open-telemetry/otel-arrow/go v0.60.3
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.72.0
 	go.opentelemetry.io/collector/component/componenttest v0.166.0
@@ -98,7 +98,7 @@ require (
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
-	golang.org/x/exp v0.0.0-20261014143641-f0251eb4aa3e // indirect
+	golang.org/x/exp v0.0.0-20261113113407-e3970619a1a4 // indirect
 	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
