@@ -71,7 +71,7 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, host c
 		return err
 	}
 	serviceName := resolveServiceNameBestEffort()
-	keyArr := strings.Split(extension.config.Key, ":")
+	keyArr := strings.Split(string(extension.config.Key), ":")
 	if len(keyArr) == 2 {
 		serviceName = keyArr[1]
 	}

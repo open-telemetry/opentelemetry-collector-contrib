@@ -6,6 +6,7 @@ package awss3receiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -33,6 +34,9 @@ type S3DownloaderConfig struct {
 	// end with a recognized compression suffix (`.gz` or `.zst`).
 	// Valid values are: `gzip`, `zstd`, `none` or no value set.
 	Decompression configcompression.Type `mapstructure:"decompression"`
+	// MaxUnmarshalSize limits the decompressed bytes buffered by non-streaming decoders.
+	// Zero uses the default of 256 MiB. Streaming decoders are not subject to this limit.
+	MaxUnmarshalSize int64 `mapstructure:"max_unmarshal_size"`
 }
 
 // SQSConfig holds SQS queue configuration for receiving object change notifications.
@@ -49,6 +53,10 @@ type SQSConfig struct {
 	// MaxNumberOfMessages specifies the maximum number of messages to receive in a single poll.
 	// Valid values: 1-10. Default is 10.
 	MaxNumberOfMessages *int64 `mapstructure:"max_number_of_messages"`
+	// VisibilityTimeoutSeconds sets and renews message visibility while messages
+	// are waiting or processing. Valid values: 1-43200. When unset, the queue's
+	// visibility timeout is used without renewal.
+	VisibilityTimeoutSeconds *int64 `mapstructure:"visibility_timeout_seconds"`
 }
 
 // Notifications groups optional notification sources.
@@ -81,6 +89,7 @@ type Config struct {
 
 const (
 	s3PartitionFormatDefault = "year=%Y/month=%m/day=%d/hour=%H/minute=%M"
+	defaultMaxUnmarshalSize  = 256 * 1024 * 1024
 )
 
 func createDefaultConfig() component.Config {
@@ -90,12 +99,16 @@ func createDefaultConfig() component.Config {
 			S3PartitionFormat:              s3PartitionFormatDefault,
 			FilePrefixIncludeTelemetryType: true,
 			EndpointPartitionID:            "aws",
+			MaxUnmarshalSize:               defaultMaxUnmarshalSize,
 		},
 	}
 }
 
 func (c Config) Validate() error {
 	var errs error
+	if c.S3Downloader.MaxUnmarshalSize < 0 || c.S3Downloader.MaxUnmarshalSize == math.MaxInt64 {
+		errs = multierr.Append(errs, errors.New("s3downloader.max_unmarshal_size must be between 0 and 9223372036854775806"))
+	}
 	if c.S3Downloader.S3Bucket == "" {
 		errs = multierr.Append(errs, errors.New("bucket is required"))
 	}
@@ -156,6 +169,9 @@ func (c Config) Validate() error {
 		// Validate max number of messages
 		if c.SQS.MaxNumberOfMessages != nil && (*c.SQS.MaxNumberOfMessages < 1 || *c.SQS.MaxNumberOfMessages > 10) {
 			errs = multierr.Append(errs, errors.New("sqs.max_number_of_messages must be between 1 and 10"))
+		}
+		if c.SQS.VisibilityTimeoutSeconds != nil && (*c.SQS.VisibilityTimeoutSeconds < 1 || *c.SQS.VisibilityTimeoutSeconds > 43200) {
+			errs = multierr.Append(errs, errors.New("sqs.visibility_timeout_seconds must be between 1 and 43200"))
 		}
 	}
 	return errs

@@ -8,11 +8,10 @@ description: |
 status:
   class: receiver
   stability:
-    alpha: [logs]
+    unmaintained: [logs]
   distributions: [contrib]
   codeowners:
-    active: [sinkingpoint]
-    emeritus: [djaglowski]
+    emeritus: [djaglowski, sinkingpoint]
   unsupported_platforms: [windows, darwin]
 
 tests:

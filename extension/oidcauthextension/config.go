@@ -9,8 +9,10 @@ import (
 	"crypto/ed25519"
 	"crypto/rsa"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
+	"net/url"
 	"os"
 	"path/filepath"
 	"slices"
@@ -142,6 +144,10 @@ type ProviderCfg struct {
 	// The file is watched for changes and keys are automatically reloaded on updates.
 	// Optional.
 	PublicKeysFile string `mapstructure:"public_keys_file"`
+
+	// URL of a remote JWKS endpoint used instead of OpenID Connect discovery.
+	// Mutually exclusive with PublicKeysFile. Optional.
+	JWKSURL string `mapstructure:"jwks_url"`
 }
 
 func (p *ProviderCfg) Validate() error {
@@ -150,6 +156,17 @@ func (p *ProviderCfg) Validate() error {
 	}
 	if p.IssuerURL == "" {
 		return errNoIssuerURL
+	}
+	if p.JWKSURL != "" {
+		if p.PublicKeysFile != "" {
+			return errors.New("jwks_url and public_keys_file are mutually exclusive")
+		}
+		endpoint, err := url.Parse(p.JWKSURL)
+		if err != nil || endpoint.Hostname() == "" ||
+			(endpoint.Scheme != "http" && endpoint.Scheme != "https") ||
+			endpoint.User != nil || endpoint.Fragment != "" {
+			return errors.New("jwks_url must be an absolute HTTP or HTTPS URL without credentials or fragment")
+		}
 	}
 
 	if p.PublicKeysFile != "" {

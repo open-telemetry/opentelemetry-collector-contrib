@@ -43,6 +43,17 @@ The following settings can be optionally configured:
   - `NoUTF8EscapingWithSuffixes`: Disables changing special characters to `_`. Special suffixes like units and `_total` for counters will be attached.
   - `NoTranslation`: Bypasses all metric and label name translation, passing them through unaltered.
 
+As required by the [OpenTelemetry specification](https://opentelemetry.io/docs/specs/otel/metrics/sdk_exporters/prometheus/#interaction-with-translation-strategy),
+`translation_strategy` is applied before HTTP content negotiation. The final metric and label
+names must also comply with the escaping scheme of the selected `Accept` header entry, even when
+`NoUTF8EscapingWithSuffixes` or `NoTranslation` is configured. If that entry has no escaping scheme,
+or no `Accept` header is provided, names are escaped using underscores. Escaping parameters on
+unsupported format entries do not apply to the selected format.
+
+To preserve UTF-8 names, use `NoUTF8EscapingWithSuffixes` or `NoTranslation` with a scraper
+that requests `escaping=allow-utf-8` for Prometheus text format 1.0.0 or OpenMetrics.
+Prometheus text format 1.0.0 does not require `enable_open_metrics: true`.
+
 Example:
 
 ```yaml
@@ -50,7 +61,7 @@ exporters:
   prometheus:
     endpoint: "1.2.3.4:1234"
     tls:
-      ca_file: "/path/to/ca.pem"
+      client_ca_file: "/path/to/ca.pem"
       cert_file: "/path/to/cert.pem"
       key_file: "/path/to/key.pem"
     namespace: test-space
@@ -127,3 +138,14 @@ app_ads_ad_requests_total{namespace="my-namespace"}
 
 sum by (namespace) (app_ads_ad_requests_total)
 ```
+
+## Benchmark Results
+
+Current Prometheus exporter benchmark results are published on the [Collector Benchmarks page](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/). The table below links directly to the current Prometheus exporter charts by scenario and metric type.
+
+| Scenario | CPU | Memory |
+| --- | --- | --- |
+| Baseline, 1k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-baseline-1k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-baseline-1k-ram-mib) |
+| Baseline, 10k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-baseline-10k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-baseline-10k-ram-mib) |
+| Native histograms, 10k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-nativehistogram-10k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-nativehistogram-10k-ram-mib) |
+| `target_info` enabled, 10k metrics | [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-withtargetinfo-10k-cpu-percentage) | [Memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#prometheusexporter-withtargetinfo-10k-ram-mib) |

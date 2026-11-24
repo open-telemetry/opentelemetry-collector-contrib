@@ -5,7 +5,7 @@ $defs:
     properties:
       connection:
         description: Connection is the connection string for Azure Blob Storage. Required when the parent config does not use auth.
-        type: string
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       container_name:
         description: ContainerName is the blob container used for checkpoint data. Required.
         type: string
@@ -50,7 +50,7 @@ properties:
     x-pointer: true
     $ref: blob_checkpoint_store_config
   connection:
-    type: string
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
   encoding:
     x-pointer: true
     type: string

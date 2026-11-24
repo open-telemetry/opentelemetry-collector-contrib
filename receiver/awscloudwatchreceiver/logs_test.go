@@ -1245,3 +1245,114 @@ func (mc *mockClient) FilterLogEvents(ctx context.Context, input *cloudwatchlogs
 	args := mc.Called(ctx, input, opts)
 	return args.Get(0).(*cloudwatchlogs.FilterLogEventsOutput), args.Error(1)
 }
+
+func newDelayTestReceiver(delay time.Duration, start time.Time, mc *mockClient) (*logsReceiver, *consumertest.LogsSink) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+	cfg.Logs.Delay = delay
+	cfg.Logs.Groups = GroupConfig{NamedConfigs: map[string]StreamConfig{"group": {}}}
+	sink := &consumertest.LogsSink{}
+	r := newLogsReceiver(cfg, receiver.Settings{TelemetrySettings: component.TelemetrySettings{Logger: zap.NewNop()}}, sink)
+	r.initialStartTime = start
+	r.client = mc
+	return r, sink
+}
+
+func windowIs(start, end time.Time) any {
+	return mock.MatchedBy(func(input *cloudwatchlogs.FilterLogEventsInput) bool {
+		return aws.ToInt64(input.StartTime) == start.UnixMilli() && aws.ToInt64(input.EndTime) == end.UnixMilli()
+	})
+}
+
+func TestLogsDelayReadsLateIngestedEvent(t *testing.T) {
+	originalNow := nowFunc
+	t.Cleanup(func() { nowFunc = originalNow })
+
+	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	// The event is timestamped 2s before the first poll but only becomes visible to
+	// FilterLogEvents 10s after it, so the first poll cannot return it.
+	eventTime := base.Add(58 * time.Second)
+	late := &cloudwatchlogs.FilterLogEventsOutput{Events: []types.FilteredLogEvent{{
+		EventId:       aws.String("late"),
+		LogStreamName: aws.String("stream"),
+		Message:       aws.String("late event"),
+		Timestamp:     aws.Int64(eventTime.UnixMilli()),
+	}}}
+	empty := &cloudwatchlogs.FilterLogEventsOutput{}
+	first, second := base.Add(time.Minute), base.Add(2*time.Minute)
+
+	t.Run("no delay skips the event", func(t *testing.T) {
+		mc := &mockClient{}
+		// The second window starts after the event timestamp, so the event is never read.
+		mc.On("FilterLogEvents", mock.Anything, windowIs(base, first), mock.Anything).Return(empty, nil).Once()
+		mc.On("FilterLogEvents", mock.Anything, windowIs(first, second), mock.Anything).Return(empty, nil).Once()
+		r, sink := newDelayTestReceiver(0, base, mc)
+
+		for _, now := range []time.Time{first, second} {
+			nowFunc = func() time.Time { return now }
+			require.NoError(t, r.poll(t.Context()))
+		}
+		mc.AssertExpectations(t)
+		require.Equal(t, 0, sink.LogRecordCount())
+	})
+
+	t.Run("delay reads the event", func(t *testing.T) {
+		delay := 30 * time.Second
+		mc := &mockClient{}
+		// The first window ends before the event; the second covers it after it became visible.
+		mc.On("FilterLogEvents", mock.Anything, windowIs(base, first.Add(-delay)), mock.Anything).Return(empty, nil).Once()
+		mc.On("FilterLogEvents", mock.Anything, windowIs(first.Add(-delay), second.Add(-delay)), mock.Anything).Return(late, nil).Once()
+		r, sink := newDelayTestReceiver(delay, base, mc)
+
+		for _, now := range []time.Time{first, second} {
+			nowFunc = func() time.Time { return now }
+			require.NoError(t, r.poll(t.Context()))
+		}
+		mc.AssertExpectations(t)
+		require.Equal(t, 1, sink.LogRecordCount())
+	})
+}
+
+func TestLogsDelayShiftsWindowEnd(t *testing.T) {
+	originalNow := nowFunc
+	t.Cleanup(func() { nowFunc = originalNow })
+
+	now := time.Date(2026, 1, 1, 1, 0, 0, 0, time.UTC)
+	nowFunc = func() time.Time { return now }
+	start := now.Add(-time.Hour)
+
+	for _, delay := range []time.Duration{0, 90 * time.Second} {
+		mc := &mockClient{}
+		mc.On("FilterLogEvents", mock.Anything, windowIs(start, now.Add(-delay)), mock.Anything).
+			Return(&cloudwatchlogs.FilterLogEventsOutput{}, nil).Once()
+		r, _ := newDelayTestReceiver(delay, start, mc)
+
+		require.NoError(t, r.poll(t.Context()))
+		mc.AssertExpectations(t)
+		// An empty window advances the start to the window end, not to now.
+		require.Equal(t, now.Add(-delay), r.groupNextStartTimes["group"])
+	}
+}
+
+func TestLogsDelaySkipsEmptyWindow(t *testing.T) {
+	originalNow := nowFunc
+	t.Cleanup(func() { nowFunc = originalNow })
+
+	now := time.Date(2026, 1, 1, 1, 0, 0, 0, time.UTC)
+	nowFunc = func() time.Time { return now }
+	delay := time.Minute
+
+	for name, start := range map[string]time.Time{
+		"window end before start": now.Add(-10 * time.Second),
+		"window end equals start": now.Add(-delay),
+	} {
+		t.Run(name, func(t *testing.T) {
+			mc := &mockClient{}
+			r, _ := newDelayTestReceiver(delay, start, mc)
+
+			require.NoError(t, r.poll(t.Context()))
+			mc.AssertNotCalled(t, "FilterLogEvents", mock.Anything, mock.Anything, mock.Anything)
+			require.Equal(t, start, r.groupNextStartTimes["group"])
+		})
+	}
+}
