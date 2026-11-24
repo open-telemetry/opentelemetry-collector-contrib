@@ -131,6 +131,65 @@ func TestSplitTracesIntoDifferentBatchesWithMultipleKeys(t *testing.T) {
 	assert.Equal(t, newTraces(expected.ResourceSpans().At(8)), outBatches[5])
 }
 
+func TestBatchKeyKeepsKeyPosition(t *testing.T) {
+	keys := []string{"attr_key", "attr_key2"}
+	onlyFirst := pcommon.NewMap()
+	onlyFirst.PutStr("attr_key", "1")
+	onlySecond := pcommon.NewMap()
+	onlySecond.PutStr("attr_key2", "1")
+	both := pcommon.NewMap()
+	both.PutStr("attr_key", "1")
+	both.PutStr("attr_key2", "1")
+
+	assert.NotEqual(t, batchKey(onlyFirst, keys), batchKey(onlySecond, keys))
+	assert.NotEqual(t, batchKey(onlyFirst, keys), batchKey(both, keys))
+	assert.NotEqual(t, batchKey(onlySecond, keys), batchKey(both, keys))
+	assert.Equal(t, batchKey(onlyFirst, keys), batchKey(onlyFirst, keys))
+}
+
+func TestSplitLogsSameValueUnderDifferentKeys(t *testing.T) {
+	inBatch := plog.NewLogs()
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", "1")
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key2", "1")
+	expected := plog.NewLogs()
+	inBatch.CopyTo(expected)
+
+	sink := new(consumertest.LogsSink)
+	bpr := NewMultiBatchPerResourceLogs([]string{"attr_key", "attr_key2"}, sink)
+	assert.NoError(t, bpr.ConsumeLogs(t.Context(), inBatch))
+	outBatches := sink.AllLogs()
+	require.Len(t, outBatches, 2)
+	sortLogs(outBatches, "attr_key")
+	assert.Equal(t, newLogs(expected.ResourceLogs().At(1)), outBatches[0])
+	assert.Equal(t, newLogs(expected.ResourceLogs().At(0)), outBatches[1])
+}
+
+func TestSplitLogsByNonStringValues(t *testing.T) {
+	inBatch := plog.NewLogs()
+	for _, v := range []int64{1, 2, 1} {
+		rl := inBatch.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutInt("attr_key", v)
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	}
+	expected := plog.NewLogs()
+	inBatch.CopyTo(expected)
+
+	sink := &ctxLogsSink{}
+	bpr := NewBatchPerResourceLogs("attr_key", sink, WithMetadataInjection())
+	require.NoError(t, bpr.ConsumeLogs(t.Context(), inBatch))
+
+	require.Len(t, sink.AllLogs(), 2)
+	require.Len(t, sink.contexts, 2)
+	got := map[string]plog.Logs{}
+	for i, ld := range sink.AllLogs() {
+		got[client.FromContext(sink.contexts[i]).Metadata.Get("attr_key")[0]] = ld
+	}
+	require.Contains(t, got, "1")
+	require.Contains(t, got, "2")
+	assert.Equal(t, newLogs(expected.ResourceLogs().At(0), expected.ResourceLogs().At(2)), got["1"])
+	assert.Equal(t, newLogs(expected.ResourceLogs().At(1)), got["2"])
+}
+
 func TestSplitMetricsOneResourceMetrics(t *testing.T) {
 	inBatch := pmetric.NewMetrics()
 	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "1")

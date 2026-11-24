@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -177,4 +178,72 @@ func TestS3QueueSettingsPartitionKeys(t *testing.T) {
 		// The user's config is not modified.
 		assert.Equal(t, []string{"tenant", "S3.Prefix"}, cfg.QueueSettings.Get().Batch.Get().Partition.MetadataKeys)
 	})
+}
+
+func TestResourceAttrsToS3SameValueUnderDifferentKeys(t *testing.T) {
+	for _, batching := range []bool{false, true} {
+		t.Run(map[bool]string{false: "without queue batching", true: "with queue batching"}[batching], func(t *testing.T) {
+			server, uploads := newFakeS3(t)
+			cfg := newBatchTestConfig(server.URL)
+			cfg.ResourceAttrsToS3.S3Bucket = "s3.bucket"
+			cfg.ResourceAttrsToS3.S3Prefix = "s3.prefix"
+			if batching {
+				enableQueueBatching(cfg)
+			}
+
+			// One resource sets only the bucket, the other only the prefix, both
+			// to the same value. They must not be grouped into one upload.
+			ld := plog.NewLogs()
+			bucketOnly := ld.ResourceLogs().AppendEmpty()
+			bucketOnly.Resource().Attributes().PutStr("s3.bucket", "shared")
+			bucketOnly.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-bucket-only")
+			prefixOnly := ld.ResourceLogs().AppendEmpty()
+			prefixOnly.Resource().Attributes().PutStr("s3.prefix", "shared")
+			prefixOnly.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-prefix-only")
+
+			exportLogs(t, cfg, ld)
+
+			got := uploads()
+			require.Len(t, got, 2, "each resource must be uploaded as its own object")
+			byBucket := map[string]s3Upload{}
+			for _, u := range got {
+				byBucket[u.bucket] = u
+			}
+			require.Contains(t, byBucket, "shared")
+			require.Contains(t, byBucket, "default-bucket")
+			assert.Equal(t, "log-bucket-only", strings.TrimSpace(byBucket["shared"].body))
+			assert.Equal(t, "log-prefix-only", strings.TrimSpace(byBucket["default-bucket"].body))
+			assert.True(t, strings.HasPrefix(byBucket["default-bucket"].key, "shared/"), "key %q", byBucket["default-bucket"].key)
+		})
+	}
+}
+
+func TestResourceAttrsToS3NonStringPrefix(t *testing.T) {
+	for _, batching := range []bool{false, true} {
+		t.Run(map[bool]string{false: "without queue batching", true: "with queue batching"}[batching], func(t *testing.T) {
+			server, uploads := newFakeS3(t)
+			cfg := newBatchTestConfig(server.URL)
+			cfg.ResourceAttrsToS3.S3Prefix = "s3.prefix"
+			if batching {
+				enableQueueBatching(cfg)
+			}
+
+			// Int prefixes must be routed by their value, like the upload does.
+			ld := plog.NewLogs()
+			for _, v := range []int64{1, 2} {
+				rl := ld.ResourceLogs().AppendEmpty()
+				rl.Resource().Attributes().PutInt("s3.prefix", v)
+				rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-from-" + strconv.FormatInt(v, 10))
+			}
+
+			exportLogs(t, cfg, ld)
+
+			got := uploads()
+			require.Len(t, got, 2, "each prefix must be uploaded as its own object")
+			for _, u := range got {
+				prefix, _, _ := strings.Cut(u.key, "/")
+				assert.Equal(t, "log-from-"+prefix, strings.TrimSpace(u.body), "key %q", u.key)
+			}
+		})
+	}
 }

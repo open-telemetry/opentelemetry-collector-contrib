@@ -5,8 +5,8 @@ package batchperresourceattr // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
-	"fmt"
 	"slices"
+	"strings"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/consumer"
@@ -20,6 +20,20 @@ import (
 )
 
 var separator = string([]byte{0x0, 0x1})
+
+// batchKey returns the key used to group resources. Each attribute key gets
+// its own slot, even when the resource does not have it, so the same value
+// under different keys gives different batch keys.
+func batchKey(attrs pcommon.Map, attrKeys []string) string {
+	var sb strings.Builder
+	for _, k := range attrKeys {
+		sb.WriteString(separator)
+		if v, ok := attrs.Get(k); ok {
+			sb.WriteString(v.AsString())
+		}
+	}
+	return sb.String()
+}
 
 // Option configures a batch consumer created by this package.
 type Option func(*options)
@@ -56,7 +70,7 @@ func injectAttrMetadata(ctx context.Context, attrs pcommon.Map, attrKeys []strin
 	var injected bool
 	for _, k := range attrKeys {
 		if v, ok := attrs.Get(k); ok {
-			meta[k] = []string{v.Str()}
+			meta[k] = []string{v.AsString()}
 			injected = true
 		}
 	}
@@ -109,14 +123,7 @@ func (bt *batchTraces) ConsumeTraces(ctx context.Context, td ptrace.Traces) erro
 	indicesByAttr := make(map[string][]int)
 	for i := range lenRss {
 		rs := rss.At(i)
-		var attrVal string
-
-		for _, k := range bt.attrKeys {
-			if attributeValue, ok := rs.Resource().Attributes().Get(k); ok {
-				attrVal = fmt.Sprintf("%s%s%s", attrVal, separator, attributeValue.Str())
-			}
-		}
-
+		attrVal := batchKey(rs.Resource().Attributes(), bt.attrKeys)
 		indicesByAttr[attrVal] = append(indicesByAttr[attrVal], i)
 	}
 	// If there is a single attribute value, then call next.
@@ -185,12 +192,7 @@ func (bt *batchMetrics) ConsumeMetrics(ctx context.Context, td pmetric.Metrics) 
 	indicesByAttr := make(map[string][]int)
 	for i := range lenRms {
 		rm := rms.At(i)
-		var attrVal string
-		for _, k := range bt.attrKeys {
-			if attributeValue, ok := rm.Resource().Attributes().Get(k); ok {
-				attrVal = fmt.Sprintf("%s%s%s", attrVal, separator, attributeValue.Str())
-			}
-		}
+		attrVal := batchKey(rm.Resource().Attributes(), bt.attrKeys)
 		indicesByAttr[attrVal] = append(indicesByAttr[attrVal], i)
 	}
 	// If there is a single attribute value, then call next.
@@ -259,12 +261,7 @@ func (bt *batchLogs) ConsumeLogs(ctx context.Context, td plog.Logs) error {
 	indicesByAttr := make(map[string][]int)
 	for i := range lenRls {
 		rl := rls.At(i)
-		var attrVal string
-		for _, k := range bt.attrKeys {
-			if attributeValue, ok := rl.Resource().Attributes().Get(k); ok {
-				attrVal = fmt.Sprintf("%s%s%s", attrVal, separator, attributeValue.Str())
-			}
-		}
+		attrVal := batchKey(rl.Resource().Attributes(), bt.attrKeys)
 		indicesByAttr[attrVal] = append(indicesByAttr[attrVal], i)
 	}
 	// If there is a single attribute value, then call next.
@@ -329,12 +326,7 @@ func (bt *batchProfiles) ConsumeProfiles(ctx context.Context, pp pprofile.Profil
 	indicesByAttr := make(map[string][]int)
 	for i := range lenRls {
 		rl := rls.At(i)
-		var attrVal string
-		for _, k := range bt.attrKeys {
-			if attributeValue, ok := rl.Resource().Attributes().Get(k); ok {
-				attrVal = fmt.Sprintf("%s%s%s", attrVal, separator, attributeValue.Str())
-			}
-		}
+		attrVal := batchKey(rl.Resource().Attributes(), bt.attrKeys)
 		indicesByAttr[attrVal] = append(indicesByAttr[attrVal], i)
 	}
 	// If there is a single attribute value, then call next.
