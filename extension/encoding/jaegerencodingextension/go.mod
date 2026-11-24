@@ -8,12 +8,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.166.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.166.0
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component v1.72.0
+	go.opentelemetry.io/collector/component v1.72.1-0.20261124164412-aa480265b48f
 	go.opentelemetry.io/collector/component/componenttest v0.166.0
-	go.opentelemetry.io/collector/confmap v1.72.0
-	go.opentelemetry.io/collector/extension v1.72.0
+	go.opentelemetry.io/collector/confmap v1.72.1-0.20261124164412-aa480265b48f
+	go.opentelemetry.io/collector/extension v1.72.1-0.20261124164412-aa480265b48f
 	go.opentelemetry.io/collector/extension/extensiontest v0.166.0
-	go.opentelemetry.io/collector/pdata v1.72.0
+	go.opentelemetry.io/collector/pdata v1.72.1-0.20261124164412-aa480265b48f
 	go.uber.org/goleak v1.3.0
 )
 
@@ -37,8 +37,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.166.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.166.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/client v1.72.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.72.0 // indirect
+	go.opentelemetry.io/collector/client v1.72.1-0.20261124164412-aa480265b48f // indirect
+	go.opentelemetry.io/collector/featuregate v1.72.1-0.20261124164412-aa480265b48f // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.166.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.166.0 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect

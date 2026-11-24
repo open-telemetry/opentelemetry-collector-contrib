@@ -11,15 +11,15 @@ require (
 	github.com/twmb/franz-go/pkg/kadm v1.20.0
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20261109062748-d6ea02a174bc
 	github.com/twmb/franz-go/pkg/kmsg v1.15.1
-	go.opentelemetry.io/collector/component v1.72.0
+	go.opentelemetry.io/collector/component v1.72.1-0.20261124164412-aa480265b48f
 	go.opentelemetry.io/collector/component/componenttest v0.166.0
-	go.opentelemetry.io/collector/confmap v1.72.0
-	go.opentelemetry.io/collector/consumer v1.72.0
+	go.opentelemetry.io/collector/confmap v1.72.1-0.20261124164412-aa480265b48f
+	go.opentelemetry.io/collector/consumer v1.72.1-0.20261124164412-aa480265b48f
 	go.opentelemetry.io/collector/consumer/consumertest v0.166.0
 	go.opentelemetry.io/collector/filter v0.166.0
-	go.opentelemetry.io/collector/pdata v1.72.0
+	go.opentelemetry.io/collector/pdata v1.72.1-0.20261124164412-aa480265b48f
 	go.opentelemetry.io/collector/pdata/xpdata v0.166.0
-	go.opentelemetry.io/collector/receiver v1.72.0
+	go.opentelemetry.io/collector/receiver v1.72.1-0.20261124164412-aa480265b48f
 	go.opentelemetry.io/collector/receiver/receivertest v0.166.0
 	go.opentelemetry.io/collector/receiver/xreceiver v0.166.0
 	go.opentelemetry.io/collector/scraper v0.166.0
@@ -72,15 +72,15 @@ require (
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0 // indirect
 	github.com/twmb/franz-go/plugin/kzap v1.1.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.72.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.72.0 // indirect
-	go.opentelemetry.io/collector/config/configtls v1.72.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.72.1-0.20261124164412-aa480265b48f // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.72.1-0.20261124164412-aa480265b48f // indirect
+	go.opentelemetry.io/collector/config/configtls v1.72.1-0.20261124164412-aa480265b48f // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.166.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.166.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.72.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.72.1-0.20261124164412-aa480265b48f // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.166.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.166.0 // indirect
-	go.opentelemetry.io/collector/pipeline v1.72.0 // indirect
+	go.opentelemetry.io/collector/pipeline v1.72.1-0.20261124164412-aa480265b48f // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.166.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.166.0 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
