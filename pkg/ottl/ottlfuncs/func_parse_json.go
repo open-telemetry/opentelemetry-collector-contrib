@@ -56,23 +56,41 @@ func parseJSON[K any](target ottl.StringGetter[K], parseInts bool) ottl.ExprFunc
 
 		switch v := parsedValue.(type) {
 		case []any:
-			if parseInts {
-				convertNumbersArray(v)
-			}
-			result := pcommon.NewSlice()
-			err = result.FromRaw(v)
-			return result, err
+			return parseArrayJSON(parseInts, v)
 		case map[string]any:
-			if parseInts {
-				convertNumbers(v)
-			}
-			result := pcommon.NewMap()
-			err = result.FromRaw(v)
-			return result, err
+			return parseJSONValue(parseInts, v)
 		default:
 			return nil, fmt.Errorf("could not convert parsed value of type %T to JSON object", v)
 		}
 	}
+}
+
+func parseArrayJSON(parseInts bool, v []any) (result pcommon.Slice, err error) {
+	result = pcommon.NewSlice()
+
+	if parseInts {
+		err = convertNumbersArray(v)
+		if err != nil {
+			return result, err
+		}
+	}
+
+	err = result.FromRaw(v)
+	return result, err
+}
+
+func parseJSONValue(parseInts bool, v map[string]any) (result pcommon.Map, err error) {
+	result = pcommon.NewMap()
+
+	if parseInts {
+		err = convertNumbers(v)
+		if err != nil {
+			return result, err
+		}
+	}
+
+	err = result.FromRaw(v)
+	return result, err
 }
 
 func unmarshalJSON[K any](ctx context.Context, tCtx K, target ottl.StringGetter[K], parseInts bool) (any, error) {
@@ -114,40 +132,54 @@ func unmarshalJSON[K any](ctx context.Context, tCtx K, target ottl.StringGetter[
 	return parsedValue, nil
 }
 
-func convertNumbers(parsedValue map[string]any) {
+func convertNumbers(parsedValue map[string]any) error {
 	for k, v := range parsedValue {
 		switch t := v.(type) {
 		case json.Number:
-			parsedValue[k] = convertNumber(t)
+			converted, err := convertNumber(t)
+			if err != nil {
+				return err
+			}
+			parsedValue[k] = converted
 		case map[string]any:
-			convertNumbers(t)
+			if err := convertNumbers(t); err != nil {
+				return err
+			}
 		case []any:
-			convertNumbersArray(t)
+			if err := convertNumbersArray(t); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
-func convertNumbersArray(arr []any) {
+func convertNumbersArray(arr []any) error {
 	for i, v := range arr {
-		switch t := v.(type) {
+		switch value := v.(type) {
 		case json.Number:
-			arr[i] = convertNumber(t)
+			converted, err := convertNumber(value)
+			if err != nil {
+				return err
+			}
+			arr[i] = converted
 		case map[string]any:
-			convertNumbers(t)
+			if err := convertNumbers(value); err != nil {
+				return err
+			}
 		case []any:
-			convertNumbersArray(t)
+			if err := convertNumbersArray(value); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
-func convertNumber(value json.Number) any {
-	i64, err := value.Int64()
-	if err == nil {
-		return i64
+// UseNumber only checks syntax, so return Float64's range error to keep out-of-range numbers failing the parse instead of becoming strings.
+func convertNumber(value json.Number) (any, error) {
+	if i64, err := value.Int64(); err == nil {
+		return i64, nil
 	}
-	f64, err := value.Float64()
-	if err == nil {
-		return f64
-	}
-	return value.String()
+	return value.Float64()
 }

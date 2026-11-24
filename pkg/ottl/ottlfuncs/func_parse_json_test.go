@@ -227,6 +227,26 @@ func Test_ParseJSON(t *testing.T) {
 	}
 }
 
+func Test_ParseJSON_NumberOutOfRange(t *testing.T) {
+	for _, input := range []string{
+		`{"overflow":1e400}`,
+		`{"overflow":-1e400}`,
+		`{"test":{"overflow":1e400}}`,
+		`{"test":[{"overflow":1e400}]}`,
+	} {
+		t.Run(input, func(t *testing.T) {
+			target := ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return input, nil
+				},
+			}
+
+			_, err := parseJSON(target, true)(t.Context(), nil)
+			assert.ErrorContains(t, err, "value out of range")
+		})
+	}
+}
+
 func Test_ParseJSON_TrailingData(t *testing.T) {
 	for _, input := range []string{
 		`{"a":1}{"b":2}`,
