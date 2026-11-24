@@ -1836,7 +1836,7 @@ Each JSON type is converted into a `pdata.Value` using the following map:
 
 ```
 JSON boolean -> bool
-JSON number  -> float64 if parse_ints is false, otherwise int64 or float64 according to the field type
+JSON number  -> float64 if parse_ints is false, otherwise int64 for integer literals within int64 range and float64 otherwise
 JSON string  -> string
 JSON null    -> nil
 JSON arrays  -> pdata.SliceValue
