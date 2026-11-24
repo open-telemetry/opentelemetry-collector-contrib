@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager v0.5.7
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.114.10
 	github.com/aws/aws-sdk-go-v2/service/sts v1.52.0
-  github.com/aws/smithy-go v1.28.9
+	github.com/aws/smithy-go v1.28.9
 	github.com/google/uuid v1.6.0
 	github.com/itchyny/timefmt-go v0.1.9
 	github.com/klauspost/compress v1.20.4
@@ -30,7 +30,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.71.1-0.20261122191605-d56d0a1c98b6
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.165.1-0.20261122191605-d56d0a1c98b6
 	go.opentelemetry.io/collector/pdata v1.71.1-0.20261122191605-d56d0a1c98b6
-  go.opentelemetry.io/otel v1.47.0
+	go.opentelemetry.io/otel v1.47.0
 	go.opentelemetry.io/otel/metric v1.47.0
 	go.opentelemetry.io/otel/sdk/metric v1.47.0
 	go.opentelemetry.io/otel/trace v1.47.0
