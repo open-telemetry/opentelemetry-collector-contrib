@@ -97,6 +97,7 @@ func TestPollPersistsAcknowledgedCheckpoint(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			nowFunc = func() time.Time { return end }
 			storage := newMockStorageClient()
 			newReceiver := func(sink consumer.Logs, client *mockClient) *logsReceiver {
 				r := newLogsReceiver(cfg, telemetry, sink)
@@ -123,6 +124,8 @@ func TestPollPersistsAcknowledgedCheckpoint(t *testing.T) {
 			require.True(t, tc.want.Equal(rcvr.groupNextStartTimes[group]))
 			mc.AssertExpectations(t)
 
+			// Move the clock forward so the resumed window is not empty.
+			nowFunc = func() time.Time { return end.Add(time.Minute) }
 			resumeClient := &mockClient{}
 			resumeClient.On("FilterLogEvents", mock.Anything, startsAt(tc.want), mock.Anything).
 				Return(&cloudwatchlogs.FilterLogEventsOutput{}, nil).Once()

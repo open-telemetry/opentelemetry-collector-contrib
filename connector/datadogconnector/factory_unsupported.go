@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build aix || solaris
+//go:build solaris
 
 package datadogconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
 import (
@@ -27,9 +27,9 @@ func NewFactory() connector.Factory {
 }
 
 func createTracesToTracesConnector(context.Context, connector.Settings, component.Config, consumer.Traces) (connector.Traces, error) {
-	return nil, errors.New("datadogconnector is not supported on aix or solaris")
+	return nil, errors.New("datadogconnector is not supported on solaris")
 }
 
 func createTracesToMetricsConnector(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Traces, error) {
-	return nil, errors.New("datadogconnector is not supported on aix or solaris")
+	return nil, errors.New("datadogconnector is not supported on solaris")
 }

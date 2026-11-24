@@ -72,6 +72,30 @@ func TestValidate(t *testing.T) {
 			expectedErr: errInvalidPollInterval,
 		},
 		{
+			name: "Invalid Logs Delay",
+			config: Config{
+				Region: "us-west-2",
+				Logs: LogsConfig{
+					MaxEventsPerRequest: defaultEventLimit,
+					PollInterval:        defaultPollInterval,
+					Delay:               500 * time.Millisecond,
+				},
+			},
+			expectedErr: errInvalidLogsDelay,
+		},
+		{
+			name: "Negative Logs Delay",
+			config: Config{
+				Region: "us-west-2",
+				Logs: LogsConfig{
+					MaxEventsPerRequest: defaultEventLimit,
+					PollInterval:        defaultPollInterval,
+					Delay:               -time.Minute,
+				},
+			},
+			expectedErr: errInvalidLogsDelay,
+		},
+		{
 			name: "Invalid Log Group Limit",
 			config: Config{
 				Region: "us-east-1",
@@ -320,6 +344,23 @@ func TestLoadLogsConfig(t *testing.T) {
 						},
 					},
 					InitialLookback: time.Hour,
+				},
+				Metrics: defaultMetrics,
+			},
+		},
+		{
+			name: "logs-delay",
+			expectedConfig: &Config{
+				Region: "us-west-1",
+				Logs: LogsConfig{
+					PollInterval:        time.Minute,
+					MaxEventsPerRequest: defaultEventLimit,
+					Delay:               90 * time.Second,
+					Groups: GroupConfig{
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit: defaultLogGroupLimit,
+						},
+					},
 				},
 				Metrics: defaultMetrics,
 			},
