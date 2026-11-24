@@ -71,7 +71,7 @@ properties:
     items:
       type: string
   datasource:
-    type: string
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
   db_auth:
     description: DBAuth optionally references a database credential provider extension. When set, the provider supplies the secret at connection time. Username remains available as provider input; a static password cannot be set.
     $ref: /config/configdbauth.id

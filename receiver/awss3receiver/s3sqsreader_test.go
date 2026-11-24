@@ -72,6 +72,11 @@ func (m *mockSQSClient) ReceiveMessage(ctx context.Context, params *sqs.ReceiveM
 	return args.Get(0).(*sqs.ReceiveMessageOutput), args.Error(1)
 }
 
+func (m *mockSQSClient) ChangeMessageVisibility(ctx context.Context, params *sqs.ChangeMessageVisibilityInput, _ ...func(*sqs.Options)) (*sqs.ChangeMessageVisibilityOutput, error) {
+	args := m.Called(ctx, params)
+	return &sqs.ChangeMessageVisibilityOutput{}, args.Error(1)
+}
+
 func (m *mockSQSClient) DeleteMessage(ctx context.Context, params *sqs.DeleteMessageInput, _ ...func(*sqs.Options)) (*sqs.DeleteMessageOutput, error) {
 	args := m.Called(ctx, params)
 	if args.Get(0) == nil {
@@ -115,6 +120,7 @@ func TestNewS3SQSReader(t *testing.T) {
 		// check all defaults are set
 		assert.Equal(t, int32(10), r.maxNumberOfMessages)
 		assert.Equal(t, int32(20), r.waitTimeSeconds)
+		assert.Zero(t, r.visibilityTimeoutSeconds)
 	})
 
 	t.Run("override non-default config", func(t *testing.T) {
@@ -124,10 +130,11 @@ func TestNewS3SQSReader(t *testing.T) {
 				Region:   "us-east-1",
 			},
 			SQS: &SQSConfig{
-				QueueURL:            "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
-				Region:              "us-east-1",
-				MaxNumberOfMessages: aws.Int64(5),
-				WaitTimeSeconds:     aws.Int64(10),
+				QueueURL:                 "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
+				Region:                   "us-east-1",
+				MaxNumberOfMessages:      aws.Int64(5),
+				WaitTimeSeconds:          aws.Int64(10),
+				VisibilityTimeoutSeconds: aws.Int64(300),
 			},
 		}
 
@@ -136,6 +143,7 @@ func TestNewS3SQSReader(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, int32(5), r.maxNumberOfMessages)
 		assert.Equal(t, int32(10), r.waitTimeSeconds)
+		assert.Equal(t, int32(300), r.visibilityTimeoutSeconds)
 	})
 }
 
@@ -262,7 +270,9 @@ func TestS3SQSReader_ReadAll(t *testing.T) {
 	var receivedKeys []string
 	var receivedContents [][]byte
 
-	err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, content []byte) error {
+	err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, stream io.Reader) error {
+		content, readErr := io.ReadAll(stream)
+		require.NoError(t, readErr)
 		callbackCallCount++
 		receivedKeys = append(receivedKeys, key)
 		receivedContents = append(receivedContents, content)
@@ -385,7 +395,9 @@ func TestS3SQSReader_ReadAllDirectS3EventNotification(t *testing.T) {
 	var receivedKey string
 	var receivedContent []byte
 
-	err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, content []byte) error {
+	err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, stream io.Reader) error {
+		content, readErr := io.ReadAll(stream)
+		require.NoError(t, readErr)
 		callbackCalled = true
 		receivedKey = key
 		receivedContent = content
@@ -530,7 +542,7 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 
 		ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
 		defer cancel()
-		err = reader.readAll(ctx, "test-telemetry", func(context.Context, string, []byte) error {
+		err = reader.readAll(ctx, "test-telemetry", func(context.Context, string, io.Reader) error {
 			t.Fatal("Callback should not be called when S3 retrieval fails")
 			return nil
 		})
@@ -643,7 +655,7 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 		successfulCallbacks := 0
 		failedCallbacks := 0
 
-		err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, _ []byte) error {
+		err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, _ io.Reader) error {
 			if key == "callback-failure-key" {
 				failedCallbacks++
 				return errors.New("callback processing failed")
@@ -737,7 +749,7 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 		defer cancel()
 
 		callbackCalled := false
-		err = reader.readAll(ctx, "test-telemetry", func(context.Context, string, []byte) error {
+		err = reader.readAll(ctx, "test-telemetry", func(context.Context, string, io.Reader) error {
 			callbackCalled = true
 			return errors.New("callback processing failed")
 		})
@@ -814,7 +826,7 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 		defer cancel()
 
 		callbackCalled := false
-		err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, _ string, _ []byte) error {
+		err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, _ string, _ io.Reader) error {
 			callbackCalled = true
 			return nil
 		})
@@ -892,7 +904,7 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 		defer cancel()
 
 		callbackCalled := false
-		err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, _ string, _ []byte) error {
+		err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, _ string, _ io.Reader) error {
 			callbackCalled = true
 			return nil
 		})
@@ -979,7 +991,7 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 		defer cancel()
 
 		callbackCalled := false
-		err = reader.readAll(ctx, "test-telemetry", func(context.Context, string, []byte) error {
+		err = reader.readAll(ctx, "test-telemetry", func(context.Context, string, io.Reader) error {
 			callbackCalled = true
 			return nil
 		})
@@ -1136,7 +1148,9 @@ func TestS3SQSReader_ReadAllWithPrefix(t *testing.T) {
 
 	processedKeys := make(map[string][]byte)
 
-	err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, content []byte) error {
+	err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, stream io.Reader) error {
+		content, readErr := io.ReadAll(stream)
+		require.NoError(t, readErr)
 		processedKeys[key] = content
 		return nil
 	})
@@ -1345,7 +1359,9 @@ func TestS3SQSReader_PutTag(t *testing.T) {
 			defer cancel()
 
 			processedKeys := make(map[string][]byte)
-			err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, content []byte) error {
+			err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, stream io.Reader) error {
+				content, readErr := io.ReadAll(stream)
+				require.NoError(t, readErr)
 				processedKeys[key] = content
 				return nil
 			})
@@ -1437,7 +1453,7 @@ func TestS3SQSReader_ReadAllDirectS3TestEvent(t *testing.T) {
 
 	var callbackCalled bool
 
-	err := reader.readAll(ctx, "test-telemetry", func(_ context.Context, _ string, _ []byte) error {
+	err := reader.readAll(ctx, "test-telemetry", func(_ context.Context, _ string, _ io.Reader) error {
 		callbackCalled = true
 		return nil
 	})
@@ -1620,7 +1636,9 @@ func TestS3SQSReader_ReadAll_SkipTagged(t *testing.T) {
 	var receivedKeys []string
 	var receivedContents [][]byte
 
-	err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, content []byte) error {
+	err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, stream io.Reader) error {
+		content, readErr := io.ReadAll(stream)
+		require.NoError(t, readErr)
 		callbackCallCount++
 		receivedKeys = append(receivedKeys, key)
 		receivedContents = append(receivedContents, content)

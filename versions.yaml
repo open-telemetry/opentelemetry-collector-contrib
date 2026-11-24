@@ -3,13 +3,13 @@
 
 module-sets:
   stable-base:
-    version: v1.4.1
+    version: v1.5.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
 
   contrib-base:
-    version: v0.165.1
+    version: v0.166.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
@@ -17,6 +17,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen
       - github.com/open-telemetry/opentelemetry-collector-contrib/config/configdbauth
+      - github.com/open-telemetry/opentelemetry-collector-contrib/config/xconfigunit
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/aesprovider
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider
@@ -172,6 +173,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils
@@ -242,6 +244,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/telemetrypolicyprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/xtransformprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/unrollprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/verifyprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver

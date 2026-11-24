@@ -46,6 +46,7 @@ const (
 	metricNameDuration = "duration"
 	metricNameCalls    = "calls"
 	metricNameEvents   = "events"
+	metricNameSelfTime = "duration_self_time"
 
 	metricAttrSamplingMethod = "sampling.method"
 
@@ -99,6 +100,8 @@ type connectorImp struct {
 	durationDimensions dimensionList
 
 	events EventsConfig
+	// selfTime is true when the self-time histogram is enabled and histograms are not disabled.
+	selfTime bool
 
 	// Tracks the last TimestampUnixNano for delta metrics so that they represent an uninterrupted series. Unused for cumulative span metrics.
 	lastDeltaTimestamps *simplelru.LRU[deltaMetricKey, pcommon.Timestamp]
@@ -111,10 +114,11 @@ type deltaMetricKey struct {
 }
 
 type resourceMetrics struct {
-	histograms metrics.HistogramMetrics
-	sums       *metrics.SumMetrics
-	events     *metrics.SumMetrics
-	attributes pcommon.Map
+	histograms         metrics.HistogramMetrics
+	selfTimeHistograms metrics.HistogramMetrics
+	sums               *metrics.SumMetrics
+	events             *metrics.SumMetrics
+	attributes         pcommon.Map
 	// lastSeen captures when the last data points for this resource were recorded.
 	lastSeen time.Time
 }
@@ -200,6 +204,7 @@ func newConnector(logger *zap.Logger, config component.Config, clock clockwork.C
 		callsDimensions:              callsDimensions,
 		durationDimensions:           durationDimensions,
 		events:                       cfg.Events,
+		selfTime:                     cfg.Histogram.SelfTime && !cfg.Histogram.Disable,
 		instanceID:                   instanceID,
 	}, nil
 }
@@ -234,6 +239,15 @@ func initHistogramMetrics(cfg Config) metrics.HistogramMetrics {
 	}
 
 	return metrics.NewExplicitHistogramMetrics(bounds, cfg.Exemplars.MaxPerDataPoint, cfg.AggregationCardinalityLimit)
+}
+
+// initSelfTimeHistogramMetrics builds a histogram aggregator for the optional
+// self-time metric using the same bucket/unit settings as duration histograms.
+func initSelfTimeHistogramMetrics(cfg Config) metrics.HistogramMetrics {
+	if !cfg.Histogram.SelfTime {
+		return nil
+	}
+	return initHistogramMetrics(cfg)
 }
 
 // unitDivider returns a unit divider to convert nanoseconds to milliseconds or seconds.
@@ -374,6 +388,13 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 			events.BuildMetrics(metric, timestamp, timeStampGenerator, aggregationTemporality)
 		}
 
+		if p.selfTime && rawMetrics.selfTimeHistograms != nil {
+			metric = sm.Metrics().AppendEmpty()
+			metric.SetName(buildMetricName(metricsNamespace, metricNameSelfTime))
+			metric.SetUnit(p.config.Histogram.Unit.String())
+			rawMetrics.selfTimeHistograms.BuildMetrics(metric, timestamp, timeStampGenerator, p.config.GetAggregationTemporality())
+		}
+
 		for mk := range deltaMetricKeys {
 			// For delta metrics, cache the current data point's timestamp, which will be the start timestamp for the next data points in the series
 			p.lastDeltaTimestamps.Add(deltaMetricKey{resource: rk, metric: mk}, timestamp)
@@ -405,6 +426,9 @@ func (p *connectorImp) resetState() {
 				if !p.config.Histogram.Disable {
 					m.histograms.ClearExemplars()
 				}
+				if p.selfTime && m.selfTimeHistograms != nil {
+					m.selfTimeHistograms.ClearExemplars()
+				}
 			}
 
 			if p.config.SeriesExpiration > 0 {
@@ -412,6 +436,9 @@ func (p *connectorImp) resetState() {
 				m.events.ExpireSeries(p.config.SeriesExpiration, now)
 				if !p.config.Histogram.Disable {
 					m.histograms.ExpireSeries(p.config.SeriesExpiration, now)
+				}
+				if p.selfTime && m.selfTimeHistograms != nil {
+					m.selfTimeHistograms.ExpireSeries(p.config.SeriesExpiration, now)
 				}
 			}
 
@@ -439,6 +466,11 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 	// Consecutive spans from the same trace share identical tracestates.
 	adjustedCountCache := metrics.NewAdjustedCountCache()
 
+	var selfTimeBySpanID map[pcommon.SpanID]int64
+	if p.selfTime {
+		selfTimeBySpanID = computeSelfTimeBySpanID(traces)
+	}
+
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
@@ -450,6 +482,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 		rm := p.getOrCreateResourceMetrics(resourceAttr)
 		sums := rm.sums
 		histograms := rm.histograms
+		selfTimeHistograms := rm.selfTimeHistograms
 		events := rm.events
 
 		unitDivider := unitDivider(p.config.Histogram.Unit)
@@ -498,6 +531,23 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 						p.addExemplar(span, duration, h)
 					}
 					h.ObserveN(duration, adjustedCount)
+				}
+
+				// Exclusive time computed from the parent-child tree of the
+				// consumed batch. Requires complete traces in the batch.
+				if p.selfTime && selfTimeHistograms != nil {
+					if selfTimeNS, ok := selfTimeBySpanID[span.SpanID()]; ok {
+						selfTime := float64(selfTimeNS) / float64(unitDivider)
+						selfTimeKey := p.buildKey(serviceName, span, p.dimensions, p.durationDimensions, resourceAttr, nil, isAdjusted)
+						attributesFun = func() pcommon.Map {
+							return p.buildAttributes(serviceName, span, resourceAttr, nil, p.dimensions, p.durationDimensions, ils.Scope(), isAdjusted)
+						}
+						h, selfTimeLimitReached := selfTimeHistograms.GetOrCreate(selfTimeKey, attributesFun, startTimestamp, lastSeen)
+						if !selfTimeLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
+							p.addExemplar(span, selfTime, h)
+						}
+						h.ObserveN(selfTime, adjustedCount)
+					}
 				}
 
 				// aggregate events metrics
@@ -554,10 +604,11 @@ func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMet
 	v, ok := p.resourceMetrics.Get(key)
 	if !ok {
 		v = &resourceMetrics{
-			histograms: initHistogramMetrics(p.config),
-			sums:       metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint, p.config.AggregationCardinalityLimit),
-			events:     metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint, p.config.AggregationCardinalityLimit),
-			attributes: attr,
+			histograms:         initHistogramMetrics(p.config),
+			selfTimeHistograms: initSelfTimeHistogramMetrics(p.config),
+			sums:               metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint, p.config.AggregationCardinalityLimit),
+			events:             metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint, p.config.AggregationCardinalityLimit),
+			attributes:         attr,
 		}
 		p.resourceMetrics.Add(key, v)
 	}
