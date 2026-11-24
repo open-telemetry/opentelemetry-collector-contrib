@@ -172,10 +172,13 @@ func newObserver(config *Config, set extension.Settings) (extension.Extension, e
 		idNamespace: set.ID.String(),
 		endpoints:   &sync.Map{},
 		podOptions: podEndpointOptions{
-			initContainers:      config.ObserveInitContainers,
-			ephemeralContainers: config.ObserveEphemeralContainers,
+			initContainers:       config.ObserveInitContainers,
+			ephemeralContainers:  config.ObserveEphemeralContainers,
+			terminatedContainers: config.ObserveTerminatedContainers,
 		},
-		logger: set.Logger,
+		terminatedContainerTTL: config.TerminatedContainerTTL,
+		now:                    time.Now,
+		logger:                 set.Logger,
 	}
 	obs := &k8sObserver{
 		EndpointsWatcher:      endpointswatcher.New(h, time.Second, set.Logger),

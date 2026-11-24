@@ -83,6 +83,8 @@ All fields are optional.
 | observe_pods      | bool      | `true`           | Whether to report observer pod and port endpoints. If `true` and `node` is specified it will only discover pod and port endpoints whose `spec.nodeName` matches the provided node name. If `true` and `node` isn't specified, it will discover all available pod and port endpoints. Please note that Collector connectivity to pods from other nodes is dependent on your cluster configuration and isn't guaranteed. | 
 | observe_init_containers | bool | `false` | Whether to also report pod container and port endpoints for init containers, native sidecar containers included. Requires `observe_pods`. As for the other containers, only init containers that are in a running state are reported, which for them is also while the pod is still pending. The `container_kind` field of a pod container endpoint is `init` for them. |
 | observe_ephemeral_containers | bool | `false` | Whether to also report pod container endpoints for ephemeral containers, such as the ones `kubectl debug` adds. Requires `observe_pods`. As for the other containers, only ephemeral containers that are in a running state are reported. The `container_kind` field of a pod container endpoint is `ephemeral` for them and `app` for the other containers. |
+| observe_terminated_containers | bool | `false` | Whether to also report pod container endpoints for containers that ran and are not running now, such as a container that crashed or the container of a finished Job, in a pod of any phase. Port endpoints are still reported for running containers only. Requires `observe_pods`. See [Terminated containers](#terminated-containers). |
+| terminated_container_ttl | duration | `15m` | How long the endpoint of a container that is not running stays reported after the container finished, when `observe_terminated_containers` is set. `0` keeps it until the pod is deleted. |
 | observe_nodes     | bool      | `false`          | Whether to report observer k8s.node endpoints. If `true` and `node` is specified it will only discover node endpoints whose `metadata.name` matches the provided node name. If `true` and `node` isn't specified, it will discover all available node endpoints. Please note that Collector connectivity to nodes is dependent on your cluster configuration and isn't guaranteed.| 
 | observe_services  | bool      | `false`          | Whether to report observer k8s.service endpoints.|
 | observe_ingresses | bool      | `false`          | Whether to report observer k8s.ingress endpoints.|
@@ -90,6 +92,50 @@ All fields are optional.
 
 More complete configuration examples on how to use this observer along with the `receiver_creator`,
 can be found at the [Receiver Creator](../../../receiver/receivercreator/README.md)'s documentation.
+
+### Terminated containers
+
+By default only containers that are in a running state get a `pod.container` endpoint. A container that
+finished before the collector saw it running, such as the container of a short Job or a container that
+crashes at start, gets none, and its logs are not collected. `observe_terminated_containers` reports these
+containers too.
+
+The `container_running` field of a `pod.container` endpoint is `false` for a container that is not running
+now. A rule that scrapes a container has to skip those, for example
+`type == "pod.container" && container_running`. Port endpoints are reported for running containers only.
+
+With `observe_terminated_containers`:
+
+- The endpoint of a container changes when the container stops and when it starts again as a new container.
+  The `receiver_creator` then restarts the receiver of that endpoint. A `filelog` receiver needs a `storage`
+  extension to go on where it stopped, without one it reads the log files again from the start.
+- The endpoint of a container that is not running is reported for `terminated_container_ttl` after the
+  container finished. This limits the number of receivers on a node with many finished pods. A container that
+  finished longer ago than that before the collector started is not reported.
+- The container endpoints of a deleted pod stay reported for 10 seconds, so that a pod that is gone within a
+  second is still seen and a receiver has time to read what the containers left.
+
+```yaml
+extensions:
+  file_storage:
+  k8s_observer:
+    node: ${env:K8S_NODE_NAME}
+    observe_terminated_containers: true
+
+receivers:
+  receiver_creator:
+    watch_observers: [k8s_observer]
+    receivers:
+      filelog:
+        rule: type == "pod.container"
+        config:
+          include:
+            - /var/log/pods/`pod.namespace`_`pod.name`_`pod.uid`/`container_name`/*.log
+          start_at: beginning
+          storage: file_storage
+          operators:
+            - type: container
+```
 
 ### Setting up RBAC permissions
 

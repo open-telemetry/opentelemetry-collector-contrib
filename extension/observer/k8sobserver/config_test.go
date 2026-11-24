@@ -6,6 +6,7 @@ package k8sobserver
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,28 +33,31 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "own-node-only"),
 			expected: &Config{
-				Node:        "node-1",
-				APIConfig:   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
-				ObservePods: true,
+				Node:                   "node-1",
+				APIConfig:              k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
+				ObservePods:            true,
+				TerminatedContainerTTL: defaultTerminatedContainerTTL,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "observe-all"),
 			expected: &Config{
-				Node:             "",
-				APIConfig:        k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
-				ObservePods:      true,
-				ObserveNodes:     true,
-				ObserveServices:  true,
-				ObserveIngresses: true,
+				Node:                   "",
+				APIConfig:              k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
+				ObservePods:            true,
+				TerminatedContainerTTL: defaultTerminatedContainerTTL,
+				ObserveNodes:           true,
+				ObserveServices:        true,
+				ObserveIngresses:       true,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "init-containers"),
 			expected: &Config{
-				APIConfig:             k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
-				ObservePods:           true,
-				ObserveInitContainers: true,
+				APIConfig:              k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				ObservePods:            true,
+				TerminatedContainerTTL: defaultTerminatedContainerTTL,
+				ObserveInitContainers:  true,
 			},
 		},
 		{
@@ -65,12 +69,30 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				APIConfig:                  k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
 				ObservePods:                true,
+				TerminatedContainerTTL:     defaultTerminatedContainerTTL,
 				ObserveEphemeralContainers: true,
 			},
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "invalid_ephemeral_without_pods"),
 			expectedErr: "observe_ephemeral_containers requires observe_pods",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "terminated-containers"),
+			expected: &Config{
+				APIConfig:                   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
+				ObservePods:                 true,
+				ObserveTerminatedContainers: true,
+				TerminatedContainerTTL:      time.Hour,
+			},
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_terminated_without_pods"),
+			expectedErr: "observe_terminated_containers requires observe_pods",
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_negative_ttl"),
+			expectedErr: "terminated_container_ttl must not be negative",
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "invalid_auth"),

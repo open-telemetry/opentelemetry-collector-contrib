@@ -221,6 +221,7 @@ targeting it will have different variables available.
 | container_id    | container id                         | String                        |
 | container_image | container image                      | String                        |
 | container_kind  | `"app"`, `"init"` or `"ephemeral"`   | String                        |
+| container_running | whether the container is running   | Boolean                       |
 | pod.name        | name of the owning pod               | String                        |
 | pod.namespace   | namespace of the pod                 | String                        |
 | pod.uid         | unique id of the pod                 | String                        |

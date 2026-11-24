@@ -22,6 +22,17 @@ k8s_observer/invalid_ephemeral_without_pods:
   observe_pods: false
   observe_nodes: true
   observe_ephemeral_containers: true
+k8s_observer/terminated-containers:
+  auth_type: none
+  observe_terminated_containers: true
+  terminated_container_ttl: 1h
+k8s_observer/invalid_terminated_without_pods:
+  observe_pods: false
+  observe_nodes: true
+  observe_terminated_containers: true
+k8s_observer/invalid_negative_ttl:
+  observe_terminated_containers: true
+  terminated_container_ttl: -1m
 k8s_observer/invalid_auth:
   auth_type: not a real auth type
 k8s_observer/invalid_no_observing:

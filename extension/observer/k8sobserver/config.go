@@ -5,6 +5,7 @@ package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"errors"
+	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -36,6 +37,15 @@ type Config struct {
 	// ObserveEphemeralContainers determines whether to also report pod container endpoints for ephemeral
 	// containers, such as the ones `kubectl debug` adds. Requires ObservePods. `false` by default.
 	ObserveEphemeralContainers bool `mapstructure:"observe_ephemeral_containers"`
+	// ObserveTerminatedContainers determines whether to also report pod container endpoints for containers
+	// that ran and are not running now, such as a container that crashed or the container of a finished
+	// Job, in a pod of any phase. Port endpoints are still reported for running containers only.
+	// Requires ObservePods. `false` by default.
+	ObserveTerminatedContainers bool `mapstructure:"observe_terminated_containers"`
+	// TerminatedContainerTTL is how long the endpoint of a container that is not running stays reported
+	// after the container finished, when ObserveTerminatedContainers is set. Zero keeps it until the pod
+	// is deleted. `15m` by default.
+	TerminatedContainerTTL time.Duration `mapstructure:"terminated_container_ttl"`
 	// ObserveNodes determines whether to report observer k8s.node endpoints. If `true` and Node is specified
 	// it will only discover node endpoints whose `metadata.name` matches the provided node name. If `true` and
 	// Node isn't specified, it will discover all available node endpoints. `false` by default.
@@ -58,6 +68,12 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.ObserveEphemeralContainers && !cfg.ObservePods {
 		return errors.New("observe_ephemeral_containers requires observe_pods")
+	}
+	if cfg.ObserveTerminatedContainers && !cfg.ObservePods {
+		return errors.New("observe_terminated_containers requires observe_pods")
+	}
+	if cfg.TerminatedContainerTTL < 0 {
+		return errors.New("terminated_container_ttl must not be negative")
 	}
 	return nil
 }

@@ -1,0 +1,14 @@
+# A pod that writes its lines and finishes, as the pod of a Job does.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: k8sobserver-e2e-terminated-finished
+  namespace: default
+  labels:
+    app: k8sobserver-e2e-terminated
+spec:
+  restartPolicy: Never
+  containers:
+    - name: app
+      image: busybox:1.37.0
+      command: ["/bin/sh", "-c", "for i in 0 1 2 3 4; do echo run=1 seq=$i; done"]

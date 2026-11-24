@@ -5,9 +5,11 @@ package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -32,6 +34,7 @@ func TestPodObjectToPortEndpoint(t *testing.T) {
 				Image:       "container-image-2",
 				ContainerID: "a808232bb4a57d421bb16f20dc9ab2a441343cb0aae8c369dc375838c7a49fd7",
 				Kind:        "app",
+				Running:     true,
 				Pod: observer.Pod{
 					Name:      "pod-2",
 					Namespace: "default",
@@ -106,6 +109,7 @@ func TestPodEndpointsEphemeralContainers(t *testing.T) {
 			Image:       "debug-image",
 			ContainerID: "debugger-id",
 			Kind:        "ephemeral",
+			Running:     true,
 			Pod: observer.Pod{
 				Name:      "pod-2",
 				Namespace: "default",
@@ -185,6 +189,7 @@ func TestPodEndpointsInitContainers(t *testing.T) {
 		Image:       "sidecar-image",
 		ContainerID: "sidecar-id",
 		Kind:        "init",
+		Running:     true,
 		Pod: observer.Pod{
 			Name:      "pod-3",
 			Namespace: "default",
@@ -238,4 +243,129 @@ func TestPodEndpointsPortsNeedPodIP(t *testing.T) {
 	endpoints := convertPodToEndpoints("namespace", pod, opts)
 	require.Equal(t, []string{"namespace/pod-3-UID/sidecar"}, endpointIDs(endpoints))
 	require.Empty(t, endpoints[0].Target)
+}
+
+func TestPodEndpointsContainerKindAndState(t *testing.T) {
+	pod := podWithInitContainers()
+	pod.Spec.EphemeralContainers = []v1.EphemeralContainer{
+		{EphemeralContainerCommon: v1.EphemeralContainerCommon{Name: "debugger", Image: "debug-image"}},
+		{EphemeralContainerCommon: v1.EphemeralContainerCommon{Name: "old-debugger", Image: "debug-image"}},
+	}
+	pod.Status.EphemeralContainerStatuses = []v1.ContainerStatus{
+		containerStatus("debugger", "containerd://debugger-id", stateRunning),
+		containerStatus("old-debugger", "containerd://old-debugger-id", stateTerminated),
+	}
+
+	type container struct {
+		name    string
+		kind    string
+		running bool
+	}
+	containers := func(opts podEndpointOptions) []container {
+		var found []container
+		for _, e := range convertPodToEndpoints("namespace", pod, opts) {
+			if details, ok := e.Details.(*observer.PodContainer); ok {
+				found = append(found, container{details.Name, details.Kind, details.Running})
+			}
+		}
+		return found
+	}
+
+	require.Equal(t, []container{{"app", "app", true}}, containers(podEndpointOptions{}))
+	require.Equal(t, []container{
+		{"app", "app", true},
+		{"debugger", "ephemeral", true},
+	}, containers(podEndpointOptions{ephemeralContainers: true}))
+	require.Equal(t, []container{
+		{"init", "init", false},
+		{"sidecar", "init", true},
+		{"app", "app", true},
+		{"debugger", "ephemeral", true},
+		{"old-debugger", "ephemeral", false},
+	}, containers(podEndpointOptions{initContainers: true, ephemeralContainers: true, terminatedContainers: true}))
+
+	env, err := convertPodToEndpoints("namespace", pod, podEndpointOptions{initContainers: true, terminatedContainers: true})[1].Env()
+	require.NoError(t, err)
+	require.Equal(t, "init", env["container_kind"])
+	require.Equal(t, false, env["container_running"])
+}
+
+func TestContainerFinishTimes(t *testing.T) {
+	finishedAt := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	terminated := v1.ContainerState{Terminated: &v1.ContainerStateTerminated{FinishedAt: metav1.NewTime(finishedAt)}}
+
+	pod := newPod("pod-5", "localhost")
+	pod.Status.InitContainerStatuses = []v1.ContainerStatus{containerStatus("init", "containerd://init-id", terminated)}
+	pod.Status.ContainerStatuses = []v1.ContainerStatus{
+		containerStatus("running", "containerd://running-id", stateRunning),
+		// Restarted after a crash: the crash does not count.
+		{Name: "restarted", State: stateRunning, LastTerminationState: terminated},
+		{Name: "backoff", State: stateWaiting, LastTerminationState: terminated},
+		containerStatus("never-started", "", stateWaiting),
+		containerStatus("no-finish-time", "containerd://no-finish-time-id", stateTerminated),
+	}
+	pod.Status.EphemeralContainerStatuses = []v1.ContainerStatus{containerStatus("debugger", "containerd://debugger-id", terminated)}
+
+	require.Equal(t, map[observer.EndpointID]time.Time{
+		"namespace/pod-5-UID/init":     finishedAt,
+		"namespace/pod-5-UID/backoff":  finishedAt,
+		"namespace/pod-5-UID/debugger": finishedAt,
+	}, containerFinishTimes("namespace", pod))
+}
+
+func TestPodEndpointsTerminatedContainers(t *testing.T) {
+	opts := podEndpointOptions{terminatedContainers: true}
+
+	pod := newPod("pod-4", "localhost")
+	pod.Spec.Containers = []v1.Container{
+		{Name: "crashed", Image: "image", Ports: []v1.ContainerPort{{Name: "http", ContainerPort: 80, Protocol: v1.ProtocolTCP}}},
+		{Name: "backoff", Image: "image"},
+		{Name: "never-started", Image: "image"},
+		{Name: "running", Image: "image"},
+	}
+	pod.Status.ContainerStatuses = []v1.ContainerStatus{
+		containerStatus("crashed", "containerd://crashed-id", stateTerminated),
+		containerStatus("backoff", "containerd://backoff-id", stateWaiting),
+		containerStatus("never-started", "", stateWaiting),
+		containerStatus("running", "containerd://running-id", stateRunning),
+	}
+
+	require.Equal(t, []string{
+		"namespace/pod-4-UID",
+		"namespace/pod-4-UID/running",
+	}, endpointIDs(convertPodToEndpoints("namespace", pod, podEndpointOptions{})))
+
+	// Containers that ran get a container endpoint, without port endpoints.
+	endpoints := convertPodToEndpoints("namespace", pod, opts)
+	require.Equal(t, []string{
+		"namespace/pod-4-UID",
+		"namespace/pod-4-UID/crashed",
+		"namespace/pod-4-UID/backoff",
+		"namespace/pod-4-UID/running",
+	}, endpointIDs(endpoints))
+	require.Equal(t, "crashed-id", endpoints[1].Details.(*observer.PodContainer).ContainerID)
+
+	// A pod that finished keeps its container endpoints and has no pod endpoint.
+	for _, phase := range []v1.PodPhase{v1.PodSucceeded, v1.PodFailed} {
+		finished := pod.DeepCopy()
+		finished.Status.Phase = phase
+		finished.Status.ContainerStatuses[3].State = stateTerminated
+		require.Empty(t, convertPodToEndpoints("namespace", finished, podEndpointOptions{}))
+		require.Equal(t, []string{
+			"namespace/pod-4-UID/crashed",
+			"namespace/pod-4-UID/backoff",
+			"namespace/pod-4-UID/running",
+		}, endpointIDs(convertPodToEndpoints("namespace", finished, opts)))
+	}
+}
+
+func TestPodEndpointsTerminatedInitContainers(t *testing.T) {
+	endpoints := convertPodToEndpoints("namespace", podWithInitContainers(), podEndpointOptions{initContainers: true, terminatedContainers: true})
+	require.Equal(t, []string{
+		"namespace/pod-3-UID",
+		"namespace/pod-3-UID/init",
+		"namespace/pod-3-UID/sidecar",
+		"namespace/pod-3-UID/metrics(9090)",
+		"namespace/pod-3-UID/app",
+	}, endpointIDs(endpoints))
 }

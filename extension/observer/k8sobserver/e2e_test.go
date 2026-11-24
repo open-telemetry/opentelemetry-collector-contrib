@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -35,6 +36,9 @@ const (
 	initCollectorObjectsDir       = "./testdata/e2e/init/collector/"
 	initWorkloadsDir              = "./testdata/e2e/init/workloads/"
 	initPod                       = "k8sobserver-e2e-init"
+	terminatedCollectorObjectsDir = "./testdata/e2e/terminated/collector/"
+	terminatedFinishedPodDir      = "./testdata/e2e/terminated/finished/"
+	terminatedCrashPodDir         = "./testdata/e2e/terminated/crash/"
 )
 
 // getOrInsertDefault is a helper function to get or insert a default value for a configoptional.Optional type.
@@ -96,7 +100,8 @@ func TestE2ENamespaced(t *testing.T) {
 
 // containerLogs is what was received from one container.
 type containerLogs struct {
-	// lines counts how many times each line was received, by its sequence number.
+	// lines counts how many times each line was received, by its sequence number and, when the
+	// line has one, the run of the container that wrote it.
 	lines map[string]int
 	// kind is the kind of the container as the observer reports it.
 	kind string
@@ -124,9 +129,15 @@ func receivedContainerLogs(sink *consumertest.LogsSink, podName string) map[stri
 			for j := 0; j < rl.ScopeLogs().Len(); j++ {
 				records := rl.ScopeLogs().At(j).LogRecords()
 				for k := 0; k < records.Len(); k++ {
-					if seq, hasSeq := records.At(k).Attributes().Get("seq"); hasSeq {
-						received.lines[seq.Str()]++
+					seq, hasSeq := records.At(k).Attributes().Get("seq")
+					if !hasSeq {
+						continue
 					}
+					line := seq.Str()
+					if run, hasRun := records.At(k).Attributes().Get("run"); hasRun {
+						line = run.Str() + "/" + line
+					}
+					received.lines[line]++
 				}
 			}
 		}
@@ -255,6 +266,84 @@ func TestE2EInitContainers(t *testing.T) {
 		assert.Equalf(t, kind, got.kind, "kind of %s", container)
 		for line, times := range got.lines {
 			assert.Equalf(t, 1, times, "line %s of %s was received %d times", line, container, times)
+		}
+	}
+}
+
+// TestE2ETerminatedContainers collects the logs of containers that are not running: the
+// container of a pod that finished before the collector started, as the pod of a Job, and a
+// container that fails twice at start and then stays up.
+func TestE2ETerminatedContainers(t *testing.T) {
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+	require.NoError(t, err)
+
+	f := otlpreceiver.NewFactory()
+	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
+	getOrInsertDefault(t, &cfg.Protocols.GRPC).NetAddr.Endpoint = "0.0.0.0:4317"
+	logsConsumer := new(consumertest.LogsSink)
+	rcvr, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(f.Type()), cfg, logsConsumer)
+	require.NoError(t, err, "failed creating logs receiver")
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, rcvr.Shutdown(context.WithoutCancel(t.Context())))
+	}()
+
+	finishedObjs, err := k8stest.CreateObjects(k8sClient, terminatedFinishedPodDir)
+	require.NoError(t, err, "failed creating the pod that finishes")
+	defer func() {
+		assert.NoError(t, k8stest.DeleteObjects(k8sClient, finishedObjs))
+	}()
+
+	// The pod is done before the collector starts.
+	pods := k8sClient.DynamicClient.Resource(schema.GroupVersionResource{Version: "v1", Resource: "pods"}).Namespace("default")
+	require.Eventually(t, func() bool {
+		pod, getErr := pods.Get(t.Context(), "k8sobserver-e2e-terminated-finished", metav1.GetOptions{})
+		if getErr != nil {
+			return false
+		}
+		phase, _, _ := unstructured.NestedString(pod.Object, "status", "phase")
+		return phase == "Succeeded"
+	}, 2*time.Minute, time.Second, "the pod did not finish")
+
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, uuid.NewString()[:8], terminatedCollectorObjectsDir, map[string]string{}, "")
+	defer func() {
+		for _, obj := range collectorObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+		}
+	}()
+
+	// The kubelet keeps the log of the last run before the current one only, so this pod starts
+	// once the collector runs.
+	crashObjs, err := k8stest.CreateObjects(k8sClient, terminatedCrashPodDir)
+	require.NoError(t, err, "failed creating the pod that crashes")
+	defer func() {
+		assert.NoError(t, k8stest.DeleteObjects(k8sClient, crashObjs))
+	}()
+
+	// Five lines of the pod that finished, five lines of each of the three runs of the other.
+	expected := map[string]int{
+		"k8sobserver-e2e-terminated-finished": 5,
+		"k8sobserver-e2e-terminated-crash":    15,
+	}
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		for pod, lines := range expected {
+			got, ok := receivedContainerLogs(logsConsumer, pod)["app"]
+			if assert.Truef(c, ok, "no logs received for %s", pod) {
+				assert.Lenf(c, got.lines, lines, "lines of %s", pod)
+			}
+		}
+	}, 4*time.Minute, time.Second, "did not receive the logs of every container")
+
+	// Give a receiver that was started again the time to deliver what it read again.
+	time.Sleep(10 * time.Second)
+
+	for pod, lines := range expected {
+		got := receivedContainerLogs(logsConsumer, pod)["app"]
+		require.NotNilf(t, got, "pod %s", pod)
+		assert.Lenf(t, got.lines, lines, "lines of %s", pod)
+		for line, times := range got.lines {
+			assert.Equalf(t, 1, times, "line %s of %s was received %d times", line, pod, times)
 		}
 	}
 }

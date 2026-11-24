@@ -8,6 +8,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
 
@@ -28,13 +29,16 @@ type podEndpointOptions struct {
 	initContainers bool
 	// ephemeralContainers also reports the ephemeral containers of a pod.
 	ephemeralContainers bool
+	// terminatedContainers also reports containers that ran and are not running now, in a pod of
+	// any phase.
+	terminatedContainers bool
 }
 
 // convertPodToEndpoints converts a pod instance into a slice of endpoints. The endpoints
 // include the pod itself, when it is running, as well as an endpoint for each reported
-// container that is in a running state and for each of its container ports.
+// container and for each container port of a container that is in a running state.
 func convertPodToEndpoints(idNamespace string, pod *v1.Pod, opts podEndpointOptions) []observer.Endpoint {
-	podID := observer.EndpointID(fmt.Sprintf("%s/%s", idNamespace, pod.UID))
+	podID := podEndpointID(idNamespace, pod)
 	podIP := pod.Status.PodIP
 	podRunning := pod.Status.Phase == v1.PodRunning
 
@@ -56,36 +60,39 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod, opts podEndpointOpti
 	}
 
 	appendContainers := func(containers []v1.Container, statuses []v1.ContainerStatus, kind string) {
-		// Map of running containers by name.
-		runningContainers := map[string]runningContainer{}
+		statusByName := make(map[string]*v1.ContainerStatus, len(statuses))
 		for i := range statuses {
-			status := &statuses[i]
-			if status.State.Running != nil {
-				runningContainers[status.Name] = containerIDWithRuntime(status)
-			}
+			statusByName[statuses[i].Name] = &statuses[i]
 		}
 
 		for i := range containers {
 			container := &containers[i]
-			rc, ok := runningContainers[container.Name]
+			status, ok := statusByName[container.Name]
 			if !ok {
 				continue
 			}
+			running := status.State.Running != nil
+			// A container that is not running is reported only when it ran.
+			if !running && (!opts.terminatedContainers || status.ContainerID == "") {
+				continue
+			}
+			rc := containerIDWithRuntime(status)
 
 			endpoints = append(endpoints, observer.Endpoint{
-				ID:     observer.EndpointID(fmt.Sprintf("%s/%s", podID, container.Name)),
+				ID:     containerEndpointID(podID, container.Name),
 				Target: podIP,
 				Details: &observer.PodContainer{
 					Name:        container.Name,
 					ContainerID: rc.ID,
 					Image:       container.Image,
 					Kind:        kind,
+					Running:     running,
 					Pod:         podDetails,
 				},
 			})
 
-			// A port can be reached only once the pod has an address.
-			if podIP == "" {
+			// A port can be reached only while its container runs and the pod has an address.
+			if !running || podIP == "" {
 				continue
 			}
 			// Create endpoint for each named container port.
@@ -110,10 +117,10 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod, opts podEndpointOpti
 	// Init containers run while the pod is still pending. They come before the app containers,
 	// so that the port of an app container is the one kept when both declare a port with the
 	// same name and number.
-	if opts.initContainers && (podRunning || pod.Status.Phase == v1.PodPending) {
+	if opts.initContainers && (podRunning || pod.Status.Phase == v1.PodPending || opts.terminatedContainers) {
 		appendContainers(pod.Spec.InitContainers, pod.Status.InitContainerStatuses, containerKindInit)
 	}
-	if !podRunning {
+	if !podRunning && !opts.terminatedContainers {
 		return endpoints
 	}
 	appendContainers(pod.Spec.Containers, pod.Status.ContainerStatuses, containerKindApp)
@@ -126,6 +133,44 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod, opts podEndpointOpti
 	}
 
 	return endpoints
+}
+
+func podEndpointID(idNamespace string, pod *v1.Pod) observer.EndpointID {
+	return observer.EndpointID(fmt.Sprintf("%s/%s", idNamespace, pod.UID))
+}
+
+func containerEndpointID(podID observer.EndpointID, containerName string) observer.EndpointID {
+	return observer.EndpointID(fmt.Sprintf("%s/%s", podID, containerName))
+}
+
+// containerFinishTimes returns when the containers of a pod that are not running last finished,
+// by the ID of the container endpoint.
+func containerFinishTimes(idNamespace string, pod *v1.Pod) map[observer.EndpointID]time.Time {
+	podID := podEndpointID(idNamespace, pod)
+	finished := map[observer.EndpointID]time.Time{}
+	for _, statuses := range [][]v1.ContainerStatus{
+		pod.Status.InitContainerStatuses,
+		pod.Status.ContainerStatuses,
+		pod.Status.EphemeralContainerStatuses,
+	} {
+		for i := range statuses {
+			status := &statuses[i]
+			var terminated *v1.ContainerStateTerminated
+			switch {
+			case status.State.Running != nil:
+				continue
+			case status.State.Terminated != nil:
+				terminated = status.State.Terminated
+			default:
+				// A container that waits for its next start, as in a crash loop.
+				terminated = status.LastTerminationState.Terminated
+			}
+			if terminated != nil && !terminated.FinishedAt.IsZero() {
+				finished[containerEndpointID(podID, status.Name)] = terminated.FinishedAt.Time
+			}
+		}
+	}
+	return finished
 }
 
 func getTransport(protocol v1.Protocol) observer.Transport {

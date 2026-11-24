@@ -211,17 +211,20 @@ type PodContainer struct {
 	ContainerID string `mapstructure:"container_id"`
 	// Kind tells where the pod spec declares the container: "app", "init" or "ephemeral".
 	Kind string `mapstructure:"container_kind"`
+	// Running tells whether the container is in a running state.
+	Running bool `mapstructure:"container_running"`
 	// Pod is the k8s pod in which the container is running
 	Pod Pod
 }
 
 func (p *PodContainer) Env() EndpointEnv {
 	return map[string]any{
-		"container_name":  p.Name,
-		"container_id":    p.ContainerID,
-		"container_image": p.Image,
-		"container_kind":  p.Kind,
-		"pod":             p.Pod.Env(),
+		"container_name":    p.Name,
+		"container_id":      p.ContainerID,
+		"container_image":   p.Image,
+		"container_kind":    p.Kind,
+		"container_running": p.Running,
+		"pod":               p.Pod.Env(),
 	}
 }
 
