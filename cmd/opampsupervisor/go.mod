@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension v0.157.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.157.0
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.0
 	go.opentelemetry.io/collector/component v1.63.1-0.20260721190914-bc198f44aa6e
 	go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260721190914-bc198f44aa6e
 	go.opentelemetry.io/collector/config/confighttp v0.157.1-0.20260721190914-bc198f44aa6e
@@ -49,8 +49,8 @@ require (
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cenkalti/backoff/v7 v7.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/ebitengine/purego v0.10.0 // indirect
+	github.com/elastic/proxy-connect-dialer-go v0.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20251226215517-609e4778396f // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
@@ -73,7 +73,6 @@ require (
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
 	github.com/knadh/koanf/v2 v2.3.5 // indirect
 	github.com/lufia/plan9stats v0.0.0-20260216142805-b3301c5f2a88 // indirect
-	github.com/michel-laterman/proxy-connect-dialer-go v0.1.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -87,7 +86,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.157.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.157.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.27 // indirect
-	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/client_golang v1.24.0-rc.0 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
@@ -304,3 +302,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oaut
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile => ../../extension/internal/credentialsfile
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof => ../../pkg/translator/pprof
+
+replace github.com/open-telemetry/opamp-go => github.com/cforce/opamp-go v0.0.0-20261124130307-37e02fb97ca7

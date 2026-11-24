@@ -12,6 +12,12 @@ import (
 const (
 	CollectorHealthStatusMetric   = "supervisor.agent.health_status"
 	CollectorFallbackStatusMetric = "supervisor.agent.fallback_status"
+	OpAMPConnectionStatusMetric = "supervisor.opamp.connection.status"
+	OpAMPConnectionAttemptsMetric = "supervisor.opamp.connection.attempts"
+	OpAMPDisconnectsMetric = "supervisor.opamp.disconnects"
+	OpAMPConnectionDurationMetric = "supervisor.opamp.connection.duration"
+	OpAMPMessagesMetric = "supervisor.opamp.messages"
+	OpAMPPayloadBytesMetric = "supervisor.opamp.payload.bytes"
 )
 
 type Metrics struct {
