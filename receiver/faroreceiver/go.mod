@@ -67,12 +67,12 @@ require (
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
-	github.com/klauspost/compress v1.20.4 // indirect
+	github.com/klauspost/compress v1.20.5 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.166.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.166.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.166.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro v0.166.0
-	github.com/pierrec/lz4/v4 v4.1.33 // indirect
+	github.com/pierrec/lz4/v4 v4.1.34 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/collector/client v1.72.1-0.20261124164412-aa480265b48f // indirect
 	go.opentelemetry.io/collector/component v1.72.1-0.20261124164412-aa480265b48f

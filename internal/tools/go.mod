@@ -158,7 +158,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
-	github.com/iimos/ucum v0.0.3 // indirect
+	github.com/iimos/ucum v0.0.4 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/itchyny/go-yaml v0.0.0-20261030110000-18a91f8189a6 // indirect
 	github.com/itchyny/gojq v0.12.20 // indirect
