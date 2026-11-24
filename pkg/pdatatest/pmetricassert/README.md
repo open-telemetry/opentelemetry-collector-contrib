@@ -31,9 +31,13 @@ The following are ignored:
 
 - datapoint values, timestamps, start timestamps,
 - exemplars, metric descriptions,
-- the order of resources, scopes, metrics, and datapoints,
-- batch boundaries — multiple `ResourceMetrics` / `ScopeMetrics` / `Metric`
-  entries with the same identity are normalized before comparison.
+- the order of resources, scopes, metrics, and datapoints.
+
+`AssertMetrics` first runs `pmetrictest.ValidateMetrics` on the actual metrics
+and fails on a semantic error before comparing anything: two datapoints of one
+metric with the same attributes, more than one `ResourceMetrics`,
+`ScopeMetrics`, or `Metric` entry with the same identity, or an empty
+container.
 
 Use `IncludeValues()` to write supported datapoint values, or
 `IncludeHistogramExplicitBounds()` to write histogram bounds without other

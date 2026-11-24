@@ -13,6 +13,8 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 // AssertMetrics compares actual against the assertion file at expectedPath.
@@ -21,7 +23,12 @@ import (
 // datapoints. Resource attributes, scope identity, metric metadata, and
 // datapoint attribute permutations must match exactly. Values, timestamps,
 // and exemplars are ignored.
+//
+// actual must pass pmetrictest.ValidateMetrics; a semantic error fails the assertion.
 func AssertMetrics(expectedPath string, actual pmetric.Metrics) error {
+	if err := pmetrictest.ValidateMetrics(actual); err != nil {
+		return fmt.Errorf("invalid actual metrics: %w", err)
+	}
 	expected, err := readDocument(expectedPath)
 	if err != nil {
 		return err
