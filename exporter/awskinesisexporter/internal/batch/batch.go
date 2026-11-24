@@ -4,13 +4,16 @@
 package batch // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
 
 import (
+	"bytes"
 	"errors"
+	"iter"
+	"slices"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis/types"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/compress"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression"
 )
 
 const (
@@ -29,7 +32,7 @@ type Batch struct {
 	maxBatchSize  int
 	maxRecordSize int
 
-	compressionType string
+	writer xcompression.Writer
 
 	records []types.PutRecordsRequestEntry
 }
@@ -54,18 +57,18 @@ func WithMaxRecordSize(size int) Option {
 	}
 }
 
-func WithCompressionType(compressionType string) Option {
+func WithCompressionWriter(w xcompression.Writer) Option {
 	return func(bt *Batch) {
-		bt.compressionType = compressionType
+		bt.writer = w
 	}
 }
 
 func New(opts ...Option) *Batch {
 	bt := &Batch{
-		maxBatchSize:    MaxBatchedRecords,
-		maxRecordSize:   MaxRecordSize,
-		compressionType: "none",
-		records:         make([]types.PutRecordsRequestEntry, 0, MaxBatchedRecords),
+		maxBatchSize:  MaxBatchedRecords,
+		maxRecordSize: MaxRecordSize,
+		writer:        xcompression.Nop{},
+		records:       make([]types.PutRecordsRequestEntry, 0, MaxBatchedRecords),
 	}
 
 	for _, op := range opts {
@@ -76,26 +79,30 @@ func New(opts ...Option) *Batch {
 }
 
 func (b *Batch) AddRecord(raw []byte, key string) error {
-	compressor, err := compress.NewCompressor(b.compressionType)
-	if err != nil {
-		return err
-	}
-
-	record, err := compressor(raw)
-	if err != nil {
-		return err
+	data := raw
+	switch b.writer.(type) {
+	case xcompression.Nop, *xcompression.Nop:
+		// In the event that no compression is set,
+		// it means that the raw can be passed
+		// through directly without modification.
+	default:
+		buf := bytes.NewBuffer(nil)
+		if _, err := b.writer.CompressBytes(buf, raw); err != nil {
+			return err
+		}
+		data = buf.Bytes()
 	}
 
 	if l := len(key); l == 0 || l > 256 {
 		return ErrPartitionKeyLength
 	}
 
-	if l := len(record); l == 0 || l > b.maxRecordSize {
+	if l := len(data); l == 0 || l > b.maxRecordSize {
 		return ErrRecordLength
 	}
 
 	b.records = append(b.records, types.PutRecordsRequestEntry{
-		Data:         record,
+		Data:         data,
 		PartitionKey: aws.String(key),
 	})
 	return nil
@@ -103,18 +110,6 @@ func (b *Batch) AddRecord(raw []byte, key string) error {
 
 // Chunk breaks up the internal queue into blocks that can be used
 // to be written to he kinesis.PutRecords endpoint
-func (b *Batch) Chunk() (chunks [][]types.PutRecordsRequestEntry) {
-	// Using local copies to avoid mutating internal data
-	var (
-		slice = b.records
-		size  = b.maxBatchSize
-	)
-	for len(slice) != 0 {
-		if len(slice) < size {
-			size = len(slice)
-		}
-		chunks = append(chunks, slice[0:size])
-		slice = slice[size:]
-	}
-	return chunks
+func (b *Batch) Chunk() iter.Seq[[]types.PutRecordsRequestEntry] {
+	return slices.Chunk(b.records, b.maxBatchSize)
 }
