@@ -1,5 +1,0 @@
-change_type: enhancement
-component: receiver/aws_s3
-note: Stream data directly from S3 to reduce memory use during download and decompression.
-subtext: Configure a streaming log or metric encoding extension as described in the receiver documentation to decode batches incrementally.
-issues: [53137]

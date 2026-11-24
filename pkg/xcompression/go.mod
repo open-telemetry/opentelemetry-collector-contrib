@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompressio
 go 1.26.0
 
 require (
-	github.com/klauspost/compress v1.20.4
+	github.com/klauspost/compress v1.20.5
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/config/configcompression v1.71.1-0.20261122191605-d56d0a1c98b6
+	go.opentelemetry.io/collector/config/configcompression v1.72.0
 	go.uber.org/goleak v1.3.0
 )
 

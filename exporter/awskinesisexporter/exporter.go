@@ -22,6 +22,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/producer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression"
 )
 
 // kinesisExporter implements an OpenTelemetry trace exporter that exports all spans to AWS Kinesis
@@ -100,11 +101,19 @@ func createExporter(ctx context.Context, c component.Config, log *zap.Logger, op
 		return nil, err
 	}
 
+	w, err := xcompression.NewWriterFactory().NewWriter(
+		conf.Encoding.Compression,
+		conf.Encoding.CompressionParams,
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	encoder, err := batch.NewEncoder(
 		conf.Encoding.Name,
 		batch.WithMaxRecordSize(conf.MaxRecordSize),
 		batch.WithMaxRecordsPerBatch(conf.MaxRecordsPerBatch),
-		batch.WithCompressionType(conf.Encoding.Compression),
+		batch.WithCompressionWriter(w),
 	)
 	if err != nil {
 		return nil, err
