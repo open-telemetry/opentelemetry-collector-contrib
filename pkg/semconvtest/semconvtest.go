@@ -53,7 +53,7 @@ const (
 	// and opens an update PR when a new Weaver release appears.
 	//
 	// renovate: datasource=github-releases depName=open-telemetry/weaver
-	defaultWeaverVersion = "0.28.0"
+	defaultWeaverVersion = "v0.28.0"
 
 	// defaultRegistryVersion is the semantic-conventions release that the
 	// live-check validates against when a test does not select a registry
@@ -181,10 +181,9 @@ func TestTraces(tb testing.TB, traces ptrace.Traces, opts ...WeaverOption) []Pol
 // for every violation-level finding. The violation findings are returned.
 func runLiveCheck(tb testing.TB, opts []WeaverOption, send func(context.Context, *pdataClients) error) []PolicyFinding {
 	tb.Helper()
-	version, _ := normalizeWeaverVersion(defaultWeaverVersion)
 
 	options := &weaverOptions{
-		version:  version,
+		version:  defaultWeaverVersion,
 		registry: fmt.Sprintf(defaultRegistryTemplate, defaultRegistryVersion),
 	}
 	for _, opt := range opts {
