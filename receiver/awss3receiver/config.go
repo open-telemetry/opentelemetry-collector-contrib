@@ -53,6 +53,10 @@ type SQSConfig struct {
 	// MaxNumberOfMessages specifies the maximum number of messages to receive in a single poll.
 	// Valid values: 1-10. Default is 10.
 	MaxNumberOfMessages *int64 `mapstructure:"max_number_of_messages"`
+	// VisibilityTimeoutSeconds sets and renews message visibility while messages
+	// are waiting or processing. Valid values: 1-43200. When unset, the queue's
+	// visibility timeout is used without renewal.
+	VisibilityTimeoutSeconds *int64 `mapstructure:"visibility_timeout_seconds"`
 }
 
 // Notifications groups optional notification sources.
@@ -165,6 +169,9 @@ func (c Config) Validate() error {
 		// Validate max number of messages
 		if c.SQS.MaxNumberOfMessages != nil && (*c.SQS.MaxNumberOfMessages < 1 || *c.SQS.MaxNumberOfMessages > 10) {
 			errs = multierr.Append(errs, errors.New("sqs.max_number_of_messages must be between 1 and 10"))
+		}
+		if c.SQS.VisibilityTimeoutSeconds != nil && (*c.SQS.VisibilityTimeoutSeconds < 1 || *c.SQS.VisibilityTimeoutSeconds > 43200) {
+			errs = multierr.Append(errs, errors.New("sqs.visibility_timeout_seconds must be between 1 and 43200"))
 		}
 	}
 	return errs

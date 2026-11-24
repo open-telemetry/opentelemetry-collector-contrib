@@ -15,6 +15,7 @@ components:
     - cmd/oteltestbedcol
     - cmd/telemetrygen
     - config/configdbauth
+    - config/xconfigunit
     - connector/count
     - connector/datadog
     - connector/exceptions

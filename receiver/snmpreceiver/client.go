@@ -101,7 +101,7 @@ func newClient(cfg *Config, logger *zap.Logger) (client, error) {
 		setV3ClientConfigs(goSNMP, cfg)
 	} else {
 		// Set goSNMP community string
-		goSNMP.SetCommunity(cfg.Community)
+		goSNMP.SetCommunity(string(cfg.Community))
 	}
 
 	// return client

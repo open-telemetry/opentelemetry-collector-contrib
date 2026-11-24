@@ -21,6 +21,7 @@ func NewFactory() exporter.Factory {
 		createDefaultConfig,
 		xexporter.WithLogs(createLogsExporter, metadata.LogsStability),
 		xexporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		xexporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
 		xexporter.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
@@ -53,6 +54,22 @@ func createTracesExporter(ctx context.Context, set exporter.Settings, config com
 		set,
 		cfg,
 		gcsExp.ConsumeTraces,
+		exporterOptions(cfg, gcsExp.Start, gcsExp.Shutdown)...,
+	)
+}
+
+func createMetricsExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Metrics, error) {
+	cfg := config.(*Config)
+	gcsExp, err := newGCSExporter(ctx, cfg, set.Logger, signalTypeMetrics)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewMetrics(
+		ctx,
+		set,
+		cfg,
+		gcsExp.ConsumeMetrics,
 		exporterOptions(cfg, gcsExp.Start, gcsExp.Shutdown)...,
 	)
 }

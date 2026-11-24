@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -395,4 +396,42 @@ func TestGetReceiverOptions(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestValidateSemconvFeatureGates(t *testing.T) {
+	tests := []struct {
+		name        string
+		emitV1      bool
+		dontEmitV0  bool
+		expectedErr string
+	}{
+		{name: "v0 only"},
+		{name: "dual publish", emitV1: true},
+		{name: "v1 only", emitV1: true, dontEmitV0: true},
+		{
+			name:        "dont emit v0 without emit v1",
+			dontEmitV0:  true,
+			expectedErr: "requires receiver.kubelet_stats.EmitV1K8sConventions",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setGate(t, metadata.ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.emitV1)
+			setGate(t, metadata.ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, tt.dontEmitV0)
+			err := createDefaultConfig().(*Config).Validate()
+			if tt.expectedErr == "" {
+				require.NoError(t, err)
+			} else {
+				require.ErrorContains(t, err, tt.expectedErr)
+			}
+		})
+	}
+}
+
+func setGate(t *testing.T, g *featuregate.Gate, enabled bool) {
+	prev := g.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(g.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(g.ID(), prev))
+	})
 }
