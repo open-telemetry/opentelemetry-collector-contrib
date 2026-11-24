@@ -52,6 +52,7 @@ The following exporter configuration parameters are supported.
 | `endpoint`              | Custom endpoint for the SQS service                                                                                                        |             | Optional |
 | `max_number_of_messages`          | Maximum number of messages to retrieve in a single SQS request                                                                             | 10          | Optional |
 | `wait_time_seconds`             | Wait time in seconds for long polling SQS requests                                                                                         | 20          | Optional |
+| `visibility_timeout_seconds` | Sets the SQS visibility timeout and renews it while received messages are waiting or processing. Valid values: 1–43200. Requires `sqs:ChangeMessageVisibility`. | Queue default, without renewal | Optional |
 | `encodings:`            | An array of entries with the following properties:                                                                                         |             | Optional |
 | `extension`             | Extension to use for decoding a key with a matching suffix.                                                                                |             | Required |
 | `suffix`                | Key suffix to match against.                                                                                                               |             | Required |
@@ -79,6 +80,16 @@ sqs:
 
 **Note:** You must configure your S3 bucket to send event notifications to the SQS queue.
 Time-based configuration (`starttime`/`endtime`) and SQS configuration cannot be used together.
+
+Set `sqs.visibility_timeout_seconds` to renew message visibility during long-running downloads or
+pipeline processing. Renewal also covers messages waiting behind another message in the same poll.
+For example, `visibility_timeout_seconds: 300` sets a five-minute timeout, renewed before it expires.
+When this option is omitted, the receiver uses the queue's visibility timeout without renewing it.
+
+A renewal failure cancels processing of the affected message and leaves it available for retry after
+its visibility timeout. Previously accepted data may be delivered again. Renewal cannot extend
+visibility beyond SQS's 12-hour limit from the original receive request. SQS provides at-least-once
+delivery, so renewal does not eliminate all possible duplicates.
 
 ### Time format for `starttime` and `endtime`
 The `starttime` and `endtime` fields are used to specify the time range for which to retrieve data.

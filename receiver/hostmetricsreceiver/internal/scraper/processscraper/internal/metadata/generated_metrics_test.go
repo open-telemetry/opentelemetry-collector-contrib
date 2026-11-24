@@ -74,20 +74,6 @@ func TestMetricsBuilder(t *testing.T) {
 			migrationGatesPinned := true
 			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
 			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ScraperProcessEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["process.context_switches"] = mb.metricProcessContextSwitches.config.AggregationStrategy

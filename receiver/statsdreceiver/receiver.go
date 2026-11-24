@@ -143,12 +143,21 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 					}
 					r.obsrecv.EndMetricsOp(flushCtx, metadata.Type.String(), numPoints, err)
 				}
+				// Report remainders so counts below 100 are not held until the next 100th line or lost on shutdown.
+				if failCnt > 0 {
+					r.reporter.RecordParseFailure(failCnt)
+					failCnt = 0
+				}
+				if successCnt > 0 {
+					r.reporter.RecordParseSuccess(successCnt)
+					successCnt = 0
+				}
 			case metric := <-transferChan:
 				err := r.parser.Aggregate(metric.Raw, metric.Addr)
 				if err != nil {
 					failCnt++
 					if failCnt%100 == 0 {
-						r.reporter.RecordParseFailure()
+						r.reporter.RecordParseFailure(failCnt)
 						failCnt = 0
 					}
 					r.reporter.OnDebugf("Error aggregating pmetric", zap.Error(err))

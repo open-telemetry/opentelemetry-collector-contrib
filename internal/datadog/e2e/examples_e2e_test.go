@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build e2e && !aix
+//go:build e2e
 
 package e2e // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/e2e"
 

@@ -11,6 +11,7 @@ import (
 	"errors"
 	"io"
 	"os/exec"
+	"sync"
 	"testing"
 	"time"
 
@@ -19,6 +20,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -712,4 +715,139 @@ func TestInputJournaldError(t *testing.T) {
 	err = op.Start(testutil.NewUnscopedMockPersister())
 	assert.EqualError(t, err, "journalctl command failed: start journalctl: fail to start")
 	require.NoError(t, op.Stop())
+}
+
+const cursorTestLine = `{"MESSAGE":"hello","__REALTIME_TIMESTAMP":"1587047866229555","__CURSOR":"s=1"}` + "\n"
+
+func TestInputJournaldSavesCursorAfterWrite(t *testing.T) {
+	cfg := NewConfigWithID("my_journald_input")
+	cfg.OutputIDs = []string{"output"}
+	op, err := cfg.Build(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	persister := testutil.NewUnscopedMockPersister()
+	var cursorDuringWrite []byte
+	var once sync.Once
+	written := make(chan struct{})
+	mockOutput := testutil.NewMockOperator("output")
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		once.Do(func() {
+			cursorDuringWrite, _ = persister.Get(args.Get(0).(context.Context), lastReadCursorKey)
+			close(written)
+		})
+	}).Return(nil)
+	require.NoError(t, op.SetOutputs([]operator.Operator{mockOutput}))
+
+	op.(*Input).newCmd = func(context.Context, []byte) cmd {
+		return &fakeJournaldCmdCustom{response: cursorTestLine}
+	}
+	require.NoError(t, op.Start(persister))
+	defer func() {
+		require.NoError(t, op.Stop())
+	}()
+
+	select {
+	case <-written:
+	case <-time.After(5 * time.Second):
+		t.Fatal("entry was never written")
+	}
+	assert.Empty(t, cursorDuringWrite, "cursor was saved before the entry was written")
+
+	require.Eventually(t, func() bool {
+		saved, getErr := persister.Get(t.Context(), lastReadCursorKey)
+		return getErr == nil && string(saved) == "s=1"
+	}, 5*time.Second, 10*time.Millisecond)
+}
+
+func TestInputJournaldStopDuringWrite(t *testing.T) {
+	cfg := NewConfigWithID("my_journald_input")
+	cfg.OutputIDs = []string{"output"}
+	op, err := cfg.Build(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	mockOutput := testutil.NewMockOperator("output")
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(mock.Arguments) {
+		close(entered)
+		<-release
+	}).Return(nil)
+	require.NoError(t, op.SetOutputs([]operator.Operator{mockOutput}))
+
+	op.(*Input).newCmd = func(context.Context, []byte) cmd {
+		return &fakeJournaldCmdCustom{response: cursorTestLine}
+	}
+	persister := testutil.NewUnscopedMockPersister()
+	require.NoError(t, op.Start(persister))
+
+	select {
+	case <-entered:
+	case <-time.After(5 * time.Second):
+		t.Fatal("entry was never written")
+	}
+
+	stopped := make(chan error)
+	go func() {
+		stopped <- op.Stop()
+	}()
+
+	select {
+	case <-stopped:
+		t.Fatal("Stop returned while an entry was still being written")
+	case <-time.After(100 * time.Millisecond):
+	}
+
+	close(release)
+	select {
+	case err = <-stopped:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("Stop did not return after the write finished")
+	}
+
+	saved, err := persister.Get(t.Context(), lastReadCursorKey)
+	require.NoError(t, err)
+	assert.Empty(t, saved, "cursor was saved for an entry interrupted by Stop")
+}
+
+// killedJournaldCmd behaves like journalctl started with exec.CommandContext:
+// it runs until the context is canceled and then exits with an error.
+type killedJournaldCmd struct {
+	ctx context.Context
+}
+
+func (*killedJournaldCmd) Start() error { return nil }
+
+func (*killedJournaldCmd) StdoutPipe() (io.ReadCloser, error) {
+	return io.NopCloser(bytes.NewReader(nil)), nil
+}
+
+func (*killedJournaldCmd) StderrPipe() (io.ReadCloser, error) {
+	return io.NopCloser(bytes.NewReader(nil)), nil
+}
+
+func (c *killedJournaldCmd) Wait() error {
+	<-c.ctx.Done()
+	return &exec.ExitError{}
+}
+
+func TestInputJournaldStopLogsAtInfo(t *testing.T) {
+	cfg := NewConfigWithID("my_journald_input")
+	cfg.OutputIDs = []string{"output"}
+
+	core, logs := observer.New(zapcore.DebugLevel)
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zap.New(core)
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+	require.NoError(t, op.SetOutputs([]operator.Operator{testutil.NewMockOperator("output")}))
+
+	op.(*Input).newCmd = func(ctx context.Context, _ []byte) cmd {
+		return &killedJournaldCmd{ctx: ctx}
+	}
+	require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
+	require.NoError(t, op.Stop())
+
+	assert.Equal(t, 1, logs.FilterMessage("journalctl command stopped").FilterLevelExact(zapcore.InfoLevel).Len())
+	assert.Zero(t, logs.FilterLevelExact(zapcore.ErrorLevel).Len(), "a normal Stop must not log errors")
 }

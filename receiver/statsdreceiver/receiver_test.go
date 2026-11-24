@@ -4,6 +4,7 @@
 package statsdreceiver
 
 import (
+	"context"
 	"errors"
 	"runtime"
 	"testing"
@@ -19,9 +20,13 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/transport/client"
 )
 
@@ -98,6 +103,46 @@ func TestStatsdReceiver_TCPShutdownReportsNoFatalError(t *testing.T) {
 		t.Fatalf("unexpected status reported on shutdown: %v %v", ev.Status(), ev.Err())
 	case <-time.After(100 * time.Millisecond):
 	}
+}
+
+func TestStatsdReceiver_ParseCounts(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.WithoutCancel(t.Context()))) })
+	addr := testutil.GetAvailableLocalNetworkAddress(t, "udp")
+	cfg := createDefaultConfig().(*Config)
+	cfg.NetAddr.Endpoint = addr
+	cfg.AggregationInterval = 500 * time.Millisecond
+	rcv, err := newReceiver(metadatatest.NewSettings(tel), *cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NoError(t, rcv.Start(t.Context(), componenttest.NewNopHost()))
+	t.Cleanup(func() { assert.NoError(t, rcv.Shutdown(context.WithoutCancel(t.Context()))) })
+
+	statsdClient, err := client.NewStatsD("udp", addr)
+	require.NoError(t, err)
+	for range 150 {
+		require.NoError(t, statsdClient.SendMetric(client.Metric{Name: "bad", Value: "1:2", Type: "ms"}))
+	}
+	for range 3 {
+		require.NoError(t, statsdClient.SendMetric(client.Metric{Name: "good", Value: "1", Type: "c"}))
+	}
+
+	assert.Eventually(t, func() bool {
+		got, err := tel.GetMetric("otelcol_receiver_received_statsd_metrics")
+		if err != nil {
+			return false
+		}
+		var total int64
+		for _, dp := range got.Data.(metricdata.Sum[int64]).DataPoints {
+			total += dp.Value
+		}
+		return total == 153
+	}, 5*time.Second, 100*time.Millisecond)
+
+	receiverAttr := attribute.String("receiver", "statsd")
+	metadatatest.AssertEqualReceiverReceivedStatsdMetrics(t, tel, []metricdata.DataPoint[int64]{
+		{Attributes: attribute.NewSet(receiverAttr, attribute.String("parse_success", "false")), Value: 150},
+		{Attributes: attribute.NewSet(receiverAttr, attribute.String("parse_success", "true")), Value: 3},
+	}, metricdatatest.IgnoreTimestamp())
 }
 
 func TestStatsdReceiver_Flush(t *testing.T) {
