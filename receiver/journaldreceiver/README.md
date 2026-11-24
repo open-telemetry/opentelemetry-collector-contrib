@@ -39,7 +39,7 @@ The journald receiver **requires the journalctl binary** to be available in the 
 | `files`                             |                                      | A list of journal files to read entries from. Relative to `root_path`.                                                                                                                                                                   |
 | `start_at`                          | `end`                                | At startup, where to start reading logs from the file. Options are beginning or end                                                                                                                                                      |
 | `units`                             |                                      | A list of units to read entries from. See [Multiple filtering options](#multiple-filtering-options) examples.                                                                                                                            |
-| `identifiers`                       |                                      | Filter output by message identifiers (`SYSTEMD_IDENTIFIER`). See [Multiple filtering options](#multiple-filtering-options) examples.                                                                                                     |
+| `identifiers`                       |                                      | Filter output by message identifiers (`SYSLOG_IDENTIFIER`). See [Multiple filtering options](#multiple-filtering-options) examples.                                                                                                     |
 | `matches`                           |                                      | A list of matches to read entries from. See [Matches](#matches) and [Multiple filtering options](#multiple-filtering-options) examples.                                                                                                  |
 | `priority`                          | `info`                               | Filter output by message priorities or priority ranges. See [Multiple filtering options](#multiple-filtering-options) examples.                                                                                                          |
 | `grep`                              |                                      | Filter output to entries where the MESSAGE= field matches the specified regular expression. See [Multiple filtering options](#multiple-filtering-options) examples.                                                                      |
@@ -79,6 +79,8 @@ The journald fields are described in [`systemd.journal-fields(7)`](https://www.f
   - `5` (notice) → `INFO2` / `notice`
   - `6` (info) → `INFO` / `info`
   - `7` (debug) → `DEBUG` / `debug`
+
+  Any other `PRIORITY` value does not set the severity and is kept as `journald.PRIORITY`.
 
 #### Resource Attributes
 
@@ -263,6 +265,12 @@ The `start_at` configuration parameter has significant performance implications:
 
 - **Unfiltered**: Reads all systemd units
 - **Filtered**: Reads only specified units
+
+## Known Limitations
+
+- The receiver runs only on Linux and needs a `journalctl` binary it can execute (see [Prerequisites](#prerequisites)).
+- Without a `storage` extension the cursor is kept in memory only. After a restart the receiver starts again from `start_at`, so with the default `end` entries written while the collector was down are not read.
+- With a `storage` extension the cursor is saved after each entry is passed on. If the collector stops between those two steps, the entry is read again after the restart, so delivery is at-least-once and duplicates are possible.
 
 ## Setup and Deployment
 
