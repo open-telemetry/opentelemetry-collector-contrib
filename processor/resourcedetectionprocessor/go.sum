@@ -8,8 +8,8 @@ cloud.google.com/go/compute v1.75.0 h1:5/TnrjqDLfel8I/Sa11jJ1nHh6Q3bIrSBuzErQrVj
 cloud.google.com/go/compute v1.75.0/go.mod h1:F4wAagalEx1JI8OalUVXsoY6yDD9Wjzudw7EPvhVu9s=
 cloud.google.com/go/compute/metadata v0.10.0 h1:pyKMUQSwchgkIBBJGdILqQbs/BNJXqwSA7Ej6LAvvtY=
 cloud.google.com/go/compute/metadata v0.10.0/go.mod h1:rGFHRrIif570kSibjFTMbt6/4/tzgJWFGI/HVol4GIk=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.38.0 h1:rmzbFS2CkHq0y2L5LkMVWm+QXjjNEXxjmhrJqga/QGk=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.38.0/go.mod h1:iIyrdhveU5Ow84ipRlxtjCOQnIM0DiqSMxuxm50xwZY=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.39.0 h1:fNLv6rCdGDI7jx9xuxXxJtY/hYrv/IZ+b+QycVaTde8=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.39.0/go.mod h1:srkevHl7bfWRaV6em40MYgXWtyw0u7/eDuq/3hHXL34=
 github.com/Microsoft/go-winio v0.6.4 h1:kJF2pamtYCWXf0xAT8sAkwKC0pMl2HYBrRPHAqyUc+g=
 github.com/Microsoft/go-winio v0.6.4/go.mod h1:1xl5JXG4ze/m74GH6Dc4Mwxfc3VL5siRVQjIAlHH07U=
 github.com/Showmax/go-fqdn v1.0.0 h1:0rG5IbmVliNT5O19Mfuvna9LL7zlHyRfsSvBPZmF9tM=
