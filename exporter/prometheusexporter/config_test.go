@@ -57,10 +57,9 @@ func TestLoadConfig(t *testing.T) {
 						"label1":        "value1",
 						"another label": "spaced value",
 					},
-					SendTimestamps:    true,
-					MetricExpiration:  60 * time.Minute,
-					AddMetricSuffixes: false,
-					QueueBatchConfig:  createDefaultConfig().(*Config).QueueBatchConfig,
+					SendTimestamps:   true,
+					MetricExpiration: 60 * time.Minute,
+					QueueBatchConfig: createDefaultConfig().(*Config).QueueBatchConfig,
 				}
 			}(),
 		},
@@ -130,4 +129,16 @@ func TestConfigValidate_SendingQueue(t *testing.T) {
 	// Default config (HasValue() == false) must remain valid even when the feature gate is enabled
 	defaultCfg := createDefaultConfig().(*Config)
 	assert.NoError(t, defaultCfg.Validate())
+}
+
+func TestUnmarshal_AddMetricSuffixesRejected(t *testing.T) {
+	t.Parallel()
+
+	cfg := createDefaultConfig().(*Config)
+	cm := confmap.NewFromStringMap(map[string]any{
+		"endpoint":            "1.2.3.4:1234",
+		"add_metric_suffixes": false,
+	})
+	err := cm.Unmarshal(cfg)
+	require.ErrorContains(t, err, "add_metric_suffixes")
 }

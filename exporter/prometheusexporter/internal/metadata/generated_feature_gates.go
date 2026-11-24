@@ -21,12 +21,3 @@ var ExporterPrometheusDisableSendingQueueFeatureGate = featuregate.GlobalRegistr
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52830"),
 	featuregate.WithRegisterFromVersion("v0.166.0"),
 )
-
-var ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.prometheusexporter.DisableAddMetricSuffixes",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, the deprecated add_metric_suffixes configuration option is ignored and translation_strategy is always used"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-specification/pull/4533"),
-	featuregate.WithRegisterFromVersion("v0.132.0"),
-	featuregate.WithRegisterToVersion("v0.167.0"),
-)

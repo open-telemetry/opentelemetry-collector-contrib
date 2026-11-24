@@ -53,11 +53,6 @@ type Config struct {
 	// WithoutScopeInfo controls the addition of labels for the instrumentation scope.
 	WithoutScopeInfo bool `mapstructure:"without_scope_info"`
 
-	// AddMetricSuffixes controls whether suffixes are added to metric names. Defaults to true.
-	//
-	// Deprecated: This setting is ignored and TranslationStrategy is always used.
-	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
-
 	// TranslationStrategy controls how OTLP metric and attribute names are translated into Prometheus metric and label names.
 	TranslationStrategy translationStrategy `mapstructure:"translation_strategy"`
 }

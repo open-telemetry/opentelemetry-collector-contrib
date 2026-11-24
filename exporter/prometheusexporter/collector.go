@@ -79,7 +79,7 @@ func normalizeNamespace(configNamespace string, labelNamer otlptranslator.LabelN
 	return namespace
 }
 
-// configureMetricNamer configures the MetricNamer based on the translation strategy or legacy configuration
+// configureMetricNamer configures the MetricNamer based on the translation strategy
 func configureMetricNamer(config *Config) otlptranslator.MetricNamer {
 	withSuffixes, utf8Allowed := getTranslationConfiguration(config)
 	return otlptranslator.MetricNamer{
@@ -89,7 +89,7 @@ func configureMetricNamer(config *Config) otlptranslator.MetricNamer {
 	}
 }
 
-// configureLabelNamer configures the LabelNamer based on the translation strategy or legacy configuration
+// configureLabelNamer configures the LabelNamer based on the translation strategy
 func configureLabelNamer(config *Config) otlptranslator.LabelNamer {
 	_, utf8Allowed := getTranslationConfiguration(config)
 	return otlptranslator.LabelNamer{
