@@ -33,6 +33,31 @@ type MetricsConfig struct {
 
 	// SummaryConfig defines the export for OTLP Summaries.
 	SummaryConfig SummaryConfig `mapstructure:"summaries"`
+
+	// Compression defines the compression algorithm for metrics payloads.
+	// Valid values are 'zlib' (default) and 'zstd'.
+	Compression string `mapstructure:"compression"`
+
+	// CompressionLevel defines the compression level for zstd metrics compression (1-22).
+	// If unset or 0, defaults to 3. Only supported when compression is 'zstd'.
+	CompressionLevel int `mapstructure:"compression_level"`
+
+	// V3 defines configuration for v3 metrics intakes.
+	V3 V3Config `mapstructure:"v3"`
+}
+
+// V3SeriesConfig defines configuration for the v3 series intake.
+type V3SeriesConfig struct {
+	// Enabled states if v3 series intake should be used.
+	// If unset (nil), v3 is automatically used when zstd compression is active,
+	// the endpoint is an eligible Datadog site, and no proxy is configured.
+	Enabled *bool `mapstructure:"enabled"`
+}
+
+// V3Config defines configuration for v3 intakes.
+type V3Config struct {
+	// Series defines configuration for v3 series intake.
+	Series V3SeriesConfig `mapstructure:"series"`
 }
 
 type HistogramMode string
@@ -98,6 +123,30 @@ func (c *HistogramConfig) validate() error {
 	if c.Mode == HistogramModeNoBuckets && !c.SendAggregations {
 		return errors.New("'nobuckets' mode and `send_aggregation_metrics` set to false will send no histogram metrics")
 	}
+	return nil
+}
+
+func (mcfg *MetricsConfig) validate() error {
+	if err := mcfg.HistConfig.validate(); err != nil {
+		return err
+	}
+
+	switch mcfg.Compression {
+	case "", "zlib":
+		if mcfg.CompressionLevel != 0 {
+			return errors.New("compression_level is only supported when compression is 'zstd'")
+		}
+		if mcfg.V3.Series.Enabled != nil && *mcfg.V3.Series.Enabled {
+			return errors.New("v3 series intake requires 'zstd' compression")
+		}
+	case "zstd":
+		if mcfg.CompressionLevel != 0 && (mcfg.CompressionLevel < 1 || mcfg.CompressionLevel > 22) {
+			return fmt.Errorf("invalid zstd compression level %d: must be between 1 and 22", mcfg.CompressionLevel)
+		}
+	default:
+		return fmt.Errorf("unsupported compression algorithm %q: only 'zlib' and 'zstd' are supported", mcfg.Compression)
+	}
+
 	return nil
 }
 

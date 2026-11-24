@@ -349,6 +349,12 @@ func (f *factory) createMetricsExporter(
 			})
 		}
 		set.Logger.Info("Using Datadog serializerexporter for metric export")
+		if cfg.Metrics.Compression != "" {
+			set.Logger.Info("Configured metrics compression",
+				zap.String("compression", cfg.Metrics.Compression),
+				zap.Int("compression_level", cfg.Metrics.CompressionLevel),
+			)
+		}
 		sf := serializerexporter.NewFactoryForOSSExporter(metadata.Type, statsIn)
 		ex := &serializerexporter.ExporterConfig{
 			Metrics: serializerexporter.MetricsConfig{

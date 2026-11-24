@@ -986,3 +986,284 @@ func TestOverrideEndpoints(t *testing.T) {
 		})
 	}
 }
+
+func TestMetricsCompressionValidation(t *testing.T) {
+	boolTrue := true
+	boolFalse := false
+
+	tests := []struct {
+		name        string
+		compression string
+		level       int
+		v3Enabled   *bool
+		wantErr     string
+	}{
+		{
+			name:        "default compression empty",
+			compression: "",
+		},
+		{
+			name:        "explicit zlib compression",
+			compression: "zlib",
+		},
+		{
+			name:        "explicit zstd compression default level",
+			compression: "zstd",
+			level:       0,
+		},
+		{
+			name:        "explicit zstd compression min level 1",
+			compression: "zstd",
+			level:       1,
+		},
+		{
+			name:        "explicit zstd compression level 3",
+			compression: "zstd",
+			level:       3,
+		},
+		{
+			name:        "explicit zstd compression max level 22",
+			compression: "zstd",
+			level:       22,
+		},
+		{
+			name:        "zstd with explicit v3 enabled",
+			compression: "zstd",
+			v3Enabled:   &boolTrue,
+		},
+		{
+			name:        "zstd with explicit v3 disabled",
+			compression: "zstd",
+			v3Enabled:   &boolFalse,
+		},
+		{
+			name:        "invalid compression algorithm gzip",
+			compression: "gzip",
+			wantErr:     "unsupported compression algorithm \"gzip\": only 'zlib' and 'zstd' are supported",
+		},
+		{
+			name:        "invalid compression algorithm deflate",
+			compression: "deflate",
+			wantErr:     "unsupported compression algorithm \"deflate\": only 'zlib' and 'zstd' are supported",
+		},
+		{
+			name:        "zstd with invalid negative level",
+			compression: "zstd",
+			level:       -1,
+			wantErr:     "invalid zstd compression level -1: must be between 1 and 22",
+		},
+		{
+			name:        "zstd with invalid excessive level 23",
+			compression: "zstd",
+			level:       23,
+			wantErr:     "invalid zstd compression level 23: must be between 1 and 22",
+		},
+		{
+			name:        "compression level configured with default compression",
+			compression: "",
+			level:       3,
+			wantErr:     "compression_level is only supported when compression is 'zstd'",
+		},
+		{
+			name:        "compression level configured with zlib",
+			compression: "zlib",
+			level:       3,
+			wantErr:     "compression_level is only supported when compression is 'zstd'",
+		},
+		{
+			name:        "v3 enabled with default compression",
+			compression: "",
+			v3Enabled:   &boolTrue,
+			wantErr:     "v3 series intake requires 'zstd' compression",
+		},
+		{
+			name:        "v3 enabled with zlib",
+			compression: "zlib",
+			v3Enabled:   &boolTrue,
+			wantErr:     "v3 series intake requires 'zstd' compression",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := CreateDefaultConfig().(*Config)
+			cfg.API.Key = "12345678901234567890123456789012"
+			cfg.Metrics.Compression = tt.compression
+			cfg.Metrics.CompressionLevel = tt.level
+			cfg.Metrics.V3.Series.Enabled = tt.v3Enabled
+
+			err := cfg.Validate()
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestShouldUseV3Series(t *testing.T) {
+	boolTrue := true
+	boolFalse := false
+
+	tests := []struct {
+		name        string
+		compression string
+		endpoint    string
+		proxyURL    string
+		envProxy    map[string]string
+		v3Enabled   *bool
+		want        bool
+	}{
+		{
+			name:        "default zlib returns false",
+			compression: "",
+			endpoint:    "https://api.datadoghq.com",
+			want:        false,
+		},
+		{
+			name:        "explicit zlib returns false",
+			compression: "zlib",
+			endpoint:    "https://api.datadoghq.com",
+			want:        false,
+		},
+		{
+			name:        "zstd with eligible datadoghq.com endpoint returns true",
+			compression: "zstd",
+			endpoint:    "https://api.datadoghq.com",
+			want:        true,
+		},
+		{
+			name:        "zstd with eligible datadoghq.eu endpoint returns true",
+			compression: "zstd",
+			endpoint:    "https://api.datadoghq.eu",
+			want:        true,
+		},
+		{
+			name:        "zstd with eligible us3.datadoghq.com endpoint returns true",
+			compression: "zstd",
+			endpoint:    "https://api.us3.datadoghq.com",
+			want:        true,
+		},
+		{
+			name:        "zstd with custom unsupported endpoint returns false",
+			compression: "zstd",
+			endpoint:    "https://custom-gateway.internal/api/v2/series",
+			want:        false,
+		},
+		{
+			name:        "zstd with localhost unsupported endpoint returns false",
+			compression: "zstd",
+			endpoint:    "http://127.0.0.1:8080",
+			want:        false,
+		},
+		{
+			name:        "zstd with eligible endpoint but explicit v3 opt-out returns false",
+			compression: "zstd",
+			endpoint:    "https://api.datadoghq.com",
+			v3Enabled:   &boolFalse,
+			want:        false,
+		},
+		{
+			name:        "zstd with eligible endpoint and ProxyURL guardrail returns false",
+			compression: "zstd",
+			endpoint:    "https://api.datadoghq.com",
+			proxyURL:    "http://proxy.corp.internal:3128",
+			want:        false,
+		},
+		{
+			name:        "zstd with eligible endpoint and HTTP_PROXY env guardrail returns false",
+			compression: "zstd",
+			endpoint:    "http://api.datadoghq.com",
+			envProxy:    map[string]string{"HTTP_PROXY": "http://proxy.example.com:8080"},
+			want:        false,
+		},
+		{
+			name:        "zstd with eligible endpoint and HTTPS_PROXY env guardrail returns false",
+			compression: "zstd",
+			endpoint:    "https://api.datadoghq.com",
+			envProxy:    map[string]string{"HTTPS_PROXY": "http://proxy.example.com:8080"},
+			want:        false,
+		},
+		{
+			name:        "zstd with eligible endpoint and HTTPS_PROXY bypassed by NO_PROXY returns true",
+			compression: "zstd",
+			endpoint:    "https://api.datadoghq.com",
+			envProxy: map[string]string{
+				"HTTPS_PROXY": "http://proxy.example.com:8080",
+				"NO_PROXY":    "datadoghq.com",
+			},
+			want: true,
+		},
+		{
+			name:        "zstd with eligible endpoint, ProxyURL and explicit v3 opt-in returns true",
+			compression: "zstd",
+			endpoint:    "https://api.datadoghq.com",
+			proxyURL:    "http://proxy.corp.internal:3128",
+			v3Enabled:   &boolTrue,
+			want:        true,
+		},
+		{
+			name:        "zstd with custom endpoint and explicit v3 opt-in returns false (safeguard against incompatible custom endpoints)",
+			compression: "zstd",
+			endpoint:    "https://custom-gateway.internal/api/v2/series",
+			v3Enabled:   &boolTrue,
+			want:        false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Clear proxy env vars for test isolation
+			for _, k := range []string{"HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy", "NO_PROXY", "no_proxy"} {
+				t.Setenv(k, "")
+			}
+			for k, v := range tt.envProxy {
+				t.Setenv(k, v)
+			}
+
+			cfg := CreateDefaultConfig().(*Config)
+			cfg.API.Key = "12345678901234567890123456789012"
+			cfg.Metrics.Compression = tt.compression
+			cfg.Metrics.Endpoint = tt.endpoint
+			cfg.ClientConfig.ProxyURL = tt.proxyURL
+			cfg.Metrics.V3.Series.Enabled = tt.v3Enabled
+
+			assert.Equal(t, tt.want, cfg.ShouldUseV3Series())
+		})
+	}
+}
+
+func TestUnmarshalMetricsCompression(t *testing.T) {
+	yamlConf := `
+metrics:
+  compression: zstd
+  compression_level: 5
+  v3:
+    series:
+      enabled: true
+`
+	conf := confmap.NewFromStringMap(map[string]any{
+		"metrics": map[string]any{
+			"compression":       "zstd",
+			"compression_level": 5,
+			"v3": map[string]any{
+				"series": map[string]any{
+					"enabled": true,
+				},
+			},
+		},
+	})
+
+	cfg := CreateDefaultConfig().(*Config)
+	err := conf.Unmarshal(cfg)
+	require.NoError(t, err)
+
+	assert.Equal(t, "zstd", cfg.Metrics.Compression)
+	assert.Equal(t, 5, cfg.Metrics.CompressionLevel)
+	require.NotNil(t, cfg.Metrics.V3.Series.Enabled)
+	assert.True(t, *cfg.Metrics.V3.Series.Enabled)
+	assert.True(t, cfg.ShouldUseV3Series())
+	_ = yamlConf
+}

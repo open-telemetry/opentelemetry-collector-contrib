@@ -5,6 +5,7 @@ package agentcomponents // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"runtime"
+	"strconv"
 	"strings"
 
 	coreconfig "github.com/DataDog/datadog-agent/comp/core/config"
@@ -18,7 +19,9 @@ import (
 	pkgconfigutils "github.com/DataDog/datadog-agent/pkg/config/utils"
 	"github.com/DataDog/datadog-agent/pkg/metrics"
 	"github.com/DataDog/datadog-agent/pkg/serializer"
+	"github.com/DataDog/datadog-agent/pkg/util/compression"
 	zlib "github.com/DataDog/datadog-agent/pkg/util/compression/impl-zlib"
+	implzstd "github.com/DataDog/datadog-agent/pkg/util/compression/impl-zstd"
 	"go.opentelemetry.io/collector/component"
 	"golang.org/x/net/http/httpproxy"
 
@@ -127,12 +130,64 @@ func NewLogComponent(set component.TelemetrySettings) corelog.Component {
 // NewSerializerComponent creates a new serializer that serializes and compresses payloads prior to being forwarded
 func NewSerializerComponent(cfg coreconfig.Component, logger corelog.Component, hostname string) SerializerWithForwarder {
 	forwarder := newForwarderComponent(cfg, logger)
-	compressor := zlib.New()
+	var compressor compression.Compressor
+	switch cfg.GetString("serializer_compressor_kind") {
+	case compression.ZstdKind:
+		level := cfg.GetInt("serializer_zstd_compressor_level")
+		if level == 0 {
+			level = 3 // default zstd compression level
+		}
+		compressor = implzstd.New(implzstd.Requires{
+			Level: compression.ZstdCompressionLevel(level),
+		})
+	default:
+		compressor = zlib.New()
+	}
 	metricSerializer := serializer.NewSerializer(forwarder, nil, compressor, cfg, logger, hostname)
 
 	return &datadogSerializer{
 		MetricSerializer: metricSerializer,
 		forwarder:        forwarder,
+	}
+}
+
+// WithMetricsCompression configures the serializer metrics compression kind and level.
+func WithMetricsCompression(compressionKind string, level int) ConfigOption {
+	return func(pkgconfig pkgconfigmodel.Config) {
+		if compressionKind != "" {
+			pkgconfig.Set("serializer_compressor_kind", compressionKind, pkgconfigmodel.SourceFile)
+		}
+		if level > 0 {
+			pkgconfig.Set("serializer_zstd_compressor_level", level, pkgconfigmodel.SourceFile)
+		}
+	}
+}
+
+// WithV3Config configures v3 metrics intake settings.
+func WithV3Config(enabled *bool) ConfigOption {
+	return func(pkgconfig pkgconfigmodel.Config) {
+		if enabled != nil {
+			pkgconfig.Set("use_v3_api.series.enabled", strconv.FormatBool(*enabled), pkgconfigmodel.SourceFile)
+		}
+	}
+}
+
+// WithMetricsConfig configures serializer metrics settings from Datadog Config.
+func WithMetricsConfig(cfg *datadogconfig.Config) ConfigOption {
+	return func(pkgconfig pkgconfigmodel.Config) {
+		compressionKind := cfg.Metrics.Compression
+		if compressionKind == "" {
+			compressionKind = compression.ZlibKind
+		}
+		pkgconfig.Set("serializer_compressor_kind", compressionKind, pkgconfigmodel.SourceFile)
+		if cfg.Metrics.CompressionLevel > 0 {
+			pkgconfig.Set("serializer_zstd_compressor_level", cfg.Metrics.CompressionLevel, pkgconfigmodel.SourceFile)
+		}
+		if cfg.ShouldUseV3Series() {
+			pkgconfig.Set("use_v3_api.series.enabled", "true", pkgconfigmodel.SourceFile)
+		} else {
+			pkgconfig.Set("use_v3_api.series.enabled", "false", pkgconfigmodel.SourceFile)
+		}
 	}
 }
 
@@ -145,6 +200,9 @@ func NewConfigComponent(options ...ConfigOption) coreconfig.Component {
 	// Register all standard agent config keys so that subsequent Set calls work
 	// correctly with the nodetreemodel config backend.
 	pkgconfigsetup.InitConfig(pkgconfig)
+
+	// In the standalone collector, metric serialization defaults to zlib for backward compatibility.
+	pkgconfig.Set("serializer_compressor_kind", compression.ZlibKind, pkgconfigmodel.SourceDefault)
 
 	// Apply all configuration options
 	for _, opt := range options {

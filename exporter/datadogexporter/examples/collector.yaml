@@ -318,6 +318,32 @@ exporters:
         #
         # mode: gauges
 
+      ## @param compression - string - optional - default: zlib
+      ## The compression algorithm for metrics payloads. Valid values are 'zlib' and 'zstd'.
+      #
+      # compression: zstd
+
+      ## @param compression_level - integer - optional - default: 3
+      ## The compression level for zstd metrics compression (1-22).
+      ## Only applicable when compression is set to 'zstd'.
+      #
+      # compression_level: 3
+
+      ## @param v3 - custom object - optional
+      ## Configuration for v3 metrics intakes.
+      #
+      # v3:
+        ## @param series - custom object - optional
+        ## Configuration for v3 series intake.
+        #
+        # series:
+          ## @param enabled - boolean - optional
+          ## Whether to use the v3 series intake. If unset, automatically used
+          ## when zstd compression is active, the endpoint is an eligible Datadog site,
+          ## and no proxy is configured. Set to false to explicitly opt out.
+          #
+          # enabled: true
+
     ## @param traces - custom object - optional
     ## Trace exporter specific configuration.
     #
