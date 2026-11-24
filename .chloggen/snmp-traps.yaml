@@ -1,5 +1,0 @@
-change_type: enhancement
-component: receiver/snmp
-note: Add optional UDP SNMP trap reception as logs.
-issues: [32358]
-subtext: Logs support is in development. SNMPv3 informs are not supported.
