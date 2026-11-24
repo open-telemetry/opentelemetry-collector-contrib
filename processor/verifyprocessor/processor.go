@@ -67,6 +67,17 @@ const (
 	algorithmHMACSHA256 = "HMAC-SHA256"
 )
 
+// Serialization options are shared by all records and must not be modified.
+// Uses default MaxDepth (128) and MaxInputBytes (2 MiB).
+var (
+	verifySerializeOptions = canonicaljson.SerializeOptions{
+		ExcludePrefixes: []string{attrIntegrityPrefix, attrVerificationPrefix},
+	}
+	stampedVerifySerializeOptions = canonicaljson.SerializeOptions{
+		ExcludePrefixes: []string{attrIntegrityPrefix},
+	}
+)
+
 type verifyFailure struct {
 	reason string
 	err    error
@@ -561,12 +572,8 @@ func (*verifyProcessor) serializeLogRecord(lr plog.LogRecord) ([]byte, error) {
 }
 
 func serializePayload(lr plog.LogRecord, includeVerification bool) ([]byte, error) {
-	prefixes := []string{attrIntegrityPrefix}
-	if !includeVerification {
-		prefixes = append(prefixes, attrVerificationPrefix)
+	if includeVerification {
+		return canonicaljson.SerializeLogRecord(lr, stampedVerifySerializeOptions)
 	}
-	opts := canonicaljson.SerializeOptions{
-		ExcludePrefixes: prefixes,
-	}
-	return canonicaljson.SerializeLogRecord(lr, opts)
+	return canonicaljson.SerializeLogRecord(lr, verifySerializeOptions)
 }

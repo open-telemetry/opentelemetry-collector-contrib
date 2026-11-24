@@ -37,6 +37,27 @@ import (
 	"go.uber.org/zap"
 )
 
+func TestSerializePayloadAttributeFiltering(t *testing.T) {
+	lr := plog.NewLogRecord()
+	lr.Body().SetStr("payload")
+	lr.Attributes().PutStr(attrRecordID, "record-1")
+	lr.Attributes().PutStr(attrIntegrityValue, "signature")
+	lr.Attributes().PutStr(attrIntegrityPrefix+"custom", "excluded")
+	lr.Attributes().PutStr(attrVerificationStatus, statusVerified)
+	lr.Attributes().PutStr(attrVerificationPrefix+"custom", "included")
+
+	// Alternate variants to ensure their shared options remain independent.
+	for _, includeVerification := range []bool{false, true, false, true} {
+		payload, err := serializePayload(lr, includeVerification)
+		require.NoError(t, err)
+		if includeVerification {
+			assert.JSONEq(t, `{"attributes":{"audit.record.id":{"stringValue":"record-1"},"audit.verification.custom":{"stringValue":"included"},"audit.verification.status":{"stringValue":"verified"}},"body":{"stringValue":"payload"}}`, string(payload))
+		} else {
+			assert.JSONEq(t, `{"attributes":{"audit.record.id":{"stringValue":"record-1"}},"body":{"stringValue":"payload"}}`, string(payload))
+		}
+	}
+}
+
 type staticProvider struct {
 	cert    *x509.Certificate
 	hmacKey []byte
