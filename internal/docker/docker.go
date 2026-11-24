@@ -366,7 +366,8 @@ func (dc *Client) Events(ctx context.Context, options docker.EventsListOptions) 
 func (dc *Client) ContainerEventLoop(ctx context.Context) {
 	filters := make(docker.Filters)
 	filters.Add("type", "container")
-	filters.Add("event", "destroy", "die", "pause", "rename", "stop", "start", "unpause", "update")
+	// Podman's Docker-compatible API reports a removed container as "remove", not "destroy".
+	filters.Add("event", "destroy", "die", "pause", "remove", "rename", "stop", "start", "unpause", "update")
 	lastTime := time.Now()
 
 EVENT_LOOP:
@@ -383,7 +384,7 @@ EVENT_LOOP:
 				return
 			case event := <-result.Messages:
 				switch event.Action {
-				case "destroy":
+				case "destroy", "remove":
 					dc.logger.Debug("Docker container was destroyed:", zap.String("id", event.Actor.ID))
 					dc.RemoveContainer(event.Actor.ID)
 				default:
@@ -437,13 +438,17 @@ func (dc *Client) inspectedContainerIsOfInterest(ctx context.Context, cid string
 	inspectCtx, cancel := context.WithTimeout(ctx, dc.config.Timeout)
 	result, err := dc.client.ContainerInspect(inspectCtx, cid, docker.ContainerInspectOptions{})
 	defer cancel()
-	if err != nil {
+	switch {
+	case cerrdefs.IsNotFound(err):
+		dc.logger.Debug("Daemon reported container doesn't exist.", zap.String("id", cid))
+		dc.RemoveContainer(cid)
+	case err != nil:
 		dc.logger.Error(
 			"Could not inspect updated container",
 			zap.String("id", cid),
 			zap.Error(err),
 		)
-	} else if !dc.shouldBeExcluded(result.Container.Config.Image) {
+	case !dc.shouldBeExcluded(result.Container.Config.Image):
 		return &result.Container, true
 	}
 	return nil, false
