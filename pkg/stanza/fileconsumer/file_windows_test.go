@@ -7,11 +7,17 @@ package fileconsumer
 
 import (
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
+	"golang.org/x/sys/windows"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
 )
 
 func TestNormalizePath(t *testing.T) {
@@ -211,4 +217,49 @@ func TestReadAfterFileDeleted(t *testing.T) {
 	// Verify EOF is reached normally
 	_, err = file.Read(buf)
 	require.ErrorIs(t, err, io.EOF, "Should reach EOF after reading all content")
+}
+
+func TestDeletePendingFileNotReportedUnreadable(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, sink := testManagerKeepFilesOpen(t, cfg)
+	core, observedLogs := observer.New(zap.ErrorLevel)
+	operator.set.Logger = zap.New(core)
+
+	temp := filetest.OpenTemp(t, tempDir)
+	filetest.WriteString(t, temp, "testlog\n")
+	require.NoError(t, temp.Close())
+
+	operator.poll(t.Context())
+	sink.ExpectToken(t, []byte("testlog"))
+	operator.wg.Wait()
+	require.Len(t, operator.tracker.PreviousPollFiles(), 1)
+
+	markDeletePending(t, temp.Name())
+	_, err := openFile(temp.Name())
+	require.ErrorIs(t, err, fs.ErrPermission, "file should be pending deletion while the operator holds its handle")
+
+	operator.poll(t.Context())
+	operator.wg.Wait()
+	require.Empty(t, operator.unreadable)
+	require.Zero(t, observedLogs.Len())
+	require.Empty(t, operator.tracker.PreviousPollFiles())
+}
+
+// markDeletePending deletes path without POSIX semantics, so it stays delete-pending while other handles are open.
+func markDeletePending(t *testing.T, path string) {
+	t.Helper()
+
+	pathp, err := windows.UTF16PtrFromString(path)
+	require.NoError(t, err)
+	sharemode := uint32(windows.FILE_SHARE_READ | windows.FILE_SHARE_WRITE | windows.FILE_SHARE_DELETE)
+	handle, err := windows.CreateFile(pathp, windows.DELETE, sharemode, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL, 0)
+	require.NoError(t, err)
+
+	deleteFile := byte(1)
+	require.NoError(t, windows.SetFileInformationByHandle(handle, windows.FileDispositionInfo, &deleteFile, 1))
+	require.NoError(t, windows.CloseHandle(handle))
 }

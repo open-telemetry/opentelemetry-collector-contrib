@@ -113,6 +113,19 @@ func keepFilesOpenBetweenPolls() bool {
 	return runtime.GOOS != "windows" || metadata.FilelogWindowsKeepFilesOpenFeatureGate.IsEnabled()
 }
 
+// heldFromPreviousPoll reports whether, on Windows, a handle to path was retained from the previous poll.
+func (m *Manager) heldFromPreviousPoll(path string) bool {
+	if runtime.GOOS != "windows" {
+		return false
+	}
+	for _, r := range m.tracker.PreviousPollFiles() {
+		if r.GetFileName() == path {
+			return true
+		}
+	}
+	return false
+}
+
 // Stop will stop the file monitoring process
 func (m *Manager) Stop() error {
 	if m.cancel != nil {
@@ -333,6 +346,11 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 	if err != nil {
 		// If a file is unreadable due to permissions error, store path in map and log error once (unless in debug mode)
 		if errors.Is(err, fs.ErrPermission) {
+			if m.heldFromPreviousPoll(normalizedPath) {
+				// The file is pending deletion and readLostFiles will drain our retained handle.
+				m.set.Logger.Debug("Skipping file pending deletion", zap.String("path", normalizedPath))
+				return nil, nil
+			}
 			_, seen := m.unreadable[path]
 			if !seen {
 				// Limit map size to prevent unbounded growth

@@ -287,3 +287,20 @@ disabled by default. When the gate is disabled, files are closed immediately aft
 Windows (the legacy behavior), which can cause data loss when files are rotated out of the matching
 pattern between polls. The gate only affects Windows; on other platforms handles are always kept
 open between polls regardless of the gate.
+
+Enabling the gate does not make every rotation scheme work on Windows. While the operator holds a
+handle to a file, which is continuous for a file that is matched on every poll, other processes are
+restricted in the following ways:
+
+- A rename that replaces an existing file fails with an access denied error if the operator holds a
+  handle to the file being replaced, unless the rotating process uses POSIX rename semantics. For
+  example, rotating `app.log` to `app.log.1` fails while an older `app.log.1` exists and is matched
+  by `include`. A rename to a name that does not exist yet is not affected.
+- On volumes without POSIX delete semantics (for example SMB shares, FAT volumes and older versions
+  of Windows Server), a deleted file stays in a delete-pending state until the operator releases its
+  handle, which happens on the next poll. Until then the file name cannot be reused, so a rotation
+  that deletes a file and immediately creates a new one with the same name fails. The operator
+  cannot reopen a delete-pending file, so it reads the remaining data from the retained handle.
+
+As on other platforms, only the handles of the last batch of a poll are retained, as described in
+[Potential data loss when maximum concurrency must be enforced](#potential-data-loss-when-maximum-concurrency-must-be-enforced).

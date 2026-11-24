@@ -48,7 +48,8 @@ feature_gates:
       On Windows, keep file handles open between poll cycles so that data written to a file that was
       rotated out of the matching pattern can still be read, matching the behavior on other platforms.
       When disabled (the default), files are closed immediately after each poll on Windows.
-    from_version: v0.160.0
+      Rotation that renames over or deletes a file that is still held open can fail when enabled.
+    from_version: v0.167.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49213
 
 telemetry:

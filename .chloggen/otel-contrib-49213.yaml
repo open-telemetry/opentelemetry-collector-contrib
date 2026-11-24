@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/fileconsumer
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add the `filelog.windows.keepFilesOpen` feature gate to keep file handles open between poll cycles on Windows
+note: Add the opt-in `filelog.windows.keepFilesOpen` feature gate (alpha, disabled by default) to keep file handles open between poll cycles on Windows
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [49213]
@@ -16,13 +16,8 @@ issues: [49213]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  On Windows, file handles are closed immediately after each poll, which can lead to data loss when
-  a file is rotated out of the matching pattern between polls. Enabling the new
-  `filelog.windows.keepFilesOpen` feature gate (disabled by default) opens files with
-  FILE_SHARE_DELETE and keeps them open between polls so that data written to rotated files can
-  still be read, matching the behavior on other platforms. The handle is released within a couple of
-  polls once the file is no longer matched.
-
+  Enabling the gate prevents the loss of data written to a file that is rotated out of the `include` pattern between polls.
+  It is disabled by default because rotation that renames over or deletes a file still held open by the receiver can fail on Windows.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

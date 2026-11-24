@@ -1387,10 +1387,7 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	sink.ExpectToken(t, []byte(content))
 	sink.ExpectNoCalls(t)
 	operator.wg.Wait()
-	if runtime.GOOS != windowsOS {
-		// On Windows, files are closed immediately after each poll by default
-		// (the filelog.windows.keepFilesOpen feature gate is opt-in), so we don't
-		// expect to see them retained here.
+	if operator.keepFilesOpen {
 		require.Len(t, operator.tracker.PreviousPollFiles(), 1)
 	}
 
@@ -1404,6 +1401,21 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	// be ingested from the beginning
 	sink.ExpectTokens(t, []byte(content), []byte(newContent1), []byte(newContent))
 	operator.wg.Wait()
+}
+
+// TestKeepFilesOpenFeatureGate must not run in parallel because it sets a global feature gate.
+func TestKeepFilesOpenFeatureGate(t *testing.T) {
+	gate := metadata.FilelogWindowsKeepFilesOpenFeatureGate
+	enabled := gate.IsEnabled()
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+	})
+
+	for _, enable := range []bool{true, false} {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enable))
+		operator, _ := testManager(t, NewConfig().includeDir(t.TempDir()))
+		require.Equal(t, enable || runtime.GOOS != windowsOS, operator.keepFilesOpen)
+	}
 }
 
 // TestFilesKeptOpenBetweenPolls verifies that, when keep-files-open is enabled, file
