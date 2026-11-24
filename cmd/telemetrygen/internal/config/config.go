@@ -18,10 +18,11 @@ import (
 )
 
 var (
-	errFormatOTLPAttributes       = errors.New("value should be in one of the following formats: key=\"value\", key=true, key=false, key=<integer>, or key=[<value1>, <value2>, ...]")
+	errFormatOTLPAttributes       = errors.New("value should be in one of the following formats: key=\"value\", key=true, key=false, key=<integer>, key=[<value1>, <value2>, ...] or key={a=\"x\", b=1, c=true, ...}")
 	errDoubleQuotesOTLPAttributes = errors.New("value should be a string wrapped in double quotes")
 	errMixedTypeSlice             = errors.New("all items in a slice should be of the same type")
 	errEmptySlice                 = errors.New("slice should not be empty")
+	errEmptyMap                   = errors.New("map should not be empty")
 )
 
 const (
@@ -105,6 +106,34 @@ func sliceFrom(items []string) (any, error) {
 	return slice.Interface(), nil
 }
 
+// mapFrom converts items into a map of key-value pairs
+func mapFrom(items []string) (map[string]any, error) {
+	result := make(map[string]any)
+	for _, item := range items {
+		kv := strings.SplitN(item, "=", 2)
+		if len(kv) != 2 {
+			return nil, errFormatOTLPAttributes
+		}
+		key := kv[0]
+		val, err := parseValue(kv[1])
+		if err != nil {
+			return nil, err
+		}
+		result[key] = val
+	}
+	return result, nil
+}
+
+// isSliceType checks if the value is a slice type (starts with '[' and ends with ']')
+func isSliceType(kv []string) bool {
+	return strings.HasPrefix(kv[1], "[") && strings.HasSuffix(kv[1], "]")
+}
+
+// isMapType checks if the value is a map type (starts with '{' and ends with '}')
+func isMapType(kv []string) bool {
+	return strings.HasPrefix(kv[1], "{") && strings.HasSuffix(kv[1], "}")
+}
+
 func (v *KeyValue) Set(s string) error {
 	kv := strings.SplitN(s, "=", 2)
 	if len(kv) != 2 {
@@ -112,7 +141,7 @@ func (v *KeyValue) Set(s string) error {
 	}
 	key := kv[0]
 
-	if !strings.HasPrefix(kv[1], "[") || !strings.HasSuffix(kv[1], "]") {
+	if !isSliceType(kv) && !isMapType(kv) {
 		val, err := parseValue(kv[1])
 		if err != nil {
 			return err
@@ -121,18 +150,36 @@ func (v *KeyValue) Set(s string) error {
 		return nil
 	}
 
-	// List of Values
-	content := strings.TrimSpace(kv[1][1 : len(kv[1])-1])
-	if content == "" {
-		return errEmptySlice
+	if isSliceType(kv) {
+		// List of Values
+		content := strings.TrimSpace(kv[1][1 : len(kv[1])-1])
+		if content == "" {
+			return errEmptySlice
+		}
+
+		items := splitItems(content)
+		slice, err := sliceFrom(items)
+		if err != nil {
+			return err
+		}
+		(*v)[key] = slice
 	}
 
-	items := splitItems(content)
-	slice, err := sliceFrom(items)
-	if err != nil {
-		return err
+	if isMapType(kv) {
+		// Map of Values
+		content := strings.TrimSpace(kv[1][1 : len(kv[1])-1])
+		if content == "" {
+			return errEmptyMap
+		}
+
+		items := splitItems(content)
+		mapVal, err := mapFrom(items)
+		if err != nil {
+			return err
+		}
+		(*v)[key] = mapVal
 	}
-	(*v)[key] = slice
+
 	return nil
 }
 
