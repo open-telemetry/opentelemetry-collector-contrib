@@ -128,12 +128,28 @@ func TestKeyValueSet(t *testing.T) {
 			err:  errDoubleQuotesOTLPAttributes,
 		},
 		{
-			flag:     "key={a=\"x\",b=1,c=true,d=\"\"}",
-			expected: KeyValue(map[string]any{"key": map[string]any{"a": "x", "b": 1, "c": true, "d": ""}}),
+			flag:     "key={a=\"x\",b=1,c=true,d=\"\",arr=[\"value1\",\"value2\"],nested={x=1,y=2}}",
+			expected: KeyValue(map[string]any{"key": map[string]any{"a": "x", "b": 1, "c": true, "d": "", "arr": []string{"value1", "value2"}, "nested": map[string]any{"x": 1, "y": 2}}}),
+		},
+		{
+			flag:     `key={a="{x,y}",b=1}`,
+			expected: KeyValue{"key": map[string]any{"a": "{x,y}", "b": 1}},
 		},
 		{
 			flag: "key={}",
 			err:  errEmptyMap,
+		},
+		{
+			flag: "key={a}",
+			err:  errFormatOTLPAttributes,
+		},
+		{
+			flag: "key={a={}}",
+			err:  errEmptyMap,
+		},
+		{
+			flag: "key={a={b=\"x\"}",
+			err:  errUnbalancedBraces,
 		},
 	}
 

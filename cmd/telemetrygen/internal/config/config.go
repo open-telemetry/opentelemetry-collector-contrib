@@ -23,6 +23,7 @@ var (
 	errMixedTypeSlice             = errors.New("all items in a slice should be of the same type")
 	errEmptySlice                 = errors.New("slice should not be empty")
 	errEmptyMap                   = errors.New("map should not be empty")
+	errUnbalancedBraces           = errors.New("unbalanced braces in map value")
 )
 
 const (
@@ -54,19 +55,58 @@ func parseValue(val string) (any, error) {
 	return val[1 : len(val)-1], nil
 }
 
-// splitItems splits the pre-trimmed content into a list of items separated by commas, respecting quotes
-func splitItems(content string) []string {
+func parseAny(val string) (any, error) {
+	switch {
+	case strings.HasPrefix(val, "{") && strings.HasSuffix(val, "}"):
+		content := strings.TrimSpace(val[1 : len(val)-1])
+		if content == "" {
+			return nil, errEmptyMap
+		}
+		items, err := splitItems(content)
+		if err != nil {
+			return nil, err
+		}
+		return mapFrom(items)
+	case strings.HasPrefix(val, "[") && strings.HasSuffix(val, "]"):
+		content := strings.TrimSpace(val[1 : len(val)-1])
+		if content == "" {
+			return nil, errEmptySlice
+		}
+		items, err := splitItems(content)
+		if err != nil {
+			return nil, err
+		}
+		return sliceFrom(items)
+	default:
+		return parseValue(val)
+	}
+}
+
+// splitItems splits a string of items separated by commas, taking into account nested structures and quoted strings.
+func splitItems(content string) ([]string, error) {
+	depth := 0
+
 	var items []string
 	var current strings.Builder
 	inQuotes := false
 
 	for _, char := range content {
 		switch char {
+		case '{', '[':
+			if !inQuotes {
+				depth++
+			}
+			current.WriteRune(char)
+		case '}', ']':
+			if !inQuotes {
+				depth--
+			}
+			current.WriteRune(char)
 		case '"':
 			inQuotes = !inQuotes
 			current.WriteRune(char)
 		case ',':
-			if !inQuotes {
+			if !inQuotes && depth == 0 {
 				if item := strings.TrimSpace(current.String()); item != "" {
 					items = append(items, item)
 				}
@@ -78,11 +118,17 @@ func splitItems(content string) []string {
 			current.WriteRune(char)
 		}
 	}
+
+	if depth != 0 {
+		// Unbalanced braces or brackets
+		return nil, errUnbalancedBraces
+	}
+
 	// Add the last item
 	if item := strings.TrimSpace(current.String()); item != "" {
 		items = append(items, item)
 	}
-	return items
+	return items, nil
 }
 
 // sliceFrom converts items into a slice of a single type
@@ -114,8 +160,8 @@ func mapFrom(items []string) (map[string]any, error) {
 		if len(kv) != 2 {
 			return nil, errFormatOTLPAttributes
 		}
-		key := kv[0]
-		val, err := parseValue(kv[1])
+		key := strings.TrimSpace(kv[0])
+		val, err := parseAny(strings.TrimSpace(kv[1]))
 		if err != nil {
 			return nil, err
 		}
@@ -124,61 +170,18 @@ func mapFrom(items []string) (map[string]any, error) {
 	return result, nil
 }
 
-// isSliceType checks if the value is a slice type (starts with '[' and ends with ']')
-func isSliceType(kv []string) bool {
-	return strings.HasPrefix(kv[1], "[") && strings.HasSuffix(kv[1], "]")
-}
-
-// isMapType checks if the value is a map type (starts with '{' and ends with '}')
-func isMapType(kv []string) bool {
-	return strings.HasPrefix(kv[1], "{") && strings.HasSuffix(kv[1], "}")
-}
-
 func (v *KeyValue) Set(s string) error {
 	kv := strings.SplitN(s, "=", 2)
 	if len(kv) != 2 {
 		return errFormatOTLPAttributes
 	}
-	key := kv[0]
+	key := strings.TrimSpace(kv[0])
 
-	if !isSliceType(kv) && !isMapType(kv) {
-		val, err := parseValue(kv[1])
-		if err != nil {
-			return err
-		}
-		(*v)[key] = val
-		return nil
+	val, err := parseAny(kv[1])
+	if err != nil {
+		return err
 	}
-
-	if isSliceType(kv) {
-		// List of Values
-		content := strings.TrimSpace(kv[1][1 : len(kv[1])-1])
-		if content == "" {
-			return errEmptySlice
-		}
-
-		items := splitItems(content)
-		slice, err := sliceFrom(items)
-		if err != nil {
-			return err
-		}
-		(*v)[key] = slice
-	}
-
-	if isMapType(kv) {
-		// Map of Values
-		content := strings.TrimSpace(kv[1][1 : len(kv[1])-1])
-		if content == "" {
-			return errEmptyMap
-		}
-
-		items := splitItems(content)
-		mapVal, err := mapFrom(items)
-		if err != nil {
-			return err
-		}
-		(*v)[key] = mapVal
-	}
+	(*v)[key] = val
 
 	return nil
 }
