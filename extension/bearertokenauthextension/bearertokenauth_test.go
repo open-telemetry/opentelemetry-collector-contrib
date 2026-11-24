@@ -486,11 +486,12 @@ func TestBearerTokenFileWithComments(t *testing.T) {
 	filename := filepath.Join("testdata", t.Name()+".tokens")
 
 	// Create file with various comment styles like:
+	// Full comment line (using # token)
 	// Standard # comment
 	// C-style // comment
 	// Plain text note
 	// Token with no comment
-	fileContent := "token1 # primary\ntoken2 // secondary\ntoken3 DO NOT DELETE\ntoken4"
+	fileContent := "# comment line\ntoken1 # primary\ntoken2 // secondary\ntoken3 DO NOT DELETE\ntoken4"
 	err := os.WriteFile(filename, []byte(fileContent), 0o600)
 	assert.NoError(t, err)
 	defer os.Remove(filename)

@@ -152,7 +152,7 @@ jobs:
       - loadtest
       - update-benchmarks
     if: always() && github.event_name != 'pull_request'
-    uses: open-telemetry/shared-workflows/.github/workflows/workflow-failure-issue.yml@efc55838c9769c5476e0a5cf7183a8c5b4ae70a5 # v0.24.0
+    uses: open-telemetry/shared-workflows/.github/workflows/workflow-failure-issue.yml@f73c28e3be66444181acb54f07ada23f144c0c39 # v0.25.0
     with:
       success: >-
         ${{

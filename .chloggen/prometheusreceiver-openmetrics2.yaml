@@ -1,6 +1,0 @@
-change_type: enhancement
-component: receiver/prometheus
-note: >-
-  Add experimental OpenMetrics 2.0 scraping support behind the `receiver.prometheus.EnableOpenMetrics2` alpha feature gate and add `OpenMetricsText2.0.0` to supported `scrape_protocols`.
-issues: [53280]
-change_logs: [user]
