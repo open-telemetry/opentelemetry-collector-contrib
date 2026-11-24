@@ -769,6 +769,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		attempt.Add(1)
 		cer, err := extract(req)
+		assert.NoError(t, err, "Error reading request: %v", err)
 		// dataset-go up to v0.21.1 sends the API key in the body; later
 		// versions send it only in the Authorization header. Accept either,
 		// then drop it so the expected requests below match both.
@@ -779,8 +780,6 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 		lock.Lock()
 		addRequests = append(addRequests, cer)
 		lock.Unlock()
-
-		assert.NoError(t, err, "Error reading request: %v", err)
 
 		wasSuccessful.Store(true)
 		payload, err := json.Marshal(map[string]any{
