@@ -8,7 +8,6 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 )
 
 // newPod is a helper function for creating Pods for testing.
@@ -63,7 +62,7 @@ var initContainer2RestartPolicyNever = v1.Container{
 	Ports: []v1.ContainerPort{
 		{Name: "http", HostPort: 0, ContainerPort: 1002, Protocol: v1.ProtocolTCP, HostIP: ""},
 	},
-	RestartPolicy: ptr.To(v1.ContainerRestartPolicyNever),
+	RestartPolicy: new(v1.ContainerRestartPolicyNever),
 }
 
 var initContainer3RestartPolicyAlways = v1.Container{
@@ -72,7 +71,7 @@ var initContainer3RestartPolicyAlways = v1.Container{
 	Ports: []v1.ContainerPort{
 		{Name: "http", HostPort: 0, ContainerPort: 1003, Protocol: v1.ProtocolTCP, HostIP: ""},
 	},
-	RestartPolicy: ptr.To(v1.ContainerRestartPolicyAlways),
+	RestartPolicy: new(v1.ContainerRestartPolicyAlways),
 }
 
 var initContainer4RestartPolicyAlways = v1.Container{
@@ -81,7 +80,7 @@ var initContainer4RestartPolicyAlways = v1.Container{
 	Ports: []v1.ContainerPort{
 		{Name: "http", HostPort: 0, ContainerPort: 1004, Protocol: v1.ProtocolTCP, HostIP: ""},
 	},
-	RestartPolicy: ptr.To(v1.ContainerRestartPolicyAlways),
+	RestartPolicy: new(v1.ContainerRestartPolicyAlways),
 }
 
 var initContainer1StatusRunning = v1.ContainerStatus{
