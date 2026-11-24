@@ -1,6 +1,0 @@
-change_type: breaking
-component: receiver/aws_s3
-note: Limit decompressed objects buffered by non-streaming decoders with s3downloader.max_unmarshal_size.
-subtext: The default limit is 256 MiB; increase s3downloader.max_unmarshal_size for larger objects. Streaming decoders are not subject to this limit.
-issues: [53137]
-change_logs: [user, api]

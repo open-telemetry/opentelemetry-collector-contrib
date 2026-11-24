@@ -1,7 +1,0 @@
-change_type: enhancement
-component: exporter/google_cloud_storage
-note: Add metrics exporting support to googlecloudstorageexporter.
-issues: [53079]
-subtext: |
-  Metrics can now be exported to Google Cloud Storage. Unmarshaled metrics default to pmetric.JSONMarshaler, and custom encoding extensions implementing pmetric.Marshaler can be configured.
-change_logs: [user]
