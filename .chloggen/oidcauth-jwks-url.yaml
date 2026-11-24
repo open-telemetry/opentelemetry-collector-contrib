@@ -1,5 +1,0 @@
-change_type: enhancement
-component: extension/oidc
-note: Add a provider-level jwks_url option to retrieve JWT verification keys without OpenID Connect discovery, with a five-minute cache lifetime.
-issues: [53168]
-change_logs: [user, api]
