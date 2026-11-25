@@ -4,7 +4,9 @@
 package k8sobserver
 
 import (
+	"fmt"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -13,6 +15,7 @@ import (
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -705,4 +708,55 @@ func TestPodEndpointsOfEvictedPod(t *testing.T) {
 	th.OnAdd(running, true)
 	th.OnUpdate(running, evicted)
 	require.Empty(t, th.ListEndpoints())
+}
+
+func TestPodEndpointsExpiredContainerNeverListed(t *testing.T) {
+	// A pod that finished long ago is added and deleted while the endpoints are listed, as when
+	// the collector starts on a node with many finished pods and when old Jobs are cleaned up.
+	th, clock := newTestHandlerWithClock(15 * time.Minute)
+	finished := jobPod("old-job")
+	finished.Status.Phase = v1.PodSucceeded
+	finished.Status.ContainerStatuses[0].State = terminatedAt(clock.now.Add(-time.Hour))
+
+	var listed atomic.Int64
+	done := make(chan struct{})
+	stopped := make(chan struct{})
+	go func() {
+		defer close(stopped)
+		for {
+			select {
+			case <-done:
+				return
+			default:
+				listed.Add(int64(len(th.ListEndpoints())))
+			}
+		}
+	}()
+
+	for i := range 50000 {
+		pod := finished.DeepCopy()
+		pod.UID = types.UID(fmt.Sprintf("old-job-%d", i))
+		th.OnAdd(pod, true)
+		th.OnDelete(pod)
+	}
+	close(done)
+	<-stopped
+	require.Zero(t, listed.Load(), "the endpoint of a container that finished before its time to live was listed")
+}
+
+func TestPodEndpointsOfDeletedPodsRemovedWithoutListing(t *testing.T) {
+	// Nothing lists the endpoints when no receiver creator watches the observer.
+	th, clock := newTestHandlerWithClock(15 * time.Minute)
+	for i := range 100 {
+		pod := jobPod(fmt.Sprintf("pod-%d", i))
+		th.OnAdd(pod, true)
+		th.OnDelete(pod)
+		clock.advance(deletedPodLinger)
+	}
+	// What is left is the container endpoint of the last pod and the time it goes.
+	require.Equal(t, 2, storedEntries(th))
+
+	th.OnAdd(jobPod("next"), true)
+	require.ElementsMatch(t, []string{"test-1/next-UID", "test-1/next-UID/work", "test-1/next-UID/http(80)"}, endpointIDs(th.ListEndpoints()))
+	require.Equal(t, 3, storedEntries(th))
 }

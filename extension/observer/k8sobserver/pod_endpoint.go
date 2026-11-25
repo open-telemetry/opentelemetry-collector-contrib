@@ -41,6 +41,8 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod, opts podEndpointOpti
 	podID := podEndpointID(idNamespace, pod)
 	podIP := pod.Status.PodIP
 	podRunning := pod.Status.Phase == v1.PodRunning
+	podPending := pod.Status.Phase == v1.PodPending
+	podFinished := pod.Status.Phase == v1.PodSucceeded || pod.Status.Phase == v1.PodFailed
 
 	podDetails := observer.Pod{
 		UID:         string(pod.UID),
@@ -71,7 +73,8 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod, opts podEndpointOpti
 			if !ok {
 				continue
 			}
-			running := status.State.Running != nil
+			// The status of a container can still say running after the pod finished.
+			running := status.State.Running != nil && !podFinished
 			// A container that is not running is reported only when it ran.
 			if !running && (!opts.terminatedContainers || status.ContainerID == "") {
 				continue
@@ -92,7 +95,8 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod, opts podEndpointOpti
 			})
 
 			// A port can be reached only while its container runs and the pod has an address.
-			if !running || podIP == "" {
+			// The pod has to run too, or for an init container be pending.
+			if !running || podIP == "" || (!podRunning && (!podPending || kind != containerKindInit)) {
 				continue
 			}
 			// Create endpoint for each named container port.
@@ -117,7 +121,7 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod, opts podEndpointOpti
 	// Init containers run while the pod is still pending. They come before the app containers,
 	// so that the port of an app container is the one kept when both declare a port with the
 	// same name and number.
-	if opts.initContainers && (podRunning || pod.Status.Phase == v1.PodPending || opts.terminatedContainers) {
+	if opts.initContainers && (podRunning || podPending || opts.terminatedContainers) {
 		appendContainers(pod.Spec.InitContainers, pod.Status.InitContainerStatuses, containerKindInit)
 	}
 	if !podRunning && !opts.terminatedContainers {

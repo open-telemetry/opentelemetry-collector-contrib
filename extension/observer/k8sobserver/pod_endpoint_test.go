@@ -369,3 +369,49 @@ func TestPodEndpointsTerminatedInitContainers(t *testing.T) {
 		"namespace/pod-3-UID/app",
 	}, endpointIDs(endpoints))
 }
+
+func TestPodEndpointsTerminatedContainersKeepPortsOfRunningPodsOnly(t *testing.T) {
+	opts := podEndpointOptions{initContainers: true, terminatedContainers: true}
+
+	pod := podWithInitContainers()
+	pod.Spec.Containers[0].Ports = []v1.ContainerPort{{Name: "http", ContainerPort: 80, Protocol: v1.ProtocolTCP}}
+	pod.Spec.Containers = append(pod.Spec.Containers, v1.Container{Name: "pulling", Image: "image"})
+	pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, containerStatus("pulling", "", stateWaiting))
+
+	// A pending pod of which an app container already runs gets no port endpoint for it, as
+	// without the option. The port of a native sidecar is reported as without the option too.
+	pending := pod.DeepCopy()
+	pending.Status.Phase = v1.PodPending
+	endpoints := convertPodToEndpoints("namespace", pending, opts)
+	require.Equal(t, []string{
+		"namespace/pod-3-UID/init",
+		"namespace/pod-3-UID/sidecar",
+		"namespace/pod-3-UID/metrics(9090)",
+		"namespace/pod-3-UID/app",
+	}, endpointIDs(endpoints))
+	require.True(t, endpoints[3].Details.(*observer.PodContainer).Running)
+
+	unknown := pod.DeepCopy()
+	unknown.Status.Phase = v1.PodUnknown
+	require.Equal(t, []string{
+		"namespace/pod-3-UID/init",
+		"namespace/pod-3-UID/sidecar",
+		"namespace/pod-3-UID/app",
+	}, endpointIDs(convertPodToEndpoints("namespace", unknown, opts)))
+
+	// The status of a container can still say running after the pod finished, as when the pod
+	// was evicted. Its containers do not run then.
+	for _, phase := range []v1.PodPhase{v1.PodSucceeded, v1.PodFailed} {
+		finished := pod.DeepCopy()
+		finished.Status.Phase = phase
+		endpoints = convertPodToEndpoints("namespace", finished, opts)
+		require.Equal(t, []string{
+			"namespace/pod-3-UID/init",
+			"namespace/pod-3-UID/sidecar",
+			"namespace/pod-3-UID/app",
+		}, endpointIDs(endpoints), phase)
+		for _, endpoint := range endpoints {
+			require.False(t, endpoint.Details.(*observer.PodContainer).Running, "%s of a pod that is %s", endpoint.ID, phase)
+		}
+	}
+}

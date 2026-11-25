@@ -58,12 +58,21 @@ func (h *handler) ListEndpoints() []observer.Endpoint {
 	now := h.now()
 	h.endpoints.Range(func(endpointID, endpoint any) bool {
 		if e, ok := endpoint.(observer.Endpoint); ok {
-			if expires, found := h.expiries.Load(endpointID); found && !now.Before(expires.(expiry).at) {
+			expires, found := h.expiries.Load(endpointID)
+			if found && !now.Before(expires.(expiry).at) {
 				if expires.(expiry).remove {
 					h.endpoints.Delete(endpointID)
 					h.expiries.Delete(endpointID)
 				}
 				return true
+			}
+			// The time an endpoint expires is stored before the endpoint and removed after it.
+			// An endpoint of a container that is not running and that has none can so be one
+			// that was removed just now.
+			if container, ok := e.Details.(*observer.PodContainer); ok && !found && !container.Running {
+				if _, stored := h.endpoints.Load(endpointID); !stored {
+					return true
+				}
 			}
 			endpoints = append(endpoints, e)
 		} else {
@@ -91,28 +100,52 @@ func (h *handler) OnAdd(objectInterface any, _ bool) {
 		return
 	}
 
+	h.removeExpiredEndpoints()
+	pod, _ := objectInterface.(*v1.Pod)
+	if pod != nil {
+		h.expireTerminatedContainers(pod, endpoints, true)
+	}
 	for _, endpoint := range endpoints {
 		h.endpoints.Store(endpoint.ID, endpoint)
 	}
-	if pod, ok := objectInterface.(*v1.Pod); ok {
-		h.expireTerminatedContainers(pod, endpoints)
+	if pod != nil {
+		h.expireTerminatedContainers(pod, endpoints, false)
 	}
 }
 
 // expireTerminatedContainers sets when the endpoints of the containers of a pod that are not
-// running stop being listed.
-func (h *handler) expireTerminatedContainers(pod *v1.Pod, endpoints []observer.Endpoint) {
+// running stop being listed. It is called with expire set before the endpoints are stored and
+// without it after that, so that a listing in between never has an endpoint that is to expire
+// without the time it expires.
+func (h *handler) expireTerminatedContainers(pod *v1.Pod, endpoints []observer.Endpoint, expire bool) {
 	finished := containerFinishTimes(h.idNamespace, pod)
 	for _, endpoint := range endpoints {
 		if endpoint.Details.Type() != observer.PodContainerType {
 			continue
 		}
-		if finishedAt, ok := finished[endpoint.ID]; ok && h.terminatedContainerTTL > 0 {
+		finishedAt, expires := finished[endpoint.ID]
+		expires = expires && h.terminatedContainerTTL > 0
+		switch {
+		case expire && expires:
 			h.expiries.Store(endpoint.ID, expiry{at: finishedAt.Add(h.terminatedContainerTTL)})
-		} else {
+		case !expire && !expires:
 			h.expiries.Delete(endpoint.ID)
 		}
 	}
+}
+
+// removeExpiredEndpoints drops the endpoints of deleted pods that stayed listed for
+// deletedPodLinger. ListEndpoints drops them too, but nothing calls it while no one watches the
+// observer.
+func (h *handler) removeExpiredEndpoints() {
+	now := h.now()
+	h.expiries.Range(func(endpointID, expires any) bool {
+		if e := expires.(expiry); e.remove && !now.Before(e.at) {
+			h.endpoints.Delete(endpointID)
+			h.expiries.Delete(endpointID)
+		}
+		return true
+	})
 }
 
 // lingers tells whether an endpoint of a deleted pod stays listed for deletedPodLinger.
@@ -219,6 +252,10 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface any) {
 		}
 	}
 
+	if updatedPod != nil {
+		h.expireTerminatedContainers(updatedPod, podEndpoints, true)
+	}
+
 	if len(updatedEndpoints) > 0 {
 		for _, endpoint := range updatedEndpoints {
 			h.endpoints.Store(endpoint.ID, endpoint)
@@ -232,7 +269,7 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface any) {
 	}
 
 	if updatedPod != nil {
-		h.expireTerminatedContainers(updatedPod, podEndpoints)
+		h.expireTerminatedContainers(updatedPod, podEndpoints, false)
 	}
 }
 
@@ -265,6 +302,7 @@ func (h *handler) OnDelete(objectInterface any) {
 	default: // unsupported
 		return
 	}
+	h.removeExpiredEndpoints()
 	if len(endpoints) != 0 {
 		for _, endpoint := range endpoints {
 			if h.lingers(endpoint) {

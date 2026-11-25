@@ -102,7 +102,7 @@ containers too.
 
 The `container_running` field of a `pod.container` endpoint is `false` for a container that is not running
 now. A rule that scrapes a container has to skip those, for example
-`type == "pod.container" && container_running`. Port endpoints are reported for running containers only.
+`type == "pod.container" && container_running`. The option does not change which port endpoints are reported.
 
 With `observe_terminated_containers`:
 
