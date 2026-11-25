@@ -4,6 +4,8 @@
 package awss3exporter
 
 import (
+	"bytes"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,6 +20,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression"
 )
 
 func TestNewUploadManager(t *testing.T) {
@@ -110,6 +114,92 @@ func TestNewUploadManager(t *testing.T) {
 	}
 }
 
+func TestUploadManagerCompressionLevel(t *testing.T) {
+	t.Parallel()
+
+	payload := bytes.Repeat([]byte("example log message\n"), 64)
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		assert.True(t, strings.HasSuffix(r.URL.Path, ".otlp.gz"))
+		assert.Empty(t, r.Header.Get("Content-Encoding")) // Archive uploads omit this header.
+		body, err := io.ReadAll(r.Body)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Greater(t, len(body), len(payload), "gzip level 0 stores the payload without compression")
+		reader, err := gzip.NewReader(bytes.NewReader(body))
+		if !assert.NoError(t, err) {
+			return
+		}
+		decoded, err := io.ReadAll(reader)
+		assert.NoError(t, err)
+		assert.Equal(t, payload, decoded)
+		assert.NoError(t, reader.Close())
+	}))
+	t.Cleanup(server.Close)
+
+	conf := createDefaultConfig().(*Config)
+	conf.S3Uploader.S3Bucket = "my-bucket"
+	conf.S3Uploader.Endpoint = server.URL
+	conf.S3Uploader.S3ForcePathStyle = true
+	conf.S3Uploader.AccessKey = "test-key"
+	conf.S3Uploader.SecretKey = "test-secret"
+	conf.S3Uploader.Compression = configcompression.TypeGzip
+	conf.S3Uploader.CompressionSettings.Level = new(configcompression.Level)
+
+	sm, err := newUploadManager(t.Context(), conf, zap.NewNop(), "logs", "otlp", true)
+	require.NoError(t, err)
+	for range 2 {
+		require.NoError(t, sm.Upload(t.Context(), payload, nil))
+	}
+}
+
+func TestUploadManagerCompressionFormats(t *testing.T) {
+	t.Parallel()
+
+	payload := []byte(strings.Repeat("example log message\n", 64))
+	for _, tc := range []struct {
+		compression configcompression.Type
+		decoder     configcompression.Type
+		extension   string
+		encoding    string
+	}{
+		{configcompression.TypeZlib, configcompression.TypeZlib, ".zlib", "deflate"},
+		{configcompression.TypeDeflate, configcompression.TypeDeflate, ".deflate", ""},
+		{configcompression.TypeSnappy, configcompression.TypeSnappy, ".snappy", ""},
+		{configcompression.TypeSnappyFramed, configcompression.TypeSnappy, ".snappy", ""},
+		{configcompression.TypeLz4, configcompression.TypeLz4, ".lz4", ""},
+	} {
+		t.Run(string(tc.compression), func(t *testing.T) {
+			t.Parallel()
+
+			decoder, err := xcompression.NewReaderFactory().NewReader(tc.decoder, configcompression.CompressionParams{})
+			require.NoError(t, err)
+			server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+				assert.True(t, strings.HasSuffix(r.URL.Path, ".otlp"+tc.extension), r.URL.Path)
+				assert.Equal(t, tc.encoding, r.Header.Get("Content-Encoding"))
+				var decoded bytes.Buffer
+				_, decodeErr := decoder.Decompress(&decoded, r.Body)
+				assert.NoError(t, decodeErr)
+				assert.Equal(t, payload, decoded.Bytes())
+			}))
+			t.Cleanup(server.Close)
+
+			conf := createDefaultConfig().(*Config)
+			conf.S3Uploader.S3Bucket = "my-bucket"
+			conf.S3Uploader.Endpoint = server.URL
+			conf.S3Uploader.S3ForcePathStyle = true
+			conf.S3Uploader.AccessKey = "test-key"
+			conf.S3Uploader.SecretKey = "test-secret"
+			conf.S3Uploader.Compression = tc.compression
+			require.NoError(t, conf.Validate())
+
+			sm, err := newUploadManager(t.Context(), conf, zap.NewNop(), "logs", "otlp", false)
+			require.NoError(t, err)
+			require.NoError(t, sm.Upload(t.Context(), payload, nil))
+		})
+	}
+}
+
 func TestNewUploadManager_RoleArnCredentialsCache(t *testing.T) {
 	for _, tt := range []struct {
 		name         string
@@ -143,7 +233,7 @@ func TestNewUploadManager_RoleArnCredentialsCache(t *testing.T) {
 						lifetime = time.Hour
 					}
 					w.Header().Set("Content-Type", "text/xml")
-					_, err := fmt.Fprintf(w, `<AssumeRoleResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/"><AssumeRoleResult><Credentials><AccessKeyId>AKID%d</AccessKeyId><SecretAccessKey>SECRET</SecretAccessKey><SessionToken>TOKEN</SessionToken><Expiration>%s</Expiration></Credentials></AssumeRoleResult></AssumeRoleResponse>`, call, time.Now().Add(lifetime).UTC().Format(time.RFC3339))
+					_, err := fmt.Fprintf(w, `<AssumeRoleResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/"><AssumeRoleResult><Credentials><AccessKeyId>AKID%d</AccessKeyId><SecretAccessKey>SECRET-AT-LEAST-14-BYTES</SecretAccessKey><SessionToken>TOKEN</SessionToken><Expiration>%s</Expiration></Credentials></AssumeRoleResult></AssumeRoleResponse>`, call, time.Now().Add(lifetime).UTC().Format(time.RFC3339))
 					if err != nil {
 						t.Error(err)
 					}
@@ -166,7 +256,7 @@ func TestNewUploadManager_RoleArnCredentialsCache(t *testing.T) {
 				t.Setenv(name, "")
 			}
 			t.Setenv("AWS_ACCESS_KEY_ID", "base-key")
-			t.Setenv("AWS_SECRET_ACCESS_KEY", "base-secret")
+			t.Setenv("AWS_SECRET_ACCESS_KEY", "base-secret-at-least-14-bytes")
 			t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
 			t.Setenv("AWS_CONFIG_FILE", filepath.Join(dir, "config"))
 			t.Setenv("AWS_SHARED_CREDENTIALS_FILE", filepath.Join(dir, "credentials"))

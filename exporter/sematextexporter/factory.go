@@ -26,8 +26,8 @@ import (
 )
 
 var (
-	metricsAppToken = uuid.NewString()
-	logsAppToken    = uuid.NewString()
+	metricsAppToken = configopaque.String(uuid.NewString())
+	logsAppToken    = configopaque.String(uuid.NewString())
 )
 
 // NewFactory creates a factory for the Sematext metrics exporter.

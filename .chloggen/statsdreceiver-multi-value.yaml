@@ -1,0 +1,7 @@
+change_type: enhancement
+component: receiver/statsd
+note: Support DogStatsD multi-value lines such as `name:1:2:3|ms`.
+issues: [53348]
+subtext: |
+  datadog-go writes these lines when client-side aggregation is enabled but the statsd parser rejects them as parse failures.
+change_logs: [user]

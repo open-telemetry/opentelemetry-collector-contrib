@@ -40,7 +40,8 @@ The following exporter configuration parameters are supported.
 | `acl`                     | [S3 Object Canned ACL](https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl)                                                                                                                 | none (does not set by default)              |
 | `s3_force_path_style`     | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html)                                                                                 | false                                       |
 | `disable_ssl`             | set this to `true` to disable SSL when sending requests                                                                                                                                                                    | false                                       |
-| `compression`             | should the file be compressed                                                                                                                                                                                              | none                                        |
+| `compression`             | Compression algorithm for uploaded objects. See [Compression](#compression). | `none` |
+| `compression_settings`    | Optional settings for the selected compression algorithm. | |
 | `sending_queue`           | [exporters common queuing](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)                                                                                          | disabled                                    |
 | `timeout`                 | [exporters common timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)                                                                                          | 5s                                          |
 | `resource_attrs_to_s3`    | determines the mapping of S3 configuration values to resource attribute values for uploading operations.                                                                                                                   |                                             |
@@ -84,9 +85,35 @@ Encoding overrides marshaler if present and sets to use an encoding extension de
 See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding.
 
 ### Compression
-- `none` (default): No compression will be applied
-- `gzip`: Files will be compressed with gzip.
-- `zstd`: Files will be compressed with zstd.
+
+Set `s3uploader.compression` to select the compression format and suffix for the S3 object key.
+
+| `compression` | Format | Object key suffix |
+| --- | --- | --- |
+| `none` (default) | Uncompressed | None |
+| `gzip` | Gzip | `.gz` |
+| `zstd` | Zstandard | `.zst` |
+| `zlib` | Zlib | `.zlib` |
+| `deflate` | Raw DEFLATE | `.deflate` |
+| `snappy` or `x-snappy-framed` | Framed Snappy | `.snappy` |
+| `lz4` | LZ4 frame | `.lz4` |
+
+For compression with the [AWS S3 receiver](../../receiver/awss3receiver), use `gzip` or `zstd`.
+
+The optional `s3uploader.compression_settings.level` overrides the default for `gzip`, `zstd`, `zlib`, or `deflate`.
+
+- `gzip`, `zlib`, and `deflate` default to `-1` (the encoder default). Levels `1` through `9` trade speed for compression. `0` stores the data in the selected format without compressing it, and `-2` selects Huffman-only compression.
+- `zstd` defaults to `3`. The encoder maps levels below `3` to fastest, `3`–`5` to default, `6`–`9` to better compression, and `10` or higher to best compression.
+
+```yaml
+exporters:
+  awss3:
+    s3uploader:
+      s3_bucket: telemetry
+      compression: gzip
+      compression_settings:
+        level: 1
+```
 
 ### resource_attrs_to_s3
 - `s3_bucket`: Defines which resource attribute's value should be used as the S3 bucket.

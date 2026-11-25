@@ -13,15 +13,23 @@ all_set:
       enabled: true
     container.memory.available:
       enabled: true
+    container.memory.available@v1:
+      enabled: true
     container.memory.major_page_faults:
       enabled: true
     container.memory.page_faults:
       enabled: true
     container.memory.rss:
       enabled: true
+    container.memory.rss@v1:
+      enabled: true
     container.memory.usage:
       enabled: true
+    container.memory.usage@v1:
+      enabled: true
     container.memory.working_set:
+      enabled: true
+    container.memory.working_set@v1:
       enabled: true
     container.uptime:
       enabled: true
@@ -175,15 +183,23 @@ reaggregate_set:
       enabled: true
     container.memory.available:
       enabled: true
+    container.memory.available@v1:
+      enabled: true
     container.memory.major_page_faults:
       enabled: true
     container.memory.page_faults:
       enabled: true
     container.memory.rss:
       enabled: true
+    container.memory.rss@v1:
+      enabled: true
     container.memory.usage:
       enabled: true
+    container.memory.usage@v1:
+      enabled: true
     container.memory.working_set:
+      enabled: true
+    container.memory.working_set@v1:
       enabled: true
     container.uptime:
       enabled: true
@@ -337,15 +353,23 @@ none_set:
       enabled: false
     container.memory.available:
       enabled: false
+    container.memory.available@v1:
+      enabled: false
     container.memory.major_page_faults:
       enabled: false
     container.memory.page_faults:
       enabled: false
     container.memory.rss:
       enabled: false
+    container.memory.rss@v1:
+      enabled: false
     container.memory.usage:
       enabled: false
+    container.memory.usage@v1:
+      enabled: false
     container.memory.working_set:
+      enabled: false
+    container.memory.working_set@v1:
       enabled: false
     container.uptime:
       enabled: false

@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 )
 
@@ -63,10 +64,10 @@ type WorkloadIdentity struct {
 }
 
 type ServicePrincipal struct {
-	TenantID              string `mapstructure:"tenant_id"`
-	ClientID              string `mapstructure:"client_id"`
-	ClientSecret          string `mapstructure:"client_secret"`
-	ClientCertificatePath string `mapstructure:"client_certificate_path"`
+	TenantID              string              `mapstructure:"tenant_id"`
+	ClientID              string              `mapstructure:"client_id"`
+	ClientSecret          configopaque.String `mapstructure:"client_secret"`
+	ClientCertificatePath string              `mapstructure:"client_certificate_path"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

@@ -3,6 +3,15 @@ sem_conv_version: 1.43.0
 
 parent: resourcedetection
 
+feature_gates:
+  - id: processor.resourcedetection.lambda.faasMaxMemoryBytes
+    stage: alpha
+    description: >-
+      When enabled, the lambda detector emits `faas.max_memory` as an int in bytes, as defined by the
+      semantic conventions, instead of a string in MiB.
+    from_version: v0.167.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-go-contrib/issues/8940
+
 resource_attributes:
   aws.log.group.names:
     semantic_convention:
@@ -43,7 +52,7 @@ resource_attributes:
   faas.max_memory:
     semantic_convention:
       ref: faas.md#faas-max-memory
-    description: The faas.max_memory
+    description: The amount of memory available to the function, in MiB. In bytes when the `processor.resourcedetection.lambda.faasMaxMemoryBytes` feature gate is enabled.
     type: string
     enabled: true
   faas.name:

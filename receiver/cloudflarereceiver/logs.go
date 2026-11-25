@@ -157,7 +157,7 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 			rw.WriteHeader(http.StatusUnauthorized)
 			l.logger.Debug("Got payload with no Secret when it was specified in config, dropping...")
 			return
-		} else if secretHeader != l.cfg.Secret {
+		} else if secretHeader != string(l.cfg.Secret) {
 			rw.WriteHeader(http.StatusUnauthorized)
 			l.logger.Debug("Got payload with invalid Secret, dropping...")
 			return

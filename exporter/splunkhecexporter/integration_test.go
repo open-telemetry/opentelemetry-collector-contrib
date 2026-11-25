@@ -246,7 +246,7 @@ func logsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 	}
 
 	httpClient := createInsecureClient()
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), settings.Logger}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), settings.Logger, nil}
 
 	err := c.pushLogData(t.Context(), logs)
 	require.NoError(t, err, "Must not error while sending Logs data")
@@ -269,7 +269,7 @@ func metricsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 	metricData := prepareMetricsData(test.config.event)
 
 	httpClient := createInsecureClient()
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), settings.Logger}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), settings.Logger, nil}
 
 	err := c.pushMetricsData(t.Context(), metricData)
 	require.NoError(t, err, "Must not error while sending Metrics data")
@@ -285,7 +285,7 @@ func tracesTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 	tracesData := prepareTracesData(test.config.index, test.config.source, test.config.sourcetype)
 
 	httpClient := createInsecureClient()
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), settings.Logger}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), settings.Logger, nil}
 
 	err := c.pushTraceData(t.Context(), tracesData)
 	require.NoError(t, err, "Must not error while sending Trace data")
