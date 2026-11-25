@@ -304,6 +304,45 @@ func TestPartitionKeyInputsFilename(t *testing.T) {
 	}
 }
 
+func TestPartitionKeyBuilderCompression(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name        string
+		compression configcompression.Type
+		suffix      string
+		encoding    string
+	}{
+		{name: "default"},
+		{name: "none", compression: "none"},
+		{name: "gzip", compression: configcompression.TypeGzip, suffix: ".gz", encoding: "gzip"},
+		{name: "zstd", compression: configcompression.TypeZstd, suffix: ".zst", encoding: "zstd"},
+		{name: "zlib", compression: configcompression.TypeZlib, suffix: ".zlib", encoding: "deflate"},
+		{name: "raw deflate", compression: configcompression.TypeDeflate, suffix: ".deflate"},
+		{name: "snappy", compression: configcompression.TypeSnappy, suffix: ".snappy"},
+		{name: "snappy framed", compression: configcompression.TypeSnappyFramed, suffix: ".snappy"},
+		{name: "lz4", compression: configcompression.TypeLz4, suffix: ".lz4"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			builder := &PartitionKeyBuilder{
+				Metadata:      "logs",
+				FileFormat:    "json",
+				Compression:   tc.compression,
+				UniqueKeyFunc: func() string { return "test" },
+			}
+			wantName := "logs_test.json" + tc.suffix
+			assert.Equal(t, wantName, builder.fileName())
+			assert.Equal(t, tc.encoding, builder.contentEncoding())
+
+			builder.IsArchiveFormat = true
+			assert.Equal(t, wantName, builder.fileName())
+			assert.Empty(t, builder.contentEncoding())
+		})
+	}
+}
+
 func TestPartitionKeyInputsUniqueKey(t *testing.T) {
 	t.Parallel()
 
