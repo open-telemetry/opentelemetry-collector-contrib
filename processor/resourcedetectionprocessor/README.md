@@ -707,7 +707,11 @@ In this example, the env variable `K8S_NODE_NAME` will hold the actual node name
 ### AWS Lambda
 
 Uses the AWS Lambda [runtime environment variables](https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-runtime)
-to retrieve related resource attributes.
+to retrieve related resource attributes, via
+[go.opentelemetry.io/contrib/detectors/aws/lambda](https://pkg.go.dev/go.opentelemetry.io/contrib/detectors/aws/lambda).
+
+`faas.max_memory` is reported as a string in MiB. Enable the `processor.resourcedetection.lambda.faasMaxMemoryBytes`
+feature gate to report it as an int in bytes, as defined by the semantic conventions.
 
 The list of the populated resource attributes can be found at [Lambda Detector Resource Attributes](./internal/aws/lambda/documentation.md).
 

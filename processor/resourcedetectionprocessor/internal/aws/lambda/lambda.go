@@ -8,6 +8,7 @@ package lambda // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 	"errors"
+	"strconv"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
@@ -54,5 +55,12 @@ func (d *detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 	}
 
 	sdkbridge.RemoveDisabledAttributes(res, d.resourceAttributes)
+
+	// The SDK reports faas.max_memory in bytes. Unless the gate is enabled, keep the previous string value in MiB.
+	if !metadata.ProcessorResourcedetectionLambdaFaasMaxMemoryBytesFeatureGate.IsEnabled() {
+		if v, ok := res.Attributes().Get("faas.max_memory"); ok {
+			res.Attributes().PutStr("faas.max_memory", strconv.FormatInt(v.Int()>>20, 10))
+		}
+	}
 	return res, schemaURL, nil
 }
