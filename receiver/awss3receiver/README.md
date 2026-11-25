@@ -90,7 +90,9 @@ Each worker can fetch up to `max_number_of_messages` messages per poll. Set this
 objects to avoid reserving messages that will wait behind another object. Size the queue's visibility
 timeout for processing and pipeline delays, or set `sqs.visibility_timeout_seconds` to renew it. Increasing concurrency increases memory use because
 each worker downloads and decodes its own object. Encoding extensions used with multiple workers
-must support concurrent decoding.
+timeout for processing and pipeline delays, or set `sqs.visibility_timeout_seconds` to renew it. 
+Increasing concurrency increases memory use becauseeach worker downloads and decodes its own  object.
+Encoding extensions used with multiple workers must support concurrent decoding.
 
 Set `sqs.visibility_timeout_seconds` to renew message visibility during long-running downloads or
 pipeline processing. Renewal also covers messages waiting behind another message in the same poll.
