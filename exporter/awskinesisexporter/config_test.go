@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
-				QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				QueueSettings:   metadata.NewDefaultSendingQueueConfig(),
 				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 				Encoding: Encoding{
@@ -67,7 +67,7 @@ func TestLoadConfig(t *testing.T) {
 					Multiplier:          backoff.DefaultMultiplier,
 				},
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
-				QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				QueueSettings:   metadata.NewDefaultSendingQueueConfig(),
 				Encoding: Encoding{
 					Name:        "otlp-proto",
 					Compression: "none",
@@ -89,7 +89,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "custom_timeout"),
 			expected: &Config{
-				QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				QueueSettings:   metadata.NewDefaultSendingQueueConfig(),
 				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 				Encoding: Encoding{

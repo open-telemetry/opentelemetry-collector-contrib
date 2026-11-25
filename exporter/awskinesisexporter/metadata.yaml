@@ -10,4 +10,8 @@ status:
     active: [Aneurysm9, MovieStoreGuy]
 
 sending_queue:
-  support: default
+  support: has_overrides
+  overrides:
+    enabled: true
+    batch:
+      enabled: true
