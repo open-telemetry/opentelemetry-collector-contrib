@@ -141,7 +141,7 @@ func (ctc *commonTestCase) returnNewStream(hs ...testChannel) func(context.Conte
 		error,
 	) {
 		h := hs[pos]
-		if pos < len(hs) {
+		if pos < len(hs)-1 {
 			pos++
 		}
 		if err := h.onConnect(ctx); err != nil {
@@ -406,6 +406,37 @@ func (*connectErrorTestChannel) onSend(context.Context) func(*arrowpb.BatchArrow
 }
 
 func (*connectErrorTestChannel) onRecv(context.Context) func() (*arrowpb.BatchStatus, error) {
+	return func() (*arrowpb.BatchStatus, error) {
+		panic("not reached")
+	}
+}
+
+// unsupportedConnectErrorTestChannel returns an Unimplemented status
+// from the ArrowTraces() call, indicating the endpoint does not serve
+// the Arrow stream service.
+type unsupportedConnectErrorTestChannel struct{}
+
+func newUnsupportedConnectErrorTestChannel() *unsupportedConnectErrorTestChannel {
+	return &unsupportedConnectErrorTestChannel{}
+}
+
+func (*unsupportedConnectErrorTestChannel) onConnect(context.Context) error {
+	return status.Error(codes.Unimplemented, "arrow will not be served")
+}
+
+func (*unsupportedConnectErrorTestChannel) onCloseSend() func() error {
+	return func() error {
+		panic("unreachable")
+	}
+}
+
+func (*unsupportedConnectErrorTestChannel) onSend(context.Context) func(*arrowpb.BatchArrowRecords) error {
+	return func(*arrowpb.BatchArrowRecords) error {
+		panic("not reached")
+	}
+}
+
+func (*unsupportedConnectErrorTestChannel) onRecv(context.Context) func() (*arrowpb.BatchStatus, error) {
 	return func() (*arrowpb.BatchStatus, error) {
 		panic("not reached")
 	}

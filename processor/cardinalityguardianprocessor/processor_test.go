@@ -628,10 +628,81 @@ func TestCardinalityProcessor_EpochRotation(t *testing.T) {
 	// Manually trigger a rotation to hit the coverage branch
 	p.rotate()
 
-	// Re-lock to check the flip occurred safely
+	// Re-lock to check the window advanced safely
 	shard.mu.RLock()
-	require.NotNil(t, tracker.previous)
+	require.NotNil(t, tracker.window)
 	shard.mu.RUnlock()
+}
+
+func TestTrackerRotateSwapsWindowAndCurrent(t *testing.T) {
+	const noLimit = ^uint64(0)
+	tracker := newTracker()
+	tracker.insert(rotationBenchmarkHash(0, 1), noLimit)
+	tracker.insert(rotationBenchmarkHash(0, 2), noLimit)
+
+	oldCurrent, oldWindow := tracker.current, tracker.window
+	require.False(t, tracker.rotate())
+	require.Same(t, oldCurrent, tracker.window)
+	require.Same(t, oldWindow, tracker.current)
+	require.Zero(t, tracker.current.Estimate())
+	require.True(t, tracker.needBaseline)
+
+	// The first insert of the new epoch snapshots the baseline (2) before
+	// adding. A value from the previous epoch adds nothing; a new one grows
+	// the window by one.
+	tracker.insert(rotationBenchmarkHash(0, 1), noLimit)
+	require.Equal(t, uint64(2), tracker.cachedPrevEpoch)
+	tracker.insert(rotationBenchmarkHash(0, 3), noLimit)
+	tracker.mu.Lock()
+	window := tracker.window.Estimate()
+	tracker.mu.Unlock()
+	require.Equal(t, uint64(3), window)
+	require.Equal(t, uint64(2), tracker.cachedPrevEpoch)
+}
+
+func TestTrackerRotateAcrossEpochs(t *testing.T) {
+	const noLimit = ^uint64(0)
+	for _, test := range []struct {
+		name            string
+		insertCount     int
+		wantDense       bool
+		wantReplacement bool
+	}{
+		{name: "sparse", insertCount: 32},
+		{name: "sparse_bound", insertCount: maxSparseSketchEntries},
+		{name: "above_sparse_bound", insertCount: maxSparseSketchEntries + 1, wantReplacement: true},
+		{name: "dense", insertCount: 10000, wantDense: true, wantReplacement: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tracker := newTracker()
+			for value := range test.insertCount {
+				tracker.insert(rotationBenchmarkHash(0, value), noLimit)
+			}
+			verifyRotationBenchmarkSketch(t, tracker.window, test.wantDense)
+			epoch1Window := tracker.window
+
+			require.False(t, tracker.rotate())
+			if test.wantReplacement {
+				require.NotSame(t, epoch1Window, tracker.current)
+			} else {
+				require.Same(t, epoch1Window, tracker.current)
+			}
+			verifyRotationBenchmarkSketch(t, tracker.current, false)
+
+			// Epoch 2: one new value, then rotation 2 makes it the baseline.
+			tracker.insert(rotationBenchmarkHash(1, 0), noLimit)
+			require.InDelta(t, test.insertCount, tracker.cachedPrevEpoch, float64(test.insertCount)/50+1)
+			require.False(t, tracker.rotate())
+			tracker.insert(rotationBenchmarkHash(2, 0), noLimit)
+			require.Equal(t, uint64(1), tracker.cachedPrevEpoch)
+			verifyRotationBenchmarkSketch(t, tracker.current, false)
+
+			// A quiet epoch must still rotate cleanly after a busy one.
+			require.False(t, tracker.rotate())
+			require.True(t, tracker.rotate())
+			require.Zero(t, tracker.current.Estimate())
+		})
+	}
 }
 
 // TestTopOffenders verifies that the otelcol_processor_cardinality_top.offenders gauge correctly
@@ -799,8 +870,8 @@ func TestCollectShardDeltas_Disabled(t *testing.T) {
 		{key: trackerKey{metricName: "m", attrKey: "k"}, t: newTracker()},
 	}
 	// Simulate some growth on the tracker.
-	entries[0].t.cachedCurr = 100
-	entries[0].t.cachedPrev = 0
+	entries[0].t.cachedWindow = 100
+	entries[0].t.cachedPrevEpoch = 0
 
 	result := collectShardDeltas(entries, nil, 0)
 	assert.Nil(t, result, "collectShardDeltas must return nil when topN=0")
@@ -1189,9 +1260,9 @@ func TestDropLogSampling_ResetOnRotate(t *testing.T) {
 	// Rotate epoch — counters should reset
 	p.rotate()
 
-	// Fill epoch 2 — must re-send baseline (0-19) plus new values (20-39)
-	// so the HLL accurately calculates the delta growth over the baseline.
-	for i := range 40 {
+	// Fill epoch 2 with only new values (20-39); growth over epoch 1 is
+	// visible without re-sending epoch 1's values.
+	for i := 20; i < 40; i++ {
 		attrs := pmetric.NewMetrics().ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty().Attributes()
 		attrs.PutStr("label_key", fmt.Sprintf("value_%d", i))
 		p.handleAttributes("test.metric", attrs)

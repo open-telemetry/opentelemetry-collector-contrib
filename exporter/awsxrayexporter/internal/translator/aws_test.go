@@ -229,6 +229,18 @@ func TestAwsWithSqsAlternateAttribute(t *testing.T) {
 	assert.Equal(t, queueURL, *awsData.QueueURL)
 }
 
+func TestAwsWithSqsQueueURLSemConvAttribute(t *testing.T) {
+	queueURL := "https://sqs.use1.amazonaws.com/Meltdown-Alerts"
+	attributes := make(map[string]pcommon.Value)
+	attributes["aws.sqs.queue.url"] = pcommon.NewValueStr(queueURL)
+
+	filtered, awsData := makeAws(attributes, pcommon.NewResource(), nil)
+
+	assert.NotContains(t, filtered, "aws.sqs.queue.url")
+	assert.NotNil(t, awsData)
+	assert.Equal(t, queueURL, *awsData.QueueURL)
+}
+
 func TestAwsWithAwsSqsSemConvAttributes(t *testing.T) {
 	queueURL := "https://sqs.use1.amazonaws.com/Meltdown-Alerts"
 	attributes := make(map[string]pcommon.Value)

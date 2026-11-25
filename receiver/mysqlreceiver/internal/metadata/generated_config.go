@@ -1982,6 +1982,156 @@ func (ms *MysqlStatementEventWaitTimeMetricConfig) Validate() error {
 	return nil
 }
 
+// MysqlTableAutoIncrementLimitMetricAttributeKey specifies the key of an attribute for the mysql.table.auto_increment.limit metric.
+type MysqlTableAutoIncrementLimitMetricAttributeKey string
+
+const (
+	MysqlTableAutoIncrementLimitMetricAttributeKeyTableName       MysqlTableAutoIncrementLimitMetricAttributeKey = "table"
+	MysqlTableAutoIncrementLimitMetricAttributeKeySchema          MysqlTableAutoIncrementLimitMetricAttributeKey = "schema"
+	MysqlTableAutoIncrementLimitMetricAttributeKeyMysqlColumnName MysqlTableAutoIncrementLimitMetricAttributeKey = "mysql.column.name"
+)
+
+// MysqlTableAutoIncrementLimitMetricConfig provides config for the mysql.table.auto_increment.limit metric.
+type MysqlTableAutoIncrementLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlTableAutoIncrementLimitMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlTableAutoIncrementLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlTableAutoIncrementLimitMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlTableAutoIncrementLimitMetricAttributeKeyTableName, MysqlTableAutoIncrementLimitMetricAttributeKeySchema, MysqlTableAutoIncrementLimitMetricAttributeKeyMysqlColumnName:
+		default:
+			return fmt.Errorf("metric mysql.table.auto_increment.limit doesn't have an attribute %v, valid attributes: [table, schema, mysql.column.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlTableAutoIncrementUsageMetricAttributeKey specifies the key of an attribute for the mysql.table.auto_increment.usage metric.
+type MysqlTableAutoIncrementUsageMetricAttributeKey string
+
+const (
+	MysqlTableAutoIncrementUsageMetricAttributeKeyTableName       MysqlTableAutoIncrementUsageMetricAttributeKey = "table"
+	MysqlTableAutoIncrementUsageMetricAttributeKeySchema          MysqlTableAutoIncrementUsageMetricAttributeKey = "schema"
+	MysqlTableAutoIncrementUsageMetricAttributeKeyMysqlColumnName MysqlTableAutoIncrementUsageMetricAttributeKey = "mysql.column.name"
+)
+
+// MysqlTableAutoIncrementUsageMetricConfig provides config for the mysql.table.auto_increment.usage metric.
+type MysqlTableAutoIncrementUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlTableAutoIncrementUsageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlTableAutoIncrementUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlTableAutoIncrementUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlTableAutoIncrementUsageMetricAttributeKeyTableName, MysqlTableAutoIncrementUsageMetricAttributeKeySchema, MysqlTableAutoIncrementUsageMetricAttributeKeyMysqlColumnName:
+		default:
+			return fmt.Errorf("metric mysql.table.auto_increment.usage doesn't have an attribute %v, valid attributes: [table, schema, mysql.column.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlTableAutoIncrementUtilizationMetricAttributeKey specifies the key of an attribute for the mysql.table.auto_increment.utilization metric.
+type MysqlTableAutoIncrementUtilizationMetricAttributeKey string
+
+const (
+	MysqlTableAutoIncrementUtilizationMetricAttributeKeyTableName       MysqlTableAutoIncrementUtilizationMetricAttributeKey = "table"
+	MysqlTableAutoIncrementUtilizationMetricAttributeKeySchema          MysqlTableAutoIncrementUtilizationMetricAttributeKey = "schema"
+	MysqlTableAutoIncrementUtilizationMetricAttributeKeyMysqlColumnName MysqlTableAutoIncrementUtilizationMetricAttributeKey = "mysql.column.name"
+)
+
+// MysqlTableAutoIncrementUtilizationMetricConfig provides config for the mysql.table.auto_increment.utilization metric.
+type MysqlTableAutoIncrementUtilizationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlTableAutoIncrementUtilizationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlTableAutoIncrementUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlTableAutoIncrementUtilizationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlTableAutoIncrementUtilizationMetricAttributeKeyTableName, MysqlTableAutoIncrementUtilizationMetricAttributeKeySchema, MysqlTableAutoIncrementUtilizationMetricAttributeKeyMysqlColumnName:
+		default:
+			return fmt.Errorf("metric mysql.table.auto_increment.utilization doesn't have an attribute %v, valid attributes: [table, schema, mysql.column.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MysqlTableAverageRowLengthMetricAttributeKey specifies the key of an attribute for the mysql.table.average_row_length metric.
 type MysqlTableAverageRowLengthMetricAttributeKey string
 
@@ -2692,6 +2842,9 @@ type MetricsConfig struct {
 	MysqlSorts                              MysqlSortsMetricConfig                              `mapstructure:"mysql.sorts"`
 	MysqlStatementEventCount                MysqlStatementEventCountMetricConfig                `mapstructure:"mysql.statement_event.count"`
 	MysqlStatementEventWaitTime             MysqlStatementEventWaitTimeMetricConfig             `mapstructure:"mysql.statement_event.wait.time"`
+	MysqlTableAutoIncrementLimit            MysqlTableAutoIncrementLimitMetricConfig            `mapstructure:"mysql.table.auto_increment.limit"`
+	MysqlTableAutoIncrementUsage            MysqlTableAutoIncrementUsageMetricConfig            `mapstructure:"mysql.table.auto_increment.usage"`
+	MysqlTableAutoIncrementUtilization      MysqlTableAutoIncrementUtilizationMetricConfig      `mapstructure:"mysql.table.auto_increment.utilization"`
 	MysqlTableAverageRowLength              MysqlTableAverageRowLengthMetricConfig              `mapstructure:"mysql.table.average_row_length"`
 	MysqlTableIoWaitCount                   MysqlTableIoWaitCountMetricConfig                   `mapstructure:"mysql.table.io.wait.count"`
 	MysqlTableIoWaitTime                    MysqlTableIoWaitTimeMetricConfig                    `mapstructure:"mysql.table.io.wait.time"`
@@ -2939,6 +3092,21 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []MysqlStatementEventWaitTimeMetricAttributeKey{MysqlStatementEventWaitTimeMetricAttributeKeySchema, MysqlStatementEventWaitTimeMetricAttributeKeyDigest, MysqlStatementEventWaitTimeMetricAttributeKeyDigestText},
 		},
+		MysqlTableAutoIncrementLimit: MysqlTableAutoIncrementLimitMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MysqlTableAutoIncrementLimitMetricAttributeKey{MysqlTableAutoIncrementLimitMetricAttributeKeyTableName, MysqlTableAutoIncrementLimitMetricAttributeKeySchema, MysqlTableAutoIncrementLimitMetricAttributeKeyMysqlColumnName},
+		},
+		MysqlTableAutoIncrementUsage: MysqlTableAutoIncrementUsageMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MysqlTableAutoIncrementUsageMetricAttributeKey{MysqlTableAutoIncrementUsageMetricAttributeKeyTableName, MysqlTableAutoIncrementUsageMetricAttributeKeySchema, MysqlTableAutoIncrementUsageMetricAttributeKeyMysqlColumnName},
+		},
+		MysqlTableAutoIncrementUtilization: MysqlTableAutoIncrementUtilizationMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []MysqlTableAutoIncrementUtilizationMetricAttributeKey{MysqlTableAutoIncrementUtilizationMetricAttributeKeyTableName, MysqlTableAutoIncrementUtilizationMetricAttributeKeySchema, MysqlTableAutoIncrementUtilizationMetricAttributeKeyMysqlColumnName},
+		},
 		MysqlTableAverageRowLength: MysqlTableAverageRowLengthMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
@@ -3032,12 +3200,16 @@ func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
 
 // EventsConfig provides config for mysql events.
 type EventsConfig struct {
+	DbServerQueryPlan   EventConfig `mapstructure:"db.server.query_plan"`
 	DbServerQuerySample EventConfig `mapstructure:"db.server.query_sample"`
 	DbServerTopQuery    EventConfig `mapstructure:"db.server.top_query"`
 }
 
 func DefaultEventsConfig() EventsConfig {
 	return EventsConfig{
+		DbServerQueryPlan: EventConfig{
+			Enabled: false,
+		},
 		DbServerQuerySample: EventConfig{
 			Enabled: false,
 		},
@@ -3141,6 +3313,76 @@ type MysqlInstanceEndpointResourceAttributeConfig struct {
 }
 
 func (rac *MysqlInstanceEndpointResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ServerAddressResourceAttributeConfig provides config for the server.address resource attribute.
+type ServerAddressResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *string `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ServerAddressResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ServerPortResourceAttributeConfig provides config for the server.port resource attribute.
+type ServerPortResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// OverrideValue allows users to override the value of this resource attribute.
+	OverrideValue *int64 `mapstructure:"override_value"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ServerPortResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -3262,6 +3504,8 @@ type ResourceAttributesConfig struct {
 	DbSystemName          DbSystemNameResourceAttributeConfig          `mapstructure:"db.system.name"`
 	DbSystemVersion       DbSystemVersionResourceAttributeConfig       `mapstructure:"db.system.version"`
 	MysqlInstanceEndpoint MysqlInstanceEndpointResourceAttributeConfig `mapstructure:"mysql.instance.endpoint"`
+	ServerAddress         ServerAddressResourceAttributeConfig         `mapstructure:"server.address"`
+	ServerPort            ServerPortResourceAttributeConfig            `mapstructure:"server.port"`
 	ServiceInstanceID     ServiceInstanceIDResourceAttributeConfig     `mapstructure:"service.instance.id"`
 	ServiceName           ServiceNameResourceAttributeConfig           `mapstructure:"service.name"`
 	ServiceNamespace      ServiceNamespaceResourceAttributeConfig      `mapstructure:"service.namespace"`
@@ -3276,6 +3520,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: false,
 		},
 		MysqlInstanceEndpoint: MysqlInstanceEndpointResourceAttributeConfig{
+			Enabled: true,
+		},
+		ServerAddress: ServerAddressResourceAttributeConfig{
+			Enabled: true,
+		},
+		ServerPort: ServerPortResourceAttributeConfig{
 			Enabled: true,
 		},
 		ServiceInstanceID: ServiceInstanceIDResourceAttributeConfig{
@@ -3302,6 +3552,12 @@ func (rac *ResourceAttributesConfig) applyOverrideValues(res pcommon.Resource) {
 	}
 	if rac.MysqlInstanceEndpoint.Enabled && rac.MysqlInstanceEndpoint.OverrideValue != nil {
 		res.Attributes().PutStr("mysql.instance.endpoint", *rac.MysqlInstanceEndpoint.OverrideValue)
+	}
+	if rac.ServerAddress.Enabled && rac.ServerAddress.OverrideValue != nil {
+		res.Attributes().PutStr("server.address", *rac.ServerAddress.OverrideValue)
+	}
+	if rac.ServerPort.Enabled && rac.ServerPort.OverrideValue != nil {
+		res.Attributes().PutInt("server.port", *rac.ServerPort.OverrideValue)
 	}
 	if rac.ServiceInstanceID.Enabled && rac.ServiceInstanceID.OverrideValue != nil {
 		res.Attributes().PutStr("service.instance.id", *rac.ServiceInstanceID.OverrideValue)

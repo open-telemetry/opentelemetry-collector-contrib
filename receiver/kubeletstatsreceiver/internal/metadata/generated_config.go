@@ -129,6 +129,26 @@ func (ms *ContainerMemoryAvailableMetricConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
+// ContainerMemoryAvailableV1MetricConfig provides config for the container.memory.available@v1 metric.
+type ContainerMemoryAvailableV1MetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerMemoryAvailableV1MetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // ContainerMemoryMajorPageFaultsMetricConfig provides config for the container.memory.major_page_faults metric.
 type ContainerMemoryMajorPageFaultsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -189,6 +209,26 @@ func (ms *ContainerMemoryRssMetricConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
+// ContainerMemoryRssV1MetricConfig provides config for the container.memory.rss@v1 metric.
+type ContainerMemoryRssV1MetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerMemoryRssV1MetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // ContainerMemoryUsageMetricConfig provides config for the container.memory.usage metric.
 type ContainerMemoryUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -209,6 +249,26 @@ func (ms *ContainerMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
+// ContainerMemoryUsageV1MetricConfig provides config for the container.memory.usage@v1 metric.
+type ContainerMemoryUsageV1MetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerMemoryUsageV1MetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // ContainerMemoryWorkingSetMetricConfig provides config for the container.memory.working_set metric.
 type ContainerMemoryWorkingSetMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -216,6 +276,26 @@ type ContainerMemoryWorkingSetMetricConfig struct {
 }
 
 func (ms *ContainerMemoryWorkingSetMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ContainerMemoryWorkingSetV1MetricConfig provides config for the container.memory.working_set@v1 metric.
+type ContainerMemoryWorkingSetV1MetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerMemoryWorkingSetV1MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -772,6 +852,46 @@ func (ms *K8sNodeNetworkIoMetricConfig) Validate() error {
 		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
 	}
 
+	return nil
+}
+
+// K8sNodePidLimitMetricConfig provides config for the k8s.node.pid.limit metric.
+type K8sNodePidLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sNodePidLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sNodePidUsageMetricConfig provides config for the k8s.node.pid.usage metric.
+type K8sNodePidUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sNodePidUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -1461,11 +1581,15 @@ type MetricsConfig struct {
 	ContainerFilesystemCapacity            ContainerFilesystemCapacityMetricConfig            `mapstructure:"container.filesystem.capacity"`
 	ContainerFilesystemUsage               ContainerFilesystemUsageMetricConfig               `mapstructure:"container.filesystem.usage"`
 	ContainerMemoryAvailable               ContainerMemoryAvailableMetricConfig               `mapstructure:"container.memory.available"`
+	ContainerMemoryAvailableV1             ContainerMemoryAvailableV1MetricConfig             `mapstructure:"container.memory.available@v1"`
 	ContainerMemoryMajorPageFaults         ContainerMemoryMajorPageFaultsMetricConfig         `mapstructure:"container.memory.major_page_faults"`
 	ContainerMemoryPageFaults              ContainerMemoryPageFaultsMetricConfig              `mapstructure:"container.memory.page_faults"`
 	ContainerMemoryRss                     ContainerMemoryRssMetricConfig                     `mapstructure:"container.memory.rss"`
+	ContainerMemoryRssV1                   ContainerMemoryRssV1MetricConfig                   `mapstructure:"container.memory.rss@v1"`
 	ContainerMemoryUsage                   ContainerMemoryUsageMetricConfig                   `mapstructure:"container.memory.usage"`
+	ContainerMemoryUsageV1                 ContainerMemoryUsageV1MetricConfig                 `mapstructure:"container.memory.usage@v1"`
 	ContainerMemoryWorkingSet              ContainerMemoryWorkingSetMetricConfig              `mapstructure:"container.memory.working_set"`
+	ContainerMemoryWorkingSetV1            ContainerMemoryWorkingSetV1MetricConfig            `mapstructure:"container.memory.working_set@v1"`
 	ContainerUptime                        ContainerUptimeMetricConfig                        `mapstructure:"container.uptime"`
 	K8sContainerCPUNodeUtilization         K8sContainerCPUNodeUtilizationMetricConfig         `mapstructure:"k8s.container.cpu.node.utilization"`
 	K8sContainerCPULimitUtilization        K8sContainerCPULimitUtilizationMetricConfig        `mapstructure:"k8s.container.cpu_limit_utilization"`
@@ -1489,6 +1613,8 @@ type MetricsConfig struct {
 	K8sNodeMemoryWorkingSet                K8sNodeMemoryWorkingSetMetricConfig                `mapstructure:"k8s.node.memory.working_set"`
 	K8sNodeNetworkErrors                   K8sNodeNetworkErrorsMetricConfig                   `mapstructure:"k8s.node.network.errors"`
 	K8sNodeNetworkIo                       K8sNodeNetworkIoMetricConfig                       `mapstructure:"k8s.node.network.io"`
+	K8sNodePidLimit                        K8sNodePidLimitMetricConfig                        `mapstructure:"k8s.node.pid.limit"`
+	K8sNodePidUsage                        K8sNodePidUsageMetricConfig                        `mapstructure:"k8s.node.pid.usage"`
 	K8sNodeSystemContainerCPUTime          K8sNodeSystemContainerCPUTimeMetricConfig          `mapstructure:"k8s.node.system_container.cpu.time"`
 	K8sNodeSystemContainerCPUUsage         K8sNodeSystemContainerCPUUsageMetricConfig         `mapstructure:"k8s.node.system_container.cpu.usage"`
 	K8sNodeSystemContainerMemoryUsage      K8sNodeSystemContainerMemoryUsageMetricConfig      `mapstructure:"k8s.node.system_container.memory.usage"`
@@ -1542,6 +1668,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerMemoryAvailable: ContainerMemoryAvailableMetricConfig{
 			Enabled: true,
 		},
+		ContainerMemoryAvailableV1: ContainerMemoryAvailableV1MetricConfig{
+			Enabled: false,
+		},
 		ContainerMemoryMajorPageFaults: ContainerMemoryMajorPageFaultsMetricConfig{
 			Enabled: true,
 		},
@@ -1551,11 +1680,20 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerMemoryRss: ContainerMemoryRssMetricConfig{
 			Enabled: true,
 		},
+		ContainerMemoryRssV1: ContainerMemoryRssV1MetricConfig{
+			Enabled: false,
+		},
 		ContainerMemoryUsage: ContainerMemoryUsageMetricConfig{
 			Enabled: true,
 		},
+		ContainerMemoryUsageV1: ContainerMemoryUsageV1MetricConfig{
+			Enabled: false,
+		},
 		ContainerMemoryWorkingSet: ContainerMemoryWorkingSetMetricConfig{
 			Enabled: true,
+		},
+		ContainerMemoryWorkingSetV1: ContainerMemoryWorkingSetV1MetricConfig{
+			Enabled: false,
 		},
 		ContainerUptime: ContainerUptimeMetricConfig{
 			Enabled: false,
@@ -1631,6 +1769,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []K8sNodeNetworkIoMetricAttributeKey{K8sNodeNetworkIoMetricAttributeKeyInterface, K8sNodeNetworkIoMetricAttributeKeyDirection},
+		},
+		K8sNodePidLimit: K8sNodePidLimitMetricConfig{
+			Enabled: false,
+		},
+		K8sNodePidUsage: K8sNodePidUsageMetricConfig{
+			Enabled: false,
 		},
 		K8sNodeSystemContainerCPUTime: K8sNodeSystemContainerCPUTimeMetricConfig{
 			Enabled: false,
@@ -1760,12 +1904,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for kubelet_stats resource attributes.
 type ResourceAttributesConfig struct {
-	AwsVolumeID                  ResourceAttributeConfig `mapstructure:"aws.volume.id"`
 	ContainerID                  ResourceAttributeConfig `mapstructure:"container.id"`
-	FsType                       ResourceAttributeConfig `mapstructure:"fs.type"`
-	GcePdName                    ResourceAttributeConfig `mapstructure:"gce.pd.name"`
-	GlusterfsEndpointsName       ResourceAttributeConfig `mapstructure:"glusterfs.endpoints.name"`
-	GlusterfsPath                ResourceAttributeConfig `mapstructure:"glusterfs.path"`
 	K8sContainerName             ResourceAttributeConfig `mapstructure:"k8s.container.name"`
 	K8sNamespaceName             ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
 	K8sNodeName                  ResourceAttributeConfig `mapstructure:"k8s.node.name"`
@@ -1775,28 +1914,12 @@ type ResourceAttributesConfig struct {
 	K8sPodUID                    ResourceAttributeConfig `mapstructure:"k8s.pod.uid"`
 	K8sVolumeName                ResourceAttributeConfig `mapstructure:"k8s.volume.name"`
 	K8sVolumeType                ResourceAttributeConfig `mapstructure:"k8s.volume.type"`
-	Partition                    ResourceAttributeConfig `mapstructure:"partition"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		AwsVolumeID: ResourceAttributeConfig{
-			Enabled: false,
-		},
 		ContainerID: ResourceAttributeConfig{
 			Enabled: true,
-		},
-		FsType: ResourceAttributeConfig{
-			Enabled: false,
-		},
-		GcePdName: ResourceAttributeConfig{
-			Enabled: false,
-		},
-		GlusterfsEndpointsName: ResourceAttributeConfig{
-			Enabled: false,
-		},
-		GlusterfsPath: ResourceAttributeConfig{
-			Enabled: false,
 		},
 		K8sContainerName: ResourceAttributeConfig{
 			Enabled: true,
@@ -1824,9 +1947,6 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		K8sVolumeType: ResourceAttributeConfig{
 			Enabled: true,
-		},
-		Partition: ResourceAttributeConfig{
-			Enabled: false,
 		},
 	}
 }

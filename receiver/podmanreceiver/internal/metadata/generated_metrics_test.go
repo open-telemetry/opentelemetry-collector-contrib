@@ -90,6 +90,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordContainerCPUUsagePercpuDataPoint(ts, 1, "core-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordContainerCPUUsagePercpuDataPoint(ts, 3, "core-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordContainerCPUUsagePercpuDataPoint(ts+1, 3, "core-val-2")
+				assert.Equal(t, 2, mb.metricContainerCPUUsagePercpu.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -211,7 +214,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["container.cpu.usage.percpu"], "Found a duplicate in the metrics slice: container.cpu.usage.percpu")
 						validatedMetrics["container.cpu.usage.percpu"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Total CPU time consumed per CPU-core.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())

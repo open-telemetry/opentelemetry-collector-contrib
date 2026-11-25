@@ -243,6 +243,48 @@ func Test_Time(t *testing.T) {
 	}
 }
 
+// Test_TimeLocalZoneAbbreviation verifies that a %Z abbreviation of the local
+// time zone is resolved against time.Local regardless of its position in the format.
+func Test_TimeLocalZoneAbbreviation(t *testing.T) {
+	locationAsiaSeoul, err := time.LoadLocation("Asia/Seoul")
+	require.NoError(t, err)
+	originalLocal := time.Local
+	time.Local = locationAsiaSeoul
+	t.Cleanup(func() { time.Local = originalLocal })
+
+	expected := time.Date(2026, 9, 8, 10, 2, 42, 0, time.UTC)
+	tests := []struct {
+		name   string
+		value  string
+		format string
+	}{
+		{
+			name:   "trailing %Z",
+			value:  "2026-09-08 19:02:42 KST",
+			format: "%Y-%m-%d %H:%M:%S %Z",
+		},
+		{
+			name:   "non-trailing %Z",
+			value:  "Tue Sep 08 19:02:42 KST 2026",
+			format: "%a %b %d %H:%M:%S %Z %Y",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			timeGetter := &ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return tt.value, nil
+				},
+			}
+			exprFunc, err := parseTime[any](timeGetter, tt.format, ottl.Optional[string]{}, ottl.Optional[string]{})
+			require.NoError(t, err)
+			result, err := exprFunc(t.Context(), nil)
+			require.NoError(t, err)
+			assert.Equal(t, expected.UnixNano(), result.(time.Time).UnixNano())
+		})
+	}
+}
+
 func Test_TimeError(t *testing.T) {
 	tests := []struct {
 		name          string

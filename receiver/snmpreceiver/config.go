@@ -5,12 +5,14 @@ package snmpreceiver // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"slices"
 	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
@@ -24,6 +26,7 @@ const (
 	defaultSecurityLevel      = "no_auth_no_priv"
 	defaultAuthType           = "MD5"
 	defaultPrivacyType        = "DES"
+	defaultMaxRepetitions     = 25
 )
 
 var (
@@ -53,6 +56,7 @@ var (
 	errMsgMultipleKeysSetOnResourceAttribute        = `resource attribute '%s' must have only one of oid, scalar_oid, or indexed_value_prefix`
 	errScalarOIDResourceAttributeEndsInNonzeroDigit = `resource attribute '%s' has scalar_oid '%s' that ends in a nonzero digit (scalar oids should not be indexed)`
 	errColumnOIDResourceAttributeEndsInZero         = `resource attribute '%s' has oid '%s' that ends in a zero (column oids should be indexed)`
+	errMsgMaxRepetitionsTooLarge                    = `max_repetitions (%d) must not exceed %d`
 
 	// Config errors
 	errEmptyEndpoint        = errors.New("endpoint must be specified")
@@ -89,7 +93,7 @@ type Config struct {
 	// Community is the SNMP community string to use.
 	// Only valid for versions "v1" and "v2c"
 	// Default: public
-	Community string `mapstructure:"community"`
+	Community configopaque.String `mapstructure:"community"`
 
 	// User is the SNMP User for this connection.
 	// Only valid for version “v3”
@@ -121,6 +125,11 @@ type Config struct {
 	// Only valid for version “v3” and if "auth_priv" is selected for SecurityLevel
 	PrivacyPassword configopaque.String `mapstructure:"privacy_password"`
 
+	// MaxRepetitions is the maximum number of iterations over the repeating variable list for GETBULK requests.
+	// Only valid for versions "v2c" and "v3".
+	// Default: 25
+	MaxRepetitions uint32 `mapstructure:"max_repetitions"`
+
 	// ResourceAttributes defines what resource attributes will be used for this receiver and is composed
 	// of resource attribute names along with their resource attribute configurations
 	ResourceAttributes map[string]*ResourceAttributeConfig `mapstructure:"resource_attributes"`
@@ -132,6 +141,9 @@ type Config struct {
 	// Metrics defines what SNMP metrics will be collected for this receiver and is composed of metric
 	// names along with their metric configurations
 	Metrics map[string]*MetricConfig `mapstructure:"metrics"`
+
+	// Traps optionally enables SNMP notifications as logs.
+	Traps *TrapsConfig `mapstructure:"traps,omitempty"`
 }
 
 // ResourceAttributeConfig contains config info about all of the resource attributes that will be used by this receiver.
@@ -253,17 +265,44 @@ type Attribute struct {
 	Value string `mapstructure:"value"`
 }
 
-// Validate validates the given config, returning an error specifying any issues with the config.
+// Unmarshal applies defaults only to explicitly configured notification blocks.
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if conf.IsSet("traps") {
+		cfg.Traps = defaultTrapsConfig()
+		if conf.IsSet("traps::v3") {
+			cfg.Traps.V3 = &TrapV3Config{
+				SecurityLevel: "auth_priv",
+				AuthType:      "SHA256",
+				PrivacyType:   "AES",
+				Engine:        &TrapEngineConfig{Cache: defaultTrapEngineCacheConfig()},
+			}
+		}
+	}
+	return conf.Unmarshal(cfg)
+}
+
+// Validate checks polling mappings when configured and optional notifications.
 func (cfg *Config) Validate() error {
 	var combinedErr error
+	if cfg.Traps == nil || len(cfg.Metrics) > 0 {
+		combinedErr = errors.Join(combinedErr, cfg.validatePolling())
+	}
+	if cfg.Traps != nil {
+		combinedErr = errors.Join(combinedErr, cfg.Traps.validate())
+	}
+	return combinedErr
+}
 
+// validatePolling checks the metric polling settings independently of traps.
+func (cfg *Config) validatePolling() error {
+	var combinedErr error
 	combinedErr = errors.Join(combinedErr, validateEndpoint(cfg))
 	combinedErr = errors.Join(combinedErr, validateVersion(cfg))
 	if strings.EqualFold(cfg.Version, "V3") {
 		combinedErr = errors.Join(combinedErr, validateSecurity(cfg))
 	}
+	combinedErr = errors.Join(combinedErr, validateMaxRepetitions(cfg))
 	combinedErr = errors.Join(combinedErr, validateMetricConfigs(cfg))
-
 	return combinedErr
 }
 
@@ -303,6 +342,15 @@ func validateVersion(cfg *Config) error {
 	case "V1", "V2C", "V3": // ok
 	default:
 		return errBadVersion
+	}
+
+	return nil
+}
+
+// validateMaxRepetitions validates the MaxRepetitions
+func validateMaxRepetitions(cfg *Config) error {
+	if cfg.MaxRepetitions > math.MaxInt32 {
+		return fmt.Errorf(errMsgMaxRepetitionsTooLarge, cfg.MaxRepetitions, math.MaxInt32)
 	}
 
 	return nil

@@ -103,7 +103,7 @@ func newAlgoProcessor(t *testing.T, algorithm string, prov KeyMaterialProvider) 
 // ---------------------------------------------------------------------------
 
 func TestConfigValidateAlgorithms(t *testing.T) {
-	validFile := &FileKeyConfig{CertFile: "c.pem", KeyFile: "k.pem"}
+	validFile := &FileKeyConfig{Certificate: "c.pem", PrivateKey: "k.pem"}
 	tests := []struct {
 		algorithm string
 		wantErr   bool

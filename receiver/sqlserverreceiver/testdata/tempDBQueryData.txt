@@ -1,0 +1,11 @@
+[
+  {
+    "measurement": "sqlserver_tempdb",
+    "sql_instance": "testhost",
+    "kb_user_objects": "8192",
+    "kb_internal_objects": "4096",
+    "kb_version_store": "2048",
+    "kb_free": "16384",
+    "kb_mixed_extents": "128"
+  }
+]

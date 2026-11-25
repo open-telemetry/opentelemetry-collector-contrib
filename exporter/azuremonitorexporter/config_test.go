@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configstorage"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -29,10 +30,6 @@ func TestLoadConfig(t *testing.T) {
 	disk := component.MustNewIDWithName("disk", "")
 
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Endpoint = "https://dc.services.visualstudio.com/v2/track"
 
 	tests := []struct {
@@ -60,7 +57,7 @@ func TestLoadConfig(t *testing.T) {
 					queue := exporterhelper.NewDefaultQueueConfig()
 					queue.QueueSize = 1000
 					queue.NumConsumers = 10
-					queue.StorageID = &disk
+					queue.StorageID = configoptional.Some(configstorage.ID(disk))
 					return queue
 				}()),
 				ShutdownTimeout: 2 * time.Second,

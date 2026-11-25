@@ -18,7 +18,7 @@ import (
 	"time"
 
 	gojson "github.com/goccy/go-json"
-	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -32,12 +32,13 @@ type Input struct {
 
 	newCmd func(ctx context.Context, cursor []byte) cmd
 
-	persister                operator.Persister
-	convertMessageBytes      bool
-	cancel                   context.CancelFunc
-	wg                       sync.WaitGroup
-	errChan                  chan error
-	includeLogRecordOriginal bool
+	persister                    operator.Persister
+	convertMessageBytes          bool
+	convertToSemanticConventions bool
+	cancel                       context.CancelFunc
+	wg                           sync.WaitGroup
+	errChan                      chan error
+	includeLogRecordOriginal     bool
 }
 
 type cmd interface {
@@ -63,7 +64,9 @@ func (operator *Input) Start(persister operator.Persister) error {
 	operator.persister = persister
 	operator.errChan = make(chan error)
 
-	go operator.run(ctx)
+	operator.wg.Go(func() {
+		operator.run(ctx)
+	})
 
 	select {
 	case err := <-operator.errChan:
@@ -97,7 +100,10 @@ func (operator *Input) run(ctx context.Context) {
 			operator.Logger().Debug("Starting the journalctl command")
 			if err := operator.runJournalctl(ctx, jctl); err != nil {
 				ee := &exec.ExitError{}
-				if ok := errors.As(err, &ee); ok && ee.ExitCode() != 0 {
+				if errors.Is(ctx.Err(), context.Canceled) {
+					// exec.CommandContext kills journalctl when the context is canceled
+					operator.Logger().Info("journalctl command stopped")
+				} else if ok := errors.As(err, &ee); ok && ee.ExitCode() != 0 {
 					operator.Logger().Error("journalctl command exited", zap.Error(ee))
 				} else {
 					operator.Logger().Info("journalctl command exited")
@@ -145,11 +151,16 @@ func (operator *Input) newJournalctl(ctx context.Context) (*journalctl, error) {
 // runJournalctl runs the journalctl command. This is a blocking call that returns
 // when the command exits.
 func (operator *Input) runJournalctl(ctx context.Context, jctl *journalctl) error {
+	// The reader goroutines get their own WaitGroup: operator.wg also
+	// tracks the goroutine running this function, so waiting on it here
+	// would never return.
+	var readers sync.WaitGroup
+
 	// Start the stderr reader goroutine.
 	// This goroutine reads the stderr from the journalctl process. If the
 	// process exits for any reason, then the stderr will be closed, this
 	// goroutine will get an EOF error and exit.
-	operator.wg.Go(func() {
+	readers.Go(func() {
 		stderrBuf := bufio.NewReader(jctl.stderr)
 
 		for {
@@ -169,7 +180,7 @@ func (operator *Input) runJournalctl(ctx context.Context, jctl *journalctl) erro
 	// the data, and writes to output. If the journalctl process exits for
 	// any reason, then the stdout will be closed, this goroutine will get
 	// an EOF error and exits.
-	operator.wg.Go(func() {
+	readers.Go(func() {
 		stdoutBuf := bufio.NewReader(jctl.stdout)
 
 		for {
@@ -186,18 +197,24 @@ func (operator *Input) runJournalctl(ctx context.Context, jctl *journalctl) erro
 				operator.Logger().Warn("Failed to parse journal entry", zap.Error(err))
 				continue
 			}
-			if err = operator.persister.Set(ctx, lastReadCursorKey, []byte(cursor)); err != nil {
-				operator.Logger().Warn("Failed to set offset", zap.Error(err))
-			}
 			if err = operator.Write(ctx, entry); err != nil {
 				operator.Logger().Error("failed to write entry", zap.Error(err))
+			}
+			// Write does not report a failed export, so a canceled context is
+			// the only sign that the entry may not have been delivered. Do not
+			// move the cursor past it, so it is read again after a restart.
+			if ctx.Err() != nil {
+				return
+			}
+			if err = operator.persister.Set(ctx, lastReadCursorKey, []byte(cursor)); err != nil {
+				operator.Logger().Warn("Failed to set offset", zap.Error(err))
 			}
 		}
 	})
 
 	// we wait for the reader goroutines to exit before calling Cmd.Wait().
 	// As per documentation states, "It is thus incorrect to call Wait before all reads from the pipe have completed".
-	operator.wg.Wait()
+	readers.Wait()
 
 	return jctl.cmd.Wait()
 }
@@ -251,24 +268,30 @@ func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, err
 		return nil, "", errors.New("journald field for cursor is not a string")
 	}
 
-	entry, err := operator.NewEntry(body)
+	e, err := operator.NewEntry(body)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to create entry: %w", err)
 	}
 
-	entry.Timestamp = time.Unix(0, timestampInt*1000) // in microseconds
-
-	if operator.includeLogRecordOriginal {
-		entry.AddAttribute(string(semconv.LogRecordOriginalKey), strings.TrimSpace(string(line)))
+	if operator.convertToSemanticConventions {
+		mapJournalEntryAttributes(e, body)
 	}
 
-	return entry, cursorString, nil
+	e.Timestamp = time.Unix(0, timestampInt*1000) // in microseconds
+
+	if operator.includeLogRecordOriginal {
+		e.AddAttribute(string(conventions.LogRecordOriginalKey), strings.TrimSpace(string(line)))
+	}
+
+	return e, cursorString, nil
 }
 
-// Stop will stop generating logs.
+// Stop will stop generating logs. It waits for the reader to exit so the
+// persister is not used after Stop returns.
 func (operator *Input) Stop() error {
 	if operator.cancel != nil {
 		operator.cancel()
 	}
+	operator.wg.Wait()
 	return nil
 }

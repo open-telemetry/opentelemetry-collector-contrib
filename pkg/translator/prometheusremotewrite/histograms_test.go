@@ -12,6 +12,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/otlptranslator"
 	"github.com/prometheus/prometheus/model/histogram"
+	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	prom "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 	"github.com/stretchr/testify/assert"
@@ -405,13 +406,14 @@ func BenchmarkConvertBucketLayout(b *testing.B) {
 
 func TestExplicitToNHCBHistogram(t *testing.T) {
 	tests := []struct {
-		name        string
-		hist        func() pmetric.HistogramDataPoint
-		wantValues  []float64
-		wantCount   uint64
-		wantSum     float64
-		wantBuckets []nhcbBucket
-		stale       bool
+		name           string
+		hist           func() pmetric.HistogramDataPoint
+		wantValues     []float64
+		wantCount      uint64
+		wantSum        float64
+		wantBuckets    []nhcbBucket
+		stale          bool
+		wantErrMessage string
 	}{
 		{
 			name:        "consistent count and buckets",
@@ -460,10 +462,7 @@ func TestExplicitToNHCBHistogram(t *testing.T) {
 				pt.SetCount(10)
 				return pt
 			},
-			wantValues:  []float64{1, 2, 3},
-			wantCount:   10,
-			wantSum:     0,
-			wantBuckets: []nhcbBucket{{1, 1}, {2, 3}, {3, 6}, {math.Inf(1), 10}},
+			wantErrMessage: "sum is not set",
 		},
 		{
 			name: "no explicit bounds (single +Inf bucket)",
@@ -492,10 +491,24 @@ func TestExplicitToNHCBHistogram(t *testing.T) {
 			},
 			stale: true,
 		},
+		{
+			name: "stale marker without sum",
+			hist: func() pmetric.HistogramDataPoint {
+				pt := newTestExplicitHistogram().Histogram().DataPoints().At(0)
+				pt.RemoveSum()
+				pt.SetFlags(pt.Flags().WithNoRecordedValue(true))
+				return pt
+			},
+			stale: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h, err := explicitToNHCBHistogram(tt.hist())
+			if tt.wantErrMessage != "" {
+				require.ErrorContains(t, err, tt.wantErrMessage)
+				return
+			}
 			require.NoError(t, err)
 			assert.Equal(t, histogram.CustomBucketsSchema, h.Schema, "must be NHCB schema -53")
 			assert.Equal(t, convertTimeStamp(testHistTimestamp), h.Timestamp)
@@ -528,6 +541,33 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 		wantErrMessage  string
 	}{
 		{
+			name: "preserve zero threshold with tiny positive and negative buckets",
+			exponentialHist: func() pmetric.ExponentialHistogramDataPoint {
+				pt := pmetric.NewExponentialHistogramDataPoint()
+				pt.SetScale(0)
+				pt.SetCount(2)
+				pt.SetSum(0)
+				pt.SetZeroCount(0)
+				pt.SetZeroThreshold(0)
+				// At scale 0, bucket -432 has upper bound 2^-431, below 1e-128.
+				pt.Positive().SetOffset(-432)
+				pt.Positive().BucketCounts().FromRaw([]uint64{1})
+				pt.Negative().SetOffset(-432)
+				pt.Negative().BucketCounts().FromRaw([]uint64{1})
+				return pt
+			},
+			wantNativeHist: func() prompb.Histogram {
+				return prompb.Histogram{
+					Count:          &prompb.Histogram_CountInt{CountInt: 2},
+					ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 0},
+					PositiveSpans:  []prompb.BucketSpan{{Offset: -431, Length: 1}},
+					PositiveDeltas: []int64{1},
+					NegativeSpans:  []prompb.BucketSpan{{Offset: -431, Length: 1}},
+					NegativeDeltas: []int64{1},
+				}
+			},
+		},
+		{
 			name: "convert exp. to native histogram",
 			exponentialHist: func() pmetric.ExponentialHistogramDataPoint {
 				pt := pmetric.NewExponentialHistogramDataPoint()
@@ -551,7 +591,7 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 					Count:          &prompb.Histogram_CountInt{CountInt: 4},
 					Sum:            10.1,
 					Schema:         1,
-					ZeroThreshold:  defaultZeroThreshold,
+					ZeroThreshold:  0,
 					ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 1},
 					NegativeSpans:  []prompb.BucketSpan{{Offset: 2, Length: 2}},
 					NegativeDeltas: []int64{1, 0},
@@ -615,19 +655,7 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 
 				return pt
 			},
-			wantNativeHist: func() prompb.Histogram {
-				return prompb.Histogram{
-					Count:          &prompb.Histogram_CountInt{CountInt: 4},
-					Schema:         1,
-					ZeroThreshold:  defaultZeroThreshold,
-					ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 1},
-					NegativeSpans:  []prompb.BucketSpan{{Offset: 2, Length: 2}},
-					NegativeDeltas: []int64{1, 0},
-					PositiveSpans:  []prompb.BucketSpan{{Offset: 2, Length: 2}},
-					PositiveDeltas: []int64{1, 0},
-					Timestamp:      500,
-				}
-			},
+			wantErrMessage: "sum is not set",
 		},
 		{
 			name: "invalid negative scale",
@@ -661,7 +689,7 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 					Count:          &prompb.Histogram_CountInt{CountInt: 6},
 					Sum:            10.1,
 					Schema:         8,
-					ZeroThreshold:  defaultZeroThreshold,
+					ZeroThreshold:  0,
 					ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 1},
 					PositiveSpans:  []prompb.BucketSpan{{Offset: 2, Length: 3}},
 					PositiveDeltas: []int64{1, 0, 0}, // 1, 1, 1
@@ -693,13 +721,42 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 					Count:          &prompb.Histogram_CountInt{CountInt: 6},
 					Sum:            10.1,
 					Schema:         8,
-					ZeroThreshold:  defaultZeroThreshold,
+					ZeroThreshold:  0,
 					ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 1},
 					PositiveSpans:  []prompb.BucketSpan{{Offset: 1, Length: 2}},
 					PositiveDeltas: []int64{1, 1}, // 0+1, 1+1 = 1, 2
 					NegativeSpans:  []prompb.BucketSpan{{Offset: 2, Length: 2}},
 					NegativeDeltas: []int64{2, -1}, // 1+1, 1+0 = 2, 1
 					Timestamp:      500,
+				}
+			},
+		},
+		{
+			name: "stale marker omits count, zero count, and buckets",
+			exponentialHist: func() pmetric.ExponentialHistogramDataPoint {
+				pt := pmetric.NewExponentialHistogramDataPoint()
+				pt.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
+				pt.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
+				pt.SetCount(4)
+				pt.SetSum(10.1)
+				pt.SetScale(1)
+				pt.SetZeroCount(1)
+				pt.SetZeroThreshold(0.02)
+				pt.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+
+				pt.Positive().BucketCounts().FromRaw([]uint64{1, 1})
+				pt.Positive().SetOffset(1)
+
+				pt.Negative().BucketCounts().FromRaw([]uint64{1, 1})
+				pt.Negative().SetOffset(1)
+				return pt
+			},
+			wantNativeHist: func() prompb.Histogram {
+				return prompb.Histogram{
+					Schema:        1,
+					ZeroThreshold: 0.02,
+					Sum:           math.Float64frombits(value.StaleNaN),
+					Timestamp:     500,
 				}
 			},
 		},
@@ -714,8 +771,18 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 			}
 
 			require.NoError(t, err)
+			if tt.exponentialHist().Flags().NoRecordedValue() {
+				want := tt.wantNativeHist()
+				assert.Equal(t, math.Float64bits(want.Sum), math.Float64bits(got.Sum))
+				require.NoError(t, got.ToIntHistogram().Validate())
+				got.Sum = 0
+				want.Sum = 0
+				assert.Equal(t, want, got)
+				return
+			}
 			assert.Equal(t, tt.wantNativeHist(), got)
 			validateNativeHistogramCount(t, got)
+			validateNoZeroBucketOverlap(t, got.ToIntHistogram())
 		})
 	}
 }
@@ -751,6 +818,18 @@ func validateNativeHistogramCount(t *testing.T, h prompb.Histogram) {
 	assert.Equal(t, want, actualCount, "native histogram count mismatch")
 }
 
+// validateNoZeroBucketOverlap checks that no populated bucket overlaps the zero bucket.
+func validateNoZeroBucketOverlap(t *testing.T, h *histogram.Histogram) {
+	for it := h.PositiveBucketIterator(); it.Next(); {
+		b := it.At()
+		assert.GreaterOrEqualf(t, b.Lower, h.ZeroThreshold, "positive bucket %s overlaps the zero bucket with threshold %g", b.String(), h.ZeroThreshold)
+	}
+	for it := h.NegativeBucketIterator(); it.Next(); {
+		b := it.At()
+		assert.LessOrEqualf(t, b.Upper, -h.ZeroThreshold, "negative bucket %s overlaps the zero bucket with threshold %g", b.String(), h.ZeroThreshold)
+	}
+}
+
 func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -766,6 +845,7 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 
 				pt := metric.ExponentialHistogram().DataPoints().AppendEmpty()
 				pt.SetCount(7)
+				pt.SetSum(0)
 				pt.SetScale(1)
 				pt.Positive().SetOffset(-1)
 				pt.Positive().BucketCounts().FromRaw([]uint64{4, 2})
@@ -774,6 +854,7 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 
 				pt = metric.ExponentialHistogram().DataPoints().AppendEmpty()
 				pt.SetCount(4)
+				pt.SetSum(0)
 				pt.SetScale(1)
 				pt.Positive().SetOffset(-1)
 				pt.Positive().BucketCounts().FromRaw([]uint64{4, 2, 1})
@@ -794,7 +875,7 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 							{
 								Count:          &prompb.Histogram_CountInt{CountInt: 7},
 								Schema:         1,
-								ZeroThreshold:  defaultZeroThreshold,
+								ZeroThreshold:  0,
 								ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 0},
 								PositiveSpans:  []prompb.BucketSpan{{Offset: 0, Length: 2}},
 								PositiveDeltas: []int64{4, -2},
@@ -802,7 +883,7 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 							{
 								Count:          &prompb.Histogram_CountInt{CountInt: 4},
 								Schema:         1,
-								ZeroThreshold:  defaultZeroThreshold,
+								ZeroThreshold:  0,
 								ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 0},
 								PositiveSpans:  []prompb.BucketSpan{{Offset: 0, Length: 3}},
 								PositiveDeltas: []int64{4, -2, -1},
@@ -825,6 +906,7 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 
 				pt := metric.ExponentialHistogram().DataPoints().AppendEmpty()
 				pt.SetCount(7)
+				pt.SetSum(0)
 				pt.SetScale(1)
 				pt.Positive().SetOffset(-1)
 				pt.Positive().BucketCounts().FromRaw([]uint64{4, 2})
@@ -833,6 +915,7 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 
 				pt = metric.ExponentialHistogram().DataPoints().AppendEmpty()
 				pt.SetCount(4)
+				pt.SetSum(0)
 				pt.SetScale(1)
 				pt.Negative().SetOffset(-1)
 				pt.Negative().BucketCounts().FromRaw([]uint64{4, 2, 1})
@@ -858,7 +941,7 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 							{
 								Count:          &prompb.Histogram_CountInt{CountInt: 7},
 								Schema:         1,
-								ZeroThreshold:  defaultZeroThreshold,
+								ZeroThreshold:  0,
 								ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 0},
 								PositiveSpans:  []prompb.BucketSpan{{Offset: 0, Length: 2}},
 								PositiveDeltas: []int64{4, -2},
@@ -874,7 +957,7 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 							{
 								Count:          &prompb.Histogram_CountInt{CountInt: 4},
 								Schema:         1,
-								ZeroThreshold:  defaultZeroThreshold,
+								ZeroThreshold:  0,
 								ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 0},
 								NegativeSpans:  []prompb.BucketSpan{{Offset: 0, Length: 3}},
 								NegativeDeltas: []int64{4, -2, -1},
@@ -900,12 +983,95 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 				metric.ExponentialHistogram().DataPoints(),
 				pcommon.NewResource(),
 				pcommon.NewInstrumentationScope(),
+				"",
 				Settings{},
 				metricName,
 			))
 
 			assert.Equal(t, tt.wantSeries(), converter.unique)
 			assert.Empty(t, converter.conflicts)
+		})
+	}
+}
+
+func TestFromMetricsExponentialHistogramSum(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		hasSum bool
+		sum    float64
+		stale  bool
+		mixed  bool
+	}{
+		{name: "absent sum"},
+		{name: "zero sum", hasSum: true},
+		{name: "nonzero sum", hasSum: true, sum: -0.5},
+		{name: "stale without sum", stale: true},
+		{name: "missing sum among valid points", mixed: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			md := pmetric.NewMetrics()
+			metric := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+			metric.SetName("test_hist")
+			h := metric.SetEmptyExponentialHistogram()
+			h.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+			dp := h.DataPoints().AppendEmpty()
+			dp.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
+			if tt.stale {
+				dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+			} else {
+				dp.SetCount(2)
+				dp.Positive().BucketCounts().FromRaw([]uint64{1})
+				dp.Negative().BucketCounts().FromRaw([]uint64{1})
+				dp.Exemplars().AppendEmpty().SetDoubleValue(1)
+			}
+			if tt.hasSum {
+				dp.SetSum(tt.sum)
+			}
+			if tt.mixed {
+				for _, separateSeries := range []bool{false, true} {
+					valid := h.DataPoints().AppendEmpty()
+					dp.CopyTo(valid)
+					valid.SetSum(0.5)
+					if separateSeries {
+						valid.Attributes().PutStr("series", "valid")
+					}
+				}
+			}
+			series, err := FromMetrics(md, Settings{DisableTargetInfo: true, DisableScopeInfo: true})
+			if !tt.hasSum && !tt.stale {
+				require.ErrorContains(t, err, "sum is not set")
+			} else {
+				require.NoError(t, err)
+			}
+			wantSeries := 1
+			if tt.mixed {
+				wantSeries = 2
+			} else if !tt.hasSum && !tt.stale {
+				wantSeries = 0
+			}
+			require.Len(t, series, wantSeries)
+			for _, ts := range series {
+				require.Len(t, ts.Histograms, 1)
+				if tt.stale {
+					require.True(t, value.IsStaleNaN(ts.Histograms[0].Sum))
+					require.Zero(t, ts.Histograms[0].GetCountInt())
+					require.Nil(t, ts.Histograms[0].Count)
+					require.Nil(t, ts.Histograms[0].ZeroCount)
+					require.Empty(t, ts.Histograms[0].PositiveSpans)
+					require.Empty(t, ts.Histograms[0].PositiveDeltas)
+					require.Empty(t, ts.Histograms[0].NegativeSpans)
+					require.Empty(t, ts.Histograms[0].NegativeDeltas)
+					require.Empty(t, ts.Exemplars)
+				} else {
+					expectedSum := tt.sum
+					if tt.mixed {
+						expectedSum = 0.5
+					}
+					require.Equal(t, expectedSum, ts.Histograms[0].Sum)
+					require.Equal(t, uint64(2), ts.Histograms[0].GetCountInt())
+					require.Len(t, ts.Exemplars, 1)
+				}
+			}
 		})
 	}
 }

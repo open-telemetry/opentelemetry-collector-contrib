@@ -74,18 +74,27 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemFilesystemInodesUsageDataPoint(ts, 1, "device-val", "mode-val", "mountpoint-val", "type-val", AttributeStateFree)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemFilesystemInodesUsageDataPoint(ts, 3, "device-val-2", "mode-val-2", "mountpoint-val-2", "type-val-2", AttributeStateReserved)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemFilesystemInodesUsageDataPoint(ts+1, 3, "device-val-2", "mode-val-2", "mountpoint-val-2", "type-val-2", AttributeStateReserved)
+				assert.Equal(t, 2, mb.metricSystemFilesystemInodesUsage.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemFilesystemUsageDataPoint(ts, 1, "device-val", "mode-val", "mountpoint-val", "type-val", AttributeStateFree)
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemFilesystemUsageDataPoint(ts, 3, "device-val-2", "mode-val-2", "mountpoint-val-2", "type-val-2", AttributeStateReserved)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemFilesystemUsageDataPoint(ts+1, 3, "device-val-2", "mode-val-2", "mountpoint-val-2", "type-val-2", AttributeStateReserved)
+				assert.Equal(t, 2, mb.metricSystemFilesystemUsage.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordSystemFilesystemUtilizationDataPoint(ts, 1, "device-val", "mode-val", "mountpoint-val", "type-val")
 			if tt.name == "reaggregate_set" {
 				mb.RecordSystemFilesystemUtilizationDataPoint(ts, 3, "device-val-2", "mode-val-2", "mountpoint-val-2", "type-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordSystemFilesystemUtilizationDataPoint(ts+1, 3, "device-val-2", "mode-val-2", "mountpoint-val-2", "type-val-2")
+				assert.Equal(t, 2, mb.metricSystemFilesystemUtilization.data.Gauge().DataPoints().Len())
 			}
 
 			res := pcommon.NewResource()
@@ -155,7 +164,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["system.filesystem.inodes.usage"], "Found a duplicate in the metrics slice: system.filesystem.inodes.usage")
 						validatedMetrics["system.filesystem.inodes.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "FileSystem inodes used.", mi.Description())
 						assert.Equal(t, "{inodes}", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -219,7 +230,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["system.filesystem.usage"], "Found a duplicate in the metrics slice: system.filesystem.usage")
 						validatedMetrics["system.filesystem.usage"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Filesystem bytes used.", mi.Description())
 						assert.Equal(t, "By", mi.Unit())
 						assert.False(t, mi.Sum().IsMonotonic())
@@ -278,7 +291,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["system.filesystem.utilization"], "Found a duplicate in the metrics slice: system.filesystem.utilization")
 						validatedMetrics["system.filesystem.utilization"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Fraction of filesystem bytes used.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)

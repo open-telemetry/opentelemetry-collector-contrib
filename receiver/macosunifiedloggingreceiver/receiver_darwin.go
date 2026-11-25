@@ -28,6 +28,10 @@ type unifiedLoggingReceiver struct {
 	logger   *zap.Logger
 	consumer consumer.Logs
 	cancel   context.CancelFunc
+
+	// lastTimestamp is the timestamp of the newest record emitted in live mode. It is the read
+	// cursor for the next poll and is only accessed from the readFromLive goroutine
+	lastTimestamp time.Time
 }
 
 func newUnifiedLoggingReceiver(
@@ -174,6 +178,10 @@ func (r *unifiedLoggingReceiver) runLogCommand(ctx context.Context, archivePath 
 
 	var processedCount int
 	isFirstLine := true
+	// In live mode, --start is second-granular, so a poll re-reads the records of the cursor's
+	// second. Skip everything up to and including the cursor since it was already emitted
+	live := archivePath == ""
+	since := r.lastTimestamp
 	// Skip the header line in text-based formats (default, syslog, compact)
 	isTextFormat := r.config.Format == "default" || r.config.Format == "syslog" || r.config.Format == "compact"
 	for scanner.Scan() {
@@ -201,13 +209,21 @@ func (r *unifiedLoggingReceiver) runLogCommand(ctx context.Context, archivePath 
 				continue
 			}
 
-			// Parse and send the log entry
-			if err := r.processLogLine(ctx, line); err != nil {
+			entry := r.parseLogLine(line)
+			if live && !entry.timestamp.IsZero() && !entry.timestamp.After(since) {
+				continue
+			}
+
+			// Send the log entry
+			if err := r.processLogLine(ctx, line, entry); err != nil {
 				r.logger.Warn("Failed to process log line",
 					zap.Error(err))
 				continue
 			}
 			processedCount++
+			if live && entry.timestamp.After(r.lastTimestamp) {
+				r.lastTimestamp = entry.timestamp
+			}
 		}
 	}
 
@@ -235,9 +251,13 @@ func (r *unifiedLoggingReceiver) buildLogCommandArgs(archivePath string) []strin
 	}
 
 	// Add start time
-	if r.config.StartTime != "" {
+	switch {
+	case archivePath == "" && !r.lastTimestamp.IsZero():
+		// For live mode, resume from the newest record emitted by the previous poll
+		args = append(args, "--start", r.lastTimestamp.Local().Format("2006-01-02 15:04:05"))
+	case r.config.StartTime != "":
 		args = append(args, "--start", r.config.StartTime)
-	} else if r.config.MaxLogAge > 0 && archivePath == "" {
+	case r.config.MaxLogAge > 0 && archivePath == "":
 		// For live mode, calculate start time from max_log_age
 		startTime := time.Now().Add(-r.config.MaxLogAge)
 		args = append(args, "--start", startTime.Format("2006-01-02 15:04:05"))
@@ -256,8 +276,48 @@ func (r *unifiedLoggingReceiver) buildLogCommandArgs(archivePath string) []strin
 	return args
 }
 
-// processLogLine processes a log line and sends it to the consumer
-func (r *unifiedLoggingReceiver) processLogLine(ctx context.Context, line []byte) error {
+// logEntry holds the fields parsed from a single log line
+type logEntry struct {
+	timestamp   time.Time
+	messageType string
+}
+
+// parseLogLine extracts the timestamp and message type from a log line
+// The timestamp comes from the "timestamp" field for JSON formats and from the leading
+// timestamp column for text formats; it is zero when the line does not carry one
+func (r *unifiedLoggingReceiver) parseLogLine(line []byte) logEntry {
+	var entry logEntry
+	if r.config.Format == "ndjson" || r.config.Format == "json" {
+		var fields map[string]any
+		if err := json.Unmarshal(line, &fields); err != nil {
+			return entry
+		}
+		if ts, ok := fields["timestamp"].(string); ok {
+			if t, err := time.Parse("2006-01-02 15:04:05.000000-0700", ts); err == nil {
+				entry.timestamp = t
+			}
+		}
+		if msgType, ok := fields["messageType"].(string); ok {
+			entry.messageType = msgType
+		}
+		return entry
+	}
+
+	// default and syslog lines start with "2006-01-02 15:04:05.000000-0700 ", compact lines with "2006-01-02 15:04:05.000 "
+	for _, layout := range []string{"2006-01-02 15:04:05.000000-0700", "2006-01-02 15:04:05.000"} {
+		if len(line) <= len(layout) || line[len(layout)] != ' ' {
+			continue
+		}
+		if t, err := time.ParseInLocation(layout, string(line[:len(layout)]), time.Local); err == nil {
+			entry.timestamp = t
+			break
+		}
+	}
+	return entry
+}
+
+// processLogLine sends a log line to the consumer using the fields parsed from it
+func (r *unifiedLoggingReceiver) processLogLine(ctx context.Context, line []byte, entry logEntry) error {
 	// Convert to OTel plog
 	logs := plog.NewLogs()
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
@@ -268,23 +328,14 @@ func (r *unifiedLoggingReceiver) processLogLine(ctx context.Context, line []byte
 	logRecord.Body().SetStr(string(line))
 	logRecord.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
-	// Parse timestamp and severity when using JSON formats
-	if r.config.Format == "ndjson" || r.config.Format == "json" {
-		var logEntry map[string]any
-		if err := json.Unmarshal(line, &logEntry); err == nil {
-			// Parse and set timestamp
-			if ts, ok := logEntry["timestamp"].(string); ok {
-				if t, err := time.Parse("2006-01-02 15:04:05.000000-0700", ts); err == nil {
-					logRecord.SetTimestamp(pcommon.NewTimestampFromTime(t))
-				}
-			}
+	if !entry.timestamp.IsZero() {
+		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(entry.timestamp))
+	}
 
-			// Set severity from messageType
-			if msgType, ok := logEntry["messageType"].(string); ok {
-				logRecord.SetSeverityText(msgType)
-				logRecord.SetSeverityNumber(mapMessageTypeToSeverity(msgType))
-			}
-		}
+	// Set severity from messageType
+	if entry.messageType != "" {
+		logRecord.SetSeverityText(entry.messageType)
+		logRecord.SetSeverityNumber(mapMessageTypeToSeverity(entry.messageType))
 	}
 
 	// Send to consumer

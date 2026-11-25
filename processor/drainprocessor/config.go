@@ -137,6 +137,15 @@ func (cfg *Config) Validate() error {
 	if cfg.MergeThreshold < 0.0 || cfg.MergeThreshold > 1.0 {
 		return fmt.Errorf("merge_threshold must be in [0.0, 1.0], got %f", cfg.MergeThreshold)
 	}
+	if cfg.MaxNodeChildren <= 0 {
+		return fmt.Errorf("max_node_children must be > 0, got %d", cfg.MaxNodeChildren)
+	}
+	if cfg.MaxClusters < 0 {
+		return fmt.Errorf("max_clusters must be >= 0, got %d", cfg.MaxClusters)
+	}
+	if cfg.TemplateAttribute == "" {
+		return errors.New("template_attribute must not be empty")
+	}
 	if cfg.WarmupMinClusters < 0 {
 		return fmt.Errorf("warmup_min_clusters must be >= 0, got %d", cfg.WarmupMinClusters)
 	}
@@ -145,6 +154,12 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.SaveInterval > 0 && cfg.Storage == nil {
 		return errors.New("save_interval requires storage to be set")
+	}
+	if cfg.EmitWildcards && cfg.WildcardsAttribute == "" {
+		return errors.New("wildcards_attribute must not be empty when emit_wildcards is true")
+	}
+	if len(cfg.MaskingRules) > 0 && cfg.ParameterKeyPrefix == "" {
+		return errors.New("parameter_key_prefix must not be empty when masking_rules are configured")
 	}
 	for i, r := range cfg.MaskingRules {
 		if err := validateMaskingRule(r); err != nil {

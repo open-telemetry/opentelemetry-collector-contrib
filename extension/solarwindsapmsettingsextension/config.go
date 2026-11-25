@@ -10,12 +10,13 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 type Config struct {
-	Endpoint string        `mapstructure:"endpoint"`
-	Key      string        `mapstructure:"key"`
-	Interval time.Duration `mapstructure:"interval"`
+	Endpoint string              `mapstructure:"endpoint"`
+	Key      configopaque.String `mapstructure:"key"`
+	Interval time.Duration       `mapstructure:"interval"`
 }
 
 const (
@@ -40,14 +41,14 @@ func (cfg *Config) Validate() error {
 		cfg.Endpoint = DefaultEndpoint
 	}
 	// Key
-	keyArr := strings.Split(cfg.Key, ":")
+	keyArr := strings.Split(string(cfg.Key), ":")
 	if len(keyArr) == 2 && keyArr[1] == "" {
 		/**
 		 * Service name is empty. We are trying our best effort to resolve the service name
 		 */
 		serviceName := resolveServiceNameBestEffort()
 		if serviceName != "" {
-			cfg.Key = keyArr[0] + ":" + serviceName
+			cfg.Key = configopaque.String(keyArr[0] + ":" + serviceName)
 		}
 	}
 	// Interval

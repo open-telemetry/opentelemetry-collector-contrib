@@ -31,6 +31,9 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -290,7 +293,7 @@ func TestNewProcessor(t *testing.T) {
 }
 
 func TestProcessorBadClientProvider(t *testing.T) {
-	clientProvider := func(_ component.TelemetrySettings, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformersFactoryList, _ bool, _, _, _ time.Duration) (kube.Client, error) {
+	clientProvider := func(_ component.TelemetrySettings, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformersFactoryList, _ bool, _, _, _ time.Duration, _ kube.KubeletConfig) (kube.Client, error) {
 		return nil, errors.New("bad client error")
 	}
 
@@ -362,6 +365,12 @@ func withHostname(hostname string) generateResourceFunc {
 func withPodUID(uid string) generateResourceFunc {
 	return func(res pcommon.Resource) {
 		res.Attributes().PutStr("k8s.pod.uid", uid)
+	}
+}
+
+func withHPAUID(uid string) generateResourceFunc {
+	return func(res pcommon.Resource) {
+		res.Attributes().PutStr("k8s.hpa.uid", uid)
 	}
 }
 
@@ -903,6 +912,58 @@ func TestAddNamespaceLabels(t *testing.T) {
 		assert.Equal(t, 2, res.Attributes().Len())
 		assertResourceHasStringAttribute(t, res, "nslabel", "1")
 		assertResourceHasStringAttribute(t, res, "service.namespace", "namespace-1")
+	})
+}
+
+func TestAddHPALabelsAnnotationsWithoutPodIdentifier(t *testing.T) {
+	m := newMultiTest(
+		t,
+		func() component.Config {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Extract.Metadata = []string{}
+			cfg.Extract.Labels = []FieldExtractConfig{
+				{From: kube.MetadataFromHPA, Key: "team"},
+			}
+			cfg.Extract.Annotations = []FieldExtractConfig{
+				{From: kube.MetadataFromHPA, Key: "owner"},
+			}
+			return cfg
+		}(),
+		nil,
+	)
+
+	hpaUID := "hpa-abc"
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		kp.kc.(*fakeClient).HPAs = map[string]*kube.HPA{
+			hpaUID: {
+				Name: "test-hpa",
+				UID:  hpaUID,
+				Attributes: map[string]string{
+					"k8s.hpa.label.team":       "checkout",
+					"k8s.hpa.annotation.owner": "sre",
+				},
+			},
+		}
+	})
+
+	m.testConsume(
+		t.Context(),
+		generateTraces(withHPAUID(hpaUID)),
+		generateMetrics(withHPAUID(hpaUID)),
+		generateLogs(withHPAUID(hpaUID)),
+		generateProfiles(withHPAUID(hpaUID)),
+		func(err error) {
+			assert.NoError(t, err)
+		},
+	)
+
+	m.assertBatchesLen(1)
+	m.assertResourceObjectLen(0)
+	m.assertResource(0, func(res pcommon.Resource) {
+		assert.Equal(t, 3, res.Attributes().Len())
+		assertResourceHasStringAttribute(t, res, "k8s.hpa.uid", hpaUID)
+		assertResourceHasStringAttribute(t, res, "k8s.hpa.label.team", "checkout")
+		assertResourceHasStringAttribute(t, res, "k8s.hpa.annotation.owner", "sre")
 	})
 }
 
@@ -2510,6 +2571,33 @@ func TestGetAttributesForPodsCronJob(t *testing.T) {
 	assert.Nil(t, attrs)
 }
 
+func TestGetAttributesForHPA(t *testing.T) {
+	kc := &fakeClient{
+		HPAs: map[string]*kube.HPA{
+			"hpa-abc": {
+				Name: "test-hpa",
+				UID:  "hpa-abc",
+				Attributes: map[string]string{
+					"k8s.hpa.label.team": "checkout",
+				},
+			},
+		},
+	}
+
+	p := &kubernetesprocessor{
+		kc: kc,
+	}
+
+	// Test getting attributes for existing hpa
+	attrs := p.getAttributesForHPA("hpa-abc")
+	assert.NotNil(t, attrs)
+	assert.Equal(t, "checkout", attrs["k8s.hpa.label.team"])
+
+	// Test getting attributes for non-existent hpa
+	attrs = p.getAttributesForHPA("non-existent")
+	assert.Nil(t, attrs)
+}
+
 // newTracesProcessorWithSettings is like newTracesProcessor but uses caller-supplied settings,
 // allowing tests to inject a telemetry-capturing componenttest.Telemetry.
 func newTracesProcessorWithSettings(set processor.Settings, cfg component.Config, next consumer.Traces, options ...option) (processor.Traces, error) {
@@ -2630,4 +2718,124 @@ func TestPodAssociationMetricSignalAttribute(t *testing.T) {
 			Attributes: attribute.NewSet(attribute.String("status", "success"), attribute.String("pod_identifier", "resource_attribute/k8s.pod.uid"), attribute.String("otelcol.signal", "traces")),
 		},
 	}, metricdatatest.IgnoreTimestamp())
+}
+
+// setSemconvGates flips both semantic convention feature gates together and
+// restores their previous values when the test finishes. The two gates must be
+// set as a pair: enabling DontEmitV0K8sConventions without
+// EmitV1K8sConventions makes Start fail.
+func setSemconvGates(t *testing.T, enabled bool) {
+	t.Helper()
+	reg := featuregate.GlobalRegistry()
+	emitV1 := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate
+	dontEmitV0 := metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate
+
+	prevEmitV1, prevDontEmitV0 := emitV1.IsEnabled(), dontEmitV0.IsEnabled()
+	require.NoError(t, reg.Set(emitV1.ID(), enabled))
+	require.NoError(t, reg.Set(dontEmitV0.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, reg.Set(emitV1.ID(), prevEmitV1))
+		require.NoError(t, reg.Set(dontEmitV0.ID(), prevDontEmitV0))
+	})
+}
+
+func TestStartLogsSemconvDeprecationWarnings(t *testing.T) {
+	const (
+		legacyTagBlocked      = "container.image.tag is configured but will NOT be emitted"
+		legacyTagRenamed      = "container.image.tag is being renamed to container.image.tags"
+		podLabelsRenamed      = "Pod label extraction attributes are being renamed"
+		podAnnotationsRenamed = "Pod annotation extraction attributes are being renamed"
+	)
+
+	tests := []struct {
+		name string
+		// gatesEnabled reflects the state of both semconv gates. They default to
+		// enabled, which is what a user of a recent release gets.
+		gatesEnabled bool
+		extract      ExtractConfig
+		wantWarnings []string
+	}{
+		{
+			name:         "legacy image tag is silently dropped when gates are enabled",
+			gatesEnabled: true,
+			extract:      ExtractConfig{Metadata: []string{"container.image.tag"}},
+			wantWarnings: []string{legacyTagBlocked},
+		},
+		{
+			name:         "legacy image tag still emitted when gates are disabled",
+			gatesEnabled: false,
+			extract:      ExtractConfig{Metadata: []string{"container.image.tag"}},
+			wantWarnings: []string{legacyTagRenamed},
+		},
+		{
+			name:         "pod labels when gates are disabled",
+			gatesEnabled: false,
+			extract: ExtractConfig{
+				Metadata: []string{"k8s.pod.name"},
+				Labels:   []FieldExtractConfig{{TagName: "l", Key: "app"}},
+			},
+			wantWarnings: []string{podLabelsRenamed},
+		},
+		{
+			name:         "pod annotations when gates are disabled",
+			gatesEnabled: false,
+			extract: ExtractConfig{
+				Metadata:    []string{"k8s.pod.name"},
+				Annotations: []FieldExtractConfig{{TagName: "a", Key: "note"}},
+			},
+			wantWarnings: []string{podAnnotationsRenamed},
+		},
+		{
+			name:         "legacy image tag and pod labels when gates are disabled",
+			gatesEnabled: false,
+			extract: ExtractConfig{
+				Metadata: []string{"container.image.tag"},
+				Labels:   []FieldExtractConfig{{TagName: "l", Key: "app"}},
+			},
+			wantWarnings: []string{legacyTagRenamed, podLabelsRenamed},
+		},
+		{
+			name:         "pod labels and annotations are not reported when gates are enabled",
+			gatesEnabled: true,
+			extract: ExtractConfig{
+				Metadata:    []string{"k8s.pod.name"},
+				Labels:      []FieldExtractConfig{{TagName: "l", Key: "app"}},
+				Annotations: []FieldExtractConfig{{TagName: "a", Key: "note"}},
+			},
+		},
+		{
+			name:         "stable image tags are not reported",
+			gatesEnabled: true,
+			extract:      ExtractConfig{Metadata: []string{"container.image.tags"}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setSemconvGates(t, tt.gatesEnabled)
+
+			core, observed := observer.New(zapcore.WarnLevel)
+			set := processortest.NewNopSettings(metadata.Type)
+			set.Logger = zap.New(core)
+
+			cfg := createDefaultConfig().(*Config)
+			cfg.Extract = tt.extract
+
+			p, err := createLogsProcessorWithOptions(
+				t.Context(), set, cfg, consumertest.NewNop(),
+				withKubeClientProvider(newFakeClient),
+			)
+			require.NoError(t, err)
+			require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+
+			assert.Equal(t, len(tt.wantWarnings), observed.Len(),
+				"unexpected warnings: %v", observed.All())
+			for _, want := range tt.wantWarnings {
+				assert.Equal(t, 1, observed.FilterMessageSnippet(want).Len(),
+					"expected a warning containing %q", want)
+			}
+
+			assert.NoError(t, p.Shutdown(t.Context()))
+		})
+	}
 }

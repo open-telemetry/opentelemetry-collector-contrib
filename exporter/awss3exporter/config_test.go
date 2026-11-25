@@ -12,8 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.uber.org/multierr"
@@ -35,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 	encoding := component.MustNewIDWithName("foo", "bar")
 
-	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
+	queueCfg := configoptional.Some(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	backoffConfig := configretry.NewDefaultBackOffConfig()
@@ -129,7 +131,7 @@ func TestConfigS3StorageClass(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
-	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
+	queueCfg := configoptional.Some(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	assert.Equal(t, &Config{
@@ -167,7 +169,7 @@ func TestConfigS3ACL(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
-	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
+	queueCfg := configoptional.Some(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	assert.Equal(t, &Config{
@@ -206,7 +208,7 @@ func TestConfigS3ACLDefined(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
-	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
+	queueCfg := configoptional.Some(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	assert.Equal(t, &Config{
@@ -243,7 +245,7 @@ func TestConfigForS3CompatibleSystems(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
+	queueCfg := configoptional.Some(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
@@ -385,6 +387,49 @@ func TestConfig_Validate(t *testing.T) {
 			}(),
 			errExpected: errors.New("invalid StorageClass"),
 		},
+		{
+			name: "valid static credentials",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.S3Bucket = "mybucket"
+				c.S3Uploader.AccessKey = "access"
+				c.S3Uploader.SecretKey = "secret"
+				return c
+			}(),
+			errExpected: nil,
+		},
+		{
+			name: "access_key without secret_key",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.S3Bucket = "mybucket"
+				c.S3Uploader.AccessKey = "access"
+				return c
+			}(),
+			errExpected: errors.New("both access_key and secret_key must either be set together or left empty"),
+		},
+		{
+			name: "secret_key without access_key",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.S3Bucket = "mybucket"
+				c.S3Uploader.SecretKey = "secret"
+				return c
+			}(),
+			errExpected: errors.New("both access_key and secret_key must either be set together or left empty"),
+		},
+		{
+			name: "static credentials with role_arn",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.S3Bucket = "mybucket"
+				c.S3Uploader.AccessKey = "access"
+				c.S3Uploader.SecretKey = "secret"
+				c.S3Uploader.RoleArn = "arn:aws:iam::123456789012:role/my-role"
+				return c
+			}(),
+			errExpected: errors.New("cannot use both static credentials (access_key/secret_key) and role_arn"),
+		},
 	}
 
 	for _, tt := range tests {
@@ -393,6 +438,18 @@ func TestConfig_Validate(t *testing.T) {
 			require.Equal(t, tt.errExpected, err)
 		})
 	}
+}
+
+func TestStaticCredentialsRedacted(t *testing.T) {
+	c := createDefaultConfig().(*Config)
+	c.S3Uploader.AccessKey = "my-access-key"
+	c.S3Uploader.SecretKey = "my-secret-key"
+
+	conf := confmap.New()
+	require.NoError(t, conf.Marshal(c))
+
+	assert.Equal(t, "[REDACTED]", conf.Get("s3uploader::access_key"))
+	assert.Equal(t, "[REDACTED]", conf.Get("s3uploader::secret_key"))
 }
 
 func TestMarshallerName(t *testing.T) {
@@ -408,7 +465,7 @@ func TestMarshallerName(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
+	queueCfg := configoptional.Some(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
@@ -463,7 +520,7 @@ func TestCompressionName(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
+	queueCfg := configoptional.Some(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
@@ -527,6 +584,52 @@ func TestCompressionName(t *testing.T) {
 	)
 }
 
+func TestCompressionSettings(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name        string
+		compression string
+		settings    map[string]any
+		wantLevel   configcompression.Level
+		wantError   string
+	}{
+		{name: "default gzip", compression: "gzip", wantLevel: configcompression.DefaultCompressionLevel},
+		{name: "default zstd", compression: "zstd", wantLevel: 3},
+		{name: "default zlib", compression: "zlib", wantLevel: configcompression.DefaultCompressionLevel},
+		{name: "custom deflate", compression: "deflate", settings: map[string]any{"level": 1}, wantLevel: 1},
+		{name: "empty settings", compression: "gzip", settings: map[string]any{}, wantLevel: configcompression.DefaultCompressionLevel},
+		{name: "explicit zero", compression: "gzip", settings: map[string]any{"level": 0}, wantLevel: 0},
+		{name: "custom zstd", compression: "zstd", settings: map[string]any{"level": 6}, wantLevel: 6},
+		{name: "invalid gzip level", compression: "gzip", settings: map[string]any{"level": 10}, wantError: "unsupported parameters"},
+		{name: "level without compression", compression: "none", settings: map[string]any{"level": 0}, wantError: "compression_settings.level requires"},
+		{name: "level with lz4", compression: "lz4", settings: map[string]any{"level": 1}, wantError: "compression_settings.level requires"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			uploader := map[string]any{"s3_bucket": "foo", "compression": tc.compression}
+			if tc.settings != nil {
+				uploader["compression_settings"] = tc.settings
+			}
+			cfg := createDefaultConfig().(*Config)
+			require.NoError(t, confmap.NewFromStringMap(map[string]any{"s3uploader": uploader}).Unmarshal(cfg))
+			if tc.wantError != "" {
+				require.ErrorContains(t, cfg.Validate(), tc.wantError)
+				return
+			}
+			require.NoError(t, cfg.Validate())
+			assert.Equal(t, tc.wantLevel, cfg.S3Uploader.compressionParams().Level)
+
+			roundTrip := confmap.New()
+			require.NoError(t, roundTrip.Marshal(cfg))
+			decoded := createDefaultConfig().(*Config)
+			require.NoError(t, roundTrip.Unmarshal(decoded))
+			assert.Equal(t, tc.wantLevel, decoded.S3Uploader.compressionParams().Level)
+		})
+	}
+}
+
 func TestResourceAttrsToS3(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
 	assert.NoError(t, err)
@@ -540,7 +643,7 @@ func TestResourceAttrsToS3(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
+	queueCfg := configoptional.Some(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
@@ -582,7 +685,7 @@ func TestRetry(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
+	queueCfg := configoptional.Some(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
@@ -622,7 +725,7 @@ func TestConfigS3UniqueKeyFunc(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
-	queueCfg := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
+	queueCfg := configoptional.Some(exporterhelper.NewDefaultQueueConfig())
 	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
 
 	assert.Equal(t, &Config{

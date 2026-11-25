@@ -139,6 +139,130 @@ func createAndUseDatabase(ctx context.Context, conn *sql.DB, cfg *Config) error 
 	return err
 }
 
+const (
+	partitionsReadyPollInterval = time.Second
+	partitionsReadyTimeout      = 60 * time.Second
+)
+
+// waitForPartitionsReady polls SHOW PARTITIONS until the table has at least
+// `expected` partitions. Dynamic-partition tables create their initial set of
+// partitions asynchronously after CREATE TABLE returns; creating a
+// materialized view before that is finished can corrupt Doris state.
+func waitForPartitionsReady(ctx context.Context, conn *sql.DB, logger *zap.Logger, database, table string, expected int) error {
+	query := fmt.Sprintf("SHOW PARTITIONS FROM `%s`.`%s`", database, table)
+	deadline := time.Now().Add(partitionsReadyTimeout)
+
+	for {
+		count, err := countPartitions(ctx, conn, query)
+		if err == nil && count >= expected {
+			return nil
+		}
+		if err != nil {
+			logger.Warn("failed to show partitions, will retry",
+				zap.String("table", table), zap.Error(err))
+		} else {
+			logger.Debug("waiting for partitions to be ready",
+				zap.String("table", table),
+				zap.Int("got", count),
+				zap.Int("expected", expected))
+		}
+
+		if time.Now().After(deadline) {
+			return fmt.Errorf("timeout waiting for partitions of %s.%s (expected >= %d)", database, table, expected)
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(partitionsReadyPollInterval):
+		}
+	}
+}
+
+func countPartitions(ctx context.Context, conn *sql.DB, query string) (int, error) {
+	rows, err := conn.QueryContext(ctx, query)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	count := 0
+	for rows.Next() {
+		count++
+	}
+	return count, rows.Err()
+}
+
+const (
+	mvReadyPollInterval = time.Second
+	mvReadyTimeout      = 5 * time.Minute
+)
+
+// waitForMaterializedViewReady polls SHOW ALTER TABLE MATERIALIZED VIEW until the
+// named view on the table has finished building. Doris returns from CREATE
+// MATERIALIZED VIEW immediately and builds it in the background; a second view on
+// the same table can only be created once the first one is done.
+func waitForMaterializedViewReady(ctx context.Context, conn *sql.DB, logger *zap.Logger, database, table, view string) error {
+	query := fmt.Sprintf("SHOW ALTER TABLE MATERIALIZED VIEW FROM `%s` WHERE TableName = '%s'", database, table)
+	deadline := time.Now().Add(mvReadyTimeout)
+
+	for {
+		state, err := materializedViewState(ctx, conn, query, view)
+		switch {
+		case err != nil:
+			logger.Warn("failed to read materialized view state, will retry",
+				zap.String("view", view), zap.Error(err))
+		case state == "FINISHED" || state == "CANCELLED" || state == "":
+			// empty means the job list no longer mentions it, i.e. it finished earlier
+			return nil
+		default:
+			logger.Debug("waiting for materialized view",
+				zap.String("view", view), zap.String("state", state))
+		}
+
+		if time.Now().After(deadline) {
+			return fmt.Errorf("timeout waiting for materialized view %s on %s.%s", view, database, table)
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(mvReadyPollInterval):
+		}
+	}
+}
+
+func materializedViewState(ctx context.Context, conn *sql.DB, query, view string) (string, error) {
+	rows, err := conn.QueryContext(ctx, query)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return "", err
+	}
+
+	state := ""
+	for rows.Next() {
+		values := make([]sql.NullString, len(columns))
+		pointers := make([]any, len(columns))
+		for i := range values {
+			pointers[i] = &values[i]
+		}
+		if err := rows.Scan(pointers...); err != nil {
+			return "", err
+		}
+		row := make(map[string]string, len(columns))
+		for i, c := range columns {
+			row[c] = values[i].String
+		}
+		if row["RollupIndexName"] == view {
+			state = row["State"]
+		}
+	}
+	return state, rows.Err()
+}
+
 type metric interface {
 	dMetricGauge | dMetricSum | dMetricHistogram | dMetricExponentialHistogram | dMetricSummary
 }

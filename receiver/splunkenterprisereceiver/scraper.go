@@ -2166,7 +2166,9 @@ func (s *splunkScraper) getSearchEntries(sid string) (searchMetaEntries, error) 
 	return metaEntries, nil
 }
 
-// setSearchJobTTLById sets the SearchJob's TTL on the remote Splunk server to Timeout and returns a ControlResponse.
+// setSearchJobTTLByID sets the SearchJob's TTL on the remote Splunk server to the configured
+// Timeout. Splunk's setttl action expects a whole number of seconds, so the duration must be
+// converted; passing it directly would send its raw nanosecond representation.
 func (s *splunkScraper) setSearchJobTTLByID(sid string) error {
 	ept := fmt.Sprintf("/services/search/jobs/%s/control", sid)
 
@@ -2177,7 +2179,7 @@ func (s *splunkScraper) setSearchJobTTLByID(sid string) error {
 
 	form := url.Values{
 		"action": []string{"setttl"},
-		"ttl":    []string{fmt.Sprintf("%d", s.conf.ControllerConfig.Timeout)},
+		"ttl":    []string{strconv.Itoa(int(s.conf.ControllerConfig.Timeout.Seconds()))},
 	}
 	req.Body = io.NopCloser(strings.NewReader(form.Encode()))
 	req.Method = http.MethodPost
@@ -2186,16 +2188,19 @@ func (s *splunkScraper) setSearchJobTTLByID(sid string) error {
 	if err != nil {
 		return err
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			return err
 		}
-		defer res.Body.Close()
 
 		return fmt.Errorf("failed to set TTL for search: %s", body)
 	}
+
+	// Drain the body so the underlying connection can be reused.
+	_, _ = io.Copy(io.Discard, res.Body)
 
 	return nil
 }
@@ -2234,8 +2239,9 @@ func (s *splunkScraper) scrapeIndexerClusterManagerStatus(_ context.Context, now
 	for _, ic := range icms.Entries {
 		if ic.Content.RollingRestartOrUpgrade {
 			s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 1, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag, i.Build, i.Version)
+		} else {
+			s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 0, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag, i.Build, i.Version)
 		}
-		s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 0, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag, i.Build, i.Version)
 	}
 }
 

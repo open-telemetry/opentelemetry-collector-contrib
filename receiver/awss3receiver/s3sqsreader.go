@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/url"
 	"strings"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	sqstypes "github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	"go.uber.org/zap"
 )
 
@@ -66,6 +68,7 @@ type s3SQSNotificationReader struct {
 	s3Prefix                   string
 	maxNumberOfMessages        int32
 	waitTimeSeconds            int32
+	visibilityTimeoutSeconds   int32
 	tagObjectAfterIngestion    bool
 	skipIngestingTaggedObjects bool
 }
@@ -96,6 +99,11 @@ func newS3SQSReader(ctx context.Context, logger *zap.Logger, cfg *Config) (*s3SQ
 		waitTime = int32(*cfg.SQS.WaitTimeSeconds)
 	}
 
+	var visibilityTimeout int32
+	if cfg.SQS.VisibilityTimeoutSeconds != nil {
+		visibilityTimeout = int32(*cfg.SQS.VisibilityTimeoutSeconds)
+	}
+
 	return &s3SQSNotificationReader{
 		logger:                     logger,
 		s3Client:                   singleObjectClient,
@@ -105,6 +113,7 @@ func newS3SQSReader(ctx context.Context, logger *zap.Logger, cfg *Config) (*s3SQ
 		s3Prefix:                   cfg.S3Downloader.S3Prefix,
 		maxNumberOfMessages:        maxMessages,
 		waitTimeSeconds:            waitTime,
+		visibilityTimeoutSeconds:   visibilityTimeout,
 		tagObjectAfterIngestion:    cfg.S3Downloader.TagObjectAfterIngestion,
 		skipIngestingTaggedObjects: cfg.S3Downloader.SkipIngestingTaggedObjects,
 	}, nil
@@ -125,10 +134,12 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 			return ctx.Err()
 		default:
 			r.logger.Debug("Waiting for messages from SQS")
+			receivedAt := time.Now()
 			result, err := r.sqsClient.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
 				QueueUrl:            aws.String(r.queueURL),
 				MaxNumberOfMessages: r.maxNumberOfMessages,
 				WaitTimeSeconds:     r.waitTimeSeconds,
+				VisibilityTimeout:   r.visibilityTimeoutSeconds,
 			})
 			if err != nil {
 				if ctx.Err() != nil {
@@ -142,150 +153,170 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 			r.logger.Debug("Received messages from SQS",
 				zap.Int("messageCount", len(result.Messages)))
 
-			for _, message := range result.Messages {
-				var s3Event s3EventNotification
-				messageBody := *message.Body
+			r.processMessages(ctx, result.Messages, receivedAt, callback)
+		}
+	}
+}
 
-				// First try to parse as direct S3 event notification
-				if err = json.Unmarshal([]byte(messageBody), &s3Event); err != nil || (len(s3Event.Records) == 0 && s3Event.Event != "s3:TestEvent") {
-					// If direct parsing failed, try to extract from SNS notification format
-					r.logger.Debug("Direct parsing as S3 event failed, trying SNS format", zap.Error(err))
+func (r *s3SQSNotificationReader) processMessages(ctx context.Context, messages []sqstypes.Message, receivedAt time.Time, callback s3ObjectCallback) {
+	type messageVisibility struct {
+		ctx    context.Context
+		finish func() error
+	}
+	visibility := make([]messageVisibility, len(messages))
+	for i, message := range messages {
+		visibility[i].ctx, visibility[i].finish = r.startVisibilityRenewal(ctx, message, receivedAt)
+		defer func() { _ = visibility[i].finish() }()
+	}
+	for i, message := range messages {
+		success := r.processMessage(visibility[i].ctx, message, callback)
+		renewalErr := visibility[i].finish()
+		if success && renewalErr == nil && ctx.Err() == nil {
+			_, err := r.sqsClient.DeleteMessage(ctx, &sqs.DeleteMessageInput{
+				QueueUrl: aws.String(r.queueURL), ReceiptHandle: message.ReceiptHandle,
+			})
+			if err != nil {
+				r.logger.Warn("Failed to delete message from SQS queue", zap.Error(err))
+			}
+		} else {
+			r.logger.Warn("Message not deleted due to processing failures, will be retried after visibility timeout",
+				zap.String("receiptHandle", aws.ToString(message.ReceiptHandle)), zap.Error(renewalErr))
+		}
+	}
+}
 
-					var snsMsg snsMessage
+func (r *s3SQSNotificationReader) processMessage(ctx context.Context, message sqstypes.Message, callback s3ObjectCallback) bool {
+	if ctx.Err() != nil {
+		return false
+	}
+	var err error
+	var s3Event s3EventNotification
+	messageBody := *message.Body
 
-					if err = json.Unmarshal([]byte(messageBody), &snsMsg); err != nil {
-						r.logger.Warn("Failed to parse message as SNS notification", zap.Error(err))
-						continue
-					}
+	// First try to parse as direct S3 event notification
+	if err = json.Unmarshal([]byte(messageBody), &s3Event); err != nil || (len(s3Event.Records) == 0 && s3Event.Event != "s3:TestEvent") {
+		// If direct parsing failed, try to extract from SNS notification format
+		r.logger.Debug("Direct parsing as S3 event failed, trying SNS format", zap.Error(err))
 
-					if snsMsg.Type != "Notification" {
-						r.logger.Warn("Message is not a valid S3 notification", zap.String("type", snsMsg.Type))
-						continue
-					}
+		var snsMsg snsMessage
 
-					if err = json.Unmarshal([]byte(snsMsg.Message), &s3Event); err != nil {
-						r.logger.Warn("Failed to parse S3 event from SNS message", zap.Error(err))
-						continue
-					}
-				}
+		if err = json.Unmarshal([]byte(messageBody), &snsMsg); err != nil {
+			r.logger.Warn("Failed to parse message as SNS notification", zap.Error(err))
+			return false
+		}
 
-				// Track whether all records were successfully processed.
-				// Only delete the message if all records succeed to prevent data loss.
-				allRecordsSucceeded := true
+		if snsMsg.Type != "Notification" {
+			r.logger.Warn("Message is not a valid S3 notification", zap.String("type", snsMsg.Type))
+			return false
+		}
 
-				// Process each S3 object notification
-				for _, record := range s3Event.Records {
-					if record.EventSource != "aws:s3" || !strings.HasPrefix(record.EventName, "ObjectCreated:") {
-						continue
-					}
-					bucket := record.S3.Bucket.Name
-					key := record.S3.Object.Key
+		if err = json.Unmarshal([]byte(snsMsg.Message), &s3Event); err != nil {
+			r.logger.Warn("Failed to parse S3 event from SNS message", zap.Error(err))
+			return false
+		}
+	}
 
-					// Decode the URL-encoded S3 key
-					decodedKey, decodeErr := url.QueryUnescape(key)
-					if decodeErr != nil {
-						r.logger.Warn("Failed to decode S3 object key, using original", zap.String("key", key), zap.Error(decodeErr))
-						decodedKey = key
-					}
+	// Track whether all records were successfully processed.
+	// Only delete the message if all records succeed to prevent data loss.
+	allRecordsSucceeded := true
 
-					if bucket != r.s3Bucket {
-						r.logger.Debug("Skipping object from different bucket",
-							zap.String("bucket", bucket),
-							zap.String("targetBucket", r.s3Bucket))
-						continue
-					}
+	// Process each S3 object notification
+	for _, record := range s3Event.Records {
+		if record.EventSource != "aws:s3" || !strings.HasPrefix(record.EventName, "ObjectCreated:") {
+			continue
+		}
+		bucket := record.S3.Bucket.Name
+		key := record.S3.Object.Key
 
-					if r.s3Prefix != "" && !strings.HasPrefix(decodedKey, r.s3Prefix) {
-						r.logger.Debug("Skipping object not matching prefix",
-							zap.String("key", decodedKey),
-							zap.String("prefix", r.s3Prefix))
-						continue
-					}
+		// Decode the URL-encoded S3 key
+		decodedKey, decodeErr := url.QueryUnescape(key)
+		if decodeErr != nil {
+			r.logger.Warn("Failed to decode S3 object key, using original", zap.String("key", key), zap.Error(decodeErr))
+			decodedKey = key
+		}
 
-					r.logger.Info("Processing new S3 object",
+		if bucket != r.s3Bucket {
+			r.logger.Debug("Skipping object from different bucket",
+				zap.String("bucket", bucket),
+				zap.String("targetBucket", r.s3Bucket))
+			continue
+		}
+
+		if r.s3Prefix != "" && !strings.HasPrefix(decodedKey, r.s3Prefix) {
+			r.logger.Debug("Skipping object not matching prefix",
+				zap.String("key", decodedKey),
+				zap.String("prefix", r.s3Prefix))
+			continue
+		}
+
+		r.logger.Info("Processing new S3 object",
+			zap.String("bucket", bucket),
+			zap.String("key", decodedKey))
+
+		if r.skipIngestingTaggedObjects {
+			var hasTag bool
+			hasTag, err = hasIngestedTag(ctx, r.s3Client, bucket, decodedKey)
+			if err != nil {
+				if _, ok := errors.AsType[*types.NoSuchKey](err); ok {
+					// Swallow no such key errors as nothing more can be done
+					r.logger.Warn("Object does not exist",
 						zap.String("bucket", bucket),
 						zap.String("key", decodedKey))
-
-					if r.skipIngestingTaggedObjects {
-						var hasTag bool
-						hasTag, err = hasIngestedTag(ctx, r.s3Client, bucket, decodedKey)
-						if err != nil {
-							if _, ok := errors.AsType[*types.NoSuchKey](err); ok {
-								// Swallow no such key errors as nothing more can be done
-								r.logger.Warn("Object does not exist",
-									zap.String("bucket", bucket),
-									zap.String("key", decodedKey))
-							} else {
-								r.logger.Error("Failed to check object tags",
-									zap.String("bucket", bucket),
-									zap.String("key", decodedKey),
-									zap.Error(err))
-								allRecordsSucceeded = false
-							}
-							continue
-						} else if hasTag {
-							r.logger.Info("Skipping already ingested object",
-								zap.String("bucket", bucket),
-								zap.String("key", decodedKey))
-							continue
-						}
-					}
-
-					var content []byte
-					content, err = retrieveS3Object(ctx, r.s3Client, bucket, decodedKey)
-					if err != nil {
-						r.logger.Warn("Failed to get S3 object",
-							zap.String("bucket", bucket),
-							zap.String("key", decodedKey),
-							zap.Error(err))
-
-						if _, ok := errors.AsType[*types.NoSuchKey](err); !ok {
-							// Swallow no such key errors as nothing more can be done
-							allRecordsSucceeded = false
-						}
-						continue
-					}
-
-					err = callback(ctx, decodedKey, content)
-					if err != nil {
-						r.logger.Error("Failed to process S3 object content",
-							zap.String("key", decodedKey),
-							zap.Error(err))
-						allRecordsSucceeded = false
-						continue
-					}
-
-					if r.tagObjectAfterIngestion {
-						err = tagS3Object(ctx, r.s3Client, bucket, decodedKey)
-						if err != nil {
-							r.logger.Warn("Failed to tag S3 object",
-								zap.String("bucket", bucket),
-								zap.String("key", decodedKey),
-								zap.Error(err))
-							// Don't mark as failed as the object was processed successfully
-						} else {
-							r.logger.Debug("Tagged S3 object",
-								zap.String("bucket", bucket),
-								zap.String("key", decodedKey))
-						}
-					}
-				}
-
-				// Only delete the message if all records were successfully processed.
-				// If any record failed, leave the message in the queue for retry.
-				if allRecordsSucceeded {
-					_, err = r.sqsClient.DeleteMessage(ctx, &sqs.DeleteMessageInput{
-						QueueUrl:      aws.String(r.queueURL),
-						ReceiptHandle: message.ReceiptHandle,
-					})
-					if err != nil {
-						r.logger.Warn("Failed to delete message from SQS queue", zap.Error(err))
-					}
 				} else {
-					r.logger.Warn("Message not deleted due to processing failures, will be retried after visibility timeout",
-						zap.String("receiptHandle", *message.ReceiptHandle))
+					r.logger.Error("Failed to check object tags",
+						zap.String("bucket", bucket),
+						zap.String("key", decodedKey),
+						zap.Error(err))
+					allRecordsSucceeded = false
 				}
+				continue
+			} else if hasTag {
+				r.logger.Info("Skipping already ingested object",
+					zap.String("bucket", bucket),
+					zap.String("key", decodedKey))
+				continue
+			}
+		}
+
+		var content io.ReadCloser
+		content, err = retrieveS3Object(ctx, r.s3Client, bucket, decodedKey)
+		if err != nil {
+			r.logger.Warn("Failed to get S3 object",
+				zap.String("bucket", bucket),
+				zap.String("key", decodedKey),
+				zap.Error(err))
+
+			if _, ok := errors.AsType[*types.NoSuchKey](err); !ok {
+				// Swallow no such key errors as nothing more can be done
+				allRecordsSucceeded = false
+			}
+			continue
+		}
+
+		err = processS3Object(ctx, decodedKey, content, callback)
+		if err != nil {
+			r.logger.Error("Failed to process S3 object content",
+				zap.String("key", decodedKey),
+				zap.Error(err))
+			allRecordsSucceeded = false
+			continue
+		}
+
+		if r.tagObjectAfterIngestion {
+			err = tagS3Object(ctx, r.s3Client, bucket, decodedKey)
+			if err != nil {
+				r.logger.Warn("Failed to tag S3 object",
+					zap.String("bucket", bucket),
+					zap.String("key", decodedKey),
+					zap.Error(err))
+				// Don't mark as failed as the object was processed successfully
+			} else {
+				r.logger.Debug("Tagged S3 object",
+					zap.String("bucket", bucket),
+					zap.String("key", decodedKey))
 			}
 		}
 	}
+
+	return allRecordsSucceeded && ctx.Err() == nil
 }

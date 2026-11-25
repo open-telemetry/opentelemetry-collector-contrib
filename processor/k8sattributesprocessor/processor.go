@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.42.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.45.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -48,6 +48,7 @@ type kubernetesprocessor struct {
 	waitForMetadataTimeout time.Duration
 	watchSyncPeriod        time.Duration
 	podDeleteGracePeriod   time.Duration
+	kubelet                kube.KubeletConfig
 }
 
 func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, kubeClient kube.ClientProvider) error {
@@ -55,7 +56,7 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, kube.InformersFactoryList{}, kp.waitForMetadata, kp.waitForMetadataTimeout, kp.watchSyncPeriod, kp.podDeleteGracePeriod)
+		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, kube.InformersFactoryList{}, kp.waitForMetadata, kp.waitForMetadataTimeout, kp.watchSyncPeriod, kp.podDeleteGracePeriod, kp.kubelet)
 		if err != nil {
 			return err
 		}
@@ -70,6 +71,16 @@ func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) err
 		kp.logger.Error("Invalid feature gate combination", zap.Error(err))
 		componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		return err
+	}
+
+	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
+
+	for _, opt := range allOptions {
+		if err := opt(kp); err != nil {
+			kp.logger.Error("Could not apply option", zap.Error(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
+			return err
+		}
 	}
 
 	if kp.rules.ContainerImageTag {
@@ -106,16 +117,6 @@ func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) err
 					"processor.k8sattributes.DontEmitV0K8sConventions feature gates. " +
 					"See processor README section 'Semantic Conventions Compatibility' for details.",
 			)
-		}
-	}
-
-	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
-
-	for _, opt := range allOptions {
-		if err := opt(kp); err != nil {
-			kp.logger.Error("Could not apply option", zap.Error(err))
-			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
-			return err
 		}
 	}
 
@@ -310,6 +311,14 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			setResourceAttribute(resource.Attributes(), key, val)
 		}
 	}
+
+	hpa := getHPAUID(resource.Attributes())
+	if hpa != "" {
+		attrsToAdd := kp.getAttributesForHPA(hpa)
+		for key, val := range attrsToAdd {
+			setResourceAttribute(resource.Attributes(), key, val)
+		}
+	}
 }
 
 func setResourceAttribute(attributes pcommon.Map, key, val string) {
@@ -373,6 +382,13 @@ func getCronJobUID(pod *kube.Pod, resAttrs pcommon.Map) string {
 		return pod.CronJobUID
 	}
 	return stringAttributeFromMap(resAttrs, string(conventions.K8SCronJobUIDKey))
+}
+
+// getHPAUID reads the HPA UID directly from the resource's own attributes. Unlike the other
+// workload types above, a HorizontalPodAutoscaler has no owning Pod to resolve it through: the
+// telemetry it enriches (emitted by the k8sclusterreceiver) already carries k8s.hpa.uid.
+func getHPAUID(resAttrs pcommon.Map) string {
+	return stringAttributeFromMap(resAttrs, string(conventions.K8SHPAUIDKey))
 }
 
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
@@ -523,6 +539,14 @@ func (kp *kubernetesprocessor) getAttributesForPodsCronJob(cronJobUID string) ma
 		return nil
 	}
 	return j.Attributes
+}
+
+func (kp *kubernetesprocessor) getAttributesForHPA(hpaUID string) map[string]string {
+	h, ok := kp.kc.GetHPA(hpaUID)
+	if !ok {
+		return nil
+	}
+	return h.Attributes
 }
 
 func (kp *kubernetesprocessor) getUIDForPodsNode(nodeName string) string {

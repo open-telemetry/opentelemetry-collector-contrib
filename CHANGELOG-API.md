@@ -7,6 +7,226 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.5.0/v0.166.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/azure_blob`: Change the type of the `auth.client_secret` and `auth.connection_string` options to `configopaque.String` so they are redacted when the configuration is printed. (#53192)
+- `exporter/pulsar`: Change the type of the `auth.oauth2.private_key` option to `configopaque.String` so it is redacted when the configuration is printed. (#53260)
+- `exporter/rabbitmq`: Change the type of the `connection.auth.plain.password` option to `configopaque.String` so it is redacted when the configuration is printed. (#53258)
+- `exporter/sematext`: Change the type of the `metrics.app_token` and `logs.app_token` options to `configopaque.String` so they are redacted when the configuration is printed, and stop including them in validation errors. (#53321)
+- `extension/azure_auth`: Change the type of `service_principal.client_secret` to `configopaque.String` so it is redacted when the configuration is printed. (#53193)
+- `extension/cfgarden_observer`: Change the type of the `cloud_foundry.auth` `password`, `access_token`, `refresh_token` and `client_secret` options to `configopaque.String` so they are redacted when the configuration is printed. (#53197)
+- `extension/db_storage`: Change the type of the `datasource` option to `configopaque.String` so it is redacted when the configuration is printed. (#53200)
+- `extension/headers_setter`: Change the type of the header `value` option to `configopaque.String` so it is redacted when the configuration is printed. (#53263)
+- `extension/solarwindsapmsettings`: Change the type of the `key` option to `configopaque.String` so it is redacted when the configuration is printed. (#53318)
+- `processor/signing`: Change the type of the inline `private_key` and `hmac_key` options and the OpenBao `token` option to `configopaque.String` so they are redacted when the configuration is printed. (#53320)
+- `processor/transform`: Move `WithProfileFunctions` and `DefaultProfileFunctions` to the new `processor/transformprocessor/xtransformprocessor` module. (#52564)
+- `processor/verify`: Change the type of the inline `hmac_key` option to `configopaque.String` so it is redacted when the configuration is printed. (#53314)
+- `receiver/aws_s3`: Limit decompressed objects buffered by non-streaming decoders with s3downloader.max_unmarshal_size. (#53137)
+  The default limit is 256 MiB; increase s3downloader.max_unmarshal_size for larger objects. Streaming decoders are not subject to this limit.
+- `receiver/azure_blob`: Change the type of the `connection_string` and `event_hub.endpoint` options to `configopaque.String` so they are redacted when the configuration is printed. (#53196)
+- `receiver/azure_event_hub`: Change the type of the `connection` and blob checkpoint store `connection` options to `configopaque.String` so they are redacted when the configuration is printed. (#53195)
+- `receiver/azure_monitor`: Change the type of the `client_secret` option to `configopaque.String` so it is redacted when the configuration is printed. (#53194)
+- `receiver/cloudflare`: Change the type of the `logs.secret` option to `configopaque.String` so it is redacted when the configuration is printed. (#53201)
+- `receiver/github`: Change the type of the webhook `secret` option to `configopaque.String` so it is redacted when the configuration is printed. (#53199)
+- `receiver/gitlab`: Change the type of the webhook `secret` option to `configopaque.String` so it is redacted when the configuration is printed. (#53198)
+- `receiver/huaweicloudcesreceiver`: Change the type of the `proxy_password` option to `configopaque.String` so it is redacted when the configuration is printed. (#53262)
+- `receiver/oracledb`: Change the type of the `datasource` and `password` options to `configopaque.String` so they are redacted when the configuration is printed. (#53261)
+- `receiver/pulsar`: Change the type of the `auth.oauth2.private_key` option to `configopaque.String` so it is redacted when the configuration is printed. (#53259)
+- `receiver/snmp`: Change the type of the `community` option to `configopaque.String` so it is redacted when the configuration is printed. (#53319)
+- `receiver/sql_query`: Change the type of the `datasource` option to `configopaque.String` so it is redacted when the configuration is printed. (#53317)
+- `receiver/sql_server`: Change the type of the `datasource` option to `configopaque.String` so it is redacted when the configuration is printed. (#53316)
+- `receiver/ssh_check`: Change the type of the `password` option to `configopaque.String` so it is redacted when the configuration is printed. (#53315)
+- `receiver/webhook_event`: Change the type of the `required_header.value` option to `configopaque.String` so it is redacted when the configuration is printed, and compare it in constant time. (#53313)
+- `receiver/windows_event_log`: Change the type of the `remote.password` option to `configopaque.String` so it is redacted when the configuration is printed. (#53312)
+
+### 🚀 New components 🚀
+
+- `pkg/xcompression`: This library is the initial design of improving compression usage throughout the collector. (#53293)
+
+### 💡 Enhancements 💡
+
+- `extension/oidc`: Add a provider-level jwks_url option to retrieve JWT verification keys without OpenID Connect discovery, with a five-minute cache lifetime. (#53168)
+- `processor/transform`: Export `ContextStatements` and `ContextID` from the `transformprocessor` package so the statement fields of a factory-created `Config` can be set in Go. (#52566)
+- `receiver/aws_s3`: Add optional SQS message visibility-timeout renewal with sqs.visibility_timeout_seconds. (#53139)
+- `scraper/hardware`: Add hardwarescraper -- adds Linux hardware temperature metrics from hwmon (#41269)
+
+### 🧰 Bug fixes 🧰
+
+- `exporter/prometheus_remote_write`: Drop explicit histogram data points without a sum instead of converting them to NHCB with a zero sum when `convert_explicit_histograms_to_nhcb` is enabled. (#53042)
+- `pkg/translator/prometheusremotewrite`: Drop exemplars on Gauges and non-monotonic Sums in FromMetricsV2 to align with the OpenTelemetry specification and FromMetrics. (#52941)
+- `pkg/translator/prometheusremotewrite`: Preserve the zero threshold when converting exponential histograms to Prometheus remote-write v1 and v2 native histograms. (#52834)
+- `pkg/translator/prometheusremotewrite`: Attach exemplars to classic histogram _bucket series in FromMetricsV2 to align with the OpenTelemetry specification and FromMetrics. (#52941)
+- `pkg/translator/prometheusremotewrite`: Align Exponential Histogram NoRecordedValue staleness marker with the specification. (#52939)
+  Exponential histogram staleness markers (`NoRecordedValue`) now leave `Count`, `ZeroCount`, and
+  bucket spans/deltas empty instead of setting `CountInt` to `value.StaleNaN` and populating
+  buckets.
+  
+- `pkg/translator/prometheusremotewrite`: Enforce trace_id and span_id precedence over colliding filtered_attributes on exemplars in FromMetrics. (#52941)
+
+<!-- previous-version -->
+
+## v1.4.0/v0.165.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Remove the deprecated SignalFx receiver. Use the OTLP receiver instead. (#51934)
+- `processor/resource_detection`: Change the type of the `openshift` detector `token` option to `configopaque.String` so it is redacted when the configuration is printed. (#52775)
+- `processor/transform`: Remove the deprecated `flatten_data` config option. Use `flatten.log` instead. (#32080)
+
+### 💡 Enhancements 💡
+
+- `extension/encoding`: Add optional message decoding interfaces with explicit client metadata options for all signals. (#51752)
+- `pkg/ottl/contexts/xspanlink`: Add `ottlspanlink` context, in the new experimental `xspanlink` module, exposing per-span-link fields (`trace_id`, `span_id`, `trace_state`, `attributes`, `dropped_attributes_count`, `flags`) for use in OTTL statements. (#26660)
+- `pkg/semconvtest`: Pin the default semantic-conventions registry to a release instead of floating on main (#52122)
+- `receiver/receiver_creator`: Improve extensibility of `receivercreator` rules by allowing use of custom `observer.EndpointDetails` "types" (#50548)
+  The `receivercreator` configuration validation no longer requires that the rule's `type == <endpoint_details>`
+  prefix match one of the `observer.EndpointDetails` "types" defined in this repository. Now it only enforces the syntax requirements.
+  The old enforcement didn't allow downstream distributions to create their own `observer.EndpointDetails` maps
+  making harder to developer new observers that could be used with the `receivercreator`.
+  
+
+<!-- previous-version -->
+
+## v1.3.1/v0.164.1
+
+<!-- previous-version -->
+
+## v1.3.0/v0.164.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/nats`: Move NATS connection settings and auth types to the shared `internal/natsclient` module. The YAML configuration is unchanged. (#50735)
+  `Config.Endpoint`, `Config.Pedantic`, `Config.TLS`, and `Config.Auth` are now under `Config.ClientConfig`. `AuthConfig`, `TokenConfig`, `UserConfig`, `NkeyConfig`, `NkeyJWTConfig`, and `NkeyUserFileConfig` moved to `internal/natsclient`.
+- `pkg/azurelogs`: Promote the `pkg.translator.azurelogs.EmitV1LogConventions` and `pkg.translator.azurelogs.DontEmitV0LogConventions` feature gates to beta. (#52096)
+  `code.function.name` and `code.file.path` are now emitted instead of `code.function` and `code.filepath` by default.
+  The gates no longer control the `event.name` resource attribute, which is always emitted.
+  
+- `pkg/ottl`: Remove the stable `ottl.set.allowNil` feature gate. (#48714)
+- `pkg/prometheus`: Promote the pkg.translator.prometheus.PermissiveLabelSanitization feature gate to stable and deprecate DropSanitizationGate. (#50429)
+  The gate can no longer be disabled and will be removed in v0.166.0.
+  
+- `pkg/prometheus`: Remove NormalizeLabel. Use github.com/prometheus/otlptranslator.LabelNamer.Build for label name translation instead. (#50429)
+
+### 🚩 Deprecations 🚩
+
+- `processor/transform`: Deprecate the `flatten_data` option in favor of the new `flatten.log` option. (#51766)
+  Replace `flatten_data: true` with `flatten: {log: true}`. `flatten_data` will be removed in a future release.
+
+### 💡 Enhancements 💡
+
+- `extension/datadog`: Add `NewFactoryWithOptions` so a host embedding the collector can supply extra Agent-config options, for example to propagate an API key rotation into the extension's forwarder. (#51877)
+- `extension/redis_storage`: Add `IncrementBy` and `BatchIncrementBy` for atomic integer counters shared across Collector instances. (#51567)
+
+### 🧰 Bug fixes 🧰
+
+- `exporter/prometheus_remote_write`: Drop exponential histogram data points without a sum instead of exporting a zero sum. (#52232)
+
+<!-- previous-version -->
+
+## v1.2.0/v0.163.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/ottl`: `FunctionContext` and the `Standard*Getter` structs can no longer be initialized with unkeyed struct literals. (#47305)
+- `pkg/ottl`: Move the experimental lambda expression Go API into the `pkg/ottl/xottl` module so it is excluded from OTTL's stability guarantees. (#51566)
+  `LambdaExpression`, `LambdaActivation`, and `NewTestingLambdaExpression` moved to
+  `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl`. `LocalIdentifierDecl` and
+  `LambdaExpression.Formals` were removed.
+  
+- `pkg/ottl`: Move the experimental `SliceGetter` API to the `xottl` module. (#51565)
+  `ottl.SliceGetter`, `ottl.GetLiteralValues`, `ottl.GetScalarLiteralValues`, and `ottl.NewTestingSliceGetter` are now in `xottl`.
+
+### 💡 Enhancements 💡
+
+- `connector/routing`: Create `With*Functions` factory options to allow custom OTTL functions registration. (#51709)
+- `pkg/ottl`: Improve OTTL parse error diagnostics by reporting the line and column of the input where available. (#51680)
+  Not all parse errors carry a position: errors that aggregate multiple statements, and some
+  inner errors that didn't already carry one, are still returned without one. The exact
+  wording and position of statement, condition, and value expression parse error messages
+  has changed as a result. The position is exposed programmatically via the new experimental
+  `xottl.Error` type.
+  
+- `pkg/ottl`: Add `WithCache` option to the `ottlotelcol` `TransformContext`. (#51652)
+- `pkg/pdatatest`: Add pmetricassert numeric comparison operators (#48470)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/ottl`: Preserve the distinction between nil and empty slices in the `xottl` `GetScalarLiteralValues` and `GetLiteralValues` helpers. (#51814)
+
+<!-- previous-version -->
+
+## v1.1.0/v0.162.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Remove the `pkg/pdatautil` module. Its hash helpers moved to `go.opentelemetry.io/collector/pdata/xpdata/xhash` in opentelemetry-collector. (#51108)
+  Replace imports of `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil`
+  (`Hash`, `Hash64`, `MapHash`, `ValueHash`, and the `With*` options) with
+  `go.opentelemetry.io/collector/pdata/xpdata/xhash`.
+  
+- `exporter/elasticsearch`: Remove the deprecated `flush` and `num_workers` configuration settings. (#42718)
+  Migrate `num_workers` to `sending_queue::num_consumers`, `flush::interval` to
+  `sending_queue::batch::flush_timeout`, and `flush::bytes` to
+  `sending_queue::batch::max_size` with `sending_queue::batch::sizer` set to `bytes`.
+  This also removes `Config.NumWorkers`, `Config.Flush`, and `FlushSettings` from
+  the exported Go API.
+  
+- `pkg/ottl`: Unexport the implementations of the standard OTTL functions (#50927)
+- `pkg/ottl`: Move profiles support into a separate `pkg/ottl/contexts/xprofile` module so it is excluded from OTTL's stability guarantees. (#50906)
+  The `ottlprofile` and `ottlprofilesample` contexts moved to
+  `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile`,
+  and the `ProfileID` converter and `NewProfileIDFactory` moved from `ottlfuncs` into that
+  module's `ottlfuncs` package. `ProfileID` is no longer part of `StandardFuncs` and
+  `StandardConverters`. Importers must update their import paths, depend on the new module,
+  and merge the profiles converters (for example via
+  `xprofilefuncs.WithProfileConverters`) to keep `ProfileID` available.
+  
+- `pkg/ottl`: Remove the unused `Strp`, `Floatp`, `Intp`, and `Boolp` helpers from the `ottltest` package. (#51037)
+- `pkg/ottl`: Move the experimental lambda converters into the `pkg/ottl/xottl` module so they are excluded from OTTL's stability guarantees. (#51563)
+  The `All`, `Any`, `Filter`, `Find`, `MapEach`, `MapKeys`, `Reduce`, and `When` converters and their `New*Factory`
+  functions moved to `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl/ottlfuncs`. They are no
+  longer part of `StandardFuncs` and `StandardConverters`; merge them (for example via
+  `xottlfuncs.WithExperimentalConverters`) to keep them available.
+  
+- `pkg/ottl`: Unexport the `ParserCollection` `Settings` and `ErrorMode` fields in favor of read-only `Settings()` and `ErrorMode()` accessor methods (#51156)
+- `pkg/ottl`: `SliceGetter.Range` now returns (bool, error); the boolean reports whether the underlying slice is non-nil. (#51494)
+- `pkg/ottl`: Remove the `ottltest` package and its `SetFeatureGateForTest` function from the public API. (#47305)
+- `pkg/ottl`: Remove the stable `ottl.PanicDuplicateName` and `ottl.contexts.enableOTelColContext` feature gates. (#44630, #46437)
+- `pkg/ottl`: Unexport the argument structs of the standard OTTL functions (#51023)
+- `receiver/carbon`: Move the `protocol` package to `internal/protocol`, removing it from the public API. (#51500)
+
+### 🚀 New components 🚀
+
+- `pkg/ottl/xottl`: Add the `pkg/ottl/xottl` module to hold OTTL's experimental Go API outside of OTTL's stability guarantees. (#51561)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add `Experimental()` to the `Factory` interface and a `WithExperimental` option so functions can declare whether they are covered by stability guarantees. (#50927)
+- `pkg/pdatatest`: Add the `/count` collection operator to `pmetricassert` for `resources`, `scopes`, `metrics`, and `datapoints`. (#48472)
+  `<collection>/count` takes `exact`, or `min` and/or `max`, and composes with
+  `/include`. Pairing it with an exact `<collection>` list is a schema error.
+  
+- `pkg/pdatatest`: Add `WithAttributeExists` and `WithAttributeRegex` options to pmetricassert snapshot generation. (#49734)
+- `pkg/pdatatest`: Add the `/include` collection operator to `pmetricassert` for `resources`, `scopes`, `metrics`, and `datapoints`. (#48472)
+  Collections without an operator keep matching exactly. Within an item matched
+  by `/include`, an omitted nested collection asserts nothing about it.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/ottl`: Fix `SliceGetter.Get` and literal slice folding so a coerced typed-nil slice (for example `[]string(nil)` when elements are getters) is treated as nil instead of an empty non-nil slice. (#51494)
+- `pkg/ottl`: Fix `GetLiteralValues` and `GetScalarLiteralValues` so they do not evaluate dynamic slices when checking for literal values. (#51438)
+- `pkg/ottl`: Prevent `SliceGetter.Get` and `SliceGetter.Range` from panicking when constructed from `nil`. (#51174)
+- `processor/transform`: Fix exponential-to-explicit histogram conversion (#50737)
+  The conversion now handles positive, negative, and zero buckets, includes the
+  required overflow bucket, preserves data point metadata, and uses the
+  exponential histogram mapping implementation for bucket boundaries.
+  
+
+<!-- previous-version -->
+
 ## v0.161.0
 
 ### 🛑 Breaking changes 🛑

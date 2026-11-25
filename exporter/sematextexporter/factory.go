@@ -26,8 +26,8 @@ import (
 )
 
 var (
-	metricsAppToken = uuid.NewString()
-	logsAppToken    = uuid.NewString()
+	metricsAppToken = configopaque.String(uuid.NewString())
+	logsAppToken    = configopaque.String(uuid.NewString())
 )
 
 // NewFactory creates a factory for the Sematext metrics exporter.
@@ -42,10 +42,6 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	clientConfig := confighttp.NewDefaultClientConfig()
-	// TODO: See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49316.
-	clientConfig.MaxIdleConns = 0    //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.IdleConnTimeout = 0 //nolint:staticcheck // SA1019: see TODO above
-	clientConfig.ForceAttemptHTTP2 = false
 	clientConfig.Timeout = 5 * time.Second
 	clientConfig.Headers = configopaque.MapList{
 		{Name: "User-Agent", Value: "OpenTelemetry -> Sematext"},

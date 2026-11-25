@@ -6,7 +6,8 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fawss3%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fawss3) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fawss3%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fawss3) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_awss3)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_awss3&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@atoulme](https://www.github.com/atoulme), [@pdelewski](https://www.github.com/pdelewski), [@Erog38](https://www.github.com/Erog38) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@atoulme](https://www.github.com/atoulme), [@Erog38](https://www.github.com/Erog38) |
+| Emeritus      | [@pdelewski](https://www.github.com/pdelewski) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -28,6 +29,8 @@ The following exporter configuration parameters are supported.
 | `s3_partition_format`     | filepath formatting for the partition; See [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) for format specification.                                                                                 | "year=%Y/month=%m/day=%d/hour=%H/minute=%M" |
 | `s3_partition_timezone`   | timezone used to format partition                                                                                                                                                                                          | Local                                       |
 | `role_arn`                | the Role ARN to be assumed                                                                                                                                                                                                 |                                             |
+| `access_key`              | AWS access key ID for static credentials. Must be set together with `secret_key` and cannot be combined with `role_arn`. See [Static credentials](#static-credentials).                                                     |                                             |
+| `secret_key`              | AWS secret access key for static credentials. Must be set together with `access_key` and cannot be combined with `role_arn`. See [Static credentials](#static-credentials).                                                |                                             |
 | `file_prefix`             | file prefix defined by user                                                                                                                                                                                                |                                             |
 | `marshaler`               | marshaler used to produce output data                                                                                                                                                                                      | `otlp_json`                                 |
 | `encoding`                | Encoding extension to use to marshal data. Overrides the `marshaler` configuration option if set.                                                                                                                          |                                             |
@@ -37,7 +40,8 @@ The following exporter configuration parameters are supported.
 | `acl`                     | [S3 Object Canned ACL](https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl)                                                                                                                 | none (does not set by default)              |
 | `s3_force_path_style`     | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html)                                                                                 | false                                       |
 | `disable_ssl`             | set this to `true` to disable SSL when sending requests                                                                                                                                                                    | false                                       |
-| `compression`             | should the file be compressed                                                                                                                                                                                              | none                                        |
+| `compression`             | Compression algorithm for uploaded objects. See [Compression](#compression). | `none` |
+| `compression_settings`    | Optional settings for the selected compression algorithm. | |
 | `sending_queue`           | [exporters common queuing](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)                                                                                          | disabled                                    |
 | `timeout`                 | [exporters common timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)                                                                                          | 5s                                          |
 | `resource_attrs_to_s3`    | determines the mapping of S3 configuration values to resource attribute values for uploading operations.                                                                                                                   |                                             |
@@ -81,9 +85,35 @@ Encoding overrides marshaler if present and sets to use an encoding extension de
 See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding.
 
 ### Compression
-- `none` (default): No compression will be applied
-- `gzip`: Files will be compressed with gzip.
-- `zstd`: Files will be compressed with zstd.
+
+Set `s3uploader.compression` to select the compression format and suffix for the S3 object key.
+
+| `compression` | Format | Object key suffix |
+| --- | --- | --- |
+| `none` (default) | Uncompressed | None |
+| `gzip` | Gzip | `.gz` |
+| `zstd` | Zstandard | `.zst` |
+| `zlib` | Zlib | `.zlib` |
+| `deflate` | Raw DEFLATE | `.deflate` |
+| `snappy` or `x-snappy-framed` | Framed Snappy | `.snappy` |
+| `lz4` | LZ4 frame | `.lz4` |
+
+For compression with the [AWS S3 receiver](../../receiver/awss3receiver), use `gzip` or `zstd`.
+
+The optional `s3uploader.compression_settings.level` overrides the default for `gzip`, `zstd`, `zlib`, or `deflate`.
+
+- `gzip`, `zlib`, and `deflate` default to `-1` (the encoder default). Levels `1` through `9` trade speed for compression. `0` stores the data in the selected format without compressing it, and `-2` selects Huffman-only compression.
+- `zstd` defaults to `3`. The encoder maps levels below `3` to fastest, `3`–`5` to default, `6`–`9` to better compression, and `10` or higher to best compression.
+
+```yaml
+exporters:
+  awss3:
+    s3uploader:
+      s3_bucket: telemetry
+      compression: gzip
+      compression_settings:
+        level: 1
+```
 
 ### resource_attrs_to_s3
 - `s3_bucket`: Defines which resource attribute's value should be used as the S3 bucket.
@@ -254,6 +284,25 @@ This exporter follows default credential resolution for the
 
 Follow the [guidelines](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html) for the
 credential configuration.
+
+### Static credentials
+
+Static credentials can be set with `access_key` and `secret_key`. When set, they take precedence over the default
+credential resolution. Both must be set together and cannot be combined with `role_arn`. Prefer referencing
+environment variables over writing secrets inline:
+
+```yaml
+exporters:
+  awss3:
+    s3uploader:
+      region: "us-east-1"
+      s3_bucket: "my-bucket"
+      access_key: ${env:AWS_ACCESS_KEY_ID}
+      secret_key: ${env:AWS_SECRET_ACCESS_KEY}
+```
+
+Avoid combining static credentials with `disable_ssl: true`: requests are still signed, but the exported data is sent
+over plain HTTP.
 
 ### OpenTelemetry Collector Helm Chart for Kubernetes
 For example, when using OpenTelemetry Collector Helm Chart you could use `extraEnvs` in the values.yaml.

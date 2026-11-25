@@ -1,0 +1,145 @@
+$defs:
+  decision_cache_config:
+    description: 'DecisionCacheConfig sizes the LRU caches that record sampling decisions. When a span arrives for a traceID that already has a recorded decision, the processor short-circuits the accumulation path: sampled traces are forwarded with the original rule and ot=th annotations; not-sampled traces are dropped. A size of 0 disables that cache.'
+    type: object
+    properties:
+      non_sampled_cache_size:
+        description: NonSampledCacheSize is the maximum number of not-sampled traces tracked. 0 disables the not-sampled cache.
+        type: integer
+      sampled_cache_size:
+        description: SampledCacheSize is the maximum number of sampled traces tracked for late-span attribution. 0 disables the sampled cache.
+        type: integer
+  eviction_config:
+    description: EvictionConfig configures the decision made for evicted traces.
+    type: object
+    properties:
+      policy:
+        description: Policy selects the eviction decision mode. Defaults to evaluate.
+        $ref: eviction_policy
+      sampling_percentage:
+        description: SamplingPercentage is the percentage of evicted traces to keep (0-100] under the probabilistic policy. Required for probabilistic; must be unset for evaluate.
+        type: number
+        x-customType: float64
+  eviction_policy:
+    description: EvictionPolicy selects how an evicted trace is decided.
+    type: string
+  match_mode:
+    description: MatchMode controls how a rule's conditions are combined against the spans of an accumulated trace.
+    type: string
+  record_fingerprint:
+    description: RecordFingerprint controls whether the matched rule's fingerprint value is recorded as an attribute on the spans of kept traces.
+    type: string
+  rule_config:
+    description: 'RuleConfig defines a single rule entry: zero or more OTTL boolean conditions that, when all match under the configured MatchMode, select the sampler.'
+    type: object
+    properties:
+      conditions:
+        description: Conditions is a list of OTTL boolean expressions evaluated against the spans of the accumulated trace. A rule with no conditions is a catch-all (always matches).
+        type: array
+        items:
+          type: string
+      match:
+        description: Match controls how conditions are combined. Defaults to MatchAnySpan. Must be unset when Conditions is empty.
+        $ref: match_mode
+      name:
+        description: Name identifies the rule in metrics and span attributes.
+        type: string
+      sampler:
+        description: Sampler is the sampler invoked when this rule matches.
+        $ref: sampler_config
+  sampler_algorithm:
+    description: SamplerAlgorithm selects how an adaptive_* sampler computes per-key rates.
+    type: string
+  sampler_config:
+    description: SamplerConfig is a flat sampler configuration. `Type` selects the sampler implementation; the remaining fields apply only to the sampler types that use them (see the field docs). SamplerConfig.validate rejects fields set for a sampler type that does not use them.
+    type: object
+    properties:
+      adjustment_interval:
+        description: 'AdjustmentInterval is how often the ema algorithm recalculates rates from recent observations. Used by: adaptive_percentage, adaptive_throughput (algorithm: ema).'
+        type: string
+        format: duration
+      algorithm:
+        description: 'Algorithm selects how a adaptive_* sampler computes per-key rates. Defaults to ema. windowed is supported by adaptive_throughput only. Used by: adaptive_percentage, adaptive_throughput.'
+        $ref: sampler_algorithm
+      fingerprint_attributes:
+        description: 'FingerprintAttributes is the list of scoped attribute selectors that identify what kind of trace this is for sampling purposes. Each entry has the form `<scope>.attributes["<name>"]` where scope is one of resource, scope, span, root, or any. Values are collected across the accumulated trace, so the fingerprint reflects the whole trace rather than any single span. Used by: adaptive_percentage, adaptive_throughput.'
+        type: array
+        items:
+          type: string
+      goal_percentage:
+        description: 'GoalPercentage is the target average percentage of traffic to keep across all sampling keys (0-100]. Decisions are made per trace; the percentage is measured over span volume, which equals the percentage of traces when trace sizes are uniform. Used by: adaptive_percentage.'
+        type: number
+        x-customType: float64
+      goal_throughput:
+        description: 'GoalThroughput is the target sustained volume budget in spans per second. Decisions are made per trace; a kept trace counts all of its spans against the budget. Used by: adaptive_throughput.'
+        type: integer
+      initial_sampling_percentage:
+        description: 'InitialSamplingPercentage is the percentage of traces kept before the sampler has learned per-fingerprint rates: during the first adjustment cycle after start, and (windowed algorithm) for fingerprints the sampler has no computed rate for, including max_keys overflow. A throughput goal cannot be converted to a sample rate without observed volume, so the bootstrap is explicit. Omit for the default of 10 (keep 10%); supplied values must be in (0, 100] like every other percentage. Used by: adaptive_throughput.'
+        x-pointer: true
+        type: number
+        x-customType: float64
+      lookback_frequency:
+        description: 'LookbackFrequency is the historical window the windowed algorithm uses to compute rates. Values that are not a multiple of UpdateFrequency are floored to the nearest lower multiple by the sampler; 0 (or omitting the field) uses 30x UpdateFrequency. Used by: adaptive_throughput (algorithm: windowed).'
+        type: string
+        format: duration
+      max_keys:
+        description: 'MaxKeys caps the number of distinct sampling keys the sampler tracks. Omitting the field defaults to defaultMaxKeys; explicitly setting it to 0 means unlimited. Used by: adaptive_percentage, adaptive_throughput.'
+        x-pointer: true
+        type: integer
+      sampling_percentage:
+        description: 'SamplingPercentage is the fixed percentage of traces to keep (0-100]. Used by: probabilistic.'
+        type: number
+        x-customType: float64
+      type:
+        description: Type is the kind of sampler to instantiate.
+        $ref: sampler_type
+      update_frequency:
+        description: 'UpdateFrequency is how often the windowed algorithm recalculates rates. 0 (or omitting the field) uses the sampler default of 1s. Used by: adaptive_throughput (algorithm: windowed).'
+        type: string
+        format: duration
+      weight:
+        description: 'Weight is the ema weighting factor in [0, 1). Higher values weight recent observations more heavily. 0 (or omitting the field) uses the sampler default of 0.5. Used by: adaptive_percentage, adaptive_throughput (algorithm: ema).'
+        type: number
+        x-customType: float64
+  sampler_type:
+    description: SamplerType identifies the kind of sampler attached to a rule.
+    type: string
+description: Config holds the top-level configuration for the adaptive tail sampling processor.
+type: object
+properties:
+  decision_cache:
+    description: DecisionCache configures the LRU caches that record decisions for already decided traces, so late-arriving spans receive the same treatment as the original trace.
+    $ref: decision_cache_config
+  decision_delay:
+    description: DecisionDelay is the pause between a triggering event (root span arrival or trace timeout) and the actual decision evaluation. Allows in-flight straggler spans to land before the trace is decided.
+    type: string
+    format: duration
+  eviction:
+    description: Eviction controls what happens to the oldest pending trace when the buffer is full (NumTraces reached) and a new trace arrives. Both policies emit a real decision (recorded in the decision cache and, for kept traces, stamped with ot=th) rather than silently dropping spans.
+    $ref: eviction_config
+  fleet_tracker:
+    description: 'FleetTrackerID optionally names an extension that reports the collector fleet''s live member count. When set, every adaptive_throughput rule''s goal_throughput is treated as a fleet-wide budget: on each member-count report N, the effective per-instance goal becomes max(goal_throughput / N, 1). Unset (default), goals apply per instance. adaptive_percentage rules are unaffected.'
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
+  num_traces:
+    description: NumTraces is the maximum number of traces held in the in-memory buffer at any time. Older traces are evicted when this limit is exceeded.
+    type: integer
+  record_fingerprint:
+    description: RecordFingerprint records the matched rule's fingerprint on every span of a kept trace (attribute otelcol.processor.adaptive_tail_sampling.fingerprint), as the raw value or a hash. Defaults to none. Only rules whose sampler has fingerprint_attributes produce the attribute. The value mode grows sampled decision-cache entries by the key string; hash is fixed size.
+    $ref: record_fingerprint
+  root_span_condition:
+    description: 'RootSpanCondition is an OTTL boolean expression evaluated against every span in the ottlspan context. When it returns true for a span, that span triggers the trace to move from accumulation to the decision-delay phase. If unset, defaults to `IsRootSpan()`: any span with an empty ParentSpanID is treated as a trigger, preserving the historical behavior. Example use-cases: - Broaden detection to include cross-process server spans: IsRootSpan() or (span.kind == SPAN_KIND_SERVER and resource.attributes["service.name"] == "gateway") - Accept a producer-side hint attribute: IsRootSpan() or span.attributes["otelcol.adaptive_tail_sampling.root_span"] == true - Only trigger on explicit hints (no default): span.attributes["otelcol.adaptive_tail_sampling.root_span"] == true'
+    type: string
+  rules:
+    description: Rules are evaluated in order, first match wins. The matched rule's sampler produces the sample rate for the trace.
+    type: array
+    items:
+      $ref: rule_config
+  span_limit:
+    description: SpanLimit caps how many spans a single trace may accumulate in the buffer. A trace reaching the limit is scheduled for an immediate decision (no decision_delay), evaluated over the spans buffered so far; spans arriving after the decision follow the late-span path (stamped from the decision cache) instead of being buffered. This bounds the memory a single giant trace can hold, which num_traces and eviction cannot (they bound trace count, not spans per trace). Defaults to 10000. 0 disables the cap.
+    type: integer
+  trace_timeout:
+    description: TraceTimeout is the maximum time a trace can sit in the accumulation buffer before its decision is forced. Acts as a safety net for traces that never receive a root span. Triggered by a timeout, the decision is made after DecisionDelay has elapsed.
+    type: string
+    format: duration

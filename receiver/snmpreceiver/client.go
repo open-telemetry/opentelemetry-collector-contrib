@@ -62,6 +62,7 @@ func newClient(cfg *Config, logger *zap.Logger) (client, error) {
 	// Create goSNMP client
 	goSNMP := newGoSNMPWrapper()
 	goSNMP.SetTimeout(cfg.ControllerConfig.Timeout)
+	goSNMP.SetMaxRepetitions(cfg.MaxRepetitions)
 
 	// Set goSNMP version based on config
 	switch cfg.Version {
@@ -100,7 +101,7 @@ func newClient(cfg *Config, logger *zap.Logger) (client, error) {
 		setV3ClientConfigs(goSNMP, cfg)
 	} else {
 		// Set goSNMP community string
-		goSNMP.SetCommunity(cfg.Community)
+		goSNMP.SetCommunity(string(cfg.Community))
 	}
 
 	// return client

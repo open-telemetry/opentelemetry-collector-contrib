@@ -6,8 +6,10 @@ package awskinesisexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis"
@@ -20,6 +22,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/producer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression"
 )
 
 // kinesisExporter implements an OpenTelemetry trace exporter that exports all spans to AWS Kinesis
@@ -56,6 +59,15 @@ func createExporter(ctx context.Context, c component.Config, log *zap.Logger, op
 		})
 	}
 
+	idleConnTimeout := conf.IdleConnTimeout
+	if idleConnTimeout == 0 {
+		idleConnTimeout = defaultIdleConnTimeout
+	}
+	httpClient := awshttp.NewBuildableClient().WithTransportOptions(func(tr *http.Transport) {
+		tr.IdleConnTimeout = idleConnTimeout
+	})
+	configOpts = append(configOpts, awsconfig.WithHTTPClient(httpClient))
+
 	awsconf, err := awsconfig.LoadDefaultConfig(ctx, configOpts...)
 	if err != nil {
 		return nil, err
@@ -89,11 +101,19 @@ func createExporter(ctx context.Context, c component.Config, log *zap.Logger, op
 		return nil, err
 	}
 
+	w, err := xcompression.NewWriterFactory().NewWriter(
+		conf.Encoding.Compression,
+		conf.Encoding.CompressionParams,
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	encoder, err := batch.NewEncoder(
 		conf.Encoding.Name,
 		batch.WithMaxRecordSize(conf.MaxRecordSize),
 		batch.WithMaxRecordsPerBatch(conf.MaxRecordsPerBatch),
-		batch.WithCompressionType(conf.Encoding.Compression),
+		batch.WithCompressionWriter(w),
 	)
 	if err != nil {
 		return nil, err

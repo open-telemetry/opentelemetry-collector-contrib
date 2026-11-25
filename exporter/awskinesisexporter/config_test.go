@@ -8,11 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff/v5"
+	"github.com/cenkalti/backoff/v7"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
@@ -42,12 +43,16 @@ func TestLoadConfig(t *testing.T) {
 				Encoding: Encoding{
 					Name:        "otlp",
 					Compression: "none",
+					CompressionParams: configcompression.CompressionParams{
+						Level: configcompression.DefaultCompressionLevel,
+					},
 				},
 				AWS: AWSConfig{
 					Region: "us-west-2",
 				},
 				MaxRecordsPerBatch: batch.MaxBatchedRecords,
 				MaxRecordSize:      batch.MaxRecordSize,
+				IdleConnTimeout:    defaultIdleConnTimeout,
 			},
 		},
 		{
@@ -66,6 +71,9 @@ func TestLoadConfig(t *testing.T) {
 				Encoding: Encoding{
 					Name:        "otlp-proto",
 					Compression: "none",
+					CompressionParams: configcompression.CompressionParams{
+						Level: configcompression.DefaultCompressionLevel,
+					},
 				},
 				AWS: AWSConfig{
 					StreamName:      "test-stream",
@@ -75,6 +83,29 @@ func TestLoadConfig(t *testing.T) {
 				},
 				MaxRecordSize:      1000,
 				MaxRecordsPerBatch: 10,
+				IdleConnTimeout:    defaultIdleConnTimeout,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "custom_timeout"),
+			expected: &Config{
+				QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
+				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+				Encoding: Encoding{
+					Name:        "otlp",
+					Compression: "none",
+					CompressionParams: configcompression.CompressionParams{
+						Level: configcompression.DefaultCompressionLevel,
+					},
+				},
+				AWS: AWSConfig{
+					StreamName: "test-stream",
+					Region:     "us-west-2",
+				},
+				MaxRecordsPerBatch: batch.MaxBatchedRecords,
+				MaxRecordSize:      batch.MaxRecordSize,
+				IdleConnTimeout:    2 * time.Second,
 			},
 		},
 	}
@@ -112,4 +143,16 @@ func TestValidate(t *testing.T) {
 	cfg.QueueSettings = configoptional.None[exporterhelper.QueueBatchConfig]()
 	err = cfg.Validate()
 	assert.NoError(t, err, "Validate() error = %v, wantNoErr", err)
+
+	cfg.IdleConnTimeout = -1 * time.Second
+	err = cfg.Validate()
+	assert.ErrorContains(t, err, "idle_conn_timeout must be non-negative")
+
+	cfg.IdleConnTimeout = 0
+	err = cfg.Validate()
+	assert.NoError(t, err)
+
+	cfg.IdleConnTimeout = 2 * time.Second
+	err = cfg.Validate()
+	assert.NoError(t, err)
 }

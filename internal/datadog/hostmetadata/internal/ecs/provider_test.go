@@ -80,7 +80,7 @@ func TestECSProvider(t *testing.T) {
 			}, nil),
 
 			onECSFargate: true,
-			src:          source.Source{Kind: source.AWSECSFargateKind, Identifier: "task-arn"},
+			src:          source.Source{Kind: source.AWSECSFargateKind, Identifier: "task-arn", SourceIdentifier: source.SourceIdentifier{Primary: "task-arn"}}, //nolint:staticcheck // SA1019: dual-write during Source.Identifier migration (datadog-agent#51116)
 		},
 	}
 

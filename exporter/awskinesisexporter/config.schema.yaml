@@ -15,7 +15,9 @@ $defs:
     type: object
     properties:
       compression:
-        type: string
+        $ref: go.opentelemetry.io/collector/config/configcompression.type
+      compression_settings:
+        $ref: go.opentelemetry.io/collector/config/configcompression.compression_params
       name:
         type: string
 description: Config contains the main configuration options for the awskinesis exporter
@@ -25,6 +27,10 @@ properties:
     $ref: aws_config
   encoding:
     $ref: encoding
+  idle_conn_timeout:
+    description: IdleConnTimeout specifies the maximum duration an idle (keep-alive) connection will remain open before being closed. If set to 0 or omitted, the default AWS SDK idle connection timeout (90s) is used.
+    type: string
+    format: duration
   max_record_size:
     type: integer
   max_records_per_batch:

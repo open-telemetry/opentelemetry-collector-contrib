@@ -6,8 +6,10 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -232,9 +234,18 @@ var (
 
 type NestedListAlias = map[string]map[string][]string
 
+// MetricTimeGrainOverrides maps Azure metric namespaces and metric names to query time grains.
+type MetricTimeGrainOverrides map[string]map[string]string
+
 type DimensionsConfig struct {
 	Enabled   *bool           `mapstructure:"enabled"`
 	Overrides NestedListAlias `mapstructure:"overrides"`
+}
+
+// ResourceTagFilter defines a tag-based filter for Azure resources.
+type ResourceTagFilter struct {
+	Name  string  `mapstructure:"name"`
+	Value *string `mapstructure:"value"`
 }
 
 // Config defines the configuration for the various elements of the receiver agent.
@@ -246,8 +257,10 @@ type Config struct {
 	DiscoverSubscriptions             bool                           `mapstructure:"discover_subscriptions"`
 	TenantID                          string                         `mapstructure:"tenant_id"`
 	ResourceGroups                    []string                       `mapstructure:"resource_groups"`
+	ResourceTags                      []ResourceTagFilter            `mapstructure:"resource_tags"`
 	Services                          []string                       `mapstructure:"services"`
 	Metrics                           NestedListAlias                `mapstructure:"metrics"`
+	TimeGrainOverrides                MetricTimeGrainOverrides       `mapstructure:"time_grain_overrides"`
 	CacheResources                    float64                        `mapstructure:"cache_resources"`
 	CacheResourcesDefinitions         float64                        `mapstructure:"cache_resources_definitions"`
 	MaximumNumberOfMetricsInACall     int                            `mapstructure:"maximum_number_of_metrics_in_a_call"`
@@ -264,10 +277,10 @@ type Config struct {
 	Authentication *AuthConfig `mapstructure:"auth"`
 
 	// Deprecated: Credentials is deprecated.
-	Credentials        string `mapstructure:"credentials"`
-	ClientID           string `mapstructure:"client_id"`
-	ClientSecret       string `mapstructure:"client_secret"`
-	FederatedTokenFile string `mapstructure:"federated_token_file"`
+	Credentials        string              `mapstructure:"credentials"`
+	ClientID           string              `mapstructure:"client_id"`
+	ClientSecret       configopaque.String `mapstructure:"client_secret"`
+	FederatedTokenFile string              `mapstructure:"federated_token_file"`
 }
 
 // AuthConfig defines the auth settings for the azure receiver.
@@ -335,6 +348,14 @@ func (c Config) Validate() (err error) {
 
 	if c.UseBatchAPI && c.MaximumResourcesPerBatch < 0 {
 		err = multierr.Append(err, errInvalidMaxResPerBatch)
+	}
+
+	for namespace, metrics := range c.TimeGrainOverrides {
+		for metric, timeGrain := range metrics {
+			if _, ok := timeGrains[strings.ToUpper(timeGrain)]; !ok {
+				err = multierr.Append(err, fmt.Errorf("time_grain_overrides[%q][%q] has unsupported time grain %q", namespace, metric, timeGrain))
+			}
+		}
 	}
 
 	return err
