@@ -19,6 +19,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/upload"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression"
 )
 
 func newUploadManager(
@@ -27,7 +28,7 @@ func newUploadManager(
 	logger *zap.Logger,
 	metadata string,
 	format string,
-	isCompressed bool,
+	isArchiveFormat bool,
 ) (upload.Manager, error) {
 	configOpts := []func(*config.LoadOptions) error{}
 
@@ -106,6 +107,15 @@ func newUploadManager(
 		s3PartitionTimeLocation = time.Local
 	}
 
+	compression := conf.S3Uploader.Compression
+	if compression.IsCompressed() {
+		writer, err := xcompression.NewWriterFactory().NewWriter(compression, conf.S3Uploader.compressionParams())
+		if err != nil {
+			return nil, fmt.Errorf("create S3 compression writer: %w", err)
+		}
+		managerOpts = append(managerOpts, upload.WithCompressionWriter(writer))
+	}
+
 	return upload.NewS3Manager(
 		logger,
 		conf.S3Uploader.S3Bucket,
@@ -117,9 +127,9 @@ func newUploadManager(
 			FilePrefix:            conf.S3Uploader.FilePrefix,
 			FileFormat:            format,
 			Metadata:              metadata,
-			Compression:           conf.S3Uploader.Compression,
+			Compression:           compression,
 			UniqueKeyFunc:         uniqueKeyFunc,
-			IsCompressed:          isCompressed,
+			IsArchiveFormat:       isArchiveFormat,
 		},
 		s3.NewFromConfig(cfg, s3Opts...),
 		s3types.StorageClass(conf.S3Uploader.StorageClass),

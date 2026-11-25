@@ -5,28 +5,28 @@ go 1.26.0
 require (
 	github.com/aws/aws-sdk-go-v2 v1.48.0
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.9
-	github.com/aws/aws-sdk-go-v2/service/sts v1.52.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.165.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.165.1
+	github.com/aws/aws-sdk-go-v2/service/sts v1.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.166.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.166.0
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component v1.71.1-0.20261119222305-0c7a74cd0a4a
-	go.opentelemetry.io/collector/component/componenttest v0.165.1-0.20261119222305-0c7a74cd0a4a
-	go.opentelemetry.io/collector/config/confighttp v1.71.1-0.20261119222305-0c7a74cd0a4a
-	go.opentelemetry.io/collector/config/confignet v1.71.1-0.20261119222305-0c7a74cd0a4a
-	go.opentelemetry.io/collector/config/configtls v1.71.1-0.20261119222305-0c7a74cd0a4a
+	go.opentelemetry.io/collector/component v1.72.0
+	go.opentelemetry.io/collector/component/componenttest v0.166.0
+	go.opentelemetry.io/collector/config/confighttp v1.72.0
+	go.opentelemetry.io/collector/config/confignet v1.72.0
+	go.opentelemetry.io/collector/config/configtls v1.72.0
 	go.uber.org/zap v1.28.0
 )
 
 require (
 	github.com/Microsoft/go-winio v0.6.4 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.33.18 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.21.0 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.33.21 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.21.3 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.12 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.12 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.12 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.25 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.12 // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.13.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.14.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.39.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.44.5 // indirect
 	github.com/aws/smithy-go v1.28.9 // indirect
@@ -53,17 +53,17 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.33 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/client v1.71.1-0.20261119222305-0c7a74cd0a4a // indirect
-	go.opentelemetry.io/collector/config/configauth v1.71.1-0.20261119222305-0c7a74cd0a4a // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.71.1-0.20261119222305-0c7a74cd0a4a // indirect
-	go.opentelemetry.io/collector/config/configmiddleware v1.71.1-0.20261119222305-0c7a74cd0a4a // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.71.1-0.20261119222305-0c7a74cd0a4a // indirect
-	go.opentelemetry.io/collector/config/configoptional v1.71.1-0.20261119222305-0c7a74cd0a4a // indirect
-	go.opentelemetry.io/collector/confmap v1.71.1-0.20261119222305-0c7a74cd0a4a // indirect
-	go.opentelemetry.io/collector/extension/extensionauth v1.71.1-0.20261119222305-0c7a74cd0a4a // indirect
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.165.1-0.20261119222305-0c7a74cd0a4a // indirect
-	go.opentelemetry.io/collector/featuregate v1.71.1-0.20261119222305-0c7a74cd0a4a // indirect
-	go.opentelemetry.io/collector/pdata v1.71.1-0.20261119222305-0c7a74cd0a4a // indirect
+	go.opentelemetry.io/collector/client v1.72.0 // indirect
+	go.opentelemetry.io/collector/config/configauth v1.72.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.72.0 // indirect
+	go.opentelemetry.io/collector/config/configmiddleware v1.72.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.72.0 // indirect
+	go.opentelemetry.io/collector/config/configoptional v1.72.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.72.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionauth v1.72.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.166.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.72.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.72.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect

@@ -25,7 +25,7 @@ func Test_NewTracesExporter(t *testing.T) {
 		clientConfig.Endpoint = "http://example.logicmonitor.com/rest"
 		config := &Config{
 			ClientConfig: clientConfig,
-			APIToken:     APIToken{AccessID: "testid", AccessKey: "testkey"},
+			APIToken:     APIToken{AccessID: "testid", AccessKey: "test-key-at-least-14-bytes"},
 		}
 		set := exportertest.NewNopSettings(metadata.Type)
 		exp := newTracesExporter(t.Context(), config, set)
@@ -49,7 +49,7 @@ func TestPushTraceData(t *testing.T) {
 	clientConfig.Endpoint = ts.URL
 	config := &Config{
 		ClientConfig: clientConfig,
-		APIToken:     APIToken{AccessID: "testid", AccessKey: "testkey"},
+		APIToken:     APIToken{AccessID: "testid", AccessKey: "test-key-at-least-14-bytes"},
 	}
 	ctx := t.Context()
 	exp, err := f.CreateTraces(ctx, params, config)
