@@ -91,6 +91,8 @@ var datadogKnownResourceAttributes = map[string]string{
 	"process_id":       string(conventions.ProcessPIDKey),
 	"error.stacktrace": string(conventions.ExceptionStacktraceKey),
 	"error.msg":        string(conventions.ExceptionMessageKey),
+	"error.stack":      string(conventions.ExceptionStacktraceKey),
+	"error.message":    string(conventions.ExceptionMessageKey),
 }
 
 // translateDatadogTagToKeyValuePair translates a Datadog tag to a key value pair
