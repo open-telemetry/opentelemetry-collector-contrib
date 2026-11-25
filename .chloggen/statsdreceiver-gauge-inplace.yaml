@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/statsd
+note: Update repeated gauge samples in place instead of rebuilding the metric, cutting most of the receiver's heap allocations.
+issues: [53611]
+subtext:
+change_logs: [user]

@@ -409,15 +409,16 @@ func validateValue(name string, v float64) error {
 func (p *StatsDParser) aggregateMetric(parsedMetric statsDMetric, instrument *instruments) {
 	switch parsedMetric.description.metricType {
 	case GaugeType:
-		_, ok := instrument.gauges[parsedMetric.description]
+		existing, ok := instrument.gauges[parsedMetric.description]
 		if !ok {
 			instrument.gauges[parsedMetric.description] = buildGaugeMetric(parsedMetric, timeNowFunc())
 		} else {
+			point := existing.Metrics().At(0).Gauge().DataPoints().At(0)
 			if parsedMetric.addition {
-				point := instrument.gauges[parsedMetric.description].Metrics().At(0).Gauge().DataPoints().At(0)
 				point.SetDoubleValue(point.DoubleValue() + parsedMetric.gaugeValue())
 			} else {
-				instrument.gauges[parsedMetric.description] = buildGaugeMetric(parsedMetric, timeNowFunc())
+				point.SetDoubleValue(parsedMetric.gaugeValue())
+				point.SetTimestamp(pcommon.NewTimestampFromTime(timeNowFunc()))
 			}
 		}
 

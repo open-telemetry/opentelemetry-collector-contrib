@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
 
@@ -1111,6 +1112,37 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStatsDParser_AggregateGaugeTimestamp(t *testing.T) {
+	now := time.Unix(711, 0)
+	originalTimeNowFunc := timeNowFunc
+	timeNowFunc = func() time.Time { return now }
+	t.Cleanup(func() { timeNowFunc = originalTimeNowFunc })
+
+	p := &StatsDParser{}
+	assert.NoError(t, p.Initialize(false, false, false, false, false, nil, protocol.CounterTypeInt))
+	addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
+	addrKey := newNetAddr(addr)
+	desc := testDescription("statsdTestMetric1", "g", []string{"mykey"}, []string{"myvalue"})
+	point := func() pmetric.NumberDataPoint {
+		return p.instrumentsByAddress[addrKey].gauges[desc].Metrics().At(0).Gauge().DataPoints().At(0)
+	}
+
+	assert.NoError(t, p.Aggregate("statsdTestMetric1:1|g|#mykey:myvalue", addr))
+	assert.Equal(t, 1.0, point().DoubleValue())
+	assert.Equal(t, pcommon.NewTimestampFromTime(time.Unix(711, 0)), point().Timestamp())
+
+	now = time.Unix(712, 0)
+	assert.NoError(t, p.Aggregate("statsdTestMetric1:+5|g|#mykey:myvalue", addr))
+	assert.Equal(t, 6.0, point().DoubleValue())
+	assert.Equal(t, pcommon.NewTimestampFromTime(time.Unix(711, 0)), point().Timestamp())
+
+	now = time.Unix(713, 0)
+	assert.NoError(t, p.Aggregate("statsdTestMetric1:42|g|#mykey:myvalue", addr))
+	assert.Equal(t, 42.0, point().DoubleValue())
+	assert.Equal(t, pcommon.NewTimestampFromTime(time.Unix(713, 0)), point().Timestamp())
+	assert.Equal(t, 1, point().Attributes().Len())
 }
 
 func TestStatsDParser_AggregateByAddress(t *testing.T) {
