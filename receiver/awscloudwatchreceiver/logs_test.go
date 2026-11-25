@@ -276,7 +276,7 @@ func TestAccountIDLookupDuringSessionInitialization(t *testing.T) {
 			t.Cleanup(server.Close)
 			t.Setenv("AWS_ENDPOINT_URL_STS", server.URL)
 			t.Setenv("AWS_ACCESS_KEY_ID", "test")
-			t.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+			t.Setenv("AWS_SECRET_ACCESS_KEY", "test-secret-at-least-14-bytes")
 			t.Setenv("AWS_SESSION_TOKEN", "")
 			t.Setenv("AWS_PROFILE", "")
 			t.Setenv("AWS_CONFIG_FILE", filepath.Join(t.TempDir(), "config"))
