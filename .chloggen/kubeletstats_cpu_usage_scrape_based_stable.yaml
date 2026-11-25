@@ -1,0 +1,6 @@
+change_type: breaking
+component: receiver/kubelet_stats
+note: Promote the `receiver.kubeletstats.cpuUsageScrapeBased` feature gate to stable.
+issues: [49477]
+subtext: CPU usage is always calculated from consecutive `*.cpu.time` samples and can no longer be read from the kubelet's `UsageNanoCores`. The gate can no longer be disabled.
+change_logs: [user]

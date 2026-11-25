@@ -4,6 +4,7 @@
 package kubeletstatsreceiver
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -17,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -25,6 +27,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	clienttesting "k8s.io/client-go/testing"
+	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -66,12 +69,11 @@ var allMetricGroups = map[kubelet.MetricGroup]bool{
 }
 
 func TestScraper(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	options := &scraperOptions{
 		metricGroupsToCollect: allMetricGroups,
 	}
 	r, err := newKubeletScraper(
-		&fakeRestClient{},
+		&fakeRestClient{advanceCPU: true},
 		receivertest.NewNopSettings(metadata.Type),
 		options,
 		metadata.NewDefaultMetricsBuilderConfig(),
@@ -79,6 +81,7 @@ func TestScraper(t *testing.T) {
 	)
 	require.NoError(t, err)
 
+	primeScrape(t, r)
 	md, err := r.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, dataLen, md.DataPointCount())
@@ -113,12 +116,11 @@ func TestScraperWithV1K8sConventions(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 			defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, true)()
 			defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, tt.dontEmit)()
 
 			r, err := newKubeletScraper(
-				&fakeRestClient{},
+				&fakeRestClient{advanceCPU: true},
 				receivertest.NewNopSettings(metadata.Type),
 				&scraperOptions{
 					metricGroupsToCollect: map[kubelet.MetricGroup]bool{
@@ -130,6 +132,7 @@ func TestScraperWithV1K8sConventions(t *testing.T) {
 			)
 			require.NoError(t, err)
 
+			primeScrape(t, r)
 			md, err := r.ScrapeMetrics(t.Context())
 			require.NoError(t, err)
 			// Legacy and v1 metrics share the same name, so only the v1 version is
@@ -176,8 +179,6 @@ func TestScraperWithV1K8sConventions(t *testing.T) {
 }
 
 func TestScraperWithCPUUsageScrapeBased(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, true)()
-
 	options := &scraperOptions{
 		metricGroupsToCollect: allMetricGroups,
 	}
@@ -220,8 +221,6 @@ func TestScraperWithCPUUsageScrapeBased(t *testing.T) {
 }
 
 func TestScraperWithCPUUsageScrapeBasedSecondScrape(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, true)()
-
 	// testdata/stats-summary-second-scrape.json is a copy of testdata/stats-summary.json
 	// with every resource's cpu.time advanced by 2 seconds and its cumulative
 	// usageCoreNanoSeconds advanced by 2 CPU-seconds, so every *.cpu.usage metric should
@@ -269,7 +268,6 @@ func TestScraperWithCPUUsageScrapeBasedSecondScrape(t *testing.T) {
 }
 
 func TestScraperWithSystemContainerMetrics(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	options := &scraperOptions{
 		metricGroupsToCollect: allMetricGroups,
 	}
@@ -280,7 +278,7 @@ func TestScraperWithSystemContainerMetrics(t *testing.T) {
 	metricsConfig.Metrics.K8sNodeSystemContainerMemoryWorkingSet.Enabled = true
 
 	r, err := newKubeletScraper(
-		&fakeRestClient{},
+		&fakeRestClient{advanceCPU: true},
 		receivertest.NewNopSettings(metadata.Type),
 		options,
 		metricsConfig,
@@ -288,6 +286,7 @@ func TestScraperWithSystemContainerMetrics(t *testing.T) {
 	)
 	require.NoError(t, err)
 
+	primeScrape(t, r)
 	md, err := r.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 
@@ -308,7 +307,6 @@ func TestScraperWithSystemContainerMetrics(t *testing.T) {
 }
 
 func TestScraperWithEphemeralStorageMetrics(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	options := &scraperOptions{
 		metricGroupsToCollect: allMetricGroups,
 	}
@@ -316,7 +314,7 @@ func TestScraperWithEphemeralStorageMetrics(t *testing.T) {
 	metricsConfig.Metrics.K8sContainerEphemeralStorageUsage.Enabled = true
 
 	r, err := newKubeletScraper(
-		&fakeRestClient{},
+		&fakeRestClient{advanceCPU: true},
 		receivertest.NewNopSettings(metadata.Type),
 		options,
 		metricsConfig,
@@ -324,6 +322,7 @@ func TestScraperWithEphemeralStorageMetrics(t *testing.T) {
 	)
 	require.NoError(t, err)
 
+	primeScrape(t, r)
 	md, err := r.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 
@@ -344,7 +343,6 @@ func TestScraperWithEphemeralStorageMetrics(t *testing.T) {
 }
 
 func TestScraperWithNodeFilesystemInodeMetrics(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	options := &scraperOptions{
 		metricGroupsToCollect: allMetricGroups,
 	}
@@ -353,7 +351,7 @@ func TestScraperWithNodeFilesystemInodeMetrics(t *testing.T) {
 	metricsConfig.Metrics.K8sNodeFilesystemInodeFree.Enabled = true
 
 	r, err := newKubeletScraper(
-		&fakeRestClient{},
+		&fakeRestClient{advanceCPU: true},
 		receivertest.NewNopSettings(metadata.Type),
 		options,
 		metricsConfig,
@@ -361,6 +359,7 @@ func TestScraperWithNodeFilesystemInodeMetrics(t *testing.T) {
 	)
 	require.NoError(t, err)
 
+	primeScrape(t, r)
 	md, err := r.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 
@@ -381,7 +380,6 @@ func TestScraperWithNodeFilesystemInodeMetrics(t *testing.T) {
 }
 
 func TestScraperWithRlimitMetrics(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	options := &scraperOptions{
 		metricGroupsToCollect: allMetricGroups,
 	}
@@ -390,7 +388,7 @@ func TestScraperWithRlimitMetrics(t *testing.T) {
 	metricsConfig.Metrics.K8sNodePidLimit.Enabled = true
 
 	r, err := newKubeletScraper(
-		&fakeRestClient{},
+		&fakeRestClient{advanceCPU: true},
 		receivertest.NewNopSettings(metadata.Type),
 		options,
 		metricsConfig,
@@ -398,6 +396,7 @@ func TestScraperWithRlimitMetrics(t *testing.T) {
 	)
 	require.NoError(t, err)
 
+	primeScrape(t, r)
 	md, err := r.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 
@@ -418,7 +417,6 @@ func TestScraperWithRlimitMetrics(t *testing.T) {
 }
 
 func TestScraperWithInterfacesMetrics(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	options := &scraperOptions{
 		metricGroupsToCollect: allMetricGroups,
 		allNetworkInterfaces: map[kubelet.MetricGroup]bool{
@@ -427,7 +425,7 @@ func TestScraperWithInterfacesMetrics(t *testing.T) {
 		},
 	}
 	r, err := newKubeletScraper(
-		&fakeRestClient{},
+		&fakeRestClient{advanceCPU: true},
 		receivertest.NewNopSettings(metadata.Type),
 		options,
 		metadata.NewDefaultMetricsBuilderConfig(),
@@ -435,6 +433,7 @@ func TestScraperWithInterfacesMetrics(t *testing.T) {
 	)
 	require.NoError(t, err)
 
+	primeScrape(t, r)
 	md, err := r.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 
@@ -455,7 +454,6 @@ func TestScraperWithInterfacesMetrics(t *testing.T) {
 }
 
 func TestScraperWithCPUNodeUtilization(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	watcherStarted := make(chan struct{})
 	// Create the fake client.
 	client := fake.NewClientset()
@@ -479,7 +477,7 @@ func TestScraperWithCPUNodeUtilization(t *testing.T) {
 		k8sAPIClient: client,
 	}
 	r, err := newKubeletScraper(
-		&fakeRestClient{},
+		&fakeRestClient{advanceCPU: true},
 		receivertest.NewNopSettings(metadata.Type),
 		options,
 		metadata.MetricsBuilderConfig{
@@ -614,7 +612,6 @@ func TestScraperWithMemoryNodeUtilization(t *testing.T) {
 }
 
 func TestScraperWithMetadata(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	tests := []struct {
 		name           string
 		metadataLabels []kubelet.MetadataLabel
@@ -652,7 +649,7 @@ func TestScraperWithMetadata(t *testing.T) {
 				metricGroupsToCollect: tt.metricGroups,
 			}
 			r, err := newKubeletScraper(
-				&fakeRestClient{},
+				&fakeRestClient{advanceCPU: true},
 				receivertest.NewNopSettings(metadata.Type),
 				options,
 				metadata.NewDefaultMetricsBuilderConfig(),
@@ -660,6 +657,7 @@ func TestScraperWithMetadata(t *testing.T) {
 			)
 			require.NoError(t, err)
 
+			primeScrape(t, r)
 			md, err := r.ScrapeMetrics(t.Context())
 			require.NoError(t, err)
 
@@ -682,7 +680,6 @@ func TestScraperWithMetadata(t *testing.T) {
 }
 
 func TestScraperWithPercentMetrics(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	options := &scraperOptions{
 		metricGroupsToCollect: map[kubelet.MetricGroup]bool{
 			kubelet.ContainerMetricGroup: true,
@@ -839,7 +836,7 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
 	}
 	r, err := newKubeletScraper(
-		&fakeRestClient{},
+		&fakeRestClient{advanceCPU: true},
 		receivertest.NewNopSettings(metadata.Type),
 		options,
 		metricsConfig,
@@ -847,6 +844,7 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 	)
 	require.NoError(t, err)
 
+	primeScrape(t, r)
 	md, err := r.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
 
@@ -865,7 +863,6 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 }
 
 func TestScraperWithMetricGroups(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
 	tests := []struct {
 		name         string
 		metricGroups map[kubelet.MetricGroup]bool
@@ -916,7 +913,7 @@ func TestScraperWithMetricGroups(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			r, err := newKubeletScraper(
-				&fakeRestClient{},
+				&fakeRestClient{advanceCPU: true},
 				receivertest.NewNopSettings(metadata.Type),
 				&scraperOptions{
 					extraMetadataLabels:   []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
@@ -927,6 +924,7 @@ func TestScraperWithMetricGroups(t *testing.T) {
 			)
 			require.NoError(t, err)
 
+			primeScrape(t, r)
 			md, err := r.ScrapeMetrics(t.Context())
 			require.NoError(t, err)
 
@@ -1175,6 +1173,52 @@ type fakeRestClient struct {
 	// This allows tests to simulate consecutive scrapes returning different data.
 	statsSummaryFiles     []string
 	statsSummaryCallCount int
+
+	// advanceCPU, when true (and statsSummaryFiles is empty), makes each call to
+	// StatsSummary return the default summary with every CPU sample time and
+	// cumulative usageCoreNanoSeconds advanced by 2s per call, so the scrape-based
+	// CPU usage of every resource is 1 core from the second scrape onwards.
+	advanceCPU bool
+}
+
+// primeScrape performs a scrape whose result is discarded, so that the scrape-based
+// CPU usage calculation has a previous sample to compute the rate against.
+func primeScrape(t *testing.T, r scraper.Metrics) {
+	t.Helper()
+	_, err := r.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+}
+
+func advancedSummary(n int) ([]byte, error) {
+	data, err := os.ReadFile("testdata/stats-summary.json")
+	if err != nil {
+		return nil, err
+	}
+	var summary stats.Summary
+	if err := json.Unmarshal(data, &summary); err != nil {
+		return nil, err
+	}
+	shift := func(c *stats.CPUStats) {
+		if c == nil {
+			return
+		}
+		c.Time = metav1.NewTime(c.Time.Add(time.Duration(n) * 2 * time.Second))
+		if c.UsageCoreNanoSeconds != nil {
+			v := *c.UsageCoreNanoSeconds + uint64(n)*2_000_000_000
+			c.UsageCoreNanoSeconds = &v
+		}
+	}
+	shift(summary.Node.CPU)
+	for i := range summary.Node.SystemContainers {
+		shift(summary.Node.SystemContainers[i].CPU)
+	}
+	for i := range summary.Pods {
+		shift(summary.Pods[i].CPU)
+		for j := range summary.Pods[i].Containers {
+			shift(summary.Pods[i].Containers[j].CPU)
+		}
+	}
+	return json.Marshal(summary)
 }
 
 func (f *fakeRestClient) StatsSummary() ([]byte, error) {
@@ -1189,7 +1233,11 @@ func (f *fakeRestClient) StatsSummary() ([]byte, error) {
 		}
 		file = f.statsSummaryFiles[idx]
 	}
+	n := f.statsSummaryCallCount
 	f.statsSummaryCallCount++
+	if f.advanceCPU && len(f.statsSummaryFiles) == 0 {
+		return advancedSummary(n)
+	}
 	return os.ReadFile(file)
 }
 

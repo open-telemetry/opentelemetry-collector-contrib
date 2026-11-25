@@ -16,7 +16,7 @@ resourceMetrics:
           - description: Pod cpu utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted.
             gauge:
               dataPoints:
-                - asDouble: 0.90502575
+                - asDouble: 250
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.pod.cpu_limit_utilization
@@ -24,7 +24,7 @@ resourceMetrics:
           - description: Pod cpu utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted.
             gauge:
               dataPoints:
-                - asDouble: 1.8100515
+                - asDouble: 500
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.pod.cpu_request_utilization
@@ -68,7 +68,7 @@ resourceMetrics:
           - description: Container cpu utilization as a ratio of the container's limits
             gauge:
               dataPoints:
-                - asDouble: 0.8596562499999999
+                - asDouble: 250
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.container.cpu_limit_utilization
@@ -76,7 +76,7 @@ resourceMetrics:
           - description: Container cpu utilization as a ratio of the container's requests
             gauge:
               dataPoints:
-                - asDouble: 1.7193124999999998
+                - asDouble: 500
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.container.cpu_request_utilization

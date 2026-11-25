@@ -12,7 +12,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 263.475389988
+                - asDouble: 265.475389988
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -20,7 +20,7 @@ resourceMetrics:
           - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
-                - asDouble: 0.165737329
+                - asDouble: 1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.node.cpu.usage
@@ -173,7 +173,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 0.300122579
+                - asDouble: 2.300122579
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -181,7 +181,7 @@ resourceMetrics:
           - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
-                - asDouble: 0
+                - asDouble: 1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.pod.cpu.usage
@@ -334,7 +334,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 3.69769445
+                - asDouble: 5.69769445
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -342,7 +342,7 @@ resourceMetrics:
           - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
-                - asDouble: 0.003494461
+                - asDouble: 1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.pod.cpu.usage
@@ -495,7 +495,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 2.771541709
+                - asDouble: 4.771541709
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -503,7 +503,7 @@ resourceMetrics:
           - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
-                - asDouble: 0.003430175
+                - asDouble: 1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.pod.cpu.usage
@@ -656,7 +656,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 20.099753934
+                - asDouble: 22.099753934
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -664,7 +664,7 @@ resourceMetrics:
           - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
-                - asDouble: 0.019806671
+                - asDouble: 1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.pod.cpu.usage
@@ -817,7 +817,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 46.096711585
+                - asDouble: 48.096711585
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -825,7 +825,7 @@ resourceMetrics:
           - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
-                - asDouble: 0.046223592
+                - asDouble: 1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.pod.cpu.usage
@@ -978,7 +978,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 16.84088936
+                - asDouble: 18.84088936
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -986,7 +986,7 @@ resourceMetrics:
           - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
-                - asDouble: 0.018113404
+                - asDouble: 1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.pod.cpu.usage
@@ -1139,7 +1139,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 1.067441804
+                - asDouble: 3.067441804
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -1147,7 +1147,7 @@ resourceMetrics:
           - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
-                - asDouble: 0.000276428
+                - asDouble: 1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.pod.cpu.usage
@@ -1300,7 +1300,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 4.553997785
+                - asDouble: 6.553997785
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -1308,7 +1308,7 @@ resourceMetrics:
           - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
-                - asDouble: 0.003620103
+                - asDouble: 1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.pod.cpu.usage
@@ -1461,7 +1461,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 1.215412064
+                - asDouble: 3.215412064
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -1469,7 +1469,7 @@ resourceMetrics:
           - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
-                - asDouble: 0.000378421
+                - asDouble: 1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.pod.cpu.usage
@@ -1625,7 +1625,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 3.662885116
+                - asDouble: 5.662885116
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -1633,7 +1633,7 @@ resourceMetrics:
           - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
-                - asDouble: 0.004558032
+                - asDouble: 1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.cpu.usage
@@ -1755,7 +1755,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 2.727333643
+                - asDouble: 4.727333643
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -1763,7 +1763,7 @@ resourceMetrics:
           - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
-                - asDouble: 0.003508506
+                - asDouble: 0.9999999999999998
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.cpu.usage
@@ -1885,7 +1885,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 20.061348607
+                - asDouble: 22.061348607
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -1893,7 +1893,7 @@ resourceMetrics:
           - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
-                - asDouble: 0.019865291
+                - asDouble: 1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.cpu.usage
@@ -2015,7 +2015,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 45.900186687
+                - asDouble: 47.900186687
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -2023,7 +2023,7 @@ resourceMetrics:
           - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
-                - asDouble: 0.046144879
+                - asDouble: 1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.cpu.usage
@@ -2145,7 +2145,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 16.885222421
+                - asDouble: 18.885222421
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -2153,7 +2153,7 @@ resourceMetrics:
           - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
-                - asDouble: 0.018247146
+                - asDouble: 1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.cpu.usage
@@ -2275,7 +2275,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 1.047769731
+                - asDouble: 3.047769731
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -2283,7 +2283,7 @@ resourceMetrics:
           - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
-                - asDouble: 0.000396945
+                - asDouble: 0.9999999999999999
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.cpu.usage
@@ -2405,7 +2405,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 4.560175707
+                - asDouble: 6.560175707
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -2413,7 +2413,7 @@ resourceMetrics:
           - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
-                - asDouble: 0.003438625
+                - asDouble: 1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.cpu.usage
@@ -2535,7 +2535,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 0.271467923
+                - asDouble: 2.271467923
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -2543,7 +2543,7 @@ resourceMetrics:
           - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
-                - asDouble: 0
+                - asDouble: 1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.cpu.usage
@@ -2665,7 +2665,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 1.196195093
+                - asDouble: 3.196195093
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -2673,7 +2673,7 @@ resourceMetrics:
           - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
-                - asDouble: 0.00032689
+                - asDouble: 1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.cpu.usage

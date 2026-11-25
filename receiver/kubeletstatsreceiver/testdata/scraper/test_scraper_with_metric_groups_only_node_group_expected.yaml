@@ -12,7 +12,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 263.475389988
+                - asDouble: 265.475389988
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -20,11 +20,11 @@ resourceMetrics:
           - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
-                - asDouble: 0.165737329
+                - asDouble: 1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.node.cpu.usage
-            unit: "{cpu}"
+            unit: '{cpu}'
           - description: Node filesystem available
             gauge:
               dataPoints:
