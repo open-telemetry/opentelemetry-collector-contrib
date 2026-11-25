@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -1096,6 +1097,7 @@ func TestClientErrors(t *testing.T) {
 		extraMetadataLabels   []kubelet.MetadataLabel
 		metricGroupsToCollect map[kubelet.MetricGroup]bool
 		numLogs               int
+		partialErr            bool
 	}{
 		{
 			name:                  "no_errors_without_metadata",
@@ -1128,6 +1130,7 @@ func TestClientErrors(t *testing.T) {
 			extraMetadataLabels:   []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
 			metricGroupsToCollect: allMetricGroups,
 			numLogs:               1,
+			partialErr:            true,
 		},
 	}
 	for _, test := range tests {
@@ -1152,10 +1155,14 @@ func TestClientErrors(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			_, err = r.ScrapeMetrics(t.Context())
-			if test.numLogs == 0 {
+			md, err := r.ScrapeMetrics(t.Context())
+			switch {
+			case test.numLogs == 0:
 				require.NoError(t, err)
-			} else {
+			case test.partialErr:
+				require.True(t, scrapererror.IsPartialScrapeError(err))
+				require.Positive(t, md.DataPointCount())
+			default:
 				require.Error(t, err)
 			}
 			require.Equal(t, test.numLogs, observedLogs.Len())
