@@ -102,8 +102,8 @@ github.com/DataDog/datadog-agent/pkg/status/health v0.85.0 h1:JPtQhdklcSZeZhkVtK
 github.com/DataDog/datadog-agent/pkg/status/health v0.85.0/go.mod h1:Dxqgy9tiZdNKJqh3xNBjGso0veSFZCv29HUOcTirMGw=
 github.com/DataDog/datadog-agent/pkg/tagger/types v0.85.0 h1:xGr+MXo501j+XRZNJvZRUdJvZmbb+PTGo6EuzmY3kBw=
 github.com/DataDog/datadog-agent/pkg/tagger/types v0.85.0/go.mod h1:1VdiFtVYEtrhn/TEnTg91YfNhL8Pk1jRgA8z11CRUrQ=
-github.com/DataDog/datadog-agent/pkg/tagset v0.85.4 h1:ahu7BgMzNh/mjfmGTkzM23QCZU7S1NJ4MrAQfKBsBGg=
-github.com/DataDog/datadog-agent/pkg/tagset v0.85.4/go.mod h1:gIJa218QmumOxh6wyKV9Bq5qlaipN80xtu9TtGNTdWs=
+github.com/DataDog/datadog-agent/pkg/tagset v0.86.0 h1:T6GiPv3WjmB+FI9sG13EblSLyrxKdhhlQp2Lad306dY=
+github.com/DataDog/datadog-agent/pkg/tagset v0.86.0/go.mod h1:7y+P+jCFvDfWT3Sg+nYi2wOTR4Pfb21dM0/2PiX6TUU=
 github.com/DataDog/datadog-agent/pkg/template v0.85.0 h1:OPgsKtpA5alVIIHNI9oyvtZN93+dzE7rXOiEptbTvkM=
 github.com/DataDog/datadog-agent/pkg/template v0.85.0/go.mod h1:eT5QvQgzFJzS42jodlI9DM8tZRqIriO51blrxUwS08A=
 github.com/DataDog/datadog-agent/pkg/trace/log v0.85.0 h1:N5MqZgwy5xuoVgwygio9mLnlLtGvojuxeMqwb337V7M=
@@ -144,8 +144,8 @@ github.com/DataDog/datadog-agent/pkg/util/quantile/sketchtest v0.85.0 h1:EyawNIM
 github.com/DataDog/datadog-agent/pkg/util/quantile/sketchtest v0.85.0/go.mod h1:Ic+6LGMwLWL48/28NlFx9eQTdK29pStkWVaDywlkdcM=
 github.com/DataDog/datadog-agent/pkg/util/scrubber v0.85.0 h1:qCBC/9XAzk1gRD+toK7VjReZh11hPDJLGX5v0v3/2kQ=
 github.com/DataDog/datadog-agent/pkg/util/scrubber v0.85.0/go.mod h1:Fkko0L+w1WupN0yWiXt3h55AiXgibwwolBFlPZ2gdMM=
-github.com/DataDog/datadog-agent/pkg/util/sort v0.85.4 h1:7sJfvPb/U1T9KAUs8Z+eJ5i3cz47H0bYPYDr/WCxf8c=
-github.com/DataDog/datadog-agent/pkg/util/sort v0.85.4/go.mod h1:Rv2eOzjpO6zlgee7Y5HG053mlY6OLYIN3iHab+VNo/k=
+github.com/DataDog/datadog-agent/pkg/util/sort v0.86.0 h1:nwO3ua2KWrVvVyROKrs2kLXd4gO2cxHtx6YLr8P8NKw=
+github.com/DataDog/datadog-agent/pkg/util/sort v0.86.0/go.mod h1:548P+VaMZ/zI8bGcv4bwl9fRy0qhWn4pzmCYuVsLgv0=
 github.com/DataDog/datadog-agent/pkg/util/system v0.84.0-devel.0.20261030015547-4fcf7d423463 h1:huG3t13/ycPOh/Bwki1+l3aLjWqs4oGF+89WI7QmI00=
 github.com/DataDog/datadog-agent/pkg/util/system v0.84.0-devel.0.20261030015547-4fcf7d423463/go.mod h1:VZnd9kaL0knuAhKdmf9GQV8HbzhOK6/fYjLBkje6Vhs=
 github.com/DataDog/datadog-agent/pkg/util/testutil v0.84.0-devel.0.20261028224924-1c255663adbd h1:thsNQ1VSol3+7VQFdPoGc3YQbzXjFY2+dv1wQNR0am4=
@@ -168,8 +168,8 @@ github.com/DataDog/sketches-go v1.4.8 h1:pFk9BNn+Rzv8IMIoPUttoOpOr3bJOqU3P6EP5wK
 github.com/DataDog/sketches-go v1.4.8/go.mod h1:a/wjRUqzqtGS8qRHRPDCs4EAQfmvPDZGDlMIF5mxXOE=
 github.com/DataDog/zstd v1.5.8-0.20260421145859-31a7e515a571 h1:zDAogP70WYpLD6MiIjQ9tHZYmkfbFcsfGb26CMf99To=
 github.com/DataDog/zstd v1.5.8-0.20260421145859-31a7e515a571/go.mod h1:oyU0k4j1rV2Cxqy/hdGZzmVg3nJtHahZBImIK9ejcDA=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.38.0 h1:rmzbFS2CkHq0y2L5LkMVWm+QXjjNEXxjmhrJqga/QGk=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.38.0/go.mod h1:iIyrdhveU5Ow84ipRlxtjCOQnIM0DiqSMxuxm50xwZY=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.39.0 h1:fNLv6rCdGDI7jx9xuxXxJtY/hYrv/IZ+b+QycVaTde8=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.39.0/go.mod h1:srkevHl7bfWRaV6em40MYgXWtyw0u7/eDuq/3hHXL34=
 github.com/Microsoft/go-winio v0.6.4 h1:kJF2pamtYCWXf0xAT8sAkwKC0pMl2HYBrRPHAqyUc+g=
 github.com/Microsoft/go-winio v0.6.4/go.mod h1:1xl5JXG4ze/m74GH6Dc4Mwxfc3VL5siRVQjIAlHH07U=
 github.com/aws/aws-sdk-go-v2 v1.48.0 h1:tFU7EJVm7MfyaXLsXdYTZ0Vd6vwt9OljCyqq0gqk0Mc=

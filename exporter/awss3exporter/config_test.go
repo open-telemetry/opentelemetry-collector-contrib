@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
@@ -581,6 +582,52 @@ func TestCompressionName(t *testing.T) {
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 	}, e,
 	)
+}
+
+func TestCompressionSettings(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name        string
+		compression string
+		settings    map[string]any
+		wantLevel   configcompression.Level
+		wantError   string
+	}{
+		{name: "default gzip", compression: "gzip", wantLevel: configcompression.DefaultCompressionLevel},
+		{name: "default zstd", compression: "zstd", wantLevel: 3},
+		{name: "default zlib", compression: "zlib", wantLevel: configcompression.DefaultCompressionLevel},
+		{name: "custom deflate", compression: "deflate", settings: map[string]any{"level": 1}, wantLevel: 1},
+		{name: "empty settings", compression: "gzip", settings: map[string]any{}, wantLevel: configcompression.DefaultCompressionLevel},
+		{name: "explicit zero", compression: "gzip", settings: map[string]any{"level": 0}, wantLevel: 0},
+		{name: "custom zstd", compression: "zstd", settings: map[string]any{"level": 6}, wantLevel: 6},
+		{name: "invalid gzip level", compression: "gzip", settings: map[string]any{"level": 10}, wantError: "unsupported parameters"},
+		{name: "level without compression", compression: "none", settings: map[string]any{"level": 0}, wantError: "compression_settings.level requires"},
+		{name: "level with lz4", compression: "lz4", settings: map[string]any{"level": 1}, wantError: "compression_settings.level requires"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			uploader := map[string]any{"s3_bucket": "foo", "compression": tc.compression}
+			if tc.settings != nil {
+				uploader["compression_settings"] = tc.settings
+			}
+			cfg := createDefaultConfig().(*Config)
+			require.NoError(t, confmap.NewFromStringMap(map[string]any{"s3uploader": uploader}).Unmarshal(cfg))
+			if tc.wantError != "" {
+				require.ErrorContains(t, cfg.Validate(), tc.wantError)
+				return
+			}
+			require.NoError(t, cfg.Validate())
+			assert.Equal(t, tc.wantLevel, cfg.S3Uploader.compressionParams().Level)
+
+			roundTrip := confmap.New()
+			require.NoError(t, roundTrip.Marshal(cfg))
+			decoded := createDefaultConfig().(*Config)
+			require.NoError(t, roundTrip.Unmarshal(decoded))
+			assert.Equal(t, tc.wantLevel, decoded.S3Uploader.compressionParams().Level)
+		})
+	}
 }
 
 func TestResourceAttrsToS3(t *testing.T) {
