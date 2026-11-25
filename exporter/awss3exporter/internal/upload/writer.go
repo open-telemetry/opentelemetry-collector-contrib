@@ -5,7 +5,6 @@ package upload // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -13,10 +12,10 @@ import (
 	transfermanagertypes "github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/klauspost/compress/zstd"
 	"github.com/tilinna/clock"
-	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression"
 )
 
 type Manager interface {
@@ -37,9 +36,30 @@ type s3manager struct {
 	uploader     *transfermanager.Client
 	storageClass s3types.StorageClass
 	acl          s3types.ObjectCannedACL
+	writer       xcompression.Writer
 }
 
 var _ Manager = (*s3manager)(nil)
+
+func WithACL(acl s3types.ObjectCannedACL) ManagerOpt {
+	return func(m Manager) {
+		s3m, ok := m.(*s3manager)
+		if !ok {
+			return
+		}
+		s3m.acl = acl
+	}
+}
+
+func WithCompressionWriter(w xcompression.Writer) ManagerOpt {
+	return func(m Manager) {
+		s3m, ok := m.(*s3manager)
+		if !ok {
+			return
+		}
+		s3m.writer = w
+	}
+}
 
 func NewS3Manager(logger *zap.Logger, bucket string, builder *PartitionKeyBuilder, service *s3.Client, storageClass s3types.StorageClass, opts ...ManagerOpt) Manager {
 	manager := &s3manager{
@@ -73,14 +93,6 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte, opts *UploadOption
 		return err
 	}
 
-	encoding := ""
-	// Only use ContentEncoding for non-archive formats
-	// Archive formats store files compressed permanently (like .tar.gz)
-	// while ContentEncoding is for HTTP transfer compression
-	if sw.builder.Compression.IsCompressed() && !sw.builder.IsCompressed {
-		encoding = string(sw.builder.Compression)
-	}
-
 	now := clock.Now(ctx)
 
 	overridePrefix := ""
@@ -101,8 +113,7 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte, opts *UploadOption
 		ACL:          transfermanagertypes.ObjectCannedACL(sw.acl),
 	}
 
-	// Only set ContentEncoding if we have a non-empty encoding value
-	if encoding != "" {
+	if encoding := sw.builder.contentEncoding(); encoding != "" {
 		uploadInput.ContentEncoding = aws.String(encoding)
 	}
 
@@ -112,46 +123,12 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte, opts *UploadOption
 }
 
 func (sw *s3manager) contentBuffer(raw []byte) (*bytes.Buffer, error) {
-	switch sw.builder.Compression {
-	case configcompression.TypeGzip:
-		content := bytes.NewBuffer(nil)
-
-		zipper := gzip.NewWriter(content)
-		if _, err := zipper.Write(raw); err != nil {
-			return nil, err
-		}
-		if err := zipper.Close(); err != nil {
-			return nil, err
-		}
-
-		return content, nil
-	case configcompression.TypeZstd:
-		content := bytes.NewBuffer(nil)
-		zipper, err := zstd.NewWriter(content)
-		if err != nil {
-			return nil, err
-		}
-		_, err = zipper.Write(raw)
-		if err != nil {
-			return nil, err
-		}
-		err = zipper.Close()
-		if err != nil {
-			return nil, err
-		}
-
-		return content, nil
-	default:
+	if sw.writer == nil {
 		return bytes.NewBuffer(raw), nil
 	}
-}
-
-func WithACL(acl s3types.ObjectCannedACL) func(Manager) {
-	return func(m Manager) {
-		s3m, ok := m.(*s3manager)
-		if !ok {
-			return
-		}
-		s3m.acl = acl
+	content := bytes.NewBuffer(nil)
+	if _, err := sw.writer.CompressBytes(content, raw); err != nil {
+		return nil, err
 	}
+	return content, nil
 }

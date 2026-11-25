@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -28,8 +29,9 @@ type AWSConfig struct {
 }
 
 type Encoding struct {
-	Name        string `mapstructure:"name"`
-	Compression string `mapstructure:"compression"`
+	Name              string                              `mapstructure:"name"`
+	Compression       configcompression.Type              `mapstructure:"compression"`
+	CompressionParams configcompression.CompressionParams `mapstructure:"compression_settings"`
 }
 
 // Config contains the main configuration options for the awskinesis exporter

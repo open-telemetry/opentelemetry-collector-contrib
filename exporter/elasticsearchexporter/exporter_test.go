@@ -1801,6 +1801,68 @@ func TestExporterMetrics(t *testing.T) {
 		assertRecordedItems(t, expected, rec, false)
 	})
 
+	t.Run("Explicit histogram are dropped when the explicit bounds are not sorted or increasing", func(t *testing.T) {
+		server := newESTestServerWithVersion(t, "9.4.0", func(_ []itemRequest) ([]itemResponse, error) {
+			require.Fail(t, "unexpected request")
+			return nil, nil
+		})
+
+		disabledVersionDetection := func(c *Config) {
+			c.VersionDetection.Enabled = false
+		}
+
+		exporter := newTestMetricsExporter(t, server.URL, disabledVersionDetection)
+
+		metrics := pmetric.NewMetrics()
+		sm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		m := sm.Metrics().AppendEmpty()
+		m.SetName("metric.foo")
+		eh := m.SetEmptyHistogram()
+		eh.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		dp := eh.DataPoints().AppendEmpty()
+		// This will create a validation error as the explicit bounds are decreasing
+		dp.ExplicitBounds().FromRaw([]float64{3.0, 2.0, 1.0})
+		dp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+
+		ctx := client.NewContext(t.Context(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}}),
+		})
+		err := exporter.ConsumeMetrics(ctx, metrics)
+		require.NoError(t, err)
+	})
+
+	t.Run("Explicit histogram are dropped when the explicit bounds are not unique", func(t *testing.T) {
+		server := newESTestServerWithVersion(t, "9.4.0", func(_ []itemRequest) ([]itemResponse, error) {
+			require.Fail(t, "unexpected request")
+			return nil, nil
+		})
+
+		disabledVersionDetection := func(c *Config) {
+			c.VersionDetection.Enabled = false
+		}
+
+		exporter := newTestMetricsExporter(t, server.URL, disabledVersionDetection)
+
+		metrics := pmetric.NewMetrics()
+		sm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		m := sm.Metrics().AppendEmpty()
+		m.SetName("metric.foo")
+		eh := m.SetEmptyHistogram()
+		eh.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		dp := eh.DataPoints().AppendEmpty()
+		// This will create a validation error as the explicit bounds are not unique
+		dp.ExplicitBounds().FromRaw([]float64{3.0, 3.0, 3.0})
+		dp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+
+		ctx := client.NewContext(t.Context(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}}),
+		})
+		err := exporter.ConsumeMetrics(ctx, metrics)
+		require.NoError(t, err)
+	})
+
 	t.Run("cumulative exponential histogram document includes temporality field when mode is otel and ES >= 9.5.0", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServerWithVersion(t, "9.5.0", func(docs []itemRequest) ([]itemResponse, error) {

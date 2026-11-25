@@ -8,6 +8,7 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	"io"
 	"testing"
 
 	"github.com/klauspost/compress/zstd"
@@ -118,7 +119,7 @@ func (e unmarshalExtension) UnmarshalLogs(_ []byte) (plog.Logs, error) {
 	return e.log, nil
 }
 
-func Test_receiveBytes_traces(t *testing.T) {
+func Test_receive_traces(t *testing.T) {
 	testTrace := generateTraceData()
 
 	jsonTrace, err := (&ptrace.JSONMarshaler{}).MarshalTraces(testTrace)
@@ -271,7 +272,7 @@ func Test_receiveBytes_traces(t *testing.T) {
 				t.Helper()
 				traceConsumed = true
 				if !tt.wantTrace {
-					t.Errorf("receiveBytes() received unexpected trace")
+					t.Errorf("receive() received unexpected trace")
 				} else {
 					require.Equal(t, testTrace, td)
 				}
@@ -292,17 +293,21 @@ func Test_receiveBytes_traces(t *testing.T) {
 					consumer: tracesConsumer,
 				},
 			}
-			if err := r.receiveBytes(t.Context(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
-				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
+			var input io.Reader
+			if tt.args.data != nil {
+				input = bytes.NewReader(tt.args.data)
+			}
+			if err := r.receive(t.Context(), tt.args.key, input); (err != nil) != tt.wantErr {
+				t.Errorf("receive() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if tt.wantTrace && !traceConsumed {
-				t.Errorf("receiveBytes() expected trace to be consumed, none received")
+				t.Errorf("receive() expected trace to be consumed, none received")
 			}
 		})
 	}
 }
 
-func Test_receiveBytes_configuredDecompression(t *testing.T) {
+func Test_receive_configuredDecompression(t *testing.T) {
 	testTrace := generateTraceData()
 
 	jsonTrace, err := (&ptrace.JSONMarshaler{}).MarshalTraces(testTrace)
@@ -411,7 +416,7 @@ func Test_receiveBytes_configuredDecompression(t *testing.T) {
 				},
 				decompression: tt.decompression,
 			}
-			err = r.receiveBytes(t.Context(), tt.key, tt.data)
+			err = r.receive(t.Context(), tt.key, bytes.NewReader(tt.data))
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -423,11 +428,11 @@ func Test_receiveBytes_configuredDecompression(t *testing.T) {
 }
 
 func Test_decompress_unsupported(t *testing.T) {
-	_, err := decompress(configcompression.TypeSnappy, []byte("test"))
+	_, err := newDecompressor(configcompression.TypeSnappy, bytes.NewReader([]byte("test")))
 	assert.ErrorContains(t, err, `unsupported decompression type "snappy"`)
 }
 
-func Test_receiveBytes_metrics(t *testing.T) {
+func Test_receive_metrics(t *testing.T) {
 	testMetric := generateMetricData()
 
 	jsonMetric, err := (&pmetric.JSONMarshaler{}).MarshalMetrics(testMetric)
@@ -580,7 +585,7 @@ func Test_receiveBytes_metrics(t *testing.T) {
 				t.Helper()
 				metricConsumed = true
 				if !tt.wantMetric {
-					t.Errorf("receiveBytes() received unexpected metric")
+					t.Errorf("receive() received unexpected metric")
 				} else {
 					require.Equal(t, testMetric, md)
 				}
@@ -601,17 +606,21 @@ func Test_receiveBytes_metrics(t *testing.T) {
 					consumer: tracesConsumer,
 				},
 			}
-			if err := r.receiveBytes(t.Context(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
-				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
+			var input io.Reader
+			if tt.args.data != nil {
+				input = bytes.NewReader(tt.args.data)
+			}
+			if err := r.receive(t.Context(), tt.args.key, input); (err != nil) != tt.wantErr {
+				t.Errorf("receive() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if tt.wantMetric && !metricConsumed {
-				t.Errorf("receiveBytes() expected metric to be consumed, none received")
+				t.Errorf("receive() expected metric to be consumed, none received")
 			}
 		})
 	}
 }
 
-func Test_receiveBytes_logs(t *testing.T) {
+func Test_receive_logs(t *testing.T) {
 	testLog := generateLogData()
 
 	jsonLog, err := (&plog.JSONMarshaler{}).MarshalLogs(testLog)
@@ -764,7 +773,7 @@ func Test_receiveBytes_logs(t *testing.T) {
 				t.Helper()
 				logConsumed = true
 				if !tt.wantMetric {
-					t.Errorf("receiveBytes() received unexpected log")
+					t.Errorf("receive() received unexpected log")
 				} else {
 					require.Equal(t, testLog, ld)
 				}
@@ -785,11 +794,15 @@ func Test_receiveBytes_logs(t *testing.T) {
 					consumer: tracesConsumer,
 				},
 			}
-			if err := r.receiveBytes(t.Context(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
-				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
+			var input io.Reader
+			if tt.args.data != nil {
+				input = bytes.NewReader(tt.args.data)
+			}
+			if err := r.receive(t.Context(), tt.args.key, input); (err != nil) != tt.wantErr {
+				t.Errorf("receive() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if tt.wantMetric && !logConsumed {
-				t.Errorf("receiveBytes() expected log to be consumed, none received")
+				t.Errorf("receive() expected log to be consumed, none received")
 			}
 		})
 	}
