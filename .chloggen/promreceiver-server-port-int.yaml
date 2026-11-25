@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/prometheus
+note: >-
+  Add alpha feature gate `receiver.prometheus.EmitServerPortAsInt` to emit the `server.port` resource attribute as an integer instead of a string when a valid numeric port is present.
+issues: [53546]
+change_logs: [user]

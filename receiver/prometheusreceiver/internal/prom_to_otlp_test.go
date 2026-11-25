@@ -473,3 +473,337 @@ func TestCreateResourceWithTargetURL(t *testing.T) {
 		})
 	}
 }
+
+func setFeatureGate(t *testing.T, gate *featuregate.Gate, enabled bool) {
+	t.Helper()
+	prev := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
+	})
+}
+
+func TestCreateResourceEmitServerPortAsInt(t *testing.T) {
+	require.False(t, metadata.ReceiverPrometheusEmitServerPortAsIntFeatureGate.IsEnabled(), "alpha feature gate must be disabled by default")
+
+	tests := []struct {
+		name           string
+		useTargetURL   bool
+		job            string
+		instance       string
+		targetAddress  string
+		targetScheme   string
+		sdLabels       labels.Labels
+		want           map[string]any
+		wantPortExists bool
+		wantPort       int64
+	}{
+		{
+			name:           "TargetURL: standard numeric port",
+			useTargetURL:   true,
+			job:            "job",
+			instance:       "logical-instance-1",
+			targetAddress:  "example.com:8080",
+			targetScheme:   "http",
+			sdLabels:       labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			wantPortExists: true,
+			wantPort:       8080,
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "logical-instance-1",
+				"server.address":      "example.com",
+				"server.port":         int64(8080),
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:           "TargetURL: minimum valid port 1",
+			useTargetURL:   true,
+			job:            "job",
+			instance:       "example.com:1",
+			targetAddress:  "example.com:1",
+			targetScheme:   "http",
+			sdLabels:       labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			wantPortExists: true,
+			wantPort:       1,
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "example.com:1",
+				"server.address":      "example.com",
+				"server.port":         int64(1),
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:           "TargetURL: maximum valid port 65535",
+			useTargetURL:   true,
+			job:            "job",
+			instance:       "example.com:65535",
+			targetAddress:  "example.com:65535",
+			targetScheme:   "https",
+			sdLabels:       labels.New(labels.Label{Name: "__scheme__", Value: "https"}),
+			wantPortExists: true,
+			wantPort:       65535,
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "example.com:65535",
+				"server.address":      "example.com",
+				"server.port":         int64(65535),
+				"url.scheme":          "https",
+			},
+		},
+		{
+			name:           "TargetURL: leading zero numeric port",
+			useTargetURL:   true,
+			job:            "job",
+			instance:       "example.com:08080",
+			targetAddress:  "example.com:08080",
+			targetScheme:   "http",
+			sdLabels:       labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			wantPortExists: true,
+			wantPort:       8080,
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "example.com:08080",
+				"server.address":      "example.com",
+				"server.port":         int64(8080),
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:           "TargetURL: IPv6 with port",
+			useTargetURL:   true,
+			job:            "job",
+			instance:       "[2001:db8::1]:9090",
+			targetAddress:  "[2001:db8::1]:9090",
+			targetScheme:   "http",
+			sdLabels:       labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			wantPortExists: true,
+			wantPort:       9090,
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "[2001:db8::1]:9090",
+				"server.address":      "2001:db8::1",
+				"server.port":         int64(9090),
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:           "TargetURL: loopback with port omits server.address and emits int port",
+			useTargetURL:   true,
+			job:            "job",
+			instance:       "127.0.0.1:9090",
+			targetAddress:  "127.0.0.1:9090",
+			targetScheme:   "http",
+			sdLabels:       labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			wantPortExists: true,
+			wantPort:       9090,
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "127.0.0.1:9090",
+				"server.port":         int64(9090),
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:          "TargetURL: port 0 omitted",
+			useTargetURL:  true,
+			job:           "job",
+			instance:      "example.com:0",
+			targetAddress: "example.com:0",
+			targetScheme:  "http",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "example.com:0",
+				"server.address":      "example.com",
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:          "TargetURL: port above 65535 omitted",
+			useTargetURL:  true,
+			job:           "job",
+			instance:      "example.com:65536",
+			targetAddress: "example.com:65536",
+			targetScheme:  "http",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "example.com:65536",
+				"server.address":      "example.com",
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:          "TargetURL: negative port omitted",
+			useTargetURL:  true,
+			job:           "job",
+			instance:      "example.com:-80",
+			targetAddress: "example.com:-80",
+			targetScheme:  "http",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "example.com:-80",
+				"server.address":      "example.com",
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:          "TargetURL: plus-signed port omitted",
+			useTargetURL:  true,
+			job:           "job",
+			instance:      "example.com:+8080",
+			targetAddress: "example.com:+8080",
+			targetScheme:  "http",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "example.com:+8080",
+				"server.address":      "example.com",
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:          "TargetURL: non-numeric port omitted",
+			useTargetURL:  true,
+			job:           "job",
+			instance:      "example.com:http",
+			targetAddress: "example.com:http",
+			targetScheme:  "http",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "example.com:http",
+				"server.address":      "example.com",
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:          "TargetURL: trailing colon empty port omitted",
+			useTargetURL:  true,
+			job:           "job",
+			instance:      "example.com:",
+			targetAddress: "example.com:",
+			targetScheme:  "http",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "example.com:",
+				"server.address":      "example.com",
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:          "TargetURL: missing port omitted",
+			useTargetURL:  true,
+			job:           "job",
+			instance:      "example.com",
+			targetAddress: "example.com",
+			targetScheme:  "http",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "example.com",
+				"server.address":      "example.com",
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:           "Legacy instance: standard numeric port",
+			useTargetURL:   false,
+			job:            "job",
+			instance:       "hostname:8888",
+			targetAddress:  "ignored.example.com:9999",
+			targetScheme:   "https",
+			sdLabels:       labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			wantPortExists: true,
+			wantPort:       8888,
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "hostname:8888",
+				"server.address":      "hostname",
+				"server.port":         int64(8888),
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:          "Legacy instance: missing port omitted",
+			useTargetURL:  false,
+			job:           "job",
+			instance:      "myinstance",
+			targetAddress: "example.com:8080",
+			targetScheme:  "http",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "https"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "myinstance",
+				"server.address":      "myinstance",
+				"url.scheme":          "https",
+			},
+		},
+		{
+			name:          "Legacy instance: non-numeric port omitted",
+			useTargetURL:  false,
+			job:           "job",
+			instance:      "my-service:prod",
+			targetAddress: "",
+			targetScheme:  "",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "my-service:prod",
+				"server.address":      "my-service",
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:          "Legacy instance: out-of-range port omitted",
+			useTargetURL:  false,
+			job:           "job",
+			instance:      "hostname:70000",
+			targetAddress: "",
+			targetScheme:  "",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "hostname:70000",
+				"server.address":      "hostname",
+				"url.scheme":          "http",
+			},
+		},
+		{
+			name:          "Legacy instance: port 0 omitted",
+			useTargetURL:  false,
+			job:           "job",
+			instance:      "hostname:0",
+			targetAddress: "",
+			targetScheme:  "",
+			sdLabels:      labels.New(labels.Label{Name: "__scheme__", Value: "http"}),
+			want: map[string]any{
+				"service.name":        "job",
+				"service.instance.id": "hostname:0",
+				"server.address":      "hostname",
+				"url.scheme":          "http",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setFeatureGate(t, metadata.ReceiverPrometheusEmitServerPortAsIntFeatureGate, true)
+			setFeatureGate(t, metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate, tt.useTargetURL)
+
+			got := CreateResource(tt.job, tt.instance, tt.targetAddress, tt.targetScheme, tt.sdLabels)
+			require.Equal(t, tt.want, got.Attributes().AsRaw())
+
+			portVal, ok := got.Attributes().Get("server.port")
+			require.Equal(t, tt.wantPortExists, ok)
+			if tt.wantPortExists {
+				require.Equal(t, pcommon.ValueTypeInt, portVal.Type())
+				require.Equal(t, tt.wantPort, portVal.Int())
+			}
+		})
+	}
+}

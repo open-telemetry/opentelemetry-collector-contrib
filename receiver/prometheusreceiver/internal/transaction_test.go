@@ -2396,3 +2396,104 @@ func TestTransactionInitWithUseTargetURLFeatureGate(t *testing.T) {
 		"url.scheme":          "https",
 	}, gotAttrs.AsRaw())
 }
+
+func TestTransactionInitWithEmitServerPortAsIntFeatureGate(t *testing.T) {
+	tests := []struct {
+		name           string
+		useTargetURL   bool
+		instanceLabel  string
+		wantAttributes map[string]any
+		wantPortExists bool
+		wantPort       int64
+	}{
+		{
+			name:          "with UseTargetUrlForServerAddress enabled",
+			useTargetURL:  true,
+			instanceLabel: "logical-instance-1",
+			wantAttributes: map[string]any{
+				"service.name":        "my-job",
+				"service.instance.id": "logical-instance-1",
+				"server.address":      "example.com",
+				"server.port":         int64(8443),
+				"url.scheme":          "https",
+			},
+			wantPortExists: true,
+			wantPort:       8443,
+		},
+		{
+			name:          "with UseTargetUrlForServerAddress disabled and numeric instance port",
+			useTargetURL:  false,
+			instanceLabel: "instance-host:9090",
+			wantAttributes: map[string]any{
+				"service.name":        "my-job",
+				"service.instance.id": "instance-host:9090",
+				"server.address":      "instance-host",
+				"server.port":         int64(9090),
+				"url.scheme":          "http",
+			},
+			wantPortExists: true,
+			wantPort:       9090,
+		},
+		{
+			name:          "with UseTargetUrlForServerAddress disabled and portless instance",
+			useTargetURL:  false,
+			instanceLabel: "logical-instance-1",
+			wantAttributes: map[string]any{
+				"service.name":        "my-job",
+				"service.instance.id": "logical-instance-1",
+				"server.address":      "logical-instance-1",
+				"url.scheme":          "http",
+			},
+			wantPortExists: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setFeatureGate(t, mdata.ReceiverPrometheusEmitServerPortAsIntFeatureGate, true)
+			setFeatureGate(t, mdata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate, tt.useTargetURL)
+
+			relabeledTarget := scrape.NewTarget(
+				labels.FromMap(map[string]string{
+					model.JobLabel:      "my-job",
+					model.InstanceLabel: tt.instanceLabel,
+					model.AddressLabel:  "example.com:8443",
+					model.SchemeLabel:   "https",
+				}),
+				&config.ScrapeConfig{},
+				map[model.LabelName]model.LabelValue{
+					model.AddressLabel: "10.0.0.1:8080",
+					model.SchemeLabel:  "http",
+				},
+				nil,
+			)
+
+			ctx := scrape.ContextWithMetricMetadataStore(
+				scrape.ContextWithTarget(t.Context(), relabeledTarget),
+				testMetadataStore(testMetadata),
+			)
+
+			sink := new(consumertest.MetricsSink)
+			tr := newTransaction(ctx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
+			_, err := tr.Append(0, labels.FromMap(map[string]string{
+				model.JobLabel:        "my-job",
+				model.InstanceLabel:   tt.instanceLabel,
+				model.MetricNameLabel: "counter_test",
+			}), 0, time.Now().UnixMilli(), 1.0, nil, nil, storage.AOptions{})
+			require.NoError(t, err)
+			require.NoError(t, tr.Commit())
+
+			mds := sink.AllMetrics()
+			require.Len(t, mds, 1)
+			gotAttrs := mds[0].ResourceMetrics().At(0).Resource().Attributes()
+			require.Equal(t, tt.wantAttributes, gotAttrs.AsRaw())
+
+			portVal, ok := gotAttrs.Get("server.port")
+			require.Equal(t, tt.wantPortExists, ok)
+			if tt.wantPortExists {
+				require.Equal(t, pcommon.ValueTypeInt, portVal.Type())
+				require.Equal(t, tt.wantPort, portVal.Int())
+			}
+		})
+	}
+}

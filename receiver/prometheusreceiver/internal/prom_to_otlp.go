@@ -5,6 +5,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"net"
+	"strconv"
 	"strings"
 
 	"github.com/prometheus/common/model"
@@ -34,6 +35,15 @@ func isDiscernibleHost(host string) bool {
 	return true
 }
 
+// parseServerPort parses a TCP/UDP port string in the valid range 1-65535.
+func parseServerPort(port string) (int64, bool) {
+	portNum, err := strconv.ParseUint(port, 10, 16)
+	if err != nil || portNum == 0 {
+		return 0, false
+	}
+	return int64(portNum), true
+}
+
 // CreateResource creates the resource data added to OTLP payloads.
 func CreateResource(job, instance, targetAddress, targetScheme string, serviceDiscoveryLabels labels.Labels) pcommon.Resource {
 	resource := pcommon.NewResource()
@@ -57,7 +67,11 @@ func CreateResource(job, instance, targetAddress, targetScheme string, serviceDi
 		if host != "" && isDiscernibleHost(host) {
 			attrs.PutStr(string(conventions.ServerAddressKey), host)
 		}
-		if port != "" {
+		if metadata.ReceiverPrometheusEmitServerPortAsIntFeatureGate.IsEnabled() {
+			if portNum, ok := parseServerPort(port); ok {
+				attrs.PutInt(string(conventions.ServerPortKey), portNum)
+			}
+		} else if port != "" {
 			attrs.PutStr(string(conventions.ServerPortKey), port)
 		}
 		scheme := targetScheme
@@ -72,7 +86,13 @@ func CreateResource(job, instance, targetAddress, targetScheme string, serviceDi
 		if isDiscernibleHost(host) {
 			attrs.PutStr(string(conventions.ServerAddressKey), host)
 		}
-		attrs.PutStr(string(conventions.ServerPortKey), port)
+		if metadata.ReceiverPrometheusEmitServerPortAsIntFeatureGate.IsEnabled() {
+			if portNum, ok := parseServerPort(port); ok {
+				attrs.PutInt(string(conventions.ServerPortKey), portNum)
+			}
+		} else {
+			attrs.PutStr(string(conventions.ServerPortKey), port)
+		}
 		attrs.PutStr(string(conventions.URLSchemeKey), serviceDiscoveryLabels.Get(model.SchemeLabel))
 	}
 

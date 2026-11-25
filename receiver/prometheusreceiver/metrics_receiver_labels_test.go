@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"testing"
 	"time"
 
@@ -1057,4 +1058,125 @@ scrape_configs:
 	}, attrs.AsRaw())
 	_, hasServerAddress := attrs.Get("server.address")
 	require.False(t, hasServerAddress, "loopback scrape target address should omit server.address")
+}
+
+func TestEmitServerPortAsInt(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(targetRelabelJobInstance))
+	}))
+	t.Cleanup(srv.Close)
+
+	srvURL, err := url.Parse(srv.URL)
+	require.NoError(t, err)
+	wantPort, err := strconv.ParseInt(srvURL.Port(), 10, 64)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name           string
+		useTargetURL   bool
+		relabelConfigs string
+		wantAttrs      map[string]any
+		wantPortExists bool
+		wantPort       int64
+	}{
+		{
+			name:         "legacy instance path emits numeric server.port as int",
+			useTargetURL: false,
+			wantAttrs: map[string]any{
+				"service.name":        "target1",
+				"service.instance.id": srvURL.Host,
+				"server.port":         wantPort,
+				"url.scheme":          "http",
+			},
+			wantPortExists: true,
+			wantPort:       wantPort,
+		},
+		{
+			name:         "legacy instance path omits server.port when instance has no port",
+			useTargetURL: false,
+			relabelConfigs: `
+    relabel_configs:
+      - action: replace
+        regex: (.*)
+        target_label: instance
+        replacement: logical-instance-1`,
+			wantAttrs: map[string]any{
+				"service.name":        "target1",
+				"service.instance.id": "logical-instance-1",
+				"server.address":      "logical-instance-1",
+				"url.scheme":          "http",
+			},
+			wantPortExists: false,
+		},
+		{
+			name:         "target URL path emits scraped server.port as int even when instance is relabeled",
+			useTargetURL: true,
+			relabelConfigs: `
+    relabel_configs:
+      - action: replace
+        regex: (.*)
+        target_label: instance
+        replacement: logical-instance-1`,
+			wantAttrs: map[string]any{
+				"service.name":        "target1",
+				"service.instance.id": "logical-instance-1",
+				"server.port":         wantPort,
+				"url.scheme":          "http",
+			},
+			wantPortExists: true,
+			wantPort:       wantPort,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setFeatureGate(t, metadata.ReceiverPrometheusEmitServerPortAsIntFeatureGate, true)
+			setFeatureGate(t, metadata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate, tt.useTargetURL)
+
+			yamlCfg := fmt.Sprintf(`
+scrape_configs:
+  - job_name: target1
+    scrape_interval: 100ms
+    static_configs:
+      - targets: [%q]%s
+`, srvURL.Host, tt.relabelConfigs)
+
+			pCfg, err := promcfg.Load(yamlCfg, promslog.NewNopLogger())
+			require.NoError(t, err)
+
+			cms := newSignalingSink(1)
+			set := receivertest.NewNopSettings(metadata.Type)
+			_ = newTestReceiverSettingsConsumer(t, &Config{
+				PrometheusConfig: (*PromConfig)(pCfg),
+				skipOffsetting:   true,
+			}, set, cms)
+
+			cms.Wait(t, 10*time.Second)
+
+			var validRM pmetric.ResourceMetrics
+			require.Eventually(t, func() bool {
+				for _, md := range cms.AllMetrics() {
+					rms := md.ResourceMetrics()
+					for i := 0; i < rms.Len(); i++ {
+						if isValidScrape(rms.At(i)) {
+							validRM = rms.At(i)
+							return true
+						}
+					}
+				}
+				return false
+			}, 10*time.Second, 20*time.Millisecond)
+
+			attrs := validRM.Resource().Attributes()
+			require.Equal(t, tt.wantAttrs, attrs.AsRaw())
+
+			portVal, ok := attrs.Get("server.port")
+			require.Equal(t, tt.wantPortExists, ok)
+			if tt.wantPortExists {
+				require.Equal(t, pcommon.ValueTypeInt, portVal.Type())
+				require.Equal(t, tt.wantPort, portVal.Int())
+			}
+		})
+	}
 }
