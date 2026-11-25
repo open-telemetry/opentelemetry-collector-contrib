@@ -53,7 +53,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.20.4 // indirect
+	github.com/klauspost/compress v1.20.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/knadh/koanf/maps v0.1.3 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.1 // indirect
@@ -66,7 +66,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.166.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/xprofile v0.166.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/xottl v0.166.0 // indirect
-	github.com/pierrec/lz4/v4 v4.1.33 // indirect
+	github.com/pierrec/lz4/v4 v4.1.34 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/twmb/murmur3 v1.2.2 // indirect
 	github.com/ua-parser/uap-go v0.0.0-20251207011819-db9adb27a0b8 // indirect

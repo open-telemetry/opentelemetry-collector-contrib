@@ -116,7 +116,7 @@ require (
 	github.com/in-toto/attestation v1.2.0 // indirect
 	github.com/in-toto/in-toto-golang v0.11.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.20.4 // indirect
+	github.com/klauspost/compress v1.20.5 // indirect
 	github.com/knadh/koanf/maps v0.1.3 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.1 // indirect
 	github.com/knadh/koanf/v2 v2.4.1 // indirect
@@ -131,7 +131,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/secretprovider v0.166.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/pandatix/go-abnf v0.5.5 // indirect
-	github.com/pierrec/lz4/v4 v4.1.33 // indirect
+	github.com/pierrec/lz4/v4 v4.1.34 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.25.0 // indirect
 	github.com/prometheus/client_model v0.6.3 // indirect
