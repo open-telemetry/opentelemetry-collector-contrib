@@ -8,7 +8,7 @@ status:
     development: [profiles]
   distributions: [contrib]
   codeowners:
-    active: [JaredTan95, blakerouse, carsonip, lahsivjar]
+    active: [JaredTan95, blakerouse, carsonip, lahsivjar, osullivandonal]
 
 attributes:
   db.collection.name:
