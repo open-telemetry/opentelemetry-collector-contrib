@@ -120,7 +120,7 @@ func TestStatsdReceiver_ParseCounts(t *testing.T) {
 	statsdClient, err := client.NewStatsD("udp", addr)
 	require.NoError(t, err)
 	for range 150 {
-		require.NoError(t, statsdClient.SendMetric(client.Metric{Name: "bad", Value: "1:2", Type: "ms"}))
+		require.NoError(t, statsdClient.SendMetric(client.Metric{Name: "bad", Value: "abc", Type: "ms"}))
 	}
 	for range 3 {
 		require.NoError(t, statsdClient.SendMetric(client.Metric{Name: "good", Value: "1", Type: "c"}))
