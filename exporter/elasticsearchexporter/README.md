@@ -935,3 +935,22 @@ warnings above. To resolve this, you can either:
 - Apply a `cumulativetodelta` processor.
 
 For more details, see [Metrics data ingestion](https://www.elastic.co/docs/reference/opentelemetry/compatibility/limitations#metrics-data-ingestion).
+
+### "histogram <metric-name> bounds are not sorted or are not unique, ignoring"
+
+Symptom: `elasticsearchexporter` logs a warning under `validation errors` similar to:
+
+```
+warn    elasticsearchexporter/exporter.go:387  validation errors
+{
+  "otelcol.component.id": "elasticsearch/otel",
+  "otelcol.component.kind": "exporter",
+  "otelcol.signal": "metrics",
+  "error": "histogram \"<metric-name>\" bounds are not sorted or are not unique, ignoring"
+}
+```
+
+Explicit-bounds histograms must have strictly increasing (sorted and unique)
+`explicitBounds`. Data points that violate this are dropped, matching the
+behavior of the Elasticsearch OTLP endpoint. Check the source that produced the
+metric.
