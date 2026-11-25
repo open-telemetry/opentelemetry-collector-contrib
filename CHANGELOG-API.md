@@ -7,6 +7,66 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.5.0/v0.166.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/azure_blob`: Change the type of the `auth.client_secret` and `auth.connection_string` options to `configopaque.String` so they are redacted when the configuration is printed. (#53192)
+- `exporter/pulsar`: Change the type of the `auth.oauth2.private_key` option to `configopaque.String` so it is redacted when the configuration is printed. (#53260)
+- `exporter/rabbitmq`: Change the type of the `connection.auth.plain.password` option to `configopaque.String` so it is redacted when the configuration is printed. (#53258)
+- `exporter/sematext`: Change the type of the `metrics.app_token` and `logs.app_token` options to `configopaque.String` so they are redacted when the configuration is printed, and stop including them in validation errors. (#53321)
+- `extension/azure_auth`: Change the type of `service_principal.client_secret` to `configopaque.String` so it is redacted when the configuration is printed. (#53193)
+- `extension/cfgarden_observer`: Change the type of the `cloud_foundry.auth` `password`, `access_token`, `refresh_token` and `client_secret` options to `configopaque.String` so they are redacted when the configuration is printed. (#53197)
+- `extension/db_storage`: Change the type of the `datasource` option to `configopaque.String` so it is redacted when the configuration is printed. (#53200)
+- `extension/headers_setter`: Change the type of the header `value` option to `configopaque.String` so it is redacted when the configuration is printed. (#53263)
+- `extension/solarwindsapmsettings`: Change the type of the `key` option to `configopaque.String` so it is redacted when the configuration is printed. (#53318)
+- `processor/signing`: Change the type of the inline `private_key` and `hmac_key` options and the OpenBao `token` option to `configopaque.String` so they are redacted when the configuration is printed. (#53320)
+- `processor/transform`: Move `WithProfileFunctions` and `DefaultProfileFunctions` to the new `processor/transformprocessor/xtransformprocessor` module. (#52564)
+- `processor/verify`: Change the type of the inline `hmac_key` option to `configopaque.String` so it is redacted when the configuration is printed. (#53314)
+- `receiver/aws_s3`: Limit decompressed objects buffered by non-streaming decoders with s3downloader.max_unmarshal_size. (#53137)
+  The default limit is 256 MiB; increase s3downloader.max_unmarshal_size for larger objects. Streaming decoders are not subject to this limit.
+- `receiver/azure_blob`: Change the type of the `connection_string` and `event_hub.endpoint` options to `configopaque.String` so they are redacted when the configuration is printed. (#53196)
+- `receiver/azure_event_hub`: Change the type of the `connection` and blob checkpoint store `connection` options to `configopaque.String` so they are redacted when the configuration is printed. (#53195)
+- `receiver/azure_monitor`: Change the type of the `client_secret` option to `configopaque.String` so it is redacted when the configuration is printed. (#53194)
+- `receiver/cloudflare`: Change the type of the `logs.secret` option to `configopaque.String` so it is redacted when the configuration is printed. (#53201)
+- `receiver/github`: Change the type of the webhook `secret` option to `configopaque.String` so it is redacted when the configuration is printed. (#53199)
+- `receiver/gitlab`: Change the type of the webhook `secret` option to `configopaque.String` so it is redacted when the configuration is printed. (#53198)
+- `receiver/huaweicloudcesreceiver`: Change the type of the `proxy_password` option to `configopaque.String` so it is redacted when the configuration is printed. (#53262)
+- `receiver/oracledb`: Change the type of the `datasource` and `password` options to `configopaque.String` so they are redacted when the configuration is printed. (#53261)
+- `receiver/pulsar`: Change the type of the `auth.oauth2.private_key` option to `configopaque.String` so it is redacted when the configuration is printed. (#53259)
+- `receiver/snmp`: Change the type of the `community` option to `configopaque.String` so it is redacted when the configuration is printed. (#53319)
+- `receiver/sql_query`: Change the type of the `datasource` option to `configopaque.String` so it is redacted when the configuration is printed. (#53317)
+- `receiver/sql_server`: Change the type of the `datasource` option to `configopaque.String` so it is redacted when the configuration is printed. (#53316)
+- `receiver/ssh_check`: Change the type of the `password` option to `configopaque.String` so it is redacted when the configuration is printed. (#53315)
+- `receiver/webhook_event`: Change the type of the `required_header.value` option to `configopaque.String` so it is redacted when the configuration is printed, and compare it in constant time. (#53313)
+- `receiver/windows_event_log`: Change the type of the `remote.password` option to `configopaque.String` so it is redacted when the configuration is printed. (#53312)
+
+### 🚀 New components 🚀
+
+- `pkg/xcompression`: This library is the initial design of improving compression usage throughout the collector. (#53293)
+
+### 💡 Enhancements 💡
+
+- `extension/oidc`: Add a provider-level jwks_url option to retrieve JWT verification keys without OpenID Connect discovery, with a five-minute cache lifetime. (#53168)
+- `processor/transform`: Export `ContextStatements` and `ContextID` from the `transformprocessor` package so the statement fields of a factory-created `Config` can be set in Go. (#52566)
+- `receiver/aws_s3`: Add optional SQS message visibility-timeout renewal with sqs.visibility_timeout_seconds. (#53139)
+- `scraper/hardware`: Add hardwarescraper -- adds Linux hardware temperature metrics from hwmon (#41269)
+
+### 🧰 Bug fixes 🧰
+
+- `exporter/prometheus_remote_write`: Drop explicit histogram data points without a sum instead of converting them to NHCB with a zero sum when `convert_explicit_histograms_to_nhcb` is enabled. (#53042)
+- `pkg/translator/prometheusremotewrite`: Drop exemplars on Gauges and non-monotonic Sums in FromMetricsV2 to align with the OpenTelemetry specification and FromMetrics. (#52941)
+- `pkg/translator/prometheusremotewrite`: Preserve the zero threshold when converting exponential histograms to Prometheus remote-write v1 and v2 native histograms. (#52834)
+- `pkg/translator/prometheusremotewrite`: Attach exemplars to classic histogram _bucket series in FromMetricsV2 to align with the OpenTelemetry specification and FromMetrics. (#52941)
+- `pkg/translator/prometheusremotewrite`: Align Exponential Histogram NoRecordedValue staleness marker with the specification. (#52939)
+  Exponential histogram staleness markers (`NoRecordedValue`) now leave `Count`, `ZeroCount`, and
+  bucket spans/deltas empty instead of setting `CountInt` to `value.StaleNaN` and populating
+  buckets.
+  
+- `pkg/translator/prometheusremotewrite`: Enforce trace_id and span_id precedence over colliding filtered_attributes on exemplars in FromMetrics. (#52941)
+
+<!-- previous-version -->
+
 ## v1.4.0/v0.165.0
 
 ### 🛑 Breaking changes 🛑
