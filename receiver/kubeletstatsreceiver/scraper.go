@@ -5,6 +5,7 @@ package kubeletstatsreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -126,10 +128,16 @@ func (r *kubeletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	metaD := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, nodeInfo, r.detailedPVCLabelsSetter())
 
-	mds := kubelet.MetricsData(r.logger, summary, metaD, r.metricGroupsToCollect, r.allNetworkInterfaces, r.mbs, r.cpuUsageCalculator)
+	mds, errs := kubelet.MetricsData(summary, metaD, r.metricGroupsToCollect, r.allNetworkInterfaces, r.mbs, r.cpuUsageCalculator)
 	md := pmetric.NewMetrics()
 	for i := range mds {
 		mds[i].ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
+	}
+	if len(errs) > 0 {
+		// The number of skipped data points is unknown because a resource is
+		// skipped before its metrics are recorded, so count one per skipped
+		// container or volume.
+		return md, scrapererror.NewPartialScrapeError(errors.Join(errs...), len(errs))
 	}
 	return md, nil
 }

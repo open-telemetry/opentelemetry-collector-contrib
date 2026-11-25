@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -961,7 +962,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 		expectedVolumes    map[string]expectedVolume
 		volumeClaimsToMiss map[string]bool
 		dataLen            int
-		numLogs            int
+		numSkipped         int
 	}{
 		{
 			name:         "successful",
@@ -994,7 +995,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 				"volume_claim_2": true,
 				"volume_claim_3": true,
 			},
-			numLogs: 3,
+			numSkipped: 3,
 		},
 		{
 			name:         "empty_volume_name_in_pvc",
@@ -1017,7 +1018,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 			volumeClaimsToMiss: map[string]bool{
 				"volume_claim_3": true,
 			},
-			numLogs: 1,
+			numSkipped: 1,
 		},
 		{
 			name:         "non_existent_volume_in_pvc",
@@ -1040,7 +1041,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 			volumeClaimsToMiss: map[string]bool{
 				"volume_claim_3": true,
 			},
-			numLogs: 1,
+			numSkipped: 1,
 		},
 		{
 			name:    "do_not_collect_detailed_labels",
@@ -1068,7 +1069,13 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 			require.NoError(t, err)
 
 			md, err := r.ScrapeMetrics(t.Context())
-			require.NoError(t, err)
+			if test.numSkipped == 0 {
+				require.NoError(t, err)
+			} else {
+				var partialErr scrapererror.PartialScrapeError
+				require.ErrorAs(t, err, &partialErr)
+				require.Equal(t, test.numSkipped, partialErr.Failed)
+			}
 
 			filename := "test_scraper_with_pvc_labels_" + test.name + "_expected.yaml"
 			expectedFile := filepath.Join("testdata", "scraper", filename)

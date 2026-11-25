@@ -7,26 +7,27 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
+// MetricsData converts the kubelet summary into metrics. The returned errors
+// describe containers and volumes that were skipped because their metadata
+// could not be resolved; the metrics for everything else are still returned.
 func MetricsData(
-	logger *zap.Logger, summary *stats.Summary,
+	summary *stats.Summary,
 	metadata Metadata,
 	metricGroupsToCollect map[MetricGroup]bool,
 	allNetworkInterfaces map[MetricGroup]bool,
 	mbs *metadata.MetricsBuilders,
 	cpuUsageCalculator *CPUUsageCalculator,
-) []pmetric.Metrics {
+) ([]pmetric.Metrics, []error) {
 	cpuUsageCalculator.startScrape()
 	defer cpuUsageCalculator.endScrape()
 
 	acc := &metricDataAccumulator{
 		metadata:              metadata,
-		logger:                logger,
 		metricGroupsToCollect: metricGroupsToCollect,
 		allNetworkInterfaces:  allNetworkInterfaces,
 		time:                  time.Now(),
@@ -49,5 +50,5 @@ func MetricsData(
 			acc.volumeStats(pod, volumeStats)
 		}
 	}
-	return acc.m
+	return acc.m, acc.errs
 }

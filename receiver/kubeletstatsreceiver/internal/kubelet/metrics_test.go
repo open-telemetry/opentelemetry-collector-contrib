@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
+	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
@@ -43,12 +43,28 @@ func TestMetricAccumulator(t *testing.T) {
 		NodeMetricGroup: true,
 		PodMetricGroup:  true,
 	}
-	requireMetricsOk(t, MetricsData(zap.NewNop(), summary, k8sMetadata, ValidMetricGroups, ifaces, mbs, NewCPUUsageCalculator()))
+	requireMetricsOk(t, mustMetricsData(t, summary, k8sMetadata, ValidMetricGroups, ifaces, mbs, NewCPUUsageCalculator()))
 	// Disable all groups
 	mbs.NodeMetricsBuilder.Reset()
 	mbs.PodMetricsBuilder.Reset()
 	mbs.OtherMetricsBuilder.Reset()
-	require.Empty(t, MetricsData(zap.NewNop(), summary, k8sMetadata, map[MetricGroup]bool{}, map[MetricGroup]bool{}, mbs, NewCPUUsageCalculator()))
+	require.Empty(t, mustMetricsData(t, summary, k8sMetadata, map[MetricGroup]bool{}, map[MetricGroup]bool{}, mbs, NewCPUUsageCalculator()))
+}
+
+// mustMetricsData calls MetricsData and requires that no resource was skipped.
+func mustMetricsData(
+	t *testing.T,
+	summary *stats.Summary,
+	md Metadata,
+	metricGroupsToCollect map[MetricGroup]bool,
+	allNetworkInterfaces map[MetricGroup]bool,
+	mbs *metadata.MetricsBuilders,
+	cpuUsageCalculator *CPUUsageCalculator,
+) []pmetric.Metrics {
+	t.Helper()
+	mds, errs := MetricsData(summary, md, metricGroupsToCollect, allNetworkInterfaces, mbs, cpuUsageCalculator)
+	require.Empty(t, errs)
+	return mds
 }
 
 func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
@@ -161,7 +177,7 @@ func TestUptime(t *testing.T) {
 		ContainerMetricsBuilder: metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
 	}
 
-	metrics := indexedFakeMetrics(MetricsData(zap.NewNop(), summary, Metadata{}, mgs, ifaces, mbs, NewCPUUsageCalculator()))
+	metrics := indexedFakeMetrics(mustMetricsData(t, summary, Metadata{}, mgs, ifaces, mbs, NewCPUUsageCalculator()))
 
 	requireContains(t, metrics, "k8s.node.uptime")
 	requireContains(t, metrics, "k8s.pod.uptime")
@@ -204,7 +220,7 @@ func TestRlimit(t *testing.T) {
 		NodeMetricsBuilder: metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
 	}
 
-	mds := MetricsData(zap.NewNop(), summary, Metadata{}, mgs, ifaces, mbs, NewCPUUsageCalculator())
+	mds := mustMetricsData(t, summary, Metadata{}, mgs, ifaces, mbs, NewCPUUsageCalculator())
 	requireMetricsOk(t, mds)
 	metrics := indexedFakeMetrics(mds)
 
@@ -265,5 +281,6 @@ func fakeMetrics() []pmetric.Metrics {
 		ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 		OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 	}
-	return MetricsData(zap.NewNop(), summary, Metadata{}, mgs, ifaces, mbs, NewCPUUsageCalculator())
+	mds, _ := MetricsData(summary, Metadata{}, mgs, ifaces, mbs, NewCPUUsageCalculator())
+	return mds
 }
