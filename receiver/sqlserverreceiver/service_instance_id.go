@@ -32,7 +32,7 @@ func isLocalhost(host string) bool {
 func resolveEndpoint(cfg *Config) (host, instance string, port int, err error) {
 	switch {
 	case cfg.DataSource != "":
-		config, parseErr := parseDataSource(cfg.DataSource)
+		config, parseErr := parseDataSource(string(cfg.DataSource))
 		if parseErr != nil {
 			return "", "", 0, fmt.Errorf("failed to parse datasource: %w", parseErr)
 		}

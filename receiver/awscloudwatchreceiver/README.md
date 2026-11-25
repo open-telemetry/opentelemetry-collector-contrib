@@ -35,6 +35,7 @@ The receiver makes requests to the `sts.GetCallerIdentity` API endpoint, which i
 | `logs`          | *optional* | `Logs`    | Configuration for logs collection. See [Logs Parameters](#logs-parameters).       |
 | `metrics`       | *optional* | `Metrics` | Configuration for metrics collection via GetMetricData. See [Metrics Parameters](#metrics-parameters-getmetricdata--listmetrics). |
 | `storage`       | *optional* | string    | The ID of a storage extension to be used for state persistence.                   |
+| `k8s_leader_elector` | *optional* | string | The ID of a [k8sleaderelector](../../extension/k8sleaderelector/README.md) extension. When set, the receiver only collects while it holds the lease. See [Leader Election](#leader-election). |
 
 ### Logs Parameters
 
@@ -44,6 +45,7 @@ The receiver makes requests to the `sts.GetCallerIdentity` API endpoint, which i
 | `initial_lookback`       | Duration | 0                                          | How far back from the collector's startup time to begin collecting logs (e.g., `1h`). Mutually exclusive with `start_from`. |
 | `poll_interval`          | Duration | 1 minute                                   | Time to wait between log requests                                                                      |
 | `max_events_per_request` | Integer  | 1,000                                      | The maximum number of events to process per request to Cloudwatch                                      |
+| `delay`                  | Duration | 0                                          | How far back from now each poll window ends. CloudWatch Logs can make an event visible some time after its timestamp; events that become visible after their time range was polled are skipped. Set this to at least the ingestion latency of your log groups (for example `90s`). Logs reach the pipeline that much later. |
 | `groups`                 | Optional | All Log Groups and Streams                 | Configuration for Log Groups, by default all Log Groups and Log Streams will be collected.             |
 
 ### Group Parameters
@@ -221,6 +223,54 @@ awscloudwatch:
         /aws/eks/dev-0/cluster: 
           names: [kube-apiserver-ea9c831555adca1815ae04b87661klasdj]
 ```
+
+## Leader Election
+
+Running the same receiver configuration on several collector replicas polls CloudWatch once per
+replica. That duplicates the data and, because `GetMetricData` and `FilterLogEvents` are billed per
+request, the CloudWatch bill as well. Setting `k8s_leader_elector` makes the receiver collect only
+while it holds the Kubernetes lease, so the remaining replicas stay idle until they take over.
+
+```yaml
+extensions:
+  k8s_leader_elector:
+    auth_type: serviceAccount
+    lease_name: aws-cloudwatch-receiver
+    lease_namespace: otel
+
+receivers:
+  aws_cloudwatch:
+    region: us-west-1
+    k8s_leader_elector: k8s_leader_elector
+    metrics:
+      collection_interval: 5m
+      discovery:
+        filters:
+          namespace: AWS/EC2
+
+service:
+  extensions: [k8s_leader_elector]
+  pipelines:
+    metrics:
+      receivers: [aws_cloudwatch]
+```
+
+The extension needs permission to manage its lease; see
+[Suggested RBAC](../../extension/k8sleaderelector/README.md#suggested-rbac).
+
+For logs, leader election needs a `storage` extension that several collectors can use at the same
+time, such as [`redis_storage`](../../extension/storage/redisstorageextension/README.md). A new
+leader that cannot read the previous leader's checkpoint restarts from
+`start_from`/`initial_lookback`, which duplicates or skips events on every failover.
+
+`file_storage` does not work for this, even on a `ReadWriteMany` volume: it takes an exclusive lock
+on its database file, so the standby replica fails to start with
+`failed to start "aws_cloudwatch" receiver: timeout` instead of waiting to take over.
+
+Configuring leader election for logs without a storage extension is rejected at startup.
+
+For metrics, a new leader scrapes as soon as it takes over, so a failover can duplicate the most
+recent `collection_interval` of data.
 
 ## Sample Configs
 

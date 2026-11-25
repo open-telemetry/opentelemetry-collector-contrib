@@ -3,6 +3,10 @@ $defs:
     description: BaseConfig is the detailed configuration of a syslog parser.
     type: object
     properties:
+      allow_rfc3339_timestamp:
+        type: boolean
+      allow_second_fractions:
+        type: boolean
       allow_skip_pri_header:
         type: boolean
       enable_octet_counting:

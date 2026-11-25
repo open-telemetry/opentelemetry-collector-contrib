@@ -332,6 +332,16 @@ func (e *oidcExtension) processProviderConfig(ctx context.Context, p ProviderCfg
 		Transport: pc.transport,
 	}
 	oidcContext := oidc.ClientContext(ctx, pc.client)
+	if p.JWKSURL != "" {
+		for _, alg := range allSupportedAlgorithms {
+			vCfg.SupportedSigningAlgs = append(vCfg.SupportedSigningAlgs, string(alg))
+		}
+		keySet := newExpiringRemoteKeySet(oidcContext, p.JWKSURL)
+		pc.verifier = oidc.NewVerifier(p.IssuerURL, keySet, vCfg)
+		e.providerContainers[p.IssuerURL] = &pc
+		return nil
+	}
+
 	pc.provider, err = oidc.NewProvider(oidcContext, p.IssuerURL)
 	if err != nil {
 		pc.transport.CloseIdleConnections()
@@ -510,7 +520,7 @@ type idToken struct {
 // It should only be used to determine which verifier to use for the token.
 func getIssuerFromUnverifiedJWT(rawIDToken string) (string, error) {
 	// TODO: it would be nice if we didn't have to parse the JWT here and then again in the verifier...
-	jws, err := jose.ParseSigned(rawIDToken, allSupportedAlgorithms)
+	jws, err := jose.ParseSignedCompact(rawIDToken, allSupportedAlgorithms)
 	if err != nil {
 		return "", fmt.Errorf("oidc: malformed jws: %w", err)
 	}

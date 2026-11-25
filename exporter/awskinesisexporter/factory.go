@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
@@ -42,6 +43,9 @@ func createDefaultConfig() component.Config {
 		Encoding: Encoding{
 			Name:        defaultEncoding,
 			Compression: defaultCompression,
+			CompressionParams: configcompression.CompressionParams{
+				Level: configcompression.DefaultCompressionLevel,
+			},
 		},
 		AWS: AWSConfig{
 			Region: "us-west-2",

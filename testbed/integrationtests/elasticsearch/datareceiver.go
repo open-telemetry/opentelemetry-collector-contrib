@@ -13,7 +13,6 @@ import (
 	"testing"
 
 	"github.com/elastic/go-docappender/v2/docappendertest"
-	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -58,9 +57,18 @@ const (
 type errElasticsearch struct {
 	httpStatus    int
 	httpDocStatus int
+
+	// abortConnection makes the mock Elasticsearch close the connection
+	// without sending any response. The exporter then observes a
+	// transport-level error instead of an HTTP status, the same failure it
+	// sees when Elasticsearch is unreachable.
+	abortConnection bool
 }
 
 func (e errElasticsearch) Error() string {
+	if e.abortConnection {
+		return "Simulated Elasticsearch aborted the connection"
+	}
 	if e.httpStatus != http.StatusOK {
 		return fmt.Sprintf("Simulated Elasticsearch returned HTTP status %d", e.httpStatus)
 	}
@@ -306,14 +314,8 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 		return fmt.Errorf("failed to bind to address %s: %w", es.config.ServerConfig.NetAddr.Endpoint, err)
 	}
 
-	r := mux.NewRouter()
-	r.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("X-Elastic-Product", "Elasticsearch")
-			next.ServeHTTP(w, r)
-		})
-	})
-	r.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+	r := http.NewServeMux()
+	r.HandleFunc("/{$}", func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprintln(w, `{"version":{"number":"1.2.3"}}`)
 	})
 	r.HandleFunc("/_bulk", func(w http.ResponseWriter, r *http.Request) {
@@ -375,6 +377,16 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 				// panic to surface test logic error because we only expect error of type errElasticsearch
 				panic("unknown consume error")
 			}
+			if errES.abortConnection {
+				// Close the connection without writing a response.
+				conn, _, hijackErr := http.NewResponseController(w).Hijack()
+				if hijackErr != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				_ = conn.Close()
+				return
+			}
 			if errES.httpStatus != http.StatusOK {
 				w.WriteHeader(errES.httpStatus)
 				return
@@ -395,7 +407,11 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 		}
 	})
 
-	es.server, err = es.config.ServerConfig.ToServer(ctx, host.GetExtensions(), es.params.TelemetrySettings, r)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("X-Elastic-Product", "Elasticsearch")
+		r.ServeHTTP(w, req)
+	})
+	es.server, err = es.config.ServerConfig.ToServer(ctx, host.GetExtensions(), es.params.TelemetrySettings, handler)
 	if err != nil {
 		return fmt.Errorf("failed to create mock ES server: %w", err)
 	}

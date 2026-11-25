@@ -152,7 +152,9 @@ func TestBadTypeInReturnedData(t *testing.T) {
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	_, err = scraper.scrape(t.Context())
-	require.EqualError(t, err, "could not decode response body to JSON: json: cannot unmarshal string into Go struct field MemStats.memstats.Alloc of type uint64")
+	// The struct name in the json error differs between Go versions.
+	require.ErrorContains(t, err, "could not decode response body to JSON: json: cannot unmarshal string into Go struct field ")
+	require.ErrorContains(t, err, ".memstats.Alloc of type uint64")
 }
 
 func TestJSONParseError(t *testing.T) {

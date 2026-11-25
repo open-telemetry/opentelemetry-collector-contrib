@@ -106,7 +106,9 @@ func (e *jsonLogExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 		for _, r := range jsonLogs {
 			if e.config.ParseInts {
-				convertNumbers(r)
+				if err := convertNumbers(r); err != nil {
+					return p, err
+				}
 			}
 			lr := sl.LogRecords().AppendEmpty()
 			lr.SetObservedTimestamp(now)
@@ -123,7 +125,9 @@ func (e *jsonLogExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 			}
 
 			if e.config.ParseInts {
-				convertNumbers(record)
+				if err := convertNumbers(record); err != nil {
+					return plog.Logs{}, err
+				}
 			}
 			lr := sl.LogRecords().AppendEmpty()
 			lr.SetObservedTimestamp(now)
@@ -164,40 +168,56 @@ func unmarshalJSON(buf []byte, value any, parseInts bool) error {
 	return nil
 }
 
-func convertNumbers(parsedValue map[string]any) {
+func convertNumbers(parsedValue map[string]any) error {
 	for key, value := range parsedValue {
 		switch value := value.(type) {
 		case json.Number:
-			parsedValue[key] = convertNumber(value)
+			converted, err := convertNumber(value)
+			if err != nil {
+				return err
+			}
+			parsedValue[key] = converted
 		case map[string]any:
-			convertNumbers(value)
+			if err := convertNumbers(value); err != nil {
+				return err
+			}
 		case []any:
-			convertNumbersArray(value)
+			if err := convertNumbersArray(value); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
-func convertNumbersArray(values []any) {
+func convertNumbersArray(values []any) error {
 	for i, value := range values {
 		switch value := value.(type) {
 		case json.Number:
-			values[i] = convertNumber(value)
+			converted, err := convertNumber(value)
+			if err != nil {
+				return err
+			}
+			values[i] = converted
 		case map[string]any:
-			convertNumbers(value)
+			if err := convertNumbers(value); err != nil {
+				return err
+			}
 		case []any:
-			convertNumbersArray(value)
+			if err := convertNumbersArray(value); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
-func convertNumber(value json.Number) any {
+// UseNumber only checks syntax, so return Float64's range error to keep out-of-range numbers failing the parse instead of becoming strings.
+func convertNumber(value json.Number) (any, error) {
 	if converted, err := value.Int64(); err == nil {
-		return converted
+		return converted, nil
 	}
-	if converted, err := value.Float64(); err == nil {
-		return converted
-	}
-	return value.String()
+	return value.Float64()
 }
 
 func (*jsonLogExtension) Start(context.Context, component.Host) error {
