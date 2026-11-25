@@ -66,12 +66,13 @@ require (
 	go.opentelemetry.io/contrib/detectors/openstack/nova v0.0.0-20261106092722-ca27f49bc143
 	go.opentelemetry.io/contrib/detectors/scaleway v0.0.0-20261106092722-ca27f49bc143
 	go.opentelemetry.io/contrib/detectors/tencent/cvm v0.0.0-20261123093453-857c9bedc28f
+	go.opentelemetry.io/contrib/detectors/upcloud v0.0.0-20261125100424-e9f7990aef3b
 	go.opentelemetry.io/contrib/detectors/vultr v0.19.0
-	go.opentelemetry.io/otel v1.47.0
-	go.opentelemetry.io/otel/metric v1.47.0
-	go.opentelemetry.io/otel/sdk v1.47.0
+	go.opentelemetry.io/otel v1.47.1-0.20261119094326-34915e1fc1ec
+	go.opentelemetry.io/otel/metric v1.47.1-0.20261119094326-34915e1fc1ec
+	go.opentelemetry.io/otel/sdk v1.47.1-0.20261119094326-34915e1fc1ec
 	go.opentelemetry.io/otel/sdk/metric v1.47.0
-	go.opentelemetry.io/otel/trace v1.47.0
+	go.opentelemetry.io/otel/trace v1.47.1-0.20261119094326-34915e1fc1ec
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.28.0
@@ -209,7 +210,7 @@ require (
 	go.opentelemetry.io/collector/receiver/xreceiver v0.166.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.72.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0 // indirect
-	go.opentelemetry.io/otel/log v1.47.0 // indirect
+	go.opentelemetry.io/otel/log v1.47.1-0.20261119094326-34915e1fc1ec // indirect
 	go.yaml.in/yaml/v2 v2.4.5 // indirect
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	golang.org/x/crypto v0.59.0 // indirect
