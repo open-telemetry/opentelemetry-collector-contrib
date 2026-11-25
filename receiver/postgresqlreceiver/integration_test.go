@@ -266,7 +266,7 @@ func TestGetDatabaseTableMetricsIgnoresAccessExclusiveLocks(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 	defer cancel()
 
-	tableMetrics, err := client.getDatabaseTableMetrics(ctx, "otel")
+	tableMetrics, err := client.getDatabaseTableMetrics(ctx, "otel", false)
 	require.NoError(t, err)
 	require.NotContains(t, tableMetrics, tableKey("otel", "public", "table1"))
 	require.Contains(t, tableMetrics, tableKey("otel", "public", "table2"))
@@ -1066,7 +1066,7 @@ func tableCountEquivalenceTest(pgVersion string) func(*testing.T) {
 		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
 
-		tableMetrics, err := client.getDatabaseTableMetrics(ctx, "otel")
+		tableMetrics, err := client.getDatabaseTableMetrics(ctx, "otel", false)
 		require.NoError(t, err)
 		count, err := client.getTableCount(ctx)
 		require.NoError(t, err)
@@ -1179,7 +1179,7 @@ WHERE c.relname IN ('big_index_table', 'toasted_table') AND n.nspname = 'public'
 		require.NoError(t, rows.Err())
 		require.Len(t, referenceByTable, 2, "reference query should see both fixture tables")
 
-		tableMetrics, err := client.getDatabaseTableMetrics(ctx, "otel")
+		tableMetrics, err := client.getDatabaseTableMetrics(ctx, "otel", false)
 		require.NoError(t, err)
 
 		indexRef := referenceByTable["big_index_table"]
@@ -1291,7 +1291,7 @@ func tableMaintenanceAndIDAgesTest(pgVersion string) func(*testing.T) {
 		// until the backend that ran the statements above has reported them.
 		var maintained, untouched *tableStats
 		require.EventuallyWithT(t, func(c *assert.CollectT) {
-			tableMetrics, scanErr := client.getDatabaseTableMetrics(ctx, "otel")
+			tableMetrics, scanErr := client.getDatabaseTableMetrics(ctx, "otel", true)
 			require.NoError(c, scanErr)
 			var ok bool
 			maintained, ok = tableMetrics[tableKey("otel", "public", "maintained")]

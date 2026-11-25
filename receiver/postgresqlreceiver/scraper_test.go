@@ -2487,8 +2487,8 @@ func (m *mockClient) getDatabaseIDAges(_ context.Context, databases []string) (m
 	return args.Get(0).(map[databaseName]databaseIDAge), args.Error(1)
 }
 
-func (m *mockClient) getDatabaseTableMetrics(ctx context.Context, database string) (map[tableIdentifier]*tableStats, error) {
-	args := m.Called(ctx, database)
+func (m *mockClient) getDatabaseTableMetrics(ctx context.Context, database string, includeMaintenance bool) (map[tableIdentifier]*tableStats, error) {
+	args := m.Called(ctx, database, includeMaintenance)
 	return args.Get(0).(map[tableIdentifier]*tableStats), args.Error(1)
 }
 
@@ -2769,7 +2769,7 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 			},
 		}
 
-		m.On("getDatabaseTableMetrics", mock.Anything, database).Return(tableMetrics, nil)
+		m.On("getDatabaseTableMetrics", mock.Anything, database, mock.Anything).Return(tableMetrics, nil)
 		m.On("getBlocksReadByTable", mock.Anything, database).Return(blocksMetrics, nil)
 		m.On("getTableCount", mock.Anything).Return(int64(len(tableMetrics)), nil)
 
@@ -2897,7 +2897,7 @@ func TestScraperSkipsQueriesForDisabledMetrics(t *testing.T) {
 
 	// Queries with no remaining enabled consumer must not run.
 	dbClient.AssertNumberOfCalls(t, "getTableCount", 1)
-	dbClient.AssertNotCalled(t, "getDatabaseTableMetrics", mock.Anything, mock.Anything)
+	dbClient.AssertNotCalled(t, "getDatabaseTableMetrics", mock.Anything, mock.Anything, mock.Anything)
 	dbClient.AssertNotCalled(t, "getBlocksReadByTable", mock.Anything, mock.Anything)
 	dbClient.AssertNotCalled(t, "getIndexStats", mock.Anything, mock.Anything)
 	dbClient.AssertNotCalled(t, "getFunctionStats", mock.Anything, mock.Anything)
@@ -3041,7 +3041,7 @@ func TestCollectDatabaseLocksError(t *testing.T) {
 func TestCollectTablesSkipsUnavailableSize(t *testing.T) {
 	c := new(mockClient)
 	c.On("getBlocksReadByTable", mock.Anything, "otel").Return(map[tableIdentifier]tableIOStats{}, nil)
-	c.On("getDatabaseTableMetrics", mock.Anything, "otel").Return(map[tableIdentifier]*tableStats{
+	c.On("getDatabaseTableMetrics", mock.Anything, "otel", mock.Anything).Return(map[tableIdentifier]*tableStats{
 		tableKey("otel", "public", "kept"):    {database: "otel", schema: "public", table: "kept", live: 10, size: 8192},
 		tableKey("otel", "public", "dropped"): {database: "otel", schema: "public", table: "dropped", live: 11, size: -1},
 	}, nil)
@@ -3062,6 +3062,36 @@ func TestCollectTablesSkipsUnavailableSize(t *testing.T) {
 	assert.Equal(t, 8, counts["postgresql.operations"])
 	assert.Equal(t, 2, counts["postgresql.table.vacuum.count"])
 	assert.Equal(t, 2, counts["postgresql.sequential_scans"])
+}
+
+func TestCollectTablesRequestsMaintenanceColumnsOnlyWhenEnabled(t *testing.T) {
+	for _, tc := range []struct {
+		name               string
+		enable             string
+		includeMaintenance bool
+	}{
+		{name: "default config", includeMaintenance: false},
+		{name: "maintenance count enabled", enable: "PostgresqlTableAutovacuumCount", includeMaintenance: true},
+		{name: "maintenance age enabled", enable: "PostgresqlTableLastAutoanalyzeAge", includeMaintenance: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			c := new(mockClient)
+			c.On("getBlocksReadByTable", mock.Anything, "otel").Return(map[tableIdentifier]tableIOStats{}, nil)
+			c.On("getDatabaseTableMetrics", mock.Anything, "otel", tc.includeMaintenance).Return(map[tableIdentifier]*tableStats{}, nil)
+
+			cfg := NewFactory().CreateDefaultConfig().(*Config)
+			if tc.enable != "" {
+				enableMetricField(cfg, tc.enable)
+			}
+			scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+			require.NoError(t, err)
+
+			var errs errsMux
+			scraper.collectTables(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, "otel", &errs)
+			require.NoError(t, errs.combine())
+			c.AssertExpectations(t)
+		})
+	}
 }
 
 func TestCollectIndexesSkipsUnavailableSize(t *testing.T) {

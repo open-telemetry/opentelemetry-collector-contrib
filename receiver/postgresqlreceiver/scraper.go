@@ -854,7 +854,12 @@ func (p *postgreSQLScraper) perTableFieldsMetricsEnabled() bool {
 		m.PostgresqlTableSize.Enabled ||
 		m.PostgresqlTableVacuumCount.Enabled ||
 		m.PostgresqlSequentialScans.Enabled ||
-		m.PostgresqlTableAutovacuumCount.Enabled ||
+		p.tableMaintenanceMetricsEnabled()
+}
+
+func (p *postgreSQLScraper) tableMaintenanceMetricsEnabled() bool {
+	m := p.config.MetricsBuilderConfig.Metrics
+	return m.PostgresqlTableAutovacuumCount.Enabled ||
 		m.PostgresqlTableAnalyzeCount.Enabled ||
 		m.PostgresqlTableAutoanalyzeCount.Enabled ||
 		m.PostgresqlTableModificationsSinceAnalyze.Enabled ||
@@ -887,7 +892,7 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 	switch {
 	case needsPerTableFields:
 		var err error
-		tableMetrics, err = dbClient.getDatabaseTableMetrics(ctx, db)
+		tableMetrics, err = dbClient.getDatabaseTableMetrics(ctx, db, p.tableMaintenanceMetricsEnabled())
 		if err != nil {
 			errs.addPartial(err)
 		}

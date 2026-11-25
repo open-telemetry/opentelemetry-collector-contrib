@@ -65,7 +65,7 @@ type client interface {
 	getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseIDAges(ctx context.Context, databases []string) (map[databaseName]databaseIDAge, error)
-	getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]*tableStats, error)
+	getDatabaseTableMetrics(ctx context.Context, db string, includeMaintenance bool) (map[tableIdentifier]*tableStats, error)
 	getBlocksReadByTable(ctx context.Context, db string) (map[tableIdentifier]tableIOStats, error)
 	getTableCount(ctx context.Context) (int64, error)
 	getReplicationStats(ctx context.Context) ([]replicationStats, error)
@@ -869,16 +869,28 @@ type tableStats struct {
 	lastAutoanalyzeAge float64
 }
 
-func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]*tableStats, error) {
+// tableMaintenanceColumns is only appended to the table metrics query when a
+// maintenance metric is enabled, so the default query is not made more expensive.
+// the last_*_age columns are -1 when the operation has never run on the table, or
+// its statistics were reset; clock_timestamp() is used rather than now() so a run
+// that finishes after this transaction starts is not reported as a negative age,
+// and greatest() clamps what remains when the statistics are read after the clock
+const tableMaintenanceColumns = `,
+    s.autovacuum_count,
+    s.analyze_count,
+    s.autoanalyze_count,
+    s.n_mod_since_analyze AS mod_since_analyze,
+    CASE WHEN s.last_vacuum IS NULL THEN -1 ELSE greatest(extract(epoch FROM clock_timestamp() - s.last_vacuum)::float8, 0) END AS last_vacuum_age,
+    CASE WHEN s.last_autovacuum IS NULL THEN -1 ELSE greatest(extract(epoch FROM clock_timestamp() - s.last_autovacuum)::float8, 0) END AS last_autovacuum_age,
+    CASE WHEN s.last_analyze IS NULL THEN -1 ELSE greatest(extract(epoch FROM clock_timestamp() - s.last_analyze)::float8, 0) END AS last_analyze_age,
+    CASE WHEN s.last_autoanalyze IS NULL THEN -1 ELSE greatest(extract(epoch FROM clock_timestamp() - s.last_autoanalyze)::float8, 0) END AS last_autoanalyze_age`
+
+func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db string, includeMaintenance bool) (map[tableIdentifier]*tableStats, error) {
 	// explicitly ignore the relations which have an active `AccessExclusiveLock`
 	// this is to prevent the current query's `AccessShareLock` from getting stalled
 	// table_size is -1 when the table is dropped after its stats row is read, as the
 	// size function then returns NULL; the scraper skips the size for that row only
-	// the last_*_age columns are -1 when the operation has never run on the table, or
-	// its statistics were reset; clock_timestamp() is used rather than now() so a run
-	// that finishes after this transaction starts is not reported as a negative age,
-	// and greatest() clamps what remains when the statistics are read after the clock
-	query := `SELECT
+	columns := `SELECT
     s.schemaname AS schema,
     s.relname AS table,
     s.n_live_tup AS live,
@@ -889,15 +901,11 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
     s.n_tup_hot_upd AS hot_upd,
     s.seq_scan AS seq_scans,
     coalesce(pg_total_relation_size(s.relid), -1) AS table_size,
-    s.vacuum_count,
-    s.autovacuum_count,
-    s.analyze_count,
-    s.autoanalyze_count,
-    s.n_mod_since_analyze AS mod_since_analyze,
-    CASE WHEN s.last_vacuum IS NULL THEN -1 ELSE greatest(extract(epoch FROM clock_timestamp() - s.last_vacuum)::float8, 0) END AS last_vacuum_age,
-    CASE WHEN s.last_autovacuum IS NULL THEN -1 ELSE greatest(extract(epoch FROM clock_timestamp() - s.last_autovacuum)::float8, 0) END AS last_autovacuum_age,
-    CASE WHEN s.last_analyze IS NULL THEN -1 ELSE greatest(extract(epoch FROM clock_timestamp() - s.last_analyze)::float8, 0) END AS last_analyze_age,
-    CASE WHEN s.last_autoanalyze IS NULL THEN -1 ELSE greatest(extract(epoch FROM clock_timestamp() - s.last_autoanalyze)::float8, 0) END AS last_autoanalyze_age
+    s.vacuum_count`
+	if includeMaintenance {
+		columns += tableMaintenanceColumns
+	}
+	query := columns + `
 FROM pg_stat_user_tables s
 LEFT JOIN (
     SELECT DISTINCT relation
@@ -916,39 +924,27 @@ WHERE l.relation IS NULL;`
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var schema, table string
-		var live, dead, ins, upd, del, hotUpd, seqScans, tableSize, vacuumCount int64
-		var autovacuumCount, analyzeCount, autoanalyzeCount, modSinceAnalyze int64
-		var lastVacuumAge, lastAutovacuumAge, lastAnalyzeAge, lastAutoanalyzeAge float64
-		err = rows.Scan(&schema, &table, &live, &dead, &ins, &upd, &del, &hotUpd, &seqScans, &tableSize, &vacuumCount,
-			&autovacuumCount, &analyzeCount, &autoanalyzeCount, &modSinceAnalyze,
-			&lastVacuumAge, &lastAutovacuumAge, &lastAnalyzeAge, &lastAutoanalyzeAge)
+		stats := &tableStats{
+			database:           db,
+			lastVacuumAge:      -1,
+			lastAutovacuumAge:  -1,
+			lastAnalyzeAge:     -1,
+			lastAutoanalyzeAge: -1,
+		}
+		dest := []any{
+			&stats.schema, &stats.table, &stats.live, &stats.dead, &stats.inserts, &stats.upd, &stats.del,
+			&stats.hotUpd, &stats.seqScans, &stats.size, &stats.vacuumCount,
+		}
+		if includeMaintenance {
+			dest = append(dest, &stats.autovacuumCount, &stats.analyzeCount, &stats.autoanalyzeCount, &stats.modSinceAnalyze,
+				&stats.lastVacuumAge, &stats.lastAutovacuumAge, &stats.lastAnalyzeAge, &stats.lastAutoanalyzeAge)
+		}
+		err = rows.Scan(dest...)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		ts[tableKey(db, schema, table)] = &tableStats{
-			database:           db,
-			schema:             schema,
-			table:              table,
-			live:               live,
-			dead:               dead,
-			inserts:            ins,
-			upd:                upd,
-			del:                del,
-			hotUpd:             hotUpd,
-			seqScans:           seqScans,
-			size:               tableSize,
-			vacuumCount:        vacuumCount,
-			autovacuumCount:    autovacuumCount,
-			analyzeCount:       analyzeCount,
-			autoanalyzeCount:   autoanalyzeCount,
-			modSinceAnalyze:    modSinceAnalyze,
-			lastVacuumAge:      lastVacuumAge,
-			lastAutovacuumAge:  lastAutovacuumAge,
-			lastAnalyzeAge:     lastAnalyzeAge,
-			lastAutoanalyzeAge: lastAutoanalyzeAge,
-		}
+		ts[tableKey(db, stats.schema, stats.table)] = stats
 	}
 	return ts, multierr.Append(errors, rows.Err())
 }
