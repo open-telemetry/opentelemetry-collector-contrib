@@ -249,14 +249,14 @@ func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now
 		return
 	}
 
-	s.processCurrentOp(ctx, operations, now)
+	s.processCurrentOp(operations, now)
 
 	rb := s.lb.NewResourceBuilder()
 	setResourceAttributes(rb, serverAddress, serverPort, s.mongoVersion)
 	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
 }
 
-func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson.M, now pcommon.Timestamp) {
+func (s *mongodbScraper) processCurrentOp(operations []bson.M, now pcommon.Timestamp) {
 	emitted := uint64(0)
 	for _, op := range operations {
 		if emitted >= s.config.QuerySampleCollection.MaxRowsPerQuery {
@@ -461,14 +461,27 @@ func extractCommandMetadata(command bson.D, opType string) (bool, []any, string)
 		case commentKey:
 			if values, ok := elem.Value.(bson.A); ok {
 				for _, value := range values {
-					comments = append(comments, stringifyCommandComment(value))
+					if comment, ok := applicationCommandComment(value); ok {
+						comments = append(comments, stringifyCommandComment(comment))
+					}
 				}
-			} else {
-				comments = append(comments, stringifyCommandComment(elem.Value))
+			} else if comment, ok := applicationCommandComment(elem.Value); ok {
+				comments = append(comments, stringifyCommandComment(comment))
 			}
 		}
 	}
 	return truncated, comments, operationName
+}
+
+// applicationCommandComment removes propagation fields from a document-valued
+// comment when it contains a valid traceparent. In that case, only the
+// application's original comment is reported, if present.
+func applicationCommandComment(value any) (any, bool) {
+	if !trace.SpanContextFromContext(contextWithTraceContextComment(value)).IsValid() {
+		return value, true
+	}
+	originalComment, ok := lookup(value, "originalComment")
+	return originalComment, ok && originalComment != nil
 }
 
 func stringifyCommandComment(value any) string {
