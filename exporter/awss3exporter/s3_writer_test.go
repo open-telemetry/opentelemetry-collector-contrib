@@ -4,6 +4,8 @@
 package awss3exporter
 
 import (
+	"bytes"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,6 +20,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression"
 )
 
 func TestNewUploadManager(t *testing.T) {
@@ -106,6 +110,92 @@ func TestNewUploadManager(t *testing.T) {
 				assert.NotNil(t, sm, "Must have a valid manager")
 				assert.NoError(t, err, "Must not error when creating client")
 			}
+		})
+	}
+}
+
+func TestUploadManagerCompressionLevel(t *testing.T) {
+	t.Parallel()
+
+	payload := bytes.Repeat([]byte("example log message\n"), 64)
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		assert.True(t, strings.HasSuffix(r.URL.Path, ".otlp.gz"))
+		assert.Empty(t, r.Header.Get("Content-Encoding")) // Archive uploads omit this header.
+		body, err := io.ReadAll(r.Body)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Greater(t, len(body), len(payload), "gzip level 0 stores the payload without compression")
+		reader, err := gzip.NewReader(bytes.NewReader(body))
+		if !assert.NoError(t, err) {
+			return
+		}
+		decoded, err := io.ReadAll(reader)
+		assert.NoError(t, err)
+		assert.Equal(t, payload, decoded)
+		assert.NoError(t, reader.Close())
+	}))
+	t.Cleanup(server.Close)
+
+	conf := createDefaultConfig().(*Config)
+	conf.S3Uploader.S3Bucket = "my-bucket"
+	conf.S3Uploader.Endpoint = server.URL
+	conf.S3Uploader.S3ForcePathStyle = true
+	conf.S3Uploader.AccessKey = "test-key"
+	conf.S3Uploader.SecretKey = "test-secret"
+	conf.S3Uploader.Compression = configcompression.TypeGzip
+	conf.S3Uploader.CompressionSettings.Level = new(configcompression.Level)
+
+	sm, err := newUploadManager(t.Context(), conf, zap.NewNop(), "logs", "otlp", true)
+	require.NoError(t, err)
+	for range 2 {
+		require.NoError(t, sm.Upload(t.Context(), payload, nil))
+	}
+}
+
+func TestUploadManagerCompressionFormats(t *testing.T) {
+	t.Parallel()
+
+	payload := []byte(strings.Repeat("example log message\n", 64))
+	for _, tc := range []struct {
+		compression configcompression.Type
+		decoder     configcompression.Type
+		extension   string
+		encoding    string
+	}{
+		{configcompression.TypeZlib, configcompression.TypeZlib, ".zlib", "deflate"},
+		{configcompression.TypeDeflate, configcompression.TypeDeflate, ".deflate", ""},
+		{configcompression.TypeSnappy, configcompression.TypeSnappy, ".snappy", ""},
+		{configcompression.TypeSnappyFramed, configcompression.TypeSnappy, ".snappy", ""},
+		{configcompression.TypeLz4, configcompression.TypeLz4, ".lz4", ""},
+	} {
+		t.Run(string(tc.compression), func(t *testing.T) {
+			t.Parallel()
+
+			decoder, err := xcompression.NewReaderFactory().NewReader(tc.decoder, configcompression.CompressionParams{})
+			require.NoError(t, err)
+			server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+				assert.True(t, strings.HasSuffix(r.URL.Path, ".otlp"+tc.extension), r.URL.Path)
+				assert.Equal(t, tc.encoding, r.Header.Get("Content-Encoding"))
+				var decoded bytes.Buffer
+				_, decodeErr := decoder.Decompress(&decoded, r.Body)
+				assert.NoError(t, decodeErr)
+				assert.Equal(t, payload, decoded.Bytes())
+			}))
+			t.Cleanup(server.Close)
+
+			conf := createDefaultConfig().(*Config)
+			conf.S3Uploader.S3Bucket = "my-bucket"
+			conf.S3Uploader.Endpoint = server.URL
+			conf.S3Uploader.S3ForcePathStyle = true
+			conf.S3Uploader.AccessKey = "test-key"
+			conf.S3Uploader.SecretKey = "test-secret"
+			conf.S3Uploader.Compression = tc.compression
+			require.NoError(t, conf.Validate())
+
+			sm, err := newUploadManager(t.Context(), conf, zap.NewNop(), "logs", "otlp", false)
+			require.NoError(t, err)
+			require.NoError(t, sm.Upload(t.Context(), payload, nil))
 		})
 	}
 }

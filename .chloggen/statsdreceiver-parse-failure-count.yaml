@@ -1,8 +1,0 @@
-change_type: bug_fix
-component: receiver/statsd
-note: "Fix `otelcol_receiver_received_statsd_metrics{parse_success=\"false\"}` reporting 1 per 100 parse failures instead of the actual count."
-issues: [53344]
-subtext: |
-  Pending parse success and failure counts are now also reported on every aggregation interval.
-  Before, counts below 100 waited for the next 100th line and were lost on shutdown.
-change_logs: [user]
