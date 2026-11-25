@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: receiver/datadog
+note: Fix `dd.trace_id` in logs being parsed as a decimal number when a 32-character hex trace ID contains only digits 0-9.
+issues: [53342]
+subtext: A 32-character `dd.trace_id` is now always treated as hex. `dd.span_id` parsing is unchanged.
+change_logs: [user]

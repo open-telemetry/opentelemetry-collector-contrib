@@ -358,8 +358,10 @@ func parseDatadogTraceID(v any, upperHex string) (pcommon.TraceID, bool) {
 
 	var id pcommon.TraceID
 	// OTel-origin traces render the id as hex (32 chars for 128-bit, 16 for 64-bit). Native Datadog
-	// renders it as a decimal integer; a hex letter disambiguates hex from decimal.
-	if containsHexLetter(s) {
+	// renders it as a decimal integer; a hex letter disambiguates hex from decimal. A 32-char value is
+	// always treated as hex: a 128-bit decimal id carrying a real timestamp in its upper 32 bits has
+	// ~38-39 digits, so an all-digit 32-char string is a hex id that happens to contain no letters.
+	if containsHexLetter(s) || len(s) == 32 {
 		if b, err := hex.DecodeString(s); err == nil && len(b) <= len(id) {
 			copy(id[len(id)-len(b):], b)
 
