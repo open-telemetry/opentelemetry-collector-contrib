@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: exporter/azure_blob
+note: Keep append blob separators inside compressed frames so readers can decode consecutive gzip and zstd blocks.
+issues: [53568]
+change_logs: [user]

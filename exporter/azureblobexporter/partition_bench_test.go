@@ -32,7 +32,10 @@ func benchLogs(resources, recordsPerResource, destinations int) plog.Logs {
 func benchExporter(b *testing.B) *azureBlobExporter {
 	b.Helper()
 	c := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
-	e := newAzureBlobExporter(c, zap.NewNop(), pipeline.SignalLogs)
+	e, err := newAzureBlobExporter(c, zap.NewNop(), pipeline.SignalLogs)
+	if err != nil {
+		b.Fatal(err)
+	}
 	if err := e.start(b.Context(), nil); err != nil {
 		b.Fatal(err)
 	}

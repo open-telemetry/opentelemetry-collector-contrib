@@ -76,7 +76,10 @@ func createLogsExporter(ctx context.Context,
 	config component.Config,
 ) (exporter.Logs, error) {
 	cfg := config.(*Config)
-	azBlobExporter := newAzureBlobExporter(cfg, params.Logger, pipeline.SignalLogs)
+	azBlobExporter, err := newAzureBlobExporter(cfg, params.Logger, pipeline.SignalLogs)
+	if err != nil {
+		return nil, err
+	}
 
 	return exporterhelper.NewLogs(ctx, params,
 		config,
@@ -92,7 +95,10 @@ func createMetricsExporter(ctx context.Context,
 	config component.Config,
 ) (exporter.Metrics, error) {
 	cfg := config.(*Config)
-	azBlobExporter := newAzureBlobExporter(cfg, params.Logger, pipeline.SignalMetrics)
+	azBlobExporter, err := newAzureBlobExporter(cfg, params.Logger, pipeline.SignalMetrics)
+	if err != nil {
+		return nil, err
+	}
 
 	return exporterhelper.NewMetrics(ctx, params,
 		config,
@@ -108,7 +114,10 @@ func createTracesExporter(ctx context.Context,
 	config component.Config,
 ) (exporter.Traces, error) {
 	cfg := config.(*Config)
-	azBlobExporter := newAzureBlobExporter(cfg, params.Logger, pipeline.SignalTraces)
+	azBlobExporter, err := newAzureBlobExporter(cfg, params.Logger, pipeline.SignalTraces)
+	if err != nil {
+		return nil, err
+	}
 
 	return exporterhelper.NewTraces(ctx,
 		params,
