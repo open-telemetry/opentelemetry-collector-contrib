@@ -170,10 +170,17 @@ type histogramMetric struct {
 type statsDMetric struct {
 	description statsDMetricDescription
 	asFloat     float64
+	values      []multiValue
 	addition    bool
 	unit        string
 	sampleRate  float64
 	timestamp   uint64
+}
+
+// multiValue keeps its own sign so a relative gauge applies per value, as if each came on its own line.
+type multiValue struct {
+	value    float64
+	addition bool
 }
 
 type statsDMetricDescription struct {
@@ -349,15 +356,30 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 		return err
 	}
 
-	// Discard NaN and infinite values for all metric types
-	if math.IsNaN(parsedMetric.asFloat) || math.IsInf(parsedMetric.asFloat, 0) {
-		reason := "NaN"
-		if math.IsInf(parsedMetric.asFloat, 0) {
-			reason = "infinite"
+	if len(parsedMetric.values) == 0 {
+		if err := validateValue(parsedMetric.description.name, parsedMetric.asFloat); err != nil {
+			return err
 		}
-		return fmt.Errorf("discarding metric %q: invalid %s value", parsedMetric.description.name, reason)
+		p.aggregateMetric(parsedMetric, p.instrumentsFor(addr))
+		return nil
 	}
 
+	// Validate every value first so a bad value never leaves the line partially aggregated.
+	for _, v := range parsedMetric.values {
+		if err := validateValue(parsedMetric.description.name, v.value); err != nil {
+			return err
+		}
+	}
+	instrument := p.instrumentsFor(addr)
+	for _, v := range parsedMetric.values {
+		parsedMetric.asFloat = v.value
+		parsedMetric.addition = v.addition
+		p.aggregateMetric(parsedMetric, instrument)
+	}
+	return nil
+}
+
+func (p *StatsDParser) instrumentsFor(addr net.Addr) *instruments {
 	addrKey := newNetAddr(addr)
 	if p.ignoreHost {
 		addrKey = netAddr{}
@@ -370,7 +392,21 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 		instrument = newInstruments(addr)
 		p.instrumentsByAddress[addrKey] = instrument
 	}
+	return instrument
+}
 
+// validateValue discards NaN and infinite values for all metric types.
+func validateValue(name string, v float64) error {
+	if math.IsNaN(v) {
+		return fmt.Errorf("discarding metric %q: invalid NaN value", name)
+	}
+	if math.IsInf(v, 0) {
+		return fmt.Errorf("discarding metric %q: invalid infinite value", name)
+	}
+	return nil
+}
+
+func (p *StatsDParser) aggregateMetric(parsedMetric statsDMetric, instrument *instruments) {
 	switch parsedMetric.description.metricType {
 	case GaugeType:
 		_, ok := instrument.gauges[parsedMetric.description]
@@ -462,8 +498,6 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 			// No action.
 		}
 	}
-
-	return nil
 }
 
 func parseMessageToMetric(line string, enableMetricType, enableSimpleTags bool) (statsDMetric, error) {
@@ -569,10 +603,18 @@ func parseMessageToMetric(line string, enableMetricType, enableSimpleTags bool) 
 			return result, fmt.Errorf("unrecognized message part: %s", part)
 		}
 	}
-	var err error
-	result.asFloat, err = strconv.ParseFloat(valueStr, 64)
-	if err != nil {
-		return result, fmt.Errorf("parse metric value string: %s", valueStr)
+	if strings.Contains(valueStr, ":") {
+		values, err := parseMultiValue(valueStr)
+		if err != nil {
+			return result, err
+		}
+		result.values = values
+	} else {
+		var err error
+		result.asFloat, err = strconv.ParseFloat(valueStr, 64)
+		if err != nil {
+			return result, fmt.Errorf("parse metric value string: %s", valueStr)
+		}
 	}
 
 	// add metric_type dimension for all metrics
@@ -587,6 +629,29 @@ func parseMessageToMetric(line string, enableMetricType, enableSimpleTags bool) 
 	}
 
 	return result, nil
+}
+
+// parseMultiValue parses a DogStatsD v1.1 value list such as "1.5:2:3".
+// Empty entries are skipped, matching the Datadog Agent.
+func parseMultiValue(valueStr string) ([]multiValue, error) {
+	values := make([]multiValue, 0, strings.Count(valueStr, ":")+1)
+	for part := range strings.SplitSeq(valueStr, ":") {
+		if part == "" {
+			continue
+		}
+		f, err := strconv.ParseFloat(part, 64)
+		if err != nil {
+			return nil, fmt.Errorf("parse metric value string: %s", part)
+		}
+		values = append(values, multiValue{
+			value:    f,
+			addition: strings.HasPrefix(part, "-") || strings.HasPrefix(part, "+"),
+		})
+	}
+	if len(values) == 0 {
+		return nil, errEmptyMetricValue
+	}
+	return values, nil
 }
 
 type netAddr struct {
