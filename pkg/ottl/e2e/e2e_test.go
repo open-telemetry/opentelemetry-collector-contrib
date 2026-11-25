@@ -1908,6 +1908,20 @@ func Test_e2e_ottl_features(t *testing.T) {
 			},
 		},
 		{
+			name:      "compare Split result with an OTTL list literal",
+			statement: `set(attributes["test"], "pass") where Split(attributes["flags"], "|") == ["A", "B", "C"]`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "compare a slice attribute with Split results",
+			statement: `set(attributes["test"], "pass") where attributes["array"] == Split("looong", "|") and Split("different", "|") != attributes["array"]`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
 			name:      "map value with nil",
 			statement: `set(body, {"value": nil})`,
 			want: func(tCtx *ottllog.TransformContext) {

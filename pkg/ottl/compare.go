@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"cmp"
 	"reflect"
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -372,6 +373,14 @@ func (p *ottlValueComparator) compare(a, b any, op compareOp) bool {
 	if a == nil && b == nil {
 		return op == eq || op == lte || op == gte
 	}
+	// Normalize mixed collection representations before dispatching on the left side.
+	if (op == eq || op == ne) && reflect.TypeOf(a) != reflect.TypeOf(b) {
+		kind := comparisonCollectionKind(a)
+		if (kind == reflect.Slice || kind == reflect.Map) && kind == comparisonCollectionKind(b) {
+			a = normalizeComparisonCollection(a)
+			b = normalizeComparisonCollection(b)
+		}
+	}
 	// Anything else, we switch on the left side first.
 	switch v := a.(type) {
 	case nil:
@@ -388,6 +397,13 @@ func (p *ottlValueComparator) compare(a, b any, op compareOp) bool {
 		return p.compareString(v, b, op)
 	case []byte:
 		return p.compareByte(v, b, op)
+	case []string:
+		other, ok := b.([]string)
+		if !ok || (op != eq && op != ne) {
+			return p.invalidComparison(op)
+		}
+		equal := (v == nil) == (other == nil) && slices.Equal(v, other)
+		return equal == (op == eq)
 	case time.Duration:
 		return p.compareDuration(v, b, op)
 	case time.Time:
@@ -403,9 +419,7 @@ func (p *ottlValueComparator) compare(a, b any, op compareOp) bool {
 	case pcommon.Value:
 		return p.comparePValue(v, b, op)
 	default:
-		// If we don't know what type it is, we can't do inequalities yet. So we can fall back to the old behavior where we just
-		// use Go's standard equality.
-		// a == b panics for uncomparable dynamic types (e.g. []string), so fall back to DeepEqual for those.
+		// Go equality can panic for values with uncomparable dynamic types.
 		switch op {
 		case eq:
 			return equalUnknown(a, b)
@@ -417,9 +431,66 @@ func (p *ottlValueComparator) compare(a, b any, op compareOp) bool {
 	}
 }
 
+func comparisonCollectionKind(value any) reflect.Kind {
+	switch v := value.(type) {
+	case []byte:
+		return reflect.Invalid
+	case pcommon.Slice:
+		return reflect.Slice
+	case pcommon.Map:
+		return reflect.Map
+	case pcommon.Value:
+		switch v.Type() {
+		case pcommon.ValueTypeSlice:
+			return reflect.Slice
+		case pcommon.ValueTypeMap:
+			return reflect.Map
+		}
+		return reflect.Invalid
+	default:
+		return reflect.ValueOf(value).Kind()
+	}
+}
+
+// normalizeComparisonCollection converts a typed slice or string-keyed map
+// to its OTTL literal representation, preserving nil and the element types.
+func normalizeComparisonCollection(value any) any {
+	switch value.(type) {
+	case []any, map[string]any:
+		return value
+	}
+	v := reflect.ValueOf(value)
+	switch v.Kind() {
+	case reflect.Slice:
+		if v.IsNil() {
+			return []any(nil)
+		}
+		items := make([]any, v.Len())
+		for i := range items {
+			items[i] = v.Index(i).Interface()
+		}
+		return items
+	case reflect.Map:
+		if v.Type().Key().Kind() != reflect.String {
+			return value
+		}
+		if v.IsNil() {
+			return map[string]any(nil)
+		}
+		items := make(map[string]any, v.Len())
+		iter := v.MapRange()
+		for iter.Next() {
+			items[iter.Key().String()] = iter.Value().Interface()
+		}
+		return items
+	default:
+		return value
+	}
+}
+
 func equalUnknown(a, b any) bool {
 	// a is never nil here, but b can be.
-	if b == nil || (reflect.TypeOf(a).Comparable() && reflect.TypeOf(b).Comparable()) {
+	if b == nil || (reflect.ValueOf(a).Comparable() && reflect.ValueOf(b).Comparable()) {
 		return a == b
 	}
 	return reflect.DeepEqual(a, b)

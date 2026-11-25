@@ -77,6 +77,10 @@ func Test_comparison(t *testing.T) {
 	pvSlice2 := pcommon.NewValueSlice()
 	psl2.CopyTo(pvSlice2.Slice())
 
+	type interfaceField struct {
+		Value any
+	}
+
 	tests := []struct {
 		name string
 		a    any
@@ -245,6 +249,10 @@ func Test_comparison(t *testing.T) {
 		{"uncomparable map[string]string equal", map[string]string{"k": "v"}, map[string]string{"k": "v"}, []bool{true, false, false, false, false, false}},
 		{"uncomparable []string differ", []string{"a"}, []string{"b"}, []bool{false, true, false, false, false, false}},
 		{"uncomparable []string vs nil", []string{"a"}, nil, []bool{false, true, false, false, false, false}},
+		{"interface field containing slice", interfaceField{[]string{"a"}}, interfaceField{[]string{"a"}}, []bool{true, false, false, false, false, false}},
+		{"interface array containing map", [1]any{map[string]string{"k": "v"}}, [1]any{map[string]string{"k": "x"}}, []bool{false, true, false, false, false, false}},
+		{"nil vs empty typed slice", []string(nil), []string{}, []bool{false, true, false, false, false, false}},
+		{"nil typed slice vs nil literal slice", []string(nil), []any(nil), []bool{true, false, false, false, false, false}},
 	}
 	ops := []compareOp{eq, ne, lt, lte, gte, gt}
 	comp := NewValueComparator()
@@ -498,5 +506,45 @@ func compareEq(a, b any, op compareOp) bool {
 func BenchmarkCompareEQFunction(b *testing.B) {
 	for b.Loop() {
 		compareEq(sa, sb, eq)
+	}
+}
+
+func TestCompareMixedCollections(t *testing.T) {
+	stringMap := pcommon.NewValueMap()
+	stringMap.Map().PutStr("k", "v")
+	intSlice := pcommon.NewValueSlice()
+	intSlice.Slice().AppendEmpty().SetInt(1)
+
+	for _, tt := range []struct {
+		name         string
+		typed, other any
+		equal        bool
+	}{
+		{"slice and literal", []string{"a", "b"}, []any{"a", "b"}, true},
+		{"slice order differs", []string{"b", "a"}, []any{"a", "b"}, false},
+		{"slice length differs", []string{"a"}, []any{"a", "b"}, false},
+		{"slice and pdata slice", []int64{1}, intSlice.Slice(), true},
+		{"slice and pdata value", []int64{1}, intSlice, true},
+		{"slice element type differs", []float64{1}, intSlice, false},
+		{"bytes and list", []byte{1}, []any{byte(1)}, false},
+		{"map and literal", map[string]string{"k": "v"}, map[string]any{"k": "v"}, true},
+		{"map and pdata map", map[string]string{"k": "v"}, stringMap.Map(), true},
+		{"map and pdata value", map[string]string{"k": "v"}, stringMap, true},
+		{"map key differs", map[string]string{"other": "v"}, stringMap, false},
+		{"map value differs", map[string]string{"k": "x"}, stringMap, false},
+		{"nil map and empty literal", map[string]string(nil), map[string]any{}, false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			c := NewValueComparator()
+			for _, pair := range [][2]any{{tt.typed, tt.other}, {tt.other, tt.typed}} {
+				a, b := pair[0], pair[1]
+				if c.Equal(a, b) != tt.equal || c.NotEqual(a, b) == tt.equal {
+					t.Errorf("equality of %T(%v) and %T(%v) should be %t", a, a, b, b, tt.equal)
+				}
+				if c.Less(a, b) || c.LessEqual(a, b) || c.Greater(a, b) || c.GreaterEqual(a, b) {
+					t.Errorf("ordering should be unsupported for %T and %T", a, b)
+				}
+			}
+		})
 	}
 }
