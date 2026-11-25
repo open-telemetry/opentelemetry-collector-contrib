@@ -1,0 +1,5 @@
+change_type: enhancement
+component: exporter/awss3
+note: Add `s3uploader.compression_settings.level` to configure gzip, zstd, zlib, and deflate compression levels.
+issues: [53568]
+change_logs: [user, api]
