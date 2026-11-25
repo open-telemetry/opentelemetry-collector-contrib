@@ -7,10 +7,10 @@ change_type: enhancement
 component: receiver/postgresql
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add opt-in metrics for table vacuum and analyze activity and for database transaction ID wraparound age.
+note: Add opt-in metrics for table vacuum and analyze activity and for database and table transaction ID wraparound age.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [53587]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
@@ -18,8 +18,9 @@ issues: []
 subtext: |
   New metrics, all disabled by default: `postgresql.table.autovacuum.count`, `postgresql.table.analyze.count`,
   `postgresql.table.autoanalyze.count`, `postgresql.table.modifications_since_analyze`,
-  `postgresql.table.last_vacuum.age`, `postgresql.table.last_autovacuum.age`, `postgresql.table.last_analyze.age`,
-  `postgresql.table.last_autoanalyze.age`, `postgresql.database.xid.age` and `postgresql.database.mxid.age`.
+  `postgresql.table.inserts_since_vacuum`, `postgresql.table.last_vacuum.age`, `postgresql.table.last_autovacuum.age`,
+  `postgresql.table.last_analyze.age`, `postgresql.table.last_autoanalyze.age`, `postgresql.table.xid.age`,
+  `postgresql.table.mxid.age`, `postgresql.database.xid.age` and `postgresql.database.mxid.age`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
