@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -188,6 +189,8 @@ func (a *alertsReceiver) retrieveAndProcessAlerts(ctx context.Context) error {
 }
 
 func (a *alertsReceiver) pollAndProcess(ctx context.Context, pc *ProjectConfig, project *mongodbatlas.Project) {
+	lastRecorded := a.record.lastRecorded(project.ID)
+	latest := lastRecorded
 	for pageNum := 1; pageNum <= int(a.maxPages); pageNum++ {
 		projectAlerts, hasNext, err := a.client.GetAlerts(ctx, project.ID, &internal.AlertPollOptions{
 			PageNum:  pageNum,
@@ -195,27 +198,30 @@ func (a *alertsReceiver) pollAndProcess(ctx context.Context, pc *ProjectConfig, 
 		})
 		if err != nil {
 			a.telemetrySettings.Logger.Error("unable to get alerts for project", zap.Error(err))
-			break
+			return
 		}
 
-		filteredAlerts := a.applyFilters(pc, projectAlerts)
+		filteredAlerts, pageLatest := a.applyFilters(pc, projectAlerts, lastRecorded)
+		if pageLatest.After(latest) {
+			latest = pageLatest
+		}
 		now := pcommon.NewTimestampFromTime(time.Now())
 		logs, err := a.convertAlerts(now, filteredAlerts, project)
 		if err != nil {
 			a.telemetrySettings.Logger.Error("error processing alerts", zap.Error(err))
-			break
-		}
-
-		if logs.LogRecordCount() > 0 {
+		} else if logs.LogRecordCount() > 0 {
 			if err = a.consumer.ConsumeLogs(ctx, logs); err != nil {
 				a.telemetrySettings.Logger.Error("error consuming alerts", zap.Error(err))
-				break
+				if !consumererror.IsPermanent(err) {
+					return
+				}
 			}
 		}
 		if !hasNext {
 			break
 		}
 	}
+	a.record.SetLastRecorded(project.ID, latest)
 }
 
 func (a *alertsReceiver) startListening(ctx context.Context, host component.Host) error {
@@ -501,13 +507,29 @@ func payloadToLogs(now time.Time, payload []byte) (plog.Logs, error) {
 // can have custom marshaling
 type alertRecord struct {
 	sync.Mutex
-	LastRecordedTime *time.Time `mapstructure:"last_recorded"`
+	LastRecordedTime    *time.Time           `mapstructure:"last_recorded"`
+	ProjectLastRecorded map[string]time.Time `mapstructure:"project_last_recorded"`
 }
 
-func (a *alertRecord) SetLastRecorded(lastUpdated *time.Time) {
+func (a *alertRecord) lastRecorded(projectID string) time.Time {
 	a.Lock()
-	a.LastRecordedTime = lastUpdated
-	a.Unlock()
+	defer a.Unlock()
+	if t, ok := a.ProjectLastRecorded[projectID]; ok {
+		return t
+	}
+	if a.LastRecordedTime != nil {
+		return *a.LastRecordedTime
+	}
+	return pcommon.Timestamp(0).AsTime()
+}
+
+func (a *alertRecord) SetLastRecorded(projectID string, lastUpdated time.Time) {
+	a.Lock()
+	defer a.Unlock()
+	if a.ProjectLastRecorded == nil {
+		a.ProjectLastRecorded = map[string]time.Time{}
+	}
+	a.ProjectLastRecorded[projectID] = lastUpdated
 }
 
 func (a *alertsReceiver) syncPersistence(ctx context.Context) error {
@@ -540,13 +562,9 @@ func (a *alertsReceiver) writeCheckpoint(ctx context.Context) error {
 	return a.storageClient.Set(ctx, alertCacheKey, marshalBytes)
 }
 
-func (a *alertsReceiver) applyFilters(pConf *ProjectConfig, alerts []mongodbatlas.Alert) []*mongodbatlas.Alert {
+func (a *alertsReceiver) applyFilters(pConf *ProjectConfig, alerts []mongodbatlas.Alert, lastRecordedTime time.Time) ([]*mongodbatlas.Alert, time.Time) {
 	filtered := []*mongodbatlas.Alert{}
 
-	lastRecordedTime := pcommon.Timestamp(0).AsTime()
-	if a.record.LastRecordedTime != nil {
-		lastRecordedTime = *a.record.LastRecordedTime
-	}
 	// we need to maintain two timestamps in order to not conflict while iterating
 	latestInPayload := pcommon.Timestamp(0).AsTime()
 
@@ -581,11 +599,7 @@ func (a *alertsReceiver) applyFilters(pConf *ProjectConfig, alerts []mongodbatla
 		}
 	}
 
-	if latestInPayload.After(lastRecordedTime) {
-		a.record.SetLastRecorded(&latestInPayload)
-	}
-
-	return filtered
+	return filtered, latestInPayload
 }
 
 func timestampFromAlert(a model.Alert) pcommon.Timestamp {
