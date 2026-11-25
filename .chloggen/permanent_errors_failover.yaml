@@ -7,7 +7,7 @@ change_type: enhancement
 component: connector/failover
 
 # A brief description of the change. Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add condition.error.permanent to let failoverconnector return permanent downstream errors without demoting priority levels."
+note: "Add condition.error.permanent to match failover errors by their permanent classification; `contains` and `permanent` are ANDed and `contains` is now optional."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [51423]

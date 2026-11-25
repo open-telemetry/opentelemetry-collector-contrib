@@ -11,12 +11,12 @@ $defs:
     type: object
     properties:
       contains:
-        description: Contains lists case-insensitive substrings matched against downstream errors. An error matching any substring triggers failover.
+        description: Contains lists case-insensitive substrings matched against downstream errors. When set, only errors matching any substring trigger failover.
         type: array
         items:
           type: string
       permanent:
-        description: Permanent controls whether permanent consumer errors trigger failover. When set to false, permanent errors never trigger failover. When unset or true, permanent errors are matched against Contains like any other error.
+        description: Permanent matches downstream errors by their permanent classification. When true, only permanent errors trigger failover. When false, only non-permanent errors trigger failover.
         x-pointer: true
         type: boolean
 type: object

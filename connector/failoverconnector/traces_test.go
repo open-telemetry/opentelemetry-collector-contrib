@@ -185,7 +185,6 @@ func TestTracesPermanentErrorFailover(t *testing.T) {
 				RetryInterval:    50 * time.Millisecond,
 				Condition: configoptional.Some(ConditionsConfig{
 					ErrorCond: &ErrorCondition{
-						Contains:  []string{"error from"},
 						Permanent: new(bool),
 					},
 				}),
@@ -204,7 +203,6 @@ func TestTracesPermanentErrorFailover(t *testing.T) {
 				RetryInterval:    50 * time.Millisecond,
 				Condition: configoptional.Some(ConditionsConfig{
 					ErrorCond: &ErrorCondition{
-						Contains:  []string{"error from"},
 						Permanent: new(bool),
 					},
 				}),

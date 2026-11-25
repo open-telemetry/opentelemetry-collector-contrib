@@ -122,8 +122,13 @@ func TestValidateConfig(t *testing.T) {
 			err:  errNoConditionDefined,
 		},
 		{
-			name: "empty error contains string",
+			name: "empty error condition",
 			id:   component.NewIDWithName(metadata.Type, "emptyerrorcontains"),
+			err:  errEmptyErrorCondition,
+		},
+		{
+			name: "empty error contains string",
+			id:   component.NewIDWithName(metadata.Type, "emptyerrorcontainsstring"),
 			err:  errEmptyErrorContains,
 		},
 	}

@@ -50,3 +50,13 @@ failover/emptyerrorcontains:
   retry_interval: 5m
   condition:
     error: {}
+
+failover/emptyerrorcontainsstring:
+  priority_levels:
+    - [ traces/first ]
+    - [ traces/second ]
+  retry_interval: 5m
+  condition:
+    error:
+      contains: [""]
+      permanent: false

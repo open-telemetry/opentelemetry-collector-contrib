@@ -12,10 +12,11 @@ import (
 )
 
 var (
-	errNoConditionDefined           = errors.New("no condition is defined")
-	errTooManyConditions            = errors.New("only one failover condition can be applied")
-	errEmptyErrorContains           = errors.New("error condition must define non-empty 'contains' strings")
-	_                     Condition = (*ErrorCondition)(nil)
+	errNoConditionDefined            = errors.New("no condition is defined")
+	errTooManyConditions             = errors.New("only one failover condition can be applied")
+	errEmptyErrorContains            = errors.New("error condition must define non-empty 'contains' strings")
+	errEmptyErrorCondition           = errors.New("error condition must define at least one of 'contains' or 'permanent'")
+	_                      Condition = (*ErrorCondition)(nil)
 )
 
 // It plugs in all the available implementations of
@@ -54,37 +55,46 @@ type Condition interface {
 // ErrorCondition implements Condition
 type ErrorCondition struct {
 	// Contains lists case-insensitive substrings matched against downstream errors.
-	// An error matching any substring triggers failover.
+	// When set, only errors matching any substring trigger failover.
 	Contains []string `mapstructure:"contains"`
 
-	// Permanent controls whether permanent consumer errors trigger failover.
-	// When set to false, permanent errors never trigger failover. When unset or
-	// true, permanent errors are matched against Contains like any other error.
+	// Permanent matches downstream errors by their permanent classification.
+	// When true, only permanent errors trigger failover. When false, only
+	// non-permanent errors trigger failover.
 	Permanent *bool `mapstructure:"permanent"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
-// Validate ensures the error condition has a usable match string.
+// Validate ensures the error condition defines at least one usable check.
 func (c *ErrorCondition) Validate() error {
-	if len(c.Contains) == 0 || slices.Contains(c.Contains, "") {
+	if len(c.Contains) == 0 && c.Permanent == nil {
+		return errEmptyErrorCondition
+	}
+	if slices.Contains(c.Contains, "") {
 		return errEmptyErrorContains
 	}
 	return nil
 }
 
 // ShouldFailover reports whether err should trigger failover.
-// A nil error never triggers failover. Permanent errors never trigger
-// failover when Permanent is set to false. Otherwise failover happens only
-// when the error message contains the configured substring.
+// A nil error never triggers failover. Otherwise the configured checks are
+// evaluated in order and failover happens only when all of them match.
 func (c *ErrorCondition) ShouldFailover(err error) bool {
 	if err == nil {
 		return false
 	}
-	if c.Permanent != nil && !*c.Permanent && consumererror.IsPermanent(err) {
+	if c.Permanent != nil && consumererror.IsPermanent(err) != *c.Permanent {
 		return false
 	}
+	if len(c.Contains) > 0 && !c.containsMatch(err) {
+		return false
+	}
+	return true
+}
+
+func (c *ErrorCondition) containsMatch(err error) bool {
 	message := strings.ToLower(err.Error())
 	for _, value := range c.Contains {
 		if value != "" && strings.Contains(message, strings.ToLower(value)) {

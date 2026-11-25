@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 func TestErrorConditionShouldFailover(t *testing.T) {
@@ -25,11 +26,40 @@ func TestErrorConditionShouldFailover(t *testing.T) {
 		"any configured substring may match")
 }
 
+func TestErrorConditionShouldFailoverPermanent(t *testing.T) {
+	permanentErr := consumererror.NewPermanent(errors.New("network failure"))
+	retryableErr := errors.New("network failure")
+
+	onlyRetryable := &ErrorCondition{Permanent: new(bool)}
+	assert.False(t, onlyRetryable.ShouldFailover(nil))
+	assert.False(t, onlyRetryable.ShouldFailover(permanentErr))
+	assert.True(t, onlyRetryable.ShouldFailover(retryableErr))
+
+	permanent := true
+	onlyPermanent := &ErrorCondition{Permanent: &permanent}
+	assert.True(t, onlyPermanent.ShouldFailover(permanentErr))
+	assert.False(t, onlyPermanent.ShouldFailover(retryableErr))
+}
+
+func TestErrorConditionShouldFailoverAndsChecks(t *testing.T) {
+	cond := &ErrorCondition{Contains: []string{"network failure"}, Permanent: new(bool)}
+
+	assert.True(t, cond.ShouldFailover(errors.New("network failure")),
+		"error passing all checks must trigger failover")
+	assert.False(t, cond.ShouldFailover(consumererror.NewPermanent(errors.New("network failure"))),
+		"error failing the permanent check must not trigger failover")
+	assert.False(t, cond.ShouldFailover(errors.New("queue full")),
+		"error failing the contains check must not trigger failover")
+}
+
 func TestErrorConditionValidate(t *testing.T) {
 	assert.NoError(t, (&ErrorCondition{Contains: []string{"network failure"}}).Validate())
-	assert.ErrorIs(t, (&ErrorCondition{}).Validate(), errEmptyErrorContains)
+	assert.NoError(t, (&ErrorCondition{Permanent: new(bool)}).Validate())
+	assert.NoError(t, (&ErrorCondition{Contains: []string{"network failure"}, Permanent: new(bool)}).Validate())
+	assert.ErrorIs(t, (&ErrorCondition{}).Validate(), errEmptyErrorCondition)
 	assert.ErrorIs(t, (&ErrorCondition{Contains: []string{""}}).Validate(), errEmptyErrorContains)
 	assert.ErrorIs(t, (&ErrorCondition{Contains: []string{"network failure", ""}}).Validate(), errEmptyErrorContains)
+	assert.ErrorIs(t, (&ErrorCondition{Contains: []string{""}, Permanent: new(bool)}).Validate(), errEmptyErrorContains)
 }
 
 func TestConditionsConfigValidate(t *testing.T) {

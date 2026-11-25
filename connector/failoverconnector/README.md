@@ -40,10 +40,10 @@ The following settings are available:
   Moving the queue to the connector avoids data being stuck in the queue of an unhealthy exporter, where it cannot be failed over to another priority level.
 - `condition`: Conditional statements that decide when the connector should failover. Currently supports below types
     - `error`: 
-       - `contains`: ["network failure", "connection refused"] (required list of non-empty, case-insensitive substrings)
-       - `permanent`: whether errors classified by `consumererror.IsPermanent` can trigger failover. Default value is `true` for backward compatibility, in which case permanent errors are matched against `contains` like any other error. When set to `false`, permanent errors are returned immediately and the current priority level remains healthy.
+       - `contains`: ["network failure", "connection refused"] (optional list of non-empty, case-insensitive substrings). When set, only errors whose message contains any configured string trigger failover.
+       - `permanent`: (optional) matches errors by their `consumererror.IsPermanent` classification. When `true`, only permanent errors trigger failover. When `false`, only non-permanent errors trigger failover.
 
-  Only errors whose message contains any configured string trigger failover. Non-matching errors are returned
+  At least one of `contains` or `permanent` must be set. Only errors matching all configured checks trigger failover. Non-matching errors are returned
   to the upstream caller without failing over, and they do not mark the pipeline level unhealthy during
   retry sampling either. When `condition` is omitted, all errors trigger failover.
 
