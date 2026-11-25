@@ -43,8 +43,8 @@ resource_attributes:
   faas.max_memory:
     semantic_convention:
       ref: faas.md#faas-max-memory
-    description: The faas.max_memory
-    type: string
+    description: The amount of memory available to the function, in bytes.
+    type: int
     enabled: true
   faas.name:
     semantic_convention:

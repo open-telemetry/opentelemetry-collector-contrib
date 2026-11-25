@@ -49,6 +49,7 @@ require (
 	go.opentelemetry.io/contrib/detectors/akamai v0.0.0-20261106092722-ca27f49bc143
 	go.opentelemetry.io/contrib/detectors/alibaba/ecs v0.0.0-20261106092722-ca27f49bc143
 	go.opentelemetry.io/contrib/detectors/aws/elasticbeanstalk v0.19.0
+	go.opentelemetry.io/contrib/detectors/aws/lambda v0.72.1-0.20261123093453-857c9bedc28f
 	go.opentelemetry.io/contrib/detectors/azure/azureaks v0.0.0-20261106092722-ca27f49bc143
 	go.opentelemetry.io/contrib/detectors/azure/azureappservice v0.19.0
 	go.opentelemetry.io/contrib/detectors/azure/azurecontainerapps v0.19.0
@@ -182,7 +183,7 @@ require (
 	github.com/tklauser/numcpus v0.12.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
+	go.opentelemetry.io/auto/sdk v1.2.2 // indirect
 	go.opentelemetry.io/collector/client v1.72.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.166.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v1.72.0 // indirect

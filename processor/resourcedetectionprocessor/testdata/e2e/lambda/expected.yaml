@@ -25,7 +25,7 @@ resourceMetrics:
             stringValue: "2024/01/15/[$LATEST]abc123def456789"
         - key: faas.max_memory
           value:
-            stringValue: "512"
+            intValue: "536870912"
         - key: faas.name
           value:
             stringValue: test-lambda-function
