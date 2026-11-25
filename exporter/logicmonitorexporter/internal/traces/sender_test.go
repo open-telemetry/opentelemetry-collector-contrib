@@ -21,7 +21,7 @@ import (
 func TestSendTraces(t *testing.T) {
 	authParams := utils.AuthParams{
 		AccessID:    "testId",
-		AccessKey:   "testKey",
+		AccessKey:   "test-key-at-least-14-bytes",
 		BearerToken: "testToken",
 	}
 	t.Run("should not return error", func(t *testing.T) {

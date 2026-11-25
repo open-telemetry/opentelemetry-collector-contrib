@@ -16,9 +16,12 @@ import (
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression"
 )
 
 func TestNewS3Manager(t *testing.T) {
@@ -33,7 +36,12 @@ func TestNewS3Manager(t *testing.T) {
 		WithACL(s3types.ObjectCannedACLPrivate),
 	)
 
-	assert.NotNil(t, sm, "Must have a valid client returned")
+	require.NotNil(t, sm, "Must have a valid client returned")
+	payload := []byte("hello world")
+	content, err := sm.(*s3manager).contentBuffer(payload)
+	require.NoError(t, err)
+	require.Equal(t, payload, content.Bytes())
+	assert.Same(t, &payload[0], &content.Bytes()[0], "Uncompressed uploads should reuse the payload")
 }
 
 func TestS3ManagerUpload(t *testing.T) {
@@ -43,6 +51,7 @@ func TestS3ManagerUpload(t *testing.T) {
 		name         string
 		handler      func(t *testing.T) http.Handler
 		compression  configcompression.Type
+		level        configcompression.Level
 		data         []byte
 		errVal       string
 		storageClass string
@@ -52,7 +61,10 @@ func TestS3ManagerUpload(t *testing.T) {
 			name: "successful upload",
 			handler: func(t *testing.T) http.Handler {
 				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-					_, _ = io.Copy(io.Discard, r.Body)
+					data, err := io.ReadAll(r.Body)
+					assert.NoError(t, err)
+					assert.Equal(t, "hello world", string(data))
+					assert.Empty(t, r.Header.Get("Content-Encoding"))
 					_ = r.Body.Close()
 
 					assert.Equal(
@@ -80,6 +92,7 @@ func TestS3ManagerUpload(t *testing.T) {
 					)
 
 					gr, err := gzip.NewReader(r.Body)
+					assert.Equal(t, "gzip", r.Header.Get("Content-Encoding"))
 					if !assert.NoError(t, err, "Must not error creating gzip reader") {
 						return
 					}
@@ -93,6 +106,7 @@ func TestS3ManagerUpload(t *testing.T) {
 				})
 			},
 			compression: configcompression.TypeGzip,
+			level:       configcompression.DefaultCompressionLevel,
 			data:        []byte("hello world"),
 			errVal:      "",
 			uploadOpts:  nil,
@@ -109,6 +123,7 @@ func TestS3ManagerUpload(t *testing.T) {
 					)
 
 					reader, err := zstd.NewReader(r.Body)
+					assert.Equal(t, "zstd", r.Header.Get("Content-Encoding"))
 					if !assert.NoError(t, err, "Must not error creating zstd reader") {
 						return
 					}
@@ -122,6 +137,7 @@ func TestS3ManagerUpload(t *testing.T) {
 				})
 			},
 			compression: configcompression.TypeZstd,
+			level:       3,
 			data:        []byte("hello world"),
 			errVal:      "",
 			uploadOpts:  nil,
@@ -297,6 +313,12 @@ func TestS3ManagerUpload(t *testing.T) {
 			s := httptest.NewServer(tc.handler(t))
 			t.Cleanup(s.Close)
 
+			opts := []ManagerOpt{WithACL(s3types.ObjectCannedACLPrivate)}
+			if tc.compression.IsCompressed() {
+				writer, err := xcompression.NewWriterFactory().NewWriter(tc.compression, configcompression.CompressionParams{Level: tc.level})
+				require.NoError(t, err)
+				opts = append(opts, WithCompressionWriter(writer))
+			}
 			sm := NewS3Manager(
 				zap.NewNop(),
 				"my-bucket",
@@ -316,7 +338,7 @@ func TestS3ManagerUpload(t *testing.T) {
 					Region:       "local",
 				}),
 				"STANDARD_IA",
-				WithACL(s3types.ObjectCannedACLPrivate),
+				opts...,
 			)
 
 			// Using a mocked virtual clock to fix the timestamp used
