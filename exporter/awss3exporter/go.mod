@@ -13,6 +13,7 @@ require (
 	github.com/itchyny/timefmt-go v0.1.9
 	github.com/klauspost/compress v1.20.5
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.166.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression v0.166.0
 	github.com/stretchr/testify v1.12.1
 	github.com/tilinna/clock v1.1.0
 	go.opentelemetry.io/collector/component v1.72.0
@@ -73,6 +74,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pandatix/go-abnf v0.5.5 // indirect
+	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/power-devops/perfstat v0.0.0-20260805114148-88456608a4f6 // indirect
 	github.com/prometheus/client_golang v1.24.1 // indirect
 	github.com/prometheus/client_model v0.6.3 // indirect
@@ -161,3 +163,5 @@ retract (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr => ../../pkg/batchperresourceattr
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression => ../../pkg/xcompression
