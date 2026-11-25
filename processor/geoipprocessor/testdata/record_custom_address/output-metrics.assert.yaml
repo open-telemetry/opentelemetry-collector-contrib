@@ -24,4 +24,4 @@ resources:
                     geo.region.iso_code: WBK
                     geo.region_name: West Berkshire
                     geo.timezone: Europe/London
-                  value: 345
+                  double_value: 345

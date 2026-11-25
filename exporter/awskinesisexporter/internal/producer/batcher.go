@@ -45,7 +45,7 @@ func NewBatcher(kinesisAPI Kinesis, stream string, opts ...BatcherOptions) (Batc
 }
 
 func (b *batcher) Put(ctx context.Context, bt *batch.Batch) error {
-	for _, records := range bt.Chunk() {
+	for records := range bt.Chunk() {
 		out, err := b.client.PutRecords(ctx, &kinesis.PutRecordsInput{
 			StreamName: b.stream,
 			Records:    records,

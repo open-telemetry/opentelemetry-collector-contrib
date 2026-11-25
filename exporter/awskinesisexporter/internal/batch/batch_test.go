@@ -4,6 +4,7 @@
 package batch_test
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,15 +21,16 @@ func TestBatchingMessages(t *testing.T) {
 	}
 
 	chunk := b.Chunk()
-	for _, records := range chunk {
+	chunks := slices.Collect(chunk)
+	for _, records := range chunks {
 		for _, record := range records {
 			assert.Equal(t, []byte("foobar"), record.Data, "Must have the expected record value")
 			assert.Equal(t, "fixed-string", *record.PartitionKey, "Must have the expected partition key")
 		}
 	}
 
-	assert.Len(t, chunk, 2, "Must have split the batch into two chunks")
-	assert.Len(t, chunk, 2, "Must not modify the stored data within the batch")
+	assert.Len(t, chunks, 2, "Must have split the batch into two chunks")
+	assert.Len(t, slices.Collect(chunk), 2, "Must not modify the stored data within the batch")
 
 	assert.Error(t, b.AddRecord(nil, "fixed-string"), "Must error when invalid record provided")
 	assert.Error(t, b.AddRecord([]byte("some data that is very important"), ""), "Must error when invalid partition key provided")
@@ -44,7 +46,7 @@ func TestCustomBatchSizeConstraints(t *testing.T) {
 	for range records {
 		assert.NoError(t, b.AddRecord([]byte("foobar"), "fixed-string"), "Must not error when adding elements into the batch")
 	}
-	assert.Len(t, b.Chunk(), records, "Must have one batch per record added")
+	assert.Len(t, slices.Collect(b.Chunk()), records, "Must have one batch per record added")
 }
 
 func BenchmarkChunkingRecords(b *testing.B) {
@@ -55,6 +57,6 @@ func BenchmarkChunkingRecords(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		assert.Len(b, bt.Chunk(), 2, "Must have exactly two chunks")
+		assert.Len(b, slices.Collect(bt.Chunk()), 2, "Must have exactly two chunks")
 	}
 }
