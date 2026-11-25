@@ -5,6 +5,7 @@ package postgresqlreceiver
 
 import (
 	"errors"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -873,11 +874,13 @@ func TestGetDatabaseTableMetricsUnavailableSize(t *testing.T) {
 		database: "otel", schema: "public", table: "kept",
 		live: 10, dead: 1, inserts: 2, upd: 3, del: 4, hotUpd: 5, seqScans: 6, size: 8192, vacuumCount: 7,
 		lastVacuumAge: -1, lastAutovacuumAge: -1, lastAnalyzeAge: -1, lastAutoanalyzeAge: -1,
+		insSinceVacuum: -1, xidAge: -1, mxidAge: -1,
 	}, tables[tableKey("otel", "public", "kept")])
 	assert.Equal(t, &tableStats{
 		database: "otel", schema: "public", table: "dropped",
 		live: 11, inserts: 1, seqScans: 2, size: -1,
 		lastVacuumAge: -1, lastAutovacuumAge: -1, lastAnalyzeAge: -1, lastAutoanalyzeAge: -1,
+		insSinceVacuum: -1, xidAge: -1, mxidAge: -1,
 	}, tables[tableKey("otel", "public", "dropped")])
 }
 
@@ -885,7 +888,7 @@ func TestGetDatabaseTableMetricsOmitsMaintenanceColumns(t *testing.T) {
 	columns := []string{"schema", "table", "live", "dead", "ins", "upd", "del", "hot_upd", "seq_scans", "table_size", "vacuum_count"}
 
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherFunc(func(_, actual string) error {
-		if strings.Contains(actual, tableMaintenanceColumns) {
+		if strings.Contains(actual, tableMaintenanceColumns) || strings.Contains(actual, tableMaintenanceJoins) {
 			return errors.New("query includes the maintenance columns")
 		}
 		return nil
@@ -909,36 +912,56 @@ func TestGetDatabaseTableMetricsMaintenance(t *testing.T) {
 		"schema", "table", "live", "dead", "ins", "upd", "del", "hot_upd", "seq_scans", "table_size", "vacuum_count",
 		"autovacuum_count", "analyze_count", "autoanalyze_count", "mod_since_analyze",
 		"last_vacuum_age", "last_autovacuum_age", "last_analyze_age", "last_autoanalyze_age",
+		"xid_age", "mxid_age", "ins_since_vacuum",
 	}
 
-	db, mock, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
+	for _, tc := range []struct {
+		name           string
+		serverVersion  string
+		insColumn      string
+		insSinceVacuum int64
+	}{
+		{name: "PG 13 and later", serverVersion: "17.2", insColumn: "s.n_ins_since_vacuum AS ins_since_vacuum", insSinceVacuum: 12},
+		{name: "before PG 13", serverVersion: "12.22", insColumn: "-1 AS ins_since_vacuum", insSinceVacuum: -1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer db.Close()
 
-	client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
+			client := &postgreSQLClient{client: db, closeFn: func() error { return nil }}
 
-	// A table that has never been vacuumed or analyzed has NULL last_* timestamps; the
-	// query must map each age to -1 so the scan never sees NULL.
-	mock.ExpectQuery(`CASE WHEN s\.last_autovacuum IS NULL THEN -1 ELSE greatest\(extract\(epoch FROM clock_timestamp\(\) - s\.last_autovacuum\)::float8, 0\) END AS last_autovacuum_age`).
-		WillReturnRows(sqlmock.NewRows(columns).
-			AddRow("public", "maintained", 10, 1, 2, 3, 4, 5, 6, 8192, 7, 8, 9, 10, 11, 3600.5, 60.25, 7200.75, 120.125).
-			AddRow("public", "untouched", 1, 0, 1, 0, 0, 0, 0, 8192, 0, 0, 0, 0, 1, -1, -1, -1, -1))
+			mock.ExpectQuery("SHOW server_version;").
+				WillReturnRows(sqlmock.NewRows([]string{"server_version"}).AddRow(tc.serverVersion))
+			// A table that has never been vacuumed or analyzed has NULL last_* timestamps, and a
+			// partitioned table has no relfrozenxid; the query must map each to -1 so the scan
+			// never sees NULL or a meaningless age.
+			mock.ExpectQuery(regexp.QuoteMeta(`CASE WHEN s.last_autovacuum IS NULL THEN -1 ELSE greatest(extract(epoch FROM clock_timestamp() - s.last_autovacuum)::float8, 0) END AS last_autovacuum_age`) +
+				`[\s\S]*` + regexp.QuoteMeta(`CASE WHEN c.relkind = 'p' THEN -1 ELSE greatest(age(c.relfrozenxid), age(t.relfrozenxid)) END AS xid_age`) +
+				`[\s\S]*` + regexp.QuoteMeta(tc.insColumn) +
+				`[\s\S]*` + regexp.QuoteMeta(`LEFT JOIN pg_catalog.pg_class t ON t.oid = c.reltoastrelid`)).
+				WillReturnRows(sqlmock.NewRows(columns).
+					AddRow("public", "maintained", 10, 1, 2, 3, 4, 5, 6, 8192, 7, 8, 9, 10, 11, 3600.5, 60.25, 7200.75, 120.125, 150_000, 2_000, tc.insSinceVacuum).
+					AddRow("public", "parted", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, 0))
 
-	tables, err := client.getDatabaseTableMetrics(t.Context(), "otel", true)
-	require.NoError(t, err)
-	require.NoError(t, mock.ExpectationsWereMet())
+			tables, err := client.getDatabaseTableMetrics(t.Context(), "otel", true)
+			require.NoError(t, err)
+			require.NoError(t, mock.ExpectationsWereMet())
 
-	assert.Equal(t, &tableStats{
-		database: "otel", schema: "public", table: "maintained",
-		live: 10, dead: 1, inserts: 2, upd: 3, del: 4, hotUpd: 5, seqScans: 6, size: 8192, vacuumCount: 7,
-		autovacuumCount: 8, analyzeCount: 9, autoanalyzeCount: 10, modSinceAnalyze: 11,
-		lastVacuumAge: 3600.5, lastAutovacuumAge: 60.25, lastAnalyzeAge: 7200.75, lastAutoanalyzeAge: 120.125,
-	}, tables[tableKey("otel", "public", "maintained")])
-	assert.Equal(t, &tableStats{
-		database: "otel", schema: "public", table: "untouched",
-		live: 1, inserts: 1, size: 8192, modSinceAnalyze: 1,
-		lastVacuumAge: -1, lastAutovacuumAge: -1, lastAnalyzeAge: -1, lastAutoanalyzeAge: -1,
-	}, tables[tableKey("otel", "public", "untouched")])
+			assert.Equal(t, &tableStats{
+				database: "otel", schema: "public", table: "maintained",
+				live: 10, dead: 1, inserts: 2, upd: 3, del: 4, hotUpd: 5, seqScans: 6, size: 8192, vacuumCount: 7,
+				autovacuumCount: 8, analyzeCount: 9, autoanalyzeCount: 10, modSinceAnalyze: 11,
+				lastVacuumAge: 3600.5, lastAutovacuumAge: 60.25, lastAnalyzeAge: 7200.75, lastAutoanalyzeAge: 120.125,
+				xidAge: 150_000, mxidAge: 2_000, insSinceVacuum: tc.insSinceVacuum,
+			}, tables[tableKey("otel", "public", "maintained")])
+			assert.Equal(t, &tableStats{
+				database: "otel", schema: "public", table: "parted",
+				lastVacuumAge: -1, lastAutovacuumAge: -1, lastAnalyzeAge: -1, lastAutoanalyzeAge: -1,
+				xidAge: -1, mxidAge: -1,
+			}, tables[tableKey("otel", "public", "parted")])
+		})
+	}
 }
 
 func TestGetDatabaseTableMetricsRowsErr(t *testing.T) {

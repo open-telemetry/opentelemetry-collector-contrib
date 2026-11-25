@@ -484,6 +484,10 @@ The number of sequential scans.
 
 Number of times a table has manually been analyzed.
 
+The count starts over from 0 when PostgreSQL statistics are reset, for example by
+`pg_stat_reset()`, after a crash, or on failover, as a standby does not carry over the
+primary's counts.
+
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {analyze} | Sum | Int | Cumulative | true | Development |
@@ -498,6 +502,10 @@ Number of times a table has manually been analyzed.
 ### postgresql.table.autoanalyze.count
 
 Number of times a table has been analyzed by the autovacuum daemon.
+
+The count starts over from 0 when PostgreSQL statistics are reset, for example by
+`pg_stat_reset()`, after a crash, or on failover, as a standby does not carry over the
+primary's counts.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
@@ -514,9 +522,32 @@ Number of times a table has been analyzed by the autovacuum daemon.
 
 Number of times a table has been vacuumed by the autovacuum daemon.
 
+The count starts over from 0 when PostgreSQL statistics are reset, for example by
+`pg_stat_reset()`, after a crash, or on failover, as a standby does not carry over the
+primary's counts.
+
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {vacuum} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+| db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
+
+### postgresql.table.inserts_since_vacuum
+
+Estimated number of rows inserted since a table was last vacuumed.
+
+Autovacuum vacuums a table once this exceeds `autovacuum_vacuum_insert_threshold` plus a
+fraction of the table set by `autovacuum_vacuum_insert_scale_factor`, so insert-only tables
+are still vacuumed and frozen. Only reported on PostgreSQL 13 and later.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {row} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 
@@ -608,6 +639,46 @@ partitioned tables, so for them this stays at 0.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {row} | Sum | Int | Cumulative | false | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+| db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
+
+### postgresql.table.mxid.age
+
+Age, in multixact IDs, of the oldest multixact ID that has not been frozen in the table.
+
+Reported from `mxid_age(relminmxid)` in `pg_class`, taking the older of the table and its TOAST
+table. Autovacuum forces an anti-wraparound vacuum of the table once this exceeds
+`autovacuum_multixact_freeze_max_age`. No data point is reported for partitioned tables, which
+hold no rows of their own.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {multixact} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+| db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
+
+### postgresql.table.xid.age
+
+Age, in transactions, of the oldest transaction ID that has not been frozen in the table.
+
+Reported from `age(relfrozenxid)` in `pg_class`, taking the older of the table and its TOAST
+table. Autovacuum forces an anti-wraparound vacuum of the table once this exceeds
+`autovacuum_freeze_max_age`. No data point is reported for partitioned tables, which hold no
+rows of their own.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {transaction} | Gauge | Int | Development |
 
 #### Attributes
 

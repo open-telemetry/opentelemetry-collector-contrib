@@ -1405,6 +1405,55 @@ func (ms *PostgresqlTableCountMetricConfig) Validate() error {
 	return nil
 }
 
+// PostgresqlTableInsertsSinceVacuumMetricAttributeKey specifies the key of an attribute for the postgresql.table.inserts_since_vacuum metric.
+type PostgresqlTableInsertsSinceVacuumMetricAttributeKey string
+
+const (
+	PostgresqlTableInsertsSinceVacuumMetricAttributeKeyDbNamespace      PostgresqlTableInsertsSinceVacuumMetricAttributeKey = "db.namespace"
+	PostgresqlTableInsertsSinceVacuumMetricAttributeKeyDbCollectionName PostgresqlTableInsertsSinceVacuumMetricAttributeKey = "db.collection.name"
+)
+
+// PostgresqlTableInsertsSinceVacuumMetricConfig provides config for the postgresql.table.inserts_since_vacuum metric.
+type PostgresqlTableInsertsSinceVacuumMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlTableInsertsSinceVacuumMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlTableInsertsSinceVacuumMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlTableInsertsSinceVacuumMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlTableInsertsSinceVacuumMetricAttributeKeyDbNamespace, PostgresqlTableInsertsSinceVacuumMetricAttributeKeyDbCollectionName:
+		default:
+			return fmt.Errorf("metric postgresql.table.inserts_since_vacuum doesn't have an attribute %v, valid attributes: [db.namespace, db.collection.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // PostgresqlTableLastAnalyzeAgeMetricAttributeKey specifies the key of an attribute for the postgresql.table.last_analyze.age metric.
 type PostgresqlTableLastAnalyzeAgeMetricAttributeKey string
 
@@ -1650,6 +1699,55 @@ func (ms *PostgresqlTableModificationsSinceAnalyzeMetricConfig) Validate() error
 	return nil
 }
 
+// PostgresqlTableMxidAgeMetricAttributeKey specifies the key of an attribute for the postgresql.table.mxid.age metric.
+type PostgresqlTableMxidAgeMetricAttributeKey string
+
+const (
+	PostgresqlTableMxidAgeMetricAttributeKeyDbNamespace      PostgresqlTableMxidAgeMetricAttributeKey = "db.namespace"
+	PostgresqlTableMxidAgeMetricAttributeKeyDbCollectionName PostgresqlTableMxidAgeMetricAttributeKey = "db.collection.name"
+)
+
+// PostgresqlTableMxidAgeMetricConfig provides config for the postgresql.table.mxid.age metric.
+type PostgresqlTableMxidAgeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlTableMxidAgeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlTableMxidAgeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlTableMxidAgeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlTableMxidAgeMetricAttributeKeyDbNamespace, PostgresqlTableMxidAgeMetricAttributeKeyDbCollectionName:
+		default:
+			return fmt.Errorf("metric postgresql.table.mxid.age doesn't have an attribute %v, valid attributes: [db.namespace, db.collection.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // PostgresqlTableSizeMetricAttributeKey specifies the key of an attribute for the postgresql.table.size metric.
 type PostgresqlTableSizeMetricAttributeKey string
 
@@ -1736,6 +1834,55 @@ func (ms *PostgresqlTableVacuumCountMetricConfig) Validate() error {
 		case PostgresqlTableVacuumCountMetricAttributeKeyDbNamespace, PostgresqlTableVacuumCountMetricAttributeKeyDbCollectionName:
 		default:
 			return fmt.Errorf("metric postgresql.table.vacuum.count doesn't have an attribute %v, valid attributes: [db.namespace, db.collection.name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// PostgresqlTableXidAgeMetricAttributeKey specifies the key of an attribute for the postgresql.table.xid.age metric.
+type PostgresqlTableXidAgeMetricAttributeKey string
+
+const (
+	PostgresqlTableXidAgeMetricAttributeKeyDbNamespace      PostgresqlTableXidAgeMetricAttributeKey = "db.namespace"
+	PostgresqlTableXidAgeMetricAttributeKeyDbCollectionName PostgresqlTableXidAgeMetricAttributeKey = "db.collection.name"
+)
+
+// PostgresqlTableXidAgeMetricConfig provides config for the postgresql.table.xid.age metric.
+type PostgresqlTableXidAgeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []PostgresqlTableXidAgeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *PostgresqlTableXidAgeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *PostgresqlTableXidAgeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case PostgresqlTableXidAgeMetricAttributeKeyDbNamespace, PostgresqlTableXidAgeMetricAttributeKeyDbCollectionName:
+		default:
+			return fmt.Errorf("metric postgresql.table.xid.age doesn't have an attribute %v, valid attributes: [db.namespace, db.collection.name]", val)
 		}
 	}
 
@@ -2478,13 +2625,16 @@ type MetricsConfig struct {
 	PostgresqlTableAutoanalyzeCount          PostgresqlTableAutoanalyzeCountMetricConfig          `mapstructure:"postgresql.table.autoanalyze.count"`
 	PostgresqlTableAutovacuumCount           PostgresqlTableAutovacuumCountMetricConfig           `mapstructure:"postgresql.table.autovacuum.count"`
 	PostgresqlTableCount                     PostgresqlTableCountMetricConfig                     `mapstructure:"postgresql.table.count"`
+	PostgresqlTableInsertsSinceVacuum        PostgresqlTableInsertsSinceVacuumMetricConfig        `mapstructure:"postgresql.table.inserts_since_vacuum"`
 	PostgresqlTableLastAnalyzeAge            PostgresqlTableLastAnalyzeAgeMetricConfig            `mapstructure:"postgresql.table.last_analyze.age"`
 	PostgresqlTableLastAutoanalyzeAge        PostgresqlTableLastAutoanalyzeAgeMetricConfig        `mapstructure:"postgresql.table.last_autoanalyze.age"`
 	PostgresqlTableLastAutovacuumAge         PostgresqlTableLastAutovacuumAgeMetricConfig         `mapstructure:"postgresql.table.last_autovacuum.age"`
 	PostgresqlTableLastVacuumAge             PostgresqlTableLastVacuumAgeMetricConfig             `mapstructure:"postgresql.table.last_vacuum.age"`
 	PostgresqlTableModificationsSinceAnalyze PostgresqlTableModificationsSinceAnalyzeMetricConfig `mapstructure:"postgresql.table.modifications_since_analyze"`
+	PostgresqlTableMxidAge                   PostgresqlTableMxidAgeMetricConfig                   `mapstructure:"postgresql.table.mxid.age"`
 	PostgresqlTableSize                      PostgresqlTableSizeMetricConfig                      `mapstructure:"postgresql.table.size"`
 	PostgresqlTableVacuumCount               PostgresqlTableVacuumCountMetricConfig               `mapstructure:"postgresql.table.vacuum.count"`
+	PostgresqlTableXidAge                    PostgresqlTableXidAgeMetricConfig                    `mapstructure:"postgresql.table.xid.age"`
 	PostgresqlTempIo                         PostgresqlTempIoMetricConfig                         `mapstructure:"postgresql.temp.io"`
 	PostgresqlTempFiles                      PostgresqlTempFilesMetricConfig                      `mapstructure:"postgresql.temp_files"`
 	PostgresqlTupDeleted                     PostgresqlTupDeletedMetricConfig                     `mapstructure:"postgresql.tup_deleted"`
@@ -2651,6 +2801,11 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []PostgresqlTableCountMetricAttributeKey{PostgresqlTableCountMetricAttributeKeyDbNamespace},
 		},
+		PostgresqlTableInsertsSinceVacuum: PostgresqlTableInsertsSinceVacuumMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []PostgresqlTableInsertsSinceVacuumMetricAttributeKey{PostgresqlTableInsertsSinceVacuumMetricAttributeKeyDbNamespace, PostgresqlTableInsertsSinceVacuumMetricAttributeKeyDbCollectionName},
+		},
 		PostgresqlTableLastAnalyzeAge: PostgresqlTableLastAnalyzeAgeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
@@ -2676,6 +2831,11 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []PostgresqlTableModificationsSinceAnalyzeMetricAttributeKey{PostgresqlTableModificationsSinceAnalyzeMetricAttributeKeyDbNamespace, PostgresqlTableModificationsSinceAnalyzeMetricAttributeKeyDbCollectionName},
 		},
+		PostgresqlTableMxidAge: PostgresqlTableMxidAgeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []PostgresqlTableMxidAgeMetricAttributeKey{PostgresqlTableMxidAgeMetricAttributeKeyDbNamespace, PostgresqlTableMxidAgeMetricAttributeKeyDbCollectionName},
+		},
 		PostgresqlTableSize: PostgresqlTableSizeMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
@@ -2685,6 +2845,11 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []PostgresqlTableVacuumCountMetricAttributeKey{PostgresqlTableVacuumCountMetricAttributeKeyDbNamespace, PostgresqlTableVacuumCountMetricAttributeKeyDbCollectionName},
+		},
+		PostgresqlTableXidAge: PostgresqlTableXidAgeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []PostgresqlTableXidAgeMetricAttributeKey{PostgresqlTableXidAgeMetricAttributeKeyDbNamespace, PostgresqlTableXidAgeMetricAttributeKeyDbCollectionName},
 		},
 		PostgresqlTempIo: PostgresqlTempIoMetricConfig{
 			Enabled:             false,

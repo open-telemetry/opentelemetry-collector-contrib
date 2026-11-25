@@ -82,13 +82,16 @@ func TestMetricsBuilderConfigForFeatureGate(t *testing.T) {
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableAutoanalyzeCount.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableAutovacuumCount.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableCount.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableInsertsSinceVacuum.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableLastAnalyzeAge.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableLastAutoanalyzeAge.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableLastAutovacuumAge.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableLastVacuumAge.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableModificationsSinceAnalyze.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableMxidAge.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableSize.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableVacuumCount.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableXidAge.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTempIo.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTempFiles.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupDeleted.EnabledAttributes)
@@ -319,6 +322,7 @@ func TestScraperMaintenanceMetrics(t *testing.T) {
 			"PostgresqlTableModificationsSinceAnalyze",
 			"PostgresqlTableLastVacuumAge", "PostgresqlTableLastAutovacuumAge",
 			"PostgresqlTableLastAnalyzeAge", "PostgresqlTableLastAutoanalyzeAge",
+			"PostgresqlTableInsertsSinceVacuum", "PostgresqlTableXidAge", "PostgresqlTableMxidAge",
 		} {
 			enableMetricField(cfg, field)
 		}
@@ -2717,6 +2721,9 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 				lastAutovacuumAge:  float64(index) + 60.5,
 				lastAnalyzeAge:     float64(index) + 7200.75,
 				lastAutoanalyzeAge: float64(index) + 120.125,
+				insSinceVacuum:     int64(index + 84),
+				xidAge:             int64(index + 50_000_000),
+				mxidAge:            int64(index + 400_000),
 			},
 			tableKey(database, schema, table2): {
 				database:    database,
@@ -2732,11 +2739,15 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 				vacuumCount: int64(index + 48),
 				seqScans:    int64(index + 49),
 
-				// Never vacuumed or analyzed: the client reports -1 for every age.
+				// Never vacuumed or analyzed, a partitioned table, on a server before PG 13:
+				// the client reports -1 for every age and for the inserts since vacuum.
 				lastVacuumAge:      -1,
 				lastAutovacuumAge:  -1,
 				lastAnalyzeAge:     -1,
 				lastAutoanalyzeAge: -1,
+				insSinceVacuum:     -1,
+				xidAge:             -1,
+				mxidAge:            -1,
 			},
 		}
 
@@ -3073,6 +3084,7 @@ func TestCollectTablesRequestsMaintenanceColumnsOnlyWhenEnabled(t *testing.T) {
 		{name: "default config", includeMaintenance: false},
 		{name: "maintenance count enabled", enable: "PostgresqlTableAutovacuumCount", includeMaintenance: true},
 		{name: "maintenance age enabled", enable: "PostgresqlTableLastAutoanalyzeAge", includeMaintenance: true},
+		{name: "table xid age enabled", enable: "PostgresqlTableXidAge", includeMaintenance: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			c := new(mockClient)
@@ -3201,6 +3213,7 @@ var queryGuards = []queryGuard{
 		"PostgresqlTableModificationsSinceAnalyze",
 		"PostgresqlTableLastVacuumAge", "PostgresqlTableLastAutovacuumAge",
 		"PostgresqlTableLastAnalyzeAge", "PostgresqlTableLastAutoanalyzeAge",
+		"PostgresqlTableInsertsSinceVacuum", "PostgresqlTableXidAge", "PostgresqlTableMxidAge",
 	}},
 	{"vectorSearchMetricsEnabled", (*postgreSQLScraper).vectorSearchMetricsEnabled, []string{
 		"PostgresqlVectorSearchCalls", "PostgresqlVectorSearchDuration", "PostgresqlVectorSearchRowsReturned",

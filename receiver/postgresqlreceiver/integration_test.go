@@ -1268,11 +1268,26 @@ func tableMaintenanceAndIDAgesTest(pgVersion string) func(*testing.T) {
 		// results as the monitoring user.
 		ownerDB, err := getDB(ctx, connConfig("root", "otel"), "otel")
 		require.NoError(t, err)
-		for _, stmt := range []string{
+		version, err := (&postgreSQLClient{client: ownerDB}).getVersion(ctx)
+		require.NoError(t, err)
+		major, err := parseMajorVersion(version)
+		require.NoError(t, err)
+
+		stmts := []string{
 			"VACUUM maintained",
 			"ANALYZE maintained",
 			"INSERT INTO maintained SELECT g FROM generate_series(1, 5) AS g",
-		} {
+		}
+		// Consume transaction IDs, then freeze toasted without its TOAST table, so
+		// the TOAST table is older than the table. PROCESS_TOAST was added in PG 14.
+		const burnedXIDs = 50
+		for range burnedXIDs {
+			stmts = append(stmts, "SELECT txid_current()")
+		}
+		if major >= 14 {
+			stmts = append(stmts, "VACUUM (FREEZE, PROCESS_TOAST false) toasted")
+		}
+		for _, stmt := range stmts {
 			_, err = ownerDB.ExecContext(ctx, stmt)
 			require.NoError(t, err, stmt)
 		}
@@ -1289,9 +1304,11 @@ func tableMaintenanceAndIDAgesTest(pgVersion string) func(*testing.T) {
 
 		// Cumulative statistics reach pg_stat_user_tables asynchronously, so wait
 		// until the backend that ran the statements above has reported them.
+		var tableMetrics map[tableIdentifier]*tableStats
 		var maintained, untouched *tableStats
 		require.EventuallyWithT(t, func(c *assert.CollectT) {
-			tableMetrics, scanErr := client.getDatabaseTableMetrics(ctx, "otel", true)
+			var scanErr error
+			tableMetrics, scanErr = client.getDatabaseTableMetrics(ctx, "otel", true)
 			require.NoError(c, scanErr)
 			var ok bool
 			maintained, ok = tableMetrics[tableKey("otel", "public", "maintained")]
@@ -1301,6 +1318,7 @@ func tableMaintenanceAndIDAgesTest(pgVersion string) func(*testing.T) {
 			require.Equal(c, int64(1), maintained.vacuumCount)
 			require.Equal(c, int64(1), maintained.analyzeCount)
 			require.Equal(c, int64(5), maintained.modSinceAnalyze)
+			require.Equal(c, int64(5), maintained.insSinceVacuum, "only the rows inserted after the vacuum count")
 		}, 30*time.Second, 250*time.Millisecond)
 
 		assert.Zero(t, maintained.autovacuumCount)
@@ -1319,6 +1337,26 @@ func tableMaintenanceAndIDAgesTest(pgVersion string) func(*testing.T) {
 		assert.Equal(t, -1.0, untouched.lastAutovacuumAge)
 		assert.Equal(t, -1.0, untouched.lastAnalyzeAge)
 		assert.Equal(t, -1.0, untouched.lastAutoanalyzeAge)
+		assert.Zero(t, untouched.insSinceVacuum)
+
+		assert.GreaterOrEqual(t, maintained.xidAge, int64(burnedXIDs))
+		assert.GreaterOrEqual(t, maintained.mxidAge, int64(0))
+
+		toasted, ok := tableMetrics[tableKey("otel", "public", "toasted")]
+		require.True(t, ok, "toasted missing from getDatabaseTableMetrics result")
+		assert.GreaterOrEqual(t, toasted.xidAge, int64(burnedXIDs))
+		if major >= 14 {
+			var heapAge int64
+			require.NoError(t, clientDB.QueryRowContext(ctx, "SELECT age(relfrozenxid) FROM pg_class WHERE relname = 'toasted'").Scan(&heapAge))
+			assert.Less(t, heapAge, int64(burnedXIDs), "the table itself was just frozen")
+			assert.Greater(t, toasted.xidAge, heapAge, "the age must come from the older TOAST table")
+
+			// Partitioned tables are only listed in pg_stat_user_tables from PG 14 on.
+			parted, partedOK := tableMetrics[tableKey("otel", "public", "parted")]
+			require.True(t, partedOK, "parted missing from getDatabaseTableMetrics result")
+			assert.Equal(t, int64(-1), parted.xidAge, "a partitioned table has no relfrozenxid")
+			assert.Equal(t, int64(-1), parted.mxidAge, "a partitioned table has no relminmxid")
+		}
 
 		filtered, err := client.getDatabaseIDAges(ctx, []string{"otel"})
 		require.NoError(t, err)

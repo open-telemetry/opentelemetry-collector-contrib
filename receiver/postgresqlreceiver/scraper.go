@@ -198,13 +198,16 @@ func metricsBuilderConfigForFeatureGate(config metadata.MetricsBuilderConfig, us
 	metrics.PostgresqlTableAutoanalyzeCount.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableAutoanalyzeCount.EnabledAttributes)
 	metrics.PostgresqlTableAutovacuumCount.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableAutovacuumCount.EnabledAttributes)
 	metrics.PostgresqlTableCount.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableCount.EnabledAttributes)
+	metrics.PostgresqlTableInsertsSinceVacuum.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableInsertsSinceVacuum.EnabledAttributes)
 	metrics.PostgresqlTableLastAnalyzeAge.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableLastAnalyzeAge.EnabledAttributes)
 	metrics.PostgresqlTableLastAutoanalyzeAge.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableLastAutoanalyzeAge.EnabledAttributes)
 	metrics.PostgresqlTableLastAutovacuumAge.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableLastAutovacuumAge.EnabledAttributes)
 	metrics.PostgresqlTableLastVacuumAge.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableLastVacuumAge.EnabledAttributes)
 	metrics.PostgresqlTableModificationsSinceAnalyze.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableModificationsSinceAnalyze.EnabledAttributes)
+	metrics.PostgresqlTableMxidAge.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableMxidAge.EnabledAttributes)
 	metrics.PostgresqlTableSize.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableSize.EnabledAttributes)
 	metrics.PostgresqlTableVacuumCount.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableVacuumCount.EnabledAttributes)
+	metrics.PostgresqlTableXidAge.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableXidAge.EnabledAttributes)
 	metrics.PostgresqlTempIo.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTempIo.EnabledAttributes)
 	metrics.PostgresqlTempFiles.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTempFiles.EnabledAttributes)
 	metrics.PostgresqlTupDeleted.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTupDeleted.EnabledAttributes)
@@ -866,7 +869,10 @@ func (p *postgreSQLScraper) tableMaintenanceMetricsEnabled() bool {
 		m.PostgresqlTableLastVacuumAge.Enabled ||
 		m.PostgresqlTableLastAutovacuumAge.Enabled ||
 		m.PostgresqlTableLastAnalyzeAge.Enabled ||
-		m.PostgresqlTableLastAutoanalyzeAge.Enabled
+		m.PostgresqlTableLastAutoanalyzeAge.Enabled ||
+		m.PostgresqlTableInsertsSinceVacuum.Enabled ||
+		m.PostgresqlTableXidAge.Enabled ||
+		m.PostgresqlTableMxidAge.Enabled
 }
 
 // Also true whenever perTableFieldsMetricsEnabled is, since the full per-table
@@ -935,6 +941,15 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 		}
 		if tm.lastAutoanalyzeAge >= 0 {
 			p.mb.RecordPostgresqlTableLastAutoanalyzeAgeDataPoint(now, tm.lastAutoanalyzeAge, namespace, tm.table)
+		}
+		if tm.insSinceVacuum >= 0 {
+			p.mb.RecordPostgresqlTableInsertsSinceVacuumDataPoint(now, tm.insSinceVacuum, namespace, tm.table)
+		}
+		if tm.xidAge >= 0 {
+			p.mb.RecordPostgresqlTableXidAgeDataPoint(now, tm.xidAge, namespace, tm.table)
+		}
+		if tm.mxidAge >= 0 {
+			p.mb.RecordPostgresqlTableMxidAgeDataPoint(now, tm.mxidAge, namespace, tm.table)
 		}
 
 		br, ok := blockReads[tableKey]

@@ -90,6 +90,9 @@ all_set:
     postgresql.table.count:
       enabled: true
       attributes: ["db.namespace"]
+    postgresql.table.inserts_since_vacuum:
+      enabled: true
+      attributes: ["db.namespace","db.collection.name"]
     postgresql.table.last_analyze.age:
       enabled: true
       attributes: ["db.namespace","db.collection.name"]
@@ -105,10 +108,16 @@ all_set:
     postgresql.table.modifications_since_analyze:
       enabled: true
       attributes: ["db.namespace","db.collection.name"]
+    postgresql.table.mxid.age:
+      enabled: true
+      attributes: ["db.namespace","db.collection.name"]
     postgresql.table.size:
       enabled: true
       attributes: ["db.namespace","db.collection.name"]
     postgresql.table.vacuum.count:
+      enabled: true
+      attributes: ["db.namespace","db.collection.name"]
+    postgresql.table.xid.age:
       enabled: true
       attributes: ["db.namespace","db.collection.name"]
     postgresql.temp.io:
@@ -274,6 +283,9 @@ reaggregate_set:
     postgresql.table.count:
       enabled: true
       attributes: []
+    postgresql.table.inserts_since_vacuum:
+      enabled: true
+      attributes: []
     postgresql.table.last_analyze.age:
       enabled: true
       attributes: []
@@ -289,10 +301,16 @@ reaggregate_set:
     postgresql.table.modifications_since_analyze:
       enabled: true
       attributes: []
+    postgresql.table.mxid.age:
+      enabled: true
+      attributes: []
     postgresql.table.size:
       enabled: true
       attributes: []
     postgresql.table.vacuum.count:
+      enabled: true
+      attributes: []
+    postgresql.table.xid.age:
       enabled: true
       attributes: []
     postgresql.temp.io:
@@ -458,6 +476,9 @@ none_set:
     postgresql.table.count:
       enabled: false
       attributes: ["db.namespace"]
+    postgresql.table.inserts_since_vacuum:
+      enabled: false
+      attributes: ["db.namespace","db.collection.name"]
     postgresql.table.last_analyze.age:
       enabled: false
       attributes: ["db.namespace","db.collection.name"]
@@ -473,10 +494,16 @@ none_set:
     postgresql.table.modifications_since_analyze:
       enabled: false
       attributes: ["db.namespace","db.collection.name"]
+    postgresql.table.mxid.age:
+      enabled: false
+      attributes: ["db.namespace","db.collection.name"]
     postgresql.table.size:
       enabled: false
       attributes: ["db.namespace","db.collection.name"]
     postgresql.table.vacuum.count:
+      enabled: false
+      attributes: ["db.namespace","db.collection.name"]
+    postgresql.table.xid.age:
       enabled: false
       attributes: ["db.namespace","db.collection.name"]
     postgresql.temp.io:

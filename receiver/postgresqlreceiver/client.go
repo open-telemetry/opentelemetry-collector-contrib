@@ -867,6 +867,9 @@ type tableStats struct {
 	lastAutovacuumAge  float64
 	lastAnalyzeAge     float64
 	lastAutoanalyzeAge float64
+	insSinceVacuum     int64
+	xidAge             int64
+	mxidAge            int64
 }
 
 // tableMaintenanceColumns is only appended to the table metrics query when a
@@ -874,7 +877,9 @@ type tableStats struct {
 // the last_*_age columns are -1 when the operation has never run on the table, or
 // its statistics were reset; clock_timestamp() is used rather than now() so a run
 // that finishes after this transaction starts is not reported as a negative age,
-// and greatest() clamps what remains when the statistics are read after the clock
+// and greatest() clamps what remains when the statistics are read after the clock.
+// partitioned tables have no relfrozenxid or relminmxid, so their xid and mxid ages
+// are -1; a TOAST table is frozen separately from its table, so the older is used
 const tableMaintenanceColumns = `,
     s.autovacuum_count,
     s.analyze_count,
@@ -883,7 +888,13 @@ const tableMaintenanceColumns = `,
     CASE WHEN s.last_vacuum IS NULL THEN -1 ELSE greatest(extract(epoch FROM clock_timestamp() - s.last_vacuum)::float8, 0) END AS last_vacuum_age,
     CASE WHEN s.last_autovacuum IS NULL THEN -1 ELSE greatest(extract(epoch FROM clock_timestamp() - s.last_autovacuum)::float8, 0) END AS last_autovacuum_age,
     CASE WHEN s.last_analyze IS NULL THEN -1 ELSE greatest(extract(epoch FROM clock_timestamp() - s.last_analyze)::float8, 0) END AS last_analyze_age,
-    CASE WHEN s.last_autoanalyze IS NULL THEN -1 ELSE greatest(extract(epoch FROM clock_timestamp() - s.last_autoanalyze)::float8, 0) END AS last_autoanalyze_age`
+    CASE WHEN s.last_autoanalyze IS NULL THEN -1 ELSE greatest(extract(epoch FROM clock_timestamp() - s.last_autoanalyze)::float8, 0) END AS last_autoanalyze_age,
+    CASE WHEN c.relkind = 'p' THEN -1 ELSE greatest(age(c.relfrozenxid), age(t.relfrozenxid)) END AS xid_age,
+    CASE WHEN c.relkind = 'p' THEN -1 ELSE greatest(mxid_age(c.relminmxid), mxid_age(t.relminmxid)) END AS mxid_age`
+
+const tableMaintenanceJoins = `
+JOIN pg_catalog.pg_class c ON c.oid = s.relid
+LEFT JOIN pg_catalog.pg_class t ON t.oid = c.reltoastrelid`
 
 func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db string, includeMaintenance bool) (map[tableIdentifier]*tableStats, error) {
 	// explicitly ignore the relations which have an active `AccessExclusiveLock`
@@ -902,11 +913,29 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
     s.seq_scan AS seq_scans,
     coalesce(pg_total_relation_size(s.relid), -1) AS table_size,
     s.vacuum_count`
+	from := `
+FROM pg_stat_user_tables s`
 	if includeMaintenance {
+		version, err := c.getVersion(ctx)
+		if err != nil {
+			return nil, err
+		}
+		major, err := parseMajorVersion(version)
+		if err != nil {
+			return nil, err
+		}
 		columns += tableMaintenanceColumns
+		// n_ins_since_vacuum was added in PG 13
+		if major >= 13 {
+			columns += `,
+    s.n_ins_since_vacuum AS ins_since_vacuum`
+		} else {
+			columns += `,
+    -1 AS ins_since_vacuum`
+		}
+		from += tableMaintenanceJoins
 	}
-	query := columns + `
-FROM pg_stat_user_tables s
+	query := columns + from + `
 LEFT JOIN (
     SELECT DISTINCT relation
     FROM pg_locks
@@ -930,6 +959,9 @@ WHERE l.relation IS NULL;`
 			lastAutovacuumAge:  -1,
 			lastAnalyzeAge:     -1,
 			lastAutoanalyzeAge: -1,
+			insSinceVacuum:     -1,
+			xidAge:             -1,
+			mxidAge:            -1,
 		}
 		dest := []any{
 			&stats.schema, &stats.table, &stats.live, &stats.dead, &stats.inserts, &stats.upd, &stats.del,
@@ -937,7 +969,8 @@ WHERE l.relation IS NULL;`
 		}
 		if includeMaintenance {
 			dest = append(dest, &stats.autovacuumCount, &stats.analyzeCount, &stats.autoanalyzeCount, &stats.modSinceAnalyze,
-				&stats.lastVacuumAge, &stats.lastAutovacuumAge, &stats.lastAnalyzeAge, &stats.lastAutoanalyzeAge)
+				&stats.lastVacuumAge, &stats.lastAutovacuumAge, &stats.lastAnalyzeAge, &stats.lastAutoanalyzeAge,
+				&stats.xidAge, &stats.mxidAge, &stats.insSinceVacuum)
 		}
 		err = rows.Scan(dest...)
 		if err != nil {

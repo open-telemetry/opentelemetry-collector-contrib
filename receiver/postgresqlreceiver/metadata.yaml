@@ -647,6 +647,10 @@ metrics:
       monotonic: true
       value_type: int
     attributes: [db.namespace, db.collection.name]
+    extended_documentation: |
+      The count starts over from 0 when PostgreSQL statistics are reset, for example by
+      `pg_stat_reset()`, after a crash, or on failover, as a standby does not carry over the
+      primary's counts.
   postgresql.table.autoanalyze.count:
     description: Number of times a table has been analyzed by the autovacuum daemon.
     stability: development
@@ -657,6 +661,10 @@ metrics:
       monotonic: true
       value_type: int
     attributes: [db.namespace, db.collection.name]
+    extended_documentation: |
+      The count starts over from 0 when PostgreSQL statistics are reset, for example by
+      `pg_stat_reset()`, after a crash, or on failover, as a standby does not carry over the
+      primary's counts.
   postgresql.table.autovacuum.count:
     description: Number of times a table has been vacuumed by the autovacuum daemon.
     stability: development
@@ -667,6 +675,10 @@ metrics:
       monotonic: true
       value_type: int
     attributes: [db.namespace, db.collection.name]
+    extended_documentation: |
+      The count starts over from 0 when PostgreSQL statistics are reset, for example by
+      `pg_stat_reset()`, after a crash, or on failover, as a standby does not carry over the
+      primary's counts.
   postgresql.table.count:
     description: Number of user tables in a database.
     stability: development
@@ -677,6 +689,20 @@ metrics:
       value_type: int
     unit: "{table}"
     attributes: [db.namespace]
+  postgresql.table.inserts_since_vacuum:
+    description: Estimated number of rows inserted since a table was last vacuumed.
+    stability: development
+    enabled: false
+    unit: "{row}"
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: int
+    attributes: [db.namespace, db.collection.name]
+    extended_documentation: |
+      Autovacuum vacuums a table once this exceeds `autovacuum_vacuum_insert_threshold` plus a
+      fraction of the table set by `autovacuum_vacuum_insert_scale_factor`, so insert-only tables
+      are still vacuumed and frozen. Only reported on PostgreSQL 13 and later.
   postgresql.table.last_analyze.age:
     description: Time since a table was last manually analyzed.
     stability: development
@@ -735,6 +761,19 @@ metrics:
       Autovacuum analyzes a table once this exceeds `autovacuum_analyze_threshold` plus
       `autovacuum_analyze_scale_factor` times the table's row count. Autovacuum never analyzes
       partitioned tables, so for them this stays at 0.
+  postgresql.table.mxid.age:
+    enabled: false
+    description: Age, in multixact IDs, of the oldest multixact ID that has not been frozen in the table.
+    stability: development
+    unit: "{multixact}"
+    gauge:
+      value_type: int
+    attributes: [db.namespace, db.collection.name]
+    extended_documentation: |
+      Reported from `mxid_age(relminmxid)` in `pg_class`, taking the older of the table and its TOAST
+      table. Autovacuum forces an anti-wraparound vacuum of the table once this exceeds
+      `autovacuum_multixact_freeze_max_age`. No data point is reported for partitioned tables, which
+      hold no rows of their own.
   postgresql.table.size:
     description: Total disk space used by a table, including its indexes and TOAST data.
     stability: development
@@ -758,6 +797,19 @@ metrics:
       monotonic: true
       value_type: int
     attributes: [db.namespace, db.collection.name]
+  postgresql.table.xid.age:
+    enabled: false
+    description: Age, in transactions, of the oldest transaction ID that has not been frozen in the table.
+    stability: development
+    unit: "{transaction}"
+    gauge:
+      value_type: int
+    attributes: [db.namespace, db.collection.name]
+    extended_documentation: |
+      Reported from `age(relfrozenxid)` in `pg_class`, taking the older of the table and its TOAST
+      table. Autovacuum forces an anti-wraparound vacuum of the table once this exceeds
+      `autovacuum_freeze_max_age`. No data point is reported for partitioned tables, which hold no
+      rows of their own.
   postgresql.temp.io:
     enabled: false
     description: Total amount of data written to temporary files by queries.
