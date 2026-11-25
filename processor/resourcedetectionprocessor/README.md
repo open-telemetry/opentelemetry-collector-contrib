@@ -993,7 +993,9 @@ roleRef:
 
 ### K8S API Metadata
 
-Queries the K8S API server to retrieve node and cluster resource attributes. The `k8snode` detector name is deprecated — use `k8s_api` instead.
+Queries the K8S API server to retrieve node and cluster resource attributes, via
+[go.opentelemetry.io/contrib/detectors/k8sapi](https://pkg.go.dev/go.opentelemetry.io/contrib/detectors/k8sapi).
+The `k8snode` detector name is deprecated — use `k8s_api` instead.
 
 The list of the populated resource attributes can be found at [k8s_api Detector Resource Attributes](./internal/k8sapi/documentation.md).
 
