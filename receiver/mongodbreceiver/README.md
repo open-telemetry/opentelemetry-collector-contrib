@@ -92,6 +92,8 @@ The following settings are optional:
 - `query_sample_collection`: Additional configuration for query sample collection (`db.server.query_sample` event):
   - `max_rows_per_query`: (default = `100`) The maximum number of eligible query samples to emit per `$currentOp` query. Must be greater than `0`.
 
+When an operation has a document-valued `comment` containing a valid W3C `traceparent` field, the query sample carries that trace and span context. MongoDB 4.4 and later support document-valued comments. String-valued comments, including those accepted by older MongoDB versions, do not carry extractable trace context; the receiver does not parse strings as JSON. The receiver reads only top-level string fields, and operations without a valid `traceparent` are emitted without trace context. The receiver does not inherit its own scrape span.
+
 ### Top Query Collection
 
 The receiver can collect the top slow queries from MongoDB using `system.profile` (when profiling is enabled) or the diagnostic log ring buffer (`getLog`) as a fallback. To enable it:

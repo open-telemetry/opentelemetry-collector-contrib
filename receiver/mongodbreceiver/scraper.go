@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
@@ -239,6 +241,10 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		namespace := getValue[string](op, namespaceKey)
 		databaseName := getDBFromNamespace(namespace)
 		command := getValue[bson.D](op, commandKey)
+		recordCtx := context.Background()
+		if comment, ok := lookup(command, commentKey); ok {
+			recordCtx = contextWithTraceContextComment(comment)
+		}
 		opType := getValue[string](op, opKey)
 		queryTruncated, commandComment, operationName := extractCommandMetadata(command, opType)
 		preparedReadConflictCount := getInt64Value(op, prepareReadConflictsKey)
@@ -291,7 +297,7 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		}
 
 		s.lb.RecordDbServerQuerySampleEvent(
-			ctx,
+			recordCtx,
 			now,
 			clientAddress,
 			clientPort,
@@ -327,6 +333,42 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		emitted++
 	}
 	s.logger.Debug("Processed MongoDB current operations", zap.Int("total_operations", len(operations)))
+}
+
+// contextWithTraceContextComment extracts propagated context from the top-level
+// string fields in a document-valued MongoDB comment. Query samples must not
+// inherit the collector's scrape span when no application context is present.
+func contextWithTraceContextComment(comment any) context.Context {
+	carrier := make(propagation.MapCarrier)
+	add := func(key string, value any) {
+		if key == "originalComment" {
+			return
+		}
+		if str, ok := value.(string); ok {
+			carrier.Set(key, str)
+		}
+	}
+	switch value := comment.(type) {
+	case bson.D:
+		for _, elem := range value {
+			add(elem.Key, elem.Value)
+		}
+	case bson.M:
+		for key, val := range value {
+			add(key, val)
+		}
+	case map[string]any:
+		for key, val := range value {
+			add(key, val)
+		}
+	default:
+		return context.Background()
+	}
+	ctx := (propagation.TraceContext{}).Extract(context.Background(), carrier)
+	if !trace.SpanContextFromContext(ctx).IsValid() {
+		return context.Background()
+	}
+	return ctx
 }
 
 func extractOperationID(op bson.M) string {

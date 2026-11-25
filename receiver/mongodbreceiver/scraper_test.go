@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -1248,6 +1249,46 @@ func TestProcessCurrentOp(t *testing.T) {
 
 	logs := scraper.lb.Emit()
 	require.Equal(t, 2, logs.LogRecordCount(), "only 2 of 4 operations should produce log records")
+}
+
+func TestProcessCurrentOpExtractsTraceContextFromComment(t *testing.T) {
+	scraperCfg := createDefaultConfig().(*Config)
+	scraperCfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
+
+	operations := []bson.M{
+		{
+			"ns":     "mydb.orders",
+			"op":     "query",
+			"active": true,
+			"command": bson.D{
+				{Key: "find", Value: "orders"},
+				{Key: "comment", Value: bson.D{{Key: "traceparent", Value: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"}}},
+			},
+		},
+		{
+			"ns":      "mydb.products",
+			"op":      "query",
+			"active":  true,
+			"command": bson.D{{Key: "find", Value: "products"}},
+		},
+	}
+
+	scrapeTraceID, err := trace.TraceIDFromHex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	require.NoError(t, err)
+	scrapeSpanID, err := trace.SpanIDFromHex("bbbbbbbbbbbbbbbb")
+	require.NoError(t, err)
+	scrapeContext := trace.ContextWithSpanContext(t.Context(), trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID: scrapeTraceID,
+		SpanID:  scrapeSpanID,
+	}))
+	scraper.processCurrentOp(scrapeContext, operations, pcommon.NewTimestampFromTime(time.Now()))
+	records := scraper.lb.Emit().ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	require.Equal(t, 2, records.Len())
+	require.Equal(t, "4bf92f3577b34da6a3ce929d0e0e4736", records.At(0).TraceID().String())
+	require.Equal(t, "00f067aa0ba902b7", records.At(0).SpanID().String())
+	require.True(t, records.At(1).TraceID().IsEmpty())
+	require.True(t, records.At(1).SpanID().IsEmpty())
 }
 
 func TestProcessCurrentOpCommandComment(t *testing.T) {
