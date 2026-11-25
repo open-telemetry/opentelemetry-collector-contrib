@@ -6,14 +6,14 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.166.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.166.0
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component v1.72.0
+	go.opentelemetry.io/collector/component v1.72.1-0.20261125173536-ae17ab78314f
 	go.opentelemetry.io/collector/component/componenttest v0.166.0
-	go.opentelemetry.io/collector/confmap v1.72.0
-	go.opentelemetry.io/collector/consumer v1.72.0
+	go.opentelemetry.io/collector/confmap v1.72.1-0.20261125173536-ae17ab78314f
+	go.opentelemetry.io/collector/consumer v1.72.1-0.20261125173536-ae17ab78314f
 	go.opentelemetry.io/collector/consumer/consumertest v0.166.0
-	go.opentelemetry.io/collector/featuregate v1.72.0
-	go.opentelemetry.io/collector/pdata v1.72.0
-	go.opentelemetry.io/collector/processor v1.72.0
+	go.opentelemetry.io/collector/featuregate v1.72.1-0.20261125173536-ae17ab78314f
+	go.opentelemetry.io/collector/pdata v1.72.1-0.20261125173536-ae17ab78314f
+	go.opentelemetry.io/collector/processor v1.72.1-0.20261125173536-ae17ab78314f
 	go.opentelemetry.io/collector/processor/processorhelper v0.166.0
 	go.opentelemetry.io/collector/processor/processortest v0.166.0
 	go.uber.org/goleak v1.3.0
@@ -43,7 +43,7 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.166.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.166.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.166.0 // indirect
-	go.opentelemetry.io/collector/pipeline v1.72.0 // indirect
+	go.opentelemetry.io/collector/pipeline v1.72.1-0.20261125173536-ae17ab78314f // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.166.0 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
