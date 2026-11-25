@@ -82,7 +82,8 @@ func TestLoadConfig(t *testing.T) {
 				},
 				ConnectionParams: map[string]string{},
 				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
-					queue := exporterhelper.NewDefaultQueueConfig()
+					defaultQueue := metadata.NewDefaultSendingQueueConfig()
+					queue := *defaultQueue.Get()
 					queue.NumConsumers = 10
 					queue.QueueSize = 100
 					queue.StorageID = configoptional.Some(configstorage.ID(storageID))

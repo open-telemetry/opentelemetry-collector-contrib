@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metrics"
 )
 
@@ -128,7 +129,7 @@ func createDefaultConfig() component.Config {
 		collectorVersion: "unknown",
 
 		TimeoutSettings:   exporterhelper.NewDefaultTimeoutConfig(),
-		QueueSettings:     configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		QueueSettings:     metadata.NewDefaultSendingQueueConfig(),
 		BackOffConfig:     configretry.NewDefaultBackOffConfig(),
 		ConnectionParams:  map[string]string{},
 		Database:          defaultDatabase,

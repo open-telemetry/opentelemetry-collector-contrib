@@ -31,18 +31,13 @@ Note:
 For optimal performance, [ClickHouse recommends](https://clickhouse.com/docs/en/introduction/performance/#performance-when-inserting-data) inserting data in large batches:
 > We recommend inserting data in packets of at least 5000 rows, or no more than a single request per second. When inserting to a MergeTree table from a tab-separated dump, the insertion speed can be from 50 to 200 MB/s.
 
-To achieve this natively, enable batching within the exporter's `sending_queue` configuration. You do not need to add the external `batch` processor to your collector pipeline. Relying on the exporter's internal batching is the recommended approach to avoid data-loss issues associated with the external processor.
-
-Enable it by adding a `batch` block inside `sending_queue`:
+Batching within the exporter's `sending_queue` is enabled by default. To tune it:
 
 ```yaml
 exporters:
   clickhouse:
     endpoint: tcp://127.0.0.1:9000
     sending_queue:
-      # num_consumers controls how many batches are inserted into ClickHouse
-      # concurrently.
-      num_consumers: 10
       batch:
         min_size: 5000      # rows per INSERT (items sizer); tune to your workload
         flush_timeout: 5s   # flush a partial batch after this delay
@@ -417,7 +412,7 @@ Processing:
     - `sizer` (default = `requests`): How `queue_size` is measured. One of `requests`, `items`, or `bytes`.
     - `block_on_overflow` (default = false): If `true`, waits for space when the queue is full instead of dropping data (applies backpressure to the pipeline).
     - `storage` (default = none): Name of a [storage extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage) for a persistent, crash-safe queue. When unset, the queue is in-memory and is lost on restart.
-    - `batch` (disabled by default): Batches data inside the sending queue. Add an empty `batch: {}` to enable it with the defaults below. This replaces the standalone `batch` processor; see the batching recommendation near the top of this document.
+    - `batch` (enabled by default): Batches data inside the sending queue.
         - `flush_timeout` (default = 200ms): Time after which a batch is sent regardless of size.
         - `min_size` (default = 8192): Minimum batch size before it is sent, in `batch.sizer` units.
         - `max_size` (default = 0): Maximum batch size; `0` means no limit. When set, larger batches are split, and it must be `>= min_size`.
