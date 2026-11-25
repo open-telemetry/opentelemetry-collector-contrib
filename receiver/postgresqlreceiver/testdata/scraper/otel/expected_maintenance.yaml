@@ -1,0 +1,190 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: postgresql.database.name
+          value:
+            stringValue: otel
+        - key: server.address
+          value:
+            stringValue: localhost
+        - key: server.port
+          value:
+            intValue: "5432"
+        - key: service.instance.id
+          value:
+            stringValue: localhost:5432
+    scopeMetrics:
+      - metrics:
+          - description: Age, in multixact IDs, of the oldest multixact ID that has not been frozen in the database.
+            gauge:
+              dataPoints:
+                - asInt: "2000000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.database.mxid.age
+            unit: '{multixact}'
+          - description: Age, in transactions, of the oldest transaction ID that has not been frozen in the database.
+            gauge:
+              dataPoints:
+                - asInt: "150000000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.database.xid.age
+            unit: '{transaction}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: postgresql.database.name
+          value:
+            stringValue: otel
+        - key: postgresql.table.name
+          value:
+            stringValue: public.table1
+        - key: server.address
+          value:
+            stringValue: localhost
+        - key: server.port
+          value:
+            intValue: "5432"
+        - key: service.instance.id
+          value:
+            stringValue: localhost:5432
+    scopeMetrics:
+      - metrics:
+          - description: Number of times a table has manually been analyzed.
+            name: postgresql.table.analyze.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "81"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{analyze}'
+          - description: Number of times a table has been analyzed by the autovacuum daemon.
+            name: postgresql.table.autoanalyze.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "82"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{analyze}'
+          - description: Number of times a table has been vacuumed by the autovacuum daemon.
+            name: postgresql.table.autovacuum.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "80"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{vacuum}'
+          - description: Time since a table was last manually analyzed.
+            gauge:
+              dataPoints:
+                - asDouble: 7200.75
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.table.last_analyze.age
+            unit: s
+          - description: Time since a table was last analyzed by the autovacuum daemon.
+            gauge:
+              dataPoints:
+                - asDouble: 120.125
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.table.last_autoanalyze.age
+            unit: s
+          - description: Time since a table was last vacuumed by the autovacuum daemon.
+            gauge:
+              dataPoints:
+                - asDouble: 60.5
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.table.last_autovacuum.age
+            unit: s
+          - description: Time since a table was last manually vacuumed, not counting `VACUUM FULL`.
+            gauge:
+              dataPoints:
+                - asDouble: 3600.25
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.table.last_vacuum.age
+            unit: s
+          - description: Estimated number of rows modified since a table was last analyzed.
+            name: postgresql.table.modifications_since_analyze
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "83"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{row}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: postgresql.database.name
+          value:
+            stringValue: otel
+        - key: postgresql.table.name
+          value:
+            stringValue: public.table2
+        - key: server.address
+          value:
+            stringValue: localhost
+        - key: server.port
+          value:
+            intValue: "5432"
+        - key: service.instance.id
+          value:
+            stringValue: localhost:5432
+    scopeMetrics:
+      - metrics:
+          - description: Number of times a table has manually been analyzed.
+            name: postgresql.table.analyze.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{analyze}'
+          - description: Number of times a table has been analyzed by the autovacuum daemon.
+            name: postgresql.table.autoanalyze.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{analyze}'
+          - description: Number of times a table has been vacuumed by the autovacuum daemon.
+            name: postgresql.table.autovacuum.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{vacuum}'
+          - description: Estimated number of rows modified since a table was last analyzed.
+            name: postgresql.table.modifications_since_analyze
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{row}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+          version: latest

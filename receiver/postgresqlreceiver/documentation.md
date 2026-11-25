@@ -368,6 +368,45 @@ The number of database locks, including those held by the receiver's own connect
 | lock_type | Type of the lockable object. | Any Str | Recommended | - |
 | db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
+### postgresql.database.mxid.age
+
+Age, in multixact IDs, of the oldest multixact ID that has not been frozen in the database.
+
+Reported from `mxid_age(datminmxid)` in `pg_database`. Autovacuum forces an anti-wraparound
+vacuum once this exceeds `autovacuum_multixact_freeze_max_age`. If it keeps rising toward the
+2^31 limit, PostgreSQL stops assigning new multixact IDs to prevent data loss. Running out of
+multixact member space can force the same protection earlier, and is not reflected here. No data
+point is reported for a database the receiver cannot connect to.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {multixact} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+
+### postgresql.database.xid.age
+
+Age, in transactions, of the oldest transaction ID that has not been frozen in the database.
+
+Reported from `age(datfrozenxid)` in `pg_database`. Autovacuum forces an anti-wraparound
+vacuum once this exceeds `autovacuum_freeze_max_age`. If it keeps rising toward the 2^31 limit,
+PostgreSQL stops accepting commands that assign new transaction IDs to prevent data loss. No
+data point is reported for a database the receiver cannot connect to.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {transaction} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+
 ### postgresql.deadlocks
 
 The number of deadlocks.
@@ -433,6 +472,142 @@ The number of sequential scans.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {sequential_scan} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+| db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
+
+### postgresql.table.analyze.count
+
+Number of times a table has manually been analyzed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {analyze} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+| db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
+
+### postgresql.table.autoanalyze.count
+
+Number of times a table has been analyzed by the autovacuum daemon.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {analyze} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+| db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
+
+### postgresql.table.autovacuum.count
+
+Number of times a table has been vacuumed by the autovacuum daemon.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {vacuum} | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+| db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
+
+### postgresql.table.last_analyze.age
+
+Time since a table was last manually analyzed.
+
+No data point is reported for a table that has never been manually analyzed, or whose
+statistics have been reset since.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+| db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
+
+### postgresql.table.last_autoanalyze.age
+
+Time since a table was last analyzed by the autovacuum daemon.
+
+No data point is reported for a table that has never been analyzed by the autovacuum daemon,
+or whose statistics have been reset since.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+| db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
+
+### postgresql.table.last_autovacuum.age
+
+Time since a table was last vacuumed by the autovacuum daemon.
+
+No data point is reported for a table that has never been vacuumed by the autovacuum daemon,
+or whose statistics have been reset since.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+| db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
+
+### postgresql.table.last_vacuum.age
+
+Time since a table was last manually vacuumed, not counting `VACUUM FULL`.
+
+No data point is reported for a table that has never been manually vacuumed, or whose
+statistics have been reset since.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
+| db.collection.name | The name of the table within the database. | Any Str | Recommended | - |
+
+### postgresql.table.modifications_since_analyze
+
+Estimated number of rows modified since a table was last analyzed.
+
+Autovacuum analyzes a table once this exceeds `autovacuum_analyze_threshold` plus
+`autovacuum_analyze_scale_factor` times the table's row count. Autovacuum never analyzes
+partitioned tables, so for them this stays at 0.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| {row} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 

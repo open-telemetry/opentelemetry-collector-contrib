@@ -64,7 +64,8 @@ type client interface {
 	getBGWriterStats(ctx context.Context) (*bgStat, error)
 	getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error)
-	getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error)
+	getDatabaseIDAges(ctx context.Context, databases []string) (map[databaseName]databaseIDAge, error)
+	getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]*tableStats, error)
 	getBlocksReadByTable(ctx context.Context, db string) (map[tableIdentifier]tableIOStats, error)
 	getTableCount(ctx context.Context) (int64, error)
 	getReplicationStats(ctx context.Context) ([]replicationStats, error)
@@ -814,27 +815,69 @@ func (c *postgreSQLClient) getDatabaseSize(ctx context.Context, databases []stri
 	return sizes, errors
 }
 
-// tableStats contains a result for a row of the getDatabaseTableMetrics result
-type tableStats struct {
-	database    string
-	schema      string
-	table       string
-	live        int64
-	dead        int64
-	inserts     int64
-	upd         int64
-	del         int64
-	hotUpd      int64
-	seqScans    int64
-	size        int64
-	vacuumCount int64
+// databaseIDAge holds how far a database's oldest unfrozen transaction and multixact IDs are
+// behind the current ones, the two counters that drive anti-wraparound vacuums.
+type databaseIDAge struct {
+	xidAge  int64
+	mxidAge int64
 }
 
-func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error) {
+func (c *postgreSQLClient) getDatabaseIDAges(ctx context.Context, databases []string) (map[databaseName]databaseIDAge, error) {
+	query := filterQueryByDatabases("SELECT datname, age(datfrozenxid), mxid_age(datminmxid) FROM pg_catalog.pg_database WHERE datistemplate = false", databases, false)
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ages := map[databaseName]databaseIDAge{}
+	var errs error
+	for rows.Next() {
+		var datname string
+		var age databaseIDAge
+		if err = rows.Scan(&datname, &age.xidAge, &age.mxidAge); err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		if datname != "" {
+			ages[databaseName(datname)] = age
+		}
+	}
+	return ages, multierr.Append(errs, rows.Err())
+}
+
+// tableStats contains a result for a row of the getDatabaseTableMetrics result
+type tableStats struct {
+	database           string
+	schema             string
+	table              string
+	live               int64
+	dead               int64
+	inserts            int64
+	upd                int64
+	del                int64
+	hotUpd             int64
+	seqScans           int64
+	size               int64
+	vacuumCount        int64
+	autovacuumCount    int64
+	analyzeCount       int64
+	autoanalyzeCount   int64
+	modSinceAnalyze    int64
+	lastVacuumAge      float64
+	lastAutovacuumAge  float64
+	lastAnalyzeAge     float64
+	lastAutoanalyzeAge float64
+}
+
+func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]*tableStats, error) {
 	// explicitly ignore the relations which have an active `AccessExclusiveLock`
 	// this is to prevent the current query's `AccessShareLock` from getting stalled
 	// table_size is -1 when the table is dropped after its stats row is read, as the
 	// size function then returns NULL; the scraper skips the size for that row only
+	// the last_*_age columns are -1 when the operation has never run on the table, or
+	// its statistics were reset; clock_timestamp() is used rather than now() so a run
+	// that finishes after this transaction starts is not reported as a negative age,
+	// and greatest() clamps what remains when the statistics are read after the clock
 	query := `SELECT
     s.schemaname AS schema,
     s.relname AS table,
@@ -846,7 +889,15 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
     s.n_tup_hot_upd AS hot_upd,
     s.seq_scan AS seq_scans,
     coalesce(pg_total_relation_size(s.relid), -1) AS table_size,
-    s.vacuum_count
+    s.vacuum_count,
+    s.autovacuum_count,
+    s.analyze_count,
+    s.autoanalyze_count,
+    s.n_mod_since_analyze AS mod_since_analyze,
+    CASE WHEN s.last_vacuum IS NULL THEN -1 ELSE greatest(extract(epoch FROM clock_timestamp() - s.last_vacuum)::float8, 0) END AS last_vacuum_age,
+    CASE WHEN s.last_autovacuum IS NULL THEN -1 ELSE greatest(extract(epoch FROM clock_timestamp() - s.last_autovacuum)::float8, 0) END AS last_autovacuum_age,
+    CASE WHEN s.last_analyze IS NULL THEN -1 ELSE greatest(extract(epoch FROM clock_timestamp() - s.last_analyze)::float8, 0) END AS last_analyze_age,
+    CASE WHEN s.last_autoanalyze IS NULL THEN -1 ELSE greatest(extract(epoch FROM clock_timestamp() - s.last_autoanalyze)::float8, 0) END AS last_autoanalyze_age
 FROM pg_stat_user_tables s
 LEFT JOIN (
     SELECT DISTINCT relation
@@ -857,7 +908,7 @@ LEFT JOIN (
 ) l ON s.relid = l.relation
 WHERE l.relation IS NULL;`
 
-	ts := map[tableIdentifier]tableStats{}
+	ts := map[tableIdentifier]*tableStats{}
 	var errors error
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
@@ -867,24 +918,36 @@ WHERE l.relation IS NULL;`
 	for rows.Next() {
 		var schema, table string
 		var live, dead, ins, upd, del, hotUpd, seqScans, tableSize, vacuumCount int64
-		err = rows.Scan(&schema, &table, &live, &dead, &ins, &upd, &del, &hotUpd, &seqScans, &tableSize, &vacuumCount)
+		var autovacuumCount, analyzeCount, autoanalyzeCount, modSinceAnalyze int64
+		var lastVacuumAge, lastAutovacuumAge, lastAnalyzeAge, lastAutoanalyzeAge float64
+		err = rows.Scan(&schema, &table, &live, &dead, &ins, &upd, &del, &hotUpd, &seqScans, &tableSize, &vacuumCount,
+			&autovacuumCount, &analyzeCount, &autoanalyzeCount, &modSinceAnalyze,
+			&lastVacuumAge, &lastAutovacuumAge, &lastAnalyzeAge, &lastAutoanalyzeAge)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		ts[tableKey(db, schema, table)] = tableStats{
-			database:    db,
-			schema:      schema,
-			table:       table,
-			live:        live,
-			dead:        dead,
-			inserts:     ins,
-			upd:         upd,
-			del:         del,
-			hotUpd:      hotUpd,
-			seqScans:    seqScans,
-			size:        tableSize,
-			vacuumCount: vacuumCount,
+		ts[tableKey(db, schema, table)] = &tableStats{
+			database:           db,
+			schema:             schema,
+			table:              table,
+			live:               live,
+			dead:               dead,
+			inserts:            ins,
+			upd:                upd,
+			del:                del,
+			hotUpd:             hotUpd,
+			seqScans:           seqScans,
+			size:               tableSize,
+			vacuumCount:        vacuumCount,
+			autovacuumCount:    autovacuumCount,
+			analyzeCount:       analyzeCount,
+			autoanalyzeCount:   autoanalyzeCount,
+			modSinceAnalyze:    modSinceAnalyze,
+			lastVacuumAge:      lastVacuumAge,
+			lastAutovacuumAge:  lastAutovacuumAge,
+			lastAnalyzeAge:     lastAnalyzeAge,
+			lastAutoanalyzeAge: lastAutoanalyzeAge,
 		}
 	}
 	return ts, multierr.Append(errors, rows.Err())

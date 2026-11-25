@@ -1201,3 +1201,138 @@ WHERE c.relname IN ('big_index_table', 'toasted_table') AND n.nspname = 'public'
 			"reported size must include TOAST data, not just the main heap and indexes")
 	}
 }
+
+// TestTableMaintenanceAndIDAges checks the vacuum, analyze and wraparound columns
+// against a real server: the casts and coalesces in the queries only fail at
+// runtime, and pre-14 servers return extract() as double precision rather than
+// numeric.
+func TestTableMaintenanceAndIDAges(t *testing.T) {
+	t.Run("pre17", tableMaintenanceAndIDAgesTest(pre17TestVersion))
+	t.Run("post17", tableMaintenanceAndIDAgesTest(post17TestVersion))
+}
+
+func tableMaintenanceAndIDAgesTest(pgVersion string) func(*testing.T) {
+	return func(t *testing.T) {
+		ci, err := testcontainers.GenericContainer(
+			t.Context(),
+			testcontainers.GenericContainerRequest{
+				ContainerRequest: testcontainers.ContainerRequest{
+					Image: fmt.Sprintf("postgres:%s", pgVersion),
+					Env: map[string]string{
+						"POSTGRES_USER":     "root",
+						"POSTGRES_PASSWORD": "otel",
+						"POSTGRES_DB":       "otel",
+					},
+					Files: []testcontainers.ContainerFile{{
+						HostFilePath:      filepath.Join("testdata", "integration", "03-maintenance-init.sql"),
+						ContainerFilePath: "/docker-entrypoint-initdb.d/01-init.sql",
+						FileMode:          700,
+					}},
+					ExposedPorts: []string{postgresqlPort},
+					// A listening port is not enough: the postgres image runs a temporary
+					// server for its init scripts, so the port accepts connections while the
+					// real server is still "starting up" (57P03). The readiness log line is
+					// emitted twice -- once for the init server, once for the real one -- so
+					// waiting for the second occurrence guarantees the DB is ready to query.
+					WaitingFor: wait.ForLog("database system is ready to accept connections").
+						WithOccurrence(2).
+						WithStartupTimeout(2 * time.Minute),
+				},
+			},
+		)
+		require.NoError(t, err)
+		defer testcontainers.CleanupContainer(t, ci)
+
+		require.NoError(t, ci.Start(t.Context()))
+
+		p, err := ci.MappedPort(t.Context(), postgresqlPort)
+		require.NoError(t, err)
+
+		connConfig := func(username, password string) postgreSQLConfig {
+			return postgreSQLConfig{
+				username: username,
+				password: password,
+				address: confignet.AddrConfig{
+					Endpoint: net.JoinHostPort("localhost", p.Port()),
+				},
+				tls: configtls.ClientConfig{
+					Insecure: true,
+				},
+			}
+		}
+
+		ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
+		defer cancel()
+
+		// Vacuum and analyze run as the table owner, then the receiver reads the
+		// results as the monitoring user.
+		ownerDB, err := getDB(ctx, connConfig("root", "otel"), "otel")
+		require.NoError(t, err)
+		for _, stmt := range []string{
+			"VACUUM maintained",
+			"ANALYZE maintained",
+			"INSERT INTO maintained SELECT g FROM generate_series(1, 5) AS g",
+		} {
+			_, err = ownerDB.ExecContext(ctx, stmt)
+			require.NoError(t, err, stmt)
+		}
+		// Before PostgreSQL 15, an idle backend only reports its table statistics
+		// when it next runs a statement or exits, so disconnect to flush the insert.
+		require.NoError(t, ownerDB.Close())
+
+		clientDB, err := getDB(ctx, connConfig("otelu", "otelp"), "otel")
+		require.NoError(t, err)
+		client := postgreSQLClient{client: clientDB, closeFn: clientDB.Close}
+		defer func() {
+			require.NoError(t, client.Close())
+		}()
+
+		// Cumulative statistics reach pg_stat_user_tables asynchronously, so wait
+		// until the backend that ran the statements above has reported them.
+		var maintained, untouched *tableStats
+		require.EventuallyWithT(t, func(c *assert.CollectT) {
+			tableMetrics, scanErr := client.getDatabaseTableMetrics(ctx, "otel")
+			require.NoError(c, scanErr)
+			var ok bool
+			maintained, ok = tableMetrics[tableKey("otel", "public", "maintained")]
+			require.True(c, ok, "maintained missing from getDatabaseTableMetrics result")
+			untouched, ok = tableMetrics[tableKey("otel", "public", "untouched")]
+			require.True(c, ok, "untouched missing from getDatabaseTableMetrics result")
+			require.Equal(c, int64(1), maintained.vacuumCount)
+			require.Equal(c, int64(1), maintained.analyzeCount)
+			require.Equal(c, int64(5), maintained.modSinceAnalyze)
+		}, 30*time.Second, 250*time.Millisecond)
+
+		assert.Zero(t, maintained.autovacuumCount)
+		assert.Zero(t, maintained.autoanalyzeCount)
+		assert.GreaterOrEqual(t, maintained.lastVacuumAge, 0.0)
+		assert.Less(t, maintained.lastVacuumAge, 60.0)
+		assert.GreaterOrEqual(t, maintained.lastAnalyzeAge, 0.0)
+		assert.Less(t, maintained.lastAnalyzeAge, 60.0)
+		assert.GreaterOrEqual(t, maintained.lastVacuumAge, maintained.lastAnalyzeAge, "the vacuum ran before the analyze")
+		assert.Equal(t, -1.0, maintained.lastAutovacuumAge, "a table never vacuumed by autovacuum must report the -1 sentinel")
+		assert.Equal(t, -1.0, maintained.lastAutoanalyzeAge, "a table never analyzed by autovacuum must report the -1 sentinel")
+
+		assert.Zero(t, untouched.vacuumCount)
+		assert.Zero(t, untouched.analyzeCount)
+		assert.Equal(t, -1.0, untouched.lastVacuumAge)
+		assert.Equal(t, -1.0, untouched.lastAutovacuumAge)
+		assert.Equal(t, -1.0, untouched.lastAnalyzeAge)
+		assert.Equal(t, -1.0, untouched.lastAutoanalyzeAge)
+
+		filtered, err := client.getDatabaseIDAges(ctx, []string{"otel"})
+		require.NoError(t, err)
+		require.Len(t, filtered, 1)
+		otelAges, ok := filtered["otel"]
+		require.True(t, ok, "otel missing from getDatabaseIDAges result")
+		assert.Positive(t, otelAges.xidAge)
+		assert.GreaterOrEqual(t, otelAges.mxidAge, int64(0))
+
+		all, err := client.getDatabaseIDAges(ctx, nil)
+		require.NoError(t, err)
+		assert.Contains(t, all, databaseName("otel"))
+		assert.Contains(t, all, databaseName("postgres"))
+		assert.NotContains(t, all, databaseName("template0"), "template databases are excluded, as they are for postgresql.db_size")
+		assert.NotContains(t, all, databaseName("template1"), "template databases are excluded, as they are for postgresql.db_size")
+	}
+}

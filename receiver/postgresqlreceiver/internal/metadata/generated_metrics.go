@@ -407,6 +407,14 @@ var MetricsInfo = metricsInfo{
 		Name:       "postgresql.database.locks",
 		Attributes: []string{"relation", "mode", "lock_type", "db.namespace"},
 	},
+	PostgresqlDatabaseMxidAge: metricInfo{
+		Name:       "postgresql.database.mxid.age",
+		Attributes: []string{"db.namespace"},
+	},
+	PostgresqlDatabaseXidAge: metricInfo{
+		Name:       "postgresql.database.xid.age",
+		Attributes: []string{"db.namespace"},
+	},
 	PostgresqlDbSize: metricInfo{
 		Name:       "postgresql.db_size",
 		Attributes: []string{"db.namespace"},
@@ -455,9 +463,41 @@ var MetricsInfo = metricsInfo{
 		Name:       "postgresql.sequential_scans",
 		Attributes: []string{"db.namespace", "db.collection.name"},
 	},
+	PostgresqlTableAnalyzeCount: metricInfo{
+		Name:       "postgresql.table.analyze.count",
+		Attributes: []string{"db.namespace", "db.collection.name"},
+	},
+	PostgresqlTableAutoanalyzeCount: metricInfo{
+		Name:       "postgresql.table.autoanalyze.count",
+		Attributes: []string{"db.namespace", "db.collection.name"},
+	},
+	PostgresqlTableAutovacuumCount: metricInfo{
+		Name:       "postgresql.table.autovacuum.count",
+		Attributes: []string{"db.namespace", "db.collection.name"},
+	},
 	PostgresqlTableCount: metricInfo{
 		Name:       "postgresql.table.count",
 		Attributes: []string{"db.namespace"},
+	},
+	PostgresqlTableLastAnalyzeAge: metricInfo{
+		Name:       "postgresql.table.last_analyze.age",
+		Attributes: []string{"db.namespace", "db.collection.name"},
+	},
+	PostgresqlTableLastAutoanalyzeAge: metricInfo{
+		Name:       "postgresql.table.last_autoanalyze.age",
+		Attributes: []string{"db.namespace", "db.collection.name"},
+	},
+	PostgresqlTableLastAutovacuumAge: metricInfo{
+		Name:       "postgresql.table.last_autovacuum.age",
+		Attributes: []string{"db.namespace", "db.collection.name"},
+	},
+	PostgresqlTableLastVacuumAge: metricInfo{
+		Name:       "postgresql.table.last_vacuum.age",
+		Attributes: []string{"db.namespace", "db.collection.name"},
+	},
+	PostgresqlTableModificationsSinceAnalyze: metricInfo{
+		Name:       "postgresql.table.modifications_since_analyze",
+		Attributes: []string{"db.namespace", "db.collection.name"},
 	},
 	PostgresqlTableSize: metricInfo{
 		Name:       "postgresql.table.size",
@@ -529,49 +569,59 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
-	PostgresqlBackends                 metricInfo
-	PostgresqlBgwriterBuffersAllocated metricInfo
-	PostgresqlBgwriterBuffersWrites    metricInfo
-	PostgresqlBgwriterCheckpointCount  metricInfo
-	PostgresqlBgwriterDuration         metricInfo
-	PostgresqlBgwriterMaxwritten       metricInfo
-	PostgresqlBlksHit                  metricInfo
-	PostgresqlBlksRead                 metricInfo
-	PostgresqlBlocksRead               metricInfo
-	PostgresqlCommits                  metricInfo
-	PostgresqlConnectionMax            metricInfo
-	PostgresqlDatabaseCount            metricInfo
-	PostgresqlDatabaseLocks            metricInfo
-	PostgresqlDbSize                   metricInfo
-	PostgresqlDeadlocks                metricInfo
-	PostgresqlFunctionCalls            metricInfo
-	PostgresqlIndexScans               metricInfo
-	PostgresqlIndexSize                metricInfo
-	PostgresqlOperations               metricInfo
-	PostgresqlQueryConflicts           metricInfo
-	PostgresqlQueryExecutionTime       metricInfo
-	PostgresqlReplicationDataDelay     metricInfo
-	PostgresqlRollbacks                metricInfo
-	PostgresqlRows                     metricInfo
-	PostgresqlSequentialScans          metricInfo
-	PostgresqlTableCount               metricInfo
-	PostgresqlTableSize                metricInfo
-	PostgresqlTableVacuumCount         metricInfo
-	PostgresqlTempIo                   metricInfo
-	PostgresqlTempFiles                metricInfo
-	PostgresqlTupDeleted               metricInfo
-	PostgresqlTupFetched               metricInfo
-	PostgresqlTupInserted              metricInfo
-	PostgresqlTupReturned              metricInfo
-	PostgresqlTupUpdated               metricInfo
-	PostgresqlVectorInsertDuration     metricInfo
-	PostgresqlVectorInsertRows         metricInfo
-	PostgresqlVectorSearchCalls        metricInfo
-	PostgresqlVectorSearchDuration     metricInfo
-	PostgresqlVectorSearchRowsReturned metricInfo
-	PostgresqlWalAge                   metricInfo
-	PostgresqlWalDelay                 metricInfo
-	PostgresqlWalLag                   metricInfo
+	PostgresqlBackends                       metricInfo
+	PostgresqlBgwriterBuffersAllocated       metricInfo
+	PostgresqlBgwriterBuffersWrites          metricInfo
+	PostgresqlBgwriterCheckpointCount        metricInfo
+	PostgresqlBgwriterDuration               metricInfo
+	PostgresqlBgwriterMaxwritten             metricInfo
+	PostgresqlBlksHit                        metricInfo
+	PostgresqlBlksRead                       metricInfo
+	PostgresqlBlocksRead                     metricInfo
+	PostgresqlCommits                        metricInfo
+	PostgresqlConnectionMax                  metricInfo
+	PostgresqlDatabaseCount                  metricInfo
+	PostgresqlDatabaseLocks                  metricInfo
+	PostgresqlDatabaseMxidAge                metricInfo
+	PostgresqlDatabaseXidAge                 metricInfo
+	PostgresqlDbSize                         metricInfo
+	PostgresqlDeadlocks                      metricInfo
+	PostgresqlFunctionCalls                  metricInfo
+	PostgresqlIndexScans                     metricInfo
+	PostgresqlIndexSize                      metricInfo
+	PostgresqlOperations                     metricInfo
+	PostgresqlQueryConflicts                 metricInfo
+	PostgresqlQueryExecutionTime             metricInfo
+	PostgresqlReplicationDataDelay           metricInfo
+	PostgresqlRollbacks                      metricInfo
+	PostgresqlRows                           metricInfo
+	PostgresqlSequentialScans                metricInfo
+	PostgresqlTableAnalyzeCount              metricInfo
+	PostgresqlTableAutoanalyzeCount          metricInfo
+	PostgresqlTableAutovacuumCount           metricInfo
+	PostgresqlTableCount                     metricInfo
+	PostgresqlTableLastAnalyzeAge            metricInfo
+	PostgresqlTableLastAutoanalyzeAge        metricInfo
+	PostgresqlTableLastAutovacuumAge         metricInfo
+	PostgresqlTableLastVacuumAge             metricInfo
+	PostgresqlTableModificationsSinceAnalyze metricInfo
+	PostgresqlTableSize                      metricInfo
+	PostgresqlTableVacuumCount               metricInfo
+	PostgresqlTempIo                         metricInfo
+	PostgresqlTempFiles                      metricInfo
+	PostgresqlTupDeleted                     metricInfo
+	PostgresqlTupFetched                     metricInfo
+	PostgresqlTupInserted                    metricInfo
+	PostgresqlTupReturned                    metricInfo
+	PostgresqlTupUpdated                     metricInfo
+	PostgresqlVectorInsertDuration           metricInfo
+	PostgresqlVectorInsertRows               metricInfo
+	PostgresqlVectorSearchCalls              metricInfo
+	PostgresqlVectorSearchDuration           metricInfo
+	PostgresqlVectorSearchRowsReturned       metricInfo
+	PostgresqlWalAge                         metricInfo
+	PostgresqlWalDelay                       metricInfo
+	PostgresqlWalLag                         metricInfo
 }
 
 type metricInfo struct {
@@ -1627,6 +1677,188 @@ func (m *metricPostgresqlDatabaseLocks) emit(metrics pmetric.MetricSlice) {
 
 func newMetricPostgresqlDatabaseLocks(cfg PostgresqlDatabaseLocksMetricConfig) metricPostgresqlDatabaseLocks {
 	m := metricPostgresqlDatabaseLocks{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlDatabaseMxidAge struct {
+	data          pmetric.Metric                        // data buffer for generated metric.
+	config        PostgresqlDatabaseMxidAgeMetricConfig // metric config provided by user.
+	capacity      int                                   // max observed number of data points added to the metric.
+	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                        // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills postgresql.database.mxid.age metric with initial data.
+func (m *metricPostgresqlDatabaseMxidAge) init() {
+	m.data.SetName("postgresql.database.mxid.age")
+	m.data.SetDescription("Age, in multixact IDs, of the oldest multixact ID that has not been frozen in the database.")
+	m.data.SetUnit("{multixact}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricPostgresqlDatabaseMxidAge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlDatabaseMxidAgeMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Gauge().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlDatabaseMxidAge) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlDatabaseMxidAge) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlDatabaseMxidAge(cfg PostgresqlDatabaseMxidAgeMetricConfig) metricPostgresqlDatabaseMxidAge {
+	m := metricPostgresqlDatabaseMxidAge{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlDatabaseXidAge struct {
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        PostgresqlDatabaseXidAgeMetricConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                       // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills postgresql.database.xid.age metric with initial data.
+func (m *metricPostgresqlDatabaseXidAge) init() {
+	m.data.SetName("postgresql.database.xid.age")
+	m.data.SetDescription("Age, in transactions, of the oldest transaction ID that has not been frozen in the database.")
+	m.data.SetUnit("{transaction}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricPostgresqlDatabaseXidAge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlDatabaseXidAgeMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Gauge().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlDatabaseXidAge) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlDatabaseXidAge) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlDatabaseXidAge(cfg PostgresqlDatabaseXidAgeMetricConfig) metricPostgresqlDatabaseXidAge {
+	m := metricPostgresqlDatabaseXidAge{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -2780,6 +3012,294 @@ func newMetricPostgresqlSequentialScans(cfg PostgresqlSequentialScansMetricConfi
 	return m
 }
 
+type metricPostgresqlTableAnalyzeCount struct {
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        PostgresqlTableAnalyzeCountMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                          // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills postgresql.table.analyze.count metric with initial data.
+func (m *metricPostgresqlTableAnalyzeCount) init() {
+	m.data.SetName("postgresql.table.analyze.count")
+	m.data.SetDescription("Number of times a table has manually been analyzed.")
+	m.data.SetUnit("{analyze}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricPostgresqlTableAnalyzeCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlTableAnalyzeCountMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlTableAnalyzeCountMetricAttributeKeyDbCollectionName) {
+		dp.Attributes().PutStr("db.collection.name", dbCollectionNameAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Sum().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlTableAnalyzeCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlTableAnalyzeCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlTableAnalyzeCount(cfg PostgresqlTableAnalyzeCountMetricConfig) metricPostgresqlTableAnalyzeCount {
+	m := metricPostgresqlTableAnalyzeCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlTableAutoanalyzeCount struct {
+	data          pmetric.Metric                              // data buffer for generated metric.
+	config        PostgresqlTableAutoanalyzeCountMetricConfig // metric config provided by user.
+	capacity      int                                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                                     // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                              // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills postgresql.table.autoanalyze.count metric with initial data.
+func (m *metricPostgresqlTableAutoanalyzeCount) init() {
+	m.data.SetName("postgresql.table.autoanalyze.count")
+	m.data.SetDescription("Number of times a table has been analyzed by the autovacuum daemon.")
+	m.data.SetUnit("{analyze}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricPostgresqlTableAutoanalyzeCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlTableAutoanalyzeCountMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlTableAutoanalyzeCountMetricAttributeKeyDbCollectionName) {
+		dp.Attributes().PutStr("db.collection.name", dbCollectionNameAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Sum().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlTableAutoanalyzeCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlTableAutoanalyzeCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlTableAutoanalyzeCount(cfg PostgresqlTableAutoanalyzeCountMetricConfig) metricPostgresqlTableAutoanalyzeCount {
+	m := metricPostgresqlTableAutoanalyzeCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlTableAutovacuumCount struct {
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        PostgresqlTableAutovacuumCountMetricConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []int64                                    // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                             // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills postgresql.table.autovacuum.count metric with initial data.
+func (m *metricPostgresqlTableAutovacuumCount) init() {
+	m.data.SetName("postgresql.table.autovacuum.count")
+	m.data.SetDescription("Number of times a table has been vacuumed by the autovacuum daemon.")
+	m.data.SetUnit("{vacuum}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricPostgresqlTableAutovacuumCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlTableAutovacuumCountMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlTableAutovacuumCountMetricAttributeKeyDbCollectionName) {
+		dp.Attributes().PutStr("db.collection.name", dbCollectionNameAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Sum().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlTableAutovacuumCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlTableAutovacuumCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlTableAutovacuumCount(cfg PostgresqlTableAutovacuumCountMetricConfig) metricPostgresqlTableAutovacuumCount {
+	m := metricPostgresqlTableAutovacuumCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricPostgresqlTableCount struct {
 	data          pmetric.Metric                   // data buffer for generated metric.
 	config        PostgresqlTableCountMetricConfig // metric config provided by user.
@@ -2865,6 +3385,478 @@ func (m *metricPostgresqlTableCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricPostgresqlTableCount(cfg PostgresqlTableCountMetricConfig) metricPostgresqlTableCount {
 	m := metricPostgresqlTableCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlTableLastAnalyzeAge struct {
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        PostgresqlTableLastAnalyzeAgeMetricConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []float64                                 // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                            // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills postgresql.table.last_analyze.age metric with initial data.
+func (m *metricPostgresqlTableLastAnalyzeAge) init() {
+	m.data.SetName("postgresql.table.last_analyze.age")
+	m.data.SetDescription("Time since a table was last manually analyzed.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricPostgresqlTableLastAnalyzeAge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlTableLastAnalyzeAgeMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlTableLastAnalyzeAgeMetricAttributeKeyDbCollectionName) {
+		dp.Attributes().PutStr("db.collection.name", dbCollectionNameAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Gauge().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlTableLastAnalyzeAge) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlTableLastAnalyzeAge) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlTableLastAnalyzeAge(cfg PostgresqlTableLastAnalyzeAgeMetricConfig) metricPostgresqlTableLastAnalyzeAge {
+	m := metricPostgresqlTableLastAnalyzeAge{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlTableLastAutoanalyzeAge struct {
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        PostgresqlTableLastAutoanalyzeAgeMetricConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []float64                                     // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                                // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills postgresql.table.last_autoanalyze.age metric with initial data.
+func (m *metricPostgresqlTableLastAutoanalyzeAge) init() {
+	m.data.SetName("postgresql.table.last_autoanalyze.age")
+	m.data.SetDescription("Time since a table was last analyzed by the autovacuum daemon.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricPostgresqlTableLastAutoanalyzeAge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlTableLastAutoanalyzeAgeMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlTableLastAutoanalyzeAgeMetricAttributeKeyDbCollectionName) {
+		dp.Attributes().PutStr("db.collection.name", dbCollectionNameAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Gauge().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlTableLastAutoanalyzeAge) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlTableLastAutoanalyzeAge) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlTableLastAutoanalyzeAge(cfg PostgresqlTableLastAutoanalyzeAgeMetricConfig) metricPostgresqlTableLastAutoanalyzeAge {
+	m := metricPostgresqlTableLastAutoanalyzeAge{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlTableLastAutovacuumAge struct {
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        PostgresqlTableLastAutovacuumAgeMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []float64                                    // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                               // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills postgresql.table.last_autovacuum.age metric with initial data.
+func (m *metricPostgresqlTableLastAutovacuumAge) init() {
+	m.data.SetName("postgresql.table.last_autovacuum.age")
+	m.data.SetDescription("Time since a table was last vacuumed by the autovacuum daemon.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricPostgresqlTableLastAutovacuumAge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlTableLastAutovacuumAgeMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlTableLastAutovacuumAgeMetricAttributeKeyDbCollectionName) {
+		dp.Attributes().PutStr("db.collection.name", dbCollectionNameAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Gauge().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlTableLastAutovacuumAge) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlTableLastAutovacuumAge) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlTableLastAutovacuumAge(cfg PostgresqlTableLastAutovacuumAgeMetricConfig) metricPostgresqlTableLastAutovacuumAge {
+	m := metricPostgresqlTableLastAutovacuumAge{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlTableLastVacuumAge struct {
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        PostgresqlTableLastVacuumAgeMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []float64                                // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                           // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills postgresql.table.last_vacuum.age metric with initial data.
+func (m *metricPostgresqlTableLastVacuumAge) init() {
+	m.data.SetName("postgresql.table.last_vacuum.age")
+	m.data.SetDescription("Time since a table was last manually vacuumed, not counting `VACUUM FULL`.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricPostgresqlTableLastVacuumAge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlTableLastVacuumAgeMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlTableLastVacuumAgeMetricAttributeKeyDbCollectionName) {
+		dp.Attributes().PutStr("db.collection.name", dbCollectionNameAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Gauge().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetDoubleValue(dpi.DoubleValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.DoubleValue() > val {
+				dpi.SetDoubleValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.DoubleValue() < val {
+				dpi.SetDoubleValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlTableLastVacuumAge) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlTableLastVacuumAge) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlTableLastVacuumAge(cfg PostgresqlTableLastVacuumAgeMetricConfig) metricPostgresqlTableLastVacuumAge {
+	m := metricPostgresqlTableLastVacuumAge{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlTableModificationsSinceAnalyze struct {
+	data          pmetric.Metric                                       // data buffer for generated metric.
+	config        PostgresqlTableModificationsSinceAnalyzeMetricConfig // metric config provided by user.
+	capacity      int                                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                                              // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                                       // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills postgresql.table.modifications_since_analyze metric with initial data.
+func (m *metricPostgresqlTableModificationsSinceAnalyze) init() {
+	m.data.SetName("postgresql.table.modifications_since_analyze")
+	m.data.SetDescription("Estimated number of rows modified since a table was last analyzed.")
+	m.data.SetUnit("{row}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricPostgresqlTableModificationsSinceAnalyze) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlTableModificationsSinceAnalyzeMetricAttributeKeyDbNamespace) {
+		dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, PostgresqlTableModificationsSinceAnalyzeMetricAttributeKeyDbCollectionName) {
+		dp.Attributes().PutStr("db.collection.name", dbCollectionNameAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Sum().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlTableModificationsSinceAnalyze) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlTableModificationsSinceAnalyze) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlTableModificationsSinceAnalyze(cfg PostgresqlTableModificationsSinceAnalyzeMetricConfig) metricPostgresqlTableModificationsSinceAnalyze {
+	m := metricPostgresqlTableModificationsSinceAnalyze{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -4431,56 +5423,66 @@ func newMetricPostgresqlWalLag(cfg PostgresqlWalLagMetricConfig) metricPostgresq
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                   MetricsBuilderConfig // config of the metrics builder.
-	startTime                                pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                          int                  // maximum observed number of metrics per resource.
-	metricsBuffer                            pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter           map[string]filter.Filter
-	resourceAttributeExcludeFilter           map[string]filter.Filter
-	metricPostgresqlBackends                 metricPostgresqlBackends
-	metricPostgresqlBgwriterBuffersAllocated metricPostgresqlBgwriterBuffersAllocated
-	metricPostgresqlBgwriterBuffersWrites    metricPostgresqlBgwriterBuffersWrites
-	metricPostgresqlBgwriterCheckpointCount  metricPostgresqlBgwriterCheckpointCount
-	metricPostgresqlBgwriterDuration         metricPostgresqlBgwriterDuration
-	metricPostgresqlBgwriterMaxwritten       metricPostgresqlBgwriterMaxwritten
-	metricPostgresqlBlksHit                  metricPostgresqlBlksHit
-	metricPostgresqlBlksRead                 metricPostgresqlBlksRead
-	metricPostgresqlBlocksRead               metricPostgresqlBlocksRead
-	metricPostgresqlCommits                  metricPostgresqlCommits
-	metricPostgresqlConnectionMax            metricPostgresqlConnectionMax
-	metricPostgresqlDatabaseCount            metricPostgresqlDatabaseCount
-	metricPostgresqlDatabaseLocks            metricPostgresqlDatabaseLocks
-	metricPostgresqlDbSize                   metricPostgresqlDbSize
-	metricPostgresqlDeadlocks                metricPostgresqlDeadlocks
-	metricPostgresqlFunctionCalls            metricPostgresqlFunctionCalls
-	metricPostgresqlIndexScans               metricPostgresqlIndexScans
-	metricPostgresqlIndexSize                metricPostgresqlIndexSize
-	metricPostgresqlOperations               metricPostgresqlOperations
-	metricPostgresqlQueryConflicts           metricPostgresqlQueryConflicts
-	metricPostgresqlQueryExecutionTime       metricPostgresqlQueryExecutionTime
-	metricPostgresqlReplicationDataDelay     metricPostgresqlReplicationDataDelay
-	metricPostgresqlRollbacks                metricPostgresqlRollbacks
-	metricPostgresqlRows                     metricPostgresqlRows
-	metricPostgresqlSequentialScans          metricPostgresqlSequentialScans
-	metricPostgresqlTableCount               metricPostgresqlTableCount
-	metricPostgresqlTableSize                metricPostgresqlTableSize
-	metricPostgresqlTableVacuumCount         metricPostgresqlTableVacuumCount
-	metricPostgresqlTempIo                   metricPostgresqlTempIo
-	metricPostgresqlTempFiles                metricPostgresqlTempFiles
-	metricPostgresqlTupDeleted               metricPostgresqlTupDeleted
-	metricPostgresqlTupFetched               metricPostgresqlTupFetched
-	metricPostgresqlTupInserted              metricPostgresqlTupInserted
-	metricPostgresqlTupReturned              metricPostgresqlTupReturned
-	metricPostgresqlTupUpdated               metricPostgresqlTupUpdated
-	metricPostgresqlVectorInsertDuration     metricPostgresqlVectorInsertDuration
-	metricPostgresqlVectorInsertRows         metricPostgresqlVectorInsertRows
-	metricPostgresqlVectorSearchCalls        metricPostgresqlVectorSearchCalls
-	metricPostgresqlVectorSearchDuration     metricPostgresqlVectorSearchDuration
-	metricPostgresqlVectorSearchRowsReturned metricPostgresqlVectorSearchRowsReturned
-	metricPostgresqlWalAge                   metricPostgresqlWalAge
-	metricPostgresqlWalDelay                 metricPostgresqlWalDelay
-	metricPostgresqlWalLag                   metricPostgresqlWalLag
+	config                                         MetricsBuilderConfig // config of the metrics builder.
+	startTime                                      pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                                int                  // maximum observed number of metrics per resource.
+	metricsBuffer                                  pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                      component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter                 map[string]filter.Filter
+	resourceAttributeExcludeFilter                 map[string]filter.Filter
+	metricPostgresqlBackends                       metricPostgresqlBackends
+	metricPostgresqlBgwriterBuffersAllocated       metricPostgresqlBgwriterBuffersAllocated
+	metricPostgresqlBgwriterBuffersWrites          metricPostgresqlBgwriterBuffersWrites
+	metricPostgresqlBgwriterCheckpointCount        metricPostgresqlBgwriterCheckpointCount
+	metricPostgresqlBgwriterDuration               metricPostgresqlBgwriterDuration
+	metricPostgresqlBgwriterMaxwritten             metricPostgresqlBgwriterMaxwritten
+	metricPostgresqlBlksHit                        metricPostgresqlBlksHit
+	metricPostgresqlBlksRead                       metricPostgresqlBlksRead
+	metricPostgresqlBlocksRead                     metricPostgresqlBlocksRead
+	metricPostgresqlCommits                        metricPostgresqlCommits
+	metricPostgresqlConnectionMax                  metricPostgresqlConnectionMax
+	metricPostgresqlDatabaseCount                  metricPostgresqlDatabaseCount
+	metricPostgresqlDatabaseLocks                  metricPostgresqlDatabaseLocks
+	metricPostgresqlDatabaseMxidAge                metricPostgresqlDatabaseMxidAge
+	metricPostgresqlDatabaseXidAge                 metricPostgresqlDatabaseXidAge
+	metricPostgresqlDbSize                         metricPostgresqlDbSize
+	metricPostgresqlDeadlocks                      metricPostgresqlDeadlocks
+	metricPostgresqlFunctionCalls                  metricPostgresqlFunctionCalls
+	metricPostgresqlIndexScans                     metricPostgresqlIndexScans
+	metricPostgresqlIndexSize                      metricPostgresqlIndexSize
+	metricPostgresqlOperations                     metricPostgresqlOperations
+	metricPostgresqlQueryConflicts                 metricPostgresqlQueryConflicts
+	metricPostgresqlQueryExecutionTime             metricPostgresqlQueryExecutionTime
+	metricPostgresqlReplicationDataDelay           metricPostgresqlReplicationDataDelay
+	metricPostgresqlRollbacks                      metricPostgresqlRollbacks
+	metricPostgresqlRows                           metricPostgresqlRows
+	metricPostgresqlSequentialScans                metricPostgresqlSequentialScans
+	metricPostgresqlTableAnalyzeCount              metricPostgresqlTableAnalyzeCount
+	metricPostgresqlTableAutoanalyzeCount          metricPostgresqlTableAutoanalyzeCount
+	metricPostgresqlTableAutovacuumCount           metricPostgresqlTableAutovacuumCount
+	metricPostgresqlTableCount                     metricPostgresqlTableCount
+	metricPostgresqlTableLastAnalyzeAge            metricPostgresqlTableLastAnalyzeAge
+	metricPostgresqlTableLastAutoanalyzeAge        metricPostgresqlTableLastAutoanalyzeAge
+	metricPostgresqlTableLastAutovacuumAge         metricPostgresqlTableLastAutovacuumAge
+	metricPostgresqlTableLastVacuumAge             metricPostgresqlTableLastVacuumAge
+	metricPostgresqlTableModificationsSinceAnalyze metricPostgresqlTableModificationsSinceAnalyze
+	metricPostgresqlTableSize                      metricPostgresqlTableSize
+	metricPostgresqlTableVacuumCount               metricPostgresqlTableVacuumCount
+	metricPostgresqlTempIo                         metricPostgresqlTempIo
+	metricPostgresqlTempFiles                      metricPostgresqlTempFiles
+	metricPostgresqlTupDeleted                     metricPostgresqlTupDeleted
+	metricPostgresqlTupFetched                     metricPostgresqlTupFetched
+	metricPostgresqlTupInserted                    metricPostgresqlTupInserted
+	metricPostgresqlTupReturned                    metricPostgresqlTupReturned
+	metricPostgresqlTupUpdated                     metricPostgresqlTupUpdated
+	metricPostgresqlVectorInsertDuration           metricPostgresqlVectorInsertDuration
+	metricPostgresqlVectorInsertRows               metricPostgresqlVectorInsertRows
+	metricPostgresqlVectorSearchCalls              metricPostgresqlVectorSearchCalls
+	metricPostgresqlVectorSearchDuration           metricPostgresqlVectorSearchDuration
+	metricPostgresqlVectorSearchRowsReturned       metricPostgresqlVectorSearchRowsReturned
+	metricPostgresqlWalAge                         metricPostgresqlWalAge
+	metricPostgresqlWalDelay                       metricPostgresqlWalDelay
+	metricPostgresqlWalLag                         metricPostgresqlWalLag
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -4502,55 +5504,65 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                   mbc,
-		startTime:                                pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                            pmetric.NewMetrics(),
-		buildInfo:                                settings.BuildInfo,
-		metricPostgresqlBackends:                 newMetricPostgresqlBackends(mbc.Metrics.PostgresqlBackends),
-		metricPostgresqlBgwriterBuffersAllocated: newMetricPostgresqlBgwriterBuffersAllocated(mbc.Metrics.PostgresqlBgwriterBuffersAllocated),
-		metricPostgresqlBgwriterBuffersWrites:    newMetricPostgresqlBgwriterBuffersWrites(mbc.Metrics.PostgresqlBgwriterBuffersWrites),
-		metricPostgresqlBgwriterCheckpointCount:  newMetricPostgresqlBgwriterCheckpointCount(mbc.Metrics.PostgresqlBgwriterCheckpointCount),
-		metricPostgresqlBgwriterDuration:         newMetricPostgresqlBgwriterDuration(mbc.Metrics.PostgresqlBgwriterDuration),
-		metricPostgresqlBgwriterMaxwritten:       newMetricPostgresqlBgwriterMaxwritten(mbc.Metrics.PostgresqlBgwriterMaxwritten),
-		metricPostgresqlBlksHit:                  newMetricPostgresqlBlksHit(mbc.Metrics.PostgresqlBlksHit),
-		metricPostgresqlBlksRead:                 newMetricPostgresqlBlksRead(mbc.Metrics.PostgresqlBlksRead),
-		metricPostgresqlBlocksRead:               newMetricPostgresqlBlocksRead(mbc.Metrics.PostgresqlBlocksRead),
-		metricPostgresqlCommits:                  newMetricPostgresqlCommits(mbc.Metrics.PostgresqlCommits),
-		metricPostgresqlConnectionMax:            newMetricPostgresqlConnectionMax(mbc.Metrics.PostgresqlConnectionMax),
-		metricPostgresqlDatabaseCount:            newMetricPostgresqlDatabaseCount(mbc.Metrics.PostgresqlDatabaseCount),
-		metricPostgresqlDatabaseLocks:            newMetricPostgresqlDatabaseLocks(mbc.Metrics.PostgresqlDatabaseLocks),
-		metricPostgresqlDbSize:                   newMetricPostgresqlDbSize(mbc.Metrics.PostgresqlDbSize),
-		metricPostgresqlDeadlocks:                newMetricPostgresqlDeadlocks(mbc.Metrics.PostgresqlDeadlocks),
-		metricPostgresqlFunctionCalls:            newMetricPostgresqlFunctionCalls(mbc.Metrics.PostgresqlFunctionCalls),
-		metricPostgresqlIndexScans:               newMetricPostgresqlIndexScans(mbc.Metrics.PostgresqlIndexScans),
-		metricPostgresqlIndexSize:                newMetricPostgresqlIndexSize(mbc.Metrics.PostgresqlIndexSize),
-		metricPostgresqlOperations:               newMetricPostgresqlOperations(mbc.Metrics.PostgresqlOperations),
-		metricPostgresqlQueryConflicts:           newMetricPostgresqlQueryConflicts(mbc.Metrics.PostgresqlQueryConflicts),
-		metricPostgresqlQueryExecutionTime:       newMetricPostgresqlQueryExecutionTime(mbc.Metrics.PostgresqlQueryExecutionTime),
-		metricPostgresqlReplicationDataDelay:     newMetricPostgresqlReplicationDataDelay(mbc.Metrics.PostgresqlReplicationDataDelay),
-		metricPostgresqlRollbacks:                newMetricPostgresqlRollbacks(mbc.Metrics.PostgresqlRollbacks),
-		metricPostgresqlRows:                     newMetricPostgresqlRows(mbc.Metrics.PostgresqlRows),
-		metricPostgresqlSequentialScans:          newMetricPostgresqlSequentialScans(mbc.Metrics.PostgresqlSequentialScans),
-		metricPostgresqlTableCount:               newMetricPostgresqlTableCount(mbc.Metrics.PostgresqlTableCount),
-		metricPostgresqlTableSize:                newMetricPostgresqlTableSize(mbc.Metrics.PostgresqlTableSize),
-		metricPostgresqlTableVacuumCount:         newMetricPostgresqlTableVacuumCount(mbc.Metrics.PostgresqlTableVacuumCount),
-		metricPostgresqlTempIo:                   newMetricPostgresqlTempIo(mbc.Metrics.PostgresqlTempIo),
-		metricPostgresqlTempFiles:                newMetricPostgresqlTempFiles(mbc.Metrics.PostgresqlTempFiles),
-		metricPostgresqlTupDeleted:               newMetricPostgresqlTupDeleted(mbc.Metrics.PostgresqlTupDeleted),
-		metricPostgresqlTupFetched:               newMetricPostgresqlTupFetched(mbc.Metrics.PostgresqlTupFetched),
-		metricPostgresqlTupInserted:              newMetricPostgresqlTupInserted(mbc.Metrics.PostgresqlTupInserted),
-		metricPostgresqlTupReturned:              newMetricPostgresqlTupReturned(mbc.Metrics.PostgresqlTupReturned),
-		metricPostgresqlTupUpdated:               newMetricPostgresqlTupUpdated(mbc.Metrics.PostgresqlTupUpdated),
-		metricPostgresqlVectorInsertDuration:     newMetricPostgresqlVectorInsertDuration(mbc.Metrics.PostgresqlVectorInsertDuration),
-		metricPostgresqlVectorInsertRows:         newMetricPostgresqlVectorInsertRows(mbc.Metrics.PostgresqlVectorInsertRows),
-		metricPostgresqlVectorSearchCalls:        newMetricPostgresqlVectorSearchCalls(mbc.Metrics.PostgresqlVectorSearchCalls),
-		metricPostgresqlVectorSearchDuration:     newMetricPostgresqlVectorSearchDuration(mbc.Metrics.PostgresqlVectorSearchDuration),
-		metricPostgresqlVectorSearchRowsReturned: newMetricPostgresqlVectorSearchRowsReturned(mbc.Metrics.PostgresqlVectorSearchRowsReturned),
-		metricPostgresqlWalAge:                   newMetricPostgresqlWalAge(mbc.Metrics.PostgresqlWalAge),
-		metricPostgresqlWalDelay:                 newMetricPostgresqlWalDelay(mbc.Metrics.PostgresqlWalDelay),
-		metricPostgresqlWalLag:                   newMetricPostgresqlWalLag(mbc.Metrics.PostgresqlWalLag),
-		resourceAttributeIncludeFilter:           make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:           make(map[string]filter.Filter),
+		config:                                         mbc,
+		startTime:                                      pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                                  pmetric.NewMetrics(),
+		buildInfo:                                      settings.BuildInfo,
+		metricPostgresqlBackends:                       newMetricPostgresqlBackends(mbc.Metrics.PostgresqlBackends),
+		metricPostgresqlBgwriterBuffersAllocated:       newMetricPostgresqlBgwriterBuffersAllocated(mbc.Metrics.PostgresqlBgwriterBuffersAllocated),
+		metricPostgresqlBgwriterBuffersWrites:          newMetricPostgresqlBgwriterBuffersWrites(mbc.Metrics.PostgresqlBgwriterBuffersWrites),
+		metricPostgresqlBgwriterCheckpointCount:        newMetricPostgresqlBgwriterCheckpointCount(mbc.Metrics.PostgresqlBgwriterCheckpointCount),
+		metricPostgresqlBgwriterDuration:               newMetricPostgresqlBgwriterDuration(mbc.Metrics.PostgresqlBgwriterDuration),
+		metricPostgresqlBgwriterMaxwritten:             newMetricPostgresqlBgwriterMaxwritten(mbc.Metrics.PostgresqlBgwriterMaxwritten),
+		metricPostgresqlBlksHit:                        newMetricPostgresqlBlksHit(mbc.Metrics.PostgresqlBlksHit),
+		metricPostgresqlBlksRead:                       newMetricPostgresqlBlksRead(mbc.Metrics.PostgresqlBlksRead),
+		metricPostgresqlBlocksRead:                     newMetricPostgresqlBlocksRead(mbc.Metrics.PostgresqlBlocksRead),
+		metricPostgresqlCommits:                        newMetricPostgresqlCommits(mbc.Metrics.PostgresqlCommits),
+		metricPostgresqlConnectionMax:                  newMetricPostgresqlConnectionMax(mbc.Metrics.PostgresqlConnectionMax),
+		metricPostgresqlDatabaseCount:                  newMetricPostgresqlDatabaseCount(mbc.Metrics.PostgresqlDatabaseCount),
+		metricPostgresqlDatabaseLocks:                  newMetricPostgresqlDatabaseLocks(mbc.Metrics.PostgresqlDatabaseLocks),
+		metricPostgresqlDatabaseMxidAge:                newMetricPostgresqlDatabaseMxidAge(mbc.Metrics.PostgresqlDatabaseMxidAge),
+		metricPostgresqlDatabaseXidAge:                 newMetricPostgresqlDatabaseXidAge(mbc.Metrics.PostgresqlDatabaseXidAge),
+		metricPostgresqlDbSize:                         newMetricPostgresqlDbSize(mbc.Metrics.PostgresqlDbSize),
+		metricPostgresqlDeadlocks:                      newMetricPostgresqlDeadlocks(mbc.Metrics.PostgresqlDeadlocks),
+		metricPostgresqlFunctionCalls:                  newMetricPostgresqlFunctionCalls(mbc.Metrics.PostgresqlFunctionCalls),
+		metricPostgresqlIndexScans:                     newMetricPostgresqlIndexScans(mbc.Metrics.PostgresqlIndexScans),
+		metricPostgresqlIndexSize:                      newMetricPostgresqlIndexSize(mbc.Metrics.PostgresqlIndexSize),
+		metricPostgresqlOperations:                     newMetricPostgresqlOperations(mbc.Metrics.PostgresqlOperations),
+		metricPostgresqlQueryConflicts:                 newMetricPostgresqlQueryConflicts(mbc.Metrics.PostgresqlQueryConflicts),
+		metricPostgresqlQueryExecutionTime:             newMetricPostgresqlQueryExecutionTime(mbc.Metrics.PostgresqlQueryExecutionTime),
+		metricPostgresqlReplicationDataDelay:           newMetricPostgresqlReplicationDataDelay(mbc.Metrics.PostgresqlReplicationDataDelay),
+		metricPostgresqlRollbacks:                      newMetricPostgresqlRollbacks(mbc.Metrics.PostgresqlRollbacks),
+		metricPostgresqlRows:                           newMetricPostgresqlRows(mbc.Metrics.PostgresqlRows),
+		metricPostgresqlSequentialScans:                newMetricPostgresqlSequentialScans(mbc.Metrics.PostgresqlSequentialScans),
+		metricPostgresqlTableAnalyzeCount:              newMetricPostgresqlTableAnalyzeCount(mbc.Metrics.PostgresqlTableAnalyzeCount),
+		metricPostgresqlTableAutoanalyzeCount:          newMetricPostgresqlTableAutoanalyzeCount(mbc.Metrics.PostgresqlTableAutoanalyzeCount),
+		metricPostgresqlTableAutovacuumCount:           newMetricPostgresqlTableAutovacuumCount(mbc.Metrics.PostgresqlTableAutovacuumCount),
+		metricPostgresqlTableCount:                     newMetricPostgresqlTableCount(mbc.Metrics.PostgresqlTableCount),
+		metricPostgresqlTableLastAnalyzeAge:            newMetricPostgresqlTableLastAnalyzeAge(mbc.Metrics.PostgresqlTableLastAnalyzeAge),
+		metricPostgresqlTableLastAutoanalyzeAge:        newMetricPostgresqlTableLastAutoanalyzeAge(mbc.Metrics.PostgresqlTableLastAutoanalyzeAge),
+		metricPostgresqlTableLastAutovacuumAge:         newMetricPostgresqlTableLastAutovacuumAge(mbc.Metrics.PostgresqlTableLastAutovacuumAge),
+		metricPostgresqlTableLastVacuumAge:             newMetricPostgresqlTableLastVacuumAge(mbc.Metrics.PostgresqlTableLastVacuumAge),
+		metricPostgresqlTableModificationsSinceAnalyze: newMetricPostgresqlTableModificationsSinceAnalyze(mbc.Metrics.PostgresqlTableModificationsSinceAnalyze),
+		metricPostgresqlTableSize:                      newMetricPostgresqlTableSize(mbc.Metrics.PostgresqlTableSize),
+		metricPostgresqlTableVacuumCount:               newMetricPostgresqlTableVacuumCount(mbc.Metrics.PostgresqlTableVacuumCount),
+		metricPostgresqlTempIo:                         newMetricPostgresqlTempIo(mbc.Metrics.PostgresqlTempIo),
+		metricPostgresqlTempFiles:                      newMetricPostgresqlTempFiles(mbc.Metrics.PostgresqlTempFiles),
+		metricPostgresqlTupDeleted:                     newMetricPostgresqlTupDeleted(mbc.Metrics.PostgresqlTupDeleted),
+		metricPostgresqlTupFetched:                     newMetricPostgresqlTupFetched(mbc.Metrics.PostgresqlTupFetched),
+		metricPostgresqlTupInserted:                    newMetricPostgresqlTupInserted(mbc.Metrics.PostgresqlTupInserted),
+		metricPostgresqlTupReturned:                    newMetricPostgresqlTupReturned(mbc.Metrics.PostgresqlTupReturned),
+		metricPostgresqlTupUpdated:                     newMetricPostgresqlTupUpdated(mbc.Metrics.PostgresqlTupUpdated),
+		metricPostgresqlVectorInsertDuration:           newMetricPostgresqlVectorInsertDuration(mbc.Metrics.PostgresqlVectorInsertDuration),
+		metricPostgresqlVectorInsertRows:               newMetricPostgresqlVectorInsertRows(mbc.Metrics.PostgresqlVectorInsertRows),
+		metricPostgresqlVectorSearchCalls:              newMetricPostgresqlVectorSearchCalls(mbc.Metrics.PostgresqlVectorSearchCalls),
+		metricPostgresqlVectorSearchDuration:           newMetricPostgresqlVectorSearchDuration(mbc.Metrics.PostgresqlVectorSearchDuration),
+		metricPostgresqlVectorSearchRowsReturned:       newMetricPostgresqlVectorSearchRowsReturned(mbc.Metrics.PostgresqlVectorSearchRowsReturned),
+		metricPostgresqlWalAge:                         newMetricPostgresqlWalAge(mbc.Metrics.PostgresqlWalAge),
+		metricPostgresqlWalDelay:                       newMetricPostgresqlWalDelay(mbc.Metrics.PostgresqlWalDelay),
+		metricPostgresqlWalLag:                         newMetricPostgresqlWalLag(mbc.Metrics.PostgresqlWalLag),
+		resourceAttributeIncludeFilter:                 make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:                 make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.DbSystemVersion.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["db.system.version"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystemVersion.MetricsInclude)
@@ -4694,6 +5706,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricPostgresqlConnectionMax.emit(ils.Metrics())
 	mb.metricPostgresqlDatabaseCount.emit(ils.Metrics())
 	mb.metricPostgresqlDatabaseLocks.emit(ils.Metrics())
+	mb.metricPostgresqlDatabaseMxidAge.emit(ils.Metrics())
+	mb.metricPostgresqlDatabaseXidAge.emit(ils.Metrics())
 	mb.metricPostgresqlDbSize.emit(ils.Metrics())
 	mb.metricPostgresqlDeadlocks.emit(ils.Metrics())
 	mb.metricPostgresqlFunctionCalls.emit(ils.Metrics())
@@ -4706,7 +5720,15 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricPostgresqlRollbacks.emit(ils.Metrics())
 	mb.metricPostgresqlRows.emit(ils.Metrics())
 	mb.metricPostgresqlSequentialScans.emit(ils.Metrics())
+	mb.metricPostgresqlTableAnalyzeCount.emit(ils.Metrics())
+	mb.metricPostgresqlTableAutoanalyzeCount.emit(ils.Metrics())
+	mb.metricPostgresqlTableAutovacuumCount.emit(ils.Metrics())
 	mb.metricPostgresqlTableCount.emit(ils.Metrics())
+	mb.metricPostgresqlTableLastAnalyzeAge.emit(ils.Metrics())
+	mb.metricPostgresqlTableLastAutoanalyzeAge.emit(ils.Metrics())
+	mb.metricPostgresqlTableLastAutovacuumAge.emit(ils.Metrics())
+	mb.metricPostgresqlTableLastVacuumAge.emit(ils.Metrics())
+	mb.metricPostgresqlTableModificationsSinceAnalyze.emit(ils.Metrics())
 	mb.metricPostgresqlTableSize.emit(ils.Metrics())
 	mb.metricPostgresqlTableVacuumCount.emit(ils.Metrics())
 	mb.metricPostgresqlTempIo.emit(ils.Metrics())
@@ -4820,6 +5842,16 @@ func (mb *MetricsBuilder) RecordPostgresqlDatabaseLocksDataPoint(ts pcommon.Time
 	mb.metricPostgresqlDatabaseLocks.recordDataPoint(mb.startTime, ts, val, relationAttributeValue, modeAttributeValue, lockTypeAttributeValue, dbNamespaceAttributeValue)
 }
 
+// RecordPostgresqlDatabaseMxidAgeDataPoint adds a data point to postgresql.database.mxid.age metric.
+func (mb *MetricsBuilder) RecordPostgresqlDatabaseMxidAgeDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
+	mb.metricPostgresqlDatabaseMxidAge.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue)
+}
+
+// RecordPostgresqlDatabaseXidAgeDataPoint adds a data point to postgresql.database.xid.age metric.
+func (mb *MetricsBuilder) RecordPostgresqlDatabaseXidAgeDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
+	mb.metricPostgresqlDatabaseXidAge.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue)
+}
+
 // RecordPostgresqlDbSizeDataPoint adds a data point to postgresql.db_size metric.
 func (mb *MetricsBuilder) RecordPostgresqlDbSizeDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
 	mb.metricPostgresqlDbSize.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue)
@@ -4880,9 +5912,49 @@ func (mb *MetricsBuilder) RecordPostgresqlSequentialScansDataPoint(ts pcommon.Ti
 	mb.metricPostgresqlSequentialScans.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, dbCollectionNameAttributeValue)
 }
 
+// RecordPostgresqlTableAnalyzeCountDataPoint adds a data point to postgresql.table.analyze.count metric.
+func (mb *MetricsBuilder) RecordPostgresqlTableAnalyzeCountDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	mb.metricPostgresqlTableAnalyzeCount.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, dbCollectionNameAttributeValue)
+}
+
+// RecordPostgresqlTableAutoanalyzeCountDataPoint adds a data point to postgresql.table.autoanalyze.count metric.
+func (mb *MetricsBuilder) RecordPostgresqlTableAutoanalyzeCountDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	mb.metricPostgresqlTableAutoanalyzeCount.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, dbCollectionNameAttributeValue)
+}
+
+// RecordPostgresqlTableAutovacuumCountDataPoint adds a data point to postgresql.table.autovacuum.count metric.
+func (mb *MetricsBuilder) RecordPostgresqlTableAutovacuumCountDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	mb.metricPostgresqlTableAutovacuumCount.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, dbCollectionNameAttributeValue)
+}
+
 // RecordPostgresqlTableCountDataPoint adds a data point to postgresql.table.count metric.
 func (mb *MetricsBuilder) RecordPostgresqlTableCountDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string) {
 	mb.metricPostgresqlTableCount.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue)
+}
+
+// RecordPostgresqlTableLastAnalyzeAgeDataPoint adds a data point to postgresql.table.last_analyze.age metric.
+func (mb *MetricsBuilder) RecordPostgresqlTableLastAnalyzeAgeDataPoint(ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	mb.metricPostgresqlTableLastAnalyzeAge.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, dbCollectionNameAttributeValue)
+}
+
+// RecordPostgresqlTableLastAutoanalyzeAgeDataPoint adds a data point to postgresql.table.last_autoanalyze.age metric.
+func (mb *MetricsBuilder) RecordPostgresqlTableLastAutoanalyzeAgeDataPoint(ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	mb.metricPostgresqlTableLastAutoanalyzeAge.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, dbCollectionNameAttributeValue)
+}
+
+// RecordPostgresqlTableLastAutovacuumAgeDataPoint adds a data point to postgresql.table.last_autovacuum.age metric.
+func (mb *MetricsBuilder) RecordPostgresqlTableLastAutovacuumAgeDataPoint(ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	mb.metricPostgresqlTableLastAutovacuumAge.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, dbCollectionNameAttributeValue)
+}
+
+// RecordPostgresqlTableLastVacuumAgeDataPoint adds a data point to postgresql.table.last_vacuum.age metric.
+func (mb *MetricsBuilder) RecordPostgresqlTableLastVacuumAgeDataPoint(ts pcommon.Timestamp, val float64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	mb.metricPostgresqlTableLastVacuumAge.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, dbCollectionNameAttributeValue)
+}
+
+// RecordPostgresqlTableModificationsSinceAnalyzeDataPoint adds a data point to postgresql.table.modifications_since_analyze metric.
+func (mb *MetricsBuilder) RecordPostgresqlTableModificationsSinceAnalyzeDataPoint(ts pcommon.Timestamp, val int64, dbNamespaceAttributeValue string, dbCollectionNameAttributeValue string) {
+	mb.metricPostgresqlTableModificationsSinceAnalyze.recordDataPoint(mb.startTime, ts, val, dbNamespaceAttributeValue, dbCollectionNameAttributeValue)
 }
 
 // RecordPostgresqlTableSizeDataPoint adds a data point to postgresql.table.size metric.
