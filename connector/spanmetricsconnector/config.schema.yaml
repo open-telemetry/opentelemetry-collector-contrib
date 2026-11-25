@@ -58,6 +58,9 @@ $defs:
       exponential:
         x-optional: true
         $ref: exponential_histogram_config
+      self_time:
+        description: SelfTime enables the optional self-time histogram metric. When enabled, the connector computes exclusive/self time from parent-child span timing in each trace batch and emits a separate histogram that shares the settings of the duration histogram. Complete traces must be present in each batch.
+        type: boolean
       unit:
         $ref: ./internal/metrics.unit
 description: Config defines the configuration options for spanmetricsconnector.

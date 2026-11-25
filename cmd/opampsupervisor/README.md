@@ -152,7 +152,7 @@ agent:
 
 ## Persistent data storage
 
-The supervisor persists some data to disk in order to mantain state between restarts. The directory where this data is stored may be specified via the supervisor configuration:
+The supervisor persists some data to disk in order to maintain state between restarts. The directory where this data is stored may be specified via the supervisor configuration:
 
 ```yaml
 storage:
@@ -172,14 +172,14 @@ healthcheck:
   endpoint: localhost:13133
 ```
 
-At the moment this healtcheck checks that the following conditions are met:
+At the moment this healthcheck checks that the following conditions are met:
 
 - The Supervisor is able to persist state to disk.
 - The Supervisor is able to generate the agent's configuration.
 
-For more details on the healthcheck configuration, see the see the [full list of `ServerConfig` options](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp).
+For more details on the healthcheck configuration, see the [full list of `ServerConfig` options](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp).
 
-Note that the healthceck endpoint is not enabled by default. To enable it, you must explicitly set at least the `endpoint` field in the configuration.
+Note that the healthcheck endpoint is not enabled by default. To enable it, you must explicitly set at least the `endpoint` field in the configuration.
 
 ## Startup Fallback Configuration
 
@@ -273,6 +273,6 @@ For a list of open issues related to the Supervisor, see [these issues](https://
 | Starts and stops a Collector using remote configuration            | ✅                                                                               |
 | Communicates with OpAMP extension running in the Collector         | ✅                                                                               |
 | Updates the Collector binary                                       | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33947> |
-| Configures the Collector to report it's own metrics over OTLP      | ✅                                                                               |
-| Configures the Collector to report it's own logs over OTLP         | ✅                                                                               |
+| Configures the Collector to report its own metrics over OTLP       | ✅                                                                               |
+| Configures the Collector to report its own logs over OTLP          | ✅                                                                               |
 | Sanitization or restriction of Collector config                    | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24310> |
