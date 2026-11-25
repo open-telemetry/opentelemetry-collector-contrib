@@ -25,7 +25,7 @@ func AssertEqualGrafanacloudDatapointCount(t *testing.T, tt *componenttest.Telem
 	want := metricdata.Metrics{
 		Name:        "otelcol_grafanacloud_datapoint_count",
 		Description: "Number of datapoints sent to Grafana Cloud [Development]",
-		Unit:        "1",
+		Unit:        "{datapoint}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -41,7 +41,7 @@ func AssertEqualGrafanacloudFlushCount(t *testing.T, tt *componenttest.Telemetry
 	want := metricdata.Metrics{
 		Name:        "otelcol_grafanacloud_flush_count",
 		Description: "Number of metrics flushes [Development]",
-		Unit:        "1",
+		Unit:        "{flush}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -57,7 +57,7 @@ func AssertEqualGrafanacloudHostCount(t *testing.T, tt *componenttest.Telemetry,
 	want := metricdata.Metrics{
 		Name:        "otelcol_grafanacloud_host_count",
 		Description: "Number of unique hosts [Development]",
-		Unit:        "1",
+		Unit:        "{host}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
 		},
