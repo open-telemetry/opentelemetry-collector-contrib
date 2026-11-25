@@ -16,8 +16,13 @@ import (
 )
 
 var compressionFileExtensions = map[configcompression.Type]string{
-	configcompression.TypeGzip: ".gz",
-	configcompression.TypeZstd: ".zst",
+	configcompression.TypeGzip:         ".gz",
+	configcompression.TypeZstd:         ".zst",
+	configcompression.TypeZlib:         ".zlib",
+	configcompression.TypeDeflate:      ".deflate",
+	configcompression.TypeSnappy:       ".snappy",
+	configcompression.TypeSnappyFramed: ".snappy",
+	configcompression.TypeLz4:          ".lz4",
 }
 
 type PartitionKeyBuilder struct {
@@ -43,17 +48,15 @@ type PartitionKeyBuilder struct {
 	// Metadata provides additional details regarding the file
 	// Expected to be one of "metrics", "traces", or "logs"
 	Metadata string
-	// Compression defines algorithm used on the
-	// body before upload.
+	// Compression is the algorithm applied by the uploader. It determines the
+	// object key suffix and, where applicable, the HTTP Content-Encoding.
 	Compression configcompression.Type
 	// UniqueKeyFunc allows for overwriting the default behavior of
 	// generating a new unique string to avoid collisions on file upload
 	// across many different instances.
 	UniqueKeyFunc func() string
-	// IsCompressed when true keeps files compressed in S3
-	// by omitting ContentEncoding headers. When false, ContentEncoding
-	// is set for HTTP transfer compression (AWS auto-decompresses).
-	IsCompressed bool
+	// IsArchiveFormat leaves ContentEncoding unset so readers receive the stored archive bytes.
+	IsArchiveFormat bool
 }
 
 func (pki *PartitionKeyBuilder) Build(ts time.Time, overridePrefix string) string {
@@ -94,11 +97,27 @@ func (pki *PartitionKeyBuilder) fileName() string {
 		suffix = "." + pki.FileFormat
 	}
 
-	if ext, ok := compressionFileExtensions[pki.Compression]; ok {
-		suffix += ext
-	}
+	suffix += compressionFileExtensions[pki.Compression]
 
 	return pki.FilePrefix + pki.Metadata + "_" + pki.uniqueKey() + suffix
+}
+
+// contentEncoding returns the registered HTTP coding that matches the compressed bytes.
+// An empty result omits the header for archives, uncompressed data, and formats
+// that identify their compression through the object key suffix alone.
+func (pki *PartitionKeyBuilder) contentEncoding() string {
+	if pki.IsArchiveFormat {
+		return ""
+	}
+	switch pki.Compression {
+	case configcompression.TypeGzip, configcompression.TypeZstd:
+		return string(pki.Compression)
+	case configcompression.TypeZlib:
+		// HTTP deflate requires the zlib wrapper around the DEFLATE stream.
+		return "deflate"
+	default:
+		return ""
+	}
 }
 
 func (pki *PartitionKeyBuilder) uniqueKey() string {
