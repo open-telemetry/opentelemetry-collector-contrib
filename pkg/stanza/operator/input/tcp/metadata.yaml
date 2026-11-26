@@ -12,7 +12,7 @@ telemetry:
   metrics:
     tcp_input_active_connections:
       description: Number of active TCP connections.
-      unit: "1"
+      unit: "{connection}"
       enabled: true
       stability: development
       sum:
@@ -20,7 +20,7 @@ telemetry:
         monotonic: false
     tcp_input_refused_connections:
       description: Number of TCP connections refused because the max_connections limit was reached.
-      unit: "1"
+      unit: "{connection}"
       enabled: true
       stability: development
       sum:

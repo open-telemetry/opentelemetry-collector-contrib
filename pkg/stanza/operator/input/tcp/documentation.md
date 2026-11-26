@@ -12,7 +12,7 @@ Number of active TCP connections.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | false | Development |
+| {connection} | Sum | Int | false | Development |
 
 ### otelcol_tcp_input_refused_connections
 
@@ -20,4 +20,4 @@ Number of TCP connections refused because the max_connections limit was reached.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {connection} | Sum | Int | true | Development |

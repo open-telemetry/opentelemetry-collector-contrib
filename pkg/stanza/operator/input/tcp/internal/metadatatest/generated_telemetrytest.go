@@ -15,7 +15,7 @@ func AssertEqualTCPInputActiveConnections(t *testing.T, tt *componenttest.Teleme
 	want := metricdata.Metrics{
 		Name:        "otelcol_tcp_input_active_connections",
 		Description: "Number of active TCP connections. [Development]",
-		Unit:        "1",
+		Unit:        "{connection}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: false,
@@ -31,7 +31,7 @@ func AssertEqualTCPInputRefusedConnections(t *testing.T, tt *componenttest.Telem
 	want := metricdata.Metrics{
 		Name:        "otelcol_tcp_input_refused_connections",
 		Description: "Number of TCP connections refused because the max_connections limit was reached. [Development]",
-		Unit:        "1",
+		Unit:        "{connection}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,

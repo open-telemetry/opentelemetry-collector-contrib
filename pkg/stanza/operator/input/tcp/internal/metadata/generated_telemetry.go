@@ -61,13 +61,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.TCPInputActiveConnections, err = builder.meter.Int64UpDownCounter(
 		"otelcol_tcp_input_active_connections",
 		metric.WithDescription("Number of active TCP connections. [Development]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{connection}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.TCPInputRefusedConnections, err = builder.meter.Int64Counter(
 		"otelcol_tcp_input_refused_connections",
 		metric.WithDescription("Number of TCP connections refused because the max_connections limit was reached. [Development]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{connection}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
