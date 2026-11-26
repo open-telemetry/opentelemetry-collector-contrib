@@ -11,7 +11,7 @@ var ReceiverAwsxrayDontEmitV0DatabaseConventionsFeatureGate = featuregate.Global
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the receiver no longer emits deprecated database semconv attributes (db.connection_string, db.name, db.system, db.statement, db.user)."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22095"),
-	featuregate.WithRegisterFromVersion("v0.163.0"),
+	featuregate.WithRegisterFromVersion("v0.167.0"),
 )
 
 var ReceiverAwsxrayDontEmitV0HTTPConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -27,7 +27,7 @@ var ReceiverAwsxrayEmitV1DatabaseConventionsFeatureGate = featuregate.GlobalRegi
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the receiver emits new database semconv attributes (db.namespace, db.system.name, db.query.text) alongside or instead of deprecated equivalents."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22095"),
-	featuregate.WithRegisterFromVersion("v0.163.0"),
+	featuregate.WithRegisterFromVersion("v0.167.0"),
 )
 
 var ReceiverAwsxrayEmitV1HTTPConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
