@@ -233,7 +233,7 @@ func TestNewUploadManager_RoleArnCredentialsCache(t *testing.T) {
 						lifetime = time.Hour
 					}
 					w.Header().Set("Content-Type", "text/xml")
-					_, err := fmt.Fprintf(w, `<AssumeRoleResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/"><AssumeRoleResult><Credentials><AccessKeyId>AKID%d</AccessKeyId><SecretAccessKey>SECRET</SecretAccessKey><SessionToken>TOKEN</SessionToken><Expiration>%s</Expiration></Credentials></AssumeRoleResult></AssumeRoleResponse>`, call, time.Now().Add(lifetime).UTC().Format(time.RFC3339))
+					_, err := fmt.Fprintf(w, `<AssumeRoleResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/"><AssumeRoleResult><Credentials><AccessKeyId>AKID%d</AccessKeyId><SecretAccessKey>SECRET-AT-LEAST-14-BYTES</SecretAccessKey><SessionToken>TOKEN</SessionToken><Expiration>%s</Expiration></Credentials></AssumeRoleResult></AssumeRoleResponse>`, call, time.Now().Add(lifetime).UTC().Format(time.RFC3339))
 					if err != nil {
 						t.Error(err)
 					}
@@ -256,7 +256,7 @@ func TestNewUploadManager_RoleArnCredentialsCache(t *testing.T) {
 				t.Setenv(name, "")
 			}
 			t.Setenv("AWS_ACCESS_KEY_ID", "base-key")
-			t.Setenv("AWS_SECRET_ACCESS_KEY", "base-secret")
+			t.Setenv("AWS_SECRET_ACCESS_KEY", "base-secret-at-least-14-bytes")
 			t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
 			t.Setenv("AWS_CONFIG_FILE", filepath.Join(dir, "config"))
 			t.Setenv("AWS_SHARED_CREDENTIALS_FILE", filepath.Join(dir, "credentials"))

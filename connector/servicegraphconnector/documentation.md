@@ -12,7 +12,7 @@ Number of spans dropped when trying to add edges
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {span} | Sum | Int | true | Development |
 
 ### otelcol_connector_servicegraph_expired_edges
 
@@ -20,7 +20,7 @@ Number of edges that expired before finding its matching span
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {edge} | Sum | Int | true | Development |
 
 ### otelcol_connector_servicegraph_total_edges
 
@@ -28,4 +28,4 @@ Total number of unique edges
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {edge} | Sum | Int | true | Development |

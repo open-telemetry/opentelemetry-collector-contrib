@@ -93,7 +93,7 @@ func TestSendLogs(t *testing.T) {
 func buildLogIngestTestOpts(endpoint string, client *http.Client) []lmsdklogs.Option {
 	authParams := utils.AuthParams{
 		AccessID:    "testId",
-		AccessKey:   "testKey",
+		AccessKey:   "test-key-at-least-14-bytes",
 		BearerToken: "testToken",
 	}
 
