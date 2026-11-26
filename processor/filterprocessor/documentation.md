@@ -12,7 +12,7 @@ Number of metric data points dropped by the filter processor
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {datapoint} | Sum | Int | true | Development |
 
 ### otelcol_processor_filter_logs.filtered
 
@@ -20,7 +20,7 @@ Number of logs dropped by the filter processor
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {log} | Sum | Int | true | Development |
 
 ### otelcol_processor_filter_profiles.filtered
 
@@ -28,7 +28,7 @@ Number of profiles dropped by the filter processor
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {profile} | Sum | Int | true | Development |
 
 ### otelcol_processor_filter_spans.filtered
 
@@ -36,4 +36,4 @@ Number of spans dropped by the filter processor
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {span} | Sum | Int | true | Development |

@@ -25,7 +25,7 @@ func AssertEqualProcessorFilterDatapointsFiltered(t *testing.T, tt *componenttes
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_filter_datapoints.filtered",
 		Description: "Number of metric data points dropped by the filter processor [Development]",
-		Unit:        "1",
+		Unit:        "{datapoint}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -41,7 +41,7 @@ func AssertEqualProcessorFilterLogsFiltered(t *testing.T, tt *componenttest.Tele
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_filter_logs.filtered",
 		Description: "Number of logs dropped by the filter processor [Development]",
-		Unit:        "1",
+		Unit:        "{log}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -57,7 +57,7 @@ func AssertEqualProcessorFilterProfilesFiltered(t *testing.T, tt *componenttest.
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_filter_profiles.filtered",
 		Description: "Number of profiles dropped by the filter processor [Development]",
-		Unit:        "1",
+		Unit:        "{profile}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -73,7 +73,7 @@ func AssertEqualProcessorFilterSpansFiltered(t *testing.T, tt *componenttest.Tel
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_filter_spans.filtered",
 		Description: "Number of spans dropped by the filter processor [Development]",
-		Unit:        "1",
+		Unit:        "{span}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,

@@ -22,7 +22,7 @@ telemetry:
     processor_filter_datapoints.filtered:
       enabled: true
       description: Number of metric data points dropped by the filter processor
-      unit: "1"
+      unit: "{datapoint}"
       sum:
         value_type: int
         monotonic: true
@@ -30,7 +30,7 @@ telemetry:
     processor_filter_logs.filtered:
       enabled: true
       description: Number of logs dropped by the filter processor
-      unit: "1"
+      unit: "{log}"
       sum:
         value_type: int
         monotonic: true
@@ -38,7 +38,7 @@ telemetry:
     processor_filter_profiles.filtered:
       enabled: true
       description: Number of profiles dropped by the filter processor
-      unit: "1"
+      unit: "{profile}"
       sum:
         value_type: int
         monotonic: true
@@ -46,7 +46,7 @@ telemetry:
     processor_filter_spans.filtered:
       enabled: true
       description: Number of spans dropped by the filter processor
-      unit: "1"
+      unit: "{span}"
       sum:
         value_type: int
         monotonic: true
