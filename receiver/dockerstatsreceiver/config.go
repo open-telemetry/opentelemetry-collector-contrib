@@ -6,8 +6,8 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.opentelemetry.io/collector/strmatch"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
@@ -34,7 +34,7 @@ type Config struct {
 	// resource attributes. A label is recorded if its key matches any of the
 	// filters. Matching labels are recorded as `container.label.<key>`, following
 	// the container resource semantic conventions.
-	ContainerLabelsToResourceAttributes []filter.Config `mapstructure:"container_labels_to_resource_attributes"`
+	ContainerLabelsToResourceAttributes []strmatch.Config `mapstructure:"container_labels_to_resource_attributes"`
 
 	// A mapping of container environment variable names to MetricDescriptor label
 	// keys.  The corresponding env var values become the DataPoint label value.

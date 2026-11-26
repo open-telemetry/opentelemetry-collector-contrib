@@ -6,10 +6,10 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -172,8 +172,8 @@ type LogsBuilder struct {
 	logsBuffer                     plog.Logs
 	logRecordsBuffer               plog.LogRecordSlice
 	buildInfo                      component.BuildInfo // contains version information.
-	resourceAttributeIncludeFilter map[string]filter.Filter
-	resourceAttributeExcludeFilter map[string]filter.Filter
+	resourceAttributeIncludeFilter map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter map[string]strmatch.Matcher
 	eventDbServerQueryPlan         eventDbServerQueryPlan
 	eventDbServerQuerySample       eventDbServerQuerySample
 	eventDbServerTopQuery          eventDbServerTopQuery
@@ -193,68 +193,68 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 		eventDbServerQueryPlan:         newEventDbServerQueryPlan(lbc.Events.DbServerQueryPlan),
 		eventDbServerQuerySample:       newEventDbServerQuerySample(lbc.Events.DbServerQuerySample),
 		eventDbServerTopQuery:          newEventDbServerTopQuery(lbc.Events.DbServerTopQuery),
-		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter: make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter: make(map[string]strmatch.Matcher),
 	}
 	if lbc.ResourceAttributes.DbSystemVersion.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["db.system.version"] = filter.CreateFilter(lbc.ResourceAttributes.DbSystemVersion.EventsInclude)
+		lb.resourceAttributeIncludeFilter["db.system.version"] = strmatch.New(lbc.ResourceAttributes.DbSystemVersion.EventsInclude)
 	}
 	if lbc.ResourceAttributes.DbSystemVersion.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["db.system.version"] = filter.CreateFilter(lbc.ResourceAttributes.DbSystemVersion.EventsExclude)
+		lb.resourceAttributeExcludeFilter["db.system.version"] = strmatch.New(lbc.ResourceAttributes.DbSystemVersion.EventsExclude)
 	}
 	if lbc.ResourceAttributes.PostgresqlDatabaseName.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["postgresql.database.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlDatabaseName.EventsInclude)
+		lb.resourceAttributeIncludeFilter["postgresql.database.name"] = strmatch.New(lbc.ResourceAttributes.PostgresqlDatabaseName.EventsInclude)
 	}
 	if lbc.ResourceAttributes.PostgresqlDatabaseName.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["postgresql.database.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlDatabaseName.EventsExclude)
+		lb.resourceAttributeExcludeFilter["postgresql.database.name"] = strmatch.New(lbc.ResourceAttributes.PostgresqlDatabaseName.EventsExclude)
 	}
 	if lbc.ResourceAttributes.PostgresqlIndexName.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["postgresql.index.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlIndexName.EventsInclude)
+		lb.resourceAttributeIncludeFilter["postgresql.index.name"] = strmatch.New(lbc.ResourceAttributes.PostgresqlIndexName.EventsInclude)
 	}
 	if lbc.ResourceAttributes.PostgresqlIndexName.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["postgresql.index.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlIndexName.EventsExclude)
+		lb.resourceAttributeExcludeFilter["postgresql.index.name"] = strmatch.New(lbc.ResourceAttributes.PostgresqlIndexName.EventsExclude)
 	}
 	if lbc.ResourceAttributes.PostgresqlSchemaName.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["postgresql.schema.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlSchemaName.EventsInclude)
+		lb.resourceAttributeIncludeFilter["postgresql.schema.name"] = strmatch.New(lbc.ResourceAttributes.PostgresqlSchemaName.EventsInclude)
 	}
 	if lbc.ResourceAttributes.PostgresqlSchemaName.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["postgresql.schema.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlSchemaName.EventsExclude)
+		lb.resourceAttributeExcludeFilter["postgresql.schema.name"] = strmatch.New(lbc.ResourceAttributes.PostgresqlSchemaName.EventsExclude)
 	}
 	if lbc.ResourceAttributes.PostgresqlTableName.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["postgresql.table.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlTableName.EventsInclude)
+		lb.resourceAttributeIncludeFilter["postgresql.table.name"] = strmatch.New(lbc.ResourceAttributes.PostgresqlTableName.EventsInclude)
 	}
 	if lbc.ResourceAttributes.PostgresqlTableName.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["postgresql.table.name"] = filter.CreateFilter(lbc.ResourceAttributes.PostgresqlTableName.EventsExclude)
+		lb.resourceAttributeExcludeFilter["postgresql.table.name"] = strmatch.New(lbc.ResourceAttributes.PostgresqlTableName.EventsExclude)
 	}
 	if lbc.ResourceAttributes.ServerAddress.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["server.address"] = filter.CreateFilter(lbc.ResourceAttributes.ServerAddress.EventsInclude)
+		lb.resourceAttributeIncludeFilter["server.address"] = strmatch.New(lbc.ResourceAttributes.ServerAddress.EventsInclude)
 	}
 	if lbc.ResourceAttributes.ServerAddress.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["server.address"] = filter.CreateFilter(lbc.ResourceAttributes.ServerAddress.EventsExclude)
+		lb.resourceAttributeExcludeFilter["server.address"] = strmatch.New(lbc.ResourceAttributes.ServerAddress.EventsExclude)
 	}
 	if lbc.ResourceAttributes.ServerPort.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["server.port"] = filter.CreateFilter(lbc.ResourceAttributes.ServerPort.EventsInclude)
+		lb.resourceAttributeIncludeFilter["server.port"] = strmatch.New(lbc.ResourceAttributes.ServerPort.EventsInclude)
 	}
 	if lbc.ResourceAttributes.ServerPort.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["server.port"] = filter.CreateFilter(lbc.ResourceAttributes.ServerPort.EventsExclude)
+		lb.resourceAttributeExcludeFilter["server.port"] = strmatch.New(lbc.ResourceAttributes.ServerPort.EventsExclude)
 	}
 	if lbc.ResourceAttributes.ServiceInstanceID.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["service.instance.id"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceInstanceID.EventsInclude)
+		lb.resourceAttributeIncludeFilter["service.instance.id"] = strmatch.New(lbc.ResourceAttributes.ServiceInstanceID.EventsInclude)
 	}
 	if lbc.ResourceAttributes.ServiceInstanceID.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["service.instance.id"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceInstanceID.EventsExclude)
+		lb.resourceAttributeExcludeFilter["service.instance.id"] = strmatch.New(lbc.ResourceAttributes.ServiceInstanceID.EventsExclude)
 	}
 	if lbc.ResourceAttributes.ServiceName.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["service.name"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceName.EventsInclude)
+		lb.resourceAttributeIncludeFilter["service.name"] = strmatch.New(lbc.ResourceAttributes.ServiceName.EventsInclude)
 	}
 	if lbc.ResourceAttributes.ServiceName.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["service.name"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceName.EventsExclude)
+		lb.resourceAttributeExcludeFilter["service.name"] = strmatch.New(lbc.ResourceAttributes.ServiceName.EventsExclude)
 	}
 	if lbc.ResourceAttributes.ServiceNamespace.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["service.namespace"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceNamespace.EventsInclude)
+		lb.resourceAttributeIncludeFilter["service.namespace"] = strmatch.New(lbc.ResourceAttributes.ServiceNamespace.EventsInclude)
 	}
 	if lbc.ResourceAttributes.ServiceNamespace.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["service.namespace"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceNamespace.EventsExclude)
+		lb.resourceAttributeExcludeFilter["service.namespace"] = strmatch.New(lbc.ResourceAttributes.ServiceNamespace.EventsExclude)
 	}
 
 	return lb
