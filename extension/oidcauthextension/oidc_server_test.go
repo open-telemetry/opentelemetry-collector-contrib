@@ -8,7 +8,6 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1" // #nosec
 	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -74,17 +73,16 @@ func newOIDCServer() (*oidcServer, error) {
 	binary.BigEndian.PutUint64(eBytes, uint64(privateKey.E))
 	eBytes = bytes.TrimLeft(eBytes, "\x00")
 
-	// #nosec
-	sum := sha1.Sum(x509Cert)
+	// No x5c: go-jose hashes the certificate with SHA-1 when it is present,
+	// which GODEBUG=fips140=only refuses. The verifier only needs n and e.
+	sum := sha256.Sum256(x509Cert)
 	jwks["keys"] = []map[string]any{{
 		"alg": "RS256",
 		"kty": "RSA",
 		"use": "sig",
-		"x5c": []string{base64.StdEncoding.EncodeToString(x509Cert)},
 		"n":   base64.RawURLEncoding.EncodeToString(privateKey.N.Bytes()),
 		"e":   base64.RawURLEncoding.EncodeToString(eBytes),
 		"kid": base64.RawURLEncoding.EncodeToString(sum[:]),
-		"x5t": base64.RawURLEncoding.EncodeToString(sum[:]),
 	}}
 
 	return &oidcServer{server, x509Cert, privateKey}, nil

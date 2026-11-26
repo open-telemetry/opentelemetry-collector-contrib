@@ -368,6 +368,12 @@ func withPodUID(uid string) generateResourceFunc {
 	}
 }
 
+func withHPAUID(uid string) generateResourceFunc {
+	return func(res pcommon.Resource) {
+		res.Attributes().PutStr("k8s.hpa.uid", uid)
+	}
+}
+
 func withContainerName(containerName string) generateResourceFunc {
 	return func(res pcommon.Resource) {
 		res.Attributes().PutStr("k8s.container.name", containerName)
@@ -906,6 +912,58 @@ func TestAddNamespaceLabels(t *testing.T) {
 		assert.Equal(t, 2, res.Attributes().Len())
 		assertResourceHasStringAttribute(t, res, "nslabel", "1")
 		assertResourceHasStringAttribute(t, res, "service.namespace", "namespace-1")
+	})
+}
+
+func TestAddHPALabelsAnnotationsWithoutPodIdentifier(t *testing.T) {
+	m := newMultiTest(
+		t,
+		func() component.Config {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Extract.Metadata = []string{}
+			cfg.Extract.Labels = []FieldExtractConfig{
+				{From: kube.MetadataFromHPA, Key: "team"},
+			}
+			cfg.Extract.Annotations = []FieldExtractConfig{
+				{From: kube.MetadataFromHPA, Key: "owner"},
+			}
+			return cfg
+		}(),
+		nil,
+	)
+
+	hpaUID := "hpa-abc"
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		kp.kc.(*fakeClient).HPAs = map[string]*kube.HPA{
+			hpaUID: {
+				Name: "test-hpa",
+				UID:  hpaUID,
+				Attributes: map[string]string{
+					"k8s.hpa.label.team":       "checkout",
+					"k8s.hpa.annotation.owner": "sre",
+				},
+			},
+		}
+	})
+
+	m.testConsume(
+		t.Context(),
+		generateTraces(withHPAUID(hpaUID)),
+		generateMetrics(withHPAUID(hpaUID)),
+		generateLogs(withHPAUID(hpaUID)),
+		generateProfiles(withHPAUID(hpaUID)),
+		func(err error) {
+			assert.NoError(t, err)
+		},
+	)
+
+	m.assertBatchesLen(1)
+	m.assertResourceObjectLen(0)
+	m.assertResource(0, func(res pcommon.Resource) {
+		assert.Equal(t, 3, res.Attributes().Len())
+		assertResourceHasStringAttribute(t, res, "k8s.hpa.uid", hpaUID)
+		assertResourceHasStringAttribute(t, res, "k8s.hpa.label.team", "checkout")
+		assertResourceHasStringAttribute(t, res, "k8s.hpa.annotation.owner", "sre")
 	})
 }
 
@@ -2510,6 +2568,33 @@ func TestGetAttributesForPodsCronJob(t *testing.T) {
 
 	// Test getting attributes for non-existent cronjob
 	attrs = p.getAttributesForPodsCronJob("non-existent")
+	assert.Nil(t, attrs)
+}
+
+func TestGetAttributesForHPA(t *testing.T) {
+	kc := &fakeClient{
+		HPAs: map[string]*kube.HPA{
+			"hpa-abc": {
+				Name: "test-hpa",
+				UID:  "hpa-abc",
+				Attributes: map[string]string{
+					"k8s.hpa.label.team": "checkout",
+				},
+			},
+		},
+	}
+
+	p := &kubernetesprocessor{
+		kc: kc,
+	}
+
+	// Test getting attributes for existing hpa
+	attrs := p.getAttributesForHPA("hpa-abc")
+	assert.NotNil(t, attrs)
+	assert.Equal(t, "checkout", attrs["k8s.hpa.label.team"])
+
+	// Test getting attributes for non-existent hpa
+	attrs = p.getAttributesForHPA("non-existent")
 	assert.Nil(t, attrs)
 }
 

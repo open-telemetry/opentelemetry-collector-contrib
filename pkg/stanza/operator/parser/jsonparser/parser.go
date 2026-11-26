@@ -45,7 +45,9 @@ func (p *Parser) parse(value any) (any, error) {
 			if err != nil {
 				return nil, err
 			}
-			convertNumbers(parsedValue)
+			if err := convertNumbers(parsedValue); err != nil {
+				return nil, err
+			}
 		} else {
 			err := json.Unmarshal([]byte(m), &parsedValue)
 			if err != nil {
@@ -59,40 +61,54 @@ func (p *Parser) parse(value any) (any, error) {
 	return parsedValue, nil
 }
 
-func convertNumbers(parsedValue map[string]any) {
+func convertNumbers(parsedValue map[string]any) error {
 	for k, v := range parsedValue {
 		switch t := v.(type) {
 		case json.Number:
-			parsedValue[k] = convertNumber(t)
+			converted, err := convertNumber(t)
+			if err != nil {
+				return err
+			}
+			parsedValue[k] = converted
 		case map[string]any:
-			convertNumbers(t)
+			if err := convertNumbers(t); err != nil {
+				return err
+			}
 		case []any:
-			convertNumbersArray(t)
+			if err := convertNumbersArray(t); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
-func convertNumbersArray(arr []any) {
+func convertNumbersArray(arr []any) error {
 	for i, v := range arr {
 		switch t := v.(type) {
 		case json.Number:
-			arr[i] = convertNumber(t)
+			converted, err := convertNumber(t)
+			if err != nil {
+				return err
+			}
+			arr[i] = converted
 		case map[string]any:
-			convertNumbers(t)
+			if err := convertNumbers(t); err != nil {
+				return err
+			}
 		case []any:
-			convertNumbersArray(t)
+			if err := convertNumbersArray(t); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
-func convertNumber(value json.Number) any {
-	i64, err := value.Int64()
-	if err == nil {
-		return i64
+// UseNumber only checks syntax, so return Float64's range error to keep out-of-range numbers failing the parse instead of becoming strings.
+func convertNumber(value json.Number) (any, error) {
+	if i64, err := value.Int64(); err == nil {
+		return i64, nil
 	}
-	f64, err := value.Float64()
-	if err == nil {
-		return f64
-	}
-	return value.String()
+	return value.Float64()
 }

@@ -61,7 +61,7 @@ func newLogsReceiver(
 
 	var dataSource string
 	if config.Config.DataSource != "" {
-		dataSource = config.Config.DataSource
+		dataSource = string(config.Config.DataSource)
 	} else {
 		dataSource, err = sqlquery.BuildDataSourceString(config.Config)
 		if err != nil {

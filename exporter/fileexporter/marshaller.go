@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
 // Marshaler configuration used for marshaling Protobuf
@@ -47,28 +48,34 @@ type marshaller struct {
 	compressor  compressFunc
 
 	formatType string
+
+	// lineDelimited is set when the encoding extension produces stream-decodable text.
+	lineDelimited bool
 }
 
 func newMarshaller(conf *Config, host component.Host) (*marshaller, error) {
 	// When native compression is enabled, skip message-level compression
 	// since the compressingWriter handles it at the file stream level.
 	compression := conf.Compression
-	compressor := buildCompressor(conf.Compression)
-	if conf.Compression != "" && metadata.ExporterFileNativeCompressionFeatureGate.IsEnabled() {
+	if metadata.ExporterFileNativeCompressionFeatureGate.IsEnabled() {
 		compression = ""
-		compressor = noneCompress
+	}
+	compressor, err := buildCompressor(compression, int(conf.CompressionParams.Level))
+	if err != nil {
+		return nil, err
 	}
 
 	if conf.Encoding != nil {
-		encoding := host.GetExtensions()[*conf.Encoding]
-		if encoding == nil {
+		ext := host.GetExtensions()[*conf.Encoding]
+		if ext == nil {
 			return nil, fmt.Errorf("unknown encoding %q", conf.Encoding)
 		}
 		// cast with ok to avoid panics.
-		tm, _ := encoding.(ptrace.Marshaler)
-		mm, _ := encoding.(pmetric.Marshaler)
-		lm, _ := encoding.(plog.Marshaler)
-		pm, _ := encoding.(pprofile.Marshaler)
+		tm, _ := ext.(ptrace.Marshaler)
+		mm, _ := ext.(pmetric.Marshaler)
+		lm, _ := ext.(plog.Marshaler)
+		pm, _ := ext.(pprofile.Marshaler)
+		_, lineDelimited := ext.(encoding.LogsDecoderFactory)
 		return &marshaller{
 			tracesMarshaler:   tm,
 			metricsMarshaler:  mm,
@@ -76,6 +83,7 @@ func newMarshaller(conf *Config, host component.Host) (*marshaller, error) {
 			profilesMarshaler: pm,
 			compression:       compression,
 			compressor:        compressor,
+			lineDelimited:     lineDelimited,
 		}, nil
 	}
 	return &marshaller{

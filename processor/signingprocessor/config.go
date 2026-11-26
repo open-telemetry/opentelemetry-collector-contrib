@@ -8,6 +8,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 const (
@@ -70,8 +71,15 @@ type SecretConfig struct {
 // EnvKeyConfig configures inline key material whose values are resolved by the
 // confmap provider (e.g. via ${env:VAR_NAME} substitution in the collector
 // config). Each field holds the actual PEM text or base64-encoded key, not an
-// env-var name.
-type EnvKeyConfig SecretConfig
+// env-var name, so the secret fields are opaque to avoid leaking them when the
+// configuration is marshaled.
+type EnvKeyConfig struct {
+	// Asymmetric key fields
+	Certificate string              `mapstructure:"certificate"`
+	PrivateKey  configopaque.String `mapstructure:"private_key"`
+	// HMAC-SHA256 field
+	HMACKey configopaque.String `mapstructure:"hmac_key"`
+}
 
 // FileKeyConfig configures file-based key material.
 type FileKeyConfig SecretConfig
@@ -89,10 +97,10 @@ type K8sSecretConfig struct {
 // MountPath is the KV v2 engine mount point (default: "secret").
 // SecretPath is the path to the secret within that mount (e.g. "signing").
 type BaoKeyConfig struct {
-	Address      string `mapstructure:"address"`
-	Token        string `mapstructure:"token"`
-	MountPath    string `mapstructure:"mount_path"`
-	SecretPath   string `mapstructure:"secret_path"`
+	Address      string              `mapstructure:"address"`
+	Token        configopaque.String `mapstructure:"token"`
+	MountPath    string              `mapstructure:"mount_path"`
+	SecretPath   string              `mapstructure:"secret_path"`
 	SecretConfig `mapstructure:",squash"`
 }
 

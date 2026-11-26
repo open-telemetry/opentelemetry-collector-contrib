@@ -47,3 +47,8 @@ timestamp:
     parse_from: body.timestamp_field
     layout_type: strptime
     layout: '%Y-%m-%d'
+rfc3164_timestamp_options:
+  type: syslog_parser
+  protocol: rfc3164
+  allow_rfc3339_timestamp: true
+  allow_second_fractions: true

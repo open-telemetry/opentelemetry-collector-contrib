@@ -7,10 +7,10 @@ description: |
 status:
   class: receiver
   stability:
-    beta: [traces]
+    unmaintained: [traces]
   distributions: [contrib]
   codeowners:
-    active: [mcardy]
+    emeritus: [mcardy]
 
 # TODO: Update the receiver to pass the tests
 tests:
