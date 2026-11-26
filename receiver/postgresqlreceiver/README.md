@@ -272,7 +272,9 @@ that inherit it, so grant `TEMPORARY` directly to roles that need it:
 REVOKE TEMPORARY ON DATABASE example_db FROM PUBLIC;
 ```
 
-The helper refuses to run for a caller that has `TEMPORARY` on the current database.
+Apply these restrictions to the monitoring role and any role it can assume.
+The helper refuses to run for a caller that has `TEMPORARY` on the current database
+or whose session contains temporary functions. The session check allows temporary tables.
 
 The execute grant amounts to `SELECT` on everything the helper owner can read.
 Built-in functions can also read tables during planning, so the restrictions above

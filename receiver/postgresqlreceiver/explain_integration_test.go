@@ -121,22 +121,28 @@ GRANT EXECUTE ON FUNCTION otel.explain_statement(text) TO monitor;`)
 				assert.Equal(t, 1, count)
 			})
 
-			t.Run("refuses callers that can create temporary functions", func(t *testing.T) {
+			t.Run("checks temporary privileges and functions", func(t *testing.T) {
 				_, err := admin.ExecContext(t.Context(), "GRANT TEMPORARY ON DATABASE otel TO monitor")
 				require.NoError(t, err)
-				// Planning folds this IMMUTABLE call and would run it as the helper owner.
-				_, err = monitor.ExecContext(t.Context(), `
-CREATE FUNCTION pg_temp.leak(integer) RETURNS integer LANGUAGE plpgsql IMMUTABLE
-AS $$ BEGIN RAISE EXCEPTION 'leaked %', (SELECT value FROM public.explain_items WHERE id = 1); END; $$;`)
-				require.NoError(t, err)
-				_, err = client.explainQuery(t.Context(), "SELECT pg_temp.leak(1)", "leak", quoted, zap.NewNop())
 				var queryErr *pq.Error
-				require.ErrorAs(t, err, &queryErr)
+				require.ErrorAs(t, client.probeExplainFunction(t.Context(), quoted), &queryErr)
 				assert.Equal(t, "42501", queryErr.SQLState())
-				assert.NotContains(t, queryErr.Message, "leaked")
-				_, err = monitor.ExecContext(t.Context(), "DROP FUNCTION pg_temp.leak(integer)")
+				assert.Contains(t, queryErr.Message, "TEMPORARY privilege")
+
+				_, err = monitor.ExecContext(t.Context(), `
+CREATE TEMP TABLE explain_temp(id integer);
+CREATE FUNCTION pg_temp.example() RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$;`)
 				require.NoError(t, err)
 				_, err = admin.ExecContext(t.Context(), "REVOKE TEMPORARY ON DATABASE otel FROM monitor")
+				require.NoError(t, err)
+				require.ErrorAs(t, client.probeExplainFunction(t.Context(), quoted), &queryErr)
+				assert.Equal(t, "42501", queryErr.SQLState())
+				assert.Contains(t, queryErr.Message, "sessions with temporary functions")
+
+				_, err = monitor.ExecContext(t.Context(), "DROP FUNCTION pg_temp.example()")
+				require.NoError(t, err)
+				require.NoError(t, client.probeExplainFunction(t.Context(), quoted))
+				_, err = monitor.ExecContext(t.Context(), "DROP TABLE pg_temp.explain_temp")
 				require.NoError(t, err)
 			})
 

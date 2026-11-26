@@ -26,6 +26,15 @@ BEGIN
             USING ERRCODE = '42501';
     END IF;
 
+    -- Temporary functions survive changes to the caller's role or privileges.
+    IF EXISTS (
+        SELECT 1 FROM pg_catalog.pg_proc
+        WHERE pronamespace = pg_catalog.pg_my_temp_schema()
+    ) THEN
+        RAISE EXCEPTION 'EXPLAIN helper refuses sessions with temporary functions'
+            USING ERRCODE = '42501';
+    END IF;
+
     l_query := pg_catalog.regexp_replace(l_query, ';[[:space:]]*$', '');
     -- Reject separators even inside literals or comments rather than parse SQL here.
     -- PREPARE through dynamic EXECUTE otherwise accepts additional commands.
