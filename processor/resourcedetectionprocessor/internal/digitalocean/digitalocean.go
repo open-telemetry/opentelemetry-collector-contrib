@@ -8,30 +8,32 @@ package digitalocean // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"errors"
-	"fmt"
 
-	do "github.com/digitalocean/go-metadata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
+	dodetector "go.opentelemetry.io/contrib/detectors/digitalocean"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/digitalocean/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/sdkbridge"
 )
 
 var _ internal.Detector = (*Detector)(nil)
 
-// newDigitalOceanClient is overridden in tests to point the client at a fake server.
-var newDigitalOceanClient = func() *do.Client {
-	return do.NewClient()
+// newResourceDetector is overridden in tests to substitute a fake SDK detector.
+var newResourceDetector = func() sdkresource.Detector {
+	return dodetector.NewResourceDetector()
 }
 
-// Detector is a DigitalOcean metadata detector.
+// Detector is a DigitalOcean metadata detector. Detection is delegated to the upstream
+// SDK detector so that the attributes reported here match the ones the collector's own
+// telemetry reports.
 type Detector struct {
-	client                *do.Client
+	detector              sdkresource.Detector
 	logger                *zap.Logger
-	rb                    *metadata.ResourceBuilder
+	resourceAttributes    metadata.ResourceAttributesConfig
 	failOnMissingMetadata bool
 }
 
@@ -40,31 +42,36 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissi
 	cfg := dcfg.(Config)
 
 	return &Detector{
-		client:                newDigitalOceanClient(),
+		detector:              newResourceDetector(),
 		logger:                p.Logger,
-		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		resourceAttributes:    cfg.ResourceAttributes,
 		failOnMissingMetadata: failOnMissingMetadata,
 	}, nil
 }
 
-// Detect detects system metadata and returns a resource with the available ones.
-func (d *Detector) Detect(_ context.Context) (pcommon.Resource, string, error) {
-	md, err := d.client.Metadata()
-	if err != nil || md == nil {
-		d.logger.Debug("DigitalOcean detector: not running on DigitalOcean or metadata unavailable", zap.Error(err))
+// Detect queries the DigitalOcean metadata service and returns a populated resource.
+func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+	// A partial result still came from a reachable metadata service, so the bridge keeps
+	// what it did return. fail_on_missing_metadata covers an unusable metadata service,
+	// not individual fields absent from its response.
+	res, schemaURL, err := sdkbridge.Detect(ctx, d.detector)
+	if err != nil {
+		d.logger.Debug("DigitalOcean metadata unavailable", zap.Error(err))
 		if d.failOnMissingMetadata {
-			if err == nil {
-				err = errors.New("digitalocean metadata is nil")
-			}
-			return pcommon.NewResource(), "", fmt.Errorf("digitalocean metadata unavailable: %w", err)
+			return pcommon.NewResource(), "", err
 		}
 		return pcommon.NewResource(), "", nil
 	}
 
-	d.rb.SetCloudProvider(TypeStr)
-	d.rb.SetHostID(fmt.Sprintf("%d", md.DropletID))
-	d.rb.SetHostName(md.Hostname)
-	d.rb.SetCloudRegion(md.Region)
+	// The SDK detector reports an empty resource and no error when not running on a Droplet.
+	if res.Attributes().Len() == 0 {
+		d.logger.Debug("DigitalOcean detector: not running on a Droplet")
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errors.New("digitalocean metadata unavailable")
+		}
+		return pcommon.NewResource(), "", nil
+	}
 
-	return d.rb.Emit(), conventions.SchemaURL, nil
+	sdkbridge.RemoveDisabledAttributes(res, d.resourceAttributes)
+	return res, schemaURL, nil
 }

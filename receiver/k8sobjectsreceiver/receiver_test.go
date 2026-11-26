@@ -17,9 +17,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/strmatch"
 	"k8s.io/apimachinery/pkg/runtime"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic/fake"
@@ -656,7 +656,7 @@ func TestNamespaceDenyListWatchObject(t *testing.T) {
 		{
 			Name: "pods",
 			Mode: k8sinventory.WatchMode,
-			ExcludeNamespaces: []filter.Config{
+			ExcludeNamespaces: []strmatch.Config{
 				{
 					Regex: "default_ignore",
 				},
