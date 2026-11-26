@@ -61,13 +61,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ExtensionRedisFleetTrackerHeartbeatFailures, err = builder.meter.Int64Counter(
 		"otelcol_extension_redis_fleet_tracker_heartbeat_failures",
 		metric.WithDescription("Number of heartbeat or observe errors. [Development]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{error}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExtensionRedisFleetTrackerMemberCount, err = builder.meter.Int64Gauge(
 		"otelcol_extension_redis_fleet_tracker_member_count",
 		metric.WithDescription("Current live member count observed for the fleet. [Development]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{member}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

@@ -25,7 +25,7 @@ func AssertEqualExtensionRedisFleetTrackerHeartbeatFailures(t *testing.T, tt *co
 	want := metricdata.Metrics{
 		Name:        "otelcol_extension_redis_fleet_tracker_heartbeat_failures",
 		Description: "Number of heartbeat or observe errors. [Development]",
-		Unit:        "1",
+		Unit:        "{error}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -41,7 +41,7 @@ func AssertEqualExtensionRedisFleetTrackerMemberCount(t *testing.T, tt *componen
 	want := metricdata.Metrics{
 		Name:        "otelcol_extension_redis_fleet_tracker_member_count",
 		Description: "Current live member count observed for the fleet. [Development]",
-		Unit:        "1",
+		Unit:        "{member}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
 		},

@@ -26,7 +26,7 @@ telemetry:
   metrics:
     extension_redis_fleet_tracker_heartbeat_failures:
       description: Number of heartbeat or observe errors.
-      unit: "1"
+      unit: "{error}"
       enabled: true
       stability: development
       sum:
@@ -34,7 +34,7 @@ telemetry:
         monotonic: true
     extension_redis_fleet_tracker_member_count:
       description: Current live member count observed for the fleet.
-      unit: "1"
+      unit: "{member}"
       enabled: true
       stability: development
       gauge:
