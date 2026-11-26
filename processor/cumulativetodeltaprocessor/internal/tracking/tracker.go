@@ -220,11 +220,11 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 			delta.Count -= prevValue.Count
 			delta.Sum -= prevValue.Sum
 			if math.IsNaN(delta.Sum) {
-				// NaN delta arises when the current point's Sum is NaN (unset).
-				// Emit zero for the delta and carry the previous Sum forward in
-				// the stored baseline so that subsequent non-NaN points still
-				// compute correct deltas.
-				delta.Sum = 0
+				// The delta Sum is NaN when the current point has no Sum or when the baseline has none.
+				// Either way the Sum of the interval is not known, so it is left NaN for the caller to
+				// drop rather than reported as 0. When the current point has no Sum, the previous Sum
+				// is carried forward in the stored baseline so that subsequent points with a Sum
+				// still compute correct deltas.
 				if math.IsNaN(value.Sum) {
 					histCopy := value.Clone()
 					histCopy.Sum = prevValue.Sum
@@ -234,6 +234,12 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 			for index, prevBucket := range prevValue.BucketCounts {
 				delta.BucketCounts[index] -= prevBucket
 			}
+		} else if math.IsNaN(value.Sum) {
+			// The point becomes the new baseline but has no Sum (bucket layout changed), so keep the
+			// previous Sum instead of losing it.
+			histCopy := value.Clone()
+			histCopy.Sum = prevValue.Sum
+			metricPoint.HistogramValue = &histCopy
 		}
 
 		out.HistogramValue = &delta
@@ -287,13 +293,11 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool, rea
 
 		// Same NaN Sum handling as for regular histograms. It runs after the reset checks so that
 		// a reset frame with NaN Sum is stored as-is rather than carrying forward the pre-reset Sum.
-		if math.IsNaN(delta.Sum) {
-			delta.Sum = 0
-			if math.IsNaN(value.Sum) {
-				expHistCopy := value.Clone()
-				expHistCopy.Sum = prevValue.Sum
-				metricPoint.ExponentialHistogramValue = &expHistCopy
-			}
+		// A NaN delta Sum is left for the caller to drop, since the Sum of the interval is not known.
+		if math.IsNaN(delta.Sum) && math.IsNaN(value.Sum) {
+			expHistCopy := value.Clone()
+			expHistCopy.Sum = prevValue.Sum
+			metricPoint.ExponentialHistogramValue = &expHistCopy
 		}
 
 		out.ExponentialHistogramPoint = &delta

@@ -255,6 +255,20 @@ func trackedSum(hasSum bool, sum float64, count uint64) float64 {
 	return sum
 }
 
+// setDeltaSum writes the delta sum of a converted histogram data point. A data point that had no sum, or a NaN
+// one, keeps it as it was. A delta sum that is NaN is not known, because the baseline it was diffed against had
+// no sum, so the sum is removed rather than reported as 0.
+func setDeltaSum(hasSum bool, sum, deltaSum float64, set func(float64), remove func()) {
+	if !hasSum || math.IsNaN(sum) {
+		return
+	}
+	if math.IsNaN(deltaSum) {
+		remove()
+		return
+	}
+	set(deltaSum)
+}
+
 func (ctdp *cumulativeToDeltaProcessor) convertNumberDataPoints(ctx context.Context, dps pmetric.NumberDataPointSlice, baseIdentity tracking.MetricIdentity) {
 	attrs := metricTypeAttrs[pmetric.MetricTypeSum]
 	dps.RemoveIf(func(dp pmetric.NumberDataPoint) bool {
@@ -331,9 +345,7 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(ctx context.C
 			ctdp.telemetry.CumulativetodeltaDatapoints.Add(ctx, 1, attrs)
 			dp.SetStartTimestamp(delta.StartTimestamp)
 			dp.SetCount(delta.HistogramValue.Count)
-			if dp.HasSum() && !math.IsNaN(dp.Sum()) {
-				dp.SetSum(delta.HistogramValue.Sum)
-			}
+			setDeltaSum(dp.HasSum(), dp.Sum(), delta.HistogramValue.Sum, dp.SetSum, dp.RemoveSum)
 			dp.ExplicitBounds().FromRaw(delta.HistogramValue.BucketBounds)
 			dp.BucketCounts().FromRaw(delta.HistogramValue.BucketCounts)
 			dp.RemoveMin()
@@ -386,9 +398,7 @@ func (ctdp *cumulativeToDeltaProcessor) convertExponentialHistogramDataPoints(ct
 			ctdp.telemetry.CumulativetodeltaDatapoints.Add(ctx, 1, attrs)
 			dp.SetStartTimestamp(delta.StartTimestamp)
 			dp.SetCount(delta.ExponentialHistogramPoint.Count)
-			if dp.HasSum() && !math.IsNaN(dp.Sum()) {
-				dp.SetSum(delta.ExponentialHistogramPoint.Sum)
-			}
+			setDeltaSum(dp.HasSum(), dp.Sum(), delta.ExponentialHistogramPoint.Sum, dp.SetSum, dp.RemoveSum)
 			// Scale and ZeroThreshold are unchanged
 			dp.SetZeroCount(delta.ExponentialHistogramPoint.ZeroCount)
 			dp.Positive().SetOffset(delta.ExponentialHistogramPoint.Positive.Offset)

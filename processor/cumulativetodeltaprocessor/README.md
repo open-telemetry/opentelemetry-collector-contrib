@@ -143,7 +143,12 @@ data points therefore add up to the growth of the cumulative sum.
 
 A data point without a sum and without observations (`count` of 0) has a sum of 0, as OTLP requires, so it counts as a
 recorded sum. If a stream starts, or restarts after a reset, with a data point that has observations but no sum, there
-is no recorded sum to diff against, and the delta sum of the next data point with a sum is 0.
+is no recorded sum to diff against, so the sum of the next delta data point is not known and it is emitted without a
+sum. The sum is not reported as 0, since that would claim that the observations of the interval summed to 0. The data
+point after it is diffed against the recorded sum as usual.
+
+A data point that is dropped because its bucket boundaries changed becomes the new baseline. If it has no sum, the last
+recorded sum stays as the baseline.
 
 ## Troubleshooting
 

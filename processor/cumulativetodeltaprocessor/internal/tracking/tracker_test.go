@@ -449,13 +449,17 @@ func TestMetricTracker_ConvertExponentialHistogramNaNSum(t *testing.T) {
 		expectedSum   float64
 	}{
 		{name: "initial point", count: 10, sum: 1000, expectedCount: 10, expectedSum: 1000},
-		{name: "NaN sum gives a zero delta sum", count: 20, sum: math.NaN(), expectedCount: 10, expectedSum: 0},
+		{name: "NaN sum gives a NaN delta sum", count: 20, sum: math.NaN(), expectedCount: 10, expectedSum: math.NaN()},
 		{name: "next sum is diffed against the sum before the NaN", count: 30, sum: 1200, expectedCount: 10, expectedSum: 200},
 		{name: "following sum is diffed as usual", count: 40, sum: 1300, expectedCount: 10, expectedSum: 100},
 	} {
 		out, valid, _ := m.Convert(point(tc.count, tc.sum))
 		require.True(t, valid, tc.name)
 		assert.Equal(t, tc.expectedCount, out.ExponentialHistogramPoint.Count, tc.name)
+		if math.IsNaN(tc.expectedSum) {
+			assert.True(t, math.IsNaN(out.ExponentialHistogramPoint.Sum), tc.name)
+			continue
+		}
 		assert.InDelta(t, tc.expectedSum, out.ExponentialHistogramPoint.Sum, 1e-9, tc.name)
 	}
 }
@@ -498,12 +502,12 @@ func TestMetricTracker_ConvertExponentialHistogramResetRecoveryNaNSum(t *testing
 	require.False(t, valid)
 	assert.Equal(t, ReasonReset, reason)
 
-	// The baseline Sum is NaN, so there is nothing to diff against: the Sum delta is zero
-	// rather than the negative value a carried-forward pre-reset Sum would give.
+	// The baseline Sum is NaN, so there is nothing to diff against: the Sum of the interval is not known,
+	// so the delta Sum is NaN, not 0 and not the negative value a carried-forward pre-reset Sum would give.
 	out, valid, _ := m.Convert(point(25, 250))
 	require.True(t, valid)
 	assert.Equal(t, uint64(15), out.ExponentialHistogramPoint.Count)
-	assert.InDelta(t, 0.0, out.ExponentialHistogramPoint.Sum, 1e-9)
+	assert.True(t, math.IsNaN(out.ExponentialHistogramPoint.Sum))
 
 	// The valid Sum is now the baseline, so the following delta is exact.
 	out, valid, _ = m.Convert(point(40, 400))
@@ -546,11 +550,11 @@ func TestMetricTracker_ConvertHistogramResetRecoveryNaNSum(t *testing.T) {
 	require.False(t, valid)
 	assert.Equal(t, ReasonReset, reason)
 
-	// Post-reset growth. The Sum delta must never be negative for a monotonic
-	// histogram; a NaN reset frame must not leave the pre-reset Sum as the baseline.
+	// Post-reset growth. A NaN reset frame must not leave the pre-reset Sum as the baseline, which would
+	// give a negative Sum delta, and the Sum of the interval is not known, so the delta Sum is NaN.
 	out, valid, _ := m.Convert(point(8, 80, []uint64{3, 5}))
 	require.True(t, valid)
-	assert.GreaterOrEqual(t, out.HistogramValue.Sum, 0.0)
+	assert.True(t, math.IsNaN(out.HistogramValue.Sum))
 }
 
 func TestMetricTracker_ConvertHistogramBucketDropResetRecovery(t *testing.T) {
