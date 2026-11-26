@@ -71,14 +71,27 @@ func TestMetricsBuilderConfigForFeatureGate(t *testing.T) {
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlBlksRead.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlCommits.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlDbSize.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlDatabaseMxidAge.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlDatabaseXidAge.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlDeadlocks.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlIndexScans.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlIndexSize.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlRollbacks.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlSequentialScans.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableAnalyzeCount.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableAutoanalyzeCount.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableAutovacuumCount.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableCount.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableInsertsSinceVacuum.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableLastAnalyzeAge.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableLastAutoanalyzeAge.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableLastAutovacuumAge.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableLastVacuumAge.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableModificationsSinceAnalyze.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableMxidAge.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableSize.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableVacuumCount.EnabledAttributes)
+	assert.Empty(t, legacyConfig.Metrics.PostgresqlTableXidAge.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTempIo.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTempFiles.EnabledAttributes)
 	assert.Empty(t, legacyConfig.Metrics.PostgresqlTupDeleted.EnabledAttributes)
@@ -289,6 +302,49 @@ func TestScraperVectorMetrics(t *testing.T) {
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceMetricsOrder(),
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+}
+
+func TestScraperMaintenanceMetrics(t *testing.T) {
+	factory := new(mockClientFactory)
+	factory.initMocks([]string{"otel"})
+
+	runTest := func(useOTelSemconv bool, file string) {
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, false)()
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlUseOTelSemconvFeatureGate, useOTelSemconv)()
+
+		// Enable only the vacuum, analyze and wraparound metrics, so the golden file shows
+		// exactly what they add.
+		cfg := allMetricsDisabledConfig()
+		cfg.Databases = []string{"otel"}
+		for _, field := range []string{
+			"PostgresqlDatabaseXidAge", "PostgresqlDatabaseMxidAge",
+			"PostgresqlTableAutovacuumCount", "PostgresqlTableAnalyzeCount", "PostgresqlTableAutoanalyzeCount",
+			"PostgresqlTableModificationsSinceAnalyze",
+			"PostgresqlTableLastVacuumAge", "PostgresqlTableLastAutovacuumAge",
+			"PostgresqlTableLastAnalyzeAge", "PostgresqlTableLastAutoanalyzeAge",
+			"PostgresqlTableInsertsSinceVacuum", "PostgresqlTableXidAge", "PostgresqlTableMxidAge",
+		} {
+			enableMetricField(cfg, field)
+		}
+
+		scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+		require.NoError(t, err)
+
+		actualMetrics, err := scraper.scrape(t.Context())
+		require.NoError(t, err)
+
+		expectedFile := filepath.Join("testdata", "scraper", "otel", file)
+		// Uncomment line below to re-generate expected metrics.
+		// golden.WriteMetrics(t, expectedFile, actualMetrics)
+		expectedMetrics, err := golden.ReadMetrics(expectedFile)
+		require.NoError(t, err)
+
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceAttributeValue("service.instance.id"), pmetrictest.IgnoreResourceAttributeValue("server.address"), pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+	}
+
+	runTest(false, "expected_maintenance.yaml")
+	runTest(true, "expected_maintenance_semconv.yaml")
 }
 
 func TestGetVectorSearchStats(t *testing.T) {
@@ -2430,9 +2486,14 @@ func (m *mockClient) getDatabaseSize(_ context.Context, databases []string) (map
 	return args.Get(0).(map[databaseName]int64), args.Error(1)
 }
 
-func (m *mockClient) getDatabaseTableMetrics(ctx context.Context, database string) (map[tableIdentifier]tableStats, error) {
-	args := m.Called(ctx, database)
-	return args.Get(0).(map[tableIdentifier]tableStats), args.Error(1)
+func (m *mockClient) getDatabaseIDAges(_ context.Context, databases []string) (map[databaseName]databaseIDAge, error) {
+	args := m.Called(databases)
+	return args.Get(0).(map[databaseName]databaseIDAge), args.Error(1)
+}
+
+func (m *mockClient) getDatabaseTableMetrics(ctx context.Context, database string, includeMaintenance bool) (map[tableIdentifier]*tableStats, error) {
+	args := m.Called(ctx, database, includeMaintenance)
+	return args.Get(0).(map[tableIdentifier]*tableStats), args.Error(1)
 }
 
 func (m *mockClient) getBlocksReadByTable(ctx context.Context, database string) (map[tableIdentifier]tableIOStats, error) {
@@ -2536,6 +2597,7 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		dbStats := map[databaseName]databaseStats{}
 		dbConflictStats := map[databaseName]databaseConflictStats{}
 		dbSize := map[databaseName]int64{}
+		dbIDAges := map[databaseName]databaseIDAge{}
 		backends := map[databaseName]int64{}
 		execDuration := map[databaseName]float64{}
 
@@ -2562,6 +2624,10 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 				conflDeadlock:   int64(idx + 17),
 			}
 			dbSize[databaseName(db)] = int64(idx + 4)
+			dbIDAges[databaseName(db)] = databaseIDAge{
+				xidAge:  int64(idx + 150_000_000),
+				mxidAge: int64(idx + 2_000_000),
+			}
 			backends[databaseName(db)] = int64(idx + 3)
 			execDuration[databaseName(db)] = float64(idx+1) + 0.5
 		}
@@ -2570,6 +2636,7 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 		m.On("getDatabaseConflicts", databases).Return(dbConflictStats, nil)
 		m.On("getExecutionTimeStats", databases).Return(execDuration, nil)
 		m.On("getDatabaseSize", databases).Return(dbSize, nil)
+		m.On("getDatabaseIDAges", databases).Return(dbIDAges, nil)
 		m.On("getBackends", databases).Return(backends, nil)
 		m.On("getBGWriterStats", mock.Anything).Return(&bgStat{
 			checkpointsReq:       1,
@@ -2631,7 +2698,7 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 	} else {
 		table1 := "table1"
 		table2 := "table2"
-		tableMetrics := map[tableIdentifier]tableStats{
+		tableMetrics := map[tableIdentifier]*tableStats{
 			tableKey(database, schema, table1): {
 				database:    database,
 				schema:      schema,
@@ -2645,6 +2712,18 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 				size:        int64(index + 43),
 				vacuumCount: int64(index + 44),
 				seqScans:    int64(index + 45),
+
+				autovacuumCount:    int64(index + 80),
+				analyzeCount:       int64(index + 81),
+				autoanalyzeCount:   int64(index + 82),
+				modSinceAnalyze:    int64(index + 83),
+				lastVacuumAge:      float64(index) + 3600.25,
+				lastAutovacuumAge:  float64(index) + 60.5,
+				lastAnalyzeAge:     float64(index) + 7200.75,
+				lastAutoanalyzeAge: float64(index) + 120.125,
+				insSinceVacuum:     int64(index + 84),
+				xidAge:             int64(index + 50_000_000),
+				mxidAge:            int64(index + 400_000),
 			},
 			tableKey(database, schema, table2): {
 				database:    database,
@@ -2659,6 +2738,16 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 				size:        int64(index + 47),
 				vacuumCount: int64(index + 48),
 				seqScans:    int64(index + 49),
+
+				// Never vacuumed or analyzed, a partitioned table, on a server before PG 13:
+				// the client reports -1 for every age and for the inserts since vacuum.
+				lastVacuumAge:      -1,
+				lastAutovacuumAge:  -1,
+				lastAnalyzeAge:     -1,
+				lastAutoanalyzeAge: -1,
+				insSinceVacuum:     -1,
+				xidAge:             -1,
+				mxidAge:            -1,
 			},
 		}
 
@@ -2691,7 +2780,7 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 			},
 		}
 
-		m.On("getDatabaseTableMetrics", mock.Anything, database).Return(tableMetrics, nil)
+		m.On("getDatabaseTableMetrics", mock.Anything, database, mock.Anything).Return(tableMetrics, nil)
 		m.On("getBlocksReadByTable", mock.Anything, database).Return(blocksMetrics, nil)
 		m.On("getTableCount", mock.Anything).Return(int64(len(tableMetrics)), nil)
 
@@ -2819,7 +2908,7 @@ func TestScraperSkipsQueriesForDisabledMetrics(t *testing.T) {
 
 	// Queries with no remaining enabled consumer must not run.
 	dbClient.AssertNumberOfCalls(t, "getTableCount", 1)
-	dbClient.AssertNotCalled(t, "getDatabaseTableMetrics", mock.Anything, mock.Anything)
+	dbClient.AssertNotCalled(t, "getDatabaseTableMetrics", mock.Anything, mock.Anything, mock.Anything)
 	dbClient.AssertNotCalled(t, "getBlocksReadByTable", mock.Anything, mock.Anything)
 	dbClient.AssertNotCalled(t, "getIndexStats", mock.Anything, mock.Anything)
 	dbClient.AssertNotCalled(t, "getFunctionStats", mock.Anything, mock.Anything)
@@ -2897,6 +2986,11 @@ func TestScraperSkipsServerWideQueriesForDisabledMetrics(t *testing.T) {
 			mockMethod: "getBGWriterStats",
 		},
 		{
+			name:           "getDatabaseIDAges skipped when both ID age metrics are left at their disabled default",
+			disableMetrics: func(*Config) {},
+			mockMethod:     "getDatabaseIDAges",
+		},
+		{
 			name:           "getMaxConnections skipped when postgresql.connection.max disabled",
 			disableMetrics: func(cfg *Config) { cfg.MetricsBuilderConfig.Metrics.PostgresqlConnectionMax.Enabled = false },
 			mockMethod:     "getMaxConnections",
@@ -2958,7 +3052,7 @@ func TestCollectDatabaseLocksError(t *testing.T) {
 func TestCollectTablesSkipsUnavailableSize(t *testing.T) {
 	c := new(mockClient)
 	c.On("getBlocksReadByTable", mock.Anything, "otel").Return(map[tableIdentifier]tableIOStats{}, nil)
-	c.On("getDatabaseTableMetrics", mock.Anything, "otel").Return(map[tableIdentifier]tableStats{
+	c.On("getDatabaseTableMetrics", mock.Anything, "otel", mock.Anything).Return(map[tableIdentifier]*tableStats{
 		tableKey("otel", "public", "kept"):    {database: "otel", schema: "public", table: "kept", live: 10, size: 8192},
 		tableKey("otel", "public", "dropped"): {database: "otel", schema: "public", table: "dropped", live: 11, size: -1},
 	}, nil)
@@ -2979,6 +3073,37 @@ func TestCollectTablesSkipsUnavailableSize(t *testing.T) {
 	assert.Equal(t, 8, counts["postgresql.operations"])
 	assert.Equal(t, 2, counts["postgresql.table.vacuum.count"])
 	assert.Equal(t, 2, counts["postgresql.sequential_scans"])
+}
+
+func TestCollectTablesRequestsMaintenanceColumnsOnlyWhenEnabled(t *testing.T) {
+	for _, tc := range []struct {
+		name               string
+		enable             string
+		includeMaintenance bool
+	}{
+		{name: "default config", includeMaintenance: false},
+		{name: "maintenance count enabled", enable: "PostgresqlTableAutovacuumCount", includeMaintenance: true},
+		{name: "maintenance age enabled", enable: "PostgresqlTableLastAutoanalyzeAge", includeMaintenance: true},
+		{name: "table xid age enabled", enable: "PostgresqlTableXidAge", includeMaintenance: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			c := new(mockClient)
+			c.On("getBlocksReadByTable", mock.Anything, "otel").Return(map[tableIdentifier]tableIOStats{}, nil)
+			c.On("getDatabaseTableMetrics", mock.Anything, "otel", tc.includeMaintenance).Return(map[tableIdentifier]*tableStats{}, nil)
+
+			cfg := NewFactory().CreateDefaultConfig().(*Config)
+			if tc.enable != "" {
+				enableMetricField(cfg, tc.enable)
+			}
+			scraper, err := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newDefaultClientFactory(cfg), newCache(1), newTTLCache[string](1, time.Second))
+			require.NoError(t, err)
+
+			var errs errsMux
+			scraper.collectTables(t.Context(), pcommon.NewTimestampFromTime(time.Now()), c, "otel", &errs)
+			require.NoError(t, errs.combine())
+			c.AssertExpectations(t)
+		})
+	}
 }
 
 func TestCollectIndexesSkipsUnavailableSize(t *testing.T) {
@@ -3065,6 +3190,7 @@ type queryGuard struct {
 var queryGuards = []queryGuard{
 	{"backendsMetricsEnabled", (*postgreSQLScraper).backendsMetricsEnabled, []string{"PostgresqlBackends"}},
 	{"dbSizeMetricsEnabled", (*postgreSQLScraper).dbSizeMetricsEnabled, []string{"PostgresqlDbSize"}},
+	{"databaseIDAgeMetricsEnabled", (*postgreSQLScraper).databaseIDAgeMetricsEnabled, []string{"PostgresqlDatabaseXidAge", "PostgresqlDatabaseMxidAge"}},
 	{"databaseConflictsMetricsEnabled", (*postgreSQLScraper).databaseConflictsMetricsEnabled, []string{"PostgresqlQueryConflicts"}},
 	{"executionTimeMetricsEnabled", (*postgreSQLScraper).executionTimeMetricsEnabled, []string{"PostgresqlQueryExecutionTime"}},
 	{"blocksReadMetricsEnabled", (*postgreSQLScraper).blocksReadMetricsEnabled, []string{"PostgresqlBlocksRead"}},
@@ -3083,6 +3209,11 @@ var queryGuards = []queryGuard{
 	{"perTableFieldsMetricsEnabled", (*postgreSQLScraper).perTableFieldsMetricsEnabled, []string{
 		"PostgresqlRows", "PostgresqlOperations", "PostgresqlTableSize",
 		"PostgresqlTableVacuumCount", "PostgresqlSequentialScans",
+		"PostgresqlTableAutovacuumCount", "PostgresqlTableAnalyzeCount", "PostgresqlTableAutoanalyzeCount",
+		"PostgresqlTableModificationsSinceAnalyze",
+		"PostgresqlTableLastVacuumAge", "PostgresqlTableLastAutovacuumAge",
+		"PostgresqlTableLastAnalyzeAge", "PostgresqlTableLastAutoanalyzeAge",
+		"PostgresqlTableInsertsSinceVacuum", "PostgresqlTableXidAge", "PostgresqlTableMxidAge",
 	}},
 	{"vectorSearchMetricsEnabled", (*postgreSQLScraper).vectorSearchMetricsEnabled, []string{
 		"PostgresqlVectorSearchCalls", "PostgresqlVectorSearchDuration", "PostgresqlVectorSearchRowsReturned",

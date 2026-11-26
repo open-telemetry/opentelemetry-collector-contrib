@@ -182,6 +182,8 @@ func metricsBuilderConfigForFeatureGate(config metadata.MetricsBuilderConfig, us
 	metrics.PostgresqlBlocksRead.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlBlocksRead.EnabledAttributes)
 	metrics.PostgresqlCommits.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlCommits.EnabledAttributes)
 	metrics.PostgresqlDatabaseLocks.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlDatabaseLocks.EnabledAttributes)
+	metrics.PostgresqlDatabaseMxidAge.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlDatabaseMxidAge.EnabledAttributes)
+	metrics.PostgresqlDatabaseXidAge.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlDatabaseXidAge.EnabledAttributes)
 	metrics.PostgresqlDbSize.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlDbSize.EnabledAttributes)
 	metrics.PostgresqlDeadlocks.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlDeadlocks.EnabledAttributes)
 	metrics.PostgresqlFunctionCalls.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlFunctionCalls.EnabledAttributes)
@@ -192,9 +194,20 @@ func metricsBuilderConfigForFeatureGate(config metadata.MetricsBuilderConfig, us
 	metrics.PostgresqlRollbacks.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlRollbacks.EnabledAttributes)
 	metrics.PostgresqlRows.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlRows.EnabledAttributes)
 	metrics.PostgresqlSequentialScans.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlSequentialScans.EnabledAttributes)
+	metrics.PostgresqlTableAnalyzeCount.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableAnalyzeCount.EnabledAttributes)
+	metrics.PostgresqlTableAutoanalyzeCount.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableAutoanalyzeCount.EnabledAttributes)
+	metrics.PostgresqlTableAutovacuumCount.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableAutovacuumCount.EnabledAttributes)
 	metrics.PostgresqlTableCount.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableCount.EnabledAttributes)
+	metrics.PostgresqlTableInsertsSinceVacuum.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableInsertsSinceVacuum.EnabledAttributes)
+	metrics.PostgresqlTableLastAnalyzeAge.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableLastAnalyzeAge.EnabledAttributes)
+	metrics.PostgresqlTableLastAutoanalyzeAge.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableLastAutoanalyzeAge.EnabledAttributes)
+	metrics.PostgresqlTableLastAutovacuumAge.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableLastAutovacuumAge.EnabledAttributes)
+	metrics.PostgresqlTableLastVacuumAge.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableLastVacuumAge.EnabledAttributes)
+	metrics.PostgresqlTableModificationsSinceAnalyze.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableModificationsSinceAnalyze.EnabledAttributes)
+	metrics.PostgresqlTableMxidAge.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableMxidAge.EnabledAttributes)
 	metrics.PostgresqlTableSize.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableSize.EnabledAttributes)
 	metrics.PostgresqlTableVacuumCount.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableVacuumCount.EnabledAttributes)
+	metrics.PostgresqlTableXidAge.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTableXidAge.EnabledAttributes)
 	metrics.PostgresqlTempIo.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTempIo.EnabledAttributes)
 	metrics.PostgresqlTempFiles.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTempFiles.EnabledAttributes)
 	metrics.PostgresqlTupDeleted.EnabledAttributes = legacyMetricAttributes(metrics.PostgresqlTupDeleted.EnabledAttributes)
@@ -220,6 +233,7 @@ type dbRetrieval struct {
 	sync.RWMutex
 	backendCountByDB map[databaseName]int64
 	dbSizeMap        map[databaseName]int64
+	dbIDAges         map[databaseName]databaseIDAge
 	dbStats          map[databaseName]databaseStats
 	dbConflictStats  map[databaseName]databaseConflictStats
 	executionTimeMap map[databaseName]float64
@@ -259,6 +273,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	r := &dbRetrieval{
 		backendCountByDB: make(map[databaseName]int64),
 		dbSizeMap:        make(map[databaseName]int64),
+		dbIDAges:         make(map[databaseName]databaseIDAge),
 		dbStats:          make(map[databaseName]databaseStats),
 		dbConflictStats:  make(map[databaseName]databaseConflictStats),
 		executionTimeMap: make(map[databaseName]float64),
@@ -705,6 +720,11 @@ func (p *postgreSQLScraper) dbSizeMetricsEnabled() bool {
 	return p.config.MetricsBuilderConfig.Metrics.PostgresqlDbSize.Enabled
 }
 
+func (p *postgreSQLScraper) databaseIDAgeMetricsEnabled() bool {
+	m := p.config.MetricsBuilderConfig.Metrics
+	return m.PostgresqlDatabaseXidAge.Enabled || m.PostgresqlDatabaseMxidAge.Enabled
+}
+
 func (p *postgreSQLScraper) databaseStatsMetricsEnabled() bool {
 	m := p.config.MetricsBuilderConfig.Metrics
 	return m.PostgresqlCommits.Enabled ||
@@ -752,6 +772,11 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 		go p.retrieveDatabaseSize(ctx, wg, listClient, databases, r, errs)
 	}
 
+	if p.databaseIDAgeMetricsEnabled() {
+		wg.Add(1)
+		go p.retrieveDatabaseIDAges(ctx, wg, listClient, databases, r, errs)
+	}
+
 	if p.databaseStatsMetricsEnabled() {
 		wg.Add(1)
 		go p.retrieveDatabaseStats(ctx, wg, listClient, databases, r, errs)
@@ -778,6 +803,10 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 	}
 	if size, ok := r.dbSizeMap[dbName]; ok {
 		p.mb.RecordPostgresqlDbSizeDataPoint(now, size, db)
+	}
+	if ages, ok := r.dbIDAges[dbName]; ok {
+		p.mb.RecordPostgresqlDatabaseXidAgeDataPoint(now, ages.xidAge, db)
+		p.mb.RecordPostgresqlDatabaseMxidAgeDataPoint(now, ages.mxidAge, db)
 	}
 	if stats, ok := r.dbStats[dbName]; ok {
 		p.mb.RecordPostgresqlCommitsDataPoint(now, stats.transactionCommitted, db)
@@ -827,7 +856,23 @@ func (p *postgreSQLScraper) perTableFieldsMetricsEnabled() bool {
 		m.PostgresqlOperations.Enabled ||
 		m.PostgresqlTableSize.Enabled ||
 		m.PostgresqlTableVacuumCount.Enabled ||
-		m.PostgresqlSequentialScans.Enabled
+		m.PostgresqlSequentialScans.Enabled ||
+		p.tableMaintenanceMetricsEnabled()
+}
+
+func (p *postgreSQLScraper) tableMaintenanceMetricsEnabled() bool {
+	m := p.config.MetricsBuilderConfig.Metrics
+	return m.PostgresqlTableAutovacuumCount.Enabled ||
+		m.PostgresqlTableAnalyzeCount.Enabled ||
+		m.PostgresqlTableAutoanalyzeCount.Enabled ||
+		m.PostgresqlTableModificationsSinceAnalyze.Enabled ||
+		m.PostgresqlTableLastVacuumAge.Enabled ||
+		m.PostgresqlTableLastAutovacuumAge.Enabled ||
+		m.PostgresqlTableLastAnalyzeAge.Enabled ||
+		m.PostgresqlTableLastAutoanalyzeAge.Enabled ||
+		m.PostgresqlTableInsertsSinceVacuum.Enabled ||
+		m.PostgresqlTableXidAge.Enabled ||
+		m.PostgresqlTableMxidAge.Enabled
 }
 
 // Also true whenever perTableFieldsMetricsEnabled is, since the full per-table
@@ -849,11 +894,11 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 	needsPerTableFields := p.perTableFieldsMetricsEnabled()
 	needsTableMetrics := p.tableCountMetricsEnabled()
 
-	var tableMetrics map[tableIdentifier]tableStats
+	var tableMetrics map[tableIdentifier]*tableStats
 	switch {
 	case needsPerTableFields:
 		var err error
-		tableMetrics, err = dbClient.getDatabaseTableMetrics(ctx, db)
+		tableMetrics, err = dbClient.getDatabaseTableMetrics(ctx, db, p.tableMaintenanceMetricsEnabled())
 		if err != nil {
 			errs.addPartial(err)
 		}
@@ -881,6 +926,31 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 		}
 		p.mb.RecordPostgresqlTableVacuumCountDataPoint(now, tm.vacuumCount, namespace, tm.table)
 		p.mb.RecordPostgresqlSequentialScansDataPoint(now, tm.seqScans, namespace, tm.table)
+		p.mb.RecordPostgresqlTableAutovacuumCountDataPoint(now, tm.autovacuumCount, namespace, tm.table)
+		p.mb.RecordPostgresqlTableAnalyzeCountDataPoint(now, tm.analyzeCount, namespace, tm.table)
+		p.mb.RecordPostgresqlTableAutoanalyzeCountDataPoint(now, tm.autoanalyzeCount, namespace, tm.table)
+		p.mb.RecordPostgresqlTableModificationsSinceAnalyzeDataPoint(now, tm.modSinceAnalyze, namespace, tm.table)
+		if tm.lastVacuumAge >= 0 {
+			p.mb.RecordPostgresqlTableLastVacuumAgeDataPoint(now, tm.lastVacuumAge, namespace, tm.table)
+		}
+		if tm.lastAutovacuumAge >= 0 {
+			p.mb.RecordPostgresqlTableLastAutovacuumAgeDataPoint(now, tm.lastAutovacuumAge, namespace, tm.table)
+		}
+		if tm.lastAnalyzeAge >= 0 {
+			p.mb.RecordPostgresqlTableLastAnalyzeAgeDataPoint(now, tm.lastAnalyzeAge, namespace, tm.table)
+		}
+		if tm.lastAutoanalyzeAge >= 0 {
+			p.mb.RecordPostgresqlTableLastAutoanalyzeAgeDataPoint(now, tm.lastAutoanalyzeAge, namespace, tm.table)
+		}
+		if tm.insSinceVacuum >= 0 {
+			p.mb.RecordPostgresqlTableInsertsSinceVacuumDataPoint(now, tm.insSinceVacuum, namespace, tm.table)
+		}
+		if tm.xidAge >= 0 {
+			p.mb.RecordPostgresqlTableXidAgeDataPoint(now, tm.xidAge, namespace, tm.table)
+		}
+		if tm.mxidAge >= 0 {
+			p.mb.RecordPostgresqlTableMxidAgeDataPoint(now, tm.mxidAge, namespace, tm.table)
+		}
 
 		br, ok := blockReads[tableKey]
 		if ok {
@@ -1371,6 +1441,26 @@ func (p *postgreSQLScraper) retrieveDatabaseSize(
 	}
 	r.Lock()
 	r.dbSizeMap = databaseSizeMetrics
+	r.Unlock()
+}
+
+func (p *postgreSQLScraper) retrieveDatabaseIDAges(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	client client,
+	databases []string,
+	r *dbRetrieval,
+	errs *errsMux,
+) {
+	defer wg.Done()
+	ages, err := client.getDatabaseIDAges(ctx, databases)
+	if err != nil {
+		p.logger.Error("Errors encountered while fetching database transaction ID ages", zap.Error(err))
+		errs.addPartial(err)
+		return
+	}
+	r.Lock()
+	r.dbIDAges = ages
 	r.Unlock()
 }
 

@@ -84,6 +84,16 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []PostgresqlDatabaseLocksMetricAttributeKey{PostgresqlDatabaseLocksMetricAttributeKeyRelation, PostgresqlDatabaseLocksMetricAttributeKeyMode, PostgresqlDatabaseLocksMetricAttributeKeyLockType, PostgresqlDatabaseLocksMetricAttributeKeyDbNamespace},
 					},
+					PostgresqlDatabaseMxidAge: PostgresqlDatabaseMxidAgeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlDatabaseMxidAgeMetricAttributeKey{PostgresqlDatabaseMxidAgeMetricAttributeKeyDbNamespace},
+					},
+					PostgresqlDatabaseXidAge: PostgresqlDatabaseXidAgeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlDatabaseXidAgeMetricAttributeKey{PostgresqlDatabaseXidAgeMetricAttributeKeyDbNamespace},
+					},
 					PostgresqlDbSize: PostgresqlDbSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
@@ -144,10 +154,60 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []PostgresqlSequentialScansMetricAttributeKey{PostgresqlSequentialScansMetricAttributeKeyDbNamespace, PostgresqlSequentialScansMetricAttributeKeyDbCollectionName},
 					},
+					PostgresqlTableAnalyzeCount: PostgresqlTableAnalyzeCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTableAnalyzeCountMetricAttributeKey{PostgresqlTableAnalyzeCountMetricAttributeKeyDbNamespace, PostgresqlTableAnalyzeCountMetricAttributeKeyDbCollectionName},
+					},
+					PostgresqlTableAutoanalyzeCount: PostgresqlTableAutoanalyzeCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTableAutoanalyzeCountMetricAttributeKey{PostgresqlTableAutoanalyzeCountMetricAttributeKeyDbNamespace, PostgresqlTableAutoanalyzeCountMetricAttributeKeyDbCollectionName},
+					},
+					PostgresqlTableAutovacuumCount: PostgresqlTableAutovacuumCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTableAutovacuumCountMetricAttributeKey{PostgresqlTableAutovacuumCountMetricAttributeKeyDbNamespace, PostgresqlTableAutovacuumCountMetricAttributeKeyDbCollectionName},
+					},
 					PostgresqlTableCount: PostgresqlTableCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []PostgresqlTableCountMetricAttributeKey{PostgresqlTableCountMetricAttributeKeyDbNamespace},
+					},
+					PostgresqlTableInsertsSinceVacuum: PostgresqlTableInsertsSinceVacuumMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTableInsertsSinceVacuumMetricAttributeKey{PostgresqlTableInsertsSinceVacuumMetricAttributeKeyDbNamespace, PostgresqlTableInsertsSinceVacuumMetricAttributeKeyDbCollectionName},
+					},
+					PostgresqlTableLastAnalyzeAge: PostgresqlTableLastAnalyzeAgeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlTableLastAnalyzeAgeMetricAttributeKey{PostgresqlTableLastAnalyzeAgeMetricAttributeKeyDbNamespace, PostgresqlTableLastAnalyzeAgeMetricAttributeKeyDbCollectionName},
+					},
+					PostgresqlTableLastAutoanalyzeAge: PostgresqlTableLastAutoanalyzeAgeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlTableLastAutoanalyzeAgeMetricAttributeKey{PostgresqlTableLastAutoanalyzeAgeMetricAttributeKeyDbNamespace, PostgresqlTableLastAutoanalyzeAgeMetricAttributeKeyDbCollectionName},
+					},
+					PostgresqlTableLastAutovacuumAge: PostgresqlTableLastAutovacuumAgeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlTableLastAutovacuumAgeMetricAttributeKey{PostgresqlTableLastAutovacuumAgeMetricAttributeKeyDbNamespace, PostgresqlTableLastAutovacuumAgeMetricAttributeKeyDbCollectionName},
+					},
+					PostgresqlTableLastVacuumAge: PostgresqlTableLastVacuumAgeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlTableLastVacuumAgeMetricAttributeKey{PostgresqlTableLastVacuumAgeMetricAttributeKeyDbNamespace, PostgresqlTableLastVacuumAgeMetricAttributeKeyDbCollectionName},
+					},
+					PostgresqlTableModificationsSinceAnalyze: PostgresqlTableModificationsSinceAnalyzeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTableModificationsSinceAnalyzeMetricAttributeKey{PostgresqlTableModificationsSinceAnalyzeMetricAttributeKeyDbNamespace, PostgresqlTableModificationsSinceAnalyzeMetricAttributeKeyDbCollectionName},
+					},
+					PostgresqlTableMxidAge: PostgresqlTableMxidAgeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlTableMxidAgeMetricAttributeKey{PostgresqlTableMxidAgeMetricAttributeKeyDbNamespace, PostgresqlTableMxidAgeMetricAttributeKeyDbCollectionName},
 					},
 					PostgresqlTableSize: PostgresqlTableSizeMetricConfig{
 						Enabled:             true,
@@ -158,6 +218,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []PostgresqlTableVacuumCountMetricAttributeKey{PostgresqlTableVacuumCountMetricAttributeKeyDbNamespace, PostgresqlTableVacuumCountMetricAttributeKeyDbCollectionName},
+					},
+					PostgresqlTableXidAge: PostgresqlTableXidAgeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlTableXidAgeMetricAttributeKey{PostgresqlTableXidAgeMetricAttributeKeyDbNamespace, PostgresqlTableXidAgeMetricAttributeKeyDbCollectionName},
 					},
 					PostgresqlTempIo: PostgresqlTempIoMetricConfig{
 						Enabled:             true,
@@ -308,6 +373,16 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategyAvg,
 						EnabledAttributes:   []PostgresqlDatabaseLocksMetricAttributeKey{PostgresqlDatabaseLocksMetricAttributeKeyRelation, PostgresqlDatabaseLocksMetricAttributeKeyMode, PostgresqlDatabaseLocksMetricAttributeKeyLockType, PostgresqlDatabaseLocksMetricAttributeKeyDbNamespace},
 					},
+					PostgresqlDatabaseMxidAge: PostgresqlDatabaseMxidAgeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlDatabaseMxidAgeMetricAttributeKey{PostgresqlDatabaseMxidAgeMetricAttributeKeyDbNamespace},
+					},
+					PostgresqlDatabaseXidAge: PostgresqlDatabaseXidAgeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlDatabaseXidAgeMetricAttributeKey{PostgresqlDatabaseXidAgeMetricAttributeKeyDbNamespace},
+					},
 					PostgresqlDbSize: PostgresqlDbSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
@@ -368,10 +443,60 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []PostgresqlSequentialScansMetricAttributeKey{PostgresqlSequentialScansMetricAttributeKeyDbNamespace, PostgresqlSequentialScansMetricAttributeKeyDbCollectionName},
 					},
+					PostgresqlTableAnalyzeCount: PostgresqlTableAnalyzeCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTableAnalyzeCountMetricAttributeKey{PostgresqlTableAnalyzeCountMetricAttributeKeyDbNamespace, PostgresqlTableAnalyzeCountMetricAttributeKeyDbCollectionName},
+					},
+					PostgresqlTableAutoanalyzeCount: PostgresqlTableAutoanalyzeCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTableAutoanalyzeCountMetricAttributeKey{PostgresqlTableAutoanalyzeCountMetricAttributeKeyDbNamespace, PostgresqlTableAutoanalyzeCountMetricAttributeKeyDbCollectionName},
+					},
+					PostgresqlTableAutovacuumCount: PostgresqlTableAutovacuumCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTableAutovacuumCountMetricAttributeKey{PostgresqlTableAutovacuumCountMetricAttributeKeyDbNamespace, PostgresqlTableAutovacuumCountMetricAttributeKeyDbCollectionName},
+					},
 					PostgresqlTableCount: PostgresqlTableCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []PostgresqlTableCountMetricAttributeKey{PostgresqlTableCountMetricAttributeKeyDbNamespace},
+					},
+					PostgresqlTableInsertsSinceVacuum: PostgresqlTableInsertsSinceVacuumMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTableInsertsSinceVacuumMetricAttributeKey{PostgresqlTableInsertsSinceVacuumMetricAttributeKeyDbNamespace, PostgresqlTableInsertsSinceVacuumMetricAttributeKeyDbCollectionName},
+					},
+					PostgresqlTableLastAnalyzeAge: PostgresqlTableLastAnalyzeAgeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlTableLastAnalyzeAgeMetricAttributeKey{PostgresqlTableLastAnalyzeAgeMetricAttributeKeyDbNamespace, PostgresqlTableLastAnalyzeAgeMetricAttributeKeyDbCollectionName},
+					},
+					PostgresqlTableLastAutoanalyzeAge: PostgresqlTableLastAutoanalyzeAgeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlTableLastAutoanalyzeAgeMetricAttributeKey{PostgresqlTableLastAutoanalyzeAgeMetricAttributeKeyDbNamespace, PostgresqlTableLastAutoanalyzeAgeMetricAttributeKeyDbCollectionName},
+					},
+					PostgresqlTableLastAutovacuumAge: PostgresqlTableLastAutovacuumAgeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlTableLastAutovacuumAgeMetricAttributeKey{PostgresqlTableLastAutovacuumAgeMetricAttributeKeyDbNamespace, PostgresqlTableLastAutovacuumAgeMetricAttributeKeyDbCollectionName},
+					},
+					PostgresqlTableLastVacuumAge: PostgresqlTableLastVacuumAgeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlTableLastVacuumAgeMetricAttributeKey{PostgresqlTableLastVacuumAgeMetricAttributeKeyDbNamespace, PostgresqlTableLastVacuumAgeMetricAttributeKeyDbCollectionName},
+					},
+					PostgresqlTableModificationsSinceAnalyze: PostgresqlTableModificationsSinceAnalyzeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlTableModificationsSinceAnalyzeMetricAttributeKey{PostgresqlTableModificationsSinceAnalyzeMetricAttributeKeyDbNamespace, PostgresqlTableModificationsSinceAnalyzeMetricAttributeKeyDbCollectionName},
+					},
+					PostgresqlTableMxidAge: PostgresqlTableMxidAgeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlTableMxidAgeMetricAttributeKey{PostgresqlTableMxidAgeMetricAttributeKeyDbNamespace, PostgresqlTableMxidAgeMetricAttributeKeyDbCollectionName},
 					},
 					PostgresqlTableSize: PostgresqlTableSizeMetricConfig{
 						Enabled:             false,
@@ -382,6 +507,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []PostgresqlTableVacuumCountMetricAttributeKey{PostgresqlTableVacuumCountMetricAttributeKeyDbNamespace, PostgresqlTableVacuumCountMetricAttributeKeyDbCollectionName},
+					},
+					PostgresqlTableXidAge: PostgresqlTableXidAgeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlTableXidAgeMetricAttributeKey{PostgresqlTableXidAgeMetricAttributeKeyDbNamespace, PostgresqlTableXidAgeMetricAttributeKeyDbCollectionName},
 					},
 					PostgresqlTempIo: PostgresqlTempIoMetricConfig{
 						Enabled:             false,
@@ -475,7 +605,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(PostgresqlBackendsMetricConfig{}, PostgresqlBgwriterBuffersAllocatedMetricConfig{}, PostgresqlBgwriterBuffersWritesMetricConfig{}, PostgresqlBgwriterCheckpointCountMetricConfig{}, PostgresqlBgwriterDurationMetricConfig{}, PostgresqlBgwriterMaxwrittenMetricConfig{}, PostgresqlBlksHitMetricConfig{}, PostgresqlBlksReadMetricConfig{}, PostgresqlBlocksReadMetricConfig{}, PostgresqlCommitsMetricConfig{}, PostgresqlConnectionMaxMetricConfig{}, PostgresqlDatabaseCountMetricConfig{}, PostgresqlDatabaseLocksMetricConfig{}, PostgresqlDbSizeMetricConfig{}, PostgresqlDeadlocksMetricConfig{}, PostgresqlFunctionCallsMetricConfig{}, PostgresqlIndexScansMetricConfig{}, PostgresqlIndexSizeMetricConfig{}, PostgresqlOperationsMetricConfig{}, PostgresqlQueryConflictsMetricConfig{}, PostgresqlQueryExecutionTimeMetricConfig{}, PostgresqlReplicationDataDelayMetricConfig{}, PostgresqlRollbacksMetricConfig{}, PostgresqlRowsMetricConfig{}, PostgresqlSequentialScansMetricConfig{}, PostgresqlTableCountMetricConfig{}, PostgresqlTableSizeMetricConfig{}, PostgresqlTableVacuumCountMetricConfig{}, PostgresqlTempIoMetricConfig{}, PostgresqlTempFilesMetricConfig{}, PostgresqlTupDeletedMetricConfig{}, PostgresqlTupFetchedMetricConfig{}, PostgresqlTupInsertedMetricConfig{}, PostgresqlTupReturnedMetricConfig{}, PostgresqlTupUpdatedMetricConfig{}, PostgresqlVectorInsertDurationMetricConfig{}, PostgresqlVectorInsertRowsMetricConfig{}, PostgresqlVectorSearchCallsMetricConfig{}, PostgresqlVectorSearchDurationMetricConfig{}, PostgresqlVectorSearchRowsReturnedMetricConfig{}, PostgresqlWalAgeMetricConfig{}, PostgresqlWalDelayMetricConfig{}, PostgresqlWalLagMetricConfig{}, DbSystemVersionResourceAttributeConfig{}, PostgresqlDatabaseNameResourceAttributeConfig{}, PostgresqlIndexNameResourceAttributeConfig{}, PostgresqlSchemaNameResourceAttributeConfig{}, PostgresqlTableNameResourceAttributeConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(PostgresqlBackendsMetricConfig{}, PostgresqlBgwriterBuffersAllocatedMetricConfig{}, PostgresqlBgwriterBuffersWritesMetricConfig{}, PostgresqlBgwriterCheckpointCountMetricConfig{}, PostgresqlBgwriterDurationMetricConfig{}, PostgresqlBgwriterMaxwrittenMetricConfig{}, PostgresqlBlksHitMetricConfig{}, PostgresqlBlksReadMetricConfig{}, PostgresqlBlocksReadMetricConfig{}, PostgresqlCommitsMetricConfig{}, PostgresqlConnectionMaxMetricConfig{}, PostgresqlDatabaseCountMetricConfig{}, PostgresqlDatabaseLocksMetricConfig{}, PostgresqlDatabaseMxidAgeMetricConfig{}, PostgresqlDatabaseXidAgeMetricConfig{}, PostgresqlDbSizeMetricConfig{}, PostgresqlDeadlocksMetricConfig{}, PostgresqlFunctionCallsMetricConfig{}, PostgresqlIndexScansMetricConfig{}, PostgresqlIndexSizeMetricConfig{}, PostgresqlOperationsMetricConfig{}, PostgresqlQueryConflictsMetricConfig{}, PostgresqlQueryExecutionTimeMetricConfig{}, PostgresqlReplicationDataDelayMetricConfig{}, PostgresqlRollbacksMetricConfig{}, PostgresqlRowsMetricConfig{}, PostgresqlSequentialScansMetricConfig{}, PostgresqlTableAnalyzeCountMetricConfig{}, PostgresqlTableAutoanalyzeCountMetricConfig{}, PostgresqlTableAutovacuumCountMetricConfig{}, PostgresqlTableCountMetricConfig{}, PostgresqlTableInsertsSinceVacuumMetricConfig{}, PostgresqlTableLastAnalyzeAgeMetricConfig{}, PostgresqlTableLastAutoanalyzeAgeMetricConfig{}, PostgresqlTableLastAutovacuumAgeMetricConfig{}, PostgresqlTableLastVacuumAgeMetricConfig{}, PostgresqlTableModificationsSinceAnalyzeMetricConfig{}, PostgresqlTableMxidAgeMetricConfig{}, PostgresqlTableSizeMetricConfig{}, PostgresqlTableVacuumCountMetricConfig{}, PostgresqlTableXidAgeMetricConfig{}, PostgresqlTempIoMetricConfig{}, PostgresqlTempFilesMetricConfig{}, PostgresqlTupDeletedMetricConfig{}, PostgresqlTupFetchedMetricConfig{}, PostgresqlTupInsertedMetricConfig{}, PostgresqlTupReturnedMetricConfig{}, PostgresqlTupUpdatedMetricConfig{}, PostgresqlVectorInsertDurationMetricConfig{}, PostgresqlVectorInsertRowsMetricConfig{}, PostgresqlVectorSearchCallsMetricConfig{}, PostgresqlVectorSearchDurationMetricConfig{}, PostgresqlVectorSearchRowsReturnedMetricConfig{}, PostgresqlWalAgeMetricConfig{}, PostgresqlWalDelayMetricConfig{}, PostgresqlWalLagMetricConfig{}, DbSystemVersionResourceAttributeConfig{}, PostgresqlDatabaseNameResourceAttributeConfig{}, PostgresqlIndexNameResourceAttributeConfig{}, PostgresqlSchemaNameResourceAttributeConfig{}, PostgresqlTableNameResourceAttributeConfig{}, ServerAddressResourceAttributeConfig{}, ServerPortResourceAttributeConfig{}, ServiceInstanceIDResourceAttributeConfig{}, ServiceNameResourceAttributeConfig{}, ServiceNamespaceResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -584,6 +714,30 @@ func TestPostgresqlDatabaseLocksMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "metric postgresql.database.locks doesn't have an attribute invalid, valid attributes: [relation, mode, lock_type, db.namespace]")
 
 	cfg = DefaultMetricsConfig().PostgresqlDatabaseLocks
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlDatabaseMxidAgeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlDatabaseMxidAge
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlDatabaseMxidAgeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.database.mxid.age doesn't have an attribute invalid, valid attributes: [db.namespace]")
+
+	cfg = DefaultMetricsConfig().PostgresqlDatabaseMxidAge
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlDatabaseXidAgeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlDatabaseXidAge
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlDatabaseXidAgeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.database.xid.age doesn't have an attribute invalid, valid attributes: [db.namespace]")
+
+	cfg = DefaultMetricsConfig().PostgresqlDatabaseXidAge
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
@@ -732,6 +886,42 @@ func TestPostgresqlSequentialScansMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
 
+func TestPostgresqlTableAnalyzeCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlTableAnalyzeCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlTableAnalyzeCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.table.analyze.count doesn't have an attribute invalid, valid attributes: [db.namespace, db.collection.name]")
+
+	cfg = DefaultMetricsConfig().PostgresqlTableAnalyzeCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlTableAutoanalyzeCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlTableAutoanalyzeCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlTableAutoanalyzeCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.table.autoanalyze.count doesn't have an attribute invalid, valid attributes: [db.namespace, db.collection.name]")
+
+	cfg = DefaultMetricsConfig().PostgresqlTableAutoanalyzeCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlTableAutovacuumCountMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlTableAutovacuumCount
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlTableAutovacuumCountMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.table.autovacuum.count doesn't have an attribute invalid, valid attributes: [db.namespace, db.collection.name]")
+
+	cfg = DefaultMetricsConfig().PostgresqlTableAutovacuumCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
 func TestPostgresqlTableCountMetricsConfig_Validate(t *testing.T) {
 	cfg := DefaultMetricsConfig().PostgresqlTableCount
 	require.NoError(t, cfg.Validate())
@@ -740,6 +930,90 @@ func TestPostgresqlTableCountMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "metric postgresql.table.count doesn't have an attribute invalid, valid attributes: [db.namespace]")
 
 	cfg = DefaultMetricsConfig().PostgresqlTableCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlTableInsertsSinceVacuumMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlTableInsertsSinceVacuum
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlTableInsertsSinceVacuumMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.table.inserts_since_vacuum doesn't have an attribute invalid, valid attributes: [db.namespace, db.collection.name]")
+
+	cfg = DefaultMetricsConfig().PostgresqlTableInsertsSinceVacuum
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlTableLastAnalyzeAgeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlTableLastAnalyzeAge
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlTableLastAnalyzeAgeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.table.last_analyze.age doesn't have an attribute invalid, valid attributes: [db.namespace, db.collection.name]")
+
+	cfg = DefaultMetricsConfig().PostgresqlTableLastAnalyzeAge
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlTableLastAutoanalyzeAgeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlTableLastAutoanalyzeAge
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlTableLastAutoanalyzeAgeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.table.last_autoanalyze.age doesn't have an attribute invalid, valid attributes: [db.namespace, db.collection.name]")
+
+	cfg = DefaultMetricsConfig().PostgresqlTableLastAutoanalyzeAge
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlTableLastAutovacuumAgeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlTableLastAutovacuumAge
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlTableLastAutovacuumAgeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.table.last_autovacuum.age doesn't have an attribute invalid, valid attributes: [db.namespace, db.collection.name]")
+
+	cfg = DefaultMetricsConfig().PostgresqlTableLastAutovacuumAge
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlTableLastVacuumAgeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlTableLastVacuumAge
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlTableLastVacuumAgeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.table.last_vacuum.age doesn't have an attribute invalid, valid attributes: [db.namespace, db.collection.name]")
+
+	cfg = DefaultMetricsConfig().PostgresqlTableLastVacuumAge
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlTableModificationsSinceAnalyzeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlTableModificationsSinceAnalyze
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlTableModificationsSinceAnalyzeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.table.modifications_since_analyze doesn't have an attribute invalid, valid attributes: [db.namespace, db.collection.name]")
+
+	cfg = DefaultMetricsConfig().PostgresqlTableModificationsSinceAnalyze
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlTableMxidAgeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlTableMxidAge
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlTableMxidAgeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.table.mxid.age doesn't have an attribute invalid, valid attributes: [db.namespace, db.collection.name]")
+
+	cfg = DefaultMetricsConfig().PostgresqlTableMxidAge
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }
@@ -764,6 +1038,18 @@ func TestPostgresqlTableVacuumCountMetricsConfig_Validate(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "metric postgresql.table.vacuum.count doesn't have an attribute invalid, valid attributes: [db.namespace, db.collection.name]")
 
 	cfg = DefaultMetricsConfig().PostgresqlTableVacuumCount
+	cfg.AggregationStrategy = "invalid"
+	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
+}
+
+func TestPostgresqlTableXidAgeMetricsConfig_Validate(t *testing.T) {
+	cfg := DefaultMetricsConfig().PostgresqlTableXidAge
+	require.NoError(t, cfg.Validate())
+
+	cfg.EnabledAttributes = []PostgresqlTableXidAgeMetricAttributeKey{"invalid"}
+	require.ErrorContains(t, cfg.Validate(), "metric postgresql.table.xid.age doesn't have an attribute invalid, valid attributes: [db.namespace, db.collection.name]")
+
+	cfg = DefaultMetricsConfig().PostgresqlTableXidAge
 	cfg.AggregationStrategy = "invalid"
 	require.ErrorContains(t, cfg.Validate(), "invalid aggregation strategy")
 }

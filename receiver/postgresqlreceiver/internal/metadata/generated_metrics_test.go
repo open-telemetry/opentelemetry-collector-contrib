@@ -76,6 +76,8 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["postgresql.blocks_read"] = mb.metricPostgresqlBlocksRead.config.AggregationStrategy
 			aggMap["postgresql.commits"] = mb.metricPostgresqlCommits.config.AggregationStrategy
 			aggMap["postgresql.database.locks"] = mb.metricPostgresqlDatabaseLocks.config.AggregationStrategy
+			aggMap["postgresql.database.mxid.age"] = mb.metricPostgresqlDatabaseMxidAge.config.AggregationStrategy
+			aggMap["postgresql.database.xid.age"] = mb.metricPostgresqlDatabaseXidAge.config.AggregationStrategy
 			aggMap["postgresql.db_size"] = mb.metricPostgresqlDbSize.config.AggregationStrategy
 			aggMap["postgresql.deadlocks"] = mb.metricPostgresqlDeadlocks.config.AggregationStrategy
 			aggMap["postgresql.function.calls"] = mb.metricPostgresqlFunctionCalls.config.AggregationStrategy
@@ -88,9 +90,20 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["postgresql.rollbacks"] = mb.metricPostgresqlRollbacks.config.AggregationStrategy
 			aggMap["postgresql.rows"] = mb.metricPostgresqlRows.config.AggregationStrategy
 			aggMap["postgresql.sequential_scans"] = mb.metricPostgresqlSequentialScans.config.AggregationStrategy
+			aggMap["postgresql.table.analyze.count"] = mb.metricPostgresqlTableAnalyzeCount.config.AggregationStrategy
+			aggMap["postgresql.table.autoanalyze.count"] = mb.metricPostgresqlTableAutoanalyzeCount.config.AggregationStrategy
+			aggMap["postgresql.table.autovacuum.count"] = mb.metricPostgresqlTableAutovacuumCount.config.AggregationStrategy
 			aggMap["postgresql.table.count"] = mb.metricPostgresqlTableCount.config.AggregationStrategy
+			aggMap["postgresql.table.inserts_since_vacuum"] = mb.metricPostgresqlTableInsertsSinceVacuum.config.AggregationStrategy
+			aggMap["postgresql.table.last_analyze.age"] = mb.metricPostgresqlTableLastAnalyzeAge.config.AggregationStrategy
+			aggMap["postgresql.table.last_autoanalyze.age"] = mb.metricPostgresqlTableLastAutoanalyzeAge.config.AggregationStrategy
+			aggMap["postgresql.table.last_autovacuum.age"] = mb.metricPostgresqlTableLastAutovacuumAge.config.AggregationStrategy
+			aggMap["postgresql.table.last_vacuum.age"] = mb.metricPostgresqlTableLastVacuumAge.config.AggregationStrategy
+			aggMap["postgresql.table.modifications_since_analyze"] = mb.metricPostgresqlTableModificationsSinceAnalyze.config.AggregationStrategy
+			aggMap["postgresql.table.mxid.age"] = mb.metricPostgresqlTableMxidAge.config.AggregationStrategy
 			aggMap["postgresql.table.size"] = mb.metricPostgresqlTableSize.config.AggregationStrategy
 			aggMap["postgresql.table.vacuum.count"] = mb.metricPostgresqlTableVacuumCount.config.AggregationStrategy
+			aggMap["postgresql.table.xid.age"] = mb.metricPostgresqlTableXidAge.config.AggregationStrategy
 			aggMap["postgresql.temp.io"] = mb.metricPostgresqlTempIo.config.AggregationStrategy
 			aggMap["postgresql.temp_files"] = mb.metricPostgresqlTempFiles.config.AggregationStrategy
 			aggMap["postgresql.tup_deleted"] = mb.metricPostgresqlTupDeleted.config.AggregationStrategy
@@ -206,6 +219,24 @@ func TestMetricsBuilder(t *testing.T) {
 				mb.RecordPostgresqlDatabaseLocksDataPoint(ts+1, 3, "relation-val-2", "mode-val-2", "lock_type-val-2", "db.namespace-val-2")
 				assert.Equal(t, 2, mb.metricPostgresqlDatabaseLocks.data.Gauge().DataPoints().Len())
 			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlDatabaseMxidAgeDataPoint(ts, 1, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlDatabaseMxidAgeDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlDatabaseMxidAgeDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlDatabaseMxidAge.data.Gauge().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlDatabaseXidAgeDataPoint(ts, 1, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlDatabaseXidAgeDataPoint(ts, 3, "db.namespace-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlDatabaseXidAgeDataPoint(ts+1, 3, "db.namespace-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlDatabaseXidAge.data.Gauge().DataPoints().Len())
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlDbSizeDataPoint(ts, 1, "db.namespace-val")
@@ -314,6 +345,33 @@ func TestMetricsBuilder(t *testing.T) {
 				mb.RecordPostgresqlSequentialScansDataPoint(ts+1, 3, "db.namespace-val-2", "db.collection.name-val-2")
 				assert.Equal(t, 2, mb.metricPostgresqlSequentialScans.data.Sum().DataPoints().Len())
 			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlTableAnalyzeCountDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlTableAnalyzeCountDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTableAnalyzeCountDataPoint(ts+1, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTableAnalyzeCount.data.Sum().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlTableAutoanalyzeCountDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlTableAutoanalyzeCountDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTableAutoanalyzeCountDataPoint(ts+1, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTableAutoanalyzeCount.data.Sum().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlTableAutovacuumCountDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlTableAutovacuumCountDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTableAutovacuumCountDataPoint(ts+1, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTableAutovacuumCount.data.Sum().DataPoints().Len())
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlTableCountDataPoint(ts, 1, "db.namespace-val")
@@ -322,6 +380,69 @@ func TestMetricsBuilder(t *testing.T) {
 				// a different timestamp is a different key: must not merge with the above.
 				mb.RecordPostgresqlTableCountDataPoint(ts+1, 3, "db.namespace-val-2")
 				assert.Equal(t, 2, mb.metricPostgresqlTableCount.data.Sum().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlTableInsertsSinceVacuumDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlTableInsertsSinceVacuumDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTableInsertsSinceVacuumDataPoint(ts+1, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTableInsertsSinceVacuum.data.Sum().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlTableLastAnalyzeAgeDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlTableLastAnalyzeAgeDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTableLastAnalyzeAgeDataPoint(ts+1, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTableLastAnalyzeAge.data.Gauge().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlTableLastAutoanalyzeAgeDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlTableLastAutoanalyzeAgeDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTableLastAutoanalyzeAgeDataPoint(ts+1, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTableLastAutoanalyzeAge.data.Gauge().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlTableLastAutovacuumAgeDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlTableLastAutovacuumAgeDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTableLastAutovacuumAgeDataPoint(ts+1, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTableLastAutovacuumAge.data.Gauge().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlTableLastVacuumAgeDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlTableLastVacuumAgeDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTableLastVacuumAgeDataPoint(ts+1, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTableLastVacuumAge.data.Gauge().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlTableModificationsSinceAnalyzeDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlTableModificationsSinceAnalyzeDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTableModificationsSinceAnalyzeDataPoint(ts+1, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTableModificationsSinceAnalyze.data.Sum().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlTableMxidAgeDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlTableMxidAgeDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTableMxidAgeDataPoint(ts+1, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTableMxidAge.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -340,6 +461,15 @@ func TestMetricsBuilder(t *testing.T) {
 				// a different timestamp is a different key: must not merge with the above.
 				mb.RecordPostgresqlTableVacuumCountDataPoint(ts+1, 3, "db.namespace-val-2", "db.collection.name-val-2")
 				assert.Equal(t, 2, mb.metricPostgresqlTableVacuumCount.data.Sum().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordPostgresqlTableXidAgeDataPoint(ts, 1, "db.namespace-val", "db.collection.name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordPostgresqlTableXidAgeDataPoint(ts, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordPostgresqlTableXidAgeDataPoint(ts+1, 3, "db.namespace-val-2", "db.collection.name-val-2")
+				assert.Equal(t, 2, mb.metricPostgresqlTableXidAge.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
@@ -494,6 +624,8 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricPostgresqlBlocksRead.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlCommits.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlDatabaseLocks.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlDatabaseMxidAge.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlDatabaseXidAge.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlDbSize.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlDeadlocks.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlFunctionCalls.aggDataPoints)
@@ -506,9 +638,20 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricPostgresqlRollbacks.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlRows.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlSequentialScans.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlTableAnalyzeCount.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlTableAutoanalyzeCount.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlTableAutovacuumCount.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlTableCount.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlTableInsertsSinceVacuum.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlTableLastAnalyzeAge.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlTableLastAutoanalyzeAge.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlTableLastAutovacuumAge.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlTableLastVacuumAge.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlTableModificationsSinceAnalyze.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlTableMxidAge.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlTableSize.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlTableVacuumCount.aggDataPoints)
+				assert.Empty(t, mb.metricPostgresqlTableXidAge.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlTempIo.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlTempFiles.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlTupDeleted.aggDataPoints)
@@ -1037,6 +1180,90 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("lock_type")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
+				case "postgresql.database.mxid.age":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.database.mxid.age"], "Found a duplicate in the metrics slice: postgresql.database.mxid.age")
+						validatedMetrics["postgresql.database.mxid.age"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Age, in multixact IDs, of the oldest multixact ID that has not been frozen in the database.", mi.Description())
+						assert.Equal(t, "{multixact}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.database.mxid.age"], "Found a duplicate in the metrics slice: postgresql.database.mxid.age")
+						validatedMetrics["postgresql.database.mxid.age"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Age, in multixact IDs, of the oldest multixact ID that has not been frozen in the database.", mi.Description())
+						assert.Equal(t, "{multixact}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.database.mxid.age"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
+				case "postgresql.database.xid.age":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.database.xid.age"], "Found a duplicate in the metrics slice: postgresql.database.xid.age")
+						validatedMetrics["postgresql.database.xid.age"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Age, in transactions, of the oldest transaction ID that has not been frozen in the database.", mi.Description())
+						assert.Equal(t, "{transaction}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.database.xid.age"], "Found a duplicate in the metrics slice: postgresql.database.xid.age")
+						validatedMetrics["postgresql.database.xid.age"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Age, in transactions, of the oldest transaction ID that has not been frozen in the database.", mi.Description())
+						assert.Equal(t, "{transaction}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.database.xid.age"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
 						assert.False(t, ok)
 					}
 				case "postgresql.db_size":
@@ -1638,6 +1865,159 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("db.collection.name")
 						assert.False(t, ok)
 					}
+				case "postgresql.table.analyze.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.table.analyze.count"], "Found a duplicate in the metrics slice: postgresql.table.analyze.count")
+						validatedMetrics["postgresql.table.analyze.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times a table has manually been analyzed.", mi.Description())
+						assert.Equal(t, "{analyze}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						dbCollectionNameAttrVal, ok := dp.Attributes().Get("db.collection.name")
+						assert.True(t, ok)
+						assert.Equal(t, "db.collection.name-val", dbCollectionNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.table.analyze.count"], "Found a duplicate in the metrics slice: postgresql.table.analyze.count")
+						validatedMetrics["postgresql.table.analyze.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Number of times a table has manually been analyzed.", mi.Description())
+						assert.Equal(t, "{analyze}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.table.analyze.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.collection.name")
+						assert.False(t, ok)
+					}
+				case "postgresql.table.autoanalyze.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.table.autoanalyze.count"], "Found a duplicate in the metrics slice: postgresql.table.autoanalyze.count")
+						validatedMetrics["postgresql.table.autoanalyze.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times a table has been analyzed by the autovacuum daemon.", mi.Description())
+						assert.Equal(t, "{analyze}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						dbCollectionNameAttrVal, ok := dp.Attributes().Get("db.collection.name")
+						assert.True(t, ok)
+						assert.Equal(t, "db.collection.name-val", dbCollectionNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.table.autoanalyze.count"], "Found a duplicate in the metrics slice: postgresql.table.autoanalyze.count")
+						validatedMetrics["postgresql.table.autoanalyze.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Number of times a table has been analyzed by the autovacuum daemon.", mi.Description())
+						assert.Equal(t, "{analyze}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.table.autoanalyze.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.collection.name")
+						assert.False(t, ok)
+					}
+				case "postgresql.table.autovacuum.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.table.autovacuum.count"], "Found a duplicate in the metrics slice: postgresql.table.autovacuum.count")
+						validatedMetrics["postgresql.table.autovacuum.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times a table has been vacuumed by the autovacuum daemon.", mi.Description())
+						assert.Equal(t, "{vacuum}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						dbCollectionNameAttrVal, ok := dp.Attributes().Get("db.collection.name")
+						assert.True(t, ok)
+						assert.Equal(t, "db.collection.name-val", dbCollectionNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.table.autovacuum.count"], "Found a duplicate in the metrics slice: postgresql.table.autovacuum.count")
+						validatedMetrics["postgresql.table.autovacuum.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Number of times a table has been vacuumed by the autovacuum daemon.", mi.Description())
+						assert.Equal(t, "{vacuum}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.table.autovacuum.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.collection.name")
+						assert.False(t, ok)
+					}
 				case "postgresql.table.count":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["postgresql.table.count"], "Found a duplicate in the metrics slice: postgresql.table.count")
@@ -1682,6 +2062,343 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.Equal(t, int64(3), dp.IntValue())
 						}
 						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
+				case "postgresql.table.inserts_since_vacuum":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.table.inserts_since_vacuum"], "Found a duplicate in the metrics slice: postgresql.table.inserts_since_vacuum")
+						validatedMetrics["postgresql.table.inserts_since_vacuum"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Estimated number of rows inserted since a table was last vacuumed.", mi.Description())
+						assert.Equal(t, "{row}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						dbCollectionNameAttrVal, ok := dp.Attributes().Get("db.collection.name")
+						assert.True(t, ok)
+						assert.Equal(t, "db.collection.name-val", dbCollectionNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.table.inserts_since_vacuum"], "Found a duplicate in the metrics slice: postgresql.table.inserts_since_vacuum")
+						validatedMetrics["postgresql.table.inserts_since_vacuum"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Estimated number of rows inserted since a table was last vacuumed.", mi.Description())
+						assert.Equal(t, "{row}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.table.inserts_since_vacuum"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.collection.name")
+						assert.False(t, ok)
+					}
+				case "postgresql.table.last_analyze.age":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.table.last_analyze.age"], "Found a duplicate in the metrics slice: postgresql.table.last_analyze.age")
+						validatedMetrics["postgresql.table.last_analyze.age"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Time since a table was last manually analyzed.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						dbCollectionNameAttrVal, ok := dp.Attributes().Get("db.collection.name")
+						assert.True(t, ok)
+						assert.Equal(t, "db.collection.name-val", dbCollectionNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.table.last_analyze.age"], "Found a duplicate in the metrics slice: postgresql.table.last_analyze.age")
+						validatedMetrics["postgresql.table.last_analyze.age"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Time since a table was last manually analyzed.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["postgresql.table.last_analyze.age"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.collection.name")
+						assert.False(t, ok)
+					}
+				case "postgresql.table.last_autoanalyze.age":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.table.last_autoanalyze.age"], "Found a duplicate in the metrics slice: postgresql.table.last_autoanalyze.age")
+						validatedMetrics["postgresql.table.last_autoanalyze.age"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Time since a table was last analyzed by the autovacuum daemon.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						dbCollectionNameAttrVal, ok := dp.Attributes().Get("db.collection.name")
+						assert.True(t, ok)
+						assert.Equal(t, "db.collection.name-val", dbCollectionNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.table.last_autoanalyze.age"], "Found a duplicate in the metrics slice: postgresql.table.last_autoanalyze.age")
+						validatedMetrics["postgresql.table.last_autoanalyze.age"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Time since a table was last analyzed by the autovacuum daemon.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["postgresql.table.last_autoanalyze.age"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.collection.name")
+						assert.False(t, ok)
+					}
+				case "postgresql.table.last_autovacuum.age":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.table.last_autovacuum.age"], "Found a duplicate in the metrics slice: postgresql.table.last_autovacuum.age")
+						validatedMetrics["postgresql.table.last_autovacuum.age"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Time since a table was last vacuumed by the autovacuum daemon.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						dbCollectionNameAttrVal, ok := dp.Attributes().Get("db.collection.name")
+						assert.True(t, ok)
+						assert.Equal(t, "db.collection.name-val", dbCollectionNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.table.last_autovacuum.age"], "Found a duplicate in the metrics slice: postgresql.table.last_autovacuum.age")
+						validatedMetrics["postgresql.table.last_autovacuum.age"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Time since a table was last vacuumed by the autovacuum daemon.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["postgresql.table.last_autovacuum.age"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.collection.name")
+						assert.False(t, ok)
+					}
+				case "postgresql.table.last_vacuum.age":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.table.last_vacuum.age"], "Found a duplicate in the metrics slice: postgresql.table.last_vacuum.age")
+						validatedMetrics["postgresql.table.last_vacuum.age"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Time since a table was last manually vacuumed, not counting `VACUUM FULL`.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						dbCollectionNameAttrVal, ok := dp.Attributes().Get("db.collection.name")
+						assert.True(t, ok)
+						assert.Equal(t, "db.collection.name-val", dbCollectionNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.table.last_vacuum.age"], "Found a duplicate in the metrics slice: postgresql.table.last_vacuum.age")
+						validatedMetrics["postgresql.table.last_vacuum.age"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Time since a table was last manually vacuumed, not counting `VACUUM FULL`.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["postgresql.table.last_vacuum.age"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.collection.name")
+						assert.False(t, ok)
+					}
+				case "postgresql.table.modifications_since_analyze":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.table.modifications_since_analyze"], "Found a duplicate in the metrics slice: postgresql.table.modifications_since_analyze")
+						validatedMetrics["postgresql.table.modifications_since_analyze"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Estimated number of rows modified since a table was last analyzed.", mi.Description())
+						assert.Equal(t, "{row}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						dbCollectionNameAttrVal, ok := dp.Attributes().Get("db.collection.name")
+						assert.True(t, ok)
+						assert.Equal(t, "db.collection.name-val", dbCollectionNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.table.modifications_since_analyze"], "Found a duplicate in the metrics slice: postgresql.table.modifications_since_analyze")
+						validatedMetrics["postgresql.table.modifications_since_analyze"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Estimated number of rows modified since a table was last analyzed.", mi.Description())
+						assert.Equal(t, "{row}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.table.modifications_since_analyze"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.collection.name")
+						assert.False(t, ok)
+					}
+				case "postgresql.table.mxid.age":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.table.mxid.age"], "Found a duplicate in the metrics slice: postgresql.table.mxid.age")
+						validatedMetrics["postgresql.table.mxid.age"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Age, in multixact IDs, of the oldest multixact ID that has not been frozen in the table.", mi.Description())
+						assert.Equal(t, "{multixact}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						dbCollectionNameAttrVal, ok := dp.Attributes().Get("db.collection.name")
+						assert.True(t, ok)
+						assert.Equal(t, "db.collection.name-val", dbCollectionNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.table.mxid.age"], "Found a duplicate in the metrics slice: postgresql.table.mxid.age")
+						validatedMetrics["postgresql.table.mxid.age"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Age, in multixact IDs, of the oldest multixact ID that has not been frozen in the table.", mi.Description())
+						assert.Equal(t, "{multixact}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.table.mxid.age"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.collection.name")
 						assert.False(t, ok)
 					}
 				case "postgresql.table.size":
@@ -1772,6 +2489,53 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						switch aggMap["postgresql.table.vacuum.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.collection.name")
+						assert.False(t, ok)
+					}
+				case "postgresql.table.xid.age":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["postgresql.table.xid.age"], "Found a duplicate in the metrics slice: postgresql.table.xid.age")
+						validatedMetrics["postgresql.table.xid.age"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Age, in transactions, of the oldest transaction ID that has not been frozen in the table.", mi.Description())
+						assert.Equal(t, "{transaction}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+						dbCollectionNameAttrVal, ok := dp.Attributes().Get("db.collection.name")
+						assert.True(t, ok)
+						assert.Equal(t, "db.collection.name-val", dbCollectionNameAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["postgresql.table.xid.age"], "Found a duplicate in the metrics slice: postgresql.table.xid.age")
+						validatedMetrics["postgresql.table.xid.age"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "Age, in transactions, of the oldest transaction ID that has not been frozen in the table.", mi.Description())
+						assert.Equal(t, "{transaction}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["postgresql.table.xid.age"] {
 						case "sum":
 							assert.Equal(t, int64(4), dp.IntValue())
 						case "avg":
