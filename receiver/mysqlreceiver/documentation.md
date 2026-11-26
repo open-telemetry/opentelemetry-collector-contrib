@@ -956,6 +956,43 @@ events:
     enabled: true
 ```
 
+### db.server.procedure_definition
+
+The obfuscated body of stored procedures and functions reported on db.server.top_procedure. Correlates with db.server.top_procedure via db.namespace, mysql.procedure.name and mysql.procedure.type.
+Emits nothing unless db.server.top_procedure is enabled. Requires the SHOW_ROUTINE privilege (MySQL 8.0.20+).
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| db.system.name | The name of the database system. | Str: ``mysql`` | - |
+| db.namespace | The name of the database the statement was executed against, or empty if not available. | Any Str | - |
+| mysql.procedure.name | The name of the stored routine (OBJECT_NAME). MySQL has no numeric routine ID, so a routine is identified by db.namespace plus this name and mysql.procedure.type. | Any Str | - |
+| mysql.procedure.type | The kind of stored routine (OBJECT_TYPE). | Str: ``procedure``, ``function`` | - |
+| mysql.procedure.definition | The SQL source text of the routine body (ROUTINE_DEFINITION), with literals obfuscated and truncated to top_procedure_collection.definition_max_length characters. | Any Str | - |
+
+### db.server.procedure_statement
+
+Statements run inside the stored procedures and functions reported on db.server.top_procedure, grouped by obfuscated statement text and summed over the statements seen since the previous scrape.
+Read from performance_schema.events_statements_history, which keeps only the last events_statements_history_size (default 10) statements per thread, so counts are a sample, not exact. Correlates with db.server.top_procedure via db.namespace, mysql.procedure.name and mysql.procedure.type.
+Emits nothing unless db.server.top_procedure is enabled.
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| db.system.name | The name of the database system. | Str: ``mysql`` | - |
+| db.namespace | The name of the database the statement was executed against, or empty if not available. | Any Str | - |
+| mysql.procedure.name | The name of the stored routine (OBJECT_NAME). MySQL has no numeric routine ID, so a routine is identified by db.namespace plus this name and mysql.procedure.type. | Any Str | - |
+| mysql.procedure.type | The kind of stored routine (OBJECT_TYPE). | Str: ``procedure``, ``function`` | - |
+| mysql.procedure.statement | The obfuscated text of one statement run inside the routine (SQL_TEXT of a statement/sp/stmt row), truncated to top_procedure_collection.definition_max_length characters. | Any Str | - |
+| mysql.procedure.execution_count | Number of times the routine was executed, reported as a delta value (COUNT_STAR). | Any Int | - |
+| mysql.procedure.total_elapsed_time | Total time spent executing the routine, reported in delta seconds (SUM_TIMER_WAIT). | Any Double | - |
+| mysql.procedure.cpu_time | CPU time spent executing the routine, reported in delta seconds (SUM_CPU_TIME). Reported as 0 unless the events_statements_cpu consumer is enabled. | Any Double | - |
+| mysql.procedure.rows_examined | Rows examined by the statements run by the routine, reported as a delta value (SUM_ROWS_EXAMINED). | Any Int | - |
+| mysql.procedure.rows_sent | Rows returned by the statements run by the routine, reported as a delta value (SUM_ROWS_SENT). | Any Int | - |
+| mysql.procedure.rows_affected | Rows affected by the statements run by the routine, reported as a delta value (SUM_ROWS_AFFECTED). | Any Int | - |
+
 ### db.server.query_plan
 
 The execution plan for a query.
@@ -1004,6 +1041,31 @@ This provides real-time visibility into active queries, helping users monitor da
 | mysql.client.name | The client driver's self-reported identity at connection time, e.g. "MySQL Connector/J" or "libmysql". Empty if the client reported no connect attributes or the connect-attrs feature is disabled server-side. | Any Str | - |
 | mysql.blocking.blocker.count | The number of concurrent InnoDB row-lock blockers currently holding a lock this session is waiting on. 0 indicates the session is not currently blocked, but also covers engines where blocking isn't measured (MariaDB, MySQL <8.0.11) -- an int can't carry that case separately. Check mysql.blocking.blocker.details to tell the two apart. | Any Int | - |
 | mysql.blocking.blocker.details | A JSON array of {thread_id, session_id} tuples, one per concurrent InnoDB row-lock blocker for this session. Unordered. session_id is null when that blocker could not be resolved (e.g. it disconnected between reads). "[]" when measured and not blocked, empty string when blocking isn't measurable on this engine/version (MariaDB, MySQL <8.0.11). | Any Str | - |
+
+### db.server.top_procedure
+
+Aggregated performance metrics for the top stored procedures and functions by elapsed time, computed as deltas over the collection interval.
+A routine is identified by db.namespace, mysql.procedure.name and mysql.procedure.type, as MySQL exposes no numeric routine ID.
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| db.system.name | The name of the database system. | Str: ``mysql`` | - |
+| db.namespace | The name of the database the statement was executed against, or empty if not available. | Any Str | - |
+| mysql.procedure.name | The name of the stored routine (OBJECT_NAME). MySQL has no numeric routine ID, so a routine is identified by db.namespace plus this name and mysql.procedure.type. | Any Str | - |
+| mysql.procedure.type | The kind of stored routine (OBJECT_TYPE). | Str: ``procedure``, ``function`` | - |
+| mysql.procedure.execution_count | Number of times the routine was executed, reported as a delta value (COUNT_STAR). | Any Int | - |
+| mysql.procedure.total_elapsed_time | Total time spent executing the routine, reported in delta seconds (SUM_TIMER_WAIT). | Any Double | - |
+| mysql.procedure.cpu_time | CPU time spent executing the routine, reported in delta seconds (SUM_CPU_TIME). Reported as 0 unless the events_statements_cpu consumer is enabled. | Any Double | - |
+| mysql.procedure.error_count | Number of statement errors raised while executing the routine, reported as a delta value (SUM_ERRORS). | Any Int | - |
+| mysql.procedure.min_duration | Shortest elapsed time of a single routine execution, in seconds (MIN_TIMER_WAIT). Can read 0 for routines first run since server start, so it is unreliable. Covers the period since the server started or the summary table was last truncated, so unlike the other durations it is not a delta. | Any Double | - |
+| mysql.procedure.max_duration | Longest elapsed time of a single routine execution, in seconds (MAX_TIMER_WAIT). Covers the period since the server started or the summary table was last truncated, so unlike the other durations it is not a delta. | Any Double | - |
+| mysql.procedure.rows_affected | Rows affected by the statements run by the routine, reported as a delta value (SUM_ROWS_AFFECTED). | Any Int | - |
+| mysql.procedure.rows_examined | Rows examined by the statements run by the routine, reported as a delta value (SUM_ROWS_EXAMINED). | Any Int | - |
+| mysql.procedure.rows_sent | Rows returned by the statements run by the routine, reported as a delta value (SUM_ROWS_SENT). | Any Int | - |
+| mysql.procedure.sort_merge_passes | Sort merge passes done by the statements run by the routine, reported as a delta value (SUM_SORT_MERGE_PASSES). A proxy for sort spills. | Any Int | - |
+| mysql.procedure.tmp_disk_tables | Internal temporary tables created on disk by the statements run by the routine, reported as a delta value (SUM_CREATED_TMP_DISK_TABLES). A proxy for spills. | Any Int | - |
 
 ### db.server.top_query
 

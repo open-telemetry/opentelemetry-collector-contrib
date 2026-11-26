@@ -1,0 +1,20 @@
+SELECT
+    COALESCE(`object_schema`, ''),
+    `object_name`,
+    LOWER(`object_type`),
+    `sql_text`,
+    `timer_start`,
+    `timer_wait`,
+    COALESCE(`cpu_time`, 0),
+    `rows_examined`,
+    `rows_sent`,
+    `rows_affected`
+FROM performance_schema.events_statements_history
+WHERE `nesting_event_id` IS NOT NULL
+    AND `object_type` IN ('PROCEDURE', 'FUNCTION')
+    AND `object_name` IS NOT NULL
+    AND `sql_text` IS NOT NULL
+    AND `end_event_id` IS NOT NULL
+    AND `timer_start` > {{ .sinceTimerStart }}
+ORDER BY `timer_start`
+LIMIT {{ .limit }}
