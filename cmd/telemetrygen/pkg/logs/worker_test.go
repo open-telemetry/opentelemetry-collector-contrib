@@ -208,6 +208,36 @@ func TestLogsWithOneTelemetryAttributes(t *testing.T) {
 	}
 }
 
+func TestLogsWithMapTelemetryAttributes(t *testing.T) {
+	qty := 1
+	cfg := configWithMapAttribute(qty, "custom body")
+
+	m := &mockExporter{}
+	expFunc := func() (sdklog.Exporter, error) {
+		return m, nil
+	}
+
+	// test
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// verify
+	require.Len(t, m.logs, qty)
+	for _, l := range m.logs {
+		found := false
+		l.WalkAttributes(func(attr attribute.KeyValue) bool {
+			if attr.Key == "kubernetes" {
+				found = true
+				assert.Equal(t, expectedMapAttributeValue(), attr.Value)
+			}
+			return true
+		})
+		assert.True(t, found, "map attribute should be present")
+	}
+}
+
 func TestLogsWithMultipleTelemetryAttributes(t *testing.T) {
 	qty := 1
 	cfg := configWithMultipleAttributes(qty, "custom body")
@@ -411,6 +441,33 @@ func configWithOneAttribute(qty int, body string) *Config {
 		SeverityText:   "Info",
 		SeverityNumber: 9,
 	}
+}
+
+func configWithMapAttribute(qty int, body string) *Config {
+	return &Config{
+		Body:    body,
+		NumLogs: qty,
+		Config: config.Config{
+			WorkerCount: 1,
+			TelemetryAttributes: config.KeyValue{
+				"kubernetes": map[string]any{
+					"namespace_name": "test-ns",
+					"pod_name":       "test-pod",
+					"labels":         map[string]any{"some_label": "test"},
+				},
+			},
+		},
+		SeverityText:   "Info",
+		SeverityNumber: 9,
+	}
+}
+
+func expectedMapAttributeValue() attribute.Value {
+	return attribute.MapValue(
+		attribute.String("namespace_name", "test-ns"),
+		attribute.String("pod_name", "test-pod"),
+		attribute.Map("labels", attribute.String("some_label", "test")),
+	)
 }
 
 func configWithMultipleAttributes(qty int, body string) *Config {
