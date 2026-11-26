@@ -341,6 +341,7 @@ func TestTLSSettingsAreClassified(t *testing.T) {
 		"tpm":                            "warned",
 		// Prometheus re-reads changed certificate, key and CA files itself.
 		"reload_interval": "covered by prometheus",
+		"ca_file_reload":  "covered by prometheus",
 		// Selects between an http and an https scrape.
 		"insecure": "controls scheme",
 	}
