@@ -90,8 +90,11 @@ disk:
 
 ### File System
 
+The `filesystem` scraper reports mounted filesystem usage (`system.filesystem.usage` and `system.filesystem.inodes.usage` by default, plus optional `system.filesystem.utilization`).
+
 ```yaml
 filesystem:
+  include_virtual_filesystems: <false|true>
   <include_devices|exclude_devices>:
     devices: [ <device name>, ... ]
     match_type: <strict|regexp>
@@ -101,8 +104,34 @@ filesystem:
   <include_mount_points|exclude_mount_points>:
     mount_points: [ <mount point>, ... ]
     match_type: <strict|regexp>
-  include_virtual_filesystems: <false|true>
 ```
+
+The following settings are optional:
+
+- `include_virtual_filesystems` (default: `false`): This setting takes effect only on Linux and has no effect on other operating systems. When `false`, the scraper skips virtual and network filesystems without a local block device (such as `tmpfs`, `proc`, `overlay`, `autofs`, `nfs`, and `nfs4`), while still keeping filesystems with a physical mount such as `zfs`. When `true`, all mounted filesystems are collected, so pair it with a filter to avoid unnecessary metrics from system mounts.
+- `include_devices`, `exclude_devices`: filter filesystems by the `device` attribute.
+- `include_fs_types`, `exclude_fs_types`: filter filesystems by the `type` attribute.
+- `include_mount_points`, `exclude_mount_points`: filter filesystems by the `mountpoint` attribute. When `root_path` is set on Linux, specify paths from the host's perspective without the `root_path` prefix.
+
+Filter matching and evaluation order:
+
+- Within the same filter kind, excludes take precedence over includes, and a mount must pass every configured filter.
+- Mounts are discovered first (applying `include_virtual_filesystems`), then filtered, and usage is read only for the mounts that pass. A filter cannot include a mount skipped during discovery (for example, an `include_fs_types` list of `nfs` and `nfs4` reports nothing while `include_virtual_filesystems` is `false`).
+
+For example, to only report NFS filesystems:
+
+```yaml
+filesystem:
+  include_virtual_filesystems: true
+  include_fs_types:
+    fs_types: [nfs, nfs4]
+    match_type: strict
+```
+
+Known limitations when `include_virtual_filesystems` is `true`:
+
+- If the server of a `hard` NFS mount (the default) stops responding, the scrape blocks until it answers again, and every scraper in the same receiver stops reporting ([issue #53167](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/53167)). Running `filesystem` in a separate receiver instance (see [Different Frequencies](#different-frequencies)) keeps the other scrapers reporting.
+- An `autofs` placeholder is treated as a filesystem, so a scrape triggers the automount and the mount point is then reported twice ([issue #53432](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/53432)). Excluding `autofs` with `exclude_fs_types` avoids both.
 
 ### Load
 
