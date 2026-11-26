@@ -99,37 +99,6 @@ func (m *memStorage) Batch(ctx context.Context, ops ...*storage.Operation) error
 	return nil
 }
 
-func (m *memStorage) Walk(ctx context.Context, fn storage.WalkFunc) error {
-	m.mu.Lock()
-	type pair struct {
-		key   string
-		value []byte
-	}
-	pairs := make([]pair, 0, len(m.items))
-	for key, value := range m.items {
-		pairs = append(pairs, pair{key, append([]byte(nil), value...)})
-	}
-	m.mu.Unlock()
-	var ops []*storage.Operation
-	for _, item := range pairs {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		got, err := fn(item.key, item.value)
-		if err != nil && !errors.Is(err, storage.SkipAll) {
-			return err
-		}
-		ops = append(ops, got...)
-		if errors.Is(err, storage.SkipAll) {
-			break
-		}
-	}
-	if len(ops) == 0 {
-		return nil
-	}
-	return m.Batch(ctx, ops...)
-}
-
 func (m *memStorage) Close(context.Context) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
