@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -308,8 +308,8 @@ type MetricsBuilder struct {
 	metricsCapacity                int                  // maximum observed number of metrics per resource.
 	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                      component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter map[string]filter.Filter
-	resourceAttributeExcludeFilter map[string]filter.Filter
+	resourceAttributeIncludeFilter map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter map[string]strmatch.Matcher
 	metricPingLossRatio            metricPingLossRatio
 	metricPingRttAvg               metricPingRttAvg
 	metricPingRttMax               metricPingRttMax
@@ -345,20 +345,20 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricPingRttMax:               newMetricPingRttMax(mbc.Metrics.PingRttMax),
 		metricPingRttMin:               newMetricPingRttMin(mbc.Metrics.PingRttMin),
 		metricPingRttStddev:            newMetricPingRttStddev(mbc.Metrics.PingRttStddev),
-		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter: make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter: make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.NetPeerIP.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["net.peer.ip"] = filter.CreateFilter(mbc.ResourceAttributes.NetPeerIP.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["net.peer.ip"] = strmatch.New(mbc.ResourceAttributes.NetPeerIP.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.NetPeerIP.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["net.peer.ip"] = filter.CreateFilter(mbc.ResourceAttributes.NetPeerIP.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["net.peer.ip"] = strmatch.New(mbc.ResourceAttributes.NetPeerIP.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.NetPeerName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["net.peer.name"] = filter.CreateFilter(mbc.ResourceAttributes.NetPeerName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["net.peer.name"] = strmatch.New(mbc.ResourceAttributes.NetPeerName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.NetPeerName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["net.peer.name"] = filter.CreateFilter(mbc.ResourceAttributes.NetPeerName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["net.peer.name"] = strmatch.New(mbc.ResourceAttributes.NetPeerName.MetricsExclude)
 	}
 
 	for _, op := range options {

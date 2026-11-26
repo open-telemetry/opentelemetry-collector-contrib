@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
@@ -1205,8 +1205,8 @@ type MetricsBuilder struct {
 	metricsCapacity                int                  // maximum observed number of metrics per resource.
 	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                      component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter map[string]filter.Filter
-	resourceAttributeExcludeFilter map[string]filter.Filter
+	resourceAttributeIncludeFilter map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter map[string]strmatch.Matcher
 	metricVcsChangeCount           metricVcsChangeCount
 	metricVcsChangeDuration        metricVcsChangeDuration
 	metricVcsChangeTimeToApproval  metricVcsChangeTimeToApproval
@@ -1252,20 +1252,20 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricVcsRefRevisionsDelta:     newMetricVcsRefRevisionsDelta(mbc.Metrics.VcsRefRevisionsDelta),
 		metricVcsRefTime:               newMetricVcsRefTime(mbc.Metrics.VcsRefTime),
 		metricVcsRepositoryCount:       newMetricVcsRepositoryCount(mbc.Metrics.VcsRepositoryCount),
-		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter: make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter: make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.VcsOwnerName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["vcs.owner.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcsOwnerName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["vcs.owner.name"] = strmatch.New(mbc.ResourceAttributes.VcsOwnerName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.VcsOwnerName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["vcs.owner.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcsOwnerName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["vcs.owner.name"] = strmatch.New(mbc.ResourceAttributes.VcsOwnerName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.VcsProviderName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["vcs.provider.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcsProviderName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["vcs.provider.name"] = strmatch.New(mbc.ResourceAttributes.VcsProviderName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.VcsProviderName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["vcs.provider.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcsProviderName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["vcs.provider.name"] = strmatch.New(mbc.ResourceAttributes.VcsProviderName.MetricsExclude)
 	}
 
 	for _, op := range options {

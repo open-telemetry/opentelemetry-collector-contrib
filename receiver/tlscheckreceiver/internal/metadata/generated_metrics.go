@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -154,8 +154,8 @@ type MetricsBuilder struct {
 	metricsCapacity                int                  // maximum observed number of metrics per resource.
 	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                      component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter map[string]filter.Filter
-	resourceAttributeExcludeFilter map[string]filter.Filter
+	resourceAttributeIncludeFilter map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter map[string]strmatch.Matcher
 	metricTlscheckTimeLeft         metricTlscheckTimeLeft
 }
 
@@ -183,14 +183,14 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricsBuffer:                  pmetric.NewMetrics(),
 		buildInfo:                      settings.BuildInfo,
 		metricTlscheckTimeLeft:         newMetricTlscheckTimeLeft(mbc.Metrics.TlscheckTimeLeft),
-		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter: make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter: make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.TlscheckTarget.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["tlscheck.target"] = filter.CreateFilter(mbc.ResourceAttributes.TlscheckTarget.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["tlscheck.target"] = strmatch.New(mbc.ResourceAttributes.TlscheckTarget.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.TlscheckTarget.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["tlscheck.target"] = filter.CreateFilter(mbc.ResourceAttributes.TlscheckTarget.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["tlscheck.target"] = strmatch.New(mbc.ResourceAttributes.TlscheckTarget.MetricsExclude)
 	}
 
 	for _, op := range options {
