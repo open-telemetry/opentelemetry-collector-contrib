@@ -115,8 +115,6 @@ The following settings are optional:
 
 Filter matching and evaluation order:
 
-- Empty filter lists are ignored. Any filter with entries requires `match_type` (`strict` or `regexp`). There is no default, and omitting it causes startup to fail.
-- `strict` requires an exact, case-sensitive match. `regexp` uses Go RE2 unanchored substring matching, so anchor with `^...$` for full-value matches (for example, `nfs` matches `nfsd`, while `^nfs4?$` matches only `nfs` and `nfs4`).
 - Within the same filter kind, excludes take precedence over includes, and a mount must pass every configured filter.
 - Mounts are discovered first (applying `include_virtual_filesystems`), then filtered, and usage is read only for the mounts that pass. A filter cannot include a mount skipped during discovery (for example, an `include_fs_types` list of `nfs` and `nfs4` reports nothing while `include_virtual_filesystems` is `false`).
 
