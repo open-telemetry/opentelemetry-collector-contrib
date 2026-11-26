@@ -10,7 +10,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -38,7 +37,7 @@ func newDefaultConfig() component.Config {
 		BulkAction:       defaultBulkAction,
 		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 		MappingsSettings: MappingsSettings{Mode: defaultMappingMode},
-		QueueConfig:      configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		QueueConfig:      metadata.NewDefaultSendingQueueConfig(),
 	}
 }
 
