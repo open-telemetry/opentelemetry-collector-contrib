@@ -8,7 +8,14 @@ status:
     development: [profiles]
   distributions: [contrib]
   codeowners:
-    active: [JaredTan95, blakerouse, carsonip, lahsivjar]
+    active: [JaredTan95, blakerouse, carsonip, lahsivjar, osullivandonal]
+
+feature_gates:
+  - id: exporter.elasticsearch.Exemplars
+    description: When enabled, exemplars are sent to ES
+    stage: alpha
+    from_version: "v0.167.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52803
 
 attributes:
   db.collection.name:

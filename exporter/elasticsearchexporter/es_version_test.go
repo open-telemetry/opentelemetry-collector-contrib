@@ -336,3 +336,34 @@ func TestSupportsCumulativeHistograms(t *testing.T) {
 		})
 	}
 }
+
+func TestSupportsExemplars(t *testing.T) {
+	for _, tc := range []struct {
+		name            string
+		v               string
+		expectedSupport bool
+	}{
+		{
+			name:            "exemplars are supported",
+			v:               "9.6.0",
+			expectedSupport: true,
+		},
+		{
+			name:            "exemplars are supported for 9.6.0 SNAPSHOT",
+			v:               "9.6.0-SNAPSHOT",
+			expectedSupport: true,
+		},
+		{
+			name:            "exemplars are not supported",
+			v:               "9.5.6",
+			expectedSupport: false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			v, err := semver.NewVersion(tc.v)
+			require.NoError(t, err)
+			actualSupported := supportsExemplars(v)
+			assert.Equal(t, tc.expectedSupport, actualSupported)
+		})
+	}
+}

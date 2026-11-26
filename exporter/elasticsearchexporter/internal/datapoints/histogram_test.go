@@ -16,72 +16,166 @@ import (
 )
 
 func TestHistogramValidate(t *testing.T) {
+	m := func() pmetric.Metric {
+		now := time.Now()
+		dp := pmetric.NewHistogramDataPoint()
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(-1 * time.Hour)))
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
+
+		m := pmetric.NewMetric()
+		m.SetName("test")
+		dp.MoveTo(m.SetEmptyHistogram().DataPoints().AppendEmpty())
+
+		return m
+	}()
+
 	for _, tc := range []struct {
-		name          string
-		hm            HistogramMapping
-		at            pmetric.AggregationTemporality
-		expectedError bool
+		name                  string
+		hm                    HistogramMapping
+		at                    pmetric.AggregationTemporality
+		metric                pmetric.Metric
+		expectedError         bool
+		expectedErrorContains string
 	}{
 		{
-			name: "Validate returns no error when histogram has cumulative temporality and mapping is exponential_histogram",
-			hm:   HistogramMappingExponential,
-			at:   pmetric.AggregationTemporalityCumulative,
+			name:   "Validate returns no error when histogram has cumulative temporality and mapping is exponential_histogram",
+			hm:     HistogramMappingExponential,
+			at:     pmetric.AggregationTemporalityCumulative,
+			metric: m,
 		},
 		{
-			name:          "Validate returns error when histogram has cumulative temporality and mapping is histogram",
-			hm:            HistogramMappingRaw,
-			at:            pmetric.AggregationTemporalityCumulative,
-			expectedError: true,
+			name:                  "Validate returns error when histogram has cumulative temporality and mapping is histogram",
+			hm:                    HistogramMappingRaw,
+			at:                    pmetric.AggregationTemporalityCumulative,
+			metric:                m,
+			expectedError:         true,
+			expectedErrorContains: "cumulative temporality histogram \"test\" is only supported when stored as exponential_histogram",
 		},
 		{
-			name:          "Validate returns error when histogram has cumulative temporality and mapping is TDigest",
-			hm:            HistogramMappingTDigest,
-			at:            pmetric.AggregationTemporalityCumulative,
-			expectedError: true,
+			name:                  "Validate returns error when histogram has cumulative temporality and mapping is TDigest",
+			hm:                    HistogramMappingTDigest,
+			at:                    pmetric.AggregationTemporalityCumulative,
+			metric:                m,
+			expectedError:         true,
+			expectedErrorContains: "cumulative temporality histogram \"test\" is only supported when stored as exponential_histogram",
 		},
 		{
-			name:          "Validate returns error when histogram has cumulative temporality and mapping is double",
-			hm:            HistogramMappingAggregateMetricDouble,
-			at:            pmetric.AggregationTemporalityCumulative,
-			expectedError: true,
+			name:                  "Validate returns error when histogram has cumulative temporality and mapping is double",
+			hm:                    HistogramMappingAggregateMetricDouble,
+			at:                    pmetric.AggregationTemporalityCumulative,
+			metric:                m,
+			expectedError:         true,
+			expectedErrorContains: "cumulative temporality histogram \"test\" is only supported when stored as exponential_histogram",
 		},
 		{
-			name: "Validate returns nil when histogram mapping is TDigest and has delta temporality",
-			hm:   HistogramMappingTDigest,
-			at:   pmetric.AggregationTemporalityDelta,
+			name:   "Validate returns nil when histogram mapping is TDigest and has delta temporality",
+			hm:     HistogramMappingTDigest,
+			metric: m,
+			at:     pmetric.AggregationTemporalityDelta,
 		},
 		{
-			name: "Validate returns nil when histogram mapping is raw and has delta temporality",
+			name:   "Validate returns nil when histogram mapping is raw and has delta temporality",
+			hm:     HistogramMappingRaw,
+			at:     pmetric.AggregationTemporalityDelta,
+			metric: m,
+		},
+		{
+			name:   "Validate returns nil when histogram mapping is exponential and has delta temporality",
+			hm:     HistogramMappingExponential,
+			at:     pmetric.AggregationTemporalityDelta,
+			metric: m,
+		},
+		{
+			name:   "Validate returns nil when histogram mapping is double and has delta temporality",
+			hm:     HistogramMappingAggregateMetricDouble,
+			at:     pmetric.AggregationTemporalityDelta,
+			metric: m,
+		},
+		{
+			name: "Validate returns error when bucket count is not one greater than explicit bounds count",
 			hm:   HistogramMappingRaw,
 			at:   pmetric.AggregationTemporalityDelta,
+			metric: func() pmetric.Metric {
+				now := time.Now()
+				m := pmetric.NewMetric()
+				m.SetName("test")
+				dp := m.SetEmptyHistogram().DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(-1 * time.Hour)))
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
+				dp.BucketCounts().Append(4, 2, 1, 0)
+				dp.ExplicitBounds().Append(4, 1)
+
+				return m
+			}(),
+			expectedError:         true,
+			expectedErrorContains: "histogram \"test\" bucket count must be one greater than explicit bounds count, ignoring ",
 		},
 		{
-			name: "Validate returns nil when histogram mapping is exponential and has delta temporality",
-			hm:   HistogramMappingExponential,
+			name: "Validate returns error when explicit bounds is not increasing",
+			hm:   HistogramMappingRaw,
 			at:   pmetric.AggregationTemporalityDelta,
+			metric: func() pmetric.Metric {
+				now := time.Now()
+				m := pmetric.NewMetric()
+				m.SetName("test")
+				dp := m.SetEmptyHistogram().DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(-1 * time.Hour)))
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
+				dp.BucketCounts().Append(3, 1, 0)
+				dp.ExplicitBounds().Append(4, 1)
+
+				return m
+			}(),
+			expectedError:         true,
+			expectedErrorContains: "histogram \"test\" bounds are not sorted or are not unique, ignoring",
 		},
 		{
-			name: "Validate returns nil when histogram mapping is double and has delta temporality",
-			hm:   HistogramMappingAggregateMetricDouble,
+			name: "Validate returns error when explicit bounds is not unique",
+			hm:   HistogramMappingRaw,
 			at:   pmetric.AggregationTemporalityDelta,
+			metric: func() pmetric.Metric {
+				now := time.Now()
+				m := pmetric.NewMetric()
+				m.SetName("test")
+				dp := m.SetEmptyHistogram().DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(-1 * time.Hour)))
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
+				dp.BucketCounts().Append(1, 2, 3)
+				dp.ExplicitBounds().Append(4, 4)
+
+				return m
+			}(),
+			expectedError:         true,
+			expectedErrorContains: "histogram \"test\" bounds are not sorted or are not unique, ignoring",
+		},
+		{
+			name: "Validate returns nil when explicit bounds are unique and increasing",
+			hm:   HistogramMappingRaw,
+			at:   pmetric.AggregationTemporalityDelta,
+			metric: func() pmetric.Metric {
+				now := time.Now()
+				m := pmetric.NewMetric()
+				m.SetName("test")
+				dp := m.SetEmptyHistogram().DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(-1 * time.Hour)))
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
+				dp.BucketCounts().Append(1, 2, 3)
+				dp.ExplicitBounds().Append(4, 5)
+
+				return m
+			}(),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			now := time.Now()
-			dp := pmetric.NewHistogramDataPoint()
-			dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(-1 * time.Hour)))
-			dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
-
-			m := pmetric.NewMetric()
-			m.SetName("test")
-			dp.MoveTo(m.SetEmptyHistogram().DataPoints().AppendEmpty())
+			m := tc.metric
 			m.Histogram().SetAggregationTemporality(tc.at)
+			dp := m.Histogram().DataPoints().At(0)
 
-			esHist := NewHistogram(m, m.Histogram().DataPoints().At(0), tc.hm)
+			esHist := NewHistogram(m, dp, tc.hm)
 
 			err := esHist.Validate()
 			if tc.expectedError {
-				assert.ErrorContains(t, err, "cumulative temporality histogram \"test\" is only supported when stored as exponential_histogram")
+				assert.ErrorContains(t, err, tc.expectedErrorContains)
 			} else {
 				assert.NoError(t, err)
 			}
@@ -497,6 +591,48 @@ func TestHistogramTemporality(t *testing.T) {
 
 			actual := esHist.Temporality()
 			assert.Equal(t, tc.expectedTemporality, actual)
+		})
+	}
+}
+
+func TestHistogramExemplars(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		dp       pmetric.HistogramDataPoint
+		expected []any
+	}{
+		{
+			name: "returns double",
+			dp: func() pmetric.HistogramDataPoint {
+				dp := pmetric.NewHistogramDataPoint()
+				dp.SetSum(123)
+				dp.SetCount(3)
+				dp.Exemplars().AppendEmpty().SetDoubleValue(10)
+				dp.Exemplars().AppendEmpty().SetDoubleValue(20)
+				return dp
+			}(),
+			expected: []any{10.0, 20.0},
+		},
+		{
+			name: "returns int",
+			dp: func() pmetric.HistogramDataPoint {
+				dp := pmetric.NewHistogramDataPoint()
+				dp.SetSum(123)
+				dp.SetCount(3)
+				dp.Exemplars().AppendEmpty().SetIntValue(10)
+				dp.Exemplars().AppendEmpty().SetIntValue(20)
+				return dp
+			}(),
+			expected: []any{int64(10), int64(20)},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := pmetric.NewMetric()
+			m.SetName("test")
+
+			esHist := NewHistogram(m, tc.dp, HistogramMappingExponential)
+			actual := esHist.Exemplars()
+			assert.Equal(t, tc.expected, exemplarValues(t, actual))
 		})
 	}
 }

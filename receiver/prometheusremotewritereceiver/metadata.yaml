@@ -51,7 +51,7 @@ tests:
 
 feature_gates:
   - id: receiver.prometheus_remote_write.disableJobSplit
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, the prometheusremotewritereceiver will disable the splitting of the job label by '/' to derive service.namespace and service.name, instead mapping the entire job string to service.name.
     from_version: v0.166.0
