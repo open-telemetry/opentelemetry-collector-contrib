@@ -57,7 +57,7 @@ telemetry:
       description: The total number of connections closed.
       extended_documentation: Only produced when franz-go is enabled.
       optional: true
-      unit: "1"
+      unit: "{connection}"
       sum:
         value_type: int
         monotonic: true
@@ -68,7 +68,7 @@ telemetry:
       description: The total number of connections opened.
       extended_documentation: Only produced when franz-go is enabled.
       optional: true
-      unit: "1"
+      unit: "{connection}"
       sum:
         value_type: int
         monotonic: true
@@ -132,7 +132,7 @@ telemetry:
       stability: deprecated
       description: The number of exported messages.
       extended_documentation: Deprecated in favor of kafka_exporter_records.
-      unit: "1"
+      unit: "{message}"
       sum:
         value_type: int
         monotonic: true
@@ -143,7 +143,7 @@ telemetry:
       enabled: true
       stability: development
       description: The number of exported records.
-      unit: "1"
+      unit: "{record}"
       sum:
         value_type: int
         monotonic: true
