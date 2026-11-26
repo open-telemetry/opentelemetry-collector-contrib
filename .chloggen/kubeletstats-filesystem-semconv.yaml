@@ -1,4 +1,0 @@
-change_type: enhancement
-component: receiver/kubelet_stats
-note: Emit container, pod, and node filesystem available, capacity, and usage metrics as UpDownCounters when the `receiver.kubelet_stats.EmitV1K8sConventions` feature gate is enabled.
-issues: [53579]
