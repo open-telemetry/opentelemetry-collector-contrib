@@ -26,7 +26,6 @@ require (
 	go.opentelemetry.io/collector/consumer v1.72.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/consumer/consumertest v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/featuregate v1.72.1-0.20261126161120-4c6c46bf6bc6
-	go.opentelemetry.io/collector/filter v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/pdata v1.72.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/pdata/xpdata v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/pipeline v1.72.1-0.20261126161120-4c6c46bf6bc6
@@ -34,6 +33,7 @@ require (
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/receiver/receivertest v0.166.1-0.20261126161120-4c6c46bf6bc6
+	go.opentelemetry.io/collector/strmatch v0.0.0-20261126142948-f0f78f7b395a
 	go.opentelemetry.io/otel v1.47.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
@@ -79,7 +79,7 @@ require (
 	github.com/google/go-tpm v0.9.9-0.20260124013517-8f8f42cba0de // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.20.4 // indirect
+	github.com/klauspost/compress v1.20.5 // indirect
 	github.com/knadh/koanf/maps v0.1.3 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.1 // indirect
 	github.com/knadh/koanf/v2 v2.4.1 // indirect
@@ -93,7 +93,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
-	github.com/pierrec/lz4/v4 v4.1.33 // indirect
+	github.com/pierrec/lz4/v4 v4.1.34 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect

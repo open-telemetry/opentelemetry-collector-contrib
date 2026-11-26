@@ -223,7 +223,7 @@ require (
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.20.4 // indirect
+	github.com/klauspost/compress v1.20.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/knadh/koanf/maps v0.1.3 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.1 // indirect
@@ -260,7 +260,7 @@ require (
 	github.com/pandatix/go-abnf v0.5.5 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
-	github.com/pierrec/lz4/v4 v4.1.33 // indirect
+	github.com/pierrec/lz4/v4 v4.1.34 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
@@ -320,7 +320,6 @@ require (
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
-	go.opentelemetry.io/collector/filter v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
@@ -339,6 +338,7 @@ require (
 	go.opentelemetry.io/collector/scraper v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
 	go.opentelemetry.io/collector/service/hostcapabilities v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
+	go.opentelemetry.io/collector/strmatch v0.0.0-20261126142948-f0f78f7b395a // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.21.0 // indirect
 	go.opentelemetry.io/contrib/detectors/aws/ec2/v2 v2.6.0 // indirect
 	go.opentelemetry.io/contrib/detectors/aws/ecs v1.47.0 // indirect

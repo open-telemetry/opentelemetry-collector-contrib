@@ -21,7 +21,6 @@ require (
 	go.opentelemetry.io/collector/consumer v1.72.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/consumer/consumertest v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/featuregate v1.72.1-0.20261126161120-4c6c46bf6bc6
-	go.opentelemetry.io/collector/filter v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/pdata v1.72.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/pdata/xpdata v0.166.1-0.20261126161120-4c6c46bf6bc6
@@ -31,6 +30,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/scraper v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.166.1-0.20261126161120-4c6c46bf6bc6
+	go.opentelemetry.io/collector/strmatch v0.0.0-20261126142948-f0f78f7b395a
 	go.opentelemetry.io/otel v1.47.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -63,7 +63,7 @@ require (
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.20.4 // indirect
+	github.com/klauspost/compress v1.20.5 // indirect
 	github.com/knadh/koanf/maps v0.1.3 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.1 // indirect
 	github.com/knadh/koanf/v2 v2.4.1 // indirect
@@ -74,7 +74,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pandatix/go-abnf v0.5.5 // indirect
-	github.com/pierrec/lz4/v4 v4.1.33 // indirect
+	github.com/pierrec/lz4/v4 v4.1.34 // indirect
 	github.com/power-devops/perfstat v0.0.0-20260805114148-88456608a4f6 // indirect
 	github.com/prometheus/client_golang v1.24.1 // indirect
 	github.com/prometheus/client_model v0.6.3 // indirect
