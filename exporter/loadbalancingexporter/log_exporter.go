@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/metric"
@@ -46,16 +45,17 @@ type logExporterImp struct {
 
 // Create new logs exporter
 func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExporterImp, error) {
+	if err := checkHTTPSignalEndpoint(cfg.(*Config), "logs"); err != nil {
+		return nil, err
+	}
 	telemetry, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
-	exporterFactory := otlpexporter.NewFactory()
 	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
-		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
-		oParams := buildExporterSettings(exporterFactory.Type(), params, endpoint)
+		f, oCfg, oParams := newBackend(cfg.(*Config), params, endpoint)
 
-		return exporterFactory.CreateLogs(ctx, oParams, &oCfg)
+		return f.CreateLogs(ctx, oParams, oCfg)
 	}
 
 	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry)
