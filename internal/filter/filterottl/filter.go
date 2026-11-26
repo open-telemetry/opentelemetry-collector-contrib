@@ -4,6 +4,8 @@
 package filterottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 
 import (
+	"slices"
+
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -26,7 +28,7 @@ func NewBoolExprForSpan(conditions []string, functions map[string]ottl.Factory[*
 }
 
 // NewBoolExprForSpanWithOptions is like NewBoolExprForSpan, but with additional options.
-func NewBoolExprForSpanWithOptions(conditions []string, functions map[string]ottl.Factory[*ottlspan.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings, parserOptions []ottl.Option[*ottlspan.TransformContext]) (*ottl.ConditionSequence[*ottlspan.TransformContext], error) {
+func NewBoolExprForSpanWithOptions(conditions []string, functions map[string]ottl.Factory[*ottlspan.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings, parserOptions []ottl.Option[*ottlspan.TransformContext], sequenceOptions ...ottlspan.ConditionSequenceOption) (*ottl.ConditionSequence[*ottlspan.TransformContext], error) {
 	parser, err := ottlspan.NewParser(functions, set, parserOptions...)
 	if err != nil {
 		return nil, err
@@ -35,7 +37,7 @@ func NewBoolExprForSpanWithOptions(conditions []string, functions map[string]ott
 	if err != nil {
 		return nil, err
 	}
-	c := ottlspan.NewConditionSequence(statements, set, ottlspan.WithConditionSequenceErrorMode(errorMode))
+	c := ottlspan.NewConditionSequence(statements, set, slices.Concat(sequenceOptions, []ottlspan.ConditionSequenceOption{ottlspan.WithConditionSequenceErrorMode(errorMode)})...)
 	return &c, nil
 }
 
@@ -47,7 +49,7 @@ func NewBoolExprForSpanEvent(conditions []string, functions map[string]ottl.Fact
 }
 
 // NewBoolExprForSpanEventWithOptions is like NewBoolExprForSpanEvent, but with additional options.
-func NewBoolExprForSpanEventWithOptions(conditions []string, functions map[string]ottl.Factory[*ottlspanevent.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings, parserOptions []ottl.Option[*ottlspanevent.TransformContext]) (*ottl.ConditionSequence[*ottlspanevent.TransformContext], error) {
+func NewBoolExprForSpanEventWithOptions(conditions []string, functions map[string]ottl.Factory[*ottlspanevent.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings, parserOptions []ottl.Option[*ottlspanevent.TransformContext], sequenceOptions ...ottlspanevent.ConditionSequenceOption) (*ottl.ConditionSequence[*ottlspanevent.TransformContext], error) {
 	parser, err := ottlspanevent.NewParser(functions, set, parserOptions...)
 	if err != nil {
 		return nil, err
@@ -56,7 +58,7 @@ func NewBoolExprForSpanEventWithOptions(conditions []string, functions map[strin
 	if err != nil {
 		return nil, err
 	}
-	c := ottlspanevent.NewConditionSequence(statements, set, ottlspanevent.WithConditionSequenceErrorMode(errorMode))
+	c := ottlspanevent.NewConditionSequence(statements, set, slices.Concat(sequenceOptions, []ottlspanevent.ConditionSequenceOption{ottlspanevent.WithConditionSequenceErrorMode(errorMode)})...)
 	return &c, nil
 }
 
@@ -68,7 +70,7 @@ func NewBoolExprForMetric(conditions []string, functions map[string]ottl.Factory
 }
 
 // NewBoolExprForMetricWithOptions is like NewBoolExprForMetric, but with additional options.
-func NewBoolExprForMetricWithOptions(conditions []string, functions map[string]ottl.Factory[*ottlmetric.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings, parserOptions []ottl.Option[*ottlmetric.TransformContext]) (*ottl.ConditionSequence[*ottlmetric.TransformContext], error) {
+func NewBoolExprForMetricWithOptions(conditions []string, functions map[string]ottl.Factory[*ottlmetric.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings, parserOptions []ottl.Option[*ottlmetric.TransformContext], sequenceOptions ...ottlmetric.ConditionSequenceOption) (*ottl.ConditionSequence[*ottlmetric.TransformContext], error) {
 	parser, err := ottlmetric.NewParser(functions, set, parserOptions...)
 	if err != nil {
 		return nil, err
@@ -77,7 +79,7 @@ func NewBoolExprForMetricWithOptions(conditions []string, functions map[string]o
 	if err != nil {
 		return nil, err
 	}
-	c := ottlmetric.NewConditionSequence(statements, set, ottlmetric.WithConditionSequenceErrorMode(errorMode))
+	c := ottlmetric.NewConditionSequence(statements, set, slices.Concat(sequenceOptions, []ottlmetric.ConditionSequenceOption{ottlmetric.WithConditionSequenceErrorMode(errorMode)})...)
 	return &c, nil
 }
 
@@ -89,7 +91,7 @@ func NewBoolExprForDataPoint(conditions []string, functions map[string]ottl.Fact
 }
 
 // NewBoolExprForDataPointWithOptions is like NewBoolExprForDataPoint, but with additional options.
-func NewBoolExprForDataPointWithOptions(conditions []string, functions map[string]ottl.Factory[*ottldatapoint.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings, parserOptions []ottl.Option[*ottldatapoint.TransformContext]) (*ottl.ConditionSequence[*ottldatapoint.TransformContext], error) {
+func NewBoolExprForDataPointWithOptions(conditions []string, functions map[string]ottl.Factory[*ottldatapoint.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings, parserOptions []ottl.Option[*ottldatapoint.TransformContext], sequenceOptions ...ottldatapoint.ConditionSequenceOption) (*ottl.ConditionSequence[*ottldatapoint.TransformContext], error) {
 	parser, err := ottldatapoint.NewParser(functions, set, parserOptions...)
 	if err != nil {
 		return nil, err
@@ -98,7 +100,7 @@ func NewBoolExprForDataPointWithOptions(conditions []string, functions map[strin
 	if err != nil {
 		return nil, err
 	}
-	c := ottldatapoint.NewConditionSequence(statements, set, ottldatapoint.WithConditionSequenceErrorMode(errorMode))
+	c := ottldatapoint.NewConditionSequence(statements, set, slices.Concat(sequenceOptions, []ottldatapoint.ConditionSequenceOption{ottldatapoint.WithConditionSequenceErrorMode(errorMode)})...)
 	return &c, nil
 }
 
@@ -110,7 +112,7 @@ func NewBoolExprForExemplar(conditions []string, functions map[string]ottl.Facto
 }
 
 // NewBoolExprForExemplarWithOptions is like NewBoolExprForExemplar, but with additional options.
-func NewBoolExprForExemplarWithOptions(conditions []string, functions map[string]ottl.Factory[*ottlexemplar.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings, parserOptions []ottl.Option[*ottlexemplar.TransformContext]) (*ottl.ConditionSequence[*ottlexemplar.TransformContext], error) {
+func NewBoolExprForExemplarWithOptions(conditions []string, functions map[string]ottl.Factory[*ottlexemplar.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings, parserOptions []ottl.Option[*ottlexemplar.TransformContext], sequenceOptions ...ottlexemplar.ConditionSequenceOption) (*ottl.ConditionSequence[*ottlexemplar.TransformContext], error) {
 	parser, err := ottlexemplar.NewParser(functions, set, parserOptions...)
 	if err != nil {
 		return nil, err
@@ -119,7 +121,7 @@ func NewBoolExprForExemplarWithOptions(conditions []string, functions map[string
 	if err != nil {
 		return nil, err
 	}
-	c := ottlexemplar.NewConditionSequence(statements, set, ottlexemplar.WithConditionSequenceErrorMode(errorMode))
+	c := ottlexemplar.NewConditionSequence(statements, set, slices.Concat(sequenceOptions, []ottlexemplar.ConditionSequenceOption{ottlexemplar.WithConditionSequenceErrorMode(errorMode)})...)
 	return &c, nil
 }
 
@@ -131,7 +133,7 @@ func NewBoolExprForLog(conditions []string, functions map[string]ottl.Factory[*o
 }
 
 // NewBoolExprForLogWithOptions is like NewBoolExprForLog, but with additional options.
-func NewBoolExprForLogWithOptions(conditions []string, functions map[string]ottl.Factory[*ottllog.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings, parserOptions []ottl.Option[*ottllog.TransformContext]) (*ottl.ConditionSequence[*ottllog.TransformContext], error) {
+func NewBoolExprForLogWithOptions(conditions []string, functions map[string]ottl.Factory[*ottllog.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings, parserOptions []ottl.Option[*ottllog.TransformContext], sequenceOptions ...ottllog.ConditionSequenceOption) (*ottl.ConditionSequence[*ottllog.TransformContext], error) {
 	parser, err := ottllog.NewParser(functions, set, parserOptions...)
 	if err != nil {
 		return nil, err
@@ -140,7 +142,7 @@ func NewBoolExprForLogWithOptions(conditions []string, functions map[string]ottl
 	if err != nil {
 		return nil, err
 	}
-	c := ottllog.NewConditionSequence(statements, set, ottllog.WithConditionSequenceErrorMode(errorMode))
+	c := ottllog.NewConditionSequence(statements, set, slices.Concat(sequenceOptions, []ottllog.ConditionSequenceOption{ottllog.WithConditionSequenceErrorMode(errorMode)})...)
 	return &c, nil
 }
 
@@ -152,7 +154,7 @@ func NewBoolExprForProfile(conditions []string, functions map[string]ottl.Factor
 }
 
 // NewBoolExprForProfileWithOptions is like NewBoolExprForProfile, but with additional options.
-func NewBoolExprForProfileWithOptions(conditions []string, functions map[string]ottl.Factory[*ottlprofile.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings, parserOptions []ottl.Option[*ottlprofile.TransformContext]) (*ottl.ConditionSequence[*ottlprofile.TransformContext], error) {
+func NewBoolExprForProfileWithOptions(conditions []string, functions map[string]ottl.Factory[*ottlprofile.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings, parserOptions []ottl.Option[*ottlprofile.TransformContext], sequenceOptions ...ottlprofile.ConditionSequenceOption) (*ottl.ConditionSequence[*ottlprofile.TransformContext], error) {
 	parser, err := ottlprofile.NewParser(functions, set, parserOptions...)
 	if err != nil {
 		return nil, err
@@ -161,7 +163,7 @@ func NewBoolExprForProfileWithOptions(conditions []string, functions map[string]
 	if err != nil {
 		return nil, err
 	}
-	c := ottlprofile.NewConditionSequence(statements, set, ottlprofile.WithConditionSequenceErrorMode(errorMode))
+	c := ottlprofile.NewConditionSequence(statements, set, slices.Concat(sequenceOptions, []ottlprofile.ConditionSequenceOption{ottlprofile.WithConditionSequenceErrorMode(errorMode)})...)
 	return &c, nil
 }
 
@@ -173,7 +175,7 @@ func NewBoolExprForResource(conditions []string, functions map[string]ottl.Facto
 }
 
 // NewBoolExprForResourceWithOptions is like NewBoolExprForResource, but with additional options.
-func NewBoolExprForResourceWithOptions(conditions []string, functions map[string]ottl.Factory[*ottlresource.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings, parserOptions []ottl.Option[*ottlresource.TransformContext]) (*ottl.ConditionSequence[*ottlresource.TransformContext], error) {
+func NewBoolExprForResourceWithOptions(conditions []string, functions map[string]ottl.Factory[*ottlresource.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings, parserOptions []ottl.Option[*ottlresource.TransformContext], sequenceOptions ...ottlresource.ConditionSequenceOption) (*ottl.ConditionSequence[*ottlresource.TransformContext], error) {
 	parser, err := ottlresource.NewParser(functions, set, parserOptions...)
 	if err != nil {
 		return nil, err
@@ -182,7 +184,7 @@ func NewBoolExprForResourceWithOptions(conditions []string, functions map[string
 	if err != nil {
 		return nil, err
 	}
-	c := ottlresource.NewConditionSequence(statements, set, ottlresource.WithConditionSequenceErrorMode(errorMode))
+	c := ottlresource.NewConditionSequence(statements, set, slices.Concat(sequenceOptions, []ottlresource.ConditionSequenceOption{ottlresource.WithConditionSequenceErrorMode(errorMode)})...)
 	return &c, nil
 }
 
@@ -194,7 +196,7 @@ func NewBoolExprForScope(conditions []string, functions map[string]ottl.Factory[
 }
 
 // NewBoolExprForScopeWithOptions is like NewBoolExprForScope, but with additional options.
-func NewBoolExprForScopeWithOptions(conditions []string, functions map[string]ottl.Factory[*ottlscope.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings, parserOptions []ottl.Option[*ottlscope.TransformContext]) (*ottl.ConditionSequence[*ottlscope.TransformContext], error) {
+func NewBoolExprForScopeWithOptions(conditions []string, functions map[string]ottl.Factory[*ottlscope.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings, parserOptions []ottl.Option[*ottlscope.TransformContext], sequenceOptions ...ottlscope.ConditionSequenceOption) (*ottl.ConditionSequence[*ottlscope.TransformContext], error) {
 	parser, err := ottlscope.NewParser(functions, set, parserOptions...)
 	if err != nil {
 		return nil, err
@@ -203,6 +205,6 @@ func NewBoolExprForScopeWithOptions(conditions []string, functions map[string]ot
 	if err != nil {
 		return nil, err
 	}
-	c := ottlscope.NewConditionSequence(statements, set, ottlscope.WithConditionSequenceErrorMode(errorMode))
+	c := ottlscope.NewConditionSequence(statements, set, slices.Concat(sequenceOptions, []ottlscope.ConditionSequenceOption{ottlscope.WithConditionSequenceErrorMode(errorMode)})...)
 	return &c, nil
 }
