@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"sync"
 	"testing"
 	"time"
 
@@ -1459,6 +1460,45 @@ func Test_FunctionGetter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_StandardFunctionGetter_concurrent(t *testing.T) {
+	fact := NewFactory(
+		"echo",
+		&stringGetterArguments{},
+		func(_ FunctionContext, oArgs Arguments) (ExprFunc[any], error) {
+			args := oArgs.(*stringGetterArguments)
+			return func(ctx context.Context, tCtx any) (any, error) {
+				return args.StringGetterArg.Get(ctx, tCtx)
+			}, nil
+		},
+	)
+	getter := StandardFunctionGetter[any]{
+		FCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()},
+		Fact: fact,
+	}
+	type funcArgs struct {
+		Input StringGetter[any]
+	}
+	keys := []string{"key_one", "key_two", "key_three", "key_four"}
+	var wg sync.WaitGroup
+	for _, key := range keys {
+		wg.Go(func() {
+			for range 2000 {
+				input := StandardStringGetter[any]{
+					Getter: func(context.Context, any) (any, error) {
+						return key, nil
+					},
+				}
+				expr, err := getter.Get(&funcArgs{Input: input})
+				assert.NoError(t, err)
+				got, err := expr.Eval(t.Context(), nil)
+				assert.NoError(t, err)
+				assert.Equal(t, key, got)
+			}
+		})
+	}
+	wg.Wait()
 }
 
 func BenchmarkStandardStringLikeGetter(b *testing.B) {

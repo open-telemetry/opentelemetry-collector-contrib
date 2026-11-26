@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
@@ -42,6 +43,9 @@ func TestLoadConfig(t *testing.T) {
 				Encoding: Encoding{
 					Name:        "otlp",
 					Compression: "none",
+					CompressionParams: configcompression.CompressionParams{
+						Level: configcompression.DefaultCompressionLevel,
+					},
 				},
 				AWS: AWSConfig{
 					Region: "us-west-2",
@@ -67,6 +71,9 @@ func TestLoadConfig(t *testing.T) {
 				Encoding: Encoding{
 					Name:        "otlp-proto",
 					Compression: "none",
+					CompressionParams: configcompression.CompressionParams{
+						Level: configcompression.DefaultCompressionLevel,
+					},
 				},
 				AWS: AWSConfig{
 					StreamName:      "test-stream",
@@ -88,6 +95,9 @@ func TestLoadConfig(t *testing.T) {
 				Encoding: Encoding{
 					Name:        "otlp",
 					Compression: "none",
+					CompressionParams: configcompression.CompressionParams{
+						Level: configcompression.DefaultCompressionLevel,
+					},
 				},
 				AWS: AWSConfig{
 					StreamName: "test-stream",

@@ -1,0 +1,5 @@
+change_type: enhancement
+component: pkg/xcompression
+note: Add the `AppendFileExtension` helper for appending compression suffixes to filenames.
+issues: [53568]
+change_logs: [api]

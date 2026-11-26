@@ -1,0 +1,5 @@
+change_type: enhancement
+component: exporter/awss3
+note: Reuse gzip and zstd writers to reduce compression time and allocations when preparing uploads.
+issues: [53568]
+change_logs: [user]

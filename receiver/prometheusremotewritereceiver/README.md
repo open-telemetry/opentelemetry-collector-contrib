@@ -159,13 +159,13 @@ The receiver reports every eviction in the `otelcol_receiver_prometheusremotewri
 
 For each `job` and `instance` pair:
 - `instance` (when non-empty) is mapped to the `service.instance.id` resource attribute.
-- By default, if `job` contains a single `/` (`<namespace>/<name>`), it is split into `service.namespace` and `service.name`; otherwise the full `job` value is mapped to `service.name`.
-- When the `receiver.prometheus_remote_write.disableJobSplit` feature gate is enabled (`--feature-gates=receiver.prometheus_remote_write.disableJobSplit`), the receiver maps the entire `job` value directly to `service.name` without splitting on `/`, matching `prometheusreceiver`. Because a valid `service.name` may itself contain `/`, the receiver cannot distinguish a `/` within `service.name` from a concatenated `<service.namespace>/<service.name>` value.
+- By default (controlled by the `receiver.prometheus_remote_write.disableJobSplit` feature gate, now in `beta`), the receiver maps the entire non-empty `job` value directly to `service.name` without splitting on `/`, matching `prometheusreceiver`. Because a valid `service.name` may itself contain `/`, the receiver cannot distinguish a `/` within `service.name` from a concatenated `<service.namespace>/<service.name>` value.
+- To temporarily restore the legacy behavior of splitting a `job` value containing a single `/` (`<namespace>/<name>`) into `service.namespace` and `service.name`, disable the feature gate with `--feature-gates=-receiver.prometheus_remote_write.disableJobSplit`.
 - Any attributes present on `target_info` series for the same `job`/`instance` pair take precedence and overwrite resource attributes derived from `job` and `instance`.
 
 #### Migrating to `receiver.prometheus_remote_write.disableJobSplit`
 
-If you rely on `service.namespace` being populated when `receiver.prometheus_remote_write.disableJobSplit` is enabled (or once it becomes the default):
+If you rely on `service.namespace` being populated from `job` now that `receiver.prometheus_remote_write.disableJobSplit` is enabled by default:
 
 1. **OTLP -> Prometheus -> Remote Write -> OTLP round-trip via `target_info`**:
    In the [OTLP-to-Prometheus specification](https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1), `service.namespace` and `service.name` are concatenated into `job="<service.namespace>/<service.name>"`. For round-trip preservation of `service.namespace` and `service.name` without splitting `job`:
