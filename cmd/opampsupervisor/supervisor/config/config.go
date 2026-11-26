@@ -376,9 +376,9 @@ type AgentDescription struct {
 type Telemetry struct {
 	// TODO: Add more telemetry options
 	// Issue here: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35582
-	Logs    Logs                           `mapstructure:"logs"`
-	Metrics Metrics                        `mapstructure:"metrics"`
-	Traces  otelconftelemetry.TracesConfig `mapstructure:"traces"`
+	Logs    Logs    `mapstructure:"logs"`
+	Metrics Metrics `mapstructure:"metrics"`
+	Traces  Traces  `mapstructure:"traces"`
 
 	Resource ResourceConfig `mapstructure:"resource"`
 	// prevent unkeyed literal initialization
@@ -426,6 +426,21 @@ type Logs struct {
 	// Processors allow configuration of log record processors to emit logs to
 	// any number of supported backends.
 	Processors []config.LogRecordProcessor `mapstructure:"processors,omitempty"`
+}
+
+type Traces struct {
+	// Level configures whether spans are emitted or not, the possible values are:
+	//  - "none" indicates that no tracing data should be collected;
+	//  - "basic" is the recommended and covers the basics of the service telemetry.
+	Level configtelemetry.Level `mapstructure:"level"`
+	// Propagators is a list of TextMapPropagators from the supported propagators list.
+	Propagators []string `mapstructure:"propagators"`
+
+	// Processors allow configuration of span processors to emit spans to
+	// any number of supported backends.
+	Processors []config.SpanProcessor `mapstructure:"processors,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Metrics struct {

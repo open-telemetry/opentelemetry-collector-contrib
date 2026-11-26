@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensiontest"
@@ -1424,4 +1425,41 @@ func runSupervisorConfigLoadTest(t *testing.T, cfgPath string, expected Supervis
 	}
 	require.NoError(t, err)
 	require.Equal(t, expected, cfg)
+}
+
+func TestLoad_TelemetryTraces(t *testing.T) {
+	tmpDir := t.TempDir()
+	executablePath := filepath.Join(tmpDir, "binary")
+	require.NoError(t, os.WriteFile(executablePath, []byte{}, 0o600))
+
+	cfgPath := setupSupervisorConfigFile(t, tmpDir, fmt.Sprintf(`
+server:
+  endpoint: ws://localhost/v1/opamp
+
+agent:
+  executable: %s
+
+telemetry:
+  traces:
+    level: basic
+    propagators:
+      - tracecontext
+    processors:
+      - simple:
+          exporter:
+            otlp:
+              protocol: http/protobuf
+              endpoint: http://localhost:4318
+`, executablePath))
+
+	cfg, err := Load(cfgPath)
+	require.NoError(t, err)
+
+	traces := cfg.Telemetry.Traces
+	require.Equal(t, configtelemetry.LevelBasic, traces.Level)
+	require.Equal(t, []string{"tracecontext"}, traces.Propagators)
+	require.Len(t, traces.Processors, 1)
+	require.NotNil(t, traces.Processors[0].Simple)
+	require.NotNil(t, traces.Processors[0].Simple.Exporter.OTLP)
+	require.Equal(t, "http://localhost:4318", *traces.Processors[0].Simple.Exporter.OTLP.Endpoint)
 }
