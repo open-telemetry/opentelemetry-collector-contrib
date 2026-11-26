@@ -399,6 +399,17 @@ func (c *postgreSQLClient) explainQueryInline(ctx context.Context, query, queryI
 
 	prepareDb := sqlquery.NewDbClient(sqlquery.ConnWrapper{Conn: conn}, setPlanCacheMode+prepareStatement, logger, sqlquery.TelemetryConfig{})
 	if _, err = prepareDb.QueryRows(ctx); err != nil {
+		var pgErr *pq.Error
+		if errors.As(err, &pgErr) && pgErr.SQLState() == "42P18" {
+			var version int
+			versionErr := conn.QueryRowContext(ctx, "/* otel-collector-ignore */ SHOW server_version_num").Scan(&version)
+			if versionErr != nil {
+				return "", fmt.Errorf("check PostgreSQL version for EXPLAIN fallback: %w", versionErr)
+			}
+			if version >= 160000 {
+				return runInlineExplain(ctx, conn, "/* otel-collector-ignore */ EXPLAIN (FORMAT JSON, GENERIC_PLAN) "+query, queryID, logger)
+			}
+		}
 		// A syntax error's character position refers to the repaired text, not the caller's.
 		logger.Error("failed to prepare statement for EXPLAIN", zap.Error(err), zap.String("queryID", queryID), zap.String("preparedQuery", query))
 		return "", err
@@ -434,8 +445,11 @@ func (c *postgreSQLClient) explainQueryInline(ctx context.Context, query, queryI
 		nullsString = "(" + strings.Join(nulls, ", ") + ")"
 	}
 	explainStatement := fmt.Sprintf("EXPLAIN(FORMAT JSON) EXECUTE otel_%s%s;", normalizedQueryID, nullsString)
+	return runInlineExplain(ctx, conn, explainStatement, queryID, logger)
+}
 
-	explainDb := sqlquery.NewDbClient(sqlquery.ConnWrapper{Conn: conn}, explainStatement, logger, sqlquery.TelemetryConfig{})
+func runInlineExplain(ctx context.Context, conn *sql.Conn, statement, queryID string, logger *zap.Logger) (string, error) {
+	explainDb := sqlquery.NewDbClient(sqlquery.ConnWrapper{Conn: conn}, statement, logger, sqlquery.TelemetryConfig{})
 	result, err := explainDb.QueryRows(ctx)
 	if err != nil {
 		logger.Error("failed to explain statement", zap.Error(err))

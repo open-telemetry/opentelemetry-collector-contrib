@@ -220,6 +220,9 @@ This defines the cache's size for query plan.
 - `explain_function_name`: (optional, default=empty). A DBA-provisioned `[schema.]function_name` used to collect query plans with the function owner's privileges. Empty uses direct EXPLAIN. See [helper function setup](#query-plans-for-write-and-locking-statements).
 - `explain_function_cache_ttl`: (optional, default=5m). How long to cache each database's helper availability. Must be positive when `explain_function_name` is set.
 
+On PostgreSQL 16 and later, plan collection retries with `EXPLAIN (GENERIC_PLAN)`
+when `PREPARE` cannot determine a parameter type.
+
 #### Query plans for write and locking statements
 
 PostgreSQL checks table privileges when planning statements. Direct EXPLAIN of

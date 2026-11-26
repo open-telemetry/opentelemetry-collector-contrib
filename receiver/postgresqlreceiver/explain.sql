@@ -44,7 +44,15 @@ BEGIN
     END IF;
 
     SET TRANSACTION READ ONLY;
-    EXECUTE 'PREPARE otel_explain_stmt AS ' || l_query;
+    BEGIN
+        EXECUTE 'PREPARE otel_explain_stmt AS ' || l_query;
+    EXCEPTION WHEN indeterminate_datatype THEN
+        IF pg_catalog.current_setting('server_version_num')::int < 160000 THEN
+            RAISE;
+        END IF;
+        EXECUTE 'EXPLAIN (FORMAT JSON, GENERIC_PLAN) ' || l_query INTO v_plan;
+        RETURN v_plan;
+    END;
     v_prepared := true;
 
     SELECT COALESCE(pg_catalog.array_length(parameter_types, 1), 0)

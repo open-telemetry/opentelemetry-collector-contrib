@@ -90,6 +90,31 @@ GRANT EXECUTE ON FUNCTION otel.explain_statement(text) TO monitor;`)
 			quoted := quoteExplainFunctionName("otel.explain_statement")
 			require.NoError(t, client.probeExplainFunction(t.Context(), quoted))
 
+			t.Run("explains a normalized JSON key with no inferred type", func(t *testing.T) {
+				_, err := admin.ExecContext(t.Context(), "SELECT json_build_object('extension', extname) FROM pg_extension")
+				require.NoError(t, err)
+				var query string
+				require.NoError(t, admin.QueryRowContext(t.Context(),
+					"SELECT query FROM pg_stat_statements WHERE query LIKE 'SELECT json_build_object(%'").Scan(&query))
+				require.Contains(t, query, "json_build_object($1, extname)")
+				major, err := parseMajorVersion(version)
+				require.NoError(t, err)
+
+				for _, mode := range []struct{ name, function string }{{"inline", ""}, {"helper", quoted}} {
+					t.Run(mode.name, func(t *testing.T) {
+						plan, err := client.explainQuery(t.Context(), query, "json_key", mode.function, zap.NewNop())
+						if major < 16 {
+							var queryErr *pq.Error
+							require.ErrorAs(t, err, &queryErr)
+							assert.Equal(t, "42P18", queryErr.SQLState())
+							return
+						}
+						require.NoError(t, err)
+						assert.Contains(t, plan, `"Relation Name":"pg_extension"`)
+					})
+				}
+			})
+
 			t.Run("write and locking plans without write grants", func(t *testing.T) {
 				queries := []struct{ query, node string }{
 					{"UPDATE explain_items SET value = $1 WHERE id = $2", "ModifyTable"},
