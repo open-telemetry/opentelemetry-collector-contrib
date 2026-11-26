@@ -45,6 +45,11 @@ func (dp Summary) DocCount() uint64 {
 	return dp.Count()
 }
 
+// Summary doesn't have Exemplars so here we are just returning an empty slice
+func (Summary) Exemplars() pmetric.ExemplarSlice {
+	return pmetric.NewExemplarSlice()
+}
+
 func (dp Summary) Metric() pmetric.Metric {
 	return dp.metric
 }
