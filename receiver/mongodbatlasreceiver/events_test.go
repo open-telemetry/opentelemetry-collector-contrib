@@ -6,6 +6,7 @@ package mongodbatlasreceiver
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -18,6 +19,8 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -180,6 +183,69 @@ func TestProjectGetFailure(t *testing.T) {
 		return sink.LogRecordCount() > 0
 	}, 2*time.Second, 500*time.Millisecond)
 	require.NoError(t, r.Shutdown(t.Context()))
+}
+
+// The checkpoint only moves forward when the events of the poll were fetched and delivered, so a failed poll is
+// retried from the same start time.
+func TestPollEventsCheckpoint(t *testing.T) {
+	retryable := errors.New("temporary failure")
+	for name, tc := range map[string]struct {
+		projectEventsErr error
+		orgEventsErr     error
+		consumerErr      error
+		wantAdvance      bool
+		wantErr          bool
+	}{
+		"success":                   {wantAdvance: true},
+		"project events error":      {projectEventsErr: retryable, wantErr: true},
+		"organization events error": {orgEventsErr: retryable, wantErr: true},
+		"consumer error":            {consumerErr: retryable, wantErr: true},
+		"permanent consumer error":  {consumerErr: consumererror.NewPermanent(retryable), wantAdvance: true, wantErr: true},
+		"permanent consumer error and organization events error": {
+			consumerErr: consumererror.NewPermanent(retryable), orgEventsErr: retryable, wantErr: true,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Events = configoptional.Some(EventsConfig{
+				Projects:      []*ProjectConfig{{Name: testProjectName}},
+				Organizations: []*OrgConfig{{ID: testOrgID}},
+				PollInterval:  time.Minute,
+			})
+			var sink consumer.Logs = &consumertest.LogsSink{}
+			if tc.consumerErr != nil {
+				sink = consumertest.NewErr(tc.consumerErr)
+			}
+			r, err := newEventsReceiver(receivertest.NewNopSettings(metadata.Type), cfg, sink)
+			require.NoError(t, err)
+
+			mClient := &mockEventsClient{}
+			mClient.setupGetProject()
+			mClient.setupGetOrganization()
+			mClient.On("GetProjectEvents", mock.Anything, mock.Anything, mock.Anything).Return(mClient.loadTestEvents(t, "project-events.json"), false, tc.projectEventsErr)
+			mClient.On("GetOrganizationEvents", mock.Anything, mock.Anything, mock.Anything).Return(mClient.loadTestEvents(t, "org-events.json"), false, tc.orgEventsErr)
+			r.client = mClient
+
+			start := time.Now().Add(-time.Hour)
+			r.record = &eventRecord{NextStartTime: &start}
+
+			err = r.pollEvents(t.Context())
+			if tc.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			if tc.wantAdvance {
+				require.True(t, r.record.NextStartTime.After(start), "the checkpoint moves forward")
+			} else {
+				require.Equal(t, start, *r.record.NextStartTime, "the next poll starts from the same time")
+			}
+
+			// Every project and organization is polled, even when an earlier one failed.
+			mClient.AssertCalled(t, "GetProjectEvents", mock.Anything, testProjectID, mock.Anything)
+			mClient.AssertCalled(t, "GetOrganizationEvents", mock.Anything, testOrgID, mock.Anything)
+		})
+	}
 }
 
 type mockEventsClient struct {
