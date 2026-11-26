@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/postgresql
+note: Add postgresql.replication_slot.active and postgresql.replication_slot.wal.safe_size metrics from pg_replication_slots (PostgreSQL 13+, disabled by default)
+issues: [53105]
+subtext: ""
+change_logs: [user]

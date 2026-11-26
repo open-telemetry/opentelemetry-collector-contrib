@@ -426,6 +426,45 @@ The total execution time of SQL statements currently tracked by pg_stat_statemen
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
+### postgresql.replication_slot.active
+
+Whether the replication slot is active (1) or inactive (0). An inactive slot continues to retain WAL segments and can silently exhaust disk space if left unmonitored.
+
+Requires PostgreSQL 13 or later.
+A value of 1 means an active walsender is using this slot; 0 means the
+replica or subscriber is currently disconnected.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {slot} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| postgresql.replication_slot.name | The name of the replication slot. | Any Str | Recommended | - |
+| postgresql.replication_slot.type | The type of the replication slot (physical or logical). | Str: ``physical``, ``logical`` | Recommended | - |
+| postgresql.replication_slot.wal_status | The WAL availability status of the replication slot. | Str: ``reserved``, ``extended``, ``unreserved``, ``lost``, ``unknown`` | Recommended | - |
+
+### postgresql.replication_slot.wal.safe_size
+
+Bytes of WAL remaining before the slot's retained WAL exceeds max_slot_wal_keep_size. A value near 0 signals imminent slot invalidation.
+
+Requires PostgreSQL 13 or later.
+No data point is reported when max_slot_wal_keep_size is unconstrained (-1)
+or when the slot has already lost WAL files.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| postgresql.replication_slot.name | The name of the replication slot. | Any Str | Recommended | - |
+| postgresql.replication_slot.type | The type of the replication slot (physical or logical). | Str: ``physical``, ``logical`` | Recommended | - |
+
 ### postgresql.sequential_scans
 
 The number of sequential scans.
