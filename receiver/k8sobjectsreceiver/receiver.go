@@ -44,6 +44,7 @@ type k8sobjectsreceiver struct {
 	mu              sync.Mutex
 	cancel          context.CancelFunc
 	registry        *informer.FactoryRegistry
+	registryOpts    []informer.Option
 	observerFunc    func(ctx context.Context, reg *informer.FactoryRegistry, object *K8sObjectsConfig) (k8sinventory.Observer, error)
 	wg              sync.WaitGroup
 	stopped         bool
@@ -83,6 +84,14 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 		consumer: consumer,
 		obsrecv:  obsrecv,
 		mu:       sync.Mutex{},
+	}
+
+	if config.DropManagedFields {
+		if !metadata.ReceiverK8sobjectsUseInformerObserverFeatureGate.IsEnabled() {
+			params.Logger.Warn("drop_managed_fields has no effect unless receiver.k8sobjects.useInformerObserver is enabled.")
+		} else {
+			kr.registryOpts = append(kr.registryOpts, informer.WithTransform(dropManagedFields))
+		}
 	}
 
 	kr.observerFunc = getObserverFunc(kr)
@@ -259,7 +268,7 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 				cctx, cancel := context.WithCancel(ctx)
 				var registry *informer.FactoryRegistry
 				if metadata.ReceiverK8sobjectsUseInformerObserverFeatureGate.IsEnabled() {
-					registry = informer.NewFactoryRegistry(kr.client, 0)
+					registry = informer.NewFactoryRegistry(kr.client, 0, kr.registryOpts...)
 				}
 				kr.mu.Lock()
 				if kr.stopped {
@@ -291,7 +300,7 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 		cctx, cancel := context.WithCancel(ctx)
 		var registry *informer.FactoryRegistry
 		if metadata.ReceiverK8sobjectsUseInformerObserverFeatureGate.IsEnabled() {
-			registry = informer.NewFactoryRegistry(kr.client, 0)
+			registry = informer.NewFactoryRegistry(kr.client, 0, kr.registryOpts...)
 		}
 		kr.mu.Lock()
 		kr.cancel = cancel
@@ -435,6 +444,14 @@ func (kr *k8sobjectsreceiver) startObserver(ctx context.Context, obs k8sinventor
 	})
 
 	return stopChan, nil
+}
+
+// dropManagedFields is an informer transform that removes metadata.managedFields.
+func dropManagedFields(obj any) (any, error) {
+	if u, ok := obj.(*unstructured.Unstructured); ok {
+		u.SetManagedFields(nil)
+	}
+	return obj, nil
 }
 
 // handleError handles errors according to the configured error mode
