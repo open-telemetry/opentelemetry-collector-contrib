@@ -9,7 +9,7 @@ $defs:
       database:
         type: string
       datasource:
-        type: string
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
       driver:
         type: string
       host:

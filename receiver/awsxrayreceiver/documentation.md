@@ -12,5 +12,7 @@ This component has the following feature gates:
 | `receiver.awsxray.DontEmitV0HttpConventions` | alpha | When enabled, semconv legacy HTTP attributes are disabled. | v0.158.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45085) |
 | `receiver.awsxray.EmitV1DatabaseConventions` | alpha | When enabled, the receiver emits new database semconv attributes (db.namespace, db.system.name, db.query.text) alongside or instead of deprecated equivalents. | v0.163.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22095) |
 | `receiver.awsxray.EmitV1HttpConventions` | alpha | When enabled, semconv stable HTTP attributes are enabled. | v0.158.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45085) |
+| `receiver.awsxray.DontEmitV0HttpConventions` | beta | When enabled, semconv legacy HTTP attributes are disabled. | v0.158.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45085) |
+| `receiver.awsxray.EmitV1HttpConventions` | beta | When enabled, semconv stable HTTP attributes are enabled. | v0.158.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45085) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

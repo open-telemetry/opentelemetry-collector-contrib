@@ -28,7 +28,7 @@ The authenticator type has to be set to `bearertokenauth`.
 
 - `tokens`: A list of static authorization tokens, one of which needs to be sent on every gRPC client call as metadata.
 
-- `filename`: Name of file that contains authorization tokens. The file is parsed line by line. On each line, the first whitespace-delimited string is treated as the token. Any text following the first whitespace is ignored and can be used for comments (e.g., `my-token # comment` or `my-token // comment`).
+- `filename`: Name of file that contains authorization tokens. For information on the expected format of the file, see [Token File Format](#token-file-format).
 
 - `retry_on_failure`: Optional. Controls retry behaviour during startup when the file referenced by `filename` is not yet available (e.g., the secret is mounted shortly after the collector starts).
   - `enabled`: When true, startup waits for the file to appear instead of failing immediately. Defaults to `false`.
@@ -83,6 +83,17 @@ service:
       processors: []
       exporters: [otlp_grpc/withauth, otlp_http/withauth]
 ```
+
+
+## Token File Format
+
+Due to a lack of specific standard or RFC for bearer token files, we parse the provided file with the following set of rules:
+* The token file is a text file with any extension containing any number of Bearer Authorization tokens in either JWT or Opaque format
+* Each token MUST be specified on its own line as the first whitespace-delimited string, all other contents of the line are ignored
+  - You may opt to use any remaining whitespace-delmited text after the first for comments, i.e. `my-token # this is my comment`
+  - Empty lines are ignored
+* If a line begins with a Bash comment token (`#`) the entire line is treated as a comment and skipped in parsing
+  - As a consequence of this, an opaque token of `#` is impossible to specify in a bearer token file
 
 ## Use as an OAuth2 token source
 

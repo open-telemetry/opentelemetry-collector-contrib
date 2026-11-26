@@ -541,16 +541,14 @@ func Test_extractOSFromKeyVal(t *testing.T) {
 
 func Test_extractNetworkFromKeyVal(t *testing.T) {
 	testcases := []struct {
-		name    string
-		kv      map[string]string
-		want    faroTypes.Network
-		wantErr assert.ErrorAssertionFunc
+		name string
+		kv   map[string]string
+		want faroTypes.Network
 	}{
 		{
-			name:    "empty kv yields zero-value Network",
-			kv:      map[string]string{},
-			want:    faroTypes.Network{},
-			wantErr: assert.NoError,
+			name: "empty kv yields zero-value Network",
+			kv:   map[string]string{},
+			want: faroTypes.Network{},
 		},
 		{
 			name: "all fields populated",
@@ -558,41 +556,17 @@ func Test_extractNetworkFromKeyVal(t *testing.T) {
 				"network_connection_type":    "cell",
 				"network_connection_subtype": "nr",
 				"network_carrier_name":       "TestCarrier",
-				"network_reachable":          "true",
 			},
 			want: faroTypes.Network{
 				ConnectionType:    "cell",
 				ConnectionSubtype: "nr",
 				CarrierName:       "TestCarrier",
-				Reachable:         new(true),
 			},
-			wantErr: assert.NoError,
-		},
-		{
-			name: "network_reachable set to false",
-			kv: map[string]string{
-				"network_connection_type": "wifi",
-				"network_reachable":       "false",
-			},
-			want: faroTypes.Network{
-				ConnectionType: "wifi",
-				Reachable:      new(false),
-			},
-			wantErr: assert.NoError,
-		},
-		{
-			name:    "network_reachable cannot be parsed as boolean",
-			kv:      map[string]string{"network_reachable": "maybe"},
-			wantErr: assert.Error,
 		},
 	}
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := extractNetworkFromKeyVal(tt.kv)
-			if !tt.wantErr(t, err, fmt.Sprintf("extractNetworkFromKeyVal(%v)", tt.kv)) {
-				return
-			}
-			assert.Equalf(t, tt.want, got, "extractNetworkFromKeyVal(%v)", tt.kv)
+			assert.Equalf(t, tt.want, extractNetworkFromKeyVal(tt.kv), "extractNetworkFromKeyVal(%v)", tt.kv)
 		})
 	}
 }
@@ -708,20 +682,11 @@ func Test_networkToKeyVal(t *testing.T) {
 				ConnectionType:    "cell",
 				ConnectionSubtype: "nr",
 				CarrierName:       "TestCarrier",
-				Reachable:         new(true),
 			},
 			want: map[string]string{
 				"network_connection_type":    "cell",
 				"network_connection_subtype": "nr",
 				"network_carrier_name":       "TestCarrier",
-				"network_reachable":          "true",
-			},
-		},
-		{
-			name:    "Reachable set to false is emitted",
-			network: faroTypes.Network{Reachable: new(false)},
-			want: map[string]string{
-				"network_reachable": "false",
 			},
 		},
 	}
@@ -730,9 +695,7 @@ func Test_networkToKeyVal(t *testing.T) {
 			got := keyValToStringMap(networkToKeyVal(tt.network))
 			assert.Equal(t, tt.want, got)
 
-			roundTrip, err := extractNetworkFromKeyVal(got)
-			require.NoError(t, err)
-			assert.Equal(t, tt.network, roundTrip)
+			assert.Equal(t, tt.network, extractNetworkFromKeyVal(got))
 		})
 	}
 }

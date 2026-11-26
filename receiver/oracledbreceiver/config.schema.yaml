@@ -83,14 +83,14 @@ properties:
   auth_type:
     $ref: auth_type
   datasource:
-    type: string
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
   endpoint:
     type: string
   kerberos:
     x-pointer: true
     $ref: kerberos_config
   password:
-    type: string
+    $ref: go.opentelemetry.io/collector/config/configopaque.string
   query_sample_collection:
     $ref: query_sample
   service:

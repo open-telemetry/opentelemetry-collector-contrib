@@ -1,4 +1,12 @@
 $defs:
+  compression_settings:
+    description: CompressionSettings contains the optional settings for S3 object compression.
+    type: object
+    properties:
+      level:
+        description: Level overrides the default compression level for the selected algorithm.
+        x-pointer: true
+        $ref: go.opentelemetry.io/collector/config/configcompression.level
   marshaler_type:
     type: string
   resource_attrs_to_s_3:
@@ -21,8 +29,11 @@ $defs:
         description: ACL is the canned ACL to use when uploading objects.
         type: string
       compression:
-        description: 'Compression sets the algorithm used to process the payload before uploading to S3. Valid values are: `gzip`, `zstd`, or no value set.'
+        description: Compression sets the algorithm used before uploading to S3. Supported values are gzip, zstd, zlib, deflate, snappy, x-snappy-framed, lz4, and none.
         $ref: go.opentelemetry.io/collector/config/configcompression.type
+      compression_settings:
+        description: CompressionSettings configures the selected compression algorithm.
+        $ref: compression_settings
       disable_ssl:
         description: DisableSLL forces communication to happen via HTTP instead of HTTPS.
         type: boolean

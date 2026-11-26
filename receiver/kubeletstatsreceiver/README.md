@@ -7,11 +7,12 @@ and sends it down the metric pipeline for further processing.
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
-| Semantic Conventions Version | 1.44.0 |
+| Semantic Conventions Version | 1.45.0 |
 | Distributions | [contrib], [k8s] |
+| Warnings      | [Other](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fkubeletstats%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fkubeletstats) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fkubeletstats%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fkubeletstats) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_kubeletstats)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_kubeletstats&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark), [@dloucasfx](https://www.github.com/dloucasfx), [@jinja2](https://www.github.com/jinja2) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark), [@jinja2](https://www.github.com/jinja2), [@PlateauGao](https://www.github.com/PlateauGao) |
 | Emeritus      | [@dmitryax](https://www.github.com/dmitryax) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -38,8 +39,22 @@ These metrics differ from host-level metrics (`hostmetricsreceiver` / `system.pr
 
 ### Kubernetes Versions
 
-This receiver is tested against the Kubernetes versions specified in the [e2e-tests.yml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/workflows/e2e-tests.yml#L97-L99)
-workflow. These tested versions represent the officially supported Kubernetes versions for this component.
+This receiver is tested against the Kubernetes versions specified in the [e2e-tests.yml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/workflows/e2e-tests.yml)
+workflow (`kubernetes-test-matrix` job). These tested versions represent the officially supported Kubernetes versions for this component.
+
+### Kubelet API
+
+The receiver reads the kubelet `/stats/summary` endpoint and decodes it with the
+`k8s.io/kubelet/pkg/apis/stats/v1alpha1` types. When `extra_metadata_labels` or any of the
+`{request,limit}_utilization` metrics are enabled, it also reads the kubelet `/pods` endpoint.
+The Summary API is not versioned by the kubelet, so its contents can vary between Kubernetes
+versions and container runtimes. Fields that the kubelet or the container runtime leave empty are
+skipped, and the corresponding metrics are not emitted.
+
+### Operating systems
+
+End-to-end tests run against Linux nodes only. The receiver has no Windows-specific handling;
+metrics depend on what the kubelet reports for Windows nodes and some metrics may be missing.
 
 ## Configuration
 
@@ -61,6 +76,15 @@ to authenticate to the kubelet API along with the default certificate which is s
 - `kubeConfig` tells this receiver to use the kubeconfig file (KUBECONFIG env variable or ~/.kube/config)
 to authenticate and use API server proxy to access the kubelet API.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
+
+### Migrating from `kubeletstats`
+
+The component type was renamed from `kubeletstats` to `kubelet_stats` in v0.152.0
+([#47957](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/47957)).
+The old name is still accepted as a deprecated alias, and the Collector logs a warning at startup
+when it is used. To migrate, replace `kubeletstats` with `kubelet_stats` everywhere the component
+ID appears, including named instances (for example `kubeletstats/node` becomes
+`kubelet_stats/node`) and pipeline `receivers` lists. No other configuration changes are needed.
 
 ### TLS Example
 
@@ -329,17 +353,6 @@ receivers:
 > produce an equivalent node-capacity-based utilization value.
 
 
-### Optional parameters
-
-The following parameters can also be specified:
-
-- `collection_interval` (default = `10s`): The interval at which to collect data.
-- `insecure_skip_verify` (default = `false`): Whether or not to skip certificate verification.
-
-The full list of settings exposed for this receiver are documented in [config.go](./config.go)
-with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
-
-
 ## Configuration Options Reference
 
 The Kubelet Stats Receiver supports the following configuration options. Options inherited from the Collector's scraper, network, kubelet client, and metric-builder configuration are included where applicable. See [config.go](./config.go) and the referenced configuration definitions for implementation details.
@@ -431,6 +444,52 @@ it and use the CPU usage reported by kubelet, start the Collector with:
 otelcol --config=config.yaml --feature-gates=-receiver.kubeletstats.cpuUsageScrapeBased
 ```
 
+### `receiver.kubelet_stats.cpuUtilizationRounding`
+
+This feature gate is at the alpha stage and is disabled by default. It affects the
+`k8s.{container,pod}.cpu.node.utilization`, `k8s.{container,pod}.cpu_limit_utilization`, and
+`k8s.{container,pod}.cpu_request_utilization` metrics.
+
+When enabled, these utilization ratios are computed from integer nanocore values and rounded to
+the number of significant digits justified by the inputs. This removes floating-point artifacts
+such as `0.30000000000000004`, which helps when values are compared, displayed, or deduplicated
+downstream. The result can differ slightly from the unrounded quotient.
+
+To enable it, start the Collector with:
+
+```shell
+otelcol --config=config.yaml --feature-gates=receiver.kubelet_stats.cpuUtilizationRounding
+```
+
+## Semantic Conventions Compatibility
+
+The receiver is migrating its metrics to the release candidate K8s and container [Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/registry/attributes/k8s/)
+through the following feature gates (both `alpha` and disabled by default):
+- `receiver.kubelet_stats.EmitV1K8sConventions`: emits the migrated metrics following the latest semantic conventions definition.
+- `receiver.kubelet_stats.DontEmitV0K8sConventions`: stops emitting the legacy version of the migrated metrics.
+
+Enabled `receiver.kubelet_stats.DontEmitV0K8sConventions` requires `receiver.kubelet_stats.EmitV1K8sConventions` to be enabled as well,
+otherwise the Collector fails to start because no version of the migrated metrics would be emitted.
+
+This follows the migration pattern described by the respective Collector [RFC](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/semconv-feature-gates.md#proposed-mechanism).
+
+The metric names are unchanged. The breaking changes between the 2 schemas are the following:
+- `container.memory.available`: Gauge -> non-monotonic cumulative Sum (UpDownCounter)
+- `container.memory.rss`: Gauge -> non-monotonic cumulative Sum (UpDownCounter)
+- `container.memory.usage`: Gauge -> non-monotonic cumulative Sum (UpDownCounter)
+- `container.memory.working_set`: Gauge -> non-monotonic cumulative Sum (UpDownCounter)
+
+The list of migrated metrics will grow as more metrics reach release candidate status in the semantic conventions.
+
+When `receiver.kubelet_stats.EmitV1K8sConventions` is enabled, the new version of each migrated metric is enabled
+whenever its legacy version is enabled. Because the legacy and new versions of the metrics above share the same name
+but have a different type, they cannot be emitted side by side: enabling `receiver.kubelet_stats.EmitV1K8sConventions`
+alone already replaces the legacy version with the new one, and a warning is logged at startup.
+Dashboards and alerts that rely on these metrics being Gauges should be reviewed before enabling the feature gate.
+
+To switch to the new schema, enable both feature gates:
+`--feature-gates=receiver.kubelet_stats.EmitV1K8sConventions,receiver.kubelet_stats.DontEmitV0K8sConventions`
+
 ## Self-observability
 
 The Kubelet Stats Receiver does not expose component-specific internal telemetry of its own. It uses the Collector's standard receiver and scraper observability mechanisms.
@@ -453,6 +512,8 @@ When `receiver.kubeletstats.cpuUsageScrapeBased` is enabled, the receiver retain
 
 After a Collector restart, the receiver needs to establish a new baseline from subsequent scrapes before it can calculate CPU usage. As a result, CPU usage values may be temporarily unavailable.
 
+Apart from these samples, the receiver keeps no state between scrapes and needs no special shutdown handling: stopping the Collector stops the scrape loop, and no data is buffered by the receiver.
+
 The receiver does not require persistent storage to preserve these CPU-time samples, and persistent storage is not supported for this calculation state.
 
 ## Deployment and scaling
@@ -467,6 +528,7 @@ When tuning collection for larger clusters, consider the following:
 - **Additional metadata and resource utilization:** Configuring `extra_metadata_labels` causes the receiver to fetch additional metadata from the kubelet `/pods` endpoint. Enabling any of the `{request,limit}_utilization` metrics also requires this endpoint to retrieve pod and container resource requests and limits.
 - **Kubernetes API access:** Configuring `k8s_api_config` enables additional Kubernetes API lookups for features that require Kubernetes metadata, including detailed persistent-volume metadata and node-capacity information used by the deprecated node-utilization metrics. The `k8s.{container,pod}.{cpu,memory}.node.utilization` metrics are deprecated. Prefer the corresponding CPU or memory usage metrics and `k8s.node.allocatable_cpu` or `k8s.node.allocatable_memory`, as appropriate. These alternatives use allocatable capacity and are not equivalent to the deprecated node-capacity-based calculation. Configure the required permissions for the features you enable.
 - **Network metric cardinality:** By default, node and pod network metrics are collected only for the default network interface. Enabling `collect_all_network_interfaces` increases the number of emitted metrics and their cardinality because metrics include the `interface` attribute.
+- **Resource sizing:** Collector CPU and memory usage grows with the number of pods and containers on the node, because each scrape decodes the full `/stats/summary` response. Use the [load-test benchmark results](#available-benchmarks) as a starting point and size DaemonSet resource limits for your largest nodes rather than the average node.
 - **Metric selection:** Use `metric_groups` and the individual metric enablement settings to limit the telemetry emitted to what your monitoring requirements need.
 
 ## Warnings

@@ -35,6 +35,7 @@ func createDefaultConfig() component.Config {
 	netAddr.Endpoint = "localhost:9090"
 	serverConfig := confighttp.NewDefaultServerConfig()
 	serverConfig.NetAddr = netAddr
+	serverConfig.CompressionAlgorithms = []string{"snappy"}
 	return &Config{
 		ServerConfig:      serverConfig,
 		ResourceCacheSize: defaultResourceCacheSize,

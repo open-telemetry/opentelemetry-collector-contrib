@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -40,7 +41,7 @@ type Config struct {
 }
 type MetricsConfig struct {
 	// App token is the token of Sematext Monitoring App to which you want to send the metrics.
-	AppToken string `mapstructure:"app_token"`
+	AppToken configopaque.String `mapstructure:"app_token"`
 	// MetricsEndpoint specifies the endpoint for receiving metrics in Sematext
 	MetricsEndpoint string `mapstructure:"-"`
 	// MetricsSchema indicates the metrics schema to emit to line protocol.
@@ -53,7 +54,7 @@ type MetricsConfig struct {
 }
 type LogsConfig struct {
 	// App token is the token of Sematext Monitoring App to which you want to send the logs.
-	AppToken string `mapstructure:"app_token"`
+	AppToken configopaque.String `mapstructure:"app_token"`
 	// LogsEndpoint specifies the endpoint for receiving logs in Sematext
 	LogsEndpoint string `mapstructure:"-"`
 }
@@ -73,11 +74,11 @@ func (cfg *Config) Validate() error {
 		return errors.New("at least one app_token must be provided (metrics.app_token or logs.app_token)")
 	}
 
-	if !isValidUUID(cfg.MetricsConfig.AppToken) && cfg.MetricsConfig.AppToken != "" {
-		return fmt.Errorf("invalid metrics app_token: %s. app_token is not a valid UUID", cfg.MetricsConfig.AppToken)
+	if !isValidUUID(string(cfg.MetricsConfig.AppToken)) && cfg.MetricsConfig.AppToken != "" {
+		return errors.New("invalid metrics app_token: app_token is not a valid UUID")
 	}
-	if !isValidUUID(cfg.LogsConfig.AppToken) && cfg.LogsConfig.AppToken != "" {
-		return fmt.Errorf("invalid logs app_token: %s. app_token is not a valid UUID", cfg.LogsConfig.AppToken)
+	if !isValidUUID(string(cfg.LogsConfig.AppToken)) && cfg.LogsConfig.AppToken != "" {
+		return errors.New("invalid logs app_token: app_token is not a valid UUID")
 	}
 
 	if strings.EqualFold(cfg.Region, euRegion) {
