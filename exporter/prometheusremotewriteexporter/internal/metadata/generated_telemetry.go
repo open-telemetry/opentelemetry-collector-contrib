@@ -83,7 +83,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ExporterPrometheusremotewriteFailedTranslations, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_failed_translations",
 		metric.WithDescription("Number of translation operations that failed to translate metrics from Otel to Prometheus [Development]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{translation}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteSentBatches, err = builder.meter.Int64Counter(
@@ -95,7 +95,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ExporterPrometheusremotewriteTranslatedTimeSeries, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_translated_time_series",
 		metric.WithDescription("Number of Prometheus time series that were translated from OTel metrics [Development]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{series}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWalBytesRead, err = builder.meter.Int64Counter(
@@ -113,7 +113,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ExporterPrometheusremotewriteWalLag, err = builder.meter.Int64Gauge(
 		"otelcol_exporter_prometheusremotewrite_wal_lag",
 		metric.WithDescription("WAL lag [Development]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{entry}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWalReadLatency, err = builder.meter.Int64Histogram(
@@ -126,13 +126,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ExporterPrometheusremotewriteWalReads, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_wal_reads",
 		metric.WithDescription("Number of WAL reads [Development]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{read}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWalReadsFailures, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_wal_reads_failures",
 		metric.WithDescription("Number of WAL reads that failed [Development]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{read}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWalSendFailedBatches, err = builder.meter.Int64Counter(
@@ -157,13 +157,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ExporterPrometheusremotewriteWalWrites, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_wal_writes",
 		metric.WithDescription("Number of WAL writes [Development]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{write}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWalWritesFailures, err = builder.meter.Int64Counter(
 		"otelcol_exporter_prometheusremotewrite_wal_writes_failures",
 		metric.WithDescription("Number of WAL writes that failed [Development]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{write}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterPrometheusremotewriteWrittenExemplars, err = builder.meter.Int64Counter(

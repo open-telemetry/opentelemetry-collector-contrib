@@ -41,7 +41,7 @@ func AssertEqualExporterPrometheusremotewriteFailedTranslations(t *testing.T, tt
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_prometheusremotewrite_failed_translations",
 		Description: "Number of translation operations that failed to translate metrics from Otel to Prometheus [Development]",
-		Unit:        "1",
+		Unit:        "{translation}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -73,7 +73,7 @@ func AssertEqualExporterPrometheusremotewriteTranslatedTimeSeries(t *testing.T, 
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_prometheusremotewrite_translated_time_series",
 		Description: "Number of Prometheus time series that were translated from OTel metrics [Development]",
-		Unit:        "1",
+		Unit:        "{series}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -121,7 +121,7 @@ func AssertEqualExporterPrometheusremotewriteWalLag(t *testing.T, tt *componentt
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_prometheusremotewrite_wal_lag",
 		Description: "WAL lag [Development]",
-		Unit:        "1",
+		Unit:        "{entry}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
 		},
@@ -150,7 +150,7 @@ func AssertEqualExporterPrometheusremotewriteWalReads(t *testing.T, tt *componen
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_prometheusremotewrite_wal_reads",
 		Description: "Number of WAL reads [Development]",
-		Unit:        "1",
+		Unit:        "{read}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -166,7 +166,7 @@ func AssertEqualExporterPrometheusremotewriteWalReadsFailures(t *testing.T, tt *
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_prometheusremotewrite_wal_reads_failures",
 		Description: "Number of WAL reads that failed [Development]",
-		Unit:        "1",
+		Unit:        "{read}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -229,7 +229,7 @@ func AssertEqualExporterPrometheusremotewriteWalWrites(t *testing.T, tt *compone
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_prometheusremotewrite_wal_writes",
 		Description: "Number of WAL writes [Development]",
-		Unit:        "1",
+		Unit:        "{write}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -245,7 +245,7 @@ func AssertEqualExporterPrometheusremotewriteWalWritesFailures(t *testing.T, tt 
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_prometheusremotewrite_wal_writes_failures",
 		Description: "Number of WAL writes that failed [Development]",
-		Unit:        "1",
+		Unit:        "{write}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,

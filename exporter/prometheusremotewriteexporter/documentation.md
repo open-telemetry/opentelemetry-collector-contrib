@@ -26,7 +26,7 @@ Number of translation operations that failed to translate metrics from Otel to P
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {translation} | Sum | Int | true | Development |
 
 ### otelcol_exporter_prometheusremotewrite_sent_batches
 
@@ -42,7 +42,7 @@ Number of Prometheus time series that were translated from OTel metrics
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {series} | Sum | Int | true | Development |
 
 ### otelcol_exporter_prometheusremotewrite_wal_bytes_read
 
@@ -66,7 +66,7 @@ WAL lag
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | Development |
+| {entry} | Gauge | Int | Development |
 
 ### otelcol_exporter_prometheusremotewrite_wal_read_latency
 
@@ -82,7 +82,7 @@ Number of WAL reads
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {read} | Sum | Int | true | Development |
 
 ### otelcol_exporter_prometheusremotewrite_wal_reads_failures
 
@@ -90,7 +90,7 @@ Number of WAL reads that failed
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {read} | Sum | Int | true | Development |
 
 ### otelcol_exporter_prometheusremotewrite_wal_send_failed_batches
 
@@ -122,7 +122,7 @@ Number of WAL writes
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {write} | Sum | Int | true | Development |
 
 ### otelcol_exporter_prometheusremotewrite_wal_writes_failures
 
@@ -130,7 +130,7 @@ Number of WAL writes that failed
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {write} | Sum | Int | true | Development |
 
 ### otelcol_exporter_prometheusremotewrite_written_exemplars
 
