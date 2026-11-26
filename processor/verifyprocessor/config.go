@@ -5,6 +5,8 @@ package verifyprocessor // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -29,17 +31,23 @@ const (
 
 	defaultBaoMountPath        = "secret"
 	defaultDeadLetterKeyPrefix = "dead_letter/"
+	minEntrySizeBytes          = 1 << 10
+	defaultMaxEntrySizeBytes   = 1 << 20
+	maxEntrySizeBytes          = 8 << 20
 )
 
 var (
-	errInvalidMode            = errors.New("mode must be sync")
-	errInvalidFailureMode     = errors.New("failure_mode must be strict, drop, or mark")
-	errInvalidKeySourceType   = errors.New("key_source.type must be k8s_secret, env, file, or bao")
-	errMissingKeySourceConfig = errors.New("key_source config block is missing for the specified type")
-	errKeySourceNeedsMaterial = errors.New("key_source must provide a certificate or hmac_key")
-	errKeySourceBothMaterials = errors.New("key_source must provide exactly one of certificate or hmac_key")
-	errDeadLetterNeedsStorage = errors.New("dead_letter.enabled requires dead_letter.storage")
-	errInvalidDeadLetterMode  = errors.New("dead_letter.failure_modes entries must be strict, drop, or mark")
+	errInvalidMode                  = errors.New("mode must be sync")
+	errInvalidFailureMode           = errors.New("failure_mode must be strict, drop, or mark")
+	errInvalidKeySourceType         = errors.New("key_source.type must be k8s_secret, env, file, or bao")
+	errMissingKeySourceConfig       = errors.New("key_source config block is missing for the specified type")
+	errKeySourceNeedsMaterial       = errors.New("key_source must provide a certificate or hmac_key")
+	errKeySourceBothMaterials       = errors.New("key_source must provide exactly one of certificate or hmac_key")
+	errDeadLetterNeedsStorage       = errors.New("dead_letter.enabled requires dead_letter.storage")
+	errInvalidDeadLetterMode        = errors.New("dead_letter.failure_modes entries must be strict, drop, or mark")
+	errInvalidDeadLetterSize        = fmt.Errorf("dead_letter.max_entry_size_bytes must be between %d and %d", minEntrySizeBytes, maxEntrySizeBytes)
+	errInvalidDeadLetterReason      = errors.New("dead_letter.reasons contains an unknown reason")
+	errUnsupportedDeadLetterOptions = errors.New("dead_letter ttl, deduplicate_by_record_id, maintain_index, and partition_by_stream are not supported yet")
 )
 
 type Config struct {
@@ -102,16 +110,17 @@ type BaoKeyConfig struct {
 }
 
 type DeadLetterConfig struct {
-	Enabled         bool         `mapstructure:"enabled"`
-	StorageID       component.ID `mapstructure:"storage"`
-	KeyPrefix       string       `mapstructure:"key_prefix"`
-	IncludeRecord   *bool        `mapstructure:"include_record"`
-	IncludeResource *bool        `mapstructure:"include_resource"`
-	Reasons         []string     `mapstructure:"reasons"`
-	FailureModes    []string     `mapstructure:"failure_modes"`
-	// TODO: validate bounds when DLQ is implemented (e.g. >0 and an upper cap).
-	MaxEntrySizeBytes     int           `mapstructure:"max_entry_size_bytes"`
-	FailOnStorageError    *bool         `mapstructure:"fail_on_storage_error"`
+	Enabled            bool          `mapstructure:"enabled"`
+	StorageID          *component.ID `mapstructure:"storage"`
+	KeyPrefix          string        `mapstructure:"key_prefix"`
+	IncludeRecord      *bool         `mapstructure:"include_record"`
+	IncludeResource    *bool         `mapstructure:"include_resource"`
+	Reasons            []string      `mapstructure:"reasons"`
+	FailureModes       []string      `mapstructure:"failure_modes"`
+	MaxEntrySizeBytes  int           `mapstructure:"max_entry_size_bytes"`
+	FailOnStorageError *bool         `mapstructure:"fail_on_storage_error"`
+	// PartitionByStream, DeduplicateByRecordID, MaintainIndex, and TTL are
+	// reserved. validate rejects a non-zero TTL and any true flag.
 	PartitionByStream     bool          `mapstructure:"partition_by_stream"`
 	DeduplicateByRecordID bool          `mapstructure:"deduplicate_by_record_id"`
 	MaintainIndex         bool          `mapstructure:"maintain_index"`
@@ -123,6 +132,10 @@ func createDefaultConfig() component.Config {
 		Mode:                defaultMode,
 		FailureMode:         defaultFailureMode,
 		VerificationProfile: defaultProfile,
+		DeadLetter: DeadLetterConfig{
+			KeyPrefix:         defaultDeadLetterKeyPrefix,
+			MaxEntrySizeBytes: defaultMaxEntrySizeBytes,
+		},
 	}
 }
 
@@ -206,21 +219,66 @@ func validateSecretMaterial(sc SecretConfig) error {
 }
 
 func (dl *DeadLetterConfig) validate() error {
+	if err := dl.rejectUnsupportedOptions(); err != nil {
+		return err
+	}
 	if !dl.Enabled {
 		return nil
 	}
-	if dl.StorageID == (component.ID{}) {
+	if dl.StorageID == nil || *dl.StorageID == (component.ID{}) {
 		return errDeadLetterNeedsStorage
 	}
-	if dl.KeyPrefix == "" {
-		dl.KeyPrefix = defaultDeadLetterKeyPrefix
+	if dl.MaxEntrySizeBytes < minEntrySizeBytes || dl.MaxEntrySizeBytes > maxEntrySizeBytes {
+		return errInvalidDeadLetterSize
 	}
 	for _, mode := range dl.FailureModes {
 		if mode != failureModeStrict && mode != failureModeDrop && mode != failureModeMark {
 			return errInvalidDeadLetterMode
 		}
 	}
+	for _, reason := range dl.Reasons {
+		if !knownDeadLetterReason(reason) {
+			return fmt.Errorf("%w: %s", errInvalidDeadLetterReason, reason)
+		}
+	}
 	return nil
+}
+
+func (dl *DeadLetterConfig) rejectUnsupportedOptions() error {
+	var names []string
+	if dl.TTL != 0 {
+		names = append(names, "ttl")
+	}
+	if dl.DeduplicateByRecordID {
+		names = append(names, "deduplicate_by_record_id")
+	}
+	if dl.MaintainIndex {
+		names = append(names, "maintain_index")
+	}
+	if dl.PartitionByStream {
+		names = append(names, "partition_by_stream")
+	}
+	if len(names) == 0 {
+		return nil
+	}
+	return fmt.Errorf("%w: %s", errUnsupportedDeadLetterOptions, strings.Join(names, ", "))
+}
+
+func knownDeadLetterReason(reason string) bool {
+	switch reason {
+	case reasonMissingIntegrityValue,
+		reasonMissingAlgorithm,
+		reasonUnsupportedAlgorithm,
+		reasonCertificateMismatch,
+		reasonMissingCertificate,
+		reasonInvalidSignature,
+		reasonIntegrityMismatch,
+		reasonSerializationError,
+		reasonKeyMaterialMismatch:
+		return true
+	default:
+		return false
+	}
 }
 
 var _ component.Config = (*Config)(nil)

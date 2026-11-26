@@ -20,12 +20,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 )
+
+func ptrID(id component.ID) *component.ID {
+	return &id
+}
 
 func TestConfigValidate(t *testing.T) {
 	t.Run("defaults filled", func(t *testing.T) {
@@ -102,29 +107,117 @@ func TestConfigValidate(t *testing.T) {
 	})
 
 	t.Run("dead letter defaults and modes", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.KeySource = KeySourceConfig{Type: keySourceEnv, Env: &EnvKeyConfig{HMACKey: "k"}}
+		cfg.DeadLetter.Enabled = true
+		cfg.DeadLetter.StorageID = ptrID(component.MustNewID("file"))
+		cfg.DeadLetter.FailureModes = []string{failureModeStrict, failureModeDrop}
+		require.NoError(t, cfg.Validate())
+		assert.Equal(t, defaultDeadLetterKeyPrefix, cfg.DeadLetter.KeyPrefix)
+		assert.Equal(t, defaultMaxEntrySizeBytes, cfg.DeadLetter.MaxEntrySizeBytes)
+	})
+
+	t.Run("dead letter zero size rejected", func(t *testing.T) {
 		cfg := &Config{
 			KeySource: KeySourceConfig{Type: keySourceEnv, Env: &EnvKeyConfig{HMACKey: "k"}},
 			DeadLetter: DeadLetterConfig{
-				Enabled:      true,
-				StorageID:    component.MustNewID("file"),
-				FailureModes: []string{failureModeStrict, failureModeDrop},
+				Enabled:   true,
+				StorageID: ptrID(component.MustNewID("file")),
 			},
 		}
-		require.NoError(t, cfg.Validate())
-		assert.Equal(t, defaultDeadLetterKeyPrefix, cfg.DeadLetter.KeyPrefix)
+		assert.ErrorIs(t, cfg.Validate(), errInvalidDeadLetterSize)
+	})
+
+	t.Run("dead letter invalid size", func(t *testing.T) {
+		cfg := &Config{
+			KeySource: KeySourceConfig{Type: keySourceEnv, Env: &EnvKeyConfig{HMACKey: "k"}},
+			DeadLetter: DeadLetterConfig{
+				Enabled:           true,
+				StorageID:         ptrID(component.MustNewID("file")),
+				MaxEntrySizeBytes: -1,
+			},
+		}
+		assert.ErrorIs(t, cfg.Validate(), errInvalidDeadLetterSize)
+	})
+
+	t.Run("dead letter size below minimum", func(t *testing.T) {
+		cfg := &Config{
+			KeySource: KeySourceConfig{Type: keySourceEnv, Env: &EnvKeyConfig{HMACKey: "k"}},
+			DeadLetter: DeadLetterConfig{
+				Enabled:           true,
+				StorageID:         ptrID(component.MustNewID("file")),
+				MaxEntrySizeBytes: minEntrySizeBytes - 1,
+			},
+		}
+		assert.ErrorIs(t, cfg.Validate(), errInvalidDeadLetterSize)
+	})
+
+	t.Run("dead letter unknown reason", func(t *testing.T) {
+		cfg := &Config{
+			KeySource: KeySourceConfig{Type: keySourceEnv, Env: &EnvKeyConfig{HMACKey: "k"}},
+			DeadLetter: DeadLetterConfig{
+				Enabled:           true,
+				StorageID:         ptrID(component.MustNewID("file")),
+				MaxEntrySizeBytes: defaultMaxEntrySizeBytes,
+				Reasons:           []string{"nope"},
+			},
+		}
+		assert.ErrorIs(t, cfg.Validate(), errInvalidDeadLetterReason)
+	})
+
+	t.Run("dead letter unsupported options", func(t *testing.T) {
+		cfg := &Config{
+			KeySource: KeySourceConfig{Type: keySourceEnv, Env: &EnvKeyConfig{HMACKey: "k"}},
+			DeadLetter: DeadLetterConfig{
+				TTL: time.Hour,
+			},
+		}
+		err := cfg.Validate()
+		assert.ErrorIs(t, err, errUnsupportedDeadLetterOptions)
+		assert.ErrorContains(t, err, "ttl")
+
+		cfg.DeadLetter.Enabled = true
+		cfg.DeadLetter.TTL = 0
+		cfg.DeadLetter.DeduplicateByRecordID = true
+		cfg.DeadLetter.MaintainIndex = true
+		cfg.DeadLetter.PartitionByStream = true
+		err = cfg.Validate()
+		assert.ErrorIs(t, err, errUnsupportedDeadLetterOptions)
+		assert.ErrorContains(t, err, "deduplicate_by_record_id, maintain_index, partition_by_stream")
 	})
 
 	t.Run("dead letter invalid mode", func(t *testing.T) {
 		cfg := &Config{
 			KeySource: KeySourceConfig{Type: keySourceEnv, Env: &EnvKeyConfig{HMACKey: "k"}},
 			DeadLetter: DeadLetterConfig{
-				Enabled:      true,
-				StorageID:    component.MustNewID("file"),
-				FailureModes: []string{"pass"},
+				Enabled:           true,
+				StorageID:         ptrID(component.MustNewID("file")),
+				MaxEntrySizeBytes: defaultMaxEntrySizeBytes,
+				FailureModes:      []string{"pass"},
 			},
 		}
 		assert.ErrorIs(t, cfg.Validate(), errInvalidDeadLetterMode)
 	})
+}
+
+func TestDeadLetterConfigFromYAML(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub("verify/dead_letter")
+	require.NoError(t, err)
+	cfg := createDefaultConfig().(*Config)
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, cfg.Validate())
+
+	require.NotNil(t, cfg.DeadLetter.StorageID)
+	assert.Equal(t, component.MustNewID("file_storage"), *cfg.DeadLetter.StorageID)
+	assert.Equal(t, "audit_verify_dlq/", cfg.DeadLetter.KeyPrefix)
+	assert.Equal(t, 1048576, cfg.DeadLetter.MaxEntrySizeBytes)
+	assert.Equal(t, []string{reasonIntegrityMismatch, reasonMissingIntegrityValue}, cfg.DeadLetter.Reasons)
+	require.NotNil(t, cfg.DeadLetter.FailOnStorageError)
+	assert.True(t, *cfg.DeadLetter.FailOnStorageError)
+	assert.Equal(t, failureModeMark, cfg.FailureMode)
+	assert.False(t, cfg.DeadLetter.PartitionByStream)
 }
 
 func TestFactoryAndProviderErrors(t *testing.T) {
@@ -153,10 +246,10 @@ func TestFactoryAndProviderErrors(t *testing.T) {
 	cfg = factory.CreateDefaultConfig().(*Config)
 	cfg.KeySource = KeySourceConfig{Type: keySourceFile, File: &FileKeyConfig{HMACKey: "testdata/dev_hmac_key.txt"}}
 	cfg.DeadLetter.Enabled = true
-	cfg.DeadLetter.StorageID = component.MustNewID("file")
+	cfg.DeadLetter.StorageID = ptrID(component.MustNewID("file"))
 	proc, err := factory.CreateLogs(t.Context(), settings, cfg, consumertest.NewNop())
 	require.NoError(t, err)
-	require.NoError(t, proc.Start(t.Context(), nil))
+	require.Error(t, proc.Start(t.Context(), nil))
 	require.NoError(t, proc.Shutdown(t.Context()))
 }
 
