@@ -17,8 +17,9 @@ import (
 
 func setDisableJobSplitFeatureGate(t *testing.T, enabled bool) {
 	t.Helper()
+	prev := metadata.ReceiverPrometheusRemoteWriteDisableJobSplitFeatureGate.IsEnabled()
 	t.Cleanup(func() {
-		assert.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverPrometheusRemoteWriteDisableJobSplitFeatureGate.ID(), false))
+		assert.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverPrometheusRemoteWriteDisableJobSplitFeatureGate.ID(), prev))
 	})
 	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverPrometheusRemoteWriteDisableJobSplitFeatureGate.ID(), enabled))
 }
@@ -124,9 +125,10 @@ func TestParseJobAndInstanceFeatureGate(t *testing.T) {
 }
 
 func TestTranslateV2DisableJobSplitFeatureGate(t *testing.T) {
-	setDisableJobSplitFeatureGate(t, true)
+	assert.Equal(t, featuregate.StageBeta, metadata.ReceiverPrometheusRemoteWriteDisableJobSplitFeatureGate.Stage())
+	require.True(t, metadata.ReceiverPrometheusRemoteWriteDisableJobSplitFeatureGate.IsEnabled())
 
-	t.Run("without target_info keeps namespace/service in service.name", func(t *testing.T) {
+	t.Run("without target_info keeps namespace/service in service.name by default", func(t *testing.T) {
 		prwReceiver := setupMetricsReceiver(t)
 		req := &writev2.Request{
 			Symbols: []string{
@@ -155,6 +157,37 @@ func TestTranslateV2DisableJobSplitFeatureGate(t *testing.T) {
 		}, resAttrs.AsRaw())
 		_, hasNamespace := resAttrs.Get("service.namespace")
 		assert.False(t, hasNamespace)
+	})
+
+	t.Run("gate disabled splits namespace/service", func(t *testing.T) {
+		setDisableJobSplitFeatureGate(t, false)
+		prwReceiver := setupMetricsReceiver(t)
+		req := &writev2.Request{
+			Symbols: []string{
+				"",
+				"__name__", "test_metric", // 1, 2
+				"instance", "host-1", // 3, 4
+				"job", "namespace/service", // 5, 6
+			},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1000}},
+				},
+			},
+		}
+
+		m, _, err := prwReceiver.translateV2(t.Context(), req)
+		require.NoError(t, err)
+		require.Equal(t, 1, m.ResourceMetrics().Len())
+
+		resAttrs := m.ResourceMetrics().At(0).Resource().Attributes()
+		assert.Equal(t, map[string]any{
+			"service.namespace":   "namespace",
+			"service.name":        "service",
+			"service.instance.id": "host-1",
+		}, resAttrs.AsRaw())
 	})
 
 	t.Run("target_info service.name and service.namespace take precedence", func(t *testing.T) {

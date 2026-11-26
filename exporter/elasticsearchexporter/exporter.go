@@ -50,6 +50,8 @@ type elasticsearchExporter struct {
 
 	defaultHistogramMapping      datapoints.HistogramMapping
 	cumulativeHistogramSupported bool
+	exemplarsSupported           bool
+	exemplarsEnabled             bool
 }
 
 func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsearchExporter, error) {
@@ -96,6 +98,12 @@ func (e *elasticsearchExporter) Start(ctx context.Context, host component.Host) 
 		esVersion := getElasticsearchVersions(ctx, e.config, e.set, host)
 		e.defaultHistogramMapping = resolveDefaultHistogramMapping(e.config, esVersion)
 		e.cumulativeHistogramSupported = supportsCumulativeHistograms(esVersion)
+		e.exemplarsSupported = supportsExemplars(esVersion)
+		e.exemplarsEnabled = metadata.ExporterElasticsearchExemplarsFeatureGate.IsEnabled()
+
+		if e.exemplarsEnabled && !e.exemplarsSupported {
+			e.set.Logger.Warn("exemplar feature gate is enabled but Elasticsearch < 9.6.0; exemplars will be dropped")
+		}
 	}
 	return nil
 }
@@ -351,6 +359,7 @@ func (e *elasticsearchExporter) pushMetricsData(ctx context.Context, metrics pme
 		}
 	}
 
+	var exemplarsDroppedGateOff bool
 	for key, groupedDataPoints := range groupedDataPointsByIndex {
 		for _, dpGroup := range groupedDataPoints {
 			buf := e.bufferPool.NewPooledBuffer()
@@ -381,10 +390,61 @@ func (e *elasticsearchExporter) pushMetricsData(ctx context.Context, metrics pme
 				}
 				errs = append(errs, err)
 			}
+
+			exemplarsIndex := elasticsearch.NewDataStreamIndex("exemplars", key.index.Dataset, key.index.Namespace)
+			for _, dp := range dpGroup.dataPoints {
+				if dp.Exemplars().Len() == 0 {
+					continue
+				}
+				// We have exemplars but the feature gate is off and ES supports them.
+				if !e.exemplarsEnabled && e.exemplarsSupported {
+					exemplarsDroppedGateOff = true
+					break
+				}
+				// We have exemplars but the ES version doesn't support them.
+				if !e.exemplarsSupported {
+					break
+				}
+				for _, exemplar := range dp.Exemplars().All() {
+					ebuf := e.bufferPool.NewPooledBuffer()
+					if err := encoder.encodeExemplar(
+						encodingContext{
+							resource:          dpGroup.resource,
+							resourceSchemaURL: dpGroup.resourceSchemaURL,
+							scope:             dpGroup.scope,
+							scopeSchemaURL:    dpGroup.scopeSchemaURL,
+						},
+						dp.Metric(),
+						dp.Temporality(),
+						exemplar,
+						dp.Attributes(),
+						exemplarsIndex,
+						ebuf.Buffer,
+					); err != nil {
+						ebuf.Recycle()
+						validationErrs = append(validationErrs, err)
+						continue
+					}
+					if err := session.Add(ctx, exemplarsIndex.Index, "", "", ebuf, nil, docappender.ActionCreate); err != nil {
+						if cerr := ctx.Err(); cerr != nil {
+							return cerr
+						}
+						errs = append(errs, err)
+					}
+				}
+			}
 		}
 	}
+
 	if len(validationErrs) > 0 {
 		e.set.Logger.Warn("validation errors", zap.Error(errors.Join(validationErrs...)))
+	}
+
+	if exemplarsDroppedGateOff {
+		e.set.Logger.Debug(
+			"dropping exemplars: enable the feature gate to ingest them",
+			zap.String("feature_gate", "exporter.elasticsearch.Exemplars"),
+		)
 	}
 
 	if err := sessions.Flush(ctx); err != nil {
@@ -393,6 +453,7 @@ func (e *elasticsearchExporter) pushMetricsData(ctx context.Context, metrics pme
 		}
 		errs = append(errs, err)
 	}
+
 	return errors.Join(errs...)
 }
 
