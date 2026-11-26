@@ -415,3 +415,15 @@ func TestPodEndpointsTerminatedContainersKeepPortsOfRunningPodsOnly(t *testing.T
 		}
 	}
 }
+
+func TestPodEndpointsPortsOfRunningPodWithoutAddress(t *testing.T) {
+	// The port of a container in a running pod is reported whether the pod has an address or not.
+	pod := podWithInitContainers()
+	pod.Spec.Containers[0].Ports = []v1.ContainerPort{{Name: "http", ContainerPort: 80, Protocol: v1.ProtocolTCP}}
+	pod.Status.PodIP = ""
+	require.Equal(t, []string{
+		"namespace/pod-3-UID",
+		"namespace/pod-3-UID/app",
+		"namespace/pod-3-UID/http(80)",
+	}, endpointIDs(convertPodToEndpoints("namespace", pod, podEndpointOptions{})))
+}

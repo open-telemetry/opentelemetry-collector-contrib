@@ -81,7 +81,7 @@ All fields are optional.
 | auth_type         | string    | `serviceAccount` | How to authenticate to the K8s API server.  This can be one of `none` (for no auth), `serviceAccount` (to use the standard service account token provided to the agent pod), or `kubeConfig` to use credentials from `~/.kube/config`. |
 | node              | string    | <no value>       | The node name to limit the discovery of pod, port, and node endpoints. Providing no value (the default) results in discovering endpoints for all available nodes. |
 | observe_pods      | bool      | `true`           | Whether to report observer pod and port endpoints. If `true` and `node` is specified it will only discover pod and port endpoints whose `spec.nodeName` matches the provided node name. If `true` and `node` isn't specified, it will discover all available pod and port endpoints. Please note that Collector connectivity to pods from other nodes is dependent on your cluster configuration and isn't guaranteed. | 
-| observe_init_containers | bool | `false` | Whether to also report pod container and port endpoints for init containers, native sidecar containers included. Requires `observe_pods`. As for the other containers, only init containers that are in a running state are reported, which for them is also while the pod is still pending. The `container_kind` field of a pod container endpoint is `init` for them. |
+| observe_init_containers | bool | `false` | Whether to also report pod container and port endpoints for init containers, native sidecar containers included. Requires `observe_pods`. As for the other containers, only init containers that are in a running state are reported, which for them is also while the pod is still pending. The `container_kind` field of a pod container endpoint is `init` for them. The endpoint of an init container changes when the pod gets its address, and the `receiver_creator` then restarts the receiver of that endpoint. |
 | observe_ephemeral_containers | bool | `false` | Whether to also report pod container endpoints for ephemeral containers, such as the ones `kubectl debug` adds. Requires `observe_pods`. As for the other containers, only ephemeral containers that are in a running state are reported. The `container_kind` field of a pod container endpoint is `ephemeral` for them and `app` for the other containers. |
 | observe_terminated_containers | bool | `false` | Whether to also report pod container endpoints for containers that ran and are not running now, such as a container that crashed or the container of a finished Job, in a pod of any phase. Port endpoints are still reported for running containers only. Requires `observe_pods`. See [Terminated containers](#terminated-containers). |
 | terminated_container_ttl | duration | `15m` | How long the endpoint of a container that is not running stays reported after the container finished, when `observe_terminated_containers` is set. `0` keeps it until the pod is deleted. |
@@ -112,8 +112,9 @@ With `observe_terminated_containers`:
 - The endpoint of a container that is not running is reported for `terminated_container_ttl` after the
   container finished. This limits the number of receivers on a node with many finished pods. A container that
   finished longer ago than that before the collector started is not reported.
-- The container endpoints of a deleted pod stay reported for 10 seconds, so that a pod that is gone within a
-  second is still seen and a receiver has time to read what the containers left.
+- The container endpoints of a deleted pod stay reported for 10 seconds as not running, so that a pod that is
+  gone within a second is still seen and a receiver has time to read what the containers left.
+- Init containers that are not running are reported only when `observe_init_containers` is set too.
 
 ```yaml
 extensions:

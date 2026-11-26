@@ -118,20 +118,39 @@ func (h *handler) OnAdd(objectInterface any, _ bool) {
 // without it after that, so that a listing in between never has an endpoint that is to expire
 // without the time it expires.
 func (h *handler) expireTerminatedContainers(pod *v1.Pod, endpoints []observer.Endpoint, expire bool) {
+	if !h.podOptions.terminatedContainers {
+		return
+	}
 	finished := containerFinishTimes(h.idNamespace, pod)
 	for _, endpoint := range endpoints {
-		if endpoint.Details.Type() != observer.PodContainerType {
+		container, ok := endpoint.Details.(*observer.PodContainer)
+		if !ok {
 			continue
 		}
-		finishedAt, expires := finished[endpoint.ID]
-		expires = expires && h.terminatedContainerTTL > 0
+		expires := !container.Running && h.terminatedContainerTTL > 0
 		switch {
 		case expire && expires:
-			h.expiries.Store(endpoint.ID, expiry{at: finishedAt.Add(h.terminatedContainerTTL)})
+			if finishedAt, known := finished[endpoint.ID]; known {
+				h.expiries.Store(endpoint.ID, expiry{at: finishedAt.Add(h.terminatedContainerTTL)})
+			} else {
+				// The status does not say when the container finished, so the time it was first
+				// seen not running counts.
+				h.expiries.LoadOrStore(endpoint.ID, expiry{at: h.now().Add(h.terminatedContainerTTL)})
+			}
 		case !expire && !expires:
 			h.expiries.Delete(endpoint.ID)
 		}
 	}
+}
+
+// notRunning returns the endpoint of a container as that of a container that is not running.
+func notRunning(endpoint observer.Endpoint) observer.Endpoint {
+	if container, ok := endpoint.Details.(*observer.PodContainer); ok && container.Running {
+		stopped := *container
+		stopped.Running = false
+		endpoint.Details = &stopped
+	}
+	return endpoint
 }
 
 // removeExpiredEndpoints drops the endpoints of deleted pods that stayed listed for
@@ -307,6 +326,8 @@ func (h *handler) OnDelete(objectInterface any) {
 		for _, endpoint := range endpoints {
 			if h.lingers(endpoint) {
 				h.expiries.Store(endpoint.ID, expiry{at: h.now().Add(deletedPodLinger), remove: true})
+				// The containers of a deleted pod do not run.
+				h.endpoints.Store(endpoint.ID, notRunning(endpoint))
 				continue
 			}
 			h.endpoints.Delete(endpoint.ID)

@@ -94,9 +94,9 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod, opts podEndpointOpti
 				},
 			})
 
-			// A port can be reached only while its container runs and the pod has an address.
-			// The pod has to run too, or for an init container be pending.
-			if !running || podIP == "" || (!podRunning && (!podPending || kind != containerKindInit)) {
+			// A port can be reached only while its container runs. The pod has to run too, or for
+			// an init container be pending and have an address.
+			if !running || (!podRunning && (!podPending || kind != containerKindInit || podIP == "")) {
 				continue
 			}
 			// Create endpoint for each named container port.

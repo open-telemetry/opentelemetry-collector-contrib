@@ -760,3 +760,32 @@ func TestPodEndpointsOfDeletedPodsRemovedWithoutListing(t *testing.T) {
 	require.ElementsMatch(t, []string{"test-1/next-UID", "test-1/next-UID/work", "test-1/next-UID/http(80)"}, endpointIDs(th.ListEndpoints()))
 	require.Equal(t, 3, storedEntries(th))
 }
+
+func TestPodEndpointsOfDeletedPodNotRunning(t *testing.T) {
+	th, _ := newTestHandlerWithClock(time.Minute)
+	pod := jobPod("pod-7")
+	th.OnAdd(pod, true)
+	require.True(t, podContainer(t, th, "test-1/pod-7-UID/work").Running)
+
+	th.OnDelete(pod)
+	require.Equal(t, []string{"test-1/pod-7-UID/work"}, endpointIDs(th.ListEndpoints()))
+	require.False(t, podContainer(t, th, "test-1/pod-7-UID/work").Running)
+}
+
+func TestPodEndpointsTerminatedContainerTTLWithoutFinishTime(t *testing.T) {
+	th, clock := newTestHandlerWithClock(time.Minute)
+	pod := jobPod("pod-8")
+	pod.Status.ContainerStatuses[0].State = v1.ContainerState{Terminated: &v1.ContainerStateTerminated{ExitCode: 1}}
+	th.OnAdd(pod, true)
+	require.ElementsMatch(t, []string{"test-1/pod-8-UID", "test-1/pod-8-UID/work"}, endpointIDs(th.ListEndpoints()))
+
+	// A later change of the pod does not move the time.
+	clock.advance(30 * time.Second)
+	changed := pod.DeepCopy()
+	changed.Labels = map[string]string{"changed": "true"}
+	th.OnUpdate(pod, changed)
+	require.ElementsMatch(t, []string{"test-1/pod-8-UID", "test-1/pod-8-UID/work"}, endpointIDs(th.ListEndpoints()))
+
+	clock.advance(30 * time.Second)
+	require.Equal(t, []string{"test-1/pod-8-UID"}, endpointIDs(th.ListEndpoints()))
+}
