@@ -8,3 +8,10 @@ googlecloudpubsub/sovereign:
   project: my-sovereign-project
   subscription: projects/my-sovereign-project/subscriptions/otlp-subscription
   universe_domain: apis.example.com
+googlecloudpubsub/errorhandling:
+  project: my-project
+  subscription: projects/my-project/subscriptions/otlp-subscription
+  on_decode_error: nack
+  on_pipeline_error: nack
+  flow_control:
+    trigger_ack_batch_size: 1000
