@@ -56,6 +56,7 @@ func createDefaultConfig() component.Config {
 			SerialNumRange:    10000,
 			Params:            map[string]string{},
 			TemplateEnabled:   false,
+			TemplateScope:     TemplateScopeRequest,
 			TimeParserEnabled: true,
 			TimeParserRanges:  nil,
 		},
