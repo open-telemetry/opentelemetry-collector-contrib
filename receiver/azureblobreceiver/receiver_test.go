@@ -52,7 +52,7 @@ func TestConsumeLogsJSON(t *testing.T) {
 
 			logsConsumer.setNextLogsConsumer(logsSink)
 
-			err := logsConsumer.consumeLogs(tt.Context(), logsJSON)
+			err := logsConsumer.consumeLogs(tt.Context(), bytes.NewReader(logsJSON))
 			require.NoError(tt, err)
 			assert.Equal(tt, 1, logsSink.LogRecordCount())
 		})
@@ -70,7 +70,7 @@ func TestConsumeTracesJSON(t *testing.T) {
 
 			tracesConsumer.setNextTracesConsumer(tracesSink)
 
-			err := tracesConsumer.consumeTraces(tt.Context(), tracesJSON)
+			err := tracesConsumer.consumeTraces(tt.Context(), bytes.NewReader(tracesJSON))
 			require.NoError(tt, err)
 			assert.Equal(tt, 2, tracesSink.SpanCount())
 		})
@@ -96,7 +96,7 @@ func TestConsumeLogsProto(t *testing.T) {
 
 			logsConsumer.setNextLogsConsumer(logsSink)
 
-			err := logsConsumer.consumeLogs(tt.Context(), logsProto)
+			err := logsConsumer.consumeLogs(tt.Context(), bytes.NewReader(logsProto))
 			require.NoError(tt, err)
 			assert.Equal(tt, 1, logsSink.LogRecordCount())
 		})
@@ -122,7 +122,7 @@ func TestConsumeTracesProto(t *testing.T) {
 
 			tracesConsumer.setNextTracesConsumer(tracesSink)
 
-			err := tracesConsumer.consumeTraces(tt.Context(), tracesProto)
+			err := tracesConsumer.consumeTraces(tt.Context(), bytes.NewReader(tracesProto))
 			require.NoError(tt, err)
 			assert.Equal(tt, 2, tracesSink.SpanCount())
 		})
@@ -159,7 +159,7 @@ func TestConsumeLogsEncoding(t *testing.T) {
 			logsConsumer := receiver.(logsDataConsumer)
 			logsConsumer.setNextLogsConsumer(logsSink)
 
-			err = logsConsumer.consumeLogs(t.Context(), tc.payload)
+			err = logsConsumer.consumeLogs(t.Context(), bytes.NewReader(tc.payload))
 			if tc.expectErr {
 				require.Error(t, err)
 			} else {
@@ -198,7 +198,7 @@ func TestWrongExtensionType(t *testing.T) {
 	}
 
 	_, err := getBlobReceiverWithHost(t, "polling", "not_an_unmarshaler", EncodingOTLPJSON, host)
-	require.ErrorContains(t, err, "is not a logs unmarshaler")
+	require.ErrorContains(t, err, "is not a logs decoder or unmarshaler")
 }
 
 func TestConsumeWithEncodingExtension(t *testing.T) {
@@ -215,13 +215,13 @@ func TestConsumeWithEncodingExtension(t *testing.T) {
 	logsSink := new(consumertest.LogsSink)
 	logsConsumer := receiver.(logsDataConsumer)
 	logsConsumer.setNextLogsConsumer(logsSink)
-	require.NoError(t, logsConsumer.consumeLogs(t.Context(), []byte("anything")))
+	require.NoError(t, logsConsumer.consumeLogs(t.Context(), bytes.NewReader([]byte("anything"))))
 	assert.Equal(t, 1, logsSink.LogRecordCount())
 
 	tracesSink := new(consumertest.TracesSink)
 	tracesConsumer := receiver.(tracesDataConsumer)
 	tracesConsumer.setNextTracesConsumer(tracesSink)
-	require.NoError(t, tracesConsumer.consumeTraces(t.Context(), []byte("anything")))
+	require.NoError(t, tracesConsumer.consumeTraces(t.Context(), bytes.NewReader([]byte("anything"))))
 	assert.Equal(t, 1, tracesSink.SpanCount())
 }
 
@@ -295,7 +295,7 @@ func TestConsumeCompressedLogsJSON(t *testing.T) {
 			logsSink := new(consumertest.LogsSink)
 			receiver.(logsDataConsumer).setNextLogsConsumer(logsSink)
 
-			err = receiver.(logsDataConsumer).consumeLogs(tt.Context(), tc.data)
+			err = receiver.(logsDataConsumer).consumeLogs(tt.Context(), bytes.NewReader(tc.data))
 			if tc.expectErr {
 				require.Error(tt, err)
 				return
@@ -315,7 +315,7 @@ func TestConsumeCompressedTracesJSON(t *testing.T) {
 	tracesSink := new(consumertest.TracesSink)
 	receiver.(tracesDataConsumer).setNextTracesConsumer(tracesSink)
 
-	require.NoError(t, receiver.(tracesDataConsumer).consumeTraces(t.Context(), gzipBytes(t, tracesJSON)))
+	require.NoError(t, receiver.(tracesDataConsumer).consumeTraces(t.Context(), bytes.NewReader(gzipBytes(t, tracesJSON))))
 	require.Len(t, tracesSink.AllTraces(), 1)
 	assert.Equal(t, 2, tracesSink.AllTraces()[0].SpanCount())
 }
@@ -344,7 +344,7 @@ func getBlobReceiverWithCompression(t *testing.T, compression string) (component
 	if err != nil {
 		return nil, err
 	}
-	if err := r.(*blobReceiver).resolveUnmarshalers(componenttest.NewNopHost()); err != nil {
+	if err := r.(*blobReceiver).resolveEncodings(componenttest.NewNopHost()); err != nil {
 		return r, err
 	}
 	return r, nil
@@ -368,7 +368,7 @@ func getBlobReceiverWithHost(t *testing.T, mode, logsEncoding, tracesEncoding st
 	if err != nil {
 		return nil, err
 	}
-	if err := r.(*blobReceiver).resolveUnmarshalers(host); err != nil {
+	if err := r.(*blobReceiver).resolveEncodings(host); err != nil {
 		return r, err
 	}
 	return r, nil

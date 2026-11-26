@@ -4,7 +4,6 @@
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
 import (
-	"bytes"
 	"errors"
 	"testing"
 
@@ -57,7 +56,7 @@ func TestNewEventHubMessageHandler(t *testing.T) {
 
 func TestEventHubEventHandler_ProcessBlobCreated_DoesNotDeleteOnReadError(t *testing.T) {
 	blobClient := &mockBlobClient{}
-	blobClient.On("readBlob", mock.Anything, mock.Anything, mock.Anything).Return((*bytes.Buffer)(nil), errors.New("read failed"))
+	blobClient.On("readBlob", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("read failed"))
 
 	handler := getEventHubEventHandler(t, blobClient)
 	handler.setLogsDataConsumer(newMockLogsDataConsumer())

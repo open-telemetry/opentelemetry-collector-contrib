@@ -4,9 +4,10 @@
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
 import (
-	"bytes"
 	"context"
 	"errors"
+	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -55,7 +56,7 @@ func TestBlobEventHandler_ProcessContainers(t *testing.T) {
 	blobClient := &mockBlobClient{}
 	blobClient.On("listBlobs", mock.Anything, logsContainerName).Return([]string{"log1.json", "log2.json"}, nil)
 	blobClient.On("listBlobs", mock.Anything, tracesContainerName).Return([]string{"trace1.json"}, nil)
-	blobClient.On("readBlob", mock.Anything, mock.Anything, mock.Anything).Return(bytes.NewBufferString("{}"), nil)
+	blobClient.On("readBlob", mock.Anything, mock.Anything, mock.Anything).Return(func(context.Context, string, string) io.ReadCloser { return io.NopCloser(strings.NewReader("{}")) }, nil)
 	blobClient.On("deleteBlob", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	handler := getBlobEventHandler(t, blobClient)
@@ -78,7 +79,7 @@ func TestBlobEventHandler_ProcessBlob_DeletesAfterSuccessfulConsume(t *testing.T
 	handler := getBlobEventHandler(t, blobClient)
 	handler.setLogsDataConsumer(newMockLogsDataConsumer())
 
-	handler.processBlob(t.Context(), logsContainerName, "log1.json", func(_ context.Context, _ []byte) error {
+	handler.processBlob(t.Context(), logsContainerName, "log1.json", func(_ context.Context, _ io.Reader) error {
 		return nil
 	})
 
@@ -88,12 +89,12 @@ func TestBlobEventHandler_ProcessBlob_DeletesAfterSuccessfulConsume(t *testing.T
 
 func TestBlobEventHandler_ProcessBlob_DoesNotDeleteOnReadError(t *testing.T) {
 	blobClient := &mockBlobClient{}
-	blobClient.On("readBlob", mock.Anything, mock.Anything, mock.Anything).Return((*bytes.Buffer)(nil), errors.New("read failed"))
+	blobClient.On("readBlob", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("read failed"))
 
 	handler := getBlobEventHandler(t, blobClient)
 	handler.setLogsDataConsumer(newMockLogsDataConsumer())
 
-	handler.processBlob(t.Context(), logsContainerName, "log1.json", func(_ context.Context, _ []byte) error {
+	handler.processBlob(t.Context(), logsContainerName, "log1.json", func(_ context.Context, _ io.Reader) error {
 		return nil
 	})
 
@@ -105,7 +106,7 @@ func TestBlobEventHandler_ProcessBlob_DoesNotDeleteOnConsumeError(t *testing.T) 
 	blobClient := newMockBlobClient()
 	handler := getBlobEventHandler(t, blobClient)
 
-	handler.processBlob(t.Context(), logsContainerName, "log1.json", func(_ context.Context, _ []byte) error {
+	handler.processBlob(t.Context(), logsContainerName, "log1.json", func(_ context.Context, _ io.Reader) error {
 		return errors.New("consume failed")
 	})
 
@@ -120,7 +121,7 @@ func TestBlobEventHandler_ProcessBlob_DoesNotDeleteOnCancelledContext(t *testing
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
-	handler.processBlob(ctx, logsContainerName, "log1.json", func(_ context.Context, _ []byte) error {
+	handler.processBlob(ctx, logsContainerName, "log1.json", func(_ context.Context, _ io.Reader) error {
 		return nil
 	})
 

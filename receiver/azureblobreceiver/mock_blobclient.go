@@ -6,6 +6,7 @@ package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	bytes "bytes"
 	context "context"
+	"io"
 
 	mock "github.com/stretchr/testify/mock"
 )
@@ -15,14 +16,14 @@ type mockBlobClient struct {
 }
 
 // ReadBlob provides a mock function with given fields: ctx, containerName, blobName
-func (_m *mockBlobClient) readBlob(ctx context.Context, containerName, blobName string) (*bytes.Buffer, error) {
+func (_m *mockBlobClient) readBlob(ctx context.Context, containerName, blobName string) (io.ReadCloser, error) {
 	ret := _m.Called(ctx, containerName, blobName)
 
-	var r0 *bytes.Buffer
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) *bytes.Buffer); ok {
+	var r0 io.ReadCloser
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) io.ReadCloser); ok {
 		r0 = rf(ctx, containerName, blobName)
 	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*bytes.Buffer)
+		r0 = ret.Get(0).(io.ReadCloser)
 	}
 
 	var r1 error
@@ -71,7 +72,7 @@ func (_m *mockBlobClient) deleteBlob(ctx context.Context, containerName, blobNam
 
 func newMockBlobClient() *mockBlobClient {
 	blobClient := &mockBlobClient{}
-	blobClient.On("readBlob", mock.Anything, mock.Anything, mock.Anything).Return(&bytes.Buffer{}, nil)
+	blobClient.On("readBlob", mock.Anything, mock.Anything, mock.Anything).Return(func(context.Context, string, string) io.ReadCloser { return io.NopCloser(&bytes.Buffer{}) }, nil)
 	blobClient.On("listBlobs", mock.Anything, mock.Anything).Return([]string{}, nil)
 	blobClient.On("deleteBlob", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	return blobClient

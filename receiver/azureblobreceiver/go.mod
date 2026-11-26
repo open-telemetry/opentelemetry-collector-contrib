@@ -7,7 +7,10 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.15.0
 	github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2 v2.0.2
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.8.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.166.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension v0.166.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.166.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding v0.166.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.72.0
 	go.opentelemetry.io/collector/component/componenttest v0.166.0
@@ -15,6 +18,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.72.0
 	go.opentelemetry.io/collector/consumer v1.72.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.166.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.166.0
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.166.0
 	go.opentelemetry.io/collector/pdata v1.72.0
 	go.opentelemetry.io/collector/receiver v1.72.0
@@ -38,7 +42,7 @@ require (
 	github.com/ebitengine/purego v0.11.2 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-ole/go-ole v1.2.6 // indirect
+	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/goccy/go-json v0.10.6 // indirect
@@ -55,12 +59,13 @@ require (
 	github.com/knadh/koanf/providers/confmap v1.0.1 // indirect
 	github.com/knadh/koanf/v2 v2.4.1 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
-	github.com/lufia/plan9stats v0.0.0-20251013123823-9fd1530e3ec3 // indirect
+	github.com/lufia/plan9stats v0.0.0-20260330125221-c963978e514e // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.166.0 // indirect
 	github.com/pandatix/go-abnf v0.5.5 // indirect
 	github.com/pierrec/lz4/v4 v4.1.33 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
@@ -79,6 +84,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
+	go.opentelemetry.io/collector/client v1.72.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.166.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.166.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.72.0 // indirect
@@ -96,7 +102,6 @@ require (
 	go.opentelemetry.io/collector/exporter/xexporter v0.166.0 // indirect
 	go.opentelemetry.io/collector/extension v1.72.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.166.0 // indirect
-	go.opentelemetry.io/collector/extension/extensiontest v0.166.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.72.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.166.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.166.0 // indirect
@@ -146,7 +151,17 @@ require (
 	google.golang.org/protobuf v1.36.12 // indirect
 )
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding => ../../extension/encoding
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension => ../../extension/encoding/textencodingextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding => ../../pkg/xstreamencoding
 
 retract (
 	v0.76.2
