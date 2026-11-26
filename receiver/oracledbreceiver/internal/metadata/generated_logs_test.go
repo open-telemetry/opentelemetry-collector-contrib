@@ -140,6 +140,9 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 
 			allEventsCount++
+			lb.RecordDbServerProcedureDefinitionEvent(ctx, timestamp, "db.system.name-val", "db.namespace-val", 21, "oracledb.procedure_name-val", "oracledb.procedure.definition-val")
+
+			allEventsCount++
 			lb.RecordDbServerQueryPlanEvent(ctx, timestamp, "db.system.name-val", "oracledb.sql_id-val", "oracledb.child_number-val", "oracledb.child_address-val", "oracledb.plan_hash_value-val", "db.namespace-val", "oracledb.query_plan-val")
 
 			allEventsCount++
@@ -189,6 +192,28 @@ func TestLogsBuilder(t *testing.T) {
 			validatedEvents := make(map[string]bool)
 			for i := 0; i < lrs.Len(); i++ {
 				switch lrs.At(i).EventName() {
+				case "db.server.procedure_definition":
+					assert.False(t, validatedEvents["db.server.procedure_definition"], "Found a duplicate in the events slice: db.server.procedure_definition")
+					validatedEvents["db.server.procedure_definition"] = true
+					lr := lrs.At(i)
+					assert.Equal(t, timestamp, lr.Timestamp())
+					assert.Equal(t, pcommon.TraceID(traceID), lr.TraceID())
+					assert.Equal(t, pcommon.SpanID(spanID), lr.SpanID())
+					attrVal, ok := lr.Attributes().Get("db.system.name")
+					assert.True(t, ok)
+					assert.Equal(t, "db.system.name-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("db.namespace")
+					assert.True(t, ok)
+					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.procedure_id")
+					assert.True(t, ok)
+					assert.EqualValues(t, 21, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("oracledb.procedure_name")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.procedure_name-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("oracledb.procedure.definition")
+					assert.True(t, ok)
+					assert.Equal(t, "oracledb.procedure.definition-val", attrVal.Str())
 				case "db.server.query_plan":
 					assert.False(t, validatedEvents["db.server.query_plan"], "Found a duplicate in the events slice: db.server.query_plan")
 					validatedEvents["db.server.query_plan"] = true

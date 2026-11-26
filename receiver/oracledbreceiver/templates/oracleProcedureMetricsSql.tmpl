@@ -1,5 +1,6 @@
 /* otel-collector */ SELECT
   P.OWNER                                 AS SCHEMA_NAME,
+  P.OBJECT_NAME                           AS OBJECT_NAME,
   P.OWNER || '.' || P.OBJECT_NAME         AS PROCEDURE_NAME,
   P.OBJECT_TYPE                           AS PROCEDURE_TYPE,
   S.PROGRAM_ID                            AS PROGRAM_ID,
