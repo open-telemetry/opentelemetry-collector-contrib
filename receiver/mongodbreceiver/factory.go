@@ -96,6 +96,7 @@ func createMetricsReceiver(
 func createLogsReceiver(_ context.Context, params receiver.Settings, rConf component.Config, consumer consumer.Logs) (receiver.Logs, error) {
 	cfg := rConf.(*Config)
 	ms := newMongodbScraper(params, cfg)
+	ms.discoverMembers = true
 
 	opts := make([]scraperhelper.ControllerOption, 0)
 
