@@ -290,7 +290,7 @@ func (s *mongodbScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 		snapshots[i] = fetchCurrentOp(ctx, m.client)
 	})
 	for i, m := range s.members {
-		s.recordMemberHealth(m, s.emitCurrentOp(ctx, snapshots[i], now))
+		s.recordMemberHealth(m, s.emitCurrentOp(snapshots[i], now))
 	}
 
 	return s.lb.Emit(), nil
