@@ -354,6 +354,7 @@ func TestTLSSettingsAreClassified(t *testing.T) {
 		}
 	}
 	// TODO: remove once configtls.ClientConfig with ca_file_reload is pulled in.
+	// ref: https://github.com/open-telemetry/opentelemetry-collector/pull/16319
 	optional := map[string]bool{"ca_file_reload": true}
 	for key := range handled {
 		if !slices.Contains(keys, key) && !optional[key] {
