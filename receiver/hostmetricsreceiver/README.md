@@ -108,7 +108,7 @@ filesystem:
 
 The following settings are optional:
 
-- `include_virtual_filesystems` (default: `false`): This setting takes effect only on Linux and has no effect on other operating systems. When `false`, the scraper skips virtual and network filesystems without a local block device (such as `tmpfs`, `proc`, `overlay`, `autofs`, `nfs`, and `nfs4`), while still keeping `zfs`. When `true`, all mounted filesystems are collected, so pair it with a filter to avoid unnecessary metrics from system mounts.
+- `include_virtual_filesystems` (default: `false`): This setting takes effect only on Linux and has no effect on other operating systems. When `false`, the scraper skips virtual and network filesystems without a local block device (such as `tmpfs`, `proc`, `overlay`, `autofs`, `nfs`, and `nfs4`), while still keeping filesystems with a physical mount such as `zfs`. When `true`, all mounted filesystems are collected, so pair it with a filter to avoid unnecessary metrics from system mounts.
 - `include_devices`, `exclude_devices`: filter filesystems by the `device` attribute.
 - `include_fs_types`, `exclude_fs_types`: filter filesystems by the `type` attribute.
 - `include_mount_points`, `exclude_mount_points`: filter filesystems by the `mountpoint` attribute. When `root_path` is set on Linux, specify paths from the host's perspective without the `root_path` prefix.
