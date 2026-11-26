@@ -34,6 +34,7 @@ The following settings can be optionally configured and have default values:
   - traces (default `traces`): container to store traces. default value is `traces`.
 - blob_name_format: the final blob name will be blob_name
   - template_enabled (default `false`): enables Go template parsing for blob name formats. If parsing fails, it will not throw an error but will log a warning and continue formatting the blob name using other rules.
+  - template_scope (default `request`): what each blob name template is evaluated against when `template_enabled` is `true`. `request` evaluates it once against the whole export request and uploads the request to a single blob. `resource` evaluates it once per resource entry and uploads each resource entry to the blob its name resolves to. See [Blob Name Templates](#blob-name-templates).
   - metrics_format (default `2006/01/02/metrics_15_04_05.json`): blob name format. The date format follows constants in Golang, refer [here](https://go.dev/src/time/format.go).
   - logs_format (default `2006/01/02/logs_15_04_05.json`): blob name format.
   - traces_format (default `2006/01/02/traces_15_04_05.json`): blob name format.
@@ -61,6 +62,8 @@ The following settings can be optionally configured and have default values:
 ### Blob Name Templates
 
 When `template_enabled` is `true`, you can use Go templates in `metrics_format`, `logs_format`, and `traces_format` to create dynamic blob names based on telemetry data. The root object for the template is the telemetry data itself (`pmetric.Metrics`, `plog.Logs`, or `ptrace.Traces`).
+
+With `template_scope: resource`, each template is evaluated against a single resource entry, which is always at index `0`; reading any other resource index fails the template. The root object provides only `ResourceLogs`, `ResourceMetrics` or `ResourceSpans` (with `Len` and `At`) and `.LogRecordCount`, `.MetricCount`, `.DataPointCount` or `.SpanCount`, which count only that resource entry; the template functions below work in both scopes. Resource entries whose names resolve to the same blob are grouped and uploaded together, one upload per blob. A name is resolved once per export request, so time-based segments (`time_parser_enabled`) use the same time for every blob from that request; only the random serial number (`serial_num_enabled`) is chosen separately for each blob. Grouping is per resource entry, not per individual log record, metric, or span. Scope- and record-level values (for example `getScopeLogAttr` or `getLogRecord`) are read from the first scope and record of each resource entry, so every record in a resource entry is written to that blob. If rendering fails for any resource entry, the whole request is uploaded once using the default (non-template) name format. Blobs are uploaded sequentially within an export request; `sending_queue::num_consumers` controls concurrency between requests. If some uploads fail, only the resource entries that failed are returned for retry; entries that uploaded successfully are not re-sent. If the request is canceled mid-way, entries that had not yet started uploading are also returned for retry. Templates are evaluated against the resource entries without copying them; entries are only copied when a request is split across more than one blob.
 
 The following template functions are available:
 
