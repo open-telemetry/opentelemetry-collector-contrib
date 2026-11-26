@@ -21,13 +21,13 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/extension/xextension v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/featuregate v1.72.1-0.20261126161120-4c6c46bf6bc6
-	go.opentelemetry.io/collector/filter v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/pdata v1.72.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/receiver v1.72.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/receiver/receivertest v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/receiver/xreceiver v0.166.1-0.20261126161120-4c6c46bf6bc6
+	go.opentelemetry.io/collector/strmatch v0.0.0-20261126142948-f0f78f7b395a
 	go.opentelemetry.io/otel v1.47.0
 	go.uber.org/zap v1.28.0
 	k8s.io/apimachinery v0.37.2
@@ -117,7 +117,6 @@ require (
 	go.opentelemetry.io/collector/pipeline v1.72.1-0.20261126161120-4c6c46bf6bc6 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper/xreceiverhelper v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
-	go.opentelemetry.io/collector/strmatch v0.0.0-20261126142948-f0f78f7b395a // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.72.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect

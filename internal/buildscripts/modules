@@ -71,6 +71,7 @@ beta_modules=(
   "go.opentelemetry.io/collector/service/hostcapabilities"
   "go.opentelemetry.io/collector/service/telemetry/telemetrytest"
   "go.opentelemetry.io/collector/filter"
+  "go.opentelemetry.io/collector/strmatch"
 )
 
 stable_modules=(
