@@ -12,4 +12,8 @@ status:
     emeritus: [atoulme]
 
 sending_queue:
-  support: default
+  support: has_overrides
+  overrides:
+    enabled: true
+    batch:
+      enabled: true
