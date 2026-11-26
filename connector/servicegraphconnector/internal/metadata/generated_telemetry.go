@@ -62,19 +62,19 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ConnectorServicegraphDroppedSpans, err = builder.meter.Int64Counter(
 		"otelcol_connector_servicegraph_dropped_spans",
 		metric.WithDescription("Number of spans dropped when trying to add edges [Development]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{span}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ConnectorServicegraphExpiredEdges, err = builder.meter.Int64Counter(
 		"otelcol_connector_servicegraph_expired_edges",
 		metric.WithDescription("Number of edges that expired before finding its matching span [Development]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{edge}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ConnectorServicegraphTotalEdges, err = builder.meter.Int64Counter(
 		"otelcol_connector_servicegraph_total_edges",
 		metric.WithDescription("Total number of unique edges [Development]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{edge}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
