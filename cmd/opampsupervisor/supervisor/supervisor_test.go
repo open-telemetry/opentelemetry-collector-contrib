@@ -803,7 +803,7 @@ func TestHandleRestartCommandReportsCommandStatus(t *testing.T) {
 		)
 		require.NoError(t, err)
 		t.Cleanup(func() {
-			require.NoError(t, cmdr.Stop(context.Background()))
+			require.NoError(t, cmdr.Stop(t.Context()))
 		})
 
 		return &Supervisor{

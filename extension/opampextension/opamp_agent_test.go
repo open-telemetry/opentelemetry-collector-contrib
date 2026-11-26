@@ -61,6 +61,30 @@ func TestNewOpampAgent(t *testing.T) {
 	assert.NoError(t, o.Shutdown(t.Context()))
 }
 
+func TestNewOpampAgentKeepsInstanceUIDAfterRestart(t *testing.T) {
+	t.Cleanup(func() { pendingRestartCommand.Store(nil) })
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
+
+	restartedUID := uuid.MustParse("019a5b6c-0000-7000-8000-000000000001")
+	pendingRestartCommand.Store(&pendingRestart{
+		command:     &protobufs.ServerToAgentCommand{Type: protobufs.CommandType_CommandType_Restart},
+		instanceUID: restartedUID,
+	})
+
+	o, err := newOpampAgent(createDefaultConfig().(*Config), set)
+	require.NoError(t, err)
+	assert.Equal(t, restartedUID, o.instanceUID, "the new instance must keep the UID of the instance that received the restart command")
+	assert.NoError(t, o.Shutdown(t.Context()))
+
+	configuredUID := "019a5b6c-0000-7000-8000-000000000002"
+	cfg := createDefaultConfig().(*Config)
+	cfg.InstanceUID = configuredUID
+	o, err = newOpampAgent(cfg, set)
+	require.NoError(t, err)
+	assert.Equal(t, configuredUID, o.instanceUID.String(), "a configured instance_uid takes precedence")
+	assert.NoError(t, o.Shutdown(t.Context()))
+}
+
 func TestNewOpampAgentAttributes(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopSettings(extensiontest.NopType)
@@ -1306,9 +1330,9 @@ func TestOpAMPAgent_onCommand(t *testing.T) {
 			sighupReceived <- true
 		})
 
-		require.NoError(t, agent.onCommand(ctx, &protobufs.ServerToAgentCommand{
+		require.ErrorIs(t, agent.onCommand(ctx, &protobufs.ServerToAgentCommand{
 			Type: 13,
-		}))
+		}), types.ErrCommandUnsupported)
 
 		select {
 		case <-sighupReceived:
@@ -1357,10 +1381,12 @@ func TestOpAMPAgent_onCommand(t *testing.T) {
 		})
 
 		reported := make(chan *protobufs.CommandStatus, 1)
+		instanceUID := uuid.MustParse("019a5b6c-0000-7000-8000-000000000003")
 		newAgent := func() *opampAgent {
 			return &opampAgent{
 				logger:       zaptest.NewLogger(t),
 				capabilities: Capabilities{AcceptsRestartCommand: true},
+				instanceUID:  instanceUID,
 				readyCh:      make(chan struct{}),
 				opampClient: mockOpAMPClient{
 					setCommandStatusFunc: func(status *protobufs.CommandStatus) error {
@@ -1382,6 +1408,7 @@ func TestOpAMPAgent_onCommand(t *testing.T) {
 			t.Fatal("should have received SIGHUP")
 		}
 		require.Empty(t, reported, "COMPLETED must not be reported before the reload finishes")
+		require.Equal(t, instanceUID, pendingRestartCommand.Load().instanceUID)
 
 		// The reload replaces the extension with a new instance.
 		require.NoError(t, newAgent().Ready())

@@ -240,4 +240,4 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/inte
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/secretprovider => ../../extension/internal/secretprovider
 
-replace github.com/open-telemetry/opamp-go => github.com/cazorla19/opamp-go v0.25.1-0.20261106110900-61b1b724bf95
+replace github.com/open-telemetry/opamp-go => github.com/cazorla19/opamp-go v0.25.1-0.20261126100620-9c10c51e1619
