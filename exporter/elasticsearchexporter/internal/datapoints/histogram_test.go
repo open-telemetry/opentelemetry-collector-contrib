@@ -594,3 +594,45 @@ func TestHistogramTemporality(t *testing.T) {
 		})
 	}
 }
+
+func TestHistogramExemplars(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		dp       pmetric.HistogramDataPoint
+		expected []any
+	}{
+		{
+			name: "returns double",
+			dp: func() pmetric.HistogramDataPoint {
+				dp := pmetric.NewHistogramDataPoint()
+				dp.SetSum(123)
+				dp.SetCount(3)
+				dp.Exemplars().AppendEmpty().SetDoubleValue(10)
+				dp.Exemplars().AppendEmpty().SetDoubleValue(20)
+				return dp
+			}(),
+			expected: []any{10.0, 20.0},
+		},
+		{
+			name: "returns int",
+			dp: func() pmetric.HistogramDataPoint {
+				dp := pmetric.NewHistogramDataPoint()
+				dp.SetSum(123)
+				dp.SetCount(3)
+				dp.Exemplars().AppendEmpty().SetIntValue(10)
+				dp.Exemplars().AppendEmpty().SetIntValue(20)
+				return dp
+			}(),
+			expected: []any{int64(10), int64(20)},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := pmetric.NewMetric()
+			m.SetName("test")
+
+			esHist := NewHistogram(m, tc.dp, HistogramMappingExponential)
+			actual := esHist.Exemplars()
+			assert.Equal(t, tc.expected, exemplarValues(t, actual))
+		})
+	}
+}
