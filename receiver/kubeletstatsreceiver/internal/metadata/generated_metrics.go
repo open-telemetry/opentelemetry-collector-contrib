@@ -94,10 +94,19 @@ var MetricsInfo = metricsInfo{
 	ContainerFilesystemAvailable: metricInfo{
 		Name: "container.filesystem.available",
 	},
+	ContainerFilesystemAvailableV1: metricInfo{
+		Name: "container.filesystem.available",
+	},
 	ContainerFilesystemCapacity: metricInfo{
 		Name: "container.filesystem.capacity",
 	},
+	ContainerFilesystemCapacityV1: metricInfo{
+		Name: "container.filesystem.capacity",
+	},
 	ContainerFilesystemUsage: metricInfo{
+		Name: "container.filesystem.usage",
+	},
+	ContainerFilesystemUsageV1: metricInfo{
 		Name: "container.filesystem.usage",
 	},
 	ContainerMemoryAvailable: metricInfo{
@@ -164,7 +173,13 @@ var MetricsInfo = metricsInfo{
 	K8sNodeFilesystemAvailable: metricInfo{
 		Name: "k8s.node.filesystem.available",
 	},
+	K8sNodeFilesystemAvailableV1: metricInfo{
+		Name: "k8s.node.filesystem.available",
+	},
 	K8sNodeFilesystemCapacity: metricInfo{
+		Name: "k8s.node.filesystem.capacity",
+	},
+	K8sNodeFilesystemCapacityV1: metricInfo{
 		Name: "k8s.node.filesystem.capacity",
 	},
 	K8sNodeFilesystemInodeCount: metricInfo{
@@ -174,6 +189,9 @@ var MetricsInfo = metricsInfo{
 		Name: "k8s.node.filesystem.inode.free",
 	},
 	K8sNodeFilesystemUsage: metricInfo{
+		Name: "k8s.node.filesystem.usage",
+	},
+	K8sNodeFilesystemUsageV1: metricInfo{
 		Name: "k8s.node.filesystem.usage",
 	},
 	K8sNodeMemoryAvailable: metricInfo{
@@ -241,10 +259,19 @@ var MetricsInfo = metricsInfo{
 	K8sPodFilesystemAvailable: metricInfo{
 		Name: "k8s.pod.filesystem.available",
 	},
+	K8sPodFilesystemAvailableV1: metricInfo{
+		Name: "k8s.pod.filesystem.available",
+	},
 	K8sPodFilesystemCapacity: metricInfo{
 		Name: "k8s.pod.filesystem.capacity",
 	},
+	K8sPodFilesystemCapacityV1: metricInfo{
+		Name: "k8s.pod.filesystem.capacity",
+	},
 	K8sPodFilesystemUsage: metricInfo{
+		Name: "k8s.pod.filesystem.usage",
+	},
+	K8sPodFilesystemUsageV1: metricInfo{
 		Name: "k8s.pod.filesystem.usage",
 	},
 	K8sPodMemoryAvailable: metricInfo{
@@ -309,8 +336,11 @@ type metricsInfo struct {
 	ContainerCPUTime                       metricInfo
 	ContainerCPUUsage                      metricInfo
 	ContainerFilesystemAvailable           metricInfo
+	ContainerFilesystemAvailableV1         metricInfo
 	ContainerFilesystemCapacity            metricInfo
+	ContainerFilesystemCapacityV1          metricInfo
 	ContainerFilesystemUsage               metricInfo
+	ContainerFilesystemUsageV1             metricInfo
 	ContainerMemoryAvailable               metricInfo
 	ContainerMemoryAvailableV1             metricInfo
 	ContainerMemoryMajorPageFaults         metricInfo
@@ -332,10 +362,13 @@ type metricsInfo struct {
 	K8sNodeCPUTime                         metricInfo
 	K8sNodeCPUUsage                        metricInfo
 	K8sNodeFilesystemAvailable             metricInfo
+	K8sNodeFilesystemAvailableV1           metricInfo
 	K8sNodeFilesystemCapacity              metricInfo
+	K8sNodeFilesystemCapacityV1            metricInfo
 	K8sNodeFilesystemInodeCount            metricInfo
 	K8sNodeFilesystemInodeFree             metricInfo
 	K8sNodeFilesystemUsage                 metricInfo
+	K8sNodeFilesystemUsageV1               metricInfo
 	K8sNodeMemoryAvailable                 metricInfo
 	K8sNodeMemoryMajorPageFaults           metricInfo
 	K8sNodeMemoryPageFaults                metricInfo
@@ -357,8 +390,11 @@ type metricsInfo struct {
 	K8sPodCPULimitUtilization              metricInfo
 	K8sPodCPURequestUtilization            metricInfo
 	K8sPodFilesystemAvailable              metricInfo
+	K8sPodFilesystemAvailableV1            metricInfo
 	K8sPodFilesystemCapacity               metricInfo
+	K8sPodFilesystemCapacityV1             metricInfo
 	K8sPodFilesystemUsage                  metricInfo
+	K8sPodFilesystemUsageV1                metricInfo
 	K8sPodMemoryAvailable                  metricInfo
 	K8sPodMemoryMajorPageFaults            metricInfo
 	K8sPodMemoryNodeUtilization            metricInfo
@@ -536,6 +572,58 @@ func newMetricContainerFilesystemAvailable(cfg ContainerFilesystemAvailableMetri
 	return m
 }
 
+type metricContainerFilesystemAvailableV1 struct {
+	data     pmetric.Metric                             // data buffer for generated metric.
+	config   ContainerFilesystemAvailableV1MetricConfig // metric config provided by user.
+	capacity int                                        // max observed number of data points added to the metric.
+}
+
+// init fills container.filesystem.available@v1 metric with initial data.
+func (m *metricContainerFilesystemAvailableV1) init() {
+	m.data.SetName("container.filesystem.available")
+	m.data.SetDescription("Container filesystem available bytes.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricContainerFilesystemAvailableV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerFilesystemAvailableV1) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerFilesystemAvailableV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerFilesystemAvailableV1(cfg ContainerFilesystemAvailableV1MetricConfig) metricContainerFilesystemAvailableV1 {
+	m := metricContainerFilesystemAvailableV1{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricContainerFilesystemCapacity struct {
 	data     pmetric.Metric                          // data buffer for generated metric.
 	config   ContainerFilesystemCapacityMetricConfig // metric config provided by user.
@@ -586,6 +674,58 @@ func newMetricContainerFilesystemCapacity(cfg ContainerFilesystemCapacityMetricC
 	return m
 }
 
+type metricContainerFilesystemCapacityV1 struct {
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   ContainerFilesystemCapacityV1MetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
+}
+
+// init fills container.filesystem.capacity@v1 metric with initial data.
+func (m *metricContainerFilesystemCapacityV1) init() {
+	m.data.SetName("container.filesystem.capacity")
+	m.data.SetDescription("Container filesystem capacity.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricContainerFilesystemCapacityV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerFilesystemCapacityV1) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerFilesystemCapacityV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerFilesystemCapacityV1(cfg ContainerFilesystemCapacityV1MetricConfig) metricContainerFilesystemCapacityV1 {
+	m := metricContainerFilesystemCapacityV1{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricContainerFilesystemUsage struct {
 	data     pmetric.Metric                       // data buffer for generated metric.
 	config   ContainerFilesystemUsageMetricConfig // metric config provided by user.
@@ -628,6 +768,58 @@ func (m *metricContainerFilesystemUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerFilesystemUsage(cfg ContainerFilesystemUsageMetricConfig) metricContainerFilesystemUsage {
 	m := metricContainerFilesystemUsage{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricContainerFilesystemUsageV1 struct {
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   ContainerFilesystemUsageV1MetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
+}
+
+// init fills container.filesystem.usage@v1 metric with initial data.
+func (m *metricContainerFilesystemUsageV1) init() {
+	m.data.SetName("container.filesystem.usage")
+	m.data.SetDescription("Container filesystem usage.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricContainerFilesystemUsageV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerFilesystemUsageV1) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerFilesystemUsageV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerFilesystemUsageV1(cfg ContainerFilesystemUsageV1MetricConfig) metricContainerFilesystemUsageV1 {
+	m := metricContainerFilesystemUsageV1{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -1741,6 +1933,58 @@ func newMetricK8sNodeFilesystemAvailable(cfg K8sNodeFilesystemAvailableMetricCon
 	return m
 }
 
+type metricK8sNodeFilesystemAvailableV1 struct {
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   K8sNodeFilesystemAvailableV1MetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
+}
+
+// init fills k8s.node.filesystem.available@v1 metric with initial data.
+func (m *metricK8sNodeFilesystemAvailableV1) init() {
+	m.data.SetName("k8s.node.filesystem.available")
+	m.data.SetDescription("Node filesystem available bytes.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sNodeFilesystemAvailableV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeFilesystemAvailableV1) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeFilesystemAvailableV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeFilesystemAvailableV1(cfg K8sNodeFilesystemAvailableV1MetricConfig) metricK8sNodeFilesystemAvailableV1 {
+	m := metricK8sNodeFilesystemAvailableV1{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sNodeFilesystemCapacity struct {
 	data     pmetric.Metric                        // data buffer for generated metric.
 	config   K8sNodeFilesystemCapacityMetricConfig // metric config provided by user.
@@ -1783,6 +2027,58 @@ func (m *metricK8sNodeFilesystemCapacity) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sNodeFilesystemCapacity(cfg K8sNodeFilesystemCapacityMetricConfig) metricK8sNodeFilesystemCapacity {
 	m := metricK8sNodeFilesystemCapacity{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sNodeFilesystemCapacityV1 struct {
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   K8sNodeFilesystemCapacityV1MetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
+}
+
+// init fills k8s.node.filesystem.capacity@v1 metric with initial data.
+func (m *metricK8sNodeFilesystemCapacityV1) init() {
+	m.data.SetName("k8s.node.filesystem.capacity")
+	m.data.SetDescription("Node filesystem capacity.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sNodeFilesystemCapacityV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeFilesystemCapacityV1) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeFilesystemCapacityV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeFilesystemCapacityV1(cfg K8sNodeFilesystemCapacityV1MetricConfig) metricK8sNodeFilesystemCapacityV1 {
+	m := metricK8sNodeFilesystemCapacityV1{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -1937,6 +2233,58 @@ func (m *metricK8sNodeFilesystemUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sNodeFilesystemUsage(cfg K8sNodeFilesystemUsageMetricConfig) metricK8sNodeFilesystemUsage {
 	m := metricK8sNodeFilesystemUsage{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sNodeFilesystemUsageV1 struct {
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   K8sNodeFilesystemUsageV1MetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
+}
+
+// init fills k8s.node.filesystem.usage@v1 metric with initial data.
+func (m *metricK8sNodeFilesystemUsageV1) init() {
+	m.data.SetName("k8s.node.filesystem.usage")
+	m.data.SetDescription("Node filesystem usage.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sNodeFilesystemUsageV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeFilesystemUsageV1) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeFilesystemUsageV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeFilesystemUsageV1(cfg K8sNodeFilesystemUsageV1MetricConfig) metricK8sNodeFilesystemUsageV1 {
+	m := metricK8sNodeFilesystemUsageV1{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -3097,6 +3445,58 @@ func newMetricK8sPodFilesystemAvailable(cfg K8sPodFilesystemAvailableMetricConfi
 	return m
 }
 
+type metricK8sPodFilesystemAvailableV1 struct {
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   K8sPodFilesystemAvailableV1MetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
+}
+
+// init fills k8s.pod.filesystem.available@v1 metric with initial data.
+func (m *metricK8sPodFilesystemAvailableV1) init() {
+	m.data.SetName("k8s.pod.filesystem.available")
+	m.data.SetDescription("Pod filesystem available bytes.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sPodFilesystemAvailableV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPodFilesystemAvailableV1) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPodFilesystemAvailableV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPodFilesystemAvailableV1(cfg K8sPodFilesystemAvailableV1MetricConfig) metricK8sPodFilesystemAvailableV1 {
+	m := metricK8sPodFilesystemAvailableV1{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sPodFilesystemCapacity struct {
 	data     pmetric.Metric                       // data buffer for generated metric.
 	config   K8sPodFilesystemCapacityMetricConfig // metric config provided by user.
@@ -3147,6 +3547,58 @@ func newMetricK8sPodFilesystemCapacity(cfg K8sPodFilesystemCapacityMetricConfig)
 	return m
 }
 
+type metricK8sPodFilesystemCapacityV1 struct {
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   K8sPodFilesystemCapacityV1MetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
+}
+
+// init fills k8s.pod.filesystem.capacity@v1 metric with initial data.
+func (m *metricK8sPodFilesystemCapacityV1) init() {
+	m.data.SetName("k8s.pod.filesystem.capacity")
+	m.data.SetDescription("Pod filesystem capacity.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sPodFilesystemCapacityV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPodFilesystemCapacityV1) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPodFilesystemCapacityV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPodFilesystemCapacityV1(cfg K8sPodFilesystemCapacityV1MetricConfig) metricK8sPodFilesystemCapacityV1 {
+	m := metricK8sPodFilesystemCapacityV1{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sPodFilesystemUsage struct {
 	data     pmetric.Metric                    // data buffer for generated metric.
 	config   K8sPodFilesystemUsageMetricConfig // metric config provided by user.
@@ -3189,6 +3641,58 @@ func (m *metricK8sPodFilesystemUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sPodFilesystemUsage(cfg K8sPodFilesystemUsageMetricConfig) metricK8sPodFilesystemUsage {
 	m := metricK8sPodFilesystemUsage{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sPodFilesystemUsageV1 struct {
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   K8sPodFilesystemUsageV1MetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
+}
+
+// init fills k8s.pod.filesystem.usage@v1 metric with initial data.
+func (m *metricK8sPodFilesystemUsageV1) init() {
+	m.data.SetName("k8s.pod.filesystem.usage")
+	m.data.SetDescription("Pod filesystem usage.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sPodFilesystemUsageV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPodFilesystemUsageV1) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPodFilesystemUsageV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPodFilesystemUsageV1(cfg K8sPodFilesystemUsageV1MetricConfig) metricK8sPodFilesystemUsageV1 {
+	m := metricK8sPodFilesystemUsageV1{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -4206,8 +4710,11 @@ type MetricsBuilder struct {
 	metricContainerCPUTime                       metricContainerCPUTime
 	metricContainerCPUUsage                      metricContainerCPUUsage
 	metricContainerFilesystemAvailable           metricContainerFilesystemAvailable
+	metricContainerFilesystemAvailableV1         metricContainerFilesystemAvailableV1
 	metricContainerFilesystemCapacity            metricContainerFilesystemCapacity
+	metricContainerFilesystemCapacityV1          metricContainerFilesystemCapacityV1
 	metricContainerFilesystemUsage               metricContainerFilesystemUsage
+	metricContainerFilesystemUsageV1             metricContainerFilesystemUsageV1
 	metricContainerMemoryAvailable               metricContainerMemoryAvailable
 	metricContainerMemoryAvailableV1             metricContainerMemoryAvailableV1
 	metricContainerMemoryMajorPageFaults         metricContainerMemoryMajorPageFaults
@@ -4229,10 +4736,13 @@ type MetricsBuilder struct {
 	metricK8sNodeCPUTime                         metricK8sNodeCPUTime
 	metricK8sNodeCPUUsage                        metricK8sNodeCPUUsage
 	metricK8sNodeFilesystemAvailable             metricK8sNodeFilesystemAvailable
+	metricK8sNodeFilesystemAvailableV1           metricK8sNodeFilesystemAvailableV1
 	metricK8sNodeFilesystemCapacity              metricK8sNodeFilesystemCapacity
+	metricK8sNodeFilesystemCapacityV1            metricK8sNodeFilesystemCapacityV1
 	metricK8sNodeFilesystemInodeCount            metricK8sNodeFilesystemInodeCount
 	metricK8sNodeFilesystemInodeFree             metricK8sNodeFilesystemInodeFree
 	metricK8sNodeFilesystemUsage                 metricK8sNodeFilesystemUsage
+	metricK8sNodeFilesystemUsageV1               metricK8sNodeFilesystemUsageV1
 	metricK8sNodeMemoryAvailable                 metricK8sNodeMemoryAvailable
 	metricK8sNodeMemoryMajorPageFaults           metricK8sNodeMemoryMajorPageFaults
 	metricK8sNodeMemoryPageFaults                metricK8sNodeMemoryPageFaults
@@ -4254,8 +4764,11 @@ type MetricsBuilder struct {
 	metricK8sPodCPULimitUtilization              metricK8sPodCPULimitUtilization
 	metricK8sPodCPURequestUtilization            metricK8sPodCPURequestUtilization
 	metricK8sPodFilesystemAvailable              metricK8sPodFilesystemAvailable
+	metricK8sPodFilesystemAvailableV1            metricK8sPodFilesystemAvailableV1
 	metricK8sPodFilesystemCapacity               metricK8sPodFilesystemCapacity
+	metricK8sPodFilesystemCapacityV1             metricK8sPodFilesystemCapacityV1
 	metricK8sPodFilesystemUsage                  metricK8sPodFilesystemUsage
+	metricK8sPodFilesystemUsageV1                metricK8sPodFilesystemUsageV1
 	metricK8sPodMemoryAvailable                  metricK8sPodMemoryAvailable
 	metricK8sPodMemoryMajorPageFaults            metricK8sPodMemoryMajorPageFaults
 	metricK8sPodMemoryNodeUtilization            metricK8sPodMemoryNodeUtilization
@@ -4314,8 +4827,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricContainerCPUTime:                       newMetricContainerCPUTime(mbc.Metrics.ContainerCPUTime),
 		metricContainerCPUUsage:                      newMetricContainerCPUUsage(mbc.Metrics.ContainerCPUUsage),
 		metricContainerFilesystemAvailable:           newMetricContainerFilesystemAvailable(mbc.Metrics.ContainerFilesystemAvailable),
+		metricContainerFilesystemAvailableV1:         newMetricContainerFilesystemAvailableV1(mbc.Metrics.ContainerFilesystemAvailableV1),
 		metricContainerFilesystemCapacity:            newMetricContainerFilesystemCapacity(mbc.Metrics.ContainerFilesystemCapacity),
+		metricContainerFilesystemCapacityV1:          newMetricContainerFilesystemCapacityV1(mbc.Metrics.ContainerFilesystemCapacityV1),
 		metricContainerFilesystemUsage:               newMetricContainerFilesystemUsage(mbc.Metrics.ContainerFilesystemUsage),
+		metricContainerFilesystemUsageV1:             newMetricContainerFilesystemUsageV1(mbc.Metrics.ContainerFilesystemUsageV1),
 		metricContainerMemoryAvailable:               newMetricContainerMemoryAvailable(mbc.Metrics.ContainerMemoryAvailable),
 		metricContainerMemoryAvailableV1:             newMetricContainerMemoryAvailableV1(mbc.Metrics.ContainerMemoryAvailableV1),
 		metricContainerMemoryMajorPageFaults:         newMetricContainerMemoryMajorPageFaults(mbc.Metrics.ContainerMemoryMajorPageFaults),
@@ -4337,10 +4853,13 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sNodeCPUTime:                         newMetricK8sNodeCPUTime(mbc.Metrics.K8sNodeCPUTime),
 		metricK8sNodeCPUUsage:                        newMetricK8sNodeCPUUsage(mbc.Metrics.K8sNodeCPUUsage),
 		metricK8sNodeFilesystemAvailable:             newMetricK8sNodeFilesystemAvailable(mbc.Metrics.K8sNodeFilesystemAvailable),
+		metricK8sNodeFilesystemAvailableV1:           newMetricK8sNodeFilesystemAvailableV1(mbc.Metrics.K8sNodeFilesystemAvailableV1),
 		metricK8sNodeFilesystemCapacity:              newMetricK8sNodeFilesystemCapacity(mbc.Metrics.K8sNodeFilesystemCapacity),
+		metricK8sNodeFilesystemCapacityV1:            newMetricK8sNodeFilesystemCapacityV1(mbc.Metrics.K8sNodeFilesystemCapacityV1),
 		metricK8sNodeFilesystemInodeCount:            newMetricK8sNodeFilesystemInodeCount(mbc.Metrics.K8sNodeFilesystemInodeCount),
 		metricK8sNodeFilesystemInodeFree:             newMetricK8sNodeFilesystemInodeFree(mbc.Metrics.K8sNodeFilesystemInodeFree),
 		metricK8sNodeFilesystemUsage:                 newMetricK8sNodeFilesystemUsage(mbc.Metrics.K8sNodeFilesystemUsage),
+		metricK8sNodeFilesystemUsageV1:               newMetricK8sNodeFilesystemUsageV1(mbc.Metrics.K8sNodeFilesystemUsageV1),
 		metricK8sNodeMemoryAvailable:                 newMetricK8sNodeMemoryAvailable(mbc.Metrics.K8sNodeMemoryAvailable),
 		metricK8sNodeMemoryMajorPageFaults:           newMetricK8sNodeMemoryMajorPageFaults(mbc.Metrics.K8sNodeMemoryMajorPageFaults),
 		metricK8sNodeMemoryPageFaults:                newMetricK8sNodeMemoryPageFaults(mbc.Metrics.K8sNodeMemoryPageFaults),
@@ -4362,8 +4881,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sPodCPULimitUtilization:              newMetricK8sPodCPULimitUtilization(mbc.Metrics.K8sPodCPULimitUtilization),
 		metricK8sPodCPURequestUtilization:            newMetricK8sPodCPURequestUtilization(mbc.Metrics.K8sPodCPURequestUtilization),
 		metricK8sPodFilesystemAvailable:              newMetricK8sPodFilesystemAvailable(mbc.Metrics.K8sPodFilesystemAvailable),
+		metricK8sPodFilesystemAvailableV1:            newMetricK8sPodFilesystemAvailableV1(mbc.Metrics.K8sPodFilesystemAvailableV1),
 		metricK8sPodFilesystemCapacity:               newMetricK8sPodFilesystemCapacity(mbc.Metrics.K8sPodFilesystemCapacity),
+		metricK8sPodFilesystemCapacityV1:             newMetricK8sPodFilesystemCapacityV1(mbc.Metrics.K8sPodFilesystemCapacityV1),
 		metricK8sPodFilesystemUsage:                  newMetricK8sPodFilesystemUsage(mbc.Metrics.K8sPodFilesystemUsage),
+		metricK8sPodFilesystemUsageV1:                newMetricK8sPodFilesystemUsageV1(mbc.Metrics.K8sPodFilesystemUsageV1),
 		metricK8sPodMemoryAvailable:                  newMetricK8sPodMemoryAvailable(mbc.Metrics.K8sPodMemoryAvailable),
 		metricK8sPodMemoryMajorPageFaults:            newMetricK8sPodMemoryMajorPageFaults(mbc.Metrics.K8sPodMemoryMajorPageFaults),
 		metricK8sPodMemoryNodeUtilization:            newMetricK8sPodMemoryNodeUtilization(mbc.Metrics.K8sPodMemoryNodeUtilization),
@@ -4444,6 +4966,105 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if mbc.ResourceAttributes.K8sVolumeType.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["k8s.volume.type"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeType.MetricsExclude)
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricContainerFilesystemAvailable.config.Enabled && !mb.metricContainerFilesystemAvailableV1.config.enabledSetByUser {
+			mb.metricContainerFilesystemAvailableV1.config.Enabled = true
+			mb.metricContainerFilesystemAvailableV1.data = pmetric.NewMetric()
+			mb.metricContainerFilesystemAvailableV1.init()
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricContainerFilesystemAvailable.config.Enabled && mb.metricContainerFilesystemAvailableV1.config.Enabled {
+			var disable bool
+			if mb.metricContainerFilesystemAvailable.data.Type() != mb.metricContainerFilesystemAvailableV1.data.Type() {
+				// Disable legacy metric if legacy and latest have same name but different types
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `container.filesystem.available` disabled: same emitted name as `container.filesystem.available@v1` with different type; only latest will be emitted")
+			}
+			if !slices.Equal(MetricsInfo.ContainerFilesystemAvailable.Attributes, MetricsInfo.ContainerFilesystemAvailableV1.Attributes) {
+				// Disable legacy metric if legacy and latest have same name but different attributes
+				// The latest metric will emit both attribute sets during migration
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `container.filesystem.available` disabled: same emitted name as `container.filesystem.available@v1` with different attributes; only latest will be emitted with combined attributes",
+					zap.Strings("legacy_attributes", MetricsInfo.ContainerFilesystemAvailable.Attributes),
+					zap.Strings("latest_attributes", MetricsInfo.ContainerFilesystemAvailableV1.Attributes))
+			}
+			if disable {
+				mb.metricContainerFilesystemAvailable.config.Enabled = false
+			}
+		}
+	} else {
+		if mb.metricContainerFilesystemAvailableV1.config.Enabled {
+			mb.metricContainerFilesystemAvailableV1.config.Enabled = false
+			settings.Logger.Warn("[WARNING] metric `container.filesystem.available@v1` requires feature gate `receiver.kubelet_stats.EmitV1K8sConventions` to be enabled, metric has been disabled")
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricContainerFilesystemCapacity.config.Enabled && !mb.metricContainerFilesystemCapacityV1.config.enabledSetByUser {
+			mb.metricContainerFilesystemCapacityV1.config.Enabled = true
+			mb.metricContainerFilesystemCapacityV1.data = pmetric.NewMetric()
+			mb.metricContainerFilesystemCapacityV1.init()
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricContainerFilesystemCapacity.config.Enabled && mb.metricContainerFilesystemCapacityV1.config.Enabled {
+			var disable bool
+			if mb.metricContainerFilesystemCapacity.data.Type() != mb.metricContainerFilesystemCapacityV1.data.Type() {
+				// Disable legacy metric if legacy and latest have same name but different types
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `container.filesystem.capacity` disabled: same emitted name as `container.filesystem.capacity@v1` with different type; only latest will be emitted")
+			}
+			if !slices.Equal(MetricsInfo.ContainerFilesystemCapacity.Attributes, MetricsInfo.ContainerFilesystemCapacityV1.Attributes) {
+				// Disable legacy metric if legacy and latest have same name but different attributes
+				// The latest metric will emit both attribute sets during migration
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `container.filesystem.capacity` disabled: same emitted name as `container.filesystem.capacity@v1` with different attributes; only latest will be emitted with combined attributes",
+					zap.Strings("legacy_attributes", MetricsInfo.ContainerFilesystemCapacity.Attributes),
+					zap.Strings("latest_attributes", MetricsInfo.ContainerFilesystemCapacityV1.Attributes))
+			}
+			if disable {
+				mb.metricContainerFilesystemCapacity.config.Enabled = false
+			}
+		}
+	} else {
+		if mb.metricContainerFilesystemCapacityV1.config.Enabled {
+			mb.metricContainerFilesystemCapacityV1.config.Enabled = false
+			settings.Logger.Warn("[WARNING] metric `container.filesystem.capacity@v1` requires feature gate `receiver.kubelet_stats.EmitV1K8sConventions` to be enabled, metric has been disabled")
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricContainerFilesystemUsage.config.Enabled && !mb.metricContainerFilesystemUsageV1.config.enabledSetByUser {
+			mb.metricContainerFilesystemUsageV1.config.Enabled = true
+			mb.metricContainerFilesystemUsageV1.data = pmetric.NewMetric()
+			mb.metricContainerFilesystemUsageV1.init()
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricContainerFilesystemUsage.config.Enabled && mb.metricContainerFilesystemUsageV1.config.Enabled {
+			var disable bool
+			if mb.metricContainerFilesystemUsage.data.Type() != mb.metricContainerFilesystemUsageV1.data.Type() {
+				// Disable legacy metric if legacy and latest have same name but different types
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `container.filesystem.usage` disabled: same emitted name as `container.filesystem.usage@v1` with different type; only latest will be emitted")
+			}
+			if !slices.Equal(MetricsInfo.ContainerFilesystemUsage.Attributes, MetricsInfo.ContainerFilesystemUsageV1.Attributes) {
+				// Disable legacy metric if legacy and latest have same name but different attributes
+				// The latest metric will emit both attribute sets during migration
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `container.filesystem.usage` disabled: same emitted name as `container.filesystem.usage@v1` with different attributes; only latest will be emitted with combined attributes",
+					zap.Strings("legacy_attributes", MetricsInfo.ContainerFilesystemUsage.Attributes),
+					zap.Strings("latest_attributes", MetricsInfo.ContainerFilesystemUsageV1.Attributes))
+			}
+			if disable {
+				mb.metricContainerFilesystemUsage.config.Enabled = false
+			}
+		}
+	} else {
+		if mb.metricContainerFilesystemUsageV1.config.Enabled {
+			mb.metricContainerFilesystemUsageV1.config.Enabled = false
+			settings.Logger.Warn("[WARNING] metric `container.filesystem.usage@v1` requires feature gate `receiver.kubelet_stats.EmitV1K8sConventions` to be enabled, metric has been disabled")
+		}
 	}
 	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
 		if mb.metricContainerMemoryAvailable.config.Enabled && !mb.metricContainerMemoryAvailableV1.config.enabledSetByUser {
@@ -4577,6 +5198,204 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 			settings.Logger.Warn("[WARNING] metric `container.memory.working_set@v1` requires feature gate `receiver.kubelet_stats.EmitV1K8sConventions` to be enabled, metric has been disabled")
 		}
 	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricK8sNodeFilesystemAvailable.config.Enabled && !mb.metricK8sNodeFilesystemAvailableV1.config.enabledSetByUser {
+			mb.metricK8sNodeFilesystemAvailableV1.config.Enabled = true
+			mb.metricK8sNodeFilesystemAvailableV1.data = pmetric.NewMetric()
+			mb.metricK8sNodeFilesystemAvailableV1.init()
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricK8sNodeFilesystemAvailable.config.Enabled && mb.metricK8sNodeFilesystemAvailableV1.config.Enabled {
+			var disable bool
+			if mb.metricK8sNodeFilesystemAvailable.data.Type() != mb.metricK8sNodeFilesystemAvailableV1.data.Type() {
+				// Disable legacy metric if legacy and latest have same name but different types
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `k8s.node.filesystem.available` disabled: same emitted name as `k8s.node.filesystem.available@v1` with different type; only latest will be emitted")
+			}
+			if !slices.Equal(MetricsInfo.K8sNodeFilesystemAvailable.Attributes, MetricsInfo.K8sNodeFilesystemAvailableV1.Attributes) {
+				// Disable legacy metric if legacy and latest have same name but different attributes
+				// The latest metric will emit both attribute sets during migration
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `k8s.node.filesystem.available` disabled: same emitted name as `k8s.node.filesystem.available@v1` with different attributes; only latest will be emitted with combined attributes",
+					zap.Strings("legacy_attributes", MetricsInfo.K8sNodeFilesystemAvailable.Attributes),
+					zap.Strings("latest_attributes", MetricsInfo.K8sNodeFilesystemAvailableV1.Attributes))
+			}
+			if disable {
+				mb.metricK8sNodeFilesystemAvailable.config.Enabled = false
+			}
+		}
+	} else {
+		if mb.metricK8sNodeFilesystemAvailableV1.config.Enabled {
+			mb.metricK8sNodeFilesystemAvailableV1.config.Enabled = false
+			settings.Logger.Warn("[WARNING] metric `k8s.node.filesystem.available@v1` requires feature gate `receiver.kubelet_stats.EmitV1K8sConventions` to be enabled, metric has been disabled")
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricK8sNodeFilesystemCapacity.config.Enabled && !mb.metricK8sNodeFilesystemCapacityV1.config.enabledSetByUser {
+			mb.metricK8sNodeFilesystemCapacityV1.config.Enabled = true
+			mb.metricK8sNodeFilesystemCapacityV1.data = pmetric.NewMetric()
+			mb.metricK8sNodeFilesystemCapacityV1.init()
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricK8sNodeFilesystemCapacity.config.Enabled && mb.metricK8sNodeFilesystemCapacityV1.config.Enabled {
+			var disable bool
+			if mb.metricK8sNodeFilesystemCapacity.data.Type() != mb.metricK8sNodeFilesystemCapacityV1.data.Type() {
+				// Disable legacy metric if legacy and latest have same name but different types
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `k8s.node.filesystem.capacity` disabled: same emitted name as `k8s.node.filesystem.capacity@v1` with different type; only latest will be emitted")
+			}
+			if !slices.Equal(MetricsInfo.K8sNodeFilesystemCapacity.Attributes, MetricsInfo.K8sNodeFilesystemCapacityV1.Attributes) {
+				// Disable legacy metric if legacy and latest have same name but different attributes
+				// The latest metric will emit both attribute sets during migration
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `k8s.node.filesystem.capacity` disabled: same emitted name as `k8s.node.filesystem.capacity@v1` with different attributes; only latest will be emitted with combined attributes",
+					zap.Strings("legacy_attributes", MetricsInfo.K8sNodeFilesystemCapacity.Attributes),
+					zap.Strings("latest_attributes", MetricsInfo.K8sNodeFilesystemCapacityV1.Attributes))
+			}
+			if disable {
+				mb.metricK8sNodeFilesystemCapacity.config.Enabled = false
+			}
+		}
+	} else {
+		if mb.metricK8sNodeFilesystemCapacityV1.config.Enabled {
+			mb.metricK8sNodeFilesystemCapacityV1.config.Enabled = false
+			settings.Logger.Warn("[WARNING] metric `k8s.node.filesystem.capacity@v1` requires feature gate `receiver.kubelet_stats.EmitV1K8sConventions` to be enabled, metric has been disabled")
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricK8sNodeFilesystemUsage.config.Enabled && !mb.metricK8sNodeFilesystemUsageV1.config.enabledSetByUser {
+			mb.metricK8sNodeFilesystemUsageV1.config.Enabled = true
+			mb.metricK8sNodeFilesystemUsageV1.data = pmetric.NewMetric()
+			mb.metricK8sNodeFilesystemUsageV1.init()
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricK8sNodeFilesystemUsage.config.Enabled && mb.metricK8sNodeFilesystemUsageV1.config.Enabled {
+			var disable bool
+			if mb.metricK8sNodeFilesystemUsage.data.Type() != mb.metricK8sNodeFilesystemUsageV1.data.Type() {
+				// Disable legacy metric if legacy and latest have same name but different types
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `k8s.node.filesystem.usage` disabled: same emitted name as `k8s.node.filesystem.usage@v1` with different type; only latest will be emitted")
+			}
+			if !slices.Equal(MetricsInfo.K8sNodeFilesystemUsage.Attributes, MetricsInfo.K8sNodeFilesystemUsageV1.Attributes) {
+				// Disable legacy metric if legacy and latest have same name but different attributes
+				// The latest metric will emit both attribute sets during migration
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `k8s.node.filesystem.usage` disabled: same emitted name as `k8s.node.filesystem.usage@v1` with different attributes; only latest will be emitted with combined attributes",
+					zap.Strings("legacy_attributes", MetricsInfo.K8sNodeFilesystemUsage.Attributes),
+					zap.Strings("latest_attributes", MetricsInfo.K8sNodeFilesystemUsageV1.Attributes))
+			}
+			if disable {
+				mb.metricK8sNodeFilesystemUsage.config.Enabled = false
+			}
+		}
+	} else {
+		if mb.metricK8sNodeFilesystemUsageV1.config.Enabled {
+			mb.metricK8sNodeFilesystemUsageV1.config.Enabled = false
+			settings.Logger.Warn("[WARNING] metric `k8s.node.filesystem.usage@v1` requires feature gate `receiver.kubelet_stats.EmitV1K8sConventions` to be enabled, metric has been disabled")
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricK8sPodFilesystemAvailable.config.Enabled && !mb.metricK8sPodFilesystemAvailableV1.config.enabledSetByUser {
+			mb.metricK8sPodFilesystemAvailableV1.config.Enabled = true
+			mb.metricK8sPodFilesystemAvailableV1.data = pmetric.NewMetric()
+			mb.metricK8sPodFilesystemAvailableV1.init()
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricK8sPodFilesystemAvailable.config.Enabled && mb.metricK8sPodFilesystemAvailableV1.config.Enabled {
+			var disable bool
+			if mb.metricK8sPodFilesystemAvailable.data.Type() != mb.metricK8sPodFilesystemAvailableV1.data.Type() {
+				// Disable legacy metric if legacy and latest have same name but different types
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `k8s.pod.filesystem.available` disabled: same emitted name as `k8s.pod.filesystem.available@v1` with different type; only latest will be emitted")
+			}
+			if !slices.Equal(MetricsInfo.K8sPodFilesystemAvailable.Attributes, MetricsInfo.K8sPodFilesystemAvailableV1.Attributes) {
+				// Disable legacy metric if legacy and latest have same name but different attributes
+				// The latest metric will emit both attribute sets during migration
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `k8s.pod.filesystem.available` disabled: same emitted name as `k8s.pod.filesystem.available@v1` with different attributes; only latest will be emitted with combined attributes",
+					zap.Strings("legacy_attributes", MetricsInfo.K8sPodFilesystemAvailable.Attributes),
+					zap.Strings("latest_attributes", MetricsInfo.K8sPodFilesystemAvailableV1.Attributes))
+			}
+			if disable {
+				mb.metricK8sPodFilesystemAvailable.config.Enabled = false
+			}
+		}
+	} else {
+		if mb.metricK8sPodFilesystemAvailableV1.config.Enabled {
+			mb.metricK8sPodFilesystemAvailableV1.config.Enabled = false
+			settings.Logger.Warn("[WARNING] metric `k8s.pod.filesystem.available@v1` requires feature gate `receiver.kubelet_stats.EmitV1K8sConventions` to be enabled, metric has been disabled")
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricK8sPodFilesystemCapacity.config.Enabled && !mb.metricK8sPodFilesystemCapacityV1.config.enabledSetByUser {
+			mb.metricK8sPodFilesystemCapacityV1.config.Enabled = true
+			mb.metricK8sPodFilesystemCapacityV1.data = pmetric.NewMetric()
+			mb.metricK8sPodFilesystemCapacityV1.init()
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricK8sPodFilesystemCapacity.config.Enabled && mb.metricK8sPodFilesystemCapacityV1.config.Enabled {
+			var disable bool
+			if mb.metricK8sPodFilesystemCapacity.data.Type() != mb.metricK8sPodFilesystemCapacityV1.data.Type() {
+				// Disable legacy metric if legacy and latest have same name but different types
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `k8s.pod.filesystem.capacity` disabled: same emitted name as `k8s.pod.filesystem.capacity@v1` with different type; only latest will be emitted")
+			}
+			if !slices.Equal(MetricsInfo.K8sPodFilesystemCapacity.Attributes, MetricsInfo.K8sPodFilesystemCapacityV1.Attributes) {
+				// Disable legacy metric if legacy and latest have same name but different attributes
+				// The latest metric will emit both attribute sets during migration
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `k8s.pod.filesystem.capacity` disabled: same emitted name as `k8s.pod.filesystem.capacity@v1` with different attributes; only latest will be emitted with combined attributes",
+					zap.Strings("legacy_attributes", MetricsInfo.K8sPodFilesystemCapacity.Attributes),
+					zap.Strings("latest_attributes", MetricsInfo.K8sPodFilesystemCapacityV1.Attributes))
+			}
+			if disable {
+				mb.metricK8sPodFilesystemCapacity.config.Enabled = false
+			}
+		}
+	} else {
+		if mb.metricK8sPodFilesystemCapacityV1.config.Enabled {
+			mb.metricK8sPodFilesystemCapacityV1.config.Enabled = false
+			settings.Logger.Warn("[WARNING] metric `k8s.pod.filesystem.capacity@v1` requires feature gate `receiver.kubelet_stats.EmitV1K8sConventions` to be enabled, metric has been disabled")
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricK8sPodFilesystemUsage.config.Enabled && !mb.metricK8sPodFilesystemUsageV1.config.enabledSetByUser {
+			mb.metricK8sPodFilesystemUsageV1.config.Enabled = true
+			mb.metricK8sPodFilesystemUsageV1.data = pmetric.NewMetric()
+			mb.metricK8sPodFilesystemUsageV1.init()
+		}
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		if mb.metricK8sPodFilesystemUsage.config.Enabled && mb.metricK8sPodFilesystemUsageV1.config.Enabled {
+			var disable bool
+			if mb.metricK8sPodFilesystemUsage.data.Type() != mb.metricK8sPodFilesystemUsageV1.data.Type() {
+				// Disable legacy metric if legacy and latest have same name but different types
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `k8s.pod.filesystem.usage` disabled: same emitted name as `k8s.pod.filesystem.usage@v1` with different type; only latest will be emitted")
+			}
+			if !slices.Equal(MetricsInfo.K8sPodFilesystemUsage.Attributes, MetricsInfo.K8sPodFilesystemUsageV1.Attributes) {
+				// Disable legacy metric if legacy and latest have same name but different attributes
+				// The latest metric will emit both attribute sets during migration
+				disable = true
+				settings.Logger.Warn("[WARNING] Legacy metric `k8s.pod.filesystem.usage` disabled: same emitted name as `k8s.pod.filesystem.usage@v1` with different attributes; only latest will be emitted with combined attributes",
+					zap.Strings("legacy_attributes", MetricsInfo.K8sPodFilesystemUsage.Attributes),
+					zap.Strings("latest_attributes", MetricsInfo.K8sPodFilesystemUsageV1.Attributes))
+			}
+			if disable {
+				mb.metricK8sPodFilesystemUsage.config.Enabled = false
+			}
+		}
+	} else {
+		if mb.metricK8sPodFilesystemUsageV1.config.Enabled {
+			mb.metricK8sPodFilesystemUsageV1.config.Enabled = false
+			settings.Logger.Warn("[WARNING] metric `k8s.pod.filesystem.usage@v1` requires feature gate `receiver.kubelet_stats.EmitV1K8sConventions` to be enabled, metric has been disabled")
+		}
+	}
 
 	for _, op := range options {
 		op.apply(mb)
@@ -4650,8 +5469,11 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricContainerCPUTime.emit(ils.Metrics())
 	mb.metricContainerCPUUsage.emit(ils.Metrics())
 	mb.metricContainerFilesystemAvailable.emit(ils.Metrics())
+	mb.metricContainerFilesystemAvailableV1.emit(ils.Metrics())
 	mb.metricContainerFilesystemCapacity.emit(ils.Metrics())
+	mb.metricContainerFilesystemCapacityV1.emit(ils.Metrics())
 	mb.metricContainerFilesystemUsage.emit(ils.Metrics())
+	mb.metricContainerFilesystemUsageV1.emit(ils.Metrics())
 	mb.metricContainerMemoryAvailable.emit(ils.Metrics())
 	mb.metricContainerMemoryAvailableV1.emit(ils.Metrics())
 	mb.metricContainerMemoryMajorPageFaults.emit(ils.Metrics())
@@ -4673,10 +5495,13 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sNodeCPUTime.emit(ils.Metrics())
 	mb.metricK8sNodeCPUUsage.emit(ils.Metrics())
 	mb.metricK8sNodeFilesystemAvailable.emit(ils.Metrics())
+	mb.metricK8sNodeFilesystemAvailableV1.emit(ils.Metrics())
 	mb.metricK8sNodeFilesystemCapacity.emit(ils.Metrics())
+	mb.metricK8sNodeFilesystemCapacityV1.emit(ils.Metrics())
 	mb.metricK8sNodeFilesystemInodeCount.emit(ils.Metrics())
 	mb.metricK8sNodeFilesystemInodeFree.emit(ils.Metrics())
 	mb.metricK8sNodeFilesystemUsage.emit(ils.Metrics())
+	mb.metricK8sNodeFilesystemUsageV1.emit(ils.Metrics())
 	mb.metricK8sNodeMemoryAvailable.emit(ils.Metrics())
 	mb.metricK8sNodeMemoryMajorPageFaults.emit(ils.Metrics())
 	mb.metricK8sNodeMemoryPageFaults.emit(ils.Metrics())
@@ -4698,8 +5523,11 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sPodCPULimitUtilization.emit(ils.Metrics())
 	mb.metricK8sPodCPURequestUtilization.emit(ils.Metrics())
 	mb.metricK8sPodFilesystemAvailable.emit(ils.Metrics())
+	mb.metricK8sPodFilesystemAvailableV1.emit(ils.Metrics())
 	mb.metricK8sPodFilesystemCapacity.emit(ils.Metrics())
+	mb.metricK8sPodFilesystemCapacityV1.emit(ils.Metrics())
 	mb.metricK8sPodFilesystemUsage.emit(ils.Metrics())
+	mb.metricK8sPodFilesystemUsageV1.emit(ils.Metrics())
 	mb.metricK8sPodMemoryAvailable.emit(ils.Metrics())
 	mb.metricK8sPodMemoryMajorPageFaults.emit(ils.Metrics())
 	mb.metricK8sPodMemoryNodeUtilization.emit(ils.Metrics())
@@ -4761,17 +5589,38 @@ func (mb *MetricsBuilder) RecordContainerCPUUsageDataPoint(ts pcommon.Timestamp,
 
 // RecordContainerFilesystemAvailableDataPoint adds a data point to container.filesystem.available metric.
 func (mb *MetricsBuilder) RecordContainerFilesystemAvailableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerFilesystemAvailable.recordDataPoint(mb.startTime, ts, val)
+	// Dual-schema emission controlled by feature gates
+	emitLegacy := !ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
+		mb.metricContainerFilesystemAvailable.recordDataPoint(mb.startTime, ts, val)
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		mb.metricContainerFilesystemAvailableV1.recordDataPoint(mb.startTime, ts, val)
+	}
 }
 
 // RecordContainerFilesystemCapacityDataPoint adds a data point to container.filesystem.capacity metric.
 func (mb *MetricsBuilder) RecordContainerFilesystemCapacityDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerFilesystemCapacity.recordDataPoint(mb.startTime, ts, val)
+	// Dual-schema emission controlled by feature gates
+	emitLegacy := !ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
+		mb.metricContainerFilesystemCapacity.recordDataPoint(mb.startTime, ts, val)
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		mb.metricContainerFilesystemCapacityV1.recordDataPoint(mb.startTime, ts, val)
+	}
 }
 
 // RecordContainerFilesystemUsageDataPoint adds a data point to container.filesystem.usage metric.
 func (mb *MetricsBuilder) RecordContainerFilesystemUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerFilesystemUsage.recordDataPoint(mb.startTime, ts, val)
+	// Dual-schema emission controlled by feature gates
+	emitLegacy := !ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
+		mb.metricContainerFilesystemUsage.recordDataPoint(mb.startTime, ts, val)
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		mb.metricContainerFilesystemUsageV1.recordDataPoint(mb.startTime, ts, val)
+	}
 }
 
 // RecordContainerMemoryAvailableDataPoint adds a data point to container.memory.available metric.
@@ -4884,12 +5733,26 @@ func (mb *MetricsBuilder) RecordK8sNodeCPUUsageDataPoint(ts pcommon.Timestamp, v
 
 // RecordK8sNodeFilesystemAvailableDataPoint adds a data point to k8s.node.filesystem.available metric.
 func (mb *MetricsBuilder) RecordK8sNodeFilesystemAvailableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sNodeFilesystemAvailable.recordDataPoint(mb.startTime, ts, val)
+	// Dual-schema emission controlled by feature gates
+	emitLegacy := !ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
+		mb.metricK8sNodeFilesystemAvailable.recordDataPoint(mb.startTime, ts, val)
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		mb.metricK8sNodeFilesystemAvailableV1.recordDataPoint(mb.startTime, ts, val)
+	}
 }
 
 // RecordK8sNodeFilesystemCapacityDataPoint adds a data point to k8s.node.filesystem.capacity metric.
 func (mb *MetricsBuilder) RecordK8sNodeFilesystemCapacityDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sNodeFilesystemCapacity.recordDataPoint(mb.startTime, ts, val)
+	// Dual-schema emission controlled by feature gates
+	emitLegacy := !ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
+		mb.metricK8sNodeFilesystemCapacity.recordDataPoint(mb.startTime, ts, val)
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		mb.metricK8sNodeFilesystemCapacityV1.recordDataPoint(mb.startTime, ts, val)
+	}
 }
 
 // RecordK8sNodeFilesystemInodeCountDataPoint adds a data point to k8s.node.filesystem.inode.count metric.
@@ -4904,7 +5767,14 @@ func (mb *MetricsBuilder) RecordK8sNodeFilesystemInodeFreeDataPoint(ts pcommon.T
 
 // RecordK8sNodeFilesystemUsageDataPoint adds a data point to k8s.node.filesystem.usage metric.
 func (mb *MetricsBuilder) RecordK8sNodeFilesystemUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sNodeFilesystemUsage.recordDataPoint(mb.startTime, ts, val)
+	// Dual-schema emission controlled by feature gates
+	emitLegacy := !ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
+		mb.metricK8sNodeFilesystemUsage.recordDataPoint(mb.startTime, ts, val)
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		mb.metricK8sNodeFilesystemUsageV1.recordDataPoint(mb.startTime, ts, val)
+	}
 }
 
 // RecordK8sNodeMemoryAvailableDataPoint adds a data point to k8s.node.memory.available metric.
@@ -5009,17 +5879,38 @@ func (mb *MetricsBuilder) RecordK8sPodCPURequestUtilizationDataPoint(ts pcommon.
 
 // RecordK8sPodFilesystemAvailableDataPoint adds a data point to k8s.pod.filesystem.available metric.
 func (mb *MetricsBuilder) RecordK8sPodFilesystemAvailableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sPodFilesystemAvailable.recordDataPoint(mb.startTime, ts, val)
+	// Dual-schema emission controlled by feature gates
+	emitLegacy := !ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
+		mb.metricK8sPodFilesystemAvailable.recordDataPoint(mb.startTime, ts, val)
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		mb.metricK8sPodFilesystemAvailableV1.recordDataPoint(mb.startTime, ts, val)
+	}
 }
 
 // RecordK8sPodFilesystemCapacityDataPoint adds a data point to k8s.pod.filesystem.capacity metric.
 func (mb *MetricsBuilder) RecordK8sPodFilesystemCapacityDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sPodFilesystemCapacity.recordDataPoint(mb.startTime, ts, val)
+	// Dual-schema emission controlled by feature gates
+	emitLegacy := !ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
+		mb.metricK8sPodFilesystemCapacity.recordDataPoint(mb.startTime, ts, val)
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		mb.metricK8sPodFilesystemCapacityV1.recordDataPoint(mb.startTime, ts, val)
+	}
 }
 
 // RecordK8sPodFilesystemUsageDataPoint adds a data point to k8s.pod.filesystem.usage metric.
 func (mb *MetricsBuilder) RecordK8sPodFilesystemUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sPodFilesystemUsage.recordDataPoint(mb.startTime, ts, val)
+	// Dual-schema emission controlled by feature gates
+	emitLegacy := !ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
+		mb.metricK8sPodFilesystemUsage.recordDataPoint(mb.startTime, ts, val)
+	}
+	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
+		mb.metricK8sPodFilesystemUsageV1.recordDataPoint(mb.startTime, ts, val)
+	}
 }
 
 // RecordK8sPodMemoryAvailableDataPoint adds a data point to k8s.pod.memory.available metric.

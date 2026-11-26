@@ -36,6 +36,14 @@ Container filesystem available
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
 
+#### Migration
+
+- Target Metric: `container.filesystem.available@v1`
+- Disable Old Gate: `receiver.kubelet_stats.DontEmitV0K8sConventions`
+- Enable New Gate: `receiver.kubelet_stats.EmitV1K8sConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
 ### container.filesystem.capacity
 
 Container filesystem capacity
@@ -44,6 +52,14 @@ Container filesystem capacity
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
 
+#### Migration
+
+- Target Metric: `container.filesystem.capacity@v1`
+- Disable Old Gate: `receiver.kubelet_stats.DontEmitV0K8sConventions`
+- Enable New Gate: `receiver.kubelet_stats.EmitV1K8sConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
 ### container.filesystem.usage
 
 Container filesystem usage
@@ -51,6 +67,14 @@ Container filesystem usage
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
+
+#### Migration
+
+- Target Metric: `container.filesystem.usage@v1`
+- Disable Old Gate: `receiver.kubelet_stats.DontEmitV0K8sConventions`
+- Enable New Gate: `receiver.kubelet_stats.EmitV1K8sConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
 
 ### container.memory.available
 
@@ -156,6 +180,14 @@ Node filesystem available
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
 
+#### Migration
+
+- Target Metric: `k8s.node.filesystem.available@v1`
+- Disable Old Gate: `receiver.kubelet_stats.DontEmitV0K8sConventions`
+- Enable New Gate: `receiver.kubelet_stats.EmitV1K8sConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
 ### k8s.node.filesystem.capacity
 
 Node filesystem capacity
@@ -164,6 +196,14 @@ Node filesystem capacity
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
 
+#### Migration
+
+- Target Metric: `k8s.node.filesystem.capacity@v1`
+- Disable Old Gate: `receiver.kubelet_stats.DontEmitV0K8sConventions`
+- Enable New Gate: `receiver.kubelet_stats.EmitV1K8sConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
 ### k8s.node.filesystem.usage
 
 Node filesystem usage
@@ -171,6 +211,14 @@ Node filesystem usage
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
+
+#### Migration
+
+- Target Metric: `k8s.node.filesystem.usage@v1`
+- Disable Old Gate: `receiver.kubelet_stats.DontEmitV0K8sConventions`
+- Enable New Gate: `receiver.kubelet_stats.EmitV1K8sConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
 
 ### k8s.node.memory.available
 
@@ -274,6 +322,14 @@ Pod filesystem available
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
 
+#### Migration
+
+- Target Metric: `k8s.pod.filesystem.available@v1`
+- Disable Old Gate: `receiver.kubelet_stats.DontEmitV0K8sConventions`
+- Enable New Gate: `receiver.kubelet_stats.EmitV1K8sConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
 ### k8s.pod.filesystem.capacity
 
 Pod filesystem capacity
@@ -282,6 +338,14 @@ Pod filesystem capacity
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
 
+#### Migration
+
+- Target Metric: `k8s.pod.filesystem.capacity@v1`
+- Disable Old Gate: `receiver.kubelet_stats.DontEmitV0K8sConventions`
+- Enable New Gate: `receiver.kubelet_stats.EmitV1K8sConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
 ### k8s.pod.filesystem.usage
 
 Pod filesystem usage
@@ -289,6 +353,14 @@ Pod filesystem usage
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | Development |
+
+#### Migration
+
+- Target Metric: `k8s.pod.filesystem.usage@v1`
+- Disable Old Gate: `receiver.kubelet_stats.DontEmitV0K8sConventions`
+- Enable New Gate: `receiver.kubelet_stats.EmitV1K8sConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
 
 ### k8s.pod.memory.available
 
@@ -418,6 +490,36 @@ metrics:
     enabled: true
 ```
 
+### container.filesystem.available@v1
+
+Container filesystem available bytes.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Beta |
+
+Emitted Name: `container.filesystem.available`
+
+### container.filesystem.capacity@v1
+
+Container filesystem capacity.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Beta |
+
+Emitted Name: `container.filesystem.capacity`
+
+### container.filesystem.usage@v1
+
+Container filesystem usage.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Beta |
+
+Emitted Name: `container.filesystem.usage`
+
 ### container.memory.available@v1
 
 Container memory available.
@@ -528,6 +630,26 @@ Container memory utilization as a ratio of the container's requests
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
 
+### k8s.node.filesystem.available@v1
+
+Node filesystem available bytes.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Beta |
+
+Emitted Name: `k8s.node.filesystem.available`
+
+### k8s.node.filesystem.capacity@v1
+
+Node filesystem capacity.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Beta |
+
+Emitted Name: `k8s.node.filesystem.capacity`
+
 ### k8s.node.filesystem.inode.count
 
 Total number of inodes in the node's root filesystem.
@@ -543,6 +665,16 @@ Number of free inodes in the node's root filesystem.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {inode} | Sum | Int | Cumulative | false | Development |
+
+### k8s.node.filesystem.usage@v1
+
+Node filesystem usage.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Beta |
+
+Emitted Name: `k8s.node.filesystem.usage`
 
 ### k8s.node.pid.limit
 
@@ -623,6 +755,36 @@ Pod cpu utilization as a ratio of the pod's total container requests. If any con
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
+
+### k8s.pod.filesystem.available@v1
+
+Pod filesystem available bytes.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Beta |
+
+Emitted Name: `k8s.pod.filesystem.available`
+
+### k8s.pod.filesystem.capacity@v1
+
+Pod filesystem capacity.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Beta |
+
+Emitted Name: `k8s.pod.filesystem.capacity`
+
+### k8s.pod.filesystem.usage@v1
+
+Pod filesystem usage.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Beta |
+
+Emitted Name: `k8s.pod.filesystem.usage`
 
 ### k8s.pod.memory.node.utilization
 

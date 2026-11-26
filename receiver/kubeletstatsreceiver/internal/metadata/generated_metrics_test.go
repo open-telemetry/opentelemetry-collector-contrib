@@ -103,6 +103,15 @@ func TestMetricsBuilder(t *testing.T) {
 				expectedWarnings++ // type differs
 				expectedWarnings++ // type differs
 				expectedWarnings++ // type differs
+				expectedWarnings++ // type differs
+				expectedWarnings++ // type differs
+				expectedWarnings++ // type differs
+				expectedWarnings++ // type differs
+				expectedWarnings++ // type differs
+				expectedWarnings++ // type differs
+				expectedWarnings++ // type differs
+				expectedWarnings++ // type differs
+				expectedWarnings++ // type differs
 			}
 			if migrationGatesPinned {
 				if tt.metricsSet != testDataSetReag {
@@ -118,15 +127,21 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUsageDataPoint(ts, 1)
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordContainerFilesystemAvailableDataPoint(ts, 1)
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordContainerFilesystemCapacityDataPoint(ts, 1)
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordContainerFilesystemUsageDataPoint(ts, 1)
+			if tt.name != "all_set" {
+				defaultMetricsCount++
+				allMetricsCount++
+				mb.RecordContainerFilesystemAvailableDataPoint(ts, 1)
+			}
+			if tt.name != "all_set" {
+				defaultMetricsCount++
+				allMetricsCount++
+				mb.RecordContainerFilesystemCapacityDataPoint(ts, 1)
+			}
+			if tt.name != "all_set" {
+				defaultMetricsCount++
+				allMetricsCount++
+				mb.RecordContainerFilesystemUsageDataPoint(ts, 1)
+			}
 			if tt.name != "all_set" {
 				defaultMetricsCount++
 				allMetricsCount++
@@ -189,21 +204,27 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeCPUUsageDataPoint(ts, 1)
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeFilesystemAvailableDataPoint(ts, 1)
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeFilesystemCapacityDataPoint(ts, 1)
+			if tt.name != "all_set" {
+				defaultMetricsCount++
+				allMetricsCount++
+				mb.RecordK8sNodeFilesystemAvailableDataPoint(ts, 1)
+			}
+			if tt.name != "all_set" {
+				defaultMetricsCount++
+				allMetricsCount++
+				mb.RecordK8sNodeFilesystemCapacityDataPoint(ts, 1)
+			}
 
 			allMetricsCount++
 			mb.RecordK8sNodeFilesystemInodeCountDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordK8sNodeFilesystemInodeFreeDataPoint(ts, 1)
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeFilesystemUsageDataPoint(ts, 1)
+			if tt.name != "all_set" {
+				defaultMetricsCount++
+				allMetricsCount++
+				mb.RecordK8sNodeFilesystemUsageDataPoint(ts, 1)
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeMemoryAvailableDataPoint(ts, 1)
@@ -276,15 +297,21 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordK8sPodCPURequestUtilizationDataPoint(ts, 1)
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sPodFilesystemAvailableDataPoint(ts, 1)
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sPodFilesystemCapacityDataPoint(ts, 1)
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sPodFilesystemUsageDataPoint(ts, 1)
+			if tt.name != "all_set" {
+				defaultMetricsCount++
+				allMetricsCount++
+				mb.RecordK8sPodFilesystemAvailableDataPoint(ts, 1)
+			}
+			if tt.name != "all_set" {
+				defaultMetricsCount++
+				allMetricsCount++
+				mb.RecordK8sPodFilesystemCapacityDataPoint(ts, 1)
+			}
+			if tt.name != "all_set" {
+				defaultMetricsCount++
+				allMetricsCount++
+				mb.RecordK8sPodFilesystemUsageDataPoint(ts, 1)
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodMemoryAvailableDataPoint(ts, 1)
@@ -424,42 +451,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "container.filesystem.available":
-					assert.False(t, validatedMetrics["container.filesystem.available"], "Found a duplicate in the metrics slice: container.filesystem.available")
-					validatedMetrics["container.filesystem.available"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Container filesystem available", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "container.filesystem.capacity":
-					assert.False(t, validatedMetrics["container.filesystem.capacity"], "Found a duplicate in the metrics slice: container.filesystem.capacity")
-					validatedMetrics["container.filesystem.capacity"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Container filesystem capacity", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "container.filesystem.usage":
-					assert.False(t, validatedMetrics["container.filesystem.usage"], "Found a duplicate in the metrics slice: container.filesystem.usage")
-					validatedMetrics["container.filesystem.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Container filesystem usage", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
 				case "container.memory.major_page_faults":
 					assert.False(t, validatedMetrics["container.memory.major_page_faults"], "Found a duplicate in the metrics slice: container.memory.major_page_faults")
 					validatedMetrics["container.memory.major_page_faults"] = true
@@ -642,30 +633,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "k8s.node.filesystem.available":
-					assert.False(t, validatedMetrics["k8s.node.filesystem.available"], "Found a duplicate in the metrics slice: k8s.node.filesystem.available")
-					validatedMetrics["k8s.node.filesystem.available"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Node filesystem available", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "k8s.node.filesystem.capacity":
-					assert.False(t, validatedMetrics["k8s.node.filesystem.capacity"], "Found a duplicate in the metrics slice: k8s.node.filesystem.capacity")
-					validatedMetrics["k8s.node.filesystem.capacity"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Node filesystem capacity", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
 				case "k8s.node.filesystem.inode.count":
 					assert.False(t, validatedMetrics["k8s.node.filesystem.inode.count"], "Found a duplicate in the metrics slice: k8s.node.filesystem.inode.count")
 					validatedMetrics["k8s.node.filesystem.inode.count"] = true
@@ -690,18 +657,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.False(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "k8s.node.filesystem.usage":
-					assert.False(t, validatedMetrics["k8s.node.filesystem.usage"], "Found a duplicate in the metrics slice: k8s.node.filesystem.usage")
-					validatedMetrics["k8s.node.filesystem.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Node filesystem usage", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -1034,42 +989,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "k8s.pod.filesystem.available":
-					assert.False(t, validatedMetrics["k8s.pod.filesystem.available"], "Found a duplicate in the metrics slice: k8s.pod.filesystem.available")
-					validatedMetrics["k8s.pod.filesystem.available"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod filesystem available", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "k8s.pod.filesystem.capacity":
-					assert.False(t, validatedMetrics["k8s.pod.filesystem.capacity"], "Found a duplicate in the metrics slice: k8s.pod.filesystem.capacity")
-					validatedMetrics["k8s.pod.filesystem.capacity"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod filesystem capacity", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "k8s.pod.filesystem.usage":
-					assert.False(t, validatedMetrics["k8s.pod.filesystem.usage"], "Found a duplicate in the metrics slice: k8s.pod.filesystem.usage")
-					validatedMetrics["k8s.pod.filesystem.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod filesystem usage", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
 				case "k8s.pod.memory.available":
 					assert.False(t, validatedMetrics["k8s.pod.memory.available"], "Found a duplicate in the metrics slice: k8s.pod.memory.available")
 					validatedMetrics["k8s.pod.memory.available"] = true
@@ -1374,6 +1293,225 @@ func TestMetricsBuilder(t *testing.T) {
 	}
 }
 func TestVersionedMetrics(t *testing.T) {
+	t.Run("container.filesystem.available", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				settings := receivertest.NewNopSettings(receivertest.NopType)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordContainerFilesystemAvailableDataPoint(ts, 1)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Same emitted name, different types - distinguish by type
+						if m.Name() == "container.filesystem.available" {
+							if m.Type() == pmetric.MetricTypeGauge {
+								legacyFound = true
+							}
+							if m.Type() == pmetric.MetricTypeSum {
+								newFound = true
+							}
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+			})
+		}
+	})
+	t.Run("container.filesystem.capacity", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				settings := receivertest.NewNopSettings(receivertest.NopType)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordContainerFilesystemCapacityDataPoint(ts, 1)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Same emitted name, different types - distinguish by type
+						if m.Name() == "container.filesystem.capacity" {
+							if m.Type() == pmetric.MetricTypeGauge {
+								legacyFound = true
+							}
+							if m.Type() == pmetric.MetricTypeSum {
+								newFound = true
+							}
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+			})
+		}
+	})
+	t.Run("container.filesystem.usage", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				settings := receivertest.NewNopSettings(receivertest.NopType)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordContainerFilesystemUsageDataPoint(ts, 1)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Same emitted name, different types - distinguish by type
+						if m.Name() == "container.filesystem.usage" {
+							if m.Type() == pmetric.MetricTypeGauge {
+								legacyFound = true
+							}
+							if m.Type() == pmetric.MetricTypeSum {
+								newFound = true
+							}
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+			})
+		}
+	})
 	t.Run("container.memory.available", func(t *testing.T) {
 		tests := []struct {
 			name               string
@@ -1652,6 +1790,444 @@ func TestVersionedMetrics(t *testing.T) {
 						m := ms.At(mi)
 						// Same emitted name, different types - distinguish by type
 						if m.Name() == "container.memory.working_set" {
+							if m.Type() == pmetric.MetricTypeGauge {
+								legacyFound = true
+							}
+							if m.Type() == pmetric.MetricTypeSum {
+								newFound = true
+							}
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+			})
+		}
+	})
+	t.Run("k8s.node.filesystem.available", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				settings := receivertest.NewNopSettings(receivertest.NopType)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordK8sNodeFilesystemAvailableDataPoint(ts, 1)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Same emitted name, different types - distinguish by type
+						if m.Name() == "k8s.node.filesystem.available" {
+							if m.Type() == pmetric.MetricTypeGauge {
+								legacyFound = true
+							}
+							if m.Type() == pmetric.MetricTypeSum {
+								newFound = true
+							}
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+			})
+		}
+	})
+	t.Run("k8s.node.filesystem.capacity", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				settings := receivertest.NewNopSettings(receivertest.NopType)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordK8sNodeFilesystemCapacityDataPoint(ts, 1)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Same emitted name, different types - distinguish by type
+						if m.Name() == "k8s.node.filesystem.capacity" {
+							if m.Type() == pmetric.MetricTypeGauge {
+								legacyFound = true
+							}
+							if m.Type() == pmetric.MetricTypeSum {
+								newFound = true
+							}
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+			})
+		}
+	})
+	t.Run("k8s.node.filesystem.usage", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				settings := receivertest.NewNopSettings(receivertest.NopType)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordK8sNodeFilesystemUsageDataPoint(ts, 1)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Same emitted name, different types - distinguish by type
+						if m.Name() == "k8s.node.filesystem.usage" {
+							if m.Type() == pmetric.MetricTypeGauge {
+								legacyFound = true
+							}
+							if m.Type() == pmetric.MetricTypeSum {
+								newFound = true
+							}
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+			})
+		}
+	})
+	t.Run("k8s.pod.filesystem.available", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				settings := receivertest.NewNopSettings(receivertest.NopType)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordK8sPodFilesystemAvailableDataPoint(ts, 1)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Same emitted name, different types - distinguish by type
+						if m.Name() == "k8s.pod.filesystem.available" {
+							if m.Type() == pmetric.MetricTypeGauge {
+								legacyFound = true
+							}
+							if m.Type() == pmetric.MetricTypeSum {
+								newFound = true
+							}
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+			})
+		}
+	})
+	t.Run("k8s.pod.filesystem.capacity", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				settings := receivertest.NewNopSettings(receivertest.NopType)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordK8sPodFilesystemCapacityDataPoint(ts, 1)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Same emitted name, different types - distinguish by type
+						if m.Name() == "k8s.pod.filesystem.capacity" {
+							if m.Type() == pmetric.MetricTypeGauge {
+								legacyFound = true
+							}
+							if m.Type() == pmetric.MetricTypeSum {
+								newFound = true
+							}
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+			})
+		}
+	})
+	t.Run("k8s.pod.filesystem.usage", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ReceiverKubeletStatsDontEmitV0K8sConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				settings := receivertest.NewNopSettings(receivertest.NopType)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordK8sPodFilesystemUsageDataPoint(ts, 1)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Same emitted name, different types - distinguish by type
+						if m.Name() == "k8s.pod.filesystem.usage" {
 							if m.Type() == pmetric.MetricTypeGauge {
 								legacyFound = true
 							}
