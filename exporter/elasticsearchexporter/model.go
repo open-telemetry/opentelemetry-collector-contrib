@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventionsv126 "go.opentelemetry.io/otel/semconv/v1.26.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
@@ -29,7 +28,7 @@ import (
 
 // Deprecated semantic convention attribute keys. These were removed from the
 // semconv Go module after v1.26.0 and are therefore no longer available as
-// constants in the imported v1.40.0 package. They are matched here as literals
+// constants in the imported semconv package. They are matched here as literals
 // to preserve backward compatibility with telemetry emitted by older
 // instrumentation; the conversion maps only read incoming attributes, so keeping
 // them has no effect on the attributes the exporter emits.
