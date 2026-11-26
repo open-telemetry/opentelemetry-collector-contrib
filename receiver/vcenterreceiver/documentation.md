@@ -812,6 +812,38 @@ metrics:
     enabled: true
 ```
 
+### vcenter.cluster.ha.failover_capacity.current
+
+The percentage of the cluster's resources currently available for vSphere HA failover.
+
+Only reported when vSphere HA and admission control are enabled on the cluster and the admission control policy is "Cluster resource percentage". vSphere HA prevents operations such as powering on virtual machines when this value would drop below `vcenter.cluster.ha.failover_capacity.reserved`.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| type | The type of cluster resource reserved for vSphere HA failover. | Str: ``cpu``, ``memory`` | Recommended | - |
+
+### vcenter.cluster.ha.failover_capacity.reserved
+
+The percentage of the cluster's resources that vSphere HA admission control reserves for failover.
+
+Only reported when vSphere HA and admission control are enabled on the cluster and the admission control policy is "Cluster resource percentage".
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| type | The type of cluster resource reserved for vSphere HA failover. | Str: ``cpu``, ``memory`` | Recommended | - |
+
 ### vcenter.datastore.alarm.count
 
 The number of triggered alarms on the datastore.
