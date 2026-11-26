@@ -75,9 +75,9 @@ The following settings are optional:
 
 - `hosts` (default: `[{endpoint: "localhost:27017"}]`): list of objects with an `endpoint` field set to `host:port` or a unix domain socket path. The `transport` option is no longer available.
   - For standalone MongoDB deployments this is the hostname and port of the mongod instance
-  - For replica sets specify the hostnames and ports of the mongod instances that are in the replica set configuration. If the `replica_set` field is specified, nodes will be autodiscovered.
+  - For replica sets specify the hostnames and ports of the mongod instances that are in the replica set configuration. The receiver discovers the members to collect query samples from; see [Replica set member discovery](#replica-set-member-discovery).
   - For a sharded MongoDB deployment, please specify a list of the `mongos` hosts.
-- `scheme` (default: `mongodb`): connection scheme. Use `mongodb+srv` for clusters that use SRV DNS records (e.g. MongoDB Atlas). When using `mongodb+srv`, exactly one host must be specified.
+- `scheme` (default: `mongodb`): connection scheme. Use `mongodb+srv` for clusters that use SRV DNS records (e.g. MongoDB Atlas). When using `mongodb+srv`, exactly one host must be specified. Connections to the replica set members the receiver discovers use TLS, as the `mongodb+srv` scheme requires.
 - `username`: If authentication is required, the user can with `clusterMonitor` permissions can be provided here.
 - `password`: If authentication is required, the password can be provided here.
 - `auth_mechanism`: (optional) The authentication mechanism to use. Common values include `SCRAM-SHA-1`, `SCRAM-SHA-256`, `MONGODB-X509`, `GSSAPI`, `MONGODB-AWS`, etc. If not specified, MongoDB will use the default mechanism.
@@ -85,12 +85,42 @@ The following settings are optional:
 - `auth_mechanism_properties`: (optional) A map of key-value pairs specifying additional properties for the authentication mechanism. For example, when using `GSSAPI` (Kerberos), you may need to set `SERVICE_NAME`. For `MONGODB-AWS`, you may need to set `AWS_SESSION_TOKEN` when using temporary AWS credentials.
 - `collection_interval`: (default = `1m`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
-- `replica_set`: If the deployment of MongoDB is a replica set then this allows users to specify the replica set name which allows for autodiscovery of other nodes in the replica set.
+- `replica_set`: The replica set name, when the deployment is a replica set.
 - `timeout`: (default = `1m`) The timeout of running commands against mongo.
 - `tls`: TLS control. [By default, insecure settings are rejected and certificate verification is on](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).
-- `direct_connection`: If true, then the driver will not try to autodiscover other nodes, and perform instead a direct connection o the host.
+- `direct_connection`: If true, the receiver connects only to the configured host and does not discover other replica set members. Use it when you configure one receiver per member; it cannot be combined with the `mongodb+srv` scheme.
 - `query_sample_collection`: Additional configuration for query sample collection (`db.server.query_sample` event):
   - `max_rows_per_query`: (default = `100`) The maximum number of eligible query samples to emit per `$currentOp` query. Must be greater than `0`.
+
+### Replica set member discovery
+
+Unless `direct_connection` is `true`, the receiver connects to the configured host once at start and
+discovers the data-bearing members of the replica set, including the primary, with the `hello` command.
+Arbiters and hidden members are not discovered. Members are addressed by the names `hello` reports for the
+connection, so a deployment behind a private endpoint or other address translation that defines replica set
+horizons, such as MongoDB Atlas, reports its members under the names the collector can reach. This works
+with both the `mongodb` and `mongodb+srv` schemes.
+
+Discovered members are used for `db.server.query_sample` events only. The receiver opens a direct
+connection to each member and collects query samples from every member over that connection, so each
+member is reported once, under its own `server.address` and `server.port`, whichever member is primary.
+When no members are discovered (a standalone server, a `mongos`, or a node that reports no valid replica
+set configuration), query samples come from the configured host.
+
+Metrics and `db.server.top_query` events always come from the configured host. With a replica set
+connection, that is the current primary. To collect them from every member, configure one receiver per
+member with `direct_connection: true`.
+
+Members are discovered only at start; restart the collector to pick up members added to or removed from
+the set. If discovery fails at start, for example because no member is reachable, the receiver logs a
+warning and collects query samples from the configured host until it is restarted.
+
+Members are scraped concurrently, each within the shorter of `timeout` and `collection_interval`, so a
+member that cannot be reached only delays its own data. `timeout` also bounds how long the receiver waits
+to reach a member. The receiver logs a warning when collection from a
+member starts failing and an info message when it recovers.
+
+Sharded clusters are not discovered: with a `mongos` host, only the configured host is scraped.
 
 ### Top Query Collection
 

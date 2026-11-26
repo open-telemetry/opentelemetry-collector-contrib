@@ -14,6 +14,16 @@
 | cloud.provider | The cloud.provider | Any Str | true | [cloud.provider](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-provider) | - |
 | cloud.region | The cloud.region | Any Str | true | [cloud.region](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/cloud.md#cloud-region) | - |
 | faas.instance | The faas.instance | Any Str | true | [faas.instance](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/faas.md#faas-instance) | - |
-| faas.max_memory | The faas.max_memory | Any Str | true | [faas.max_memory](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/faas.md#faas-max-memory) | - |
+| faas.max_memory | The amount of memory available to the function, in MiB. In bytes when the `processor.resourcedetection.lambda.faasMaxMemoryBytes` feature gate is enabled. | Any Str | true | [faas.max_memory](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/faas.md#faas-max-memory) | - |
 | faas.name | faas.name | Any Str | true | [faas.name](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/faas.md#faas-name) | - |
 | faas.version | The faas.version | Any Str | true | [faas.version](https://github.com/open-telemetry/semantic-conventions/blob/v1.43.0/docs/registry/attributes/faas.md#faas-version) | - |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `processor.resourcedetection.lambda.faasMaxMemoryBytes` | alpha | When enabled, the lambda detector emits `faas.max_memory` as an int in bytes, as defined by the semantic conventions, instead of a string in MiB. | v0.167.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-go-contrib/issues/8940) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
