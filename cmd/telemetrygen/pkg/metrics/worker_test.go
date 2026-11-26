@@ -313,6 +313,33 @@ func TestSumSingleTelemetryAttr(t *testing.T) {
 	}
 }
 
+func TestSumMapTelemetryAttr(t *testing.T) {
+	// arrange
+	qty := 2
+	cfg := configWithMapAttribute(MetricTypeSum, qty)
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+
+	// act
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// asserts
+	require.Len(t, m.rms, qty)
+
+	for i := range qty {
+		ms := m.rms[i].ScopeMetrics[0].Metrics[0]
+		attr := ms.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
+		actualValue, found := attr.Value("kubernetes")
+		require.True(t, found, "map attribute should be present")
+		assert.Equal(t, expectedMapAttributeValue(), actualValue)
+	}
+}
+
 func TestGaugeSingleTelemetryAttr(t *testing.T) {
 	// arrange
 	qty := 2
@@ -504,6 +531,32 @@ func configWithOneAttribute(metric MetricType, qty int) *Config {
 		MetricName: "test",
 		MetricType: metric,
 	}
+}
+
+func configWithMapAttribute(metric MetricType, qty int) *Config {
+	return &Config{
+		Config: config.Config{
+			WorkerCount: 1,
+			TelemetryAttributes: config.KeyValue{
+				"kubernetes": map[string]any{
+					"namespace_name": "test-ns",
+					"pod_name":       "test-pod",
+					"labels":         map[string]any{"some_label": "test"},
+				},
+			},
+		},
+		NumMetrics: qty,
+		MetricName: "test",
+		MetricType: metric,
+	}
+}
+
+func expectedMapAttributeValue() attribute.Value {
+	return attribute.MapValue(
+		attribute.String("namespace_name", "test-ns"),
+		attribute.String("pod_name", "test-pod"),
+		attribute.Map("labels", attribute.String("some_label", "test")),
+	)
 }
 
 func configWithMultipleAttributes(metric MetricType, qty int) *Config {
