@@ -35,12 +35,17 @@ var (
 	scopeKeys     = []string{"name", "version", "version/exists", "version/regex", "metrics", "metrics/include", "metrics/count"}
 	metricKeys    = []string{"name", "type", "unit", "temporality", "monotonic", "datapoints", "datapoints/include", "datapoints/count"}
 	datapointKeys = []string{
-		"attributes", "attributes/include", "int_value", "int_value/<op>", "double_value", "double_value/<op>",
-		doubleValuePrecisionPrefix + "<n>", "count", "sum", "explicit_bounds", "bucket_counts", "min", "max",
+		"attributes", "attributes/include", "int_value", "double_value",
+		"count", "sum", "explicit_bounds", "bucket_counts", "min", "max",
 	}
+	// Datapoint keys that carry an operator after the prefix, such as int_value/gte or double_value/precision3.
+	datapointOperatorPrefixes = []string{"int_value/", "double_value/"}
 )
 
-// checkKnownKeys rejects keys of raw that are neither in known nor start with one of delegatedPrefixes.
+// checkKnownKeys rejects keys of raw that are not in known.
+//
+// A key that starts with one of delegatedPrefixes is accepted here: its suffix is
+// an operator, and the decoder of that field validates it and reports its own error.
 func checkKnownKeys(raw map[string]yaml.Node, known []string, delegatedPrefixes ...string) error {
 	var unknown []string
 	for key := range raw {
@@ -53,16 +58,21 @@ func checkKnownKeys(raw map[string]yaml.Node, known []string, delegatedPrefixes 
 		return nil
 	}
 	sort.Strings(unknown)
+	if len(delegatedPrefixes) > 0 {
+		return fmt.Errorf("unknown keys %q, want %q or an operator after %q", unknown, known, delegatedPrefixes)
+	}
 	return fmt.Errorf("unknown keys %q, want %q", unknown, known)
+}
+
+// attributeKeyForm is one way an attribute key was written, such as foo or foo/regex.
+type attributeKeyForm struct {
+	rawKey  string
+	numeric bool
 }
 
 // validateAttributes rejects invalid operator arguments and conflicting forms of one attribute key.
 func validateAttributes(attrs map[string]any) error {
-	type form struct {
-		rawKey  string
-		numeric bool
-	}
-	seen := make(map[string]form, len(attrs))
+	seen := make(map[string]attributeKeyForm, len(attrs))
 	for _, rawKey := range slices.Sorted(maps.Keys(attrs)) {
 		value := attrs[rawKey]
 		key, numeric := rawKey, false
@@ -86,7 +96,7 @@ func validateAttributes(attrs map[string]any) error {
 		if other, dup := seen[key]; dup && (!numeric || !other.numeric) {
 			return fmt.Errorf("attribute %q: cannot specify both %q and %q", key, other.rawKey, rawKey)
 		}
-		seen[key] = form{rawKey: rawKey, numeric: numeric}
+		seen[key] = attributeKeyForm{rawKey: rawKey, numeric: numeric}
 	}
 	return nil
 }
@@ -555,7 +565,7 @@ func (d *datapointAssertion) UnmarshalYAML(node *yaml.Node) error {
 	if err := node.Decode(&raw); err != nil {
 		return err
 	}
-	if err := checkKnownKeys(raw, datapointKeys, "int_value/", "double_value/"); err != nil {
+	if err := checkKnownKeys(raw, datapointKeys, datapointOperatorPrefixes...); err != nil {
 		return fmt.Errorf("datapoint assertion at line %d: %w", node.Line, err)
 	}
 	if inc, ok := raw["attributes/include"]; ok {

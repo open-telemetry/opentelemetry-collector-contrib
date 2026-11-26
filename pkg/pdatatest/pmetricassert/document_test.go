@@ -324,7 +324,35 @@ resources:
             datapoints:
               - value: 1
 `,
-			wantErr: `datapoint assertion at line 10: unknown keys ["value"]`,
+			wantErr: `datapoint assertion at line 10: unknown keys ["value"], want ["attributes" "attributes/include" "int_value" "double_value" "count" "sum" "explicit_bounds" "bucket_counts" "min" "max"] or an operator after ["int_value/" "double_value/"]`,
+		},
+		"datapoint operator placeholder is not a key": {
+			body: `version: 1
+signal: metrics
+resources:
+  - scopes:
+      - name: scope-a
+        metrics:
+          - name: svc.active
+            type: gauge
+            datapoints:
+              - "int_value/<op>": 1
+`,
+			wantErr: `unsupported datapoint assertion key "int_value/<op>"`,
+		},
+		"datapoint precision placeholder is not a key": {
+			body: `version: 1
+signal: metrics
+resources:
+  - scopes:
+      - name: scope-a
+        metrics:
+          - name: svc.active
+            type: gauge
+            datapoints:
+              - "double_value/precision<n>": 1
+`,
+			wantErr: `"double_value/precision<n>" must end in a decimal place count`,
 		},
 		"datapoint operator on a field without operators": {
 			body: `version: 1
