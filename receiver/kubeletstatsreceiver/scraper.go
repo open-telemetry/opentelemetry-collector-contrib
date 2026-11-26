@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -110,12 +111,15 @@ func (r *kubeletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	}
 
 	var podsMetadata *v1.PodList
+	var podsErr error
 	// fetch metadata only when extra metadata labels are needed
 	if len(r.extraMetadataLabels) > 0 || r.needsResources {
-		podsMetadata, err = r.metadataProvider.Pods()
-		if err != nil {
-			r.logger.Error("call to /pods endpoint failed", zap.Error(err))
-			return pmetric.Metrics{}, err
+		podsMetadata, podsErr = r.metadataProvider.Pods()
+		if podsErr != nil {
+			// Keep going without pod metadata: metrics that don't depend on it
+			// are still emitted and the failure is reported as a partial error.
+			r.logger.Error("call to /pods endpoint failed", zap.Error(podsErr))
+			podsMetadata = nil
 		}
 	}
 
@@ -130,6 +134,11 @@ func (r *kubeletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
 	for i := range mds {
 		mds[i].ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
+	}
+	if podsErr != nil {
+		// The number of data points that could not be enriched or were skipped
+		// is unknown, so count the failed /pods call as one.
+		return md, scrapererror.NewPartialScrapeError(fmt.Errorf("call to /pods endpoint failed: %w", podsErr), 1)
 	}
 	return md, nil
 }
