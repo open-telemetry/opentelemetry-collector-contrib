@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -646,8 +646,8 @@ type MetricsBuilder struct {
 	metricsCapacity                    int                  // maximum observed number of metrics per resource.
 	metricsBuffer                      pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                          component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter     map[string]filter.Filter
-	resourceAttributeExcludeFilter     map[string]filter.Filter
+	resourceAttributeIncludeFilter     map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter     map[string]strmatch.Matcher
 	metricSystemNetworkErrors          metricSystemNetworkErrors
 	metricSystemNetworkInterfaceStatus metricSystemNetworkInterfaceStatus
 	metricSystemNetworkIo              metricSystemNetworkIo
@@ -683,26 +683,26 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		metricSystemNetworkIo:              newMetricSystemNetworkIo(mbc.Metrics.SystemNetworkIo),
 		metricSystemNetworkPacketCount:     newMetricSystemNetworkPacketCount(mbc.Metrics.SystemNetworkPacketCount),
 		metricSystemNetworkPacketDropped:   newMetricSystemNetworkPacketDropped(mbc.Metrics.SystemNetworkPacketDropped),
-		resourceAttributeIncludeFilter:     make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:     make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter:     make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter:     make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.HostIP.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["host.ip"] = filter.CreateFilter(mbc.ResourceAttributes.HostIP.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["host.ip"] = strmatch.New(mbc.ResourceAttributes.HostIP.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.HostIP.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["host.ip"] = filter.CreateFilter(mbc.ResourceAttributes.HostIP.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["host.ip"] = strmatch.New(mbc.ResourceAttributes.HostIP.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.HwType.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["hw.type"] = filter.CreateFilter(mbc.ResourceAttributes.HwType.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["hw.type"] = strmatch.New(mbc.ResourceAttributes.HwType.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.HwType.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["hw.type"] = filter.CreateFilter(mbc.ResourceAttributes.HwType.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["hw.type"] = strmatch.New(mbc.ResourceAttributes.HwType.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.OsName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["os.name"] = filter.CreateFilter(mbc.ResourceAttributes.OsName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["os.name"] = strmatch.New(mbc.ResourceAttributes.OsName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.OsName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["os.name"] = filter.CreateFilter(mbc.ResourceAttributes.OsName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["os.name"] = strmatch.New(mbc.ResourceAttributes.OsName.MetricsExclude)
 	}
 
 	for _, op := range options {
