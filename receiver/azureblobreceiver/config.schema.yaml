@@ -1,14 +1,30 @@
 $defs:
   auth_type:
     type: string
+  blob_checkpoint_store_config:
+    type: object
+    properties:
+      container_name:
+        description: Existing container in the receiver's storage account, using the receiver's authentication.
+        type: string
   cloud_type:
     type: string
   event_hub_config:
     type: object
     properties:
+      blob_checkpoint_store:
+        description: Shared checkpoint storage enables coordinated partition ownership.
+        x-pointer: true
+        $ref: blob_checkpoint_store_config
+      consumer_group:
+        description: Consumer group shared by receiver instances (default = "$Default").
+        type: string
       endpoint:
         description: Azure Event Hub endpoint triggering on the `Blob Create` event
         $ref: go.opentelemetry.io/collector/config/configopaque.string
+      ignore_missing_blobs:
+        description: Skip BlobNotFound errors during coordinated consumption, including replay after deletion.
+        type: boolean
   logs_config:
     type: object
     properties:
