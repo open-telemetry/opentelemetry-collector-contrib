@@ -127,6 +127,30 @@ func TestKeyValueSet(t *testing.T) {
 			flag: "key=12.34",
 			err:  errDoubleQuotesOTLPAttributes,
 		},
+		{
+			flag:     "key={a=\"x\",b=1,c=true,d=\"\",arr=[\"value1\",\"value2\"],nested={x=1,y=2}}",
+			expected: KeyValue(map[string]any{"key": map[string]any{"a": "x", "b": 1, "c": true, "d": "", "arr": []string{"value1", "value2"}, "nested": map[string]any{"x": 1, "y": 2}}}),
+		},
+		{
+			flag:     `key={a="{x,y}",b=1}`,
+			expected: KeyValue{"key": map[string]any{"a": "{x,y}", "b": 1}},
+		},
+		{
+			flag: "key={}",
+			err:  errEmptyMap,
+		},
+		{
+			flag: "key={a}",
+			err:  errFormatOTLPAttributes,
+		},
+		{
+			flag: "key={a={}}",
+			err:  errEmptyMap,
+		},
+		{
+			flag: "key={a={b=\"x\"}",
+			err:  errUnbalancedBraces,
+		},
 	}
 
 	for _, tt := range tests {
@@ -288,6 +312,55 @@ func TestGetAttributes(t *testing.T) {
 			},
 			expectedTelemetryAttributes: []attribute.KeyValue{
 				attribute.BoolSlice("telemetryKey", []bool{false, true, false}),
+			},
+		},
+		{
+			name: "Map Attributes",
+			cfg: &Config{
+				ServiceName: "test",
+				ResourceAttributes: KeyValue(map[string]any{
+					"resourceKey": map[string]any{
+						"a":      "x",
+						"b":      1,
+						"c":      true,
+						"d":      "",
+						"arr":    []string{"value1", "value2"},
+						"nested": map[string]any{"x": 1, "y": 2},
+					},
+				}),
+				TelemetryAttributes: KeyValue(map[string]any{
+					"telemetryKey": map[string]any{
+						"d":      "y",
+						"e":      2,
+						"f":      false,
+						"g":      "",
+						"arr":    []int{1, 2, 3},
+						"nested": map[string]any{"y": 2, "z": 3},
+					},
+				}),
+			},
+			expectedAttributes: []attribute.KeyValue{
+				attribute.String("service.name", "test"),
+				attribute.Map(
+					"resourceKey",
+					attribute.String("a", "x"),
+					attribute.Int("b", 1),
+					attribute.Bool("c", true),
+					attribute.String("d", ""),
+					attribute.StringSlice("arr", []string{"value1", "value2"}),
+					attribute.Map("nested", attribute.Int("x", 1), attribute.Int("y", 2)),
+				),
+			},
+			expectedTelemetryAttributes: []attribute.KeyValue{
+				attribute.Map(
+					"telemetryKey",
+					attribute.String("d", "y"),
+					attribute.Int("e", 2),
+					attribute.Bool("f", false),
+					attribute.String("g", ""),
+					attribute.IntSlice("arr", []int{1, 2, 3}),
+					attribute.Map("nested", attribute.Int("y", 2), attribute.Int("z", 3)),
+				),
 			},
 		},
 	}

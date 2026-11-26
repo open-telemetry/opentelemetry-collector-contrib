@@ -2349,6 +2349,82 @@ func TestStatsDParser_IgnoreHost(t *testing.T) {
 	assert.Equal(t, int64(4), value)
 }
 
+func Test_ParseMessageToMetricMultiValue(t *testing.T) {
+	tests := []struct {
+		name       string
+		input      string
+		wantValues []multiValue
+		wantFloat  float64
+		err        error
+	}{
+		{name: "timing", input: "test.metric:1.5:2:3|ms", wantValues: []multiValue{{value: 1.5}, {value: 2}, {value: 3}}},
+		{name: "histogram", input: "test.metric:1:2|h|@0.5|#key:val", wantValues: []multiValue{{value: 1}, {value: 2}}},
+		{name: "distribution", input: "test.metric:4:5|d", wantValues: []multiValue{{value: 4}, {value: 5}}},
+		{name: "counter", input: "test.metric:1:2|c", wantValues: []multiValue{{value: 1}, {value: 2}}},
+		{name: "gauge", input: "test.metric:1:2|g", wantValues: []multiValue{{value: 1}, {value: 2}}},
+		{name: "gauge per-value sign", input: "test.metric:5:+1:-2|g", wantValues: []multiValue{{value: 5}, {value: 1, addition: true}, {value: -2, addition: true}}},
+		{name: "empty entries skipped", input: "test.metric::1::2:|ms", wantValues: []multiValue{{value: 1}, {value: 2}}},
+		{name: "only separators", input: "test.metric:::|ms", err: errEmptyMetricValue},
+		{name: "invalid entry", input: "test.metric:1:abc:2|ms", err: errors.New("parse metric value string: abc")},
+		{name: "single value unchanged", input: "test.metric:7|ms", wantFloat: 7},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseMessageToMetric(tt.input, false, false)
+			if tt.err != nil {
+				assert.Equal(t, tt.err, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantValues, got.values)
+			assert.Equal(t, tt.wantFloat, got.asFloat)
+		})
+	}
+}
+
+func TestStatsDParser_AggregateMultiValue(t *testing.T) {
+	p := &StatsDParser{}
+	require.NoError(t, p.Initialize(false, false, false, false, false, []protocol.TimerHistogramMapping{
+		{StatsdType: "timing", ObserverType: "summary"},
+		{StatsdType: "histogram", ObserverType: "summary"},
+	}, protocol.CounterTypeInt))
+	addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
+
+	require.NoError(t, p.Aggregate("statsdTestMetric1:1:2:3|ms|#mykey:myvalue", addr))
+	require.NoError(t, p.Aggregate("statsdTestMetric1:4|ms|#mykey:myvalue", addr))
+	require.NoError(t, p.Aggregate("statsdTestMetric2:10:20|h|@0.5|#mykey:myvalue", addr))
+	assert.EqualError(t, p.Aggregate("statsdTestMetric1:5:NaN|ms|#mykey:myvalue", addr),
+		"discarding metric \"statsdTestMetric1\": invalid NaN value")
+
+	summaries := p.instrumentsByAddress[newNetAddr(addr)].summaries
+	m1 := summaries[testDescription("statsdTestMetric1", "ms", []string{"mykey"}, []string{"myvalue"})]
+	assert.Equal(t, []float64{1, 2, 3, 4}, m1.points)
+	assert.Equal(t, []float64{1, 1, 1, 1}, m1.weights)
+	m2 := summaries[testDescription("statsdTestMetric2", "h", []string{"mykey"}, []string{"myvalue"})]
+	assert.Equal(t, []float64{10, 20}, m2.points)
+	assert.Equal(t, []float64{2, 2}, m2.weights)
+}
+
+func TestStatsDParser_AggregateMultiValueCounterGauge(t *testing.T) {
+	p := &StatsDParser{}
+	require.NoError(t, p.Initialize(false, false, false, false, false, nil, protocol.CounterTypeInt))
+	addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
+
+	require.NoError(t, p.Aggregate("counter:1:2:3|c|#mykey:myvalue", addr))
+	require.NoError(t, p.Aggregate("counter:4:5|c|@0.5|#mykey:myvalue", addr))
+	require.NoError(t, p.Aggregate("gauge:5:7|g|#mykey:myvalue", addr))
+	require.NoError(t, p.Aggregate("relgauge:10:+2:-3|g|#mykey:myvalue", addr))
+
+	instruments := p.instrumentsByAddress[newNetAddr(addr)]
+	counter := instruments.counters[testDescription("counter", "c", []string{"mykey"}, []string{"myvalue"})]
+	assert.Equal(t, int64(24), counter.Metrics().At(0).Sum().DataPoints().At(0).IntValue())
+	gauge := instruments.gauges[testDescription("gauge", "g", []string{"mykey"}, []string{"myvalue"})]
+	assert.Equal(t, 7.0, gauge.Metrics().At(0).Gauge().DataPoints().At(0).DoubleValue())
+	relGauge := instruments.gauges[testDescription("relgauge", "g", []string{"mykey"}, []string{"myvalue"})]
+	assert.Equal(t, 9.0, relGauge.Metrics().At(0).Gauge().DataPoints().At(0).DoubleValue())
+}
+
 func TestStatsDParser_DiscardInvalidValues(t *testing.T) {
 	p := &StatsDParser{}
 	assert.NoError(t, p.Initialize(false, false, false, false, false, nil, protocol.CounterTypeInt))

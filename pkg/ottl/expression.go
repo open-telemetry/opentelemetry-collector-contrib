@@ -740,13 +740,14 @@ func (g StandardFunctionGetter[K]) Get(args Arguments) (Expr[K], error) {
 	if g.Fact == nil {
 		return Expr[K]{}, errors.New("undefined function")
 	}
-	fArgs := g.Fact.CreateDefaultArguments()
-	if reflect.TypeOf(fArgs).Kind() != reflect.Pointer {
+	defaultArgs := g.Fact.CreateDefaultArguments()
+	if reflect.TypeOf(defaultArgs).Kind() != reflect.Pointer {
 		return Expr[K]{}, fmt.Errorf("factory for %q must return a pointer to an Arguments value in its CreateDefaultArguments method", g.Fact.Name())
 	}
 	if reflect.TypeOf(args).Kind() != reflect.Pointer {
 		return Expr[K]{}, fmt.Errorf("%q must be pointer to an Arguments value", reflect.TypeOf(args).Kind())
 	}
+	fArgs := reflect.New(reflect.ValueOf(defaultArgs).Elem().Type()).Interface()
 	fArgsVal := reflect.ValueOf(fArgs).Elem()
 	argsVal := reflect.ValueOf(args).Elem()
 	if fArgsVal.NumField() != argsVal.NumField() {

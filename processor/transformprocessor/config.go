@@ -34,18 +34,23 @@ var (
 // Config defines the configuration for the processor.
 type Config struct {
 	// ErrorMode determines how the processor reacts to errors that occur while processing a statement.
-	// Valid values are `ignore` and `propagate`.
+	// Valid values are `ignore`, `silent` and `propagate`.
 	// `ignore` means the processor ignores errors returned by statements and continues on to the next statement. This is the recommended mode.
+	// `silent` is the same as `ignore` but the errors are not logged.
 	// `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.
 	// The default value is `ignore`.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 
-	TraceStatements  []ContextStatements `mapstructure:"trace_statements"`
+	// TraceStatements configures the OTTL statements executed against trace data.
+	TraceStatements []ContextStatements `mapstructure:"trace_statements"`
+	// MetricStatements configures the OTTL statements executed against metric data.
 	MetricStatements []ContextStatements `mapstructure:"metric_statements"`
-	LogStatements    []ContextStatements `mapstructure:"log_statements"`
+	// LogStatements configures the OTTL statements executed against log data.
+	LogStatements []ContextStatements `mapstructure:"log_statements"`
 	// ProfileStatements configures the OTTL statements executed against profile data.
 	ProfileStatements []ContextStatements `mapstructure:"profile_statements"`
 
+	// Flatten configures flattening of the data before the statements run.
 	Flatten FlattenConfig `mapstructure:"flatten"`
 	logger  *zap.Logger
 
@@ -70,23 +75,24 @@ var _ ottl.StatementsGetter = (*ContextStatements)(nil)
 // ContextID is the name of the OTTL context a group of statements runs against.
 type ContextID string
 
+// The OTTL contexts that can be set on [ContextStatements.Context].
 const (
-	Resource  ContextID = "resource"
-	Scope     ContextID = "scope"
-	Span      ContextID = "span"
-	SpanEvent ContextID = "spanevent"
-	Metric    ContextID = "metric"
-	DataPoint ContextID = "datapoint"
-	Exemplar  ContextID = "exemplar"
-	Log       ContextID = "log"
-	Profile   ContextID = "profile"
+	ContextIDResource  ContextID = "resource"
+	ContextIDScope     ContextID = "scope"
+	ContextIDSpan      ContextID = "span"
+	ContextIDSpanEvent ContextID = "spanevent"
+	ContextIDMetric    ContextID = "metric"
+	ContextIDDataPoint ContextID = "datapoint"
+	ContextIDExemplar  ContextID = "exemplar"
+	ContextIDLog       ContextID = "log"
+	ContextIDProfile   ContextID = "profile"
 )
 
 // UnmarshalText sets the ContextID from its case-insensitive name and rejects unknown contexts.
 func (c *ContextID) UnmarshalText(text []byte) error {
 	str := ContextID(strings.ToLower(string(text)))
 	switch str {
-	case Resource, Scope, Span, SpanEvent, Metric, DataPoint, Exemplar, Log, Profile:
+	case ContextIDResource, ContextIDScope, ContextIDSpan, ContextIDSpanEvent, ContextIDMetric, ContextIDDataPoint, ContextIDExemplar, ContextIDLog, ContextIDProfile:
 		*c = str
 		return nil
 	default:
@@ -96,9 +102,13 @@ func (c *ContextID) UnmarshalText(text []byte) error {
 
 // ContextStatements is a group of OTTL statements and conditions executed together.
 type ContextStatements struct {
-	Context    ContextID `mapstructure:"context"`
-	Conditions []string  `mapstructure:"conditions"`
-	Statements []string  `mapstructure:"statements"`
+	// Context is the OTTL context the statements run against. When empty, it is inferred from the statements and conditions.
+	Context ContextID `mapstructure:"context"`
+	// Conditions are OTTL conditions that must evaluate to true for the statements to run.
+	// Multiple conditions are combined with a logical OR.
+	Conditions []string `mapstructure:"conditions"`
+	// Statements are the OTTL statements to execute.
+	Statements []string `mapstructure:"statements"`
 	// ErrorMode determines how the processor reacts to errors that occur while processing
 	// this group of statements. When provided, it overrides the default Config ErrorMode.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
@@ -145,7 +155,7 @@ func toCommonContextStatements(contextStatements []ContextStatements) []common.C
 // Example of structured configuration:
 //
 //	log_statements:
-//	  - context: "span"
+//	  - context: "log"
 //	    statements:
 //	      - set(attributes["service.new_name"], attributes["service.name"])
 //	      - delete_key(attributes, "service.name")
@@ -169,7 +179,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		rawVal := conf.Get(fieldName)
 		values, ok := rawVal.([]any)
 		if !ok {
-			return fmt.Errorf("invalid %s type, expected: array, got: %t", fieldName, rawVal)
+			return fmt.Errorf("invalid %s type, expected: array, got: %T", fieldName, rawVal)
 		}
 		if len(values) == 0 {
 			continue
@@ -216,6 +226,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 
 var _ component.Config = (*Config)(nil)
 
+// Validate checks that all statements and conditions parse and that required feature gates are enabled.
 func (c *Config) Validate() error {
 	var errors error
 

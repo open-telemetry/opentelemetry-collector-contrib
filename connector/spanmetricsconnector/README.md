@@ -122,6 +122,7 @@ The following settings can be optionally configured:
       buckets: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
   - `exponential`:
     - `max_size` (default: `160`) the maximum number of buckets per positive or negative number range.
+  - `self_time` (default: `false`): enabling will compute exclusive/self time from parent-child span intervals in each consumed trace batch and emit `traces.span.metrics.duration_self_time`. Complete traces must be present in the batch; place the `groupbytrace` processor, or an equivalent processor that assembles complete traces, before this connector in the traces pipeline. The metric uses the same unit, buckets and dimensions as the duration histogram and is not emitted when `disable` is `true`.
 - `dimensions`: the list of dimensions to add to `traces.span.metrics.calls`, `traces.span.metrics.duration` and `traces.span.metrics.event` metrics with the default dimensions defined above.
   Each list entry must set **exactly one** of:
   1. `name` which is looked up in the span's collection of attributes or resource attributes (AKA process tags) such as `ip`, `host.name` or `region`.

@@ -19,7 +19,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/trace"
-	tracepb "go.opentelemetry.io/proto/otlp/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
@@ -368,7 +367,7 @@ func TestHTTPExporterOptions_TLS(t *testing.T) {
 			require.NoError(t, err)
 			client := otlptracehttp.NewClient(opts...)
 
-			err = client.UploadTraces(t.Context(), []*tracepb.ResourceSpans{})
+			err = client.UploadTraces(t.Context(), nil)
 			if tc.expectTransportError {
 				require.Error(t, err)
 				assert.False(t, called)
@@ -417,7 +416,7 @@ func TestHTTPExporterOptions_HTTP(t *testing.T) {
 			require.NoError(t, err)
 			client := otlptracehttp.NewClient(opts...)
 
-			err = client.UploadTraces(t.Context(), []*tracepb.ResourceSpans{})
+			err = client.UploadTraces(t.Context(), nil)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedHTTPPath, httpPath)
 			for k, expected := range tc.expectedHeader {
