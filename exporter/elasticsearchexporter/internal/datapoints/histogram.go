@@ -34,6 +34,18 @@ func (dp Histogram) Validate() error {
 		dp.resolvedMapping() != HistogramMappingExponential {
 		return fmt.Errorf("cumulative temporality histogram %q is only supported when stored as exponential_histogram", dp.metric.Name())
 	}
+
+	bc := dp.BucketCounts().Len()
+	ebc := dp.ExplicitBounds().Len()
+	if bc > 0 && bc != ebc+1 {
+		return fmt.Errorf("histogram %q bucket count must be one greater than explicit bounds count, ignoring ", dp.metric.Name())
+	}
+
+	for i := 1; i < dp.ExplicitBounds().Len(); i++ {
+		if dp.ExplicitBounds().At(i-1) >= dp.ExplicitBounds().At(i) {
+			return fmt.Errorf("histogram %q bounds are not sorted or are not unique, ignoring", dp.metric.Name())
+		}
+	}
 	return nil
 }
 

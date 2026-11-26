@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -262,6 +263,132 @@ func BenchmarkSerializeMetrics(b *testing.B) {
 			}
 		})
 	}
+}
+
+func BenchmarkSerializeExemplar(b *testing.B) {
+	for _, bb := range []struct {
+		name        string
+		build       func() (pmetric.Metrics, []datapoints.DataPoint, elasticsearch.Index)
+		expectedErr bool
+	}{
+		{
+			name: "double",
+			build: func() (pmetric.Metrics, []datapoints.DataPoint, elasticsearch.Index) {
+				return buildExemplarCase(func(_ pmetric.NumberDataPoint, e pmetric.Exemplar) {
+					e.SetDoubleValue(10)
+				})
+			},
+		},
+		{
+			name: "int value",
+			build: func() (pmetric.Metrics, []datapoints.DataPoint, elasticsearch.Index) {
+				return buildExemplarCase(func(_ pmetric.NumberDataPoint, e pmetric.Exemplar) {
+					e.SetIntValue(10)
+				})
+			},
+		},
+		{
+			name: "with trace span",
+			build: func() (pmetric.Metrics, []datapoints.DataPoint, elasticsearch.Index) {
+				return buildExemplarCase(func(_ pmetric.NumberDataPoint, e pmetric.Exemplar) {
+					e.SetDoubleValue(10)
+					e.SetTraceID(pcommon.TraceID{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10})
+					e.SetSpanID(pcommon.SpanID{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08})
+				})
+			},
+		},
+		{
+			name: "with empty trace span",
+			build: func() (pmetric.Metrics, []datapoints.DataPoint, elasticsearch.Index) {
+				return buildExemplarCase(func(_ pmetric.NumberDataPoint, e pmetric.Exemplar) {
+					e.SetDoubleValue(10)
+					e.SetTraceID(pcommon.TraceID{})
+					e.SetSpanID(pcommon.SpanID{})
+				})
+			},
+		},
+		{
+			name: "with filtered attributes",
+			build: func() (pmetric.Metrics, []datapoints.DataPoint, elasticsearch.Index) {
+				return buildExemplarCase(func(_ pmetric.NumberDataPoint, e pmetric.Exemplar) {
+					e.SetDoubleValue(10)
+					e.SetTraceID(pcommon.TraceID{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10})
+					e.SetSpanID(pcommon.SpanID{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08})
+					e.FilteredAttributes().PutInt("thread.id", 42)
+				})
+			},
+		},
+		{
+			name: "with dp attributes",
+			build: func() (pmetric.Metrics, []datapoints.DataPoint, elasticsearch.Index) {
+				return buildExemplarCase(func(dp pmetric.NumberDataPoint, e pmetric.Exemplar) {
+					e.SetDoubleValue(10)
+					e.SetTraceID(pcommon.TraceID{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10})
+					e.SetSpanID(pcommon.SpanID{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08})
+					e.FilteredAttributes().PutInt("thread.id", 42)
+					dp.Attributes().PutStr("state", "user")
+					dp.Attributes().PutStr("cpu", "system")
+				})
+			},
+		},
+		{
+			name: "empty",
+			build: func() (pmetric.Metrics, []datapoints.DataPoint, elasticsearch.Index) {
+				return buildExemplarCase(func(_ pmetric.NumberDataPoint, _ pmetric.Exemplar) {
+				})
+			},
+			expectedErr: true,
+		},
+	} {
+		b.Run(bb.name, func(b *testing.B) {
+			metrics, dps, idx := bb.build()
+			rm := metrics.ResourceMetrics().At(0)
+			sm := rm.ScopeMetrics().At(0)
+			metrics.MarkReadOnly()
+
+			dp := dps[0]
+			ex := dp.Exemplars().At(0)
+			attr := dp.Attributes()
+			m := dp.Metric()
+
+			ser, err := New()
+			require.NoError(b, err)
+
+			var buf bytes.Buffer
+			buf.Grow(1024)
+
+			b.ReportAllocs()
+
+			for b.Loop() {
+				buf.Reset()
+				err = ser.SerializeExemplar(
+					rm.Resource(), "",
+					sm.Scope(), "",
+					idx,
+					&buf,
+					ex,
+					m,
+					"delta",
+					attr,
+				)
+				if bb.expectedErr {
+					assert.Error(b, err)
+				}
+			}
+		})
+	}
+}
+
+func buildExemplarCase(cfg func(dp pmetric.NumberDataPoint, e pmetric.Exemplar)) (pmetric.Metrics, []datapoints.DataPoint, elasticsearch.Index) {
+	metrics := pmetric.NewMetrics()
+	sm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("metric.foo")
+	m.SetUnit("1")
+	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+	e := dp.Exemplars().AppendEmpty()
+	cfg(dp, e)
+	return metrics, []datapoints.DataPoint{datapoints.NewNumber(m, dp)}, elasticsearch.Index{}
 }
 
 func BenchmarkSerializeSpan(b *testing.B) {
