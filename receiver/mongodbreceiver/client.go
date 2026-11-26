@@ -45,7 +45,11 @@ type mongodbClient struct {
 // newClient creates a new client to connect and query mongo for the
 // mongodbreceiver
 var newClient = func(_ context.Context, config *Config, logger *zap.Logger, secondary bool) (client, error) {
-	driver, err := mongo.Connect(config.ClientOptions(secondary))
+	opts, err := config.ClientOptions(secondary)
+	if err != nil {
+		return nil, err
+	}
+	driver, err := mongo.Connect(opts)
 	if err != nil {
 		return nil, err
 	}

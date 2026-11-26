@@ -105,8 +105,7 @@ func newKubeletScraper(
 func (r *kubeletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	summary, err := r.statsProvider.StatsSummary()
 	if err != nil {
-		r.logger.Error("call to /stats/summary endpoint failed", zap.Error(err))
-		return pmetric.Metrics{}, err
+		return pmetric.Metrics{}, fmt.Errorf("call to /stats/summary endpoint failed: %w", err)
 	}
 
 	var podsMetadata *v1.PodList
@@ -114,8 +113,7 @@ func (r *kubeletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	if len(r.extraMetadataLabels) > 0 || r.needsResources {
 		podsMetadata, err = r.metadataProvider.Pods()
 		if err != nil {
-			r.logger.Error("call to /pods endpoint failed", zap.Error(err))
-			return pmetric.Metrics{}, err
+			return pmetric.Metrics{}, fmt.Errorf("call to /pods endpoint failed: %w", err)
 		}
 	}
 

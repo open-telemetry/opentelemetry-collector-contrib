@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -1158,6 +1159,17 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 		m.logger.Error("Failed to fetch top queries", zap.Error(err))
 		errs.AddPartial(1, err)
 		return
+	}
+
+	// Drop rows without digest_text before diffing and ranking. MySQL aggregates statements that
+	// overflow performance_schema_digests_size into a single row with NULL schema, digest and
+	// digest_text; that row cannot be obfuscated or attributed to a query and would otherwise
+	// occupy a top_query_count slot.
+	fetched := len(queries)
+	queries = slices.DeleteFunc(queries, func(q topQuery) bool { return q.digestText == "" })
+	if droppedQueries := fetched - len(queries); droppedQueries > 0 {
+		m.logger.Debug("dropped top queries due to missing digest_text",
+			zap.Int("count", droppedQueries))
 	}
 
 	sumTimerWaitInPicoSecondsDiff := make([]int64, len(queries))

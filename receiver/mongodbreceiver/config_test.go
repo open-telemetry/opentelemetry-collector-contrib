@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -217,7 +218,7 @@ func TestOptions(t *testing.T) {
 		ReplicaSet: "rs-1",
 	}
 
-	clientOptions := cfg.ClientOptions(false)
+	clientOptions := mustClientOptions(t, cfg, false)
 	require.Equal(t, clientOptions.Auth.Username, cfg.Username)
 	require.Equal(t,
 		clientOptions.ConnectTimeout.Milliseconds(),
@@ -245,7 +246,7 @@ func TestOptionsWithAuthMechanismAndSource(t *testing.T) {
 	}
 
 	// Test primary connection options
-	clientOptions := cfg.ClientOptions(false)
+	clientOptions := mustClientOptions(t, cfg, false)
 	require.Equal(t, clientOptions.Auth.Username, cfg.Username)
 	require.Equal(t, clientOptions.Auth.AuthMechanism, cfg.AuthMechanism)
 	require.Equal(t, clientOptions.Auth.AuthSource, cfg.AuthSource)
@@ -257,7 +258,7 @@ func TestOptionsWithAuthMechanismAndSource(t *testing.T) {
 	require.Equal(t, "rs-1", *clientOptions.ReplicaSet)
 
 	// Test secondary connection options
-	secondaryOptions := cfg.ClientOptions(true)
+	secondaryOptions := mustClientOptions(t, cfg, true)
 	require.Equal(t, secondaryOptions.Auth.Username, cfg.Username)
 	require.Equal(t, secondaryOptions.Auth.AuthMechanism, cfg.AuthMechanism)
 	require.Equal(t, secondaryOptions.Auth.AuthSource, cfg.AuthSource)
@@ -277,14 +278,14 @@ func TestOptionsWithAuthMechanismOnly(t *testing.T) {
 	}
 
 	// Test primary connection options
-	clientOptions := cfg.ClientOptions(false)
+	clientOptions := mustClientOptions(t, cfg, false)
 	require.Empty(t, clientOptions.Auth.Username)
 	require.Empty(t, clientOptions.Auth.Password)
 	require.Equal(t, "MONGODB-X509", clientOptions.Auth.AuthMechanism)
 	require.Equal(t, "$external", clientOptions.Auth.AuthSource)
 
 	// Test secondary connection options
-	secondaryOptions := cfg.ClientOptions(true)
+	secondaryOptions := mustClientOptions(t, cfg, true)
 	require.Empty(t, secondaryOptions.Auth.Username)
 	require.Empty(t, secondaryOptions.Auth.Password)
 	require.Equal(t, "MONGODB-X509", secondaryOptions.Auth.AuthMechanism)
@@ -300,7 +301,7 @@ func TestOptionsDefaultScheme(t *testing.T) {
 		},
 	}
 
-	clientOptions := cfg.ClientOptions(false)
+	clientOptions := mustClientOptions(t, cfg, false)
 	require.Equal(t, []string{"localhost:27017"}, clientOptions.Hosts)
 }
 
@@ -314,7 +315,7 @@ func TestOptionsSRVScheme(t *testing.T) {
 		Scheme: "mongodb+srv",
 	}
 
-	clientOptions := cfg.ClientOptions(false)
+	clientOptions := mustClientOptions(t, cfg, false)
 	require.NotNil(t, clientOptions)
 	// mongodb+srv:// defers host resolution to connect time,
 	// so Hosts is not populated at parse time
@@ -338,11 +339,11 @@ func TestOptionsTLS(t *testing.T) {
 			},
 		},
 	}
-	opts := cfg.ClientOptions(false)
+	opts := mustClientOptions(t, cfg, false)
 	require.NotNil(t, opts.TLSConfig)
 
 	// Secondaries belong to the same deployment, so they need the same transport security.
-	secondaryOpts := cfg.ClientOptions(true)
+	secondaryOpts := mustClientOptions(t, cfg, true)
 	require.NotNil(t, secondaryOpts.TLSConfig)
 }
 
@@ -357,7 +358,7 @@ func TestOptionsSecondaryOperationTimeout(t *testing.T) {
 	}
 
 	// A secondary that connects but stops responding must not hold a collection open.
-	opts := cfg.ClientOptions(true)
+	opts := mustClientOptions(t, cfg, true)
 	require.NotNil(t, opts.Timeout)
 	require.Equal(t, cfg.Timeout, *opts.Timeout)
 	require.NotNil(t, opts.ConnectTimeout)
@@ -567,4 +568,27 @@ func TestValidateTopQueryCollection_PartialUserConfig(t *testing.T) {
 // preservation path.
 func decodeInto(cfg *Config, raw map[string]any) error {
 	return confmap.NewFromStringMap(raw).Unmarshal(cfg)
+}
+
+func mustClientOptions(t *testing.T, cfg *Config, secondary bool) *options.ClientOptions {
+	t.Helper()
+	opts, err := cfg.ClientOptions(secondary)
+	require.NoError(t, err)
+	return opts
+}
+
+func TestClientOptionsTLSLoadError(t *testing.T) {
+	for _, scheme := range []string{"mongodb", "mongodb+srv"} {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Scheme = scheme
+		cfg.Hosts = []confignet.TCPAddrConfig{{Endpoint: "member.example.net:27017"}}
+		cfg.ClientConfig.Insecure = false
+		cfg.ClientConfig.CAFile = filepath.Join(t.TempDir(), "missing-ca.pem")
+
+		for _, secondary := range []bool{false, true} {
+			opts, err := cfg.ClientOptions(secondary)
+			require.ErrorContains(t, err, "failed to load TLS configuration", "scheme %s, secondary %v", scheme, secondary)
+			require.Nil(t, opts)
+		}
+	}
 }

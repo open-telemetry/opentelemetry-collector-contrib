@@ -60,7 +60,7 @@ require (
 	go.opentelemetry.io/collector/config/configoptional v1.72.0
 	go.opentelemetry.io/collector/config/configretry v1.72.0
 	go.opentelemetry.io/collector/config/configstorage v0.166.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.166.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.166.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.166.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.166.0 // indirect
 	go.opentelemetry.io/collector/extension v1.72.0 // indirect

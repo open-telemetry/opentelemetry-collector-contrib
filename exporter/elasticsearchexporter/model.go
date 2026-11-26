@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventionsv126 "go.opentelemetry.io/otel/semconv/v1.26.0"
@@ -158,6 +159,7 @@ type documentEncoder interface {
 	// encoders that need custom routing return a different index than the one passed in.
 	encodeSpanEvent(encodingContext, ptrace.Span, ptrace.SpanEvent, elasticsearch.Index, *bytes.Buffer) (elasticsearch.Index, error)
 	encodeMetrics(_ encodingContext, _ []datapoints.DataPoint, validationErrors *[]error, _ elasticsearch.Index, _ *bytes.Buffer) (map[string]string, error)
+	encodeExemplar(_ encodingContext, _ pmetric.Metric, _ string, _ pmetric.Exemplar, _ pcommon.Map, _ elasticsearch.Index, _ *bytes.Buffer) error
 	encodeProfile(_ encodingContext, _ pprofile.ProfilesDictionary, _ pprofile.Profile, _ func(*bytes.Buffer, string, string) error) error
 }
 
@@ -198,8 +200,9 @@ func newEncoder(mode MappingMode) (documentEncoder, error) {
 	switch mode {
 	case MappingNone:
 		return legacyModeEncoder{
-			metricsUnsupportedEncoder:  metricsUnsupportedEncoder{mode: mode},
-			profilesUnsupportedEncoder: profilesUnsupportedEncoder{mode: mode},
+			metricsUnsupportedEncoder:   metricsUnsupportedEncoder{mode: mode},
+			exemplarsUnsupportedEncoder: exemplarsUnsupportedEncoder{mode: mode},
+			profilesUnsupportedEncoder:  profilesUnsupportedEncoder{mode: mode},
 			nonOTelSpanEncoder: nonOTelSpanEncoder{
 				attributesPrefix: "Attributes",
 				eventsPrefix:     "Events",
@@ -208,8 +211,9 @@ func newEncoder(mode MappingMode) (documentEncoder, error) {
 		}, nil
 	case MappingRaw:
 		return legacyModeEncoder{
-			metricsUnsupportedEncoder:  metricsUnsupportedEncoder{mode: mode},
-			profilesUnsupportedEncoder: profilesUnsupportedEncoder{mode: mode},
+			metricsUnsupportedEncoder:   metricsUnsupportedEncoder{mode: mode},
+			exemplarsUnsupportedEncoder: exemplarsUnsupportedEncoder{mode: mode},
+			profilesUnsupportedEncoder:  profilesUnsupportedEncoder{mode: mode},
 			nonOTelSpanEncoder: nonOTelSpanEncoder{
 				attributesPrefix: "",
 				eventsPrefix:     "",
@@ -224,8 +228,9 @@ func newEncoder(mode MappingMode) (documentEncoder, error) {
 		return ecsModeEncoder{serializer: ecsSer}, nil
 	case MappingBodyMap:
 		return bodymapModeEncoder{
-			metricsUnsupportedEncoder:  metricsUnsupportedEncoder{mode: mode},
-			profilesUnsupportedEncoder: profilesUnsupportedEncoder{mode: mode},
+			metricsUnsupportedEncoder:   metricsUnsupportedEncoder{mode: mode},
+			exemplarsUnsupportedEncoder: exemplarsUnsupportedEncoder{mode: mode},
+			profilesUnsupportedEncoder:  profilesUnsupportedEncoder{mode: mode},
 		}, nil
 	case MappingOTel:
 		ser, err := otelserializer.New()
@@ -240,17 +245,20 @@ func newEncoder(mode MappingMode) (documentEncoder, error) {
 type legacyModeEncoder struct {
 	nonOTelSpanEncoder
 	metricsUnsupportedEncoder
+	exemplarsUnsupportedEncoder
 	profilesUnsupportedEncoder
 	attributesPrefix string
 }
 
 type ecsModeEncoder struct {
 	ecsDataPointsEncoder
+	exemplarsUnsupportedEncoder
 	serializer *ecsserializer.Serializer
 }
 
 type bodymapModeEncoder struct {
 	metricsUnsupportedEncoder
+	exemplarsUnsupportedEncoder
 	profilesUnsupportedEncoder
 }
 
@@ -427,6 +435,27 @@ func (e otelModeEncoder) encodeMetrics(
 	)
 }
 
+func (e otelModeEncoder) encodeExemplar(
+	ec encodingContext,
+	metric pmetric.Metric,
+	temporality string,
+	exemplar pmetric.Exemplar,
+	attr pcommon.Map,
+	idx elasticsearch.Index,
+	buf *bytes.Buffer,
+) error {
+	return e.serializer.SerializeExemplar(
+		ec.resource, ec.resourceSchemaURL,
+		ec.scope, ec.scopeSchemaURL,
+		idx,
+		buf,
+		exemplar,
+		metric,
+		temporality,
+		attr,
+	)
+}
+
 func (bodymapModeEncoder) encodeLog(
 	_ encodingContext,
 	record plog.LogRecord,
@@ -453,6 +482,10 @@ type metricsUnsupportedEncoder struct {
 	mode MappingMode
 }
 
+type exemplarsUnsupportedEncoder struct {
+	mode MappingMode
+}
+
 //nolint:unparam // result 0 is expected to always be nil
 func (e metricsUnsupportedEncoder) encodeMetrics(
 	_ encodingContext,
@@ -466,6 +499,18 @@ func (e metricsUnsupportedEncoder) encodeMetrics(
 
 type profilesUnsupportedEncoder struct {
 	mode MappingMode
+}
+
+func (e exemplarsUnsupportedEncoder) encodeExemplar(
+	_ encodingContext,
+	_ pmetric.Metric,
+	_ string,
+	_ pmetric.Exemplar,
+	_ pcommon.Map,
+	_ elasticsearch.Index,
+	_ *bytes.Buffer,
+) error {
+	return fmt.Errorf("mapping mode %q (%d) does not support exemplars", e.mode, int(e.mode))
 }
 
 func (e profilesUnsupportedEncoder) encodeProfile(
