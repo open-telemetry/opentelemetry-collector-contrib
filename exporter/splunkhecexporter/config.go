@@ -45,16 +45,16 @@ type HecHeartbeat struct {
 
 // HecTelemetry defines the telemetry configuration for the exporter.
 //
-// Deprecated: [v0.166.0] the telemetry block will be removed in a future release; the heartbeat
+// Deprecated: [v0.167.0] the telemetry block will be removed in a future release; the heartbeat
 // metrics are emitted directly from metadata.yaml.
 type HecTelemetry struct {
-	// Deprecated: [v0.166.0] no longer has any effect; the heartbeat metrics are always emitted.
+	// Deprecated: [v0.167.0] no longer has any effect; the heartbeat metrics are always emitted.
 	Enabled bool `mapstructure:"enabled"`
 
-	// Deprecated: [v0.166.0] the heartbeat metrics have fixed names and cannot be overridden.
+	// Deprecated: [v0.167.0] the heartbeat metrics have fixed names and cannot be overridden.
 	OverrideMetricsNames map[string]string `mapstructure:"override_metrics_names"`
 
-	// Deprecated: [v0.166.0] attach extra attributes via a processor instead.
+	// Deprecated: [v0.167.0] attach extra attributes via a processor instead.
 	ExtraAttributes map[string]string `mapstructure:"extra_attributes"`
 }
 

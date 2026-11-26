@@ -71,12 +71,12 @@ func newHeartbeater(config *Config, buildInfo component.BuildInfo, pushLogFn fun
 	overrides := config.Telemetry.OverrideMetricsNames
 	heartbeatsSent, err := heartbeatCounter(meter, telemetryBuilder.ExporterSplunkhecHeartbeatsSent, overrides, defaultHBSentMetricsName, "number of heartbeats sent")
 	if err != nil {
-		logger.Error("failed to create heartbeat metric", zap.Error(err))
+		logger.Error("Failed to create heartbeat metric", zap.Error(err))
 		return nil
 	}
 	heartbeatsFailed, err := heartbeatCounter(meter, telemetryBuilder.ExporterSplunkhecHeartbeatsFailed, overrides, defaultHBFailedMetricsName, "number of heartbeats failed")
 	if err != nil {
-		logger.Error("failed to create heartbeat metric", zap.Error(err))
+		logger.Error("Failed to create heartbeat metric", zap.Error(err))
 		return nil
 	}
 
