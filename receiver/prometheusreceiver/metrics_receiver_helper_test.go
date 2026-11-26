@@ -42,13 +42,14 @@ type mockPrometheusResponse struct {
 	code           int
 	data           string
 	useOpenMetrics bool
+	contentType    string
+	onRequest      func(*http.Request)
 
 	useProtoBuf bool // This overrides data and useOpenMetrics above
 	buf         []byte
 }
 
 type mockPrometheus struct {
-	mu          sync.Mutex // mu protects the fields below.
 	endpoints   map[string][]mockPrometheusResponse
 	accessIndex map[string]*atomic.Int32
 	wg          *sync.WaitGroup
@@ -73,15 +74,15 @@ func newMockPrometheus(endpoints map[string][]mockPrometheusResponse) *mockProme
 }
 
 func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	mp.mu.Lock()
-	defer mp.mu.Unlock()
+	if req.Context().Err() != nil {
+		return
+	}
 	iptr, ok := mp.accessIndex[req.URL.Path]
 	if !ok {
 		rw.WriteHeader(http.StatusNotFound)
 		return
 	}
-	index := int(iptr.Load())
-	iptr.Add(1)
+	index := int(iptr.Add(1) - 1)
 	pages := mp.endpoints[req.URL.Path]
 	if index >= len(pages) {
 		if index == len(pages) {
@@ -93,7 +94,12 @@ func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		}
 		index = len(pages) - 1
 	}
+	if pages[index].onRequest != nil {
+		pages[index].onRequest(req)
+	}
 	switch {
+	case pages[index].contentType != "":
+		rw.Header().Set("Content-Type", pages[index].contentType)
 	case pages[index].useProtoBuf:
 		rw.Header().Set("Content-Type", "application/vnd.google.protobuf; proto=io.prometheus.client.MetricFamily; encoding=delimited")
 	case pages[index].useOpenMetrics:
@@ -212,7 +218,7 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *PromConfig, error)
 		job := make(map[string]any)
 		job["job_name"] = tds[i].name
 		job["metrics_path"] = metricPaths[i]
-		job["scrape_interval"] = "100ms"
+		job["scrape_interval"] = "500ms"
 		job["static_configs"] = []map[string]any{{"targets": []string{u.Host}}}
 		jobs = append(jobs, job)
 	}

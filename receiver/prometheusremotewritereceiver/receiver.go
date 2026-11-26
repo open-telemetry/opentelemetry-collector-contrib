@@ -3,17 +3,23 @@
 package prometheusremotewritereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver"
 
 import (
+	"bufio"
 	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"math"
+	"mime"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/golang/snappy"
 	lru "github.com/hashicorp/golang-lru/v2"
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/common/model"
@@ -24,6 +30,7 @@ import (
 	promremote "github.com/prometheus/prometheus/storage/remote"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -39,6 +46,29 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/metadata"
 )
+
+const (
+	writePath = "/api/v1/write"
+	// defaultMaxRequestBodySize matches confighttp's unexported default (20MiB) so the custom
+	// snappy block decoder applies the same bound before confighttp populates ServerConfig.
+	defaultMaxRequestBodySize = 20 * 1024 * 1024
+
+	appProtoContentType = "application/x-protobuf"
+	writeV2ContentType  = appProtoContentType + ";proto=" + string(remoteapi.WriteV2MessageType)
+	// acceptedContentTypes is the RFC 7694 Accept header value advertised on 415 responses
+	// for unsupported Content-Type, proto, or mode parameters.
+	acceptedContentTypes = writeV2ContentType + ", " +
+		writeV2ContentType + ";mode=none, " +
+		writeV2ContentType + ";mode=stateless, " +
+		writeV2ContentType + ";mode=stateless-st"
+)
+
+// snappyFramingHeader is the 10-byte stream identifier chunk at the start of a Snappy framed stream.
+// See https://github.com/google/snappy/blob/main/framing_format.txt.
+var snappyFramingHeader = []byte{
+	0xff, 0x06, 0x00, 0x00,
+	0x73, 0x4e, 0x61, 0x50, 0x70, 0x59, // "sNaPpY"
+}
 
 // droppedClassicHistogramAttrs and droppedSummaryAttrs are the precomputed attribute sets of the
 // dropped series counter, one per value of the metric_type enum declared in metadata.yaml.
@@ -156,8 +186,6 @@ func (mi metricIdentity) Hash() uint64 {
 }
 
 func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host component.Host) error {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/api/v1/write", prw.handlePRW)
 	var err error
 	prw.obsrecv, err = receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             prw.settings.ID,
@@ -168,7 +196,7 @@ func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host compon
 		return fmt.Errorf("failed to create obsreport: %w", err)
 	}
 
-	prw.server, err = prw.config.ServerConfig.ToServer(ctx, host.GetExtensions(), prw.settings.TelemetrySettings, mux)
+	prw.server, err = prw.buildHTTPServer(ctx, host.GetExtensions())
 	if err != nil {
 		return fmt.Errorf("failed to create server definition: %w", err)
 	}
@@ -185,6 +213,194 @@ func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host compon
 	return nil
 }
 
+type multipleContentEncodingKey struct{}
+
+// writeRouteHandler wraps the POST /api/v1/write handler in a concrete comparable pointer type
+// so makeHTTPErrorHandler can safely test mux.Handler(r) != writeHandler without panicking on
+// non-comparable http.HandlerFunc values (such as ServeMux's 404/405 handlers).
+type writeRouteHandler struct {
+	fn http.HandlerFunc
+}
+
+func (h *writeRouteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.fn(w, r)
+}
+
+// tagMultipleContentEncoding records when a request arrives with multiple Content-Encoding
+// header lines before confighttp's decompressor reads only the first value and strips all of them.
+// It never mutates r.Header or short-circuits so CORS, otelhttp, response_headers, and auth run first.
+func tagMultipleContentEncoding(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if values := r.Header.Values("Content-Encoding"); len(values) > 1 {
+			r = r.WithContext(context.WithValue(r.Context(), multipleContentEncodingKey{}, strings.Join(values, ", ")))
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (prw *prometheusRemoteWriteReceiver) buildHTTPServer(ctx context.Context, extensions map[component.ID]component.Component) (*http.Server, error) {
+	serverCfg := prw.config.ServerConfig
+	if serverCfg.CompressionAlgorithms == nil {
+		serverCfg.CompressionAlgorithms = []string{"snappy"}
+	} else if len(serverCfg.CompressionAlgorithms) > 0 {
+		normalized := make([]string, len(serverCfg.CompressionAlgorithms))
+		for i, alg := range serverCfg.CompressionAlgorithms {
+			normalized[i] = strings.ToLower(alg)
+		}
+		serverCfg.CompressionAlgorithms = normalized
+	}
+	maxRequestBodySize := serverCfg.MaxRequestBodySize
+	if maxRequestBodySize <= 0 {
+		maxRequestBodySize = defaultMaxRequestBodySize
+	}
+
+	allowedEncodings, acceptEncoding := compressionSettings(serverCfg.CompressionAlgorithms)
+
+	writeHandler := &writeRouteHandler{fn: func(w http.ResponseWriter, r *http.Request) {
+		if enc, ok := r.Context().Value(multipleContentEncodingKey{}).(string); ok {
+			if acceptEncoding != "" {
+				w.Header().Set("Accept-Encoding", acceptEncoding)
+			}
+			prw.settings.Logger.Warn("Unsupported multiple Content-Encoding headers", zap.String("content_encoding", enc))
+			http.Error(w, fmt.Sprintf("unsupported Content-Encoding: %s", enc), http.StatusUnsupportedMediaType)
+			return
+		}
+		prw.handlePRW(w, r)
+	}}
+	mux := http.NewServeMux()
+	mux.Handle("POST "+writePath, writeHandler)
+
+	serverOpts := []confighttp.ToServerOption{
+		confighttp.WithErrorHandler(prw.makeHTTPErrorHandler(mux, writeHandler, allowedEncodings, acceptEncoding)),
+	}
+	if _, ok := allowedEncodings["snappy"]; ok {
+		serverOpts = append(serverOpts, confighttp.WithDecoder("snappy", newSnappyBlockDecoder(maxRequestBodySize)))
+	}
+
+	srv, err := serverCfg.ToServer(ctx, extensions, prw.settings.TelemetrySettings, mux, serverOpts...)
+	if err != nil {
+		return nil, err
+	}
+	if len(allowedEncodings) > 0 {
+		srv.Handler = tagMultipleContentEncoding(srv.Handler)
+	}
+	return srv, nil
+}
+
+// compressionSettings builds the set of allowed Content-Encoding header values matching
+// confighttp's decompressor (where "" also enables "identity") and formats the RFC 7694
+// Accept-Encoding response header value.
+func compressionSettings(algorithms []string) (allowed map[string]struct{}, acceptEncoding string) {
+	allowed = make(map[string]struct{}, len(algorithms))
+	advertised := make([]string, 0, len(algorithms))
+	seenAdvertised := make(map[string]struct{}, len(algorithms))
+	for _, alg := range algorithms {
+		allowed[alg] = struct{}{}
+		token := alg
+		if alg == "" {
+			allowed["identity"] = struct{}{}
+			token = "identity"
+		}
+		if _, ok := seenAdvertised[token]; !ok {
+			seenAdvertised[token] = struct{}{}
+			advertised = append(advertised, token)
+		}
+	}
+	return allowed, strings.Join(advertised, ", ")
+}
+
+func (prw *prometheusRemoteWriteReceiver) makeHTTPErrorHandler(
+	mux *http.ServeMux,
+	writeHandler *writeRouteHandler,
+	allowedEncodings map[string]struct{},
+	acceptEncoding string,
+) func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int) {
+	return func(w http.ResponseWriter, r *http.Request, errorMsg string, statusCode int) {
+		// Pass through non-400 errors (for example, 401 Unauthorized from auth extensions).
+		if statusCode != http.StatusBadRequest {
+			http.Error(w, errorMsg, statusCode)
+			return
+		}
+		// Delegate any request that ServeMux would not dispatch to writeHandler (non-POST,
+		// unknown paths, non-canonical redirects, CONNECT, OPTIONS *, percent-encoded slashes
+		// like /api/v1%2Fwrite) so status codes and headers (405 Allow, 307 Location, 404, 400)
+		// match ServeMux identically without ever invoking writeHandler/handlePRW.
+		if r.RequestURI == "*" {
+			mux.ServeHTTP(w, r)
+			return
+		}
+		if h, _ := mux.Handler(r); h != writeHandler {
+			h.ServeHTTP(w, r)
+			return
+		}
+		if encValues := r.Header.Values("Content-Encoding"); len(encValues) > 1 {
+			joined := strings.Join(encValues, ", ")
+			if acceptEncoding != "" {
+				w.Header().Set("Accept-Encoding", acceptEncoding)
+			}
+			prw.settings.Logger.Warn("Unsupported multiple Content-Encoding headers", zap.String("content_encoding", joined))
+			http.Error(w, fmt.Sprintf("unsupported Content-Encoding: %s", joined), http.StatusUnsupportedMediaType)
+			return
+		}
+		encoding := r.Header.Get("Content-Encoding")
+		if _, ok := allowedEncodings[encoding]; !ok {
+			if acceptEncoding != "" {
+				w.Header().Set("Accept-Encoding", acceptEncoding)
+			}
+			prw.settings.Logger.Warn("Unsupported Content-Encoding", zap.String("content_encoding", encoding))
+			if encoding == "" {
+				http.Error(w, "Content-Encoding header is required", http.StatusUnsupportedMediaType)
+			} else {
+				http.Error(w, errorMsg, http.StatusUnsupportedMediaType)
+			}
+			return
+		}
+		prw.settings.Logger.Warn("Error decompressing remote write request body", zap.String("error", errorMsg))
+		http.Error(w, errorMsg, statusCode)
+	}
+}
+
+// newSnappyBlockDecoder returns a confighttp decoder for Snappy block format only.
+// Unlike confighttp's default snappy handler, it rejects Snappy framed streams as required
+// by the Prometheus Remote Write 2.0 specification.
+func newSnappyBlockDecoder(maxRequestBodySize int64) func(io.ReadCloser) (io.ReadCloser, error) {
+	return func(body io.ReadCloser) (io.ReadCloser, error) {
+		defer func() { _ = body.Close() }()
+
+		peekLen := max(len(snappyFramingHeader), binary.MaxVarintLen64)
+		// Use a minimal buffer (clamped to 16 bytes by bufio) so peeking avoids a 4KiB
+		// read-ahead and rejects framed streams or oversized headers after at most 16 bytes.
+		br := bufio.NewReaderSize(body, peekLen)
+
+		peekBytes, err := br.Peek(peekLen)
+		if err != nil && !errors.Is(err, io.EOF) {
+			return nil, err
+		}
+		if bytes.HasPrefix(peekBytes, snappyFramingHeader) {
+			return nil, errors.New("snappy: framed format is not supported; use snappy block format")
+		}
+		if maxRequestBodySize > 0 {
+			decodedLen, decErr := snappy.DecodedLen(peekBytes)
+			if decErr != nil {
+				return nil, decErr
+			}
+			if int64(decodedLen) > maxRequestBodySize {
+				return nil, errors.New("snappy: decoded size exceeds max request body size")
+			}
+		}
+
+		compressed, err := io.ReadAll(br)
+		if err != nil {
+			return nil, err
+		}
+		decoded, err := snappy.Decode(nil, compressed)
+		if err != nil {
+			return nil, err
+		}
+		return io.NopCloser(bytes.NewReader(decoded)), nil
+	}
+}
+
 func (prw *prometheusRemoteWriteReceiver) Shutdown(ctx context.Context) error {
 	prw.telemetryBuilder.Shutdown()
 	if prw.server == nil {
@@ -199,28 +415,49 @@ func (prw *prometheusRemoteWriteReceiver) Shutdown(ctx context.Context) error {
 	return err
 }
 
+func writeUnsupportedMediaType(w http.ResponseWriter, msg string) {
+	w.Header().Set("Accept", acceptedContentTypes)
+	http.Error(w, msg, http.StatusUnsupportedMediaType)
+}
+
 func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *http.Request) {
-	contentType := req.Header.Get("Content-Type")
-	if contentType == "" {
-		prw.settings.Logger.Warn("message received without Content-Type header, rejecting")
-		http.Error(w, "Content-Type header is required", http.StatusUnsupportedMediaType)
+	if req.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	msgType, err := prw.parseProto(contentType)
+	ctValues := req.Header.Values("Content-Type")
+	if len(ctValues) > 1 {
+		prw.settings.Logger.Warn("message received with multiple Content-Type headers, rejecting")
+		writeUnsupportedMediaType(w, "multiple Content-Type headers are not allowed")
+		return
+	}
+	contentType := req.Header.Get("Content-Type")
+	if contentType == "" {
+		prw.settings.Logger.Warn("message received without Content-Type header, rejecting")
+		writeUnsupportedMediaType(w, "Content-Type header is required")
+		return
+	}
+
+	msgType, err := parseProto(contentType)
 	if err != nil {
 		prw.settings.Logger.Warn("Error decoding remote-write request", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
-		http.Error(w, err.Error(), http.StatusUnsupportedMediaType)
+		writeUnsupportedMediaType(w, err.Error())
 		return
 	}
 	if msgType != remoteapi.WriteV2MessageType {
 		prw.settings.Logger.Warn("message received with unsupported proto version, rejecting")
-		http.Error(w, "Unsupported proto version", http.StatusUnsupportedMediaType)
+		writeUnsupportedMediaType(w, "Unsupported proto version")
 		return
 	}
 
-	// After parsing the content-type header, the next step would be to handle content-encoding.
-	// Luckly confighttp's Server has middleware that already decompress the request body for us.
+	// Default the required PRW 2.0 Written response headers to 0 so that early errors
+	// (body read, protobuf unmarshal, or downstream consumer errors) report nothing written.
+	promremote.WriteResponseStats{}.SetHeaders(w)
+
+	// confighttp's server middleware validates Content-Encoding and decompresses the request body
+	// before handlePRW runs.
 	buf := prw.bodyBufferPool.Get().(*bytes.Buffer)
 	buf.Reset()
 	defer prw.bodyBufferPool.Put(buf)
@@ -237,65 +474,81 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 		return
 	}
 
-	m, stats, err := prw.translateV2(req.Context(), &prw2Req)
-	if err != nil {
-		// A refused request is not passed on, so nothing in it was written.
-		promremote.WriteResponseStats{}.SetHeaders(w)
-		http.Error(w, err.Error(), http.StatusBadRequest) // Following instructions at https://prometheus.io/docs/specs/remote_write_spec_2_0/#invalid-samples
-		return
-	}
-	stats.SetHeaders(w)
+	m, stats, commitRMCache, badRequestErr := prw.translateV2WithStagedCache(req.Context(), &prw2Req)
 
-	// Return early if metric count is 0.
-	if m.MetricCount() == 0 {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	obsrecvCtx := prw.obsrecv.StartMetricsOp(req.Context())
-	err = prw.nextConsumer.ConsumeMetrics(obsrecvCtx, m)
-	prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", m.DataPointCount(), err)
-	if err != nil {
-		prw.settings.Logger.Error("Error consuming metrics", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
-		if consumererror.IsPermanent(err) {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+	dataPointCount := m.DataPointCount()
+	if dataPointCount > 0 {
+		obsrecvCtx := prw.obsrecv.StartMetricsOp(req.Context())
+		err = prw.nextConsumer.ConsumeMetrics(obsrecvCtx, m)
+		prw.obsrecv.EndMetricsOp(obsrecvCtx, "prometheusremotewritereceiver", dataPointCount, err)
+		if err != nil {
+			prw.settings.Logger.Error("Error consuming metrics", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+			if consumererror.IsPermanent(err) {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+			} else {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			return
 		}
+	}
+
+	commitRMCache()
+	stats.SetHeaders(w)
+	if badRequestErr != nil {
+		http.Error(w, badRequestErr.Error(), http.StatusBadRequest) // Following instructions at https://prometheus.io/docs/specs/remote_write_spec_2_0/#invalid-samples
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// parseProto parses the content-type header and returns the version of the remote-write protocol.
-// We can't expect that senders of remote-write v1 will add the "proto=" parameter since it was not
-// a requirement in v1. So, if the parameter is not found, we assume v1.
-func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (remoteapi.WriteMessageType, error) {
-	contentType = strings.TrimSpace(contentType)
-
-	parts := strings.Split(contentType, ";")
-	if parts[0] != "application/x-protobuf" {
-		return "", fmt.Errorf("expected %q as the first (media) part, got %v content-type", "application/x-protobuf", contentType)
+// parseProto parses an RFC 9110 Content-Type header and returns the remote-write protobuf message
+// type. It validates any optional PRW 2.0 "mode" parameter and rejects unknown parameters.
+// Senders of remote-write v1 may omit the "proto" parameter, so if absent we return v1.
+func parseProto(contentType string) (remoteapi.WriteMessageType, error) {
+	if strings.ContainsRune(contentType, '*') {
+		return "", fmt.Errorf("invalid content-type %q: extended parameters are not supported", contentType)
+	}
+	mediaType, params, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		return "", fmt.Errorf("invalid content-type %q: %w", contentType, err)
+	}
+	if mediaType != appProtoContentType {
+		return "", fmt.Errorf("expected %q media type, got %q", appProtoContentType, contentType)
 	}
 
-	for _, part := range parts[1:] {
-		parameter := strings.Split(part, "=")
-		if len(parameter) != 2 {
-			return "", fmt.Errorf("as per https://www.rfc-editor.org/rfc/rfc9110#parameter expected parameters to be key-values, got %v in %v content-type", part, contentType)
-		}
-
-		if strings.TrimSpace(parameter[0]) == "proto" {
-			ret := remoteapi.WriteMessageType(parameter[1])
-			if err := ret.Validate(); err != nil {
-				return "", fmt.Errorf("got %v content type; %w", contentType, err)
+	var (
+		msgType = remoteapi.WriteV1MessageType
+		rawMode string
+		hasMode bool
+	)
+	for key, val := range params {
+		switch key {
+		case "proto":
+			msgType = remoteapi.WriteMessageType(val)
+			if err := msgType.Validate(); err != nil {
+				return "", fmt.Errorf("got %q content-type: %w", contentType, err)
 			}
-			return ret, nil
+		case "mode":
+			hasMode = true
+			rawMode = val
+		default:
+			return "", fmt.Errorf("unexpected parameter %q in content-type %q", key, contentType)
 		}
 	}
 
-	// No "proto=" parameter found, assume v1.
-	return remoteapi.WriteV1MessageType, nil
+	if hasMode {
+		switch rawMode {
+		case "none", "stateless", "stateless-st":
+			if msgType != remoteapi.WriteV2MessageType {
+				return "", fmt.Errorf("mode %q is only supported with protobuf message %q, got %q", rawMode, remoteapi.WriteV2MessageType, msgType)
+			}
+		default:
+			return "", fmt.Errorf("unsupported remote-write mode %q in content-type %q", rawMode, contentType)
+		}
+	}
+
+	return msgType, nil
 }
 
 // getOrCreateRM returns or creates the ResourceMetrics for a job/instance pair within an HTTP request.
@@ -310,7 +563,8 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (remoteapi.
 //
 // This function always creates new ResourceMetrics per request, only copying attributes
 // from the LRU cache when available. Never returns cached objects to avoid shared
-// mutation across concurrent requests.
+// mutation across concurrent requests. Updates to prw.rmCache are deferred to commitRMCache
+// so a failed request or failed downstream ConsumeMetrics call leaves the cache untouched.
 func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMetrics pmetric.Metrics, reqRM map[uint64]pmetric.ResourceMetrics) (pmetric.ResourceMetrics, uint64) {
 	// Hash job+instance directly to avoid allocating a temporary pcommon.Resource
 	// on every call (which happens once per time series).
@@ -327,25 +581,27 @@ func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMe
 	}
 
 	rm := otelMetrics.ResourceMetrics().AppendEmpty()
-	if existingRM, ok := prw.rmCache.Get(hashedLabels); ok {
+	if existingRM, ok := prw.rmCache.Peek(hashedLabels); ok {
 		// When the ResourceMetrics already exists in the global cache, we can reuse the previous snapshots and perpass the already seen attributes to the current request.
 		existingRM.Resource().Attributes().CopyTo(rm.Resource().Attributes())
 	} else {
 		// When the ResourceMetrics does not exist in the global cache, we need to create a new one and add it to the request map.
-		// Saving the new ResourceMetrics in the global cache to avoid creating duplicates in the next requests.
-		parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
-		snapshot := pmetric.NewResourceMetrics()
-		rm.Resource().Attributes().CopyTo(snapshot.Resource().Attributes())
-		prw.rmCache.Add(hashedLabels, snapshot)
+		parseJobAndInstance(rm.Resource().Attributes(), job, instance)
 	}
 
 	reqRM[hashedLabels] = rm
 	return rm, hashedLabels
 }
 
-// translateV2 translates a v2 remote-write request into OTLP metrics.
+// translateV2 translates a v2 remote-write request into OTLP metrics and commits staged resource cache updates.
 // translate is not feature complete.
 func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
+	m, stats, commitRMCache, err := prw.translateV2WithStagedCache(ctx, req)
+	commitRMCache()
+	return m, stats, err
+}
+
+func (prw *prometheusRemoteWriteReceiver) translateV2WithStagedCache(ctx context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, func(), error) {
 	var (
 		badRequestErrors error
 		// otelMetrics represents the final metrics, after all the processing, that will be returned by the receiver.
@@ -359,14 +615,12 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 		// The key is composed by: resource_hash:scope_name:scope_version:metric_name:unit:type
 		metricCache = make(map[uint64]pmetric.Metric)
 		scopeCache  = make(map[scopeCacheKey]pmetric.ScopeMetrics)
-		// modifiedResourceMetric keeps track, for each request, of which resources (identified by the job/instance hash) had their resource attributes modified — for example, through target_info.
-		// Once the request is fully processed, only the resource attributes contained in the request’s ResourceMetrics are snapshotted back into the LRU cache.
-		// This ensures that future requests start with the enriched resource attributes already applied.
+		// modifiedResourceMetric keeps track, for each request, of which resources (identified by the job/instance hash) were created or modified during translation.
+		// Updates to prw.rmCache are deferred to commitRMCache so that a failed request or failed ConsumeMetrics call does not mutate the cache.
 		modifiedResourceMetric = make(map[uint64]pmetric.ResourceMetrics)
+		targetInfoModified     = make(map[uint64]bool)
 
-		// exemplarMap holds exemplars under the series key collectExemplars builds.
-		exemplarMap = collectExemplars(req, prw.settings, &stats)
-
+		droppedHistogramKeys = make(map[exemplarKey]struct{})
 		// bucketBudget bounds what every Native Histogram in this request may expand into
 		// together, since all of it stays in memory until the request has been translated.
 		bucketBudget = histogramBucketBudget{remaining: maxExponentialHistogramBucketsPerRequest}
@@ -377,7 +631,16 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 		// sender would take the difference for a partial write and report failed samples.
 		droppedClassicHistogramSeries int64
 		droppedSummarySeries          int64
+		symbolValidator               symbolUTF8Validator
 	)
+
+	if len(req.Timeseries) > 0 {
+		symbolValidator = newSymbolUTF8Validator(req.Symbols)
+	}
+
+	// exemplarMap holds exemplars under the series key collectExemplars builds.
+	exemplarMap, exemplarErr := collectExemplars(req, prw.settings, symbolValidator)
+	badRequestErrors = errors.Join(badRequestErrors, exemplarErr)
 
 	for i := range req.Timeseries {
 		ts := &req.Timeseries[i]
@@ -386,50 +649,65 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("error converting timeseries to labels: %w", err))
 			continue
 		}
+		if err := validateSeriesLabels(ls); err != nil {
+			badRequestErrors = errors.Join(badRequestErrors, err)
+			continue
+		}
+		if err := symbolValidator.validateLabelRefs(ts.LabelsRefs); err != nil {
+			badRequestErrors = errors.Join(badRequestErrors, err)
+			continue
+		}
 		metadata := schema.NewMetadataFromLabels(ls)
 		if metadata.Name == "" {
 			badRequestErrors = errors.Join(badRequestErrors, errors.New("missing metric name in labels"))
 			continue
-		} else if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("duplicate label %q in labels", duplicateLabel))
-			continue
 		}
 
 		// The target_info branch continues without reading either reference, so these sit above it
-		// and a reference past the symbol table is refused under every metric name.
-		if ts.Metadata.UnitRef >= uint32(len(req.Symbols)) {
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unit ref %d is out of bounds of symbolsTable", ts.Metadata.UnitRef))
+		// and a reference past the symbol table or containing invalid UTF-8 is refused under every metric name.
+		if err := symbolValidator.validateMetadataRefs(ts.Metadata); err != nil {
+			badRequestErrors = errors.Join(badRequestErrors, err)
 			continue
 		}
 
-		if ts.Metadata.HelpRef >= uint32(len(req.Symbols)) {
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("help ref %d is out of bounds of symbolsTable", ts.Metadata.HelpRef))
+		// Per the PRW 2.0 spec, TimeSeries messages must specify at least one sample, histogram,
+		// or exemplar; metadata-only TimeSeries are invalid.
+		if len(ts.Samples) == 0 && len(ts.Histograms) == 0 && len(ts.Exemplars) == 0 {
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("timeseries for metric %q must contain at least one sample, histogram, or exemplar", metadata.Name))
 			continue
 		}
 
 		// If the metric name is equal to target_info, we use its labels as attributes of the resource
 		// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1
 		if metadata.Name == "target_info" {
+			// Skip sample-less (e.g. exemplar-only) target_info series so they cannot mutate
+			// rmCache or enrich sibling metrics without a sample (including when their exemplars
+			// are rejected on a 400 response with 0/0/0 written). Valid exemplars were already
+			// collected into exemplarMap and are still counted at the end. Any ts.Histograms on
+			// target_info remain ignored (pre-existing behavior).
+			if len(ts.Samples) == 0 {
+				continue
+			}
 			rm, hashed := prw.getOrCreateRM(ls, otelMetrics, modifiedResourceMetric)
 			attrs := rm.Resource().Attributes()
 
-			// Add the remaining labels as resource attributes
+			// Add the remaining labels as resource attributes. Labels with an empty value are skipped
+			// here for the same reason as in extractAttributes: the data model treats them as absent,
+			// so they would only add empty resource attributes. For the same reason an empty value
+			// does not clear an attribute an earlier target_info put in the cache.
 			ls.Range(func(l labels.Label) {
-				if l.Name != "job" && l.Name != "instance" && !schema.IsMetadataLabel(l.Name) {
+				if l.Value != "" && l.Name != "job" && l.Name != "instance" && !schema.IsMetadataLabel(l.Name) {
 					attrs.PutStr(l.Name, l.Value)
 				}
 			})
 
-			snapshot := pmetric.NewResourceMetrics()
-			attrs.CopyTo(snapshot.Resource().Attributes())
-			prw.rmCache.Add(hashed, snapshot)
+			targetInfoModified[hashed] = true
 			// target_info is not stored as a metric but PRW requires the response
 			// to report all received samples, including target_info, to avoid a stats mismatch
 			stats.Samples += len(ts.Samples)
 			continue
 		}
 
-		si := prw.extractScopeInfo(ls)
 		metricName := metadata.Name
 		unit := req.Symbols[ts.Metadata.UnitRef]
 		description := req.Symbols[ts.Metadata.HelpRef]
@@ -445,13 +723,43 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 				prw.logDroppedSeries(ls, "classic_histogram")
 				continue
 			}
-			if err := prw.processHistogramTimeSeries(otelMetrics, ls, ts, si, metricName, unit, description, metricCache, scopeCache, &stats, modifiedResourceMetric, exemplarMap, &bucketBudget); err != nil {
+			// Skip histogram-less (e.g. exemplar-only) histogram series: valid exemplars were
+			// already collected into exemplarMap and are attached by sibling histograms or counted
+			// at the end.
+			if len(ts.Histograms) == 0 {
+				continue
+			}
+			si := prw.extractScopeInfo(ls)
+			if err := prw.processHistogramTimeSeries(otelMetrics, ls, ts, si, metricName, unit, description, metricCache, scopeCache, &stats, modifiedResourceMetric, exemplarMap, droppedHistogramKeys, &bucketBudget); err != nil {
 				badRequestErrors = errors.Join(badRequestErrors, err)
 			}
 			continue
 		}
 
+		switch ts.Metadata.Type {
+		case writev2.Metadata_METRIC_TYPE_GAUGE,
+			writev2.Metadata_METRIC_TYPE_UNSPECIFIED,
+			writev2.Metadata_METRIC_TYPE_COUNTER,
+			writev2.Metadata_METRIC_TYPE_INFO,
+			writev2.Metadata_METRIC_TYPE_STATESET,
+			writev2.Metadata_METRIC_TYPE_SUMMARY:
+		default:
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
+			continue
+		}
+
+		// Skip sample-less (e.g. exemplar-only) non-histogram series: valid exemplars were already
+		// collected into exemplarMap and are attached by sample-bearing siblings or counted at the end.
+		// Proceeding without samples would mutate rmCache, emit empty metrics, overwrite sibling
+		// descriptions, or increment dropped_series even when the series's only exemplars were rejected.
+		// Any ts.Histograms attached to a typed non-histogram series remain ignored (pre-existing
+		// behavior; for SUMMARY with zero samples this also avoids incrementing dropped_series).
+		if len(ts.Samples) == 0 {
+			continue
+		}
+
 		// Handle regular metrics (gauge, counter, summary)
+		si := prw.extractScopeInfo(ls)
 		rm, _ := prw.getOrCreateRM(ls, otelMetrics, modifiedResourceMetric)
 
 		resourceID := identity.OfResource(rm.Resource())
@@ -511,9 +819,6 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 				droppedSummarySeries++
 				prw.logDroppedSeries(ls, "summary")
 				continue
-			default:
-				badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
-				continue
 			}
 			metricCache[metricKey] = metric
 		} else if len(metric.Description()) < len(description) {
@@ -522,28 +827,34 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 			metric.SetDescription(description)
 		}
 
+		var dataPoints pmetric.NumberDataPointSlice
 		switch ts.Metadata.Type {
 		case writev2.Metadata_METRIC_TYPE_GAUGE, writev2.Metadata_METRIC_TYPE_UNSPECIFIED:
-			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts, &stats)
+			dataPoints = metric.Gauge().DataPoints()
 		case writev2.Metadata_METRIC_TYPE_COUNTER, writev2.Metadata_METRIC_TYPE_INFO, writev2.Metadata_METRIC_TYPE_STATESET:
-			dataPoints := metric.Sum().DataPoints()
-			before := dataPoints.Len()
-			addNumberDatapoints(dataPoints, ls, ts, &stats)
-			// Exemplars belong to a series, not to a metric, so consuming the entry stops a second
-			// metric built from the same labels, differing only by type or unit, from publishing a copy.
-			if len(exemplarMap) > 0 && dataPoints.Len() > before {
-				key := makeExemplarKey(ls)
-				if ex, ok := exemplarMap[key]; ok && ex.Len() > 0 {
-					ex.CopyTo(dataPoints.At(before).Exemplars())
-					delete(exemplarMap, key)
-				}
+			dataPoints = metric.Sum().DataPoints()
+		}
+		before := dataPoints.Len()
+		addNumberDatapoints(dataPoints, ls, ts, &stats)
+		// Exemplars belong to a series, not to a metric, so consuming the entry stops a second
+		// metric built from the same labels, differing only by type or unit, from publishing a copy.
+		if len(exemplarMap) > 0 && dataPoints.Len() > before {
+			key := makeExemplarKey(ls)
+			if ex, ok := exemplarMap[key]; ok && ex.Len() > 0 {
+				ex.CopyTo(dataPoints.At(before).Exemplars())
+				stats.Exemplars += ex.Len()
+				delete(exemplarMap, key)
 			}
+		}
+	}
 
-		case writev2.Metadata_METRIC_TYPE_SUMMARY:
-			// Drop summary series as we will not handle them.
-			continue
-		default:
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
+	// Exemplars still in exemplarMap had no data point to attach to (for example when a
+	// TimeSeries carries exemplars without samples, or its series is a classic histogram or
+	// summary dropped by design). Count them as written, unless their series only had dropped
+	// or refused native histograms, so the sender does not report a partial write on a 2xx response.
+	for key, ex := range exemplarMap {
+		if _, dropped := droppedHistogramKeys[key]; !dropped {
+			stats.Exemplars += ex.Len()
 		}
 	}
 
@@ -560,7 +871,145 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(ctx context.Context, req *
 		prw.telemetryBuilder.ReceiverPrometheusremotewriteDroppedSeries.Add(ctx, droppedSummarySeries, droppedSummaryAttrs)
 	}
 
-	return otelMetrics, stats, badRequestErrors
+	// Snapshot newly created or target_info-modified resource attributes before returning
+	// otelMetrics so commitRMCache never reads from otelMetrics after ownership is transferred
+	// to nextConsumer.ConsumeMetrics. Cache hits without target_info only need their LRU
+	// recency updated via Get on commit.
+	type stagedRMEntry struct {
+		snapshot           pmetric.ResourceMetrics
+		hasSnapshot        bool
+		targetInfoModified bool
+	}
+	stagedRMCache := make(map[uint64]stagedRMEntry, len(modifiedResourceMetric))
+	for hashed, rm := range modifiedResourceMetric {
+		entry := stagedRMEntry{
+			targetInfoModified: targetInfoModified[hashed],
+		}
+		if entry.targetInfoModified || !prw.rmCache.Contains(hashed) {
+			entry.snapshot = pmetric.NewResourceMetrics()
+			rm.Resource().Attributes().CopyTo(entry.snapshot.Resource().Attributes())
+			entry.hasSnapshot = true
+		}
+		stagedRMCache[hashed] = entry
+	}
+	commitRMCache := func() {
+		for hashed, entry := range stagedRMCache {
+			if entry.targetInfoModified {
+				prw.rmCache.Add(hashed, entry.snapshot)
+				continue
+			}
+			// Touch existing entry to update LRU recency, or add the detached snapshot on cache miss.
+			if _, ok := prw.rmCache.Get(hashed); !ok && entry.hasSnapshot {
+				prw.rmCache.Add(hashed, entry.snapshot)
+			}
+		}
+	}
+
+	return otelMetrics, stats, commitRMCache, badRequestErrors
+}
+
+// symbolUTF8Validator validates UTF-8 across a request's symbol table once so shared symbols
+// are not re-scanned on every series and exemplar. On valid requests (the common case), invalid
+// stays nil and lookups allocate nothing. Validation is applied per referenced index rather than
+// rejecting the whole request, so valid sibling series are still forwarded when another series
+// or exemplar references a non-UTF-8 symbol (and unreferenced invalid symbols do not fail valid
+// series).
+type symbolUTF8Validator struct {
+	symbols []string
+	invalid []bool
+}
+
+func newSymbolUTF8Validator(symbols []string) symbolUTF8Validator {
+	var invalid []bool
+	for i, s := range symbols {
+		if !utf8.ValidString(s) {
+			if invalid == nil {
+				invalid = make([]bool, len(symbols))
+			}
+			invalid[i] = true
+		}
+	}
+	return symbolUTF8Validator{
+		symbols: symbols,
+		invalid: invalid,
+	}
+}
+
+func (v symbolUTF8Validator) isInvalid(ref uint32) bool {
+	return v.invalid != nil && uint64(ref) < uint64(len(v.invalid)) && v.invalid[ref]
+}
+
+// validateLabelRefs reports an error if any symbol referenced by refs is not valid UTF-8.
+// Callers invoke this after ToLabels/ToExemplar, which already verified even length and bounds.
+func (v symbolUTF8Validator) validateLabelRefs(refs []uint32) error {
+	if v.invalid == nil {
+		return nil
+	}
+	for i, ref := range refs {
+		if !v.isInvalid(ref) {
+			continue
+		}
+		if i%2 == 0 {
+			return fmt.Errorf("invalid UTF-8 in label name %q", v.symbols[ref])
+		}
+		if nameRef := refs[i-1]; uint64(nameRef) < uint64(len(v.symbols)) {
+			return fmt.Errorf("invalid UTF-8 in value for label %q", v.symbols[nameRef])
+		}
+		return fmt.Errorf("invalid UTF-8 in label value at ref %d", ref)
+	}
+	return nil
+}
+
+// validateMetadataRefs verifies that md.UnitRef and md.HelpRef are within the symbol table
+// bounds and reference valid UTF-8 strings.
+func (v symbolUTF8Validator) validateMetadataRefs(md writev2.Metadata) error {
+	if uint64(md.UnitRef) >= uint64(len(v.symbols)) {
+		return fmt.Errorf("unit ref %d is out of bounds of symbolsTable", md.UnitRef)
+	}
+	if uint64(md.HelpRef) >= uint64(len(v.symbols)) {
+		return fmt.Errorf("help ref %d is out of bounds of symbolsTable", md.HelpRef)
+	}
+	if v.isInvalid(md.UnitRef) {
+		return fmt.Errorf("unit ref %d contains invalid UTF-8", md.UnitRef)
+	}
+	if v.isInvalid(md.HelpRef) {
+		return fmt.Errorf("help ref %d contains invalid UTF-8", md.HelpRef)
+	}
+	return nil
+}
+
+// validateSeriesLabels reports what makes a label set unreadable: an empty name, which cannot
+// become an OTLP attribute key, and a duplicate name, where the set does not say which value
+// applies. UTF-8 validation of symbolized label strings is checked separately via
+// symbolUTF8Validator so each symbol table entry is scanned at most once per request.
+//
+// What the Prometheus data model equates with absence is normalized rather than refused: a label
+// with an empty value is dropped where it would have become an attribute, as if it were not there.
+// Refusing it would lose the series, since common senders such as Prometheus treat a 400 as
+// non-recoverable and do not retry the batch.
+//
+// An empty name is refused instead of dropped because every attribute it could feed would be
+// unnamed, so no part of the label can be kept. An exemplar label is the exception: it annotates a
+// data point rather than identifying a series, so an empty name costs only that one attribute and
+// the label is dropped (see copyExemplarAttributes). The bare otel_scope_ prefix is the mirror
+// image: only the attribute it would produce is unusable, so that one is dropped and the series is
+// kept (see extractScopeInfo).
+//
+// ToLabels returns the labels sorted, so duplicate names are adjacent.
+func validateSeriesLabels(ls labels.Labels) error {
+	emptyName := false
+	ls.Range(func(l labels.Label) {
+		if l.Name == "" {
+			emptyName = true
+		}
+	})
+	if emptyName {
+		return errors.New("empty label name in labels")
+	}
+	if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
+		return fmt.Errorf("duplicate label %q in labels", duplicateLabel)
+	}
+	return nil
 }
 
 // logDroppedSeries logs a series dropped by design at Debug, since a sender keeps sending these
@@ -585,6 +1034,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	stats *promremote.WriteResponseStats,
 	modifiedRM map[uint64]pmetric.ResourceMetrics,
 	exemplarMap map[exemplarKey]pmetric.ExemplarSlice,
+	droppedHistogramKeys map[exemplarKey]struct{},
 	bucketBudget *histogramBucketBudget,
 ) error {
 	attrs := extractAttributes(ls)
@@ -792,8 +1242,12 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			continue
 		}
 		exemplars.CopyTo(exemplarSlice)
+		stats.Exemplars += exemplars.Len()
 		delete(exemplarMap, exemplarsKey)
 		haveExemplars = false
+	}
+	if len(ts.Histograms) > 0 && haveExemplars {
+		droppedHistogramKeys[exemplarsKey] = struct{}{}
 	}
 	return invalid
 }
@@ -814,11 +1268,13 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 		dest.PutStr("service.instance.id", instance)
 	}
 	if job != "" {
-		parts := strings.Split(job, "/")
-		if len(parts) == 2 {
-			dest.PutStr("service.namespace", parts[0])
-			dest.PutStr("service.name", parts[1])
-			return
+		if !metadata.ReceiverPrometheusRemoteWriteDisableJobSplitFeatureGate.IsEnabled() {
+			parts := strings.Split(job, "/")
+			if len(parts) == 2 {
+				dest.PutStr("service.namespace", parts[0])
+				dest.PutStr("service.name", parts[1])
+				return
+			}
 		}
 		dest.PutStr("service.name", job)
 	}
@@ -1233,12 +1689,21 @@ func appendGap(buckets pcommon.UInt64Slice, nextAppend, index int64) int64 {
 	return index + 1
 }
 
-// extractAttributes returns metric data point attributes, excluding job, instance, metric name, and all otel_scope_* labels.
+// extractAttributes returns metric data point attributes, excluding job, instance, metric name, all
+// otel_scope_* labels, and labels with an empty value, which the Prometheus data model treats as
+// absent.
 func extractAttributes(ls labels.Labels) pcommon.Map {
 	attrs := pcommon.NewMap()
-	// job, instance and metric name will always become labels
+	// An upper bound: job, instance, the metric name and labels with an empty value all drop out.
 	attrs.EnsureCapacity(ls.Len() - 3)
 	ls.Range(func(l labels.Label) {
+		if l.Value == "" {
+			// An empty label value is not copied to an attribute: the Prometheus data model treats it
+			// as an absent label, and the Prometheus/OTLP compatibility spec excludes such labels
+			// from the metric labels that become data point attributes.
+			// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/
+			return
+		}
 		if l.Name != "instance" && l.Name != "job" && // Become resource attributes
 			l.Name != model.MetricNameLabel && // Becomes metric name
 			!strings.HasPrefix(l.Name, "otel_scope_") { // Become instrumentation scope fields
@@ -1249,7 +1714,8 @@ func extractAttributes(ls labels.Labels) pcommon.Map {
 }
 
 // extractScopeInfo extracts all otel_scope_* labels into a scopeInfo per the Prometheus/OTLP compatibility spec.
-// Falls back to receiver build info when otel_scope_name is absent.
+// Falls back to receiver build info when otel_scope_name is absent or empty, since an empty label value is
+// the same as an absent label in the Prometheus data model.
 func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) scopeInfo {
 	si := scopeInfo{
 		Name:    prw.settings.BuildInfo.Description,
@@ -1257,19 +1723,22 @@ func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) sco
 	}
 
 	ls.Range(func(l labels.Label) {
+		if l.Value == "" {
+			// An empty label value means an absent label, so it sets no scope field: an absent
+			// otel_scope_name falls back to the build info above.
+			return
+		}
 		switch l.Name {
 		case "otel_scope_name":
-			if l.Value != "" {
-				si.Name = l.Value
-			}
+			si.Name = l.Value
 		case "otel_scope_version":
-			if l.Value != "" {
-				si.Version = l.Value
-			}
+			si.Version = l.Value
 		case "otel_scope_schema_url":
 			si.SchemaURL = l.Value
 		default:
-			if attrKey, ok := strings.CutPrefix(l.Name, "otel_scope_"); ok {
+			// A label named exactly otel_scope_ leaves no key once the prefix is stripped, and an
+			// empty attribute key cannot be emitted, so the label is dropped like an empty value.
+			if attrKey, ok := strings.CutPrefix(l.Name, "otel_scope_"); ok && attrKey != "" {
 				si.scopeAttrs = append(si.scopeAttrs, attribute{Key: attrKey, Value: l.Value})
 			}
 		}

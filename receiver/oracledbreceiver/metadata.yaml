@@ -379,6 +379,9 @@ attributes:
   oracledb.wait.duration:
     description: Total time waited in seconds for the wait event.
     type: double
+  oracledb.wait.start_time:
+    description: Timestamp of when the current wait started (ISO 8601 UTC format). Empty if the session is not currently waiting.
+    type: string
   oracledb.wait.timeouts:
     description: Number of the session's waits on the wait event that timed out.
     type: int
@@ -444,6 +447,7 @@ events:
       - oracledb.wait_class
       - oracledb.event
       - oracledb.query.wait_time
+      - oracledb.wait.start_time
       - oracledb.procedure_id
       - oracledb.procedure_name
       - oracledb.procedure_type

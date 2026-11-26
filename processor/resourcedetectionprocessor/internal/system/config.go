@@ -6,6 +6,8 @@ package system // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"fmt"
 
+	"go.opentelemetry.io/collector/confmap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system/internal/metadata"
 )
 
@@ -24,6 +26,28 @@ type Config struct {
 	HostnameSources []string `mapstructure:"hostname_sources"`
 
 	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
+
+	deprecatedOSBuildID metadata.ResourceAttributeConfig
+}
+
+var deprecatedOSBuildIDKey = "resource_attributes" + confmap.KeyDelimiter + "os.build.id"
+
+// Unmarshal reads the deprecated os.build.id key separately, since it is not part of the generated config.
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	if conf == nil {
+		return nil
+	}
+	if conf.IsSet(deprecatedOSBuildIDKey) {
+		sub, err := conf.Sub(deprecatedOSBuildIDKey)
+		if err != nil {
+			return err
+		}
+		if err := sub.Unmarshal(&cfg.deprecatedOSBuildID); err != nil {
+			return err
+		}
+		conf.Delete(deprecatedOSBuildIDKey)
+	}
+	return conf.Unmarshal(cfg)
 }
 
 // Validate config

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/metadata"
@@ -21,6 +22,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	assert.Equal(t, 1000, cfg.(*Config).ResourceCacheSize)
+	assert.Equal(t, []string{"snappy"}, cfg.(*Config).ServerConfig.CompressionAlgorithms)
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -84,6 +86,38 @@ func TestConfigValidate(t *testing.T) {
 				return
 			}
 			assert.EqualError(t, err, tt.expectedErr)
+		})
+	}
+}
+
+func TestUnmarshalCompressionAlgorithms(t *testing.T) {
+	tests := []struct {
+		name     string
+		raw      map[string]any
+		expected []string
+	}{
+		{
+			name:     "omitted defaults to snappy",
+			raw:      map[string]any{},
+			expected: []string{"snappy"},
+		},
+		{
+			name:     "explicit override replaces default",
+			raw:      map[string]any{"compression_algorithms": []any{"snappy", "gzip"}},
+			expected: []string{"snappy", "gzip"},
+		},
+		{
+			name:     "explicit empty slice disables decompression",
+			raw:      map[string]any{"compression_algorithms": []any{}},
+			expected: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := NewFactory().CreateDefaultConfig().(*Config)
+			require.NoError(t, confmap.NewFromStringMap(tt.raw).Unmarshal(cfg))
+			assert.Equal(t, tt.expected, cfg.ServerConfig.CompressionAlgorithms)
 		})
 	}
 }

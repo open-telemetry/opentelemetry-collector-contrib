@@ -5,6 +5,7 @@ package tcp
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -12,7 +13,9 @@ import (
 	"math/rand/v2"
 	"net"
 	"os"
+	"runtime"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -836,6 +839,47 @@ func TestTCPInput_OneLogPerPacket_PartialReadError(t *testing.T) {
 		t.Errorf("expected no entry to be emitted after read error, got: %q", entry.Body)
 	case <-time.After(500 * time.Millisecond):
 	}
+}
+
+func TestTCPInput_OneLogPerPacket_TruncatesToMaxLogSize(t *testing.T) {
+	cfg := NewConfigWithID("test_id")
+	cfg.ListenAddress = ":0"
+	cfg.OneLogPerPacket = true
+	cfg.MaxLogSize = 64 * 1024
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	tcpInput, entryChan := newTCPInput(t, op)
+
+	err = tcpInput.Start(testutil.NewUnscopedMockPersister())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, tcpInput.Stop())
+	}()
+
+	payload := bytes.Repeat([]byte("a"), 32*1024*1024)
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+
+	conn, err := net.Dial("tcp", tcpInput.listener.Addr().String())
+	require.NoError(t, err)
+
+	_, err = conn.Write(payload)
+	require.NoError(t, err)
+	require.NoError(t, conn.Close())
+
+	select {
+	case e := <-entryChan:
+		require.Equal(t, strings.Repeat("a", int(cfg.MaxLogSize)), e.Body)
+	case <-time.After(5 * time.Second):
+		require.FailNow(t, "Timed out waiting for truncated entry")
+	}
+
+	runtime.ReadMemStats(&after)
+	// The data beyond max_log_size must be discarded, not buffered.
+	require.Less(t, after.TotalAlloc-before.TotalAlloc, uint64(len(payload)/4))
 }
 
 // mockAuthExtension is a minimal extensionauth.Server used for testing.

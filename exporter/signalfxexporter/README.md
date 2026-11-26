@@ -222,14 +222,14 @@ The default rules will create the following aggregated metrics from the [`hostme
 * cpu.wait
 * disk.summary_utilization
 * disk.utilization
-* memory.total
+* memory.total (deprecated, excluded by default)
 * memory.utilization
 * network.total
-* process.cpu_time_seconds
+* process.cpu_time_seconds (deprecated, excluded by default)
 * system.disk.io.total
-* system.disk.operations.total
-* system.network.io.total
-* system.network.packets.total
+* system.disk.operations.total (deprecated, excluded by default)
+* system.network.io.total (deprecated, excluded by default)
+* system.network.packets.total (deprecated, excluded by default)
 * vmpage_io.memory.in
 * vmpage_io.memory.out
 * vmpage_io.swap.in

@@ -14,6 +14,7 @@ status:
   codeowners:
     active: [crobert-1]
     emeritus: [pmcollins, dmitryax]
+    seeking_new: true
 
 tests:
   goleak:

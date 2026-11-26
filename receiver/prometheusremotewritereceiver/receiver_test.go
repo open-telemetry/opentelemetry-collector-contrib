@@ -5,7 +5,10 @@ package prometheusremotewritereceiver // import "github.com/open-telemetry/opent
 
 import (
 	"bytes"
+	"compress/gzip"
+	"compress/zlib"
 	"context"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -23,6 +26,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
+	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/storage/remote"
@@ -30,6 +34,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -103,94 +108,233 @@ func setupMetricsReceiver(tb testing.TB) *prometheusRemoteWriteReceiver {
 
 func TestHandlePRWContentTypeNegotiation(t *testing.T) {
 	for _, tc := range []struct {
-		name          string
-		contentType   string
-		expectedCode  int
-		expectedStats remote.WriteResponseStats
+		name         string
+		contentType  string
+		expectedCode int
 	}{
 		{
 			name:         "no content type",
 			contentType:  "",
 			expectedCode: http.StatusUnsupportedMediaType,
-			expectedStats: remote.WriteResponseStats{
-				Confirmed:  false,
-				Samples:    0,
-				Histograms: 0,
-				Exemplars:  0,
-			},
 		},
 		{
-			name:         "unsupported content type",
+			name:         "whitespace only content type",
+			contentType:  "   ",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "unsupported content type application/json",
 			contentType:  "application/json",
 			expectedCode: http.StatusUnsupportedMediaType,
-			expectedStats: remote.WriteResponseStats{
-				Confirmed:  false,
-				Samples:    0,
-				Histograms: 0,
-				Exemplars:  0,
-			},
+		},
+		{
+			name:         "unsupported content type image/png",
+			contentType:  "image/png",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "unsupported content type text/plain",
+			contentType:  "text/plain",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "malformed media type",
+			contentType:  ";invalid",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "malformed parameter",
+			contentType:  "application/x-protobuf;invalid",
+			expectedCode: http.StatusUnsupportedMediaType,
 		},
 		{
 			name:         "x-protobuf/no proto parameter",
 			contentType:  "application/x-protobuf",
 			expectedCode: http.StatusUnsupportedMediaType,
-			expectedStats: remote.WriteResponseStats{
-				Confirmed:  false,
-				Samples:    0,
-				Histograms: 0,
-				Exemplars:  0,
-			},
 		},
 		{
 			name:         "x-protobuf/v1 proto parameter",
 			contentType:  fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV1MessageType),
 			expectedCode: http.StatusUnsupportedMediaType,
-			expectedStats: remote.WriteResponseStats{
-				Confirmed:  false,
-				Samples:    0,
-				Histograms: 0,
-				Exemplars:  0,
-			},
+		},
+		{
+			name:         "unsupported proto parameter",
+			contentType:  "application/x-protobuf;proto=unsupported.Message",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "empty proto parameter",
+			contentType:  "application/x-protobuf;proto=",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "empty quoted proto parameter",
+			contentType:  `application/x-protobuf;proto=""`,
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "unknown mode parameter",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;mode=unknown",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "empty mode parameter",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;mode=",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "empty quoted mode parameter",
+			contentType:  `application/x-protobuf;proto=io.prometheus.write.v2.Request;mode=""`,
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "uppercase mode value is rejected",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;mode=STATELESS",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "mode on rw1",
+			contentType:  "application/x-protobuf;proto=prometheus.WriteRequest;mode=stateless",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "mode none on rw1",
+			contentType:  "application/x-protobuf;proto=prometheus.WriteRequest;mode=none",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "mode without proto",
+			contentType:  "application/x-protobuf;mode=stateless",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "mode none without proto",
+			contentType:  "application/x-protobuf;mode=none",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "unknown parameter alongside v2 proto",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;unknown=param",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "conflicting duplicate proto parameter",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;proto=prometheus.WriteRequest",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "conflicting duplicate mode parameter",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;mode=stateless;mode=stateless-st",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "rfc2231 unknown extended parameter rejected",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;unknown*=bad",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "rfc2231 malformed mode extended parameter rejected",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;mode*=bad",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "rfc2231 extended mode overriding bad mode rejected",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;mode=unknown;mode*=utf-8''none",
+			expectedCode: http.StatusUnsupportedMediaType,
+		},
+		{
+			name:         "rfc2231 extended proto overriding rw1 proto rejected",
+			contentType:  "application/x-protobuf;proto=prometheus.WriteRequest;proto*=utf-8''io.prometheus.write.v2.Request",
+			expectedCode: http.StatusUnsupportedMediaType,
 		},
 		{
 			name:         "x-protobuf/v2 proto parameter",
 			contentType:  fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType),
 			expectedCode: http.StatusNoContent,
-			expectedStats: remote.WriteResponseStats{
-				Confirmed:  true,
-				Samples:    0,
-				Histograms: 0,
-				Exemplars:  0,
-			},
+		},
+		{
+			name:         "v2 explicit mode=none",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;mode=none",
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:         "v2 mode=stateless",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;mode=stateless",
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:         "v2 mode=stateless-st",
+			contentType:  "application/x-protobuf;proto=io.prometheus.write.v2.Request;mode=stateless-st",
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:         "rfc9110 whitespace around parameters",
+			contentType:  "application/x-protobuf; proto=io.prometheus.write.v2.Request; mode=stateless-st",
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:         "rfc9110 uppercase media type and parameter names",
+			contentType:  "APPLICATION/X-PROTOBUF;PROTO=io.prometheus.write.v2.Request;MODE=stateless-st",
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:         "rfc9110 quoted parameter values",
+			contentType:  `application/x-protobuf;proto="io.prometheus.write.v2.Request";mode="stateless-st"`,
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:         "rfc9110 reordered parameters",
+			contentType:  "application/x-protobuf;mode=stateless-st;proto=io.prometheus.write.v2.Request",
+			expectedCode: http.StatusNoContent,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			body := writev2.Request{}
 			pBuf := proto.NewBuffer(nil)
-			err := pBuf.Marshal(&body)
-			assert.NoError(t, err)
+			require.NoError(t, pBuf.Marshal(&body))
 
-			var compressedBody []byte
-			snappy.Encode(compressedBody, pBuf.Bytes())
-
-			req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(compressedBody))
-
+			// handlePRW is called directly without confighttp middleware, so the body is uncompressed.
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewReader(pBuf.Bytes()))
 			req.Header.Set("Content-Type", tc.contentType)
-			req.Header.Set("Content-Encoding", "snappy")
 			w := httptest.NewRecorder()
 
 			prwReceiver := setupMetricsReceiver(t)
 			prwReceiver.handlePRW(w, req)
 			resp := w.Result()
+			defer func() { _ = resp.Body.Close() }()
 
 			assert.Equal(t, tc.expectedCode, resp.StatusCode)
-			if tc.expectedCode == http.StatusNoContent { // We went until the end
+			if tc.expectedCode == http.StatusUnsupportedMediaType {
+				assert.Equal(t, acceptedContentTypes, resp.Header.Get("Accept"))
+				assert.Empty(t, resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+			}
+			if tc.expectedCode == http.StatusNoContent {
 				assert.NotEmpty(t, resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
 				assert.NotEmpty(t, resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
 				assert.NotEmpty(t, resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
 			}
 		})
 	}
+
+	t.Run("multiple Content-Type header lines rejected with 415", func(t *testing.T) {
+		body := writev2.Request{}
+		pBuf := proto.NewBuffer(nil)
+		require.NoError(t, pBuf.Marshal(&body))
+
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewReader(pBuf.Bytes()))
+		req.Header.Add("Content-Type", writeV2ContentType)
+		req.Header.Add("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		prwReceiver := setupMetricsReceiver(t)
+		prwReceiver.handlePRW(w, req)
+		resp := w.Result()
+		defer func() { _ = resp.Body.Close() }()
+
+		assert.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode)
+		assert.Equal(t, acceptedContentTypes, resp.Header.Get("Accept"))
+		assert.Empty(t, resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+	})
 }
 
 // exemplarSymbols is the symbol table the histogram exemplar tests share. The histogram and its
@@ -339,6 +483,14 @@ func TestExemplarsAreClaimedByOneMetricOnly(t *testing.T) {
 			Exemplars:  exemplars,
 		}
 	}
+	gauge := func(exemplars []writev2.Exemplar) writev2.TimeSeries {
+		return writev2.TimeSeries{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+			LabelsRefs: labelRefs,
+			Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+			Exemplars:  exemplars,
+		}
+	}
 	info := func(exemplars []writev2.Exemplar) writev2.TimeSeries {
 		return writev2.TimeSeries{
 			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_INFO},
@@ -371,6 +523,8 @@ func TestExemplarsAreClaimedByOneMetricOnly(t *testing.T) {
 		{"two units", []writev2.TimeSeries{counter(7, theExemplar), counter(8, nil)}},
 		{"counter then info", []writev2.TimeSeries{counter(7, theExemplar), info(nil)}},
 		{"info then counter", []writev2.TimeSeries{info(theExemplar), counter(7, nil)}},
+		{"gauge then counter", []writev2.TimeSeries{gauge(theExemplar), counter(7, nil)}},
+		{"the same gauge twice", []writev2.TimeSeries{gauge(theExemplar), gauge(nil)}},
 		{"counter then histogram", []writev2.TimeSeries{counter(7, theExemplar), histogram(nil)}},
 		{"histogram then counter", []writev2.TimeSeries{histogram(theExemplar), counter(7, nil)}},
 		{"the same counter twice", []writev2.TimeSeries{counter(7, theExemplar), counter(7, nil)}},
@@ -392,6 +546,11 @@ func TestExemplarsAreClaimedByOneMetricOnly(t *testing.T) {
 					ms := sms.At(j).Metrics()
 					for k := 0; k < ms.Len(); k++ {
 						switch m := ms.At(k); m.Type() {
+						case pmetric.MetricTypeGauge:
+							dps := m.Gauge().DataPoints()
+							for d := 0; d < dps.Len(); d++ {
+								attached += dps.At(d).Exemplars().Len()
+							}
 						case pmetric.MetricTypeSum:
 							dps := m.Sum().DataPoints()
 							for d := 0; d < dps.Len(); d++ {
@@ -574,12 +733,28 @@ func TestDroppedHistogramExemplarDoesNotAttachToPreviousDataPoint(t *testing.T) 
 		},
 	})
 	require.NoError(t, err)
-	assert.Equal(t, 1, stats.Exemplars, "counted when the request is parsed, before the histogram is refused")
+	assert.Equal(t, 0, stats.Exemplars, "exemplars on a dropped histogram are not attached and not counted as written")
 
 	dps := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
 		ExponentialHistogram().DataPoints()
 	require.Equal(t, 1, dps.Len(), "only the first histogram produced a data point")
 	assert.Equal(t, 0, dps.At(0).Exemplars().Len(), "a dropped histogram must not reach an earlier data point")
+
+	// When a later TimeSeries in the same request carries a valid histogram for the dropped series,
+	// its exemplar stays in the map and attaches to that later valid data point.
+	metrics, stats, err = prwReceiver.translateV2(t.Context(), &writev2.Request{
+		Symbols: exemplarSymbols,
+		Timeseries: []writev2.TimeSeries{
+			series(9, pastOverflow, theExemplar()),
+			series(9, exemplarHistogram([]int64{1, 1}), nil),
+		},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 1, stats.Exemplars, "exemplar is claimed by the subsequent valid histogram for the same series")
+	dps = metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).
+		ExponentialHistogram().DataPoints()
+	require.Equal(t, 1, dps.Len())
+	assert.Equal(t, 1, dps.At(0).Exemplars().Len())
 }
 
 func TestNHCBUnrepresentablePopulationIsDropped(t *testing.T) {
@@ -971,6 +1146,29 @@ func TestTranslateV2(t *testing.T) {
 			},
 		},
 		{
+			// An empty name cannot become an OTLP attribute key, so the series is refused rather
+			// than normalized. Under some labels implementations it also reads as a duplicate of
+			// nothing, which is why it is checked first.
+			name: "empty label name",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "test", "job", "j", "v"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 0, 5},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: "empty label name in labels",
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  false,
+				Samples:    0,
+				Histograms: 0,
+				Exemplars:  0,
+			},
+		},
+		{
 			name: "UnitRef bigger than symbols length",
 			request: &writev2.Request{
 				Symbols: []string{"", "__name__", "test"},
@@ -1025,6 +1223,162 @@ func TestTranslateV2(t *testing.T) {
 			expectError: "help ref 3 is out of bounds of symbolsTable",
 		},
 		{
+			name: "invalid UTF-8 in label name",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "test", "\xff\xfe", "val"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: `invalid UTF-8 in label name "\xff\xfe"`,
+		},
+		{
+			name: "invalid UTF-8 in label name with empty value",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "test", "\xff\xfe"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 0},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: `invalid UTF-8 in label name "\xff\xfe"`,
+		},
+		{
+			name: "invalid UTF-8 in label value",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "test", "job", "\xff\xfe"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: `invalid UTF-8 in value for label "job"`,
+		},
+		{
+			name: "invalid UTF-8 in metric name",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "\xff\xfe"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: `invalid UTF-8 in value for label "__name__"`,
+		},
+		{
+			name: "invalid UTF-8 in UnitRef",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "test", "\xff\xfe"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 3},
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: "unit ref 3 contains invalid UTF-8",
+		},
+		{
+			name: "invalid UTF-8 in HelpRef",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "test", "\xff\xfe"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, HelpRef: 3},
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: "help ref 3 contains invalid UTF-8",
+		},
+		{
+			name: "invalid UTF-8 in UnitRef on target_info",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "target_info", "\xff\xfe"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 3},
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: "unit ref 3 contains invalid UTF-8",
+		},
+		{
+			name: "invalid UTF-8 in HelpRef on target_info",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "target_info", "\xff\xfe"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, HelpRef: 3},
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: "help ref 3 contains invalid UTF-8",
+		},
+		{
+			name: "invalid UTF-8 at default symbol index 0",
+			request: &writev2.Request{
+				Symbols: []string{"\xff\xfe", "__name__", "test"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: "unit ref 0 contains invalid UTF-8",
+		},
+		{
+			name: "metadata-only timeseries without samples, histograms, or exemplars",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "orphan_metric", "Orphan help", "count"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_COUNTER,
+							HelpRef: 3,
+							UnitRef: 4,
+						},
+						LabelsRefs: []uint32{1, 2},
+					},
+				},
+			},
+			expectError: `timeseries for metric "orphan_metric" must contain at least one sample, histogram, or exemplar`,
+		},
+		{
+			name: "metadata-only target_info without samples",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "target_info", "job", "j", "instance", "i"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					},
+				},
+			},
+			expectError: `timeseries for metric "target_info" must contain at least one sample, histogram, or exemplar`,
+		},
+		{
 			name: "accept unspecified metric type as gauge",
 			request: &writev2.Request{
 				Symbols: []string{"", "__name__", "test_metric", "job", "test_job", "instance", "test_instance"},
@@ -1072,8 +1426,7 @@ func TestTranslateV2(t *testing.T) {
 				expected := pmetric.NewMetrics()
 				rm1 := expected.ResourceMetrics().AppendEmpty()
 				rmAttributes1 := rm1.Resource().Attributes()
-				rmAttributes1.PutStr("service.namespace", "service-x")
-				rmAttributes1.PutStr("service.name", "test")
+				rmAttributes1.PutStr("service.name", "service-x/test")
 				rmAttributes1.PutStr("service.instance.id", "107cn001")
 
 				sm1 := rm1.ScopeMetrics().AppendEmpty()
@@ -1203,8 +1556,7 @@ func TestTranslateV2(t *testing.T) {
 				expected := pmetric.NewMetrics()
 				rm1 := expected.ResourceMetrics().AppendEmpty()
 				rmAttributes1 := rm1.Resource().Attributes()
-				rmAttributes1.PutStr("service.namespace", "service-x")
-				rmAttributes1.PutStr("service.name", "test")
+				rmAttributes1.PutStr("service.name", "service-x/test")
 				rmAttributes1.PutStr("service.instance.id", "107cn001")
 
 				sm1 := rm1.ScopeMetrics().AppendEmpty()
@@ -1331,8 +1683,7 @@ func TestTranslateV2(t *testing.T) {
 				expected := pmetric.NewMetrics()
 				rm1 := expected.ResourceMetrics().AppendEmpty()
 				rmAttributes1 := rm1.Resource().Attributes()
-				rmAttributes1.PutStr("service.namespace", "service-x")
-				rmAttributes1.PutStr("service.name", "test")
+				rmAttributes1.PutStr("service.name", "service-x/test")
 				rmAttributes1.PutStr("service.instance.id", "107cn001")
 
 				sm1 := rm1.ScopeMetrics().AppendEmpty()
@@ -1401,6 +1752,7 @@ func TestTranslateV2(t *testing.T) {
 						// target_info metric
 						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
 						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 17, 18},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
 					},
 					{
 						// normal metric
@@ -1415,8 +1767,7 @@ func TestTranslateV2(t *testing.T) {
 
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "production")
-				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.name", "production/service_a")
 				attrs.PutStr("service.instance.id", "host1")
 				attrs.PutStr("machine_type", "n1-standard-1")
 				attrs.PutStr("cloud_provider", "gcp")
@@ -1442,7 +1793,124 @@ func TestTranslateV2(t *testing.T) {
 			}(),
 			expectedStats: remote.WriteResponseStats{
 				Confirmed:  true,
+				Samples:    2,
+				Histograms: 0,
+				Exemplars:  0,
+			},
+		},
+		{
+			// The name is not empty, so the series is accepted, but nothing is left of it once the
+			// scope prefix is stripped and an empty attribute key cannot be emitted.
+			name: "the bare otel_scope_ prefix leaves no scope attribute",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "normal_metric", // 1, 2
+					"job", "test_job", // 3, 4
+					"otel_scope_", "value", // 5, 6
+					"otel_scope_attr", "attr_value", // 7, 8
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.name", "test_job")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				sm.Scope().Attributes().PutStr("attr", "attr_value")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("normal_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
+
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1.0)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+
+				return metrics
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
 				Samples:    1,
+				Histograms: 0,
+				Exemplars:  0,
+			},
+		},
+		{
+			name: "labels with empty values are dropped",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "normal_metric", // 1, 2
+					"job", "production/service_a", // 3, 4
+					"instance", "host1", // 5, 6
+					"empty_label", "", // 7, 8
+					"label", "value", // 9, 10
+					"otel_scope_name", "", // 11, 12
+					"otel_scope_empty_attr", "", // 13, 14
+					"otel_scope_attr", "scope_value", // 15, 16
+					"__name__", "target_info", // 17, 18
+					"empty_resource_label", "", // 19, 20
+					"resource_label", "resource_value", // 21, 22
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						// target_info metric: an empty label value is the same as an absent label,
+						// so it must not become a resource attribute.
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{17, 18, 3, 4, 5, 6, 19, 20, 21, 22},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.name", "production/service_a")
+				attrs.PutStr("service.instance.id", "host1")
+				attrs.PutStr("resource_label", "resource_value")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				// otel_scope_name is empty, so the receiver build info is used instead.
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				sm.Scope().Attributes().PutStr("attr", "scope_value")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("normal_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
+
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1.0)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.Attributes().PutStr("label", "value")
+
+				return metrics
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Samples:    2,
 				Histograms: 0,
 				Exemplars:  0,
 			},
@@ -1497,8 +1965,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.name", "service-x/test")
 				attrs.PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -1613,8 +2080,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.name", "service-x/test")
 				attrs.PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -1930,8 +2396,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.name", "service-x/test")
 				attrs.PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -2285,8 +2750,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.name", "service-x/test")
 				attrs.PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -2448,8 +2912,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "production")
-				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.name", "production/service_a")
 				attrs.PutStr("service.instance.id", "host1")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -2537,8 +3000,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.name", "service-x/test")
 				attrs.PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -2605,8 +3067,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.name", "service-x/test")
 				attrs.PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -2680,8 +3141,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.name", "service-x/test")
 				attrs.PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -2827,8 +3287,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.name", "service-x/test")
 				attrs.PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -2898,8 +3357,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.name", "service-x/test")
 				attrs.PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -3211,8 +3669,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "production")
-				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.name", "production/service_a")
 				attrs.PutStr("service.instance.id", "host1")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -3352,8 +3809,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "production")
-				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.name", "production/service_a")
 				attrs.PutStr("service.instance.id", "host1")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -3388,6 +3844,88 @@ func TestTranslateV2(t *testing.T) {
 				var sid [8]byte
 				copy(sid[:], spanID)
 				ex.SetSpanID(pcommon.SpanID(sid))
+
+				return metrics
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Samples:   1,
+				Exemplars: 1,
+				Confirmed: true,
+			},
+		},
+		{
+			// The exemplar label name resolves to symbol 0, the empty string the symbol table
+			// starts with, so the name is empty without the series itself being malformed. Only
+			// the attribute that label would become is unusable, so the exemplar is kept and the
+			// label dropped.
+			name: "exemplar label with an empty name is dropped",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration_ms", // 1,2
+					"job", "production/service_a", // 3,4
+					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 5,6
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_COUNTER,
+						},
+						LabelsRefs: []uint32{
+							1, 2, // __name__
+							3, 4, // job
+						},
+						Samples: []writev2.Sample{
+							{
+								Value:     1,
+								Timestamp: 1,
+							},
+						},
+						Exemplars: []writev2.Exemplar{
+							{
+								Value:     1.5,
+								Timestamp: 1,
+								LabelsRefs: []uint32{
+									5, 6, // trace_id
+									0, 2, // an empty name, carrying the metric name as its value
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.name", "production/service_a")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+
+				m := sm.Metrics().AppendEmpty()
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "counter")
+				m.SetName("request_duration_ms")
+				m.SetUnit("")
+				m.SetDescription("")
+
+				sum := m.SetEmptySum()
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				sum.SetIsMonotonic(true)
+
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+
+				// No filtered attributes: the label with the empty name has nowhere to go.
+				ex := dp.Exemplars().AppendEmpty()
+				ex.SetDoubleValue(1.5)
+				ex.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				traceID, _ := hex.DecodeString("4bf92f3577b34da6a3ce929d0e0e4736")
+				var tid [16]byte
+				copy(tid[:], traceID)
+				ex.SetTraceID(pcommon.TraceID(tid))
 
 				return metrics
 			}(),
@@ -3467,8 +4005,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "production")
-				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.name", "production/service_a")
 				attrs.PutStr("service.instance.id", "host1")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -3848,8 +4385,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "production")
-				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.name", "production/service_a")
 				attrs.PutStr("service.instance.id", "host1")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -3968,8 +4504,7 @@ func TestTranslateV2(t *testing.T) {
 			expectedMetrics: func() pmetric.Metrics {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
-				rm.Resource().Attributes().PutStr("service.namespace", "production")
-				rm.Resource().Attributes().PutStr("service.name", "service_a")
+				rm.Resource().Attributes().PutStr("service.name", "production/service_a")
 				rm.Resource().Attributes().PutStr("service.instance.id", "host1")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -4051,8 +4586,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "production")
-				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.name", "production/service_a")
 				attrs.PutStr("service.instance.id", "host1")
 				attrs.PutStr("machine_type", "n1-standard-1")
 				attrs.PutStr("cloud_provider", "gcp")
@@ -4093,8 +4627,7 @@ func TestTranslateV2(t *testing.T) {
 			expectedMetrics: func() pmetric.Metrics {
 				expected := pmetric.NewMetrics()
 				rm := expected.ResourceMetrics().AppendEmpty()
-				rm.Resource().Attributes().PutStr("service.namespace", "service-x")
-				rm.Resource().Attributes().PutStr("service.name", "test")
+				rm.Resource().Attributes().PutStr("service.name", "service-x/test")
 				rm.Resource().Attributes().PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -4139,8 +4672,7 @@ func TestTranslateV2(t *testing.T) {
 			expectedMetrics: func() pmetric.Metrics {
 				expected := pmetric.NewMetrics()
 				rm := expected.ResourceMetrics().AppendEmpty()
-				rm.Resource().Attributes().PutStr("service.namespace", "service-x")
-				rm.Resource().Attributes().PutStr("service.name", "test")
+				rm.Resource().Attributes().PutStr("service.name", "service-x/test")
 				rm.Resource().Attributes().PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -4195,8 +4727,7 @@ func TestTranslateV2(t *testing.T) {
 			expectedMetrics: func() pmetric.Metrics {
 				expected := pmetric.NewMetrics()
 				rm := expected.ResourceMetrics().AppendEmpty()
-				rm.Resource().Attributes().PutStr("service.namespace", "service-x")
-				rm.Resource().Attributes().PutStr("service.name", "test")
+				rm.Resource().Attributes().PutStr("service.name", "service-x/test")
 				rm.Resource().Attributes().PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -5085,7 +5616,7 @@ func TestOnlyHistogramsPrometheusRefusesFailTheRequest(t *testing.T) {
 				PositiveSpans:  []writev2.BucketSpan{{Offset: math.MinInt32, Length: 1}},
 				PositiveDeltas: []int64{1},
 			},
-			status: http.StatusNoContent,
+			status: http.StatusBadRequest,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -5121,13 +5652,15 @@ func TestOnlyHistogramsPrometheusRefusesFailTheRequest(t *testing.T) {
 	}
 }
 
-func TestRefusedRequestReportsNothingWritten(t *testing.T) {
-	// A refused request is not passed on, so the Written headers report zero, including for the
-	// series in it that translated.
+func TestPartialWriteOnBadRequest(t *testing.T) {
+	// When a request mixes valid series with refused items, valid data points are still passed on
+	// to the consumer and counted in the Written response headers, while the HTTP status is 400.
+	exemplar := []writev2.Exemplar{{LabelsRefs: []uint32{8, 9}, Value: 1, Timestamp: 1}}
 	gauge := writev2.TimeSeries{
 		Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
 		LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
 		Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+		Exemplars:  exemplar,
 	}
 	for _, tc := range []struct {
 		name    string
@@ -5145,6 +5678,7 @@ func TestRefusedRequestReportsNothingWritten(t *testing.T) {
 					PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
 					PositiveDeltas: []int64{2, -5},
 				}},
+				Exemplars: exemplar,
 			},
 		},
 		{
@@ -5153,32 +5687,343 @@ func TestRefusedRequestReportsNothingWritten(t *testing.T) {
 				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
 				LabelsRefs: []uint32{3, 4, 5, 6},
 				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  exemplar,
+			},
+		},
+		{
+			name: "a series with an empty label name",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 0, 2},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  exemplar,
+			},
+		},
+		{
+			name: "a series with an out-of-bounds unit ref",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 99},
+				LabelsRefs: []uint32{1, 7, 3, 4, 5, 6},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  exemplar,
+			},
+		},
+		{
+			name: "a series with an out-of-bounds help ref",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, HelpRef: 99},
+				LabelsRefs: []uint32{1, 7, 3, 4, 5, 6},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  exemplar,
+			},
+		},
+		{
+			name: "a series with an unsupported metric type",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_MetricType(99)},
+				LabelsRefs: []uint32{1, 7, 3, 4, 5, 6},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  exemplar,
+			},
+		},
+		{
+			name: "a series with invalid exemplar label refs",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 7, 3, 4, 5, 6},
+				Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{99, 100}, Value: 1, Timestamp: 1}},
+			},
+		},
+		{
+			name: "a series with an invalid UTF-8 label name",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 7, 3, 4, 5, 6, 10, 4},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  exemplar,
+			},
+		},
+		{
+			name: "a series with an invalid UTF-8 label value",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 7, 3, 10, 5, 6},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  exemplar,
+			},
+		},
+		{
+			name: "a series with an invalid UTF-8 metric name",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 10, 3, 4, 5, 6},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  exemplar,
+			},
+		},
+		{
+			name: "a series with an invalid UTF-8 unit ref",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 10},
+				LabelsRefs: []uint32{1, 7, 3, 4, 5, 6},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  exemplar,
+			},
+		},
+		{
+			name: "a series with an invalid UTF-8 help ref",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, HelpRef: 10},
+				LabelsRefs: []uint32{1, 7, 3, 4, 5, 6},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				Exemplars:  exemplar,
+			},
+		},
+		{
+			name: "a series with an invalid UTF-8 exemplar label name",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 7, 3, 11, 5, 12},
+				Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{10, 4}, Value: 1, Timestamp: 1}},
+			},
+		},
+		{
+			name: "a series with an invalid UTF-8 exemplar label value",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 7, 3, 11, 5, 12},
+				Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{8, 10}, Value: 1, Timestamp: 1}},
+			},
+		},
+		{
+			name: "an exemplar-only counter with invalid exemplar label refs",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+				LabelsRefs: []uint32{1, 7, 3, 11, 5, 12},
+				Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{99, 100}, Value: 1, Timestamp: 1}},
+			},
+		},
+		{
+			name: "an exemplar-only summary with invalid exemplar label refs",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_SUMMARY},
+				LabelsRefs: []uint32{1, 7, 3, 11, 5, 12},
+				Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{99, 100}, Value: 1, Timestamp: 1}},
+			},
+		},
+		{
+			name: "a metadata-only series without samples, histograms, or exemplars",
+			refused: writev2.TimeSeries{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+				LabelsRefs: []uint32{1, 7, 3, 11, 5, 12},
 			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			sink := &consumertest.MetricsSink{}
-			resp := sendPRW(t, setupMetricsReceiverWithConsumer(t, sink), &writev2.Request{
+			prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+			resp := sendPRW(t, prwReceiver, &writev2.Request{
 				Symbols: []string{
 					"",
 					"__name__", "test_gauge", // 1, 2
 					"job", "service-x/test", // 3, 4
 					"instance", "107cn001", // 5, 6
-					"test_histogram", // 7
+					"test_histogram",                               // 7
+					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 8, 9
+					"\xff\xfe",                // 10 (invalid UTF-8)
+					"other_job", "other_inst", // 11, 12
 				},
 				Timeseries: []writev2.TimeSeries{gauge, tc.refused},
 			})
 			defer resp.Body.Close()
 
 			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-			for _, header := range []string{
-				"X-Prometheus-Remote-Write-Samples-Written",
-				"X-Prometheus-Remote-Write-Histograms-Written",
-				"X-Prometheus-Remote-Write-Exemplars-Written",
-			} {
-				assert.Equal(t, "0", resp.Header.Get(header), header)
-			}
+			assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+			assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+			assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+			require.Len(t, sink.AllMetrics(), 1)
+			assert.Equal(t, 1, sink.AllMetrics()[0].DataPointCount())
+			require.Equal(t, 1, sink.AllMetrics()[0].ResourceMetrics().Len())
+			require.Equal(t, 1, sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+			dp := sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
+			assert.Equal(t, 1, dp.Exemplars().Len())
+			assert.Equal(t, 1, prwReceiver.rmCache.Len())
+		})
+	}
+}
+
+func TestExemplarWithoutSampleIsCountedAsWritten(t *testing.T) {
+	// Prometheus's populateV2TimeSeries puts each exemplar in a TimeSeries of its own without a
+	// sample or histogram. When a batch carries an exemplar without a sample or histogram of its
+	// series, the receiver has no data point to attach it to, but still counts it as written so the
+	// 204 response does not report a partial write.
+	for _, metricType := range []writev2.Metadata_MetricType{
+		writev2.Metadata_METRIC_TYPE_COUNTER,
+		writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+	} {
+		t.Run(metricType.String(), func(t *testing.T) {
+			sink := &consumertest.MetricsSink{}
+			resp := sendPRW(t, setupMetricsReceiverWithConsumer(t, sink), &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7, 8
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: metricType},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{7, 8}, Value: 1, Timestamp: 1}},
+					},
+				},
+			})
+			defer resp.Body.Close()
+
+			assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+			assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+			assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+			assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
 			assert.Empty(t, sink.AllMetrics())
+		})
+	}
+}
+
+func TestEmptyLabelValueIsAcceptedNotRefused(t *testing.T) {
+	// A label with an empty value normalizes to an absent label instead of being refused. See
+	// validateSeriesLabels for why refusing it would lose the series.
+	sink := &consumertest.MetricsSink{}
+	resp := sendPRW(t, setupMetricsReceiverWithConsumer(t, sink), &writev2.Request{
+		Symbols: []string{
+			"",
+			"__name__", "test_gauge", // 1, 2
+			"job", "service-x/test", // 3, 4
+			"instance", "107cn001", // 5, 6
+			"empty", "", // 7, 8
+			"kept", "value", // 9, 10
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+			},
+		},
+	})
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+	written, err := remote.ParseWriteResponseStats(resp)
+	require.NoError(t, err)
+	assert.Equal(t, 1, written.Samples, "the series is written, not refused")
+
+	metrics := sink.AllMetrics()
+	require.Len(t, metrics, 1)
+	dp := metrics[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
+	assert.Equal(t, map[string]any{"kept": "value"}, dp.Attributes().AsRaw())
+}
+
+func TestEmptyLabelValuesAreDroppedFromHistogramDataPoints(t *testing.T) {
+	// Each histogram flavor builds its data points on its own, and every builder copies the one
+	// attribute map the series produced, so an empty label has to be gone from all of them,
+	// including the marker a reset leaves behind.
+	stale := math.Float64frombits(value.StaleNaN)
+	prwReceiver := setupMetricsReceiver(t)
+
+	metrics, stats, err := prwReceiver.translateV2(t.Context(), &writev2.Request{
+		Symbols: []string{
+			"",
+			"__name__", "test_histogram", // 1, 2
+			"job", "service-x/test", // 3, 4
+			"instance", "107cn001", // 5, 6
+			"empty", "", // 7, 8
+			"attr", "value", // 9, 10
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+				Histograms: []writev2.Histogram{
+					{
+						Schema:         0,
+						Count:          &writev2.Histogram_CountInt{CountInt: 2},
+						Sum:            2,
+						Timestamp:      1,
+						StartTimestamp: 1,
+						PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}},
+						PositiveDeltas: []int64{2},
+					},
+					{
+						Schema:    0,
+						Sum:       stale,
+						Timestamp: 2,
+					},
+				},
+			},
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+				Histograms: []writev2.Histogram{{
+					Schema:         -53,
+					Count:          &writev2.Histogram_CountInt{CountInt: 1},
+					Sum:            1,
+					Timestamp:      3,
+					CustomValues:   []float64{1},
+					PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}},
+					PositiveDeltas: []int64{1},
+				}},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 3, stats.Histograms, "the stale marker is written too")
+
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+	expected := map[string]any{"attr": "value"}
+	sms := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	require.Equal(t, 2, sms.Len(), "each flavor is its own metric")
+
+	seen := 0
+	for i := 0; i < sms.Len(); i++ {
+		switch m := sms.At(i); m.Type() {
+		case pmetric.MetricTypeExponentialHistogram:
+			dps := m.ExponentialHistogram().DataPoints()
+			require.Equal(t, 2, dps.Len())
+			for j := 0; j < dps.Len(); j++ {
+				assert.Equal(t, expected, dps.At(j).Attributes().AsRaw())
+				seen++
+			}
+		case pmetric.MetricTypeHistogram:
+			dps := m.Histogram().DataPoints()
+			require.Equal(t, 1, dps.Len())
+			assert.Equal(t, expected, dps.At(0).Attributes().AsRaw())
+			seen++
+		default:
+			t.Fatalf("unexpected metric type %v", m.Type())
+		}
+	}
+	assert.Equal(t, 3, seen)
+}
+
+func TestExtractScopeInfoDropsUnrepresentableScopeLabels(t *testing.T) {
+	// A scope attribute needs both a key and a value, so a label whose suffix is empty and a label
+	// whose value is empty drop out while the attribute around them survives. Each row pins one of
+	// the two checks on its own: they are independent, and neither may take the other's labels out.
+	prwReceiver := setupMetricsReceiver(t)
+	want := []attribute{{Key: "kept", Value: "kept"}}
+	for _, tc := range []struct {
+		name   string
+		labels labels.Labels
+	}{
+		{name: "empty value", labels: labels.FromStrings("otel_scope_empty", "", "otel_scope_kept", "kept")},
+		{name: "bare prefix", labels: labels.FromStrings("otel_scope_", "value", "otel_scope_kept", "kept")},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			si := prwReceiver.extractScopeInfo(tc.labels)
+			assert.Equal(t, want, si.scopeAttrs)
+			assert.Equal(t, "OpenTelemetry Collector", si.Name)
+			assert.Equal(t, "latest", si.Version)
 		})
 	}
 }
@@ -5486,6 +6331,10 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 	tests := []struct {
 		name     string
 		requests []*writev2.Request
+		// batches is the number of ConsumeMetrics calls the requests produce; every batch is
+		// compared with expected.
+		batches  int
+		expected pmetric.Metrics
 	}{
 		{
 			name: "target_info first, normal metric second",
@@ -5504,6 +6353,7 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 						{
 							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
 							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+							Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
 						},
 					},
 				},
@@ -5524,34 +6374,65 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 					},
 				},
 			},
+			batches: 1,
+			// The only batch is the join between the target_info and the normal metric.
+			expected: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.name", "production/service_a")
+				attrs.PutStr("service.instance.id", "host1")
+				attrs.PutStr("machine_type", "n1-standard-1")
+				attrs.PutStr("cloud_provider", "gcp")
+				attrs.PutStr("region", "us-central1")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m1 := sm.Metrics().AppendEmpty()
+				m1.SetName("normal_metric")
+				m1.SetUnit("")
+				m1.SetDescription("")
+				dp1 := m1.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp1.SetDoubleValue(2.0)
+				dp1.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+				dp1.Attributes().PutStr("foo", "bar")
+
+				return metrics
+			}(),
+		},
+		{
+			// A label that arrives with an empty value means an absent label, so it neither sets
+			// region nor clears the one an earlier target_info cached.
+			name: "an empty label value does not clear a cached attribute",
+			requests: []*writev2.Request{
+				targetInfoRequest("us-central1"),
+				targetInfoRequest(""),
+			},
+			batches: 2,
+			expected: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.name", "production/service_a")
+				attrs.PutStr("service.instance.id", "host1")
+				attrs.PutStr("region", "us-central1")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m1 := sm.Metrics().AppendEmpty()
+				m1.SetName("normal_metric")
+				m1.SetUnit("")
+				m1.SetDescription("")
+				dp1 := m1.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp1.SetDoubleValue(2.0)
+				dp1.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+
+				return metrics
+			}(),
 		},
 	}
-
-	expectedIndex0 := func() pmetric.Metrics {
-		metrics := pmetric.NewMetrics()
-		rm := metrics.ResourceMetrics().AppendEmpty()
-		attrs := rm.Resource().Attributes()
-		attrs.PutStr("service.namespace", "production")
-		attrs.PutStr("service.name", "service_a")
-		attrs.PutStr("service.instance.id", "host1")
-		attrs.PutStr("machine_type", "n1-standard-1")
-		attrs.PutStr("cloud_provider", "gcp")
-		attrs.PutStr("region", "us-central1")
-
-		sm := rm.ScopeMetrics().AppendEmpty()
-		sm.Scope().SetName("OpenTelemetry Collector")
-		sm.Scope().SetVersion("latest")
-		m1 := sm.Metrics().AppendEmpty()
-		m1.SetName("normal_metric")
-		m1.SetUnit("")
-		m1.SetDescription("")
-		dp1 := m1.SetEmptyGauge().DataPoints().AppendEmpty()
-		dp1.SetDoubleValue(2.0)
-		dp1.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
-		dp1.Attributes().PutStr("foo", "bar")
-
-		return metrics
-	}()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -5567,27 +6448,85 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 				// we don't need to compress the body to use the snappy compression in the unit test
 				// because the encoder is just initialized when we initialize the http server.
 				// so we can just use the uncompressed body.
-				err := pBuf.Marshal(req)
-				assert.NoError(t, err)
+				require.NoError(t, pBuf.Marshal(req))
 
 				resp, err := http.Post(
 					ts.URL,
 					fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType),
 					bytes.NewBuffer(pBuf.Bytes()),
 				)
-				assert.NoError(t, err)
-				defer resp.Body.Close()
+				require.NoError(t, err)
 
 				body, err := io.ReadAll(resp.Body)
-				assert.NoError(t, err)
-				assert.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
+				resp.Body.Close()
+				require.NoError(t, err)
+				require.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
 			}
-			// Only one metric should be emitted
-			assert.Len(t, mockConsumer.metrics, 1)
-			// index 0 is related to the join between the target_info and the normal metric.
-			assert.NoError(t, pmetrictest.CompareMetrics(expectedIndex0, mockConsumer.metrics[0]))
+
+			require.Len(t, mockConsumer.metrics, tt.batches)
+			for i, batch := range mockConsumer.metrics {
+				assert.NoError(t, pmetrictest.CompareMetrics(tt.expected, batch), "batch %d", i)
+			}
 		})
 	}
+}
+
+// targetInfoRequest builds a request carrying a target_info with the given region plus a sample
+// of the metric it describes, so the two can be joined within the request.
+func targetInfoRequest(region string) *writev2.Request {
+	return &writev2.Request{
+		Symbols: []string{
+			"",
+			"job", "production/service_a", // 1, 2
+			"instance", "host1", // 3, 4
+			"region", region, // 5, 6
+			"__name__", "target_info", // 7, 8
+			"__name__", "normal_metric", // 9, 10
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+			},
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{9, 10, 1, 2, 3, 4},
+				Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+			},
+		},
+	}
+}
+
+func TestTargetInfoUpdatesCachedResource(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	prw := setupMetricsReceiverWithConsumer(t, sink)
+	plain := &writev2.Request{
+		Symbols: []string{"", "job", "j", "instance", "i", "__name__", "m"},
+		Timeseries: []writev2.TimeSeries{{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+			LabelsRefs: []uint32{5, 6, 1, 2, 3, 4},
+			Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+		}},
+	}
+	info := &writev2.Request{
+		Symbols: []string{"", "job", "j", "instance", "i", "__name__", "target_info", "region", "eu"},
+		Timeseries: []writev2.TimeSeries{{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+			LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
+			Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+		}},
+	}
+	for _, r := range []*writev2.Request{plain, info, plain} {
+		resp := sendPRW(t, prw, r)
+		require.NoError(t, resp.Body.Close())
+		require.Equal(t, http.StatusNoContent, resp.StatusCode)
+	}
+	all := sink.AllMetrics()
+	require.Len(t, all, 2)
+	v, ok := all[1].ResourceMetrics().At(0).Resource().Attributes().Get("region")
+	require.True(t, ok, "third request lost the target_info attribute: %v", all[1].ResourceMetrics().At(0).Resource().Attributes().AsRaw())
+	require.Equal(t, "eu", v.Str())
 }
 
 // TestLRUCacheResourceMetrics verifies the LRU cache behavior for resource metrics:
@@ -5619,6 +6558,7 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 			{
 				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
 				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
 			},
 		},
 	}
@@ -5683,8 +6623,7 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 		metrics := pmetric.NewMetrics()
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		attrs := rm.Resource().Attributes()
-		attrs.PutStr("service.namespace", "production")
-		attrs.PutStr("service.name", "service_a")
+		attrs.PutStr("service.name", "production/service_a")
 		attrs.PutStr("service.instance.id", "host1")
 		attrs.PutStr("machine_type", "n1-standard-1")
 		attrs.PutStr("cloud_provider", "gcp")
@@ -5712,8 +6651,7 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 		metrics := pmetric.NewMetrics()
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		attrs := rm.Resource().Attributes()
-		attrs.PutStr("service.namespace", "production")
-		attrs.PutStr("service.name", "service_b")
+		attrs.PutStr("service.name", "production/service_b")
 		attrs.PutStr("service.instance.id", "host2")
 
 		sm := rm.ScopeMetrics().AppendEmpty()
@@ -5737,8 +6675,7 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 		metrics := pmetric.NewMetrics()
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		attrs := rm.Resource().Attributes()
-		attrs.PutStr("service.namespace", "production")
-		attrs.PutStr("service.name", "service_a")
+		attrs.PutStr("service.name", "production/service_a")
 		attrs.PutStr("service.instance.id", "host1")
 
 		sm := rm.ScopeMetrics().AppendEmpty()
@@ -6185,7 +7122,7 @@ func TestHandlePRWConsumerResponse(t *testing.T) {
 		assert.Len(t, sink.AllMetrics(), 1)
 	})
 
-	t.Run("retryable error returns 500", func(t *testing.T) {
+	t.Run("retryable error returns 500 and leaves Written headers at zero and rmCache untouched", func(t *testing.T) {
 		prwReceiver := setupMetricsReceiverWithConsumer(t, consumertest.NewErr(errors.New("temporary failure")))
 
 		req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(rawBody))
@@ -6196,15 +7133,42 @@ func TestHandlePRWConsumerResponse(t *testing.T) {
 		resp := w.Result()
 
 		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+		for _, header := range []string{
+			"X-Prometheus-Remote-Write-Samples-Written",
+			"X-Prometheus-Remote-Write-Histograms-Written",
+			"X-Prometheus-Remote-Write-Exemplars-Written",
+		} {
+			assert.Equal(t, "0", resp.Header.Get(header), header)
+		}
+		assert.Equal(t, 0, prwReceiver.rmCache.Len())
 		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 		assert.Contains(t, string(body), "temporary failure")
 	})
 
-	t.Run("permanent error returns 400", func(t *testing.T) {
+	t.Run("permanent error returns 400 and leaves Written headers at zero and rmCache untouched", func(t *testing.T) {
 		prwReceiver := setupMetricsReceiverWithConsumer(t, consumertest.NewErr(consumererror.NewPermanent(errors.New("permanent failure"))))
 
-		req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(rawBody))
+		// Include target_info in the failing request to verify rmCache is not updated when ConsumeMetrics fails.
+		withTargetInfo := &writev2.Request{
+			Symbols: []string{"", "__name__", "target_info", "test_metric", "job", "test-job", "instance", "test-instance", "region", "us-west"},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 2, 4, 5, 6, 7, 8, 9},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				},
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 3, 4, 5, 6, 7},
+					Samples:    []writev2.Sample{{Value: 2, Timestamp: 1}},
+				},
+			},
+		}
+		tiBuf := proto.NewBuffer(nil)
+		require.NoError(t, tiBuf.Marshal(withTargetInfo))
+
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(tiBuf.Bytes()))
 		req.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType))
 
 		w := httptest.NewRecorder()
@@ -6212,15 +7176,62 @@ func TestHandlePRWConsumerResponse(t *testing.T) {
 		resp := w.Result()
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		for _, header := range []string{
+			"X-Prometheus-Remote-Write-Samples-Written",
+			"X-Prometheus-Remote-Write-Histograms-Written",
+			"X-Prometheus-Remote-Write-Exemplars-Written",
+		} {
+			assert.Equal(t, "0", resp.Header.Get(header), header)
+		}
+		assert.Equal(t, 0, prwReceiver.rmCache.Len())
 		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 		assert.Contains(t, string(body), "permanent failure")
 	})
+
+	t.Run("corrupt protobuf returns 400 with zero Written headers", func(t *testing.T) {
+		prwReceiver := setupMetricsReceiverWithConsumer(t, consumertest.NewNop())
+
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer([]byte("not a valid protobuf")))
+		req.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType))
+
+		w := httptest.NewRecorder()
+		prwReceiver.handlePRW(w, req)
+		resp := w.Result()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		for _, header := range []string{
+			"X-Prometheus-Remote-Write-Samples-Written",
+			"X-Prometheus-Remote-Write-Histograms-Written",
+			"X-Prometheus-Remote-Write-Exemplars-Written",
+		} {
+			assert.Equal(t, "0", resp.Header.Get(header), header)
+		}
+	})
+}
+
+type mutatingMetricsConsumer struct{}
+
+func (*mutatingMetricsConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
+func (*mutatingMetricsConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		attrs := md.ResourceMetrics().At(i).Resource().Attributes()
+		attrs.Remove("service.name")
+		attrs.PutStr("mutated_by_consumer", "true")
+	}
+	dest := pmetric.NewMetrics()
+	md.ResourceMetrics().MoveAndAppendTo(dest.ResourceMetrics())
+	return nil
 }
 
 // TestEndMetricsOpReportsDataPointCount verifies that EndMetricsOp is called with the
-// number of data points, not the number of resource metric groups.
+// number of data points, not the number of resource metric groups, even when downstream
+// consumers mutate or move the metric data.
 // See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48306
+// See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52819
 func TestEndMetricsOpReportsDataPointCount(t *testing.T) {
 	// Build a request with 3 gauge time series all from the same job/instance.
 	// ResourceMetrics().Len() == 1, but DataPointCount() == 3.
@@ -6270,8 +7281,7 @@ func TestEndMetricsOpReportsDataPointCount(t *testing.T) {
 	settings.TelemetrySettings = tt.NewTelemetrySettings()
 	settings.ID = receiverID
 
-	sink := &consumertest.MetricsSink{}
-	prwReceiver, err := factory.CreateMetrics(t.Context(), settings, cfg, sink)
+	prwReceiver, err := factory.CreateMetrics(t.Context(), settings, cfg, &mutatingMetricsConsumer{})
 	require.NoError(t, err)
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -6293,9 +7303,18 @@ func TestEndMetricsOpReportsDataPointCount(t *testing.T) {
 	writeReceiver.handlePRW(w, req)
 
 	assert.Equal(t, http.StatusNoContent, w.Result().StatusCode)
+	require.Equal(t, 1, writeReceiver.rmCache.Len())
+	for _, cachedRM := range writeReceiver.rmCache.Values() {
+		serviceName, ok := cachedRM.Resource().Attributes().Get("service.name")
+		require.True(t, ok, "cached resource must keep unmutated service.name")
+		assert.Equal(t, "test-job", serviceName.Str())
+		_, polluted := cachedRM.Resource().Attributes().Get("mutated_by_consumer")
+		assert.False(t, polluted, "downstream consumer mutations must not pollute rmCache")
+	}
 
 	// The accepted metric points must equal the data point count (3), not the
-	// resource group count (1). This is the regression check for #48306.
+	// resource group count (1). This also verifies data point count is preserved
+	// even when downstream consumers mutate the data (#48306, #52819).
 	got, err := tt.GetMetric("otelcol_receiver_accepted_metric_points")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t,
@@ -6435,7 +7454,7 @@ func droppedSeriesRequest(typed bool) *writev2.Request {
 			{Metadata: histogram, LabelsRefs: []uint32{1, 3, 11, 12, 9, 10}, Samples: sample},
 			{Metadata: histogram, LabelsRefs: []uint32{1, 4, 11, 12, 9, 10}, Samples: sample},
 			{Metadata: summary, LabelsRefs: []uint32{1, 5, 11, 12, 9, 10, 16, 17}, Samples: sample},
-			{Metadata: summary, LabelsRefs: []uint32{1, 5, 11, 12, 9, 10, 16, 18}, Samples: sample},
+			{Metadata: summary, LabelsRefs: []uint32{1, 5, 11, 12, 9, 10, 16, 18}, Samples: sample, Exemplars: exemplar},
 			{Metadata: summary, LabelsRefs: []uint32{1, 6, 11, 12, 9, 10}, Samples: sample},
 			{Metadata: summary, LabelsRefs: []uint32{1, 7, 11, 12, 9, 10}, Samples: sample},
 			{
@@ -6604,4 +7623,2241 @@ func TestDroppedSeriesAreLoggedAtDebug(t *testing.T) {
 	_, _, err = writeReceiver.translateV2(t.Context(), droppedSeriesRequest(true))
 	require.NoError(t, err)
 	assert.Empty(t, infoObs.All())
+}
+
+func TestInvalidUTF8SymbolReferences(t *testing.T) {
+	t.Run("unreferenced invalid UTF-8 symbol does not reject valid series", func(t *testing.T) {
+		sink := &consumertest.MetricsSink{}
+		prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+		resp := sendPRW(t, prwReceiver, &writev2.Request{
+			Symbols: []string{
+				"",
+				"__name__", "test_gauge", // 1, 2
+				"job", "test_job", // 3, 4
+				"instance", "host1", // 5, 6
+				"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7, 8
+				"\xff\xfe", // 9 (unreferenced)
+			},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 42, Timestamp: 1}},
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{7, 8}, Value: 42, Timestamp: 1}},
+				},
+			},
+		})
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+		assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+		assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+		require.Len(t, sink.AllMetrics(), 1)
+		assert.Equal(t, 1, sink.AllMetrics()[0].DataPointCount())
+	})
+
+	t.Run("empty request with unreferenced invalid UTF-8 symbol still returns 204", func(t *testing.T) {
+		sink := &consumertest.MetricsSink{}
+		prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+		resp := sendPRW(t, prwReceiver, &writev2.Request{
+			Symbols: []string{"", "\xff\xfe"},
+		})
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+		assert.Empty(t, sink.AllMetrics())
+	})
+
+	t.Run("valid multibyte UTF-8 and invalid UTF-8 sequences", func(t *testing.T) {
+		cases := []struct {
+			name   string
+			symbol string
+			valid  bool
+		}{
+			{name: "valid multibyte and emoji", symbol: "test🚀_äöü_测试", valid: true},
+			{name: "replacement char U+FFFD", symbol: "\uFFFD", valid: true},
+			{name: "invalid raw bytes", symbol: "\xff\xfe", valid: false},
+			{name: "UTF-16 surrogate half", symbol: "\xed\xa0\x80", valid: false},
+			{name: "truncated multibyte sequence", symbol: "\xc3", valid: false},
+			{name: "overlong encoding", symbol: "\xc0\xaf", valid: false},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "test_gauge",
+						"env", tc.symbol,
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+							LabelsRefs: []uint32{1, 2, 3, 4},
+							Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+						},
+					},
+				})
+				defer resp.Body.Close()
+
+				if tc.valid {
+					assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+					assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+					require.Len(t, sink.AllMetrics(), 1)
+				} else {
+					assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+					assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+					assert.Empty(t, sink.AllMetrics())
+				}
+			})
+		}
+	})
+
+	t.Run("mixed valid and invalid UTF-8 exemplars on valid sample series", func(t *testing.T) {
+		sink := &consumertest.MetricsSink{}
+		prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+		resp := sendPRW(t, prwReceiver, &writev2.Request{
+			Symbols: []string{
+				"",
+				"__name__", "test_counter", // 1, 2
+				"job", "test_job", // 3, 4
+				"instance", "host1", // 5, 6
+				"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7, 8
+				"bad_val", "\xff\xfe", // 9, 10
+			},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 10, Timestamp: 1}},
+					Exemplars: []writev2.Exemplar{
+						{LabelsRefs: []uint32{9, 10}, Value: 1, Timestamp: 1},
+						{LabelsRefs: []uint32{7, 8}, Value: 2, Timestamp: 2},
+					},
+				},
+			},
+		})
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+		assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+		require.Len(t, sink.AllMetrics(), 1)
+		dp := sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+		require.Equal(t, 1, dp.Exemplars().Len())
+		assert.Equal(t, 2.0, dp.Exemplars().At(0).DoubleValue())
+	})
+
+	t.Run("all invalid UTF-8 exemplars on valid sample series forwards sample with zero exemplars", func(t *testing.T) {
+		sink := &consumertest.MetricsSink{}
+		prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+		resp := sendPRW(t, prwReceiver, &writev2.Request{
+			Symbols: []string{
+				"",
+				"__name__", "test_counter",
+				"bad_key", "\xff\xfe",
+			},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+					LabelsRefs: []uint32{1, 2},
+					Samples:    []writev2.Sample{{Value: 10, Timestamp: 1}},
+					Exemplars: []writev2.Exemplar{
+						{LabelsRefs: []uint32{3, 4}, Value: 1, Timestamp: 1},
+					},
+				},
+			},
+		})
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+		require.Len(t, sink.AllMetrics(), 1)
+		dp := sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+		assert.Equal(t, 0, dp.Exemplars().Len())
+	})
+
+	t.Run("rejected series with same labels does not leak exemplars onto valid sibling", func(t *testing.T) {
+		for _, tc := range []struct {
+			name string
+			meta writev2.Metadata
+		}{
+			{
+				name: "invalid UTF-8 UnitRef",
+				meta: writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER, UnitRef: 9},
+			},
+			{
+				name: "invalid UTF-8 HelpRef",
+				meta: writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER, HelpRef: 9},
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "test_counter", // 1, 2
+						"job", "test_job", // 3, 4
+						"instance", "host1", // 5, 6
+						"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7, 8
+						"\xff\xfe", // 9
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   tc.meta,
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+							Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+							Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{7, 8}, Value: 1, Timestamp: 1}},
+						},
+						{
+							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+							Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+						},
+					},
+				})
+				defer resp.Body.Close()
+
+				assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				require.Len(t, sink.AllMetrics(), 1)
+				dp := sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+				assert.Equal(t, 2.0, dp.DoubleValue())
+				assert.Equal(t, 0, dp.Exemplars().Len())
+			})
+		}
+	})
+
+	t.Run("classic histogram and summary with invalid UTF-8 refs are rejected not dropped", func(t *testing.T) {
+		for _, metricType := range []writev2.Metadata_MetricType{
+			writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+			writev2.Metadata_METRIC_TYPE_SUMMARY,
+		} {
+			for _, tc := range []struct {
+				name       string
+				ts         writev2.TimeSeries
+				wantErrStr string
+			}{
+				{
+					name: "invalid label name",
+					ts: writev2.TimeSeries{
+						Metadata:   writev2.Metadata{Type: metricType},
+						LabelsRefs: []uint32{1, 2, 3, 4},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+					wantErrStr: `invalid UTF-8 in label name "\xff\xfe"`,
+				},
+				{
+					name: "invalid label value",
+					ts: writev2.TimeSeries{
+						Metadata:   writev2.Metadata{Type: metricType},
+						LabelsRefs: []uint32{1, 2, 4, 3},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+					wantErrStr: `invalid UTF-8 in value for label "val"`,
+				},
+				{
+					name: "invalid UnitRef",
+					ts: writev2.TimeSeries{
+						Metadata:   writev2.Metadata{Type: metricType, UnitRef: 3},
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+					wantErrStr: "unit ref 3 contains invalid UTF-8",
+				},
+				{
+					name: "invalid HelpRef",
+					ts: writev2.TimeSeries{
+						Metadata:   writev2.Metadata{Type: metricType, HelpRef: 3},
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+					wantErrStr: "help ref 3 contains invalid UTF-8",
+				},
+			} {
+				t.Run(metricType.String()+"/"+tc.name, func(t *testing.T) {
+					tel := componenttest.NewTelemetry()
+					defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+
+					prw, err := NewFactory().CreateMetrics(t.Context(), metadatatest.NewSettings(tel), createDefaultConfig(), consumertest.NewNop())
+					require.NoError(t, err)
+					writeReceiver := prw.(*prometheusRemoteWriteReceiver)
+					obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+						ReceiverID:             component.MustNewID("test"),
+						ReceiverCreateSettings: metadatatest.NewSettings(tel),
+						Transport:              "http",
+					})
+					require.NoError(t, err)
+					writeReceiver.obsrecv = obsrecv
+					defer writeReceiver.rmCache.Purge()
+
+					resp := sendPRW(t, writeReceiver, &writev2.Request{
+						Symbols:    []string{"", "__name__", "test_metric", "\xff\xfe", "val"},
+						Timeseries: []writev2.TimeSeries{tc.ts},
+					})
+					defer resp.Body.Close()
+
+					body, err := io.ReadAll(resp.Body)
+					require.NoError(t, err)
+					assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+					assert.Contains(t, string(body), tc.wantErrStr)
+					assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+					assert.Equal(t, 0, writeReceiver.rmCache.Len())
+
+					var rm metricdata.ResourceMetrics
+					require.NoError(t, tel.Reader.Collect(t.Context(), &rm))
+					assert.Empty(t, rm.ScopeMetrics)
+				})
+			}
+		}
+	})
+
+	t.Run("target_info with invalid UTF-8 does not mutate rmCache or count samples", func(t *testing.T) {
+		for _, tc := range []struct {
+			name       string
+			ts         writev2.TimeSeries
+			wantErrStr string
+		}{
+			{
+				name: "invalid label name",
+				ts: writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 8, 9},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				},
+				wantErrStr: `invalid UTF-8 in label name "\xff\xfe"`,
+			},
+			{
+				name: "invalid label value",
+				ts: writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				},
+				wantErrStr: `invalid UTF-8 in value for label "region"`,
+			},
+			{
+				name: "invalid UnitRef",
+				ts: writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 8},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				},
+				wantErrStr: "unit ref 8 contains invalid UTF-8",
+			},
+			{
+				name: "invalid HelpRef",
+				ts: writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, HelpRef: 8},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				},
+				wantErrStr: "help ref 8 contains invalid UTF-8",
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "target_info", // 1, 2
+						"job", "test_job", // 3, 4
+						"instance", "host1", // 5, 6
+						"region", "\xff\xfe", "poison", // 7, 8, 9
+					},
+					Timeseries: []writev2.TimeSeries{tc.ts},
+				})
+				defer resp.Body.Close()
+
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+				assert.Contains(t, string(body), tc.wantErrStr)
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				assert.Equal(t, 0, prwReceiver.rmCache.Len())
+				assert.Empty(t, sink.AllMetrics())
+			})
+		}
+
+		t.Run("rejected target_info does not enrich sibling or follow-up requests", func(t *testing.T) {
+			for _, targetInfoFirst := range []bool{true, false} {
+				order := "target_info after valid"
+				if targetInfoFirst {
+					order = "target_info before valid"
+				}
+				t.Run(order, func(t *testing.T) {
+					sink := &consumertest.MetricsSink{}
+					prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+					badTargetInfo := writev2.TimeSeries{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, HelpRef: 10},
+						LabelsRefs: []uint32{1, 2, 4, 5, 6, 7, 8, 9},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					}
+					valid := writev2.TimeSeries{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 3, 4, 5, 6, 7},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					}
+					series := []writev2.TimeSeries{valid, badTargetInfo}
+					if targetInfoFirst {
+						series = []writev2.TimeSeries{badTargetInfo, valid}
+					}
+
+					resp := sendPRW(t, prwReceiver, &writev2.Request{
+						Symbols: []string{
+							"",
+							"__name__", "target_info", "normal_metric", // 1, 2, 3
+							"job", "test_job", // 4, 5
+							"instance", "host1", // 6, 7
+							"region", "should_not_appear", // 8, 9
+							"\xff\xfe", // 10
+						},
+						Timeseries: series,
+					})
+					defer resp.Body.Close()
+
+					body, err := io.ReadAll(resp.Body)
+					require.NoError(t, err)
+					assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+					assert.Contains(t, string(body), "help ref 10 contains invalid UTF-8")
+					assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+					require.Len(t, sink.AllMetrics(), 1)
+					_, hasRegion := sink.AllMetrics()[0].ResourceMetrics().At(0).Resource().Attributes().Get("region")
+					assert.False(t, hasRegion)
+
+					require.Equal(t, 1, prwReceiver.rmCache.Len())
+					for _, cached := range prwReceiver.rmCache.Values() {
+						_, cachedHasRegion := cached.Resource().Attributes().Get("region")
+						assert.False(t, cachedHasRegion)
+					}
+
+					followUp := sendPRW(t, prwReceiver, &writev2.Request{
+						Symbols: []string{
+							"",
+							"__name__", "normal_metric",
+							"job", "test_job",
+							"instance", "host1",
+						},
+						Timeseries: []writev2.TimeSeries{
+							{
+								Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+								LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+								Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+							},
+						},
+					})
+					defer followUp.Body.Close()
+
+					assert.Equal(t, http.StatusNoContent, followUp.StatusCode)
+					require.Len(t, sink.AllMetrics(), 2)
+					_, hasRegion = sink.AllMetrics()[1].ResourceMetrics().At(0).Resource().Attributes().Get("region")
+					assert.False(t, hasRegion)
+				})
+			}
+		})
+	})
+
+	t.Run("native histogram with invalid UTF-8 refs is rejected with zero histograms and exemplars", func(t *testing.T) {
+		for _, tc := range []struct {
+			name       string
+			ts         writev2.TimeSeries
+			wantErrStr string
+		}{
+			{
+				name: "invalid label name",
+				ts: writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+					LabelsRefs: []uint32{1, 2, 3, 4},
+					Histograms: exemplarHistogram([]int64{1, 1}),
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{5, 6}, Value: 1, Timestamp: 1}},
+				},
+				wantErrStr: `invalid UTF-8 in label name "\xff\xfe"`,
+			},
+			{
+				name: "invalid label value",
+				ts: writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+					LabelsRefs: []uint32{1, 2, 4, 3},
+					Histograms: exemplarHistogram([]int64{1, 1}),
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{5, 6}, Value: 1, Timestamp: 1}},
+				},
+				wantErrStr: `invalid UTF-8 in value for label "val"`,
+			},
+			{
+				name: "invalid UnitRef",
+				ts: writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM, UnitRef: 3},
+					LabelsRefs: []uint32{1, 2},
+					Histograms: exemplarHistogram([]int64{1, 1}),
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{5, 6}, Value: 1, Timestamp: 1}},
+				},
+				wantErrStr: "unit ref 3 contains invalid UTF-8",
+			},
+			{
+				name: "invalid HelpRef",
+				ts: writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM, HelpRef: 3},
+					LabelsRefs: []uint32{1, 2},
+					Histograms: exemplarHistogram([]int64{1, 1}),
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{5, 6}, Value: 1, Timestamp: 1}},
+				},
+				wantErrStr: "help ref 3 contains invalid UTF-8",
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "test_hist", // 1, 2
+						"\xff\xfe", "val", // 3, 4
+						"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 5, 6
+					},
+					Timeseries: []writev2.TimeSeries{tc.ts},
+				})
+				defer resp.Body.Close()
+
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+				assert.Contains(t, string(body), tc.wantErrStr)
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				assert.Empty(t, sink.AllMetrics())
+				assert.Equal(t, 0, prwReceiver.rmCache.Len())
+			})
+		}
+	})
+
+	t.Run("valid native histogram with invalid UTF-8 exemplars forwards histogram and valid exemplars", func(t *testing.T) {
+		for _, tc := range []struct {
+			name            string
+			exemplars       []writev2.Exemplar
+			wantExemplars   int
+			wantExemplarVal float64
+		}{
+			{
+				name: "mixed valid and invalid exemplars",
+				exemplars: []writev2.Exemplar{
+					{LabelsRefs: []uint32{9, 10}, Value: 1, Timestamp: 1},
+					{LabelsRefs: []uint32{7, 8}, Value: 2, Timestamp: 2},
+				},
+				wantExemplars:   1,
+				wantExemplarVal: 2.0,
+			},
+			{
+				name: "all invalid exemplars",
+				exemplars: []writev2.Exemplar{
+					{LabelsRefs: []uint32{9, 10}, Value: 1, Timestamp: 1},
+				},
+				wantExemplars: 0,
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "test_hist", // 1, 2
+						"job", "test_job", // 3, 4
+						"instance", "host1", // 5, 6
+						"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7, 8
+						"bad_val", "\xff\xfe", // 9, 10
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+							Histograms: exemplarHistogram([]int64{1, 1}),
+							Exemplars:  tc.exemplars,
+						},
+					},
+				})
+				defer resp.Body.Close()
+
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+				assert.Contains(t, string(body), `invalid UTF-8 in value for label "bad_val"`)
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+				assert.Equal(t, fmt.Sprintf("%d", tc.wantExemplars), resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				require.Len(t, sink.AllMetrics(), 1)
+				dp := sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0)
+				require.Equal(t, tc.wantExemplars, dp.Exemplars().Len())
+				if tc.wantExemplars > 0 {
+					assert.Equal(t, tc.wantExemplarVal, dp.Exemplars().At(0).DoubleValue())
+				}
+			})
+		}
+	})
+}
+
+func TestMetadataOnlyTimeSeriesRejected(t *testing.T) {
+	t.Run("all metric types and target_info without data points return 400", func(t *testing.T) {
+		types := []struct {
+			name       string
+			metricName string
+			metricType writev2.Metadata_MetricType
+		}{
+			{name: "unspecified", metricName: "orphan_unspecified", metricType: writev2.Metadata_METRIC_TYPE_UNSPECIFIED},
+			{name: "counter", metricName: "orphan_counter", metricType: writev2.Metadata_METRIC_TYPE_COUNTER},
+			{name: "gauge", metricName: "orphan_gauge", metricType: writev2.Metadata_METRIC_TYPE_GAUGE},
+			{name: "histogram", metricName: "orphan_histogram", metricType: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+			{name: "gaugehistogram", metricName: "orphan_gaugehist", metricType: writev2.Metadata_METRIC_TYPE_GAUGEHISTOGRAM},
+			{name: "summary", metricName: "orphan_summary", metricType: writev2.Metadata_METRIC_TYPE_SUMMARY},
+			{name: "info", metricName: "orphan_info", metricType: writev2.Metadata_METRIC_TYPE_INFO},
+			{name: "stateset", metricName: "orphan_stateset", metricType: writev2.Metadata_METRIC_TYPE_STATESET},
+			{name: "target_info", metricName: "target_info", metricType: writev2.Metadata_METRIC_TYPE_GAUGE},
+		}
+		for _, tc := range types {
+			t.Run(tc.name, func(t *testing.T) {
+				tel := componenttest.NewTelemetry()
+				defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+
+				sink := &consumertest.MetricsSink{}
+				prw, err := NewFactory().CreateMetrics(t.Context(), metadatatest.NewSettings(tel), createDefaultConfig(), sink)
+				require.NoError(t, err)
+				writeReceiver := prw.(*prometheusRemoteWriteReceiver)
+				obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+					ReceiverID:             component.MustNewID("test"),
+					ReceiverCreateSettings: metadatatest.NewSettings(tel),
+					Transport:              "http",
+				})
+				require.NoError(t, err)
+				writeReceiver.obsrecv = obsrecv
+				defer writeReceiver.rmCache.Purge()
+
+				resp := sendPRW(t, writeReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", tc.metricName,
+						"job", "test_job",
+						"instance", "host1",
+						"Orphan help text", "seconds",
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata: writev2.Metadata{
+								Type:    tc.metricType,
+								HelpRef: 7,
+								UnitRef: 8,
+							},
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						},
+					},
+				})
+				defer resp.Body.Close()
+
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+				assert.Contains(t, string(body), fmt.Sprintf("timeseries for metric %q must contain at least one sample, histogram, or exemplar", tc.metricName))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				assert.Empty(t, sink.AllMetrics())
+				assert.Equal(t, 0, writeReceiver.rmCache.Len())
+
+				var rm metricdata.ResourceMetrics
+				require.NoError(t, tel.Reader.Collect(t.Context(), &rm))
+				assert.Empty(t, rm.ScopeMetrics)
+			})
+		}
+	})
+
+	t.Run("metadata-only target_info does not enrich valid sibling or rmCache", func(t *testing.T) {
+		for _, tc := range []struct {
+			name            string
+			targetInfoFirst bool
+		}{
+			{name: "target_info before valid", targetInfoFirst: true},
+			{name: "target_info after valid", targetInfoFirst: false},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				targetInfo := writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 2, 4, 5, 6, 7, 8, 9},
+				}
+				valid := writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 3, 4, 5, 6, 7},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				}
+				series := []writev2.TimeSeries{valid, targetInfo}
+				if tc.targetInfoFirst {
+					series = []writev2.TimeSeries{targetInfo, valid}
+				}
+
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "target_info", "normal_metric", // 1, 2, 3
+						"job", "test_job", // 4, 5
+						"instance", "host1", // 6, 7
+						"region", "should_not_appear", // 8, 9
+					},
+					Timeseries: series,
+				})
+				defer resp.Body.Close()
+
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+				assert.Contains(t, string(body), `timeseries for metric "target_info" must contain at least one sample, histogram, or exemplar`)
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				require.Len(t, sink.AllMetrics(), 1)
+				resAttrs := sink.AllMetrics()[0].ResourceMetrics().At(0).Resource().Attributes()
+				_, hasRegion := resAttrs.Get("region")
+				assert.False(t, hasRegion)
+
+				// Verify rmCache did not store the rejected target_info attributes.
+				require.Equal(t, 1, prwReceiver.rmCache.Len())
+				for _, cached := range prwReceiver.rmCache.Values() {
+					_, cachedHasRegion := cached.Resource().Attributes().Get("region")
+					assert.False(t, cachedHasRegion)
+				}
+
+				// Follow-up plain request confirms subsequent requests remain unpolluted.
+				followUp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "normal_metric",
+						"job", "test_job",
+						"instance", "host1",
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+							Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+						},
+					},
+				})
+				defer followUp.Body.Close()
+
+				assert.Equal(t, http.StatusNoContent, followUp.StatusCode)
+				require.Len(t, sink.AllMetrics(), 2)
+				_, hasRegion = sink.AllMetrics()[1].ResourceMetrics().At(0).Resource().Attributes().Get("region")
+				assert.False(t, hasRegion)
+			})
+		}
+	})
+
+	t.Run("metadata-only series does not overwrite valid sibling metric description", func(t *testing.T) {
+		for _, tc := range []struct {
+			name          string
+			metadataFirst bool
+		}{
+			{name: "metadata-only before valid", metadataFirst: true},
+			{name: "metadata-only after valid", metadataFirst: false},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				metaOnly := writev2.TimeSeries{
+					Metadata: writev2.Metadata{
+						Type:    writev2.Metadata_METRIC_TYPE_COUNTER,
+						HelpRef: 4,
+					},
+					LabelsRefs: []uint32{1, 2},
+				}
+				valid := writev2.TimeSeries{
+					Metadata: writev2.Metadata{
+						Type:    writev2.Metadata_METRIC_TYPE_COUNTER,
+						HelpRef: 3,
+					},
+					LabelsRefs: []uint32{1, 2},
+					Samples:    []writev2.Sample{{Value: 5, Timestamp: 1}},
+				}
+				series := []writev2.TimeSeries{valid, metaOnly}
+				if tc.metadataFirst {
+					series = []writev2.TimeSeries{metaOnly, valid}
+				}
+
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "test_counter",
+						"short",
+						"much longer rejected metadata-only description",
+					},
+					Timeseries: series,
+				})
+				defer resp.Body.Close()
+
+				assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				require.Len(t, sink.AllMetrics(), 1)
+				m := sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+				assert.Equal(t, "short", m.Description())
+			})
+		}
+	})
+
+	t.Run("empty request with zero timeseries still returns 204", func(t *testing.T) {
+		sink := &consumertest.MetricsSink{}
+		prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+		resp := sendPRW(t, prwReceiver, &writev2.Request{
+			Symbols: []string{""},
+		})
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+		assert.Empty(t, sink.AllMetrics())
+	})
+}
+
+func TestSamplelessExemplarOnlySeriesSkipped(t *testing.T) {
+	t.Run("valid exemplar-only counter alongside sibling emits no empty metric or extra resource", func(t *testing.T) {
+		for _, tc := range []struct {
+			name        string
+			counterRefs []uint32
+		}{
+			{
+				name:        "different resource",
+				counterRefs: []uint32{1, 3, 4, 6, 7, 9},
+			},
+			{
+				name:        "same resource different metric",
+				counterRefs: []uint32{1, 3, 4, 5, 7, 8},
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "test_gauge", "orphan_counter", // 1, 2, 3
+						"job", "test_job", "other_job", // 4, 5, 6
+						"instance", "host1", "other_inst", // 7, 8, 9
+						"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 10, 11
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+							LabelsRefs: []uint32{1, 2, 4, 5, 7, 8},
+							Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+						},
+						{
+							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+							LabelsRefs: tc.counterRefs,
+							Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{10, 11}, Value: 1, Timestamp: 1}},
+						},
+					},
+				})
+				defer resp.Body.Close()
+
+				assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				require.Len(t, sink.AllMetrics(), 1)
+				require.Equal(t, 1, sink.AllMetrics()[0].ResourceMetrics().Len())
+				require.Equal(t, 1, sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+				assert.Equal(t, "test_gauge", sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
+				assert.Equal(t, 1, prwReceiver.rmCache.Len())
+			})
+		}
+	})
+
+	t.Run("valid exemplar-only counter with same labels attaches exemplar and preserves sibling description", func(t *testing.T) {
+		for _, exemplarFirst := range []bool{true, false} {
+			order := "exemplar-only after sample"
+			if exemplarFirst {
+				order = "exemplar-only before sample"
+			}
+			t.Run(order, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				sampleSeries := writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER, HelpRef: 7},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 5, Timestamp: 1}},
+				}
+				exemplarSeries := writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER, HelpRef: 8},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{9, 10}, Value: 5, Timestamp: 1}},
+				}
+				series := []writev2.TimeSeries{sampleSeries, exemplarSeries}
+				if exemplarFirst {
+					series = []writev2.TimeSeries{exemplarSeries, sampleSeries}
+				}
+
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "test_counter", // 1, 2
+						"job", "test_job", // 3, 4
+						"instance", "host1", // 5, 6
+						"short",                                        // 7
+						"much longer exemplar-only help text",          // 8
+						"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 9, 10
+					},
+					Timeseries: series,
+				})
+				defer resp.Body.Close()
+
+				assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				require.Len(t, sink.AllMetrics(), 1)
+				m := sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+				assert.Equal(t, "short", m.Description())
+				require.Equal(t, 1, m.Sum().DataPoints().Len())
+				assert.Equal(t, 1, m.Sum().DataPoints().At(0).Exemplars().Len())
+			})
+		}
+	})
+
+	t.Run("valid exemplar-only histogram alongside sibling emits no extra resource and counts exemplar", func(t *testing.T) {
+		sink := &consumertest.MetricsSink{}
+		prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+		resp := sendPRW(t, prwReceiver, &writev2.Request{
+			Symbols: []string{
+				"",
+				"__name__", "test_gauge", "orphan_histogram", // 1, 2, 3
+				"job", "test_job", "other_job", // 4, 5, 6
+				"instance", "host1", "other_inst", // 7, 8, 9
+				"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 10, 11
+			},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 2, 4, 5, 7, 8},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				},
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+					LabelsRefs: []uint32{1, 3, 4, 6, 7, 9},
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{10, 11}, Value: 1, Timestamp: 1}},
+				},
+			},
+		})
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+		assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+		assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+		require.Len(t, sink.AllMetrics(), 1)
+		require.Equal(t, 1, sink.AllMetrics()[0].ResourceMetrics().Len())
+		assert.Equal(t, 1, prwReceiver.rmCache.Len())
+	})
+
+	t.Run("separate exemplar-only histogram with same-labels dropped native histogram suppresses exemplars", func(t *testing.T) {
+		for _, exemplarFirst := range []bool{true, false} {
+			order := "exemplar-only after dropped histogram"
+			if exemplarFirst {
+				order = "exemplar-only before dropped histogram"
+			}
+			t.Run(order, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				droppedHist := writev2.Histogram{
+					Schema:         0,
+					Count:          &writev2.Histogram_CountInt{CountInt: 1},
+					Sum:            1,
+					Timestamp:      1,
+					ResetHint:      writev2.Histogram_RESET_HINT_GAUGE,
+					PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 1}},
+					PositiveDeltas: []int64{1},
+				}
+				histSeries := writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Histograms: []writev2.Histogram{droppedHist},
+				}
+				exemplarSeries := writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{7, 8}, Value: 1, Timestamp: 1}},
+				}
+				series := []writev2.TimeSeries{histSeries, exemplarSeries}
+				if exemplarFirst {
+					series = []writev2.TimeSeries{exemplarSeries, histSeries}
+				}
+
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "dropped_hist", // 1, 2
+						"job", "test_job", // 3, 4
+						"instance", "host1", // 5, 6
+						"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 7, 8
+					},
+					Timeseries: series,
+				})
+				defer resp.Body.Close()
+
+				assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				assert.Empty(t, sink.AllMetrics())
+				assert.Equal(t, 0, prwReceiver.rmCache.Len())
+			})
+		}
+	})
+
+	t.Run("valid exemplar-only summary counts exemplar without incrementing dropped_series", func(t *testing.T) {
+		tel := componenttest.NewTelemetry()
+		defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+
+		sink := &consumertest.MetricsSink{}
+		prw, err := NewFactory().CreateMetrics(t.Context(), metadatatest.NewSettings(tel), createDefaultConfig(), sink)
+		require.NoError(t, err)
+		writeReceiver := prw.(*prometheusRemoteWriteReceiver)
+		obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+			ReceiverID:             component.MustNewID("test"),
+			ReceiverCreateSettings: metadatatest.NewSettings(tel),
+			Transport:              "http",
+		})
+		require.NoError(t, err)
+		writeReceiver.obsrecv = obsrecv
+		defer writeReceiver.rmCache.Purge()
+
+		resp := sendPRW(t, writeReceiver, &writev2.Request{
+			Symbols: []string{
+				"",
+				"__name__", "test_summary",
+				"job", "test_job",
+				"instance", "host1",
+				"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736",
+			},
+			Timeseries: []writev2.TimeSeries{
+				{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_SUMMARY},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{7, 8}, Value: 1, Timestamp: 1}},
+				},
+			},
+		})
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+		assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+		assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+		assert.Empty(t, sink.AllMetrics())
+		assert.Equal(t, 0, writeReceiver.rmCache.Len())
+
+		var rm metricdata.ResourceMetrics
+		require.NoError(t, tel.Reader.Collect(t.Context(), &rm))
+		assert.Empty(t, rm.ScopeMetrics)
+	})
+
+	t.Run("valid exemplar-only target_info does not enrich sibling or rmCache", func(t *testing.T) {
+		for _, targetInfoFirst := range []bool{true, false} {
+			order := "target_info after valid"
+			if targetInfoFirst {
+				order = "target_info before valid"
+			}
+			t.Run(order, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				targetInfo := writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 2, 4, 5, 6, 7, 8, 9},
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{10, 11}, Value: 1, Timestamp: 1}},
+				}
+				valid := writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+					LabelsRefs: []uint32{1, 3, 4, 5, 6, 7},
+					Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+				}
+				series := []writev2.TimeSeries{valid, targetInfo}
+				if targetInfoFirst {
+					series = []writev2.TimeSeries{targetInfo, valid}
+				}
+
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "target_info", "normal_metric", // 1, 2, 3
+						"job", "test_job", // 4, 5
+						"instance", "host1", // 6, 7
+						"region", "should_not_appear", // 8, 9
+						"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736", // 10, 11
+					},
+					Timeseries: series,
+				})
+				defer resp.Body.Close()
+
+				assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				require.Len(t, sink.AllMetrics(), 1)
+				_, hasRegion := sink.AllMetrics()[0].ResourceMetrics().At(0).Resource().Attributes().Get("region")
+				assert.False(t, hasRegion)
+
+				require.Equal(t, 1, prwReceiver.rmCache.Len())
+				for _, cached := range prwReceiver.rmCache.Values() {
+					_, cachedHasRegion := cached.Resource().Attributes().Get("region")
+					assert.False(t, cachedHasRegion)
+				}
+
+				followUp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "normal_metric",
+						"job", "test_job",
+						"instance", "host1",
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+							Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+						},
+					},
+				})
+				defer followUp.Body.Close()
+
+				assert.Equal(t, http.StatusNoContent, followUp.StatusCode)
+				require.Len(t, sink.AllMetrics(), 2)
+				_, hasRegion = sink.AllMetrics()[1].ResourceMetrics().At(0).Resource().Attributes().Get("region")
+				assert.False(t, hasRegion)
+			})
+		}
+	})
+
+	t.Run("exemplar-only unsupported metric type still returns 400", func(t *testing.T) {
+		for _, metricType := range []writev2.Metadata_MetricType{
+			writev2.Metadata_METRIC_TYPE_GAUGEHISTOGRAM,
+			writev2.Metadata_MetricType(99),
+		} {
+			t.Run(metricType.String(), func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "test_unsupported",
+						"job", "test_job",
+						"instance", "host1",
+						"trace_id", "4bf92f3577b34da6a3ce929d0e0e4736",
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   writev2.Metadata{Type: metricType},
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+							Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{7, 8}, Value: 1, Timestamp: 1}},
+						},
+					},
+				})
+				defer resp.Body.Close()
+
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+				assert.Contains(t, string(body), "unsupported metric type")
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				assert.Empty(t, sink.AllMetrics())
+				assert.Equal(t, 0, prwReceiver.rmCache.Len())
+			})
+		}
+	})
+
+	t.Run("same-identity counter with rejected exemplar preserves description and emits no empty metric", func(t *testing.T) {
+		for _, exemplarFirst := range []bool{true, false} {
+			order := "rejected exemplar after sample"
+			if exemplarFirst {
+				order = "rejected exemplar before sample"
+			}
+			t.Run(order, func(t *testing.T) {
+				sink := &consumertest.MetricsSink{}
+				prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+				sampleSeries := writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER, HelpRef: 7},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Samples:    []writev2.Sample{{Value: 5, Timestamp: 1}},
+				}
+				exemplarSeries := writev2.TimeSeries{
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER, HelpRef: 8},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+					Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{99, 100}, Value: 5, Timestamp: 1}},
+				}
+				series := []writev2.TimeSeries{sampleSeries, exemplarSeries}
+				if exemplarFirst {
+					series = []writev2.TimeSeries{exemplarSeries, sampleSeries}
+				}
+
+				resp := sendPRW(t, prwReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "test_counter", // 1, 2
+						"job", "test_job", // 3, 4
+						"instance", "host1", // 5, 6
+						"short", // 7
+						"much longer rejected exemplar-only help text", // 8
+					},
+					Timeseries: series,
+				})
+				defer resp.Body.Close()
+
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+				assert.Contains(t, string(body), `error converting exemplar label refs for metric "test_counter"`)
+				assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				require.Len(t, sink.AllMetrics(), 1)
+				require.Equal(t, 1, sink.AllMetrics()[0].ResourceMetrics().Len())
+				require.Equal(t, 1, sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+				m := sink.AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+				assert.Equal(t, "short", m.Description())
+				require.Equal(t, 1, m.Sum().DataPoints().Len())
+				assert.Equal(t, 0, m.Sum().DataPoints().At(0).Exemplars().Len())
+				assert.Equal(t, 1, prwReceiver.rmCache.Len())
+			})
+		}
+	})
+
+	t.Run("standalone exemplar-only counter and summary with rejected exemplar leave rmCache and dropped_series empty", func(t *testing.T) {
+		for _, metricType := range []writev2.Metadata_MetricType{
+			writev2.Metadata_METRIC_TYPE_COUNTER,
+			writev2.Metadata_METRIC_TYPE_SUMMARY,
+		} {
+			t.Run(metricType.String(), func(t *testing.T) {
+				tel := componenttest.NewTelemetry()
+				defer func() { require.NoError(t, tel.Shutdown(t.Context())) }()
+
+				sink := &consumertest.MetricsSink{}
+				prw, err := NewFactory().CreateMetrics(t.Context(), metadatatest.NewSettings(tel), createDefaultConfig(), sink)
+				require.NoError(t, err)
+				writeReceiver := prw.(*prometheusRemoteWriteReceiver)
+				obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+					ReceiverID:             component.MustNewID("test"),
+					ReceiverCreateSettings: metadatatest.NewSettings(tel),
+					Transport:              "http",
+				})
+				require.NoError(t, err)
+				writeReceiver.obsrecv = obsrecv
+				defer writeReceiver.rmCache.Purge()
+
+				resp := sendPRW(t, writeReceiver, &writev2.Request{
+					Symbols: []string{
+						"",
+						"__name__", "test_metric",
+						"job", "other_job",
+						"instance", "other_inst",
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   writev2.Metadata{Type: metricType},
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+							Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{99, 100}, Value: 1, Timestamp: 1}},
+						},
+					},
+				})
+				defer resp.Body.Close()
+
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+				assert.Contains(t, string(body), `error converting exemplar label refs for metric "test_metric"`)
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+				assert.Empty(t, sink.AllMetrics())
+				assert.Equal(t, 0, writeReceiver.rmCache.Len())
+
+				var rm metricdata.ResourceMetrics
+				require.NoError(t, tel.Reader.Collect(t.Context(), &rm))
+				assert.Empty(t, rm.ScopeMetrics)
+			})
+		}
+	})
+
+	t.Run("exemplar-only target_info with rejected exemplar does not mutate rmCache or enrich sibling or follow-up requests", func(t *testing.T) {
+		t.Run("standalone", func(t *testing.T) {
+			sink := &consumertest.MetricsSink{}
+			prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+			resp := sendPRW(t, prwReceiver, &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "target_info", // 1, 2
+					"job", "test_job", // 3, 4
+					"instance", "host1", // 5, 6
+					"region", "poison", // 7, 8
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+						Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{99, 100}, Value: 1, Timestamp: 1}},
+					},
+				},
+			})
+			defer resp.Body.Close()
+
+			body, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+			assert.Contains(t, string(body), `error converting exemplar label refs for metric "target_info"`)
+			assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+			assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+			assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+			assert.Equal(t, 0, prwReceiver.rmCache.Len())
+			assert.Empty(t, sink.AllMetrics())
+		})
+
+		t.Run("with sibling and follow-up", func(t *testing.T) {
+			sink := &consumertest.MetricsSink{}
+			prwReceiver := setupMetricsReceiverWithConsumer(t, sink)
+			resp := sendPRW(t, prwReceiver, &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "target_info", "normal_metric", // 1, 2, 3
+					"job", "test_job", // 4, 5
+					"instance", "host1", // 6, 7
+					"region", "poison", // 8, 9
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 4, 5, 6, 7, 8, 9},
+						Exemplars:  []writev2.Exemplar{{LabelsRefs: []uint32{99, 100}, Value: 1, Timestamp: 1}},
+					},
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 3, 4, 5, 6, 7},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			})
+			defer resp.Body.Close()
+
+			body, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+			assert.Contains(t, string(body), `error converting exemplar label refs for metric "target_info"`)
+			assert.Equal(t, "1", resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+			assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+			require.Len(t, sink.AllMetrics(), 1)
+			_, hasRegion := sink.AllMetrics()[0].ResourceMetrics().At(0).Resource().Attributes().Get("region")
+			assert.False(t, hasRegion)
+
+			// Follow-up plain request confirms rmCache was not polluted with "region".
+			followUp := sendPRW(t, prwReceiver, &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "normal_metric",
+					"job", "test_job",
+					"instance", "host1",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+					},
+				},
+			})
+			defer followUp.Body.Close()
+
+			assert.Equal(t, http.StatusNoContent, followUp.StatusCode)
+			require.Len(t, sink.AllMetrics(), 2)
+			_, hasRegion = sink.AllMetrics()[1].ResourceMetrics().At(0).Resource().Attributes().Get("region")
+			assert.False(t, hasRegion)
+		})
+	})
+}
+
+func startTestHTTPServer(t *testing.T, modifyCfg func(*Config)) *httptest.Server {
+	t.Helper()
+
+	cfg := createDefaultConfig().(*Config)
+	if modifyCfg != nil {
+		modifyCfg(cfg)
+	}
+
+	factory := NewFactory()
+	prwReceiver, err := factory.CreateMetrics(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             component.MustNewID("test"),
+		Transport:              "http",
+		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
+	})
+	require.NoError(t, err)
+	writeReceiver.obsrecv = obsrecv
+
+	t.Cleanup(func() {
+		writeReceiver.rmCache.Purge()
+		writeReceiver.telemetryBuilder.Shutdown()
+	})
+
+	srv, err := writeReceiver.buildHTTPServer(t.Context(), nil)
+	require.NoError(t, err)
+
+	ts := httptest.NewServer(srv.Handler)
+	t.Cleanup(ts.Close)
+	return ts
+}
+
+func marshalWriteV2Sample(t *testing.T) []byte {
+	t.Helper()
+	pBuf := proto.NewBuffer(nil)
+	require.NoError(t, pBuf.Marshal(writeV2RequestFixture))
+	return pBuf.Bytes()
+}
+
+func compressGzipBytes(t *testing.T, data []byte) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	gw := gzip.NewWriter(&buf)
+	_, err := gw.Write(data)
+	require.NoError(t, err)
+	require.NoError(t, gw.Close())
+	return buf.Bytes()
+}
+
+func compressZlibBytes(t *testing.T, data []byte) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	zw := zlib.NewWriter(&buf)
+	_, err := zw.Write(data)
+	require.NoError(t, err)
+	require.NoError(t, zw.Close())
+	return buf.Bytes()
+}
+
+func compressSnappyFramedBytes(t *testing.T, data []byte) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	sw := snappy.NewBufferedWriter(&buf)
+	_, err := sw.Write(data)
+	require.NoError(t, err)
+	require.NoError(t, sw.Close())
+	return buf.Bytes()
+}
+
+func TestHandlePRWDirectRejectsNonPostMethods(t *testing.T) {
+	prwReceiver := setupMetricsReceiver(t)
+	for _, method := range []string{http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodPatch, http.MethodHead, http.MethodOptions} {
+		t.Run(method, func(t *testing.T) {
+			req := httptest.NewRequest(method, writePath, http.NoBody)
+			req.Header.Set("Content-Type", writeV2ContentType)
+			w := httptest.NewRecorder()
+			prwReceiver.handlePRW(w, req)
+
+			resp := w.Result()
+			defer func() { _ = resp.Body.Close() }()
+			assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
+			assert.Equal(t, http.MethodPost, resp.Header.Get("Allow"))
+		})
+	}
+}
+
+func TestHTTPServerMethodAndPathConformance(t *testing.T) {
+	ts := startTestHTTPServer(t, nil)
+	raw := marshalWriteV2Sample(t)
+	snappyBlock := snappy.Encode(nil, raw)
+
+	for _, method := range []string{http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodPatch, http.MethodHead, http.MethodOptions} {
+		t.Run(method+" with valid snappy body", func(t *testing.T) {
+			req, err := http.NewRequestWithContext(t.Context(), method, ts.URL+writePath, bytes.NewReader(snappyBlock))
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", writeV2ContentType)
+			req.Header.Set("Content-Encoding", "snappy")
+
+			resp, err := ts.Client().Do(req)
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
+			assert.Equal(t, http.MethodPost, resp.Header.Get("Allow"))
+		})
+
+		t.Run(method+" without Content-Encoding header", func(t *testing.T) {
+			req, err := http.NewRequestWithContext(t.Context(), method, ts.URL+writePath, http.NoBody)
+			require.NoError(t, err)
+
+			resp, err := ts.Client().Do(req)
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
+			assert.Equal(t, http.MethodPost, resp.Header.Get("Allow"))
+		})
+
+		t.Run(method+" with corrupt snappy body", func(t *testing.T) {
+			req, err := http.NewRequestWithContext(t.Context(), method, ts.URL+writePath, bytes.NewReader([]byte("not snappy")))
+			require.NoError(t, err)
+			req.Header.Set("Content-Encoding", "snappy")
+
+			resp, err := ts.Client().Do(req)
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
+			assert.Equal(t, http.MethodPost, resp.Header.Get("Allow"))
+		})
+	}
+
+	for _, tc := range []struct {
+		name     string
+		method   string
+		path     string
+		encoding string
+		body     []byte
+	}{
+		{name: "GET unknown path without encoding", method: http.MethodGet, path: "/unknown"},
+		{name: "POST unknown path without encoding", method: http.MethodPost, path: "/unknown"},
+		{name: "POST trailing slash without encoding", method: http.MethodPost, path: writePath + "/"},
+		{name: "POST unknown path with valid snappy", method: http.MethodPost, path: "/unknown", encoding: "snappy", body: snappyBlock},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			req, err := http.NewRequestWithContext(t.Context(), tc.method, ts.URL+tc.path, bytes.NewReader(tc.body))
+			require.NoError(t, err)
+			if tc.encoding != "" {
+				req.Header.Set("Content-Encoding", tc.encoding)
+			}
+
+			resp, err := ts.Client().Do(req)
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+		})
+	}
+
+	// Verify non-canonical paths and CONNECT match http.ServeMux identically across both
+	// error-handler (missing/corrupt encoding) and decompressed-request paths.
+	noRedirectClient := ts.Client()
+	noRedirectClient.CheckRedirect = func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+	for _, tc := range []struct {
+		name           string
+		method         string
+		rawPath        string
+		expectedStatus int
+		expectLocation string
+	}{
+		{name: "POST double slash redirects", method: http.MethodPost, rawPath: "/api/v1//write", expectedStatus: http.StatusTemporaryRedirect, expectLocation: writePath},
+		{name: "POST dot segment redirects", method: http.MethodPost, rawPath: "/api/v1/./write", expectedStatus: http.StatusTemporaryRedirect, expectLocation: writePath},
+		{name: "GET double slash redirects", method: http.MethodGet, rawPath: "/api/v1//write", expectedStatus: http.StatusTemporaryRedirect, expectLocation: writePath},
+	} {
+		for _, encCase := range []struct {
+			label    string
+			encoding string
+			body     []byte
+		}{
+			{label: "without encoding"},
+			{label: "with valid snappy", encoding: "snappy", body: snappyBlock},
+		} {
+			t.Run(tc.name+" "+encCase.label, func(t *testing.T) {
+				req, err := http.NewRequestWithContext(t.Context(), tc.method, ts.URL+tc.rawPath, bytes.NewReader(encCase.body))
+				require.NoError(t, err)
+				if encCase.encoding != "" {
+					req.Header.Set("Content-Encoding", encCase.encoding)
+				}
+				resp, err := noRedirectClient.Do(req)
+				require.NoError(t, err)
+				defer func() { _ = resp.Body.Close() }()
+				assert.Equal(t, tc.expectedStatus, resp.StatusCode)
+				assert.Equal(t, tc.expectLocation, resp.Header.Get("Location"))
+			})
+		}
+	}
+
+	t.Run("percent-encoded slashes match ServeMux 404 identically on all paths", func(t *testing.T) {
+		for _, rawPath := range []string{"/api/v1%2Fwrite", "/api/v1%2fwrite", "/api%2Fv1/write"} {
+			for _, tc := range []struct {
+				label    string
+				encoding string
+				body     []byte
+			}{
+				{label: "without encoding", body: raw},
+				{label: "with corrupt snappy", encoding: "snappy", body: []byte("not snappy")},
+				{label: "with valid snappy", encoding: "snappy", body: snappyBlock},
+			} {
+				t.Run(rawPath+" "+tc.label, func(t *testing.T) {
+					req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+rawPath, bytes.NewReader(tc.body))
+					require.NoError(t, err)
+					req.Header.Set("Content-Type", writeV2ContentType)
+					if tc.encoding != "" {
+						req.Header.Set("Content-Encoding", tc.encoding)
+					}
+					resp, err := noRedirectClient.Do(req)
+					require.NoError(t, err)
+					defer func() { _ = resp.Body.Close() }()
+					assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+					assert.Empty(t, resp.Header.Get("Accept-Encoding"))
+				})
+			}
+		}
+	})
+
+	t.Run("percent-encoded non-slash segments still enforce Content-Encoding", func(t *testing.T) {
+		for _, rawPath := range []string{"/%61pi/v1/write", "/api/v1/%77rite"} {
+			t.Run(rawPath+" without encoding rejected with 415", func(t *testing.T) {
+				req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+rawPath, bytes.NewReader(raw))
+				require.NoError(t, err)
+				req.Header.Set("Content-Type", writeV2ContentType)
+				resp, err := noRedirectClient.Do(req)
+				require.NoError(t, err)
+				defer func() { _ = resp.Body.Close() }()
+				assert.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode)
+				assert.Equal(t, "snappy", resp.Header.Get("Accept-Encoding"))
+			})
+			t.Run(rawPath+" with valid snappy accepted with 204", func(t *testing.T) {
+				req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+rawPath, bytes.NewReader(snappyBlock))
+				require.NoError(t, err)
+				req.Header.Set("Content-Type", writeV2ContentType)
+				req.Header.Set("Content-Encoding", "snappy")
+				resp, err := noRedirectClient.Do(req)
+				require.NoError(t, err)
+				defer func() { _ = resp.Body.Close() }()
+				assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+			})
+		}
+	})
+
+	t.Run("asterisk request-target delegates to ServeMux 400", func(t *testing.T) {
+		prw := setupMetricsReceiver(t)
+		srv, err := prw.buildHTTPServer(t.Context(), nil)
+		require.NoError(t, err)
+		for _, method := range []string{http.MethodOptions, http.MethodPost} {
+			req := httptest.NewRequest(method, "http://example.com/", http.NoBody)
+			req.RequestURI = "*"
+			w := httptest.NewRecorder()
+			srv.Handler.ServeHTTP(w, req)
+			resp := w.Result()
+			defer func() { _ = resp.Body.Close() }()
+			assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+			assert.Equal(t, "close", resp.Header.Get("Connection"))
+			assert.Empty(t, resp.Header.Get("Accept-Encoding"))
+		}
+	})
+
+	t.Run("CONNECT matches ServeMux identically on both paths", func(t *testing.T) {
+		prw := setupMetricsReceiver(t)
+		srv, err := prw.buildHTTPServer(t.Context(), nil)
+		require.NoError(t, err)
+		for _, tc := range []struct {
+			name     string
+			path     string
+			encoding string
+			body     []byte
+			wantCode int
+			wantHdr  string
+		}{
+			{name: "clean path without encoding", path: writePath, wantCode: http.StatusMethodNotAllowed, wantHdr: http.MethodPost},
+			{name: "clean path with valid snappy", path: writePath, encoding: "snappy", body: snappyBlock, wantCode: http.StatusMethodNotAllowed, wantHdr: http.MethodPost},
+			{name: "unclean path without encoding", path: "/api/v1//write", wantCode: http.StatusNotFound},
+			{name: "unclean path with valid snappy", path: "/api/v1//write", encoding: "snappy", body: snappyBlock, wantCode: http.StatusNotFound},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				req := httptest.NewRequest(http.MethodConnect, tc.path, bytes.NewReader(tc.body))
+				if tc.encoding != "" {
+					req.Header.Set("Content-Encoding", tc.encoding)
+				}
+				w := httptest.NewRecorder()
+				srv.Handler.ServeHTTP(w, req)
+				resp := w.Result()
+				defer func() { _ = resp.Body.Close() }()
+				assert.Equal(t, tc.wantCode, resp.StatusCode)
+				assert.Equal(t, tc.wantHdr, resp.Header.Get("Allow"))
+			})
+		}
+	})
+}
+
+func TestHTTPServerContentEncodingAndSnappyFormat(t *testing.T) {
+	ts := startTestHTTPServer(t, nil)
+	raw := marshalWriteV2Sample(t)
+	snappyBlock := snappy.Encode(nil, raw)
+	emptySnappyBlock := snappy.Encode(nil, nil)
+	corruptSnappy := append([]byte(nil), snappyBlock...)
+	corruptSnappy[0] = '0'
+	invalidProtoSnappy := snappy.Encode(nil, []byte("invalid protobuf wire payload \xff\xff\xff"))
+
+	tests := []struct {
+		name               string
+		contentType        string
+		contentEncoding    string
+		body               []byte
+		expectedStatus     int
+		expectedAcceptEnc  string
+		expectedAccept     string
+		expectWrittenHdrs  bool
+		expectSamples      string
+		expectBodyContains string
+	}{
+		{
+			name:              "valid snappy block payload",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "snappy",
+			body:              snappyBlock,
+			expectedStatus:    http.StatusNoContent,
+			expectWrittenHdrs: true,
+			expectSamples:     "3",
+		},
+		{
+			name:              "valid empty snappy block payload",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "snappy",
+			body:              emptySnappyBlock,
+			expectedStatus:    http.StatusNoContent,
+			expectWrittenHdrs: true,
+			expectSamples:     "0",
+		},
+		{
+			name:               "missing Content-Encoding rejected with 415",
+			contentType:        writeV2ContentType,
+			contentEncoding:    "",
+			body:               raw,
+			expectedStatus:     http.StatusUnsupportedMediaType,
+			expectedAcceptEnc:  "snappy",
+			expectBodyContains: "Content-Encoding header is required",
+		},
+		{
+			name:              "identity encoding with matching payload rejected with 415",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "identity",
+			body:              raw,
+			expectedStatus:    http.StatusUnsupportedMediaType,
+			expectedAcceptEnc: "snappy",
+		},
+		{
+			name:              "identity encoding with corrupt payload rejected with 415",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "identity",
+			body:              corruptSnappy,
+			expectedStatus:    http.StatusUnsupportedMediaType,
+			expectedAcceptEnc: "snappy",
+		},
+		{
+			name:              "gzip encoding with matching payload rejected with 415",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "gzip",
+			body:              compressGzipBytes(t, raw),
+			expectedStatus:    http.StatusUnsupportedMediaType,
+			expectedAcceptEnc: "snappy",
+		},
+		{
+			name:              "gzip encoding with corrupt payload rejected with 415",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "gzip",
+			body:              corruptSnappy,
+			expectedStatus:    http.StatusUnsupportedMediaType,
+			expectedAcceptEnc: "snappy",
+		},
+		{
+			name:              "deflate encoding with matching payload rejected with 415",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "deflate",
+			body:              compressZlibBytes(t, raw),
+			expectedStatus:    http.StatusUnsupportedMediaType,
+			expectedAcceptEnc: "snappy",
+		},
+		{
+			name:              "zstd encoding rejected with 415",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "zstd",
+			body:              corruptSnappy,
+			expectedStatus:    http.StatusUnsupportedMediaType,
+			expectedAcceptEnc: "snappy",
+		},
+		{
+			name:              "x-snappy-framed encoding rejected with 415",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "x-snappy-framed",
+			body:              compressSnappyFramedBytes(t, raw),
+			expectedStatus:    http.StatusUnsupportedMediaType,
+			expectedAcceptEnc: "snappy",
+		},
+		{
+			name:              "multiple encodings in single header rejected with 415",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "snappy, gzip",
+			body:              snappyBlock,
+			expectedStatus:    http.StatusUnsupportedMediaType,
+			expectedAcceptEnc: "snappy",
+		},
+		{
+			name:               "snappy framed stream with Content-Encoding snappy rejected with 400",
+			contentType:        writeV2ContentType,
+			contentEncoding:    "snappy",
+			body:               compressSnappyFramedBytes(t, raw),
+			expectedStatus:     http.StatusBadRequest,
+			expectBodyContains: "framed format",
+		},
+		{
+			name:            "uncompressed protobuf with Content-Encoding snappy rejected with 400",
+			contentType:     writeV2ContentType,
+			contentEncoding: "snappy",
+			body:            raw,
+			expectedStatus:  http.StatusBadRequest,
+		},
+		{
+			name:            "corrupt snappy body rejected with 400",
+			contentType:     writeV2ContentType,
+			contentEncoding: "snappy",
+			body:            corruptSnappy,
+			expectedStatus:  http.StatusBadRequest,
+		},
+		{
+			name:            "empty 0-byte body with Content-Encoding snappy rejected with 400",
+			contentType:     writeV2ContentType,
+			contentEncoding: "snappy",
+			body:            nil,
+			expectedStatus:  http.StatusBadRequest,
+		},
+		{
+			name:              "snappy block with invalid protobuf rejected with 400 and zero written headers",
+			contentType:       writeV2ContentType,
+			contentEncoding:   "snappy",
+			body:              invalidProtoSnappy,
+			expectedStatus:    http.StatusBadRequest,
+			expectWrittenHdrs: true,
+			expectSamples:     "0",
+		},
+		{
+			name:            "rw1 content-type with corrupt snappy body rejected with 400 (rw1_compat/error_handling)",
+			contentType:     appProtoContentType,
+			contentEncoding: "snappy",
+			body:            corruptSnappy,
+			expectedStatus:  http.StatusBadRequest,
+		},
+		{
+			name:            "rw1 content-type with valid snappy body rejected with 415 and Accept header",
+			contentType:     appProtoContentType,
+			contentEncoding: "snappy",
+			body:            snappyBlock,
+			expectedStatus:  http.StatusUnsupportedMediaType,
+			expectedAccept:  acceptedContentTypes,
+		},
+		{
+			name:            "bad mode with valid snappy body rejected with 415 and Accept header",
+			contentType:     writeV2ContentType + ";mode=unknown",
+			contentEncoding: "snappy",
+			body:            snappyBlock,
+			expectedStatus:  http.StatusUnsupportedMediaType,
+			expectedAccept:  acceptedContentTypes,
+		},
+		{
+			name:              "rfc9110 uppercase quoted content-type with valid snappy body accepted with 204",
+			contentType:       `application/x-protobuf;PROTO="io.prometheus.write.v2.Request";MODE="stateless-st"`,
+			contentEncoding:   "snappy",
+			body:              snappyBlock,
+			expectedStatus:    http.StatusNoContent,
+			expectWrittenHdrs: true,
+			expectSamples:     "3",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(tc.body))
+			require.NoError(t, err)
+			if tc.contentType != "" {
+				req.Header.Set("Content-Type", tc.contentType)
+			}
+			if tc.contentEncoding != "" {
+				req.Header.Set("Content-Encoding", tc.contentEncoding)
+			}
+
+			resp, err := ts.Client().Do(req)
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			respBody, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.expectedStatus, resp.StatusCode, string(respBody))
+			assert.Equal(t, tc.expectedAcceptEnc, resp.Header.Get("Accept-Encoding"))
+			assert.Equal(t, tc.expectedAccept, resp.Header.Get("Accept"))
+			if tc.expectWrittenHdrs {
+				assert.Equal(t, tc.expectSamples, resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+				assert.Equal(t, "0", resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+			} else {
+				assert.Empty(t, resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Empty(t, resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+				assert.Empty(t, resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
+			}
+			if tc.expectBodyContains != "" {
+				assert.Contains(t, string(respBody), tc.expectBodyContains)
+			}
+		})
+	}
+
+	t.Run("multiple Content-Encoding header lines rejected with 415 across all body types", func(t *testing.T) {
+		consumer := new(mockConsumer)
+		prw := setupMetricsReceiver(t)
+		prw.nextConsumer = consumer
+		srv, srvErr := prw.buildHTTPServer(t.Context(), nil)
+		require.NoError(t, srvErr)
+		multiTS := httptest.NewServer(srv.Handler)
+		defer multiTS.Close()
+
+		for _, tc := range []struct {
+			name    string
+			headers []string
+			body    []byte
+		}{
+			{
+				name:    "snappy and gzip with valid snappy body",
+				headers: []string{"snappy", "gzip"},
+				body:    snappyBlock,
+			},
+			{
+				name:    "snappy and gzip with corrupt/gzip body",
+				headers: []string{"snappy", "gzip"},
+				body:    compressGzipBytes(t, snappyBlock),
+			},
+			{
+				name:    "snappy and snappy (double compression)",
+				headers: []string{"snappy", "snappy"},
+				body:    snappyBlock,
+			},
+			{
+				name:    "gzip and deflate",
+				headers: []string{"gzip", "deflate"},
+				body:    corruptSnappy,
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, multiTS.URL+writePath, bytes.NewReader(tc.body))
+				require.NoError(t, err)
+				req.Header.Set("Content-Type", writeV2ContentType)
+				for _, h := range tc.headers {
+					req.Header.Add("Content-Encoding", h)
+				}
+
+				resp, err := multiTS.Client().Do(req)
+				require.NoError(t, err)
+				defer func() { _ = resp.Body.Close() }()
+				respBody, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+
+				assert.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode, string(respBody))
+				assert.Equal(t, "snappy", resp.Header.Get("Accept-Encoding"))
+				assert.Empty(t, resp.Header.Get("Accept"))
+				assert.Empty(t, resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+				assert.Contains(t, string(respBody), "unsupported Content-Encoding:")
+				assert.NotContains(t, string(respBody), "snappy: corrupt input")
+			})
+		}
+
+		assert.Empty(t, consumer.metrics, "rejected requests must not forward metrics to consumer")
+
+		// Non-POST with multiple Content-Encoding headers must still return 405 with Allow: POST.
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, multiTS.URL+writePath, bytes.NewReader(snappyBlock))
+		require.NoError(t, err)
+		req.Header.Add("Content-Encoding", "snappy")
+		req.Header.Add("Content-Encoding", "gzip")
+		resp, err := multiTS.Client().Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
+		assert.Equal(t, http.MethodPost, resp.Header.Get("Allow"))
+	})
+}
+
+func TestHTTPServerCustomCompressionAlgorithms(t *testing.T) {
+	raw := marshalWriteV2Sample(t)
+	snappyBlock := snappy.Encode(nil, raw)
+	gzipBody := compressGzipBytes(t, raw)
+
+	t.Run("nil CompressionAlgorithms defaults to snappy without mutating config", func(t *testing.T) {
+		var receiverCfg *Config
+		ts := startTestHTTPServer(t, func(cfg *Config) {
+			cfg.ServerConfig = confighttp.NewDefaultServerConfig()
+			cfg.ServerConfig.CompressionAlgorithms = nil
+			receiverCfg = cfg
+		})
+		assert.Nil(t, receiverCfg.ServerConfig.CompressionAlgorithms)
+
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(gzipBody))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", writeV2ContentType)
+		req.Header.Set("Content-Encoding", "gzip")
+		resp, err := ts.Client().Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode)
+		assert.Equal(t, "snappy", resp.Header.Get("Accept-Encoding"))
+	})
+
+	t.Run("explicit snappy and gzip advertises both and still rejects framed snappy", func(t *testing.T) {
+		ts := startTestHTTPServer(t, func(cfg *Config) {
+			cfg.ServerConfig.CompressionAlgorithms = []string{"snappy", "gzip"}
+		})
+
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(gzipBody))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", writeV2ContentType)
+		req.Header.Set("Content-Encoding", "gzip")
+		resp, err := ts.Client().Do(req)
+		require.NoError(t, err)
+		_ = resp.Body.Close()
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+
+		req2, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(raw))
+		require.NoError(t, err)
+		req2.Header.Set("Content-Type", writeV2ContentType)
+		req2.Header.Set("Content-Encoding", "zstd")
+		resp2, err := ts.Client().Do(req2)
+		require.NoError(t, err)
+		_ = resp2.Body.Close()
+		assert.Equal(t, http.StatusUnsupportedMediaType, resp2.StatusCode)
+		assert.Equal(t, "snappy, gzip", resp2.Header.Get("Accept-Encoding"))
+
+		req3, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(compressSnappyFramedBytes(t, raw)))
+		require.NoError(t, err)
+		req3.Header.Set("Content-Type", writeV2ContentType)
+		req3.Header.Set("Content-Encoding", "snappy")
+		resp3, err := ts.Client().Do(req3)
+		require.NoError(t, err)
+		_ = resp3.Body.Close()
+		assert.Equal(t, http.StatusBadRequest, resp3.StatusCode)
+	})
+
+	t.Run("explicit gzip only does not re-enable snappy", func(t *testing.T) {
+		ts := startTestHTTPServer(t, func(cfg *Config) {
+			cfg.ServerConfig.CompressionAlgorithms = []string{"gzip"}
+		})
+
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(snappyBlock))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", writeV2ContentType)
+		req.Header.Set("Content-Encoding", "snappy")
+		resp, err := ts.Client().Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode)
+		assert.Equal(t, "gzip", resp.Header.Get("Accept-Encoding"))
+	})
+
+	t.Run("explicit empty string allows missing and identity encodings", func(t *testing.T) {
+		ts := startTestHTTPServer(t, func(cfg *Config) {
+			cfg.ServerConfig.CompressionAlgorithms = []string{"", "identity", "snappy"}
+		})
+
+		for _, enc := range []string{"", "identity"} {
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(raw))
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", writeV2ContentType)
+			if enc != "" {
+				req.Header.Set("Content-Encoding", enc)
+			}
+			resp, err := ts.Client().Do(req)
+			require.NoError(t, err)
+			_ = resp.Body.Close()
+			assert.Equal(t, http.StatusNoContent, resp.StatusCode, "encoding=%q", enc)
+		}
+
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(gzipBody))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", writeV2ContentType)
+		req.Header.Set("Content-Encoding", "gzip")
+		resp, err := ts.Client().Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode)
+		assert.Equal(t, "identity, snappy", resp.Header.Get("Accept-Encoding"))
+	})
+
+	t.Run("empty non-nil CompressionAlgorithms disables confighttp decompression", func(t *testing.T) {
+		ts := startTestHTTPServer(t, func(cfg *Config) {
+			cfg.ServerConfig.CompressionAlgorithms = []string{}
+		})
+
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(raw))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", writeV2ContentType)
+		req.Header.Add("Content-Encoding", "snappy")
+		req.Header.Add("Content-Encoding", "gzip")
+		resp, err := ts.Client().Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+	})
+
+	t.Run("uppercase CompressionAlgorithms config is normalized without mutating caller config", func(t *testing.T) {
+		orig := []string{"SNAPPY"}
+		ts := startTestHTTPServer(t, func(cfg *Config) {
+			cfg.ServerConfig.CompressionAlgorithms = orig
+		})
+		assert.Equal(t, []string{"SNAPPY"}, orig)
+
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(snappyBlock))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", writeV2ContentType)
+		req.Header.Set("Content-Encoding", "snappy")
+		resp, err := ts.Client().Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+
+		req2, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(gzipBody))
+		require.NoError(t, err)
+		req2.Header.Set("Content-Type", writeV2ContentType)
+		req2.Header.Set("Content-Encoding", "gzip")
+		resp2, err := ts.Client().Do(req2)
+		require.NoError(t, err)
+		defer func() { _ = resp2.Body.Close() }()
+		assert.Equal(t, http.StatusUnsupportedMediaType, resp2.StatusCode)
+		assert.Equal(t, "snappy", resp2.Header.Get("Accept-Encoding"))
+	})
+}
+
+type closeTrackingReadCloser struct {
+	io.Reader
+	bytesRead int
+	closed    bool
+}
+
+func (c *closeTrackingReadCloser) Read(p []byte) (int, error) {
+	n, err := c.Reader.Read(p)
+	c.bytesRead += n
+	return n, err
+}
+
+func (c *closeTrackingReadCloser) Close() error {
+	c.closed = true
+	return nil
+}
+
+func TestSnappyBlockDecoderBoundsAndClosesBody(t *testing.T) {
+	t.Run("rejects oversized decoded size over HTTP before compressed body limit", func(t *testing.T) {
+		const maxBody = 1024
+		payload := make([]byte, binary.MaxVarintLen64+maxBody+1)
+		n := binary.PutUvarint(payload, maxBody+1)
+		payload = payload[:n+maxBody+1]
+
+		ts := startTestHTTPServer(t, func(cfg *Config) {
+			cfg.ServerConfig.MaxRequestBodySize = maxBody
+		})
+
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, ts.URL+writePath, bytes.NewReader(payload))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", writeV2ContentType)
+		req.Header.Set("Content-Encoding", "snappy")
+
+		resp, err := ts.Client().Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		assert.Contains(t, string(body), "decoded size exceeds max request body size")
+	})
+
+	exactBoundary := bytes.Repeat([]byte("a"), 1024)
+	overBoundary := bytes.Repeat([]byte("a"), 1025)
+
+	for _, tc := range []struct {
+		name         string
+		maxBody      int64
+		payload      []byte
+		wantDecoded  []byte
+		wantError    string
+		maxBytesRead int
+	}{
+		{
+			name:        "valid block closes body",
+			maxBody:     1024,
+			payload:     snappy.Encode(nil, []byte("hello world")),
+			wantDecoded: []byte("hello world"),
+		},
+		{
+			name:        "exact maxBody boundary passes",
+			maxBody:     1024,
+			payload:     snappy.Encode(nil, exactBoundary),
+			wantDecoded: exactBoundary,
+		},
+		{
+			name:         "maxBody+1 boundary fails early",
+			maxBody:      1024,
+			payload:      snappy.Encode(nil, overBoundary),
+			wantError:    "snappy: decoded size exceeds max request body size",
+			maxBytesRead: 16,
+		},
+		{
+			name:         "framed stream closes body and stops reading after header",
+			maxBody:      1024,
+			payload:      compressSnappyFramedBytes(t, bytes.Repeat([]byte("hello world "), 512)),
+			wantError:    "snappy: framed format is not supported; use snappy block format",
+			maxBytesRead: 16,
+		},
+		{
+			name:         "oversized block closes body and stops reading after header",
+			maxBody:      1024,
+			payload:      append(snappy.Encode(nil, make([]byte, 8*1024)), make([]byte, 8*1024)...),
+			wantError:    "snappy: decoded size exceeds max request body size",
+			maxBytesRead: 16,
+		},
+		{
+			name:      "empty body closes body and returns corrupt error",
+			maxBody:   1024,
+			payload:   nil,
+			wantError: snappy.ErrCorrupt.Error(),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			rc := &closeTrackingReadCloser{Reader: bytes.NewReader(tc.payload)}
+			decoded, err := newSnappyBlockDecoder(tc.maxBody)(rc)
+			assert.True(t, rc.closed, "original request body must always be closed")
+			if tc.maxBytesRead > 0 {
+				assert.LessOrEqual(t, rc.bytesRead, tc.maxBytesRead, "decoder must stop reading after peeking header")
+			}
+			if tc.wantError != "" {
+				require.EqualError(t, err, tc.wantError)
+				assert.Nil(t, decoded)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, decoded)
+			defer func() { _ = decoded.Close() }()
+			got, err := io.ReadAll(decoded)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantDecoded, got)
+		})
+	}
+}
+
+func TestHTTPErrorHandlerPassesThroughNon400(t *testing.T) {
+	prw := setupMetricsReceiver(t)
+	writeHandler := &writeRouteHandler{fn: prw.handlePRW}
+	mux := http.NewServeMux()
+	mux.Handle("POST "+writePath, writeHandler)
+	allowed, acceptEnc := compressionSettings([]string{"snappy"})
+	eh := prw.makeHTTPErrorHandler(mux, writeHandler, allowed, acceptEnc)
+
+	req := httptest.NewRequest(http.MethodGet, writePath, http.NoBody)
+	w := httptest.NewRecorder()
+	eh(w, req, "unauthorized", http.StatusUnauthorized)
+
+	resp := w.Result()
+	defer func() { _ = resp.Body.Close() }()
+	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	assert.Empty(t, resp.Header.Get("Allow"))
+	assert.Empty(t, resp.Header.Get("Accept-Encoding"))
 }

@@ -154,7 +154,7 @@ func setupLogQueries(cfg *Config) []string {
 // Assumes config has all information necessary to directly connect to the database
 func getDBConnectionString(config *Config) string {
 	if config.DataSource != "" {
-		return config.DataSource
+		return string(config.DataSource)
 	}
 	if !config.DBAuth.IsEmpty() {
 		// The credential provider supplies secrets at connection time. Keep the
@@ -706,7 +706,8 @@ func isWorkerThreadsQueryEnabled(metrics *metadata.MetricsConfig) bool {
 	}
 
 	return metrics.SqlserverWorkerRequestCount.Enabled ||
-		metrics.SqlserverWorkerThreadCount.Enabled
+		metrics.SqlserverWorkerThreadCount.Enabled ||
+		metrics.SqlserverThreadPoolTaskCount.Enabled
 }
 
 func isIndexPhysicalStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
