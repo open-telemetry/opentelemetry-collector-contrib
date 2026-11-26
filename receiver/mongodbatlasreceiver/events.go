@@ -14,6 +14,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -136,13 +137,16 @@ func (er *eventsReceiver) pollEvents(ctx context.Context) error {
 	}
 	et := time.Now()
 
+	var errs []error
 	for _, pc := range er.cfg.Events.Get().Projects {
 		project, err := er.client.GetProject(ctx, pc.Name)
 		if err != nil {
 			er.logger.Error("error retrieving project information for "+pc.Name+":", zap.Error(err))
 			return err
 		}
-		er.pollProject(ctx, project, pc, st, et)
+		if err := er.pollProject(ctx, project, pc, st, et); err != nil {
+			errs = append(errs, err)
+		}
 	}
 
 	for _, pc := range er.cfg.Events.Get().Organizations {
@@ -151,14 +155,23 @@ func (er *eventsReceiver) pollEvents(ctx context.Context) error {
 			er.logger.Error("error retrieving org information for "+pc.ID+":", zap.Error(err))
 			return err
 		}
-		er.pollOrg(ctx, org, pc, st, et)
+		if err := er.pollOrg(ctx, org, pc, st, et); err != nil {
+			errs = append(errs, err)
+		}
 	}
 
+	// Keep the start time when events could not be fetched or delivered, so the next poll requests them again.
+	// Events that the consumer rejected permanently are not requested again.
+	for _, err := range errs {
+		if !consumererror.IsPermanent(err) {
+			return errors.Join(errs...)
+		}
+	}
 	er.record.NextStartTime = &et
-	return er.checkpoint(ctx)
+	return errors.Join(append(errs, er.checkpoint(ctx))...)
 }
 
-func (er *eventsReceiver) pollProject(ctx context.Context, project *mongodbatlas.Project, p *ProjectConfig, startTime, now time.Time) {
+func (er *eventsReceiver) pollProject(ctx context.Context, project *mongodbatlas.Project, p *ProjectConfig, startTime, now time.Time) error {
 	for pageN := 1; pageN <= er.maxPages; pageN++ {
 		opts := &internal.GetEventsOptions{
 			PageNum:    pageN,
@@ -170,7 +183,7 @@ func (er *eventsReceiver) pollProject(ctx context.Context, project *mongodbatlas
 		projectEvents, hasNext, err := er.client.GetProjectEvents(ctx, project.ID, opts)
 		if err != nil {
 			er.logger.Error("unable to get events for project", zap.Error(err), zap.String("project", p.Name))
-			break
+			return err
 		}
 
 		now := pcommon.NewTimestampFromTime(now)
@@ -179,7 +192,7 @@ func (er *eventsReceiver) pollProject(ctx context.Context, project *mongodbatlas
 		if logs.LogRecordCount() > 0 {
 			if err = er.consumer.ConsumeLogs(ctx, logs); err != nil {
 				er.logger.Error("error consuming project events", zap.Error(err))
-				break
+				return err
 			}
 		}
 
@@ -187,9 +200,10 @@ func (er *eventsReceiver) pollProject(ctx context.Context, project *mongodbatlas
 			break
 		}
 	}
+	return nil
 }
 
-func (er *eventsReceiver) pollOrg(ctx context.Context, org *mongodbatlas.Organization, p *OrgConfig, startTime, now time.Time) {
+func (er *eventsReceiver) pollOrg(ctx context.Context, org *mongodbatlas.Organization, p *OrgConfig, startTime, now time.Time) error {
 	for pageN := 1; pageN <= er.maxPages; pageN++ {
 		opts := &internal.GetEventsOptions{
 			PageNum:    pageN,
@@ -201,7 +215,7 @@ func (er *eventsReceiver) pollOrg(ctx context.Context, org *mongodbatlas.Organiz
 		organizationEvents, hasNext, err := er.client.GetOrganizationEvents(ctx, org.ID, opts)
 		if err != nil {
 			er.logger.Error("unable to get events for organization", zap.Error(err), zap.String("organization", p.ID))
-			break
+			return err
 		}
 
 		now := pcommon.NewTimestampFromTime(now)
@@ -210,7 +224,7 @@ func (er *eventsReceiver) pollOrg(ctx context.Context, org *mongodbatlas.Organiz
 		if logs.LogRecordCount() > 0 {
 			if err = er.consumer.ConsumeLogs(ctx, logs); err != nil {
 				er.logger.Error("error consuming organization events", zap.Error(err))
-				break
+				return err
 			}
 		}
 
@@ -218,6 +232,7 @@ func (er *eventsReceiver) pollOrg(ctx context.Context, org *mongodbatlas.Organiz
 			break
 		}
 	}
+	return nil
 }
 
 func (er *eventsReceiver) transformProjectEvents(now pcommon.Timestamp, events []*mongodbatlas.Event, p *mongodbatlas.Project) plog.Logs {
