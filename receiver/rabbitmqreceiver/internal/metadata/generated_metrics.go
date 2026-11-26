@@ -57,6 +57,14 @@ var MapAttributeMessageState = map[string]AttributeMessageState{
 }
 
 var MetricsInfo = metricsInfo{
+	RabbitmqChannelCount: metricInfo{
+		Name:       "rabbitmq.channel.count",
+		Attributes: []string{"channel.consuming", "channel.prefetch_count", "user.name", "vhost.name"},
+	},
+	RabbitmqConnectionCount: metricInfo{
+		Name:       "rabbitmq.connection.count",
+		Attributes: []string{"user.name", "vhost.name"},
+	},
 	RabbitmqConsumerCount: metricInfo{
 		Name: "rabbitmq.consumer.count",
 	},
@@ -307,6 +315,8 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
+	RabbitmqChannelCount                        metricInfo
+	RabbitmqConnectionCount                     metricInfo
 	RabbitmqConsumerCount                       metricInfo
 	RabbitmqExchangeMessagesPublishedIn         metricInfo
 	RabbitmqExchangeMessagesPublishedOut        metricInfo
@@ -394,6 +404,204 @@ type metricsInfo struct {
 type metricInfo struct {
 	Name       string
 	Attributes []string
+}
+
+type metricRabbitmqChannelCount struct {
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        RabbitmqChannelCountMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                   // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills rabbitmq.channel.count metric with initial data.
+func (m *metricRabbitmqChannelCount) init() {
+	m.data.SetName("rabbitmq.channel.count")
+	m.data.SetDescription("The number of open channels.")
+	m.data.SetUnit("{channels}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricRabbitmqChannelCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, channelConsumingAttributeValue bool, channelPrefetchCountAttributeValue int64, userNameAttributeValue string, vhostNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, RabbitmqChannelCountMetricAttributeKeyChannelConsuming) {
+		dp.Attributes().PutBool("rabbitmq.channel.consuming", channelConsumingAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, RabbitmqChannelCountMetricAttributeKeyChannelPrefetchCount) {
+		dp.Attributes().PutInt("rabbitmq.channel.prefetch_count", channelPrefetchCountAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, RabbitmqChannelCountMetricAttributeKeyUserName) {
+		dp.Attributes().PutStr("rabbitmq.user.name", userNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, RabbitmqChannelCountMetricAttributeKeyVhostName) {
+		dp.Attributes().PutStr("rabbitmq.vhost.name", vhostNameAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Sum().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricRabbitmqChannelCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricRabbitmqChannelCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricRabbitmqChannelCount(cfg RabbitmqChannelCountMetricConfig) metricRabbitmqChannelCount {
+	m := metricRabbitmqChannelCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricRabbitmqConnectionCount struct {
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        RabbitmqConnectionCountMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                      // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills rabbitmq.connection.count metric with initial data.
+func (m *metricRabbitmqConnectionCount) init() {
+	m.data.SetName("rabbitmq.connection.count")
+	m.data.SetDescription("The number of open connections.")
+	m.data.SetUnit("{connections}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricRabbitmqConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, userNameAttributeValue string, vhostNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, RabbitmqConnectionCountMetricAttributeKeyUserName) {
+		dp.Attributes().PutStr("rabbitmq.user.name", userNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, RabbitmqConnectionCountMetricAttributeKeyVhostName) {
+		dp.Attributes().PutStr("rabbitmq.vhost.name", vhostNameAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Sum().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricRabbitmqConnectionCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricRabbitmqConnectionCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricRabbitmqConnectionCount(cfg RabbitmqConnectionCountMetricConfig) metricRabbitmqConnectionCount {
+	m := metricRabbitmqConnectionCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 type metricRabbitmqConsumerCount struct {
@@ -4711,6 +4919,8 @@ type MetricsBuilder struct {
 	buildInfo                                         component.BuildInfo  // contains version information.
 	resourceAttributeIncludeFilter                    map[string]filter.Filter
 	resourceAttributeExcludeFilter                    map[string]filter.Filter
+	metricRabbitmqChannelCount                        metricRabbitmqChannelCount
+	metricRabbitmqConnectionCount                     metricRabbitmqConnectionCount
 	metricRabbitmqConsumerCount                       metricRabbitmqConsumerCount
 	metricRabbitmqExchangeMessagesPublishedIn         metricRabbitmqExchangeMessagesPublishedIn
 	metricRabbitmqExchangeMessagesPublishedOut        metricRabbitmqExchangeMessagesPublishedOut
@@ -4814,11 +5024,13 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                      mbc,
-		startTime:                   pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:               pmetric.NewMetrics(),
-		buildInfo:                   settings.BuildInfo,
-		metricRabbitmqConsumerCount: newMetricRabbitmqConsumerCount(mbc.Metrics.RabbitmqConsumerCount),
+		config:                        mbc,
+		startTime:                     pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                 pmetric.NewMetrics(),
+		buildInfo:                     settings.BuildInfo,
+		metricRabbitmqChannelCount:    newMetricRabbitmqChannelCount(mbc.Metrics.RabbitmqChannelCount),
+		metricRabbitmqConnectionCount: newMetricRabbitmqConnectionCount(mbc.Metrics.RabbitmqConnectionCount),
+		metricRabbitmqConsumerCount:   newMetricRabbitmqConsumerCount(mbc.Metrics.RabbitmqConsumerCount),
 		metricRabbitmqExchangeMessagesPublishedIn:         newMetricRabbitmqExchangeMessagesPublishedIn(mbc.Metrics.RabbitmqExchangeMessagesPublishedIn),
 		metricRabbitmqExchangeMessagesPublishedOut:        newMetricRabbitmqExchangeMessagesPublishedOut(mbc.Metrics.RabbitmqExchangeMessagesPublishedOut),
 		metricRabbitmqMessageAcknowledged:                 newMetricRabbitmqMessageAcknowledged(mbc.Metrics.RabbitmqMessageAcknowledged),
@@ -5008,6 +5220,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricRabbitmqChannelCount.emit(ils.Metrics())
+	mb.metricRabbitmqConnectionCount.emit(ils.Metrics())
 	mb.metricRabbitmqConsumerCount.emit(ils.Metrics())
 	mb.metricRabbitmqExchangeMessagesPublishedIn.emit(ils.Metrics())
 	mb.metricRabbitmqExchangeMessagesPublishedOut.emit(ils.Metrics())
@@ -5119,6 +5333,16 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
+}
+
+// RecordRabbitmqChannelCountDataPoint adds a data point to rabbitmq.channel.count metric.
+func (mb *MetricsBuilder) RecordRabbitmqChannelCountDataPoint(ts pcommon.Timestamp, val int64, channelConsumingAttributeValue bool, channelPrefetchCountAttributeValue int64, userNameAttributeValue string, vhostNameAttributeValue string) {
+	mb.metricRabbitmqChannelCount.recordDataPoint(mb.startTime, ts, val, channelConsumingAttributeValue, channelPrefetchCountAttributeValue, userNameAttributeValue, vhostNameAttributeValue)
+}
+
+// RecordRabbitmqConnectionCountDataPoint adds a data point to rabbitmq.connection.count metric.
+func (mb *MetricsBuilder) RecordRabbitmqConnectionCountDataPoint(ts pcommon.Timestamp, val int64, userNameAttributeValue string, vhostNameAttributeValue string) {
+	mb.metricRabbitmqConnectionCount.recordDataPoint(mb.startTime, ts, val, userNameAttributeValue, vhostNameAttributeValue)
 }
 
 // RecordRabbitmqConsumerCountDataPoint adds a data point to rabbitmq.consumer.count metric.
