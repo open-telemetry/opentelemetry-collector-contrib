@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -1583,8 +1583,8 @@ type MetricsBuilder struct {
 	metricsCapacity                     int                  // maximum observed number of metrics per resource.
 	metricsBuffer                       pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                           component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter      map[string]filter.Filter
-	resourceAttributeExcludeFilter      map[string]filter.Filter
+	resourceAttributeIncludeFilter      map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter      map[string]strmatch.Matcher
 	metricKafkaBrokerLogRetentionPeriod metricKafkaBrokerLogRetentionPeriod
 	metricKafkaBrokers                  metricKafkaBrokers
 	metricKafkaConsumerGroupLag         metricKafkaConsumerGroupLag
@@ -1642,20 +1642,20 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricKafkaTopicMinInsyncReplicas:   newMetricKafkaTopicMinInsyncReplicas(mbc.Metrics.KafkaTopicMinInsyncReplicas),
 		metricKafkaTopicPartitions:          newMetricKafkaTopicPartitions(mbc.Metrics.KafkaTopicPartitions),
 		metricKafkaTopicReplicationFactor:   newMetricKafkaTopicReplicationFactor(mbc.Metrics.KafkaTopicReplicationFactor),
-		resourceAttributeIncludeFilter:      make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:      make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter:      make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter:      make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.KafkaClusterAlias.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["kafka.cluster.alias"] = filter.CreateFilter(mbc.ResourceAttributes.KafkaClusterAlias.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["kafka.cluster.alias"] = strmatch.New(mbc.ResourceAttributes.KafkaClusterAlias.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.KafkaClusterAlias.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["kafka.cluster.alias"] = filter.CreateFilter(mbc.ResourceAttributes.KafkaClusterAlias.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["kafka.cluster.alias"] = strmatch.New(mbc.ResourceAttributes.KafkaClusterAlias.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.KafkaClusterID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["kafka.cluster.id"] = filter.CreateFilter(mbc.ResourceAttributes.KafkaClusterID.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["kafka.cluster.id"] = strmatch.New(mbc.ResourceAttributes.KafkaClusterID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.KafkaClusterID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["kafka.cluster.id"] = filter.CreateFilter(mbc.ResourceAttributes.KafkaClusterID.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["kafka.cluster.id"] = strmatch.New(mbc.ResourceAttributes.KafkaClusterID.MetricsExclude)
 	}
 
 	for _, op := range options {

@@ -18,10 +18,12 @@ import (
 )
 
 var (
-	errFormatOTLPAttributes       = errors.New("value should be in one of the following formats: key=\"value\", key=true, key=false, key=<integer>, or key=[<value1>, <value2>, ...]")
+	errFormatOTLPAttributes       = errors.New("value should be in one of the following formats: key=\"value\", key=true, key=false, key=<integer>, key=[<value1>, <value2>, ...] or key={a=\"x\", b=1, c=true, ...}")
 	errDoubleQuotesOTLPAttributes = errors.New("value should be a string wrapped in double quotes")
 	errMixedTypeSlice             = errors.New("all items in a slice should be of the same type")
 	errEmptySlice                 = errors.New("slice should not be empty")
+	errEmptyMap                   = errors.New("map should not be empty")
+	errUnbalancedBraces           = errors.New("unbalanced braces in map value")
 )
 
 const (
@@ -53,19 +55,58 @@ func parseValue(val string) (any, error) {
 	return val[1 : len(val)-1], nil
 }
 
-// splitItems splits the pre-trimmed content into a list of items separated by commas, respecting quotes
-func splitItems(content string) []string {
+func parseAny(val string) (any, error) {
+	switch {
+	case strings.HasPrefix(val, "{") && strings.HasSuffix(val, "}"):
+		content := strings.TrimSpace(val[1 : len(val)-1])
+		if content == "" {
+			return nil, errEmptyMap
+		}
+		items, err := splitItems(content)
+		if err != nil {
+			return nil, err
+		}
+		return mapFrom(items)
+	case strings.HasPrefix(val, "[") && strings.HasSuffix(val, "]"):
+		content := strings.TrimSpace(val[1 : len(val)-1])
+		if content == "" {
+			return nil, errEmptySlice
+		}
+		items, err := splitItems(content)
+		if err != nil {
+			return nil, err
+		}
+		return sliceFrom(items)
+	default:
+		return parseValue(val)
+	}
+}
+
+// splitItems splits a string of items separated by commas, taking into account nested structures and quoted strings.
+func splitItems(content string) ([]string, error) {
+	depth := 0
+
 	var items []string
 	var current strings.Builder
 	inQuotes := false
 
 	for _, char := range content {
 		switch char {
+		case '{', '[':
+			if !inQuotes {
+				depth++
+			}
+			current.WriteRune(char)
+		case '}', ']':
+			if !inQuotes {
+				depth--
+			}
+			current.WriteRune(char)
 		case '"':
 			inQuotes = !inQuotes
 			current.WriteRune(char)
 		case ',':
-			if !inQuotes {
+			if !inQuotes && depth == 0 {
 				if item := strings.TrimSpace(current.String()); item != "" {
 					items = append(items, item)
 				}
@@ -77,11 +118,17 @@ func splitItems(content string) []string {
 			current.WriteRune(char)
 		}
 	}
+
+	if depth != 0 {
+		// Unbalanced braces or brackets
+		return nil, errUnbalancedBraces
+	}
+
 	// Add the last item
 	if item := strings.TrimSpace(current.String()); item != "" {
 		items = append(items, item)
 	}
-	return items
+	return items, nil
 }
 
 // sliceFrom converts items into a slice of a single type
@@ -105,34 +152,37 @@ func sliceFrom(items []string) (any, error) {
 	return slice.Interface(), nil
 }
 
+// mapFrom converts items into a map of key-value pairs
+func mapFrom(items []string) (map[string]any, error) {
+	result := make(map[string]any)
+	for _, item := range items {
+		kv := strings.SplitN(item, "=", 2)
+		if len(kv) != 2 {
+			return nil, errFormatOTLPAttributes
+		}
+		key := strings.TrimSpace(kv[0])
+		val, err := parseAny(strings.TrimSpace(kv[1]))
+		if err != nil {
+			return nil, err
+		}
+		result[key] = val
+	}
+	return result, nil
+}
+
 func (v *KeyValue) Set(s string) error {
 	kv := strings.SplitN(s, "=", 2)
 	if len(kv) != 2 {
 		return errFormatOTLPAttributes
 	}
-	key := kv[0]
+	key := strings.TrimSpace(kv[0])
 
-	if !strings.HasPrefix(kv[1], "[") || !strings.HasSuffix(kv[1], "]") {
-		val, err := parseValue(kv[1])
-		if err != nil {
-			return err
-		}
-		(*v)[key] = val
-		return nil
-	}
-
-	// List of Values
-	content := strings.TrimSpace(kv[1][1 : len(kv[1])-1])
-	if content == "" {
-		return errEmptySlice
-	}
-
-	items := splitItems(content)
-	slice, err := sliceFrom(items)
+	val, err := parseAny(kv[1])
 	if err != nil {
 		return err
 	}
-	(*v)[key] = slice
+	(*v)[key] = val
+
 	return nil
 }
 
@@ -194,6 +244,34 @@ func (c *Config) Endpoint() string {
 	return defaultGRPCEndpoint
 }
 
+// toValue converts an interface{} to an attribute.Value, returning a boolean indicating success.
+func toValue(v any) (attribute.Value, bool) {
+	switch v := v.(type) {
+	case string:
+		return attribute.StringValue(v), true
+	case bool:
+		return attribute.BoolValue(v), true
+	case int:
+		return attribute.IntValue(v), true
+	case []string:
+		return attribute.StringSliceValue(v), true
+	case []bool:
+		return attribute.BoolSliceValue(v), true
+	case []int:
+		return attribute.IntSliceValue(v), true
+	case map[string]any:
+		kvs := make([]attribute.KeyValue, 0, len(v))
+		for k, inner := range v {
+			if val, ok := toValue(inner); ok {
+				kvs = append(kvs, attribute.KeyValue{Key: attribute.Key(k), Value: val})
+			}
+		}
+		return attribute.MapValue(kvs...), true
+	default:
+		return attribute.Value{}, false
+	}
+}
+
 func (c *Config) GetAttributes() []attribute.KeyValue {
 	var attributes []attribute.KeyValue
 
@@ -201,19 +279,8 @@ func (c *Config) GetAttributes() []attribute.KeyValue {
 	attributes = append(attributes, conventions.ServiceNameKey.String(c.ServiceName))
 	if len(c.ResourceAttributes) > 0 {
 		for k, t := range c.ResourceAttributes {
-			switch v := t.(type) {
-			case string:
-				attributes = append(attributes, attribute.String(k, v))
-			case bool:
-				attributes = append(attributes, attribute.Bool(k, v))
-			case int:
-				attributes = append(attributes, attribute.Int(k, v))
-			case []string:
-				attributes = append(attributes, attribute.StringSlice(k, v))
-			case []bool:
-				attributes = append(attributes, attribute.BoolSlice(k, v))
-			case []int:
-				attributes = append(attributes, attribute.IntSlice(k, v))
+			if val, ok := toValue(t); ok {
+				attributes = append(attributes, attribute.KeyValue{Key: attribute.Key(k), Value: val})
 			}
 		}
 	}
@@ -225,19 +292,8 @@ func (c *Config) GetTelemetryAttributes() []attribute.KeyValue {
 
 	if len(c.TelemetryAttributes) > 0 {
 		for k, t := range c.TelemetryAttributes {
-			switch v := t.(type) {
-			case string:
-				attributes = append(attributes, attribute.String(k, v))
-			case bool:
-				attributes = append(attributes, attribute.Bool(k, v))
-			case int:
-				attributes = append(attributes, attribute.Int(k, v))
-			case []string:
-				attributes = append(attributes, attribute.StringSlice(k, v))
-			case []bool:
-				attributes = append(attributes, attribute.BoolSlice(k, v))
-			case []int:
-				attributes = append(attributes, attribute.IntSlice(k, v))
+			if val, ok := toValue(t); ok {
+				attributes = append(attributes, attribute.KeyValue{Key: attribute.Key(k), Value: val})
 			}
 		}
 	}
