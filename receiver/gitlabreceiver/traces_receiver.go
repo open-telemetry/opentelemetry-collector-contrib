@@ -256,14 +256,13 @@ func (gtr *gitlabTracesReceiver) validateReq(r *http.Request) (gitlab.EventType,
 	}
 
 	if gtr.cfg.WebHook.Secret != "" {
-		secret := r.Header.Get(defaultGitLabSecretTokenHeader)
-		if secret != string(gtr.cfg.WebHook.Secret) {
+		if !gtr.cfg.WebHook.Secret.Equal(r.Header.Get(defaultGitLabSecretTokenHeader)) {
 			return "", fmt.Errorf("%w: %s", errInvalidHeader, defaultGitLabSecretTokenHeader)
 		}
 	}
 
 	for key, value := range gtr.cfg.WebHook.RequiredHeaders {
-		if r.Header.Get(key) != string(value) {
+		if !value.Equal(r.Header.Get(key)) {
 			return "", fmt.Errorf("%w: %s", errInvalidHeader, key)
 		}
 	}
