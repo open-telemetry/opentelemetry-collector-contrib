@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -706,4 +707,125 @@ func (mac *mockAlertsClient) GetProject(ctx context.Context, pID string) (*mongo
 func (mac *mockAlertsClient) GetAlerts(ctx context.Context, pID string, opts *internal.AlertPollOptions) ([]mongodbatlas.Alert, bool, error) {
 	args := mac.Called(ctx, pID, opts)
 	return args.Get(0).([]mongodbatlas.Alert), args.Bool(1), args.Error(2)
+}
+
+func TestAlertPollingCheckpoint(t *testing.T) {
+	day := func(d int) time.Time { return time.Date(2025, 1, d, 0, 0, 0, 0, time.UTC) }
+	alertAt := func(id string, updated time.Time) mongodbatlas.Alert {
+		alert := testAlert()
+		alert.ID, alert.Updated = id, updated.Format(time.RFC3339)
+		return alert
+	}
+	badHost := alertAt("bad", day(1))
+	badHost.HostnameAndPort = "host:notaport"
+	legacy := day(2)
+
+	tests := []struct {
+		name           string
+		alerts         map[string]mongodbatlas.Alert
+		projects       []string
+		legacy         *time.Time
+		setup          func(*mockAlertsClient)
+		consumeErr     error
+		polls          int
+		wantDelivered  int
+		wantCheckpoint map[string]time.Time
+	}{
+		{
+			name:          "older alert in later project",
+			alerts:        map[string]mongodbatlas.Alert{"a": alertAt("newer", day(2)), "b": alertAt("older", day(1))},
+			projects:      []string{"a", "b"},
+			polls:         2,
+			wantDelivered: 2,
+		},
+		{
+			name:          "retryable consumer error",
+			alerts:        map[string]mongodbatlas.Alert{"a": alertAt("alert", day(1))},
+			projects:      []string{"a"},
+			consumeErr:    errors.New("consumer failed"),
+			polls:         2,
+			wantDelivered: 1,
+		},
+		{
+			name:          "permanent consumer error",
+			alerts:        map[string]mongodbatlas.Alert{"a": alertAt("alert", day(1))},
+			projects:      []string{"a"},
+			consumeErr:    consumererror.NewPermanent(errors.New("rejected")),
+			polls:         2,
+			wantDelivered: 0,
+		},
+		{
+			name:           "malformed alert",
+			alerts:         map[string]mongodbatlas.Alert{"a": badHost},
+			projects:       []string{"a"},
+			polls:          1,
+			wantCheckpoint: map[string]time.Time{"a": day(1)},
+		},
+		{
+			name:          "legacy checkpoint",
+			alerts:        map[string]mongodbatlas.Alert{"a": alertAt("seen", day(1)), "b": alertAt("new", day(3))},
+			projects:      []string{"a", "b"},
+			legacy:        &legacy,
+			polls:         1,
+			wantDelivered: 1,
+		},
+		{
+			name:     "fetch error on later page",
+			projects: []string{"a"},
+			setup: func(c *mockAlertsClient) {
+				page := func(n int) any {
+					return mock.MatchedBy(func(o *internal.AlertPollOptions) bool { return o.PageNum == n })
+				}
+				c.On("GetAlerts", mock.Anything, "a", page(1)).Return([]mongodbatlas.Alert{alertAt("newer", day(2))}, true, nil)
+				c.On("GetAlerts", mock.Anything, "a", page(2)).Return([]mongodbatlas.Alert(nil), false, errors.New("fetch failed")).Once()
+				c.On("GetAlerts", mock.Anything, "a", page(2)).Return([]mongodbatlas.Alert{alertAt("older", day(1))}, false, nil)
+			},
+			polls:         2,
+			wantDelivered: 3,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := &mockAlertsClient{}
+			for _, id := range tt.projects {
+				client.On("GetProject", mock.Anything, id).Return(&mongodbatlas.Project{ID: id, Name: id}, nil)
+			}
+			for id, alert := range tt.alerts {
+				client.On("GetAlerts", mock.Anything, id, mock.Anything).Return([]mongodbatlas.Alert{alert}, false, nil)
+			}
+			if tt.setup != nil {
+				tt.setup(client)
+			}
+
+			sink := &consumertest.LogsSink{}
+			consumeErr := tt.consumeErr
+			next, err := consumer.NewLogs(func(ctx context.Context, logs plog.Logs) error {
+				if err := consumeErr; err != nil {
+					consumeErr = nil
+					return err
+				}
+				return sink.ConsumeLogs(ctx, logs)
+			})
+			require.NoError(t, err)
+
+			cfg := &Config{Alerts: AlertConfig{Mode: alertModePoll, MaxPages: 10, PageSize: 100}}
+			for _, p := range tt.projects {
+				cfg.Alerts.Projects = append(cfg.Alerts.Projects, &ProjectConfig{Name: p})
+			}
+			rcvr, err := newAlertsReceiver(receivertest.NewNopSettings(metadata.Type), cfg, next)
+			require.NoError(t, err)
+			rcvr.client = client
+			rcvr.storageClient = storage.NewNopClient()
+			require.NoError(t, rcvr.syncPersistence(t.Context()))
+			rcvr.record.LastRecordedTime = tt.legacy
+
+			for range tt.polls {
+				require.NoError(t, rcvr.retrieveAndProcessAlerts(t.Context()))
+			}
+			require.Equal(t, tt.wantDelivered, sink.LogRecordCount())
+			for id, want := range tt.wantCheckpoint {
+				require.Equal(t, want, rcvr.record.lastRecorded(id))
+			}
+		})
+	}
 }
