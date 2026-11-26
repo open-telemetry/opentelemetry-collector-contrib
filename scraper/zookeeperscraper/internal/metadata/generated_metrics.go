@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -1071,8 +1071,8 @@ type MetricsBuilder struct {
 	metricsCapacity                            int                  // maximum observed number of metrics per resource.
 	metricsBuffer                              pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                                  component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter             map[string]filter.Filter
-	resourceAttributeExcludeFilter             map[string]filter.Filter
+	resourceAttributeIncludeFilter             map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter             map[string]strmatch.Matcher
 	metricZookeeperConnectionActive            metricZookeeperConnectionActive
 	metricZookeeperDataTreeEphemeralNodeCount  metricZookeeperDataTreeEphemeralNodeCount
 	metricZookeeperDataTreeSize                metricZookeeperDataTreeSize
@@ -1130,20 +1130,20 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		metricZookeeperSyncPending:                 newMetricZookeeperSyncPending(mbc.Metrics.ZookeeperSyncPending),
 		metricZookeeperWatchCount:                  newMetricZookeeperWatchCount(mbc.Metrics.ZookeeperWatchCount),
 		metricZookeeperZnodeCount:                  newMetricZookeeperZnodeCount(mbc.Metrics.ZookeeperZnodeCount),
-		resourceAttributeIncludeFilter:             make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:             make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter:             make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter:             make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.ServerState.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["server.state"] = filter.CreateFilter(mbc.ResourceAttributes.ServerState.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["server.state"] = strmatch.New(mbc.ResourceAttributes.ServerState.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ServerState.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["server.state"] = filter.CreateFilter(mbc.ResourceAttributes.ServerState.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["server.state"] = strmatch.New(mbc.ResourceAttributes.ServerState.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ZkVersion.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["zk.version"] = filter.CreateFilter(mbc.ResourceAttributes.ZkVersion.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["zk.version"] = strmatch.New(mbc.ResourceAttributes.ZkVersion.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ZkVersion.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["zk.version"] = filter.CreateFilter(mbc.ResourceAttributes.ZkVersion.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["zk.version"] = strmatch.New(mbc.ResourceAttributes.ZkVersion.MetricsExclude)
 	}
 
 	for _, op := range options {

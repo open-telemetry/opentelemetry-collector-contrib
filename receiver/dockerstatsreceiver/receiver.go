@@ -14,11 +14,11 @@ import (
 	ctypes "github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/client"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/strmatch"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
@@ -48,7 +48,7 @@ type metricsReceiver struct {
 	mb       *metadata.MetricsBuilder
 	// labelFilter selects container labels to record as resource attributes.
 	// It is nil when no filters are configured.
-	labelFilter filter.Filter
+	labelFilter strmatch.Matcher
 	cancel      context.CancelFunc
 }
 
@@ -63,7 +63,7 @@ func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver 
 			"use `container_labels_to_resource_attributes` instead, which records labels as `container.label.<key>` resource attributes")
 	}
 	if len(config.ContainerLabelsToResourceAttributes) > 0 {
-		r.labelFilter = filter.CreateFilter(config.ContainerLabelsToResourceAttributes)
+		r.labelFilter = strmatch.New(config.ContainerLabelsToResourceAttributes)
 	}
 	return r
 }

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
+	"go.opentelemetry.io/collector/strmatch"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -45,7 +45,7 @@ type K8sObjectsConfig struct {
 	Name              string               `mapstructure:"name"`
 	Group             string               `mapstructure:"group"`
 	Namespaces        []string             `mapstructure:"namespaces"`
-	ExcludeNamespaces []filter.Config      `mapstructure:"exclude_namespaces"`
+	ExcludeNamespaces []strmatch.Config    `mapstructure:"exclude_namespaces"`
 	Mode              k8sinventory.Mode    `mapstructure:"mode"`
 	LabelSelector     string               `mapstructure:"label_selector"`
 	FieldSelector     string               `mapstructure:"field_selector"`

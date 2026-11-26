@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -7301,8 +7301,8 @@ type MetricsBuilder struct {
 	metricsCapacity                               int                  // maximum observed number of metrics per resource.
 	metricsBuffer                                 pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                                     component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter                map[string]filter.Filter
-	resourceAttributeExcludeFilter                map[string]filter.Filter
+	resourceAttributeIncludeFilter                map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter                map[string]strmatch.Matcher
 	metricMysqlBufferPoolDataPages                metricMysqlBufferPoolDataPages
 	metricMysqlBufferPoolLimit                    metricMysqlBufferPoolLimit
 	metricMysqlBufferPoolOperations               metricMysqlBufferPoolOperations
@@ -7476,56 +7476,56 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlThreads:                            newMetricMysqlThreads(mbc.Metrics.MysqlThreads),
 		metricMysqlTmpResources:                       newMetricMysqlTmpResources(mbc.Metrics.MysqlTmpResources),
 		metricMysqlUptime:                             newMetricMysqlUptime(mbc.Metrics.MysqlUptime),
-		resourceAttributeIncludeFilter:                make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:                make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter:                make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter:                make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.DbSystemName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["db.system.name"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystemName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["db.system.name"] = strmatch.New(mbc.ResourceAttributes.DbSystemName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.DbSystemName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["db.system.name"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystemName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["db.system.name"] = strmatch.New(mbc.ResourceAttributes.DbSystemName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.DbSystemVersion.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["db.system.version"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystemVersion.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["db.system.version"] = strmatch.New(mbc.ResourceAttributes.DbSystemVersion.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.DbSystemVersion.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["db.system.version"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystemVersion.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["db.system.version"] = strmatch.New(mbc.ResourceAttributes.DbSystemVersion.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.MysqlInstanceEndpoint.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["mysql.instance.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.MysqlInstanceEndpoint.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["mysql.instance.endpoint"] = strmatch.New(mbc.ResourceAttributes.MysqlInstanceEndpoint.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.MysqlInstanceEndpoint.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["mysql.instance.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.MysqlInstanceEndpoint.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["mysql.instance.endpoint"] = strmatch.New(mbc.ResourceAttributes.MysqlInstanceEndpoint.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ServerAddress.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["server.address"] = strmatch.New(mbc.ResourceAttributes.ServerAddress.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ServerAddress.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["server.address"] = strmatch.New(mbc.ResourceAttributes.ServerAddress.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ServerPort.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["server.port"] = strmatch.New(mbc.ResourceAttributes.ServerPort.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ServerPort.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["server.port"] = strmatch.New(mbc.ResourceAttributes.ServerPort.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ServiceInstanceID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["service.instance.id"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceInstanceID.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["service.instance.id"] = strmatch.New(mbc.ResourceAttributes.ServiceInstanceID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ServiceInstanceID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["service.instance.id"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceInstanceID.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["service.instance.id"] = strmatch.New(mbc.ResourceAttributes.ServiceInstanceID.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ServiceName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["service.name"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["service.name"] = strmatch.New(mbc.ResourceAttributes.ServiceName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ServiceName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["service.name"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["service.name"] = strmatch.New(mbc.ResourceAttributes.ServiceName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ServiceNamespace.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["service.namespace"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceNamespace.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["service.namespace"] = strmatch.New(mbc.ResourceAttributes.ServiceNamespace.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ServiceNamespace.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["service.namespace"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceNamespace.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["service.namespace"] = strmatch.New(mbc.ResourceAttributes.ServiceNamespace.MetricsExclude)
 	}
 
 	for _, op := range options {
