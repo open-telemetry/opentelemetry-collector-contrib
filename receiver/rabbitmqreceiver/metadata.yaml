@@ -204,8 +204,22 @@ attributes:
     enum:
       - ready
       - unacknowledged
+  properties_key:
+    description: The key RabbitMQ uses to distinguish bindings that share a source, destination and routing key but have different arguments.
+    type: string
+  routing_key:
+    description: The routing key of a RabbitMQ binding.
+    type: string
 
 metrics:
+  rabbitmq.binding:
+    description: Indicates a binding exists between a RabbitMQ exchange and a queue. The resource carries both the exchange and queue names, letting queue and exchange metrics be correlated through this metric.
+    stability: development
+    unit: "{binding}"
+    gauge:
+      value_type: int
+    attributes: [properties_key, routing_key]
+    enabled: false
   rabbitmq.consumer.count:
     description: The number of consumers currently reading from the queue.
     stability: development
