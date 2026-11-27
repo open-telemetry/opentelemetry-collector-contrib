@@ -67,6 +67,22 @@ func (e *s3Exporter) start(ctx context.Context, host component.Host) error {
 		if m, err = newMarshalerFromEncoding(e.config.Encoding, e.config.EncodingFileExtension, host, e.logger); err != nil {
 			return err
 		}
+		if s3m, ok := m.(*s3Marshaler); ok {
+			switch e.signalType {
+			case "logs":
+				if s3m.logsMarshaler == nil {
+					return fmt.Errorf("encoding extension %q does not implement plog.Marshaler", e.config.Encoding)
+				}
+			case "metrics":
+				if s3m.metricsMarshaler == nil {
+					return fmt.Errorf("encoding extension %q does not implement pmetric.Marshaler", e.config.Encoding)
+				}
+			case "traces":
+				if s3m.tracesMarshaler == nil {
+					return fmt.Errorf("encoding extension %q does not implement ptrace.Marshaler", e.config.Encoding)
+				}
+			}
+		}
 	} else {
 		if m, err = newMarshaler(e.config.MarshalerName, e.logger); err != nil {
 			return fmt.Errorf("unknown marshaler %q", e.config.MarshalerName)
