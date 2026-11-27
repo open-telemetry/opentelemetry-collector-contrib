@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -1428,8 +1428,8 @@ type MetricsBuilder struct {
 	metricsCapacity                                         int                  // maximum observed number of metrics per resource.
 	metricsBuffer                                           pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                                               component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter                          map[string]filter.Filter
-	resourceAttributeExcludeFilter                          map[string]filter.Filter
+	resourceAttributeIncludeFilter                          map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter                          map[string]strmatch.Matcher
 	metricAerospikeNamespaceDiskAvailable                   metricAerospikeNamespaceDiskAvailable
 	metricAerospikeNamespaceGeojsonRegionQueryCells         metricAerospikeNamespaceGeojsonRegionQueryCells
 	metricAerospikeNamespaceGeojsonRegionQueryFalsePositive metricAerospikeNamespaceGeojsonRegionQueryFalsePositive
@@ -1483,20 +1483,20 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricAerospikeNodeConnectionOpen:                       newMetricAerospikeNodeConnectionOpen(mbc.Metrics.AerospikeNodeConnectionOpen),
 		metricAerospikeNodeMemoryFree:                           newMetricAerospikeNodeMemoryFree(mbc.Metrics.AerospikeNodeMemoryFree),
 		metricAerospikeNodeQueryTracked:                         newMetricAerospikeNodeQueryTracked(mbc.Metrics.AerospikeNodeQueryTracked),
-		resourceAttributeIncludeFilter:                          make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:                          make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter:                          make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter:                          make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.AerospikeNamespace.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["aerospike.namespace"] = filter.CreateFilter(mbc.ResourceAttributes.AerospikeNamespace.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["aerospike.namespace"] = strmatch.New(mbc.ResourceAttributes.AerospikeNamespace.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.AerospikeNamespace.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["aerospike.namespace"] = filter.CreateFilter(mbc.ResourceAttributes.AerospikeNamespace.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["aerospike.namespace"] = strmatch.New(mbc.ResourceAttributes.AerospikeNamespace.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.AerospikeNodeName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["aerospike.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.AerospikeNodeName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["aerospike.node.name"] = strmatch.New(mbc.ResourceAttributes.AerospikeNodeName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.AerospikeNodeName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["aerospike.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.AerospikeNodeName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["aerospike.node.name"] = strmatch.New(mbc.ResourceAttributes.AerospikeNodeName.MetricsExclude)
 	}
 
 	for _, op := range options {

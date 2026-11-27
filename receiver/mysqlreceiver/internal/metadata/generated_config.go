@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 // MysqlBufferPoolDataPagesMetricAttributeKey specifies the key of an attribute for the mysql.buffer_pool.data_pages metric.
@@ -3226,18 +3226,18 @@ type DbSystemNameResourceAttributeConfig struct {
 	OverrideValue *string `mapstructure:"override_value"`
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
-	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	MetricsInclude []strmatch.Config `mapstructure:"metrics_include"`
 	// Experimental: MetricsExclude defines a list of filters for attribute values.
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
-	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	MetricsExclude []strmatch.Config `mapstructure:"metrics_exclude"`
 	// Experimental: EventsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only events with matching resource attribute values will be emitted.
-	EventsInclude []filter.Config `mapstructure:"events_include"`
+	EventsInclude []strmatch.Config `mapstructure:"events_include"`
 	// Experimental: EventsExclude defines a list of filters for attribute values.
 	// If the list is not empty, events with matching resource attribute values will not be emitted.
 	// EventsInclude has higher priority than EventsExclude.
-	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+	EventsExclude []strmatch.Config `mapstructure:"events_exclude"`
 
 	enabledSetByUser bool
 }
@@ -3261,18 +3261,18 @@ type DbSystemVersionResourceAttributeConfig struct {
 	OverrideValue *string `mapstructure:"override_value"`
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
-	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	MetricsInclude []strmatch.Config `mapstructure:"metrics_include"`
 	// Experimental: MetricsExclude defines a list of filters for attribute values.
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
-	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	MetricsExclude []strmatch.Config `mapstructure:"metrics_exclude"`
 	// Experimental: EventsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only events with matching resource attribute values will be emitted.
-	EventsInclude []filter.Config `mapstructure:"events_include"`
+	EventsInclude []strmatch.Config `mapstructure:"events_include"`
 	// Experimental: EventsExclude defines a list of filters for attribute values.
 	// If the list is not empty, events with matching resource attribute values will not be emitted.
 	// EventsInclude has higher priority than EventsExclude.
-	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+	EventsExclude []strmatch.Config `mapstructure:"events_exclude"`
 
 	enabledSetByUser bool
 }
@@ -3296,18 +3296,18 @@ type MysqlInstanceEndpointResourceAttributeConfig struct {
 	OverrideValue *string `mapstructure:"override_value"`
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
-	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	MetricsInclude []strmatch.Config `mapstructure:"metrics_include"`
 	// Experimental: MetricsExclude defines a list of filters for attribute values.
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
-	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	MetricsExclude []strmatch.Config `mapstructure:"metrics_exclude"`
 	// Experimental: EventsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only events with matching resource attribute values will be emitted.
-	EventsInclude []filter.Config `mapstructure:"events_include"`
+	EventsInclude []strmatch.Config `mapstructure:"events_include"`
 	// Experimental: EventsExclude defines a list of filters for attribute values.
 	// If the list is not empty, events with matching resource attribute values will not be emitted.
 	// EventsInclude has higher priority than EventsExclude.
-	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+	EventsExclude []strmatch.Config `mapstructure:"events_exclude"`
 
 	enabledSetByUser bool
 }
@@ -3331,18 +3331,18 @@ type ServerAddressResourceAttributeConfig struct {
 	OverrideValue *string `mapstructure:"override_value"`
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
-	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	MetricsInclude []strmatch.Config `mapstructure:"metrics_include"`
 	// Experimental: MetricsExclude defines a list of filters for attribute values.
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
-	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	MetricsExclude []strmatch.Config `mapstructure:"metrics_exclude"`
 	// Experimental: EventsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only events with matching resource attribute values will be emitted.
-	EventsInclude []filter.Config `mapstructure:"events_include"`
+	EventsInclude []strmatch.Config `mapstructure:"events_include"`
 	// Experimental: EventsExclude defines a list of filters for attribute values.
 	// If the list is not empty, events with matching resource attribute values will not be emitted.
 	// EventsInclude has higher priority than EventsExclude.
-	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+	EventsExclude []strmatch.Config `mapstructure:"events_exclude"`
 
 	enabledSetByUser bool
 }
@@ -3366,18 +3366,18 @@ type ServerPortResourceAttributeConfig struct {
 	OverrideValue *int64 `mapstructure:"override_value"`
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
-	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	MetricsInclude []strmatch.Config `mapstructure:"metrics_include"`
 	// Experimental: MetricsExclude defines a list of filters for attribute values.
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
-	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	MetricsExclude []strmatch.Config `mapstructure:"metrics_exclude"`
 	// Experimental: EventsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only events with matching resource attribute values will be emitted.
-	EventsInclude []filter.Config `mapstructure:"events_include"`
+	EventsInclude []strmatch.Config `mapstructure:"events_include"`
 	// Experimental: EventsExclude defines a list of filters for attribute values.
 	// If the list is not empty, events with matching resource attribute values will not be emitted.
 	// EventsInclude has higher priority than EventsExclude.
-	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+	EventsExclude []strmatch.Config `mapstructure:"events_exclude"`
 
 	enabledSetByUser bool
 }
@@ -3401,18 +3401,18 @@ type ServiceInstanceIDResourceAttributeConfig struct {
 	OverrideValue *string `mapstructure:"override_value"`
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
-	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	MetricsInclude []strmatch.Config `mapstructure:"metrics_include"`
 	// Experimental: MetricsExclude defines a list of filters for attribute values.
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
-	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	MetricsExclude []strmatch.Config `mapstructure:"metrics_exclude"`
 	// Experimental: EventsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only events with matching resource attribute values will be emitted.
-	EventsInclude []filter.Config `mapstructure:"events_include"`
+	EventsInclude []strmatch.Config `mapstructure:"events_include"`
 	// Experimental: EventsExclude defines a list of filters for attribute values.
 	// If the list is not empty, events with matching resource attribute values will not be emitted.
 	// EventsInclude has higher priority than EventsExclude.
-	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+	EventsExclude []strmatch.Config `mapstructure:"events_exclude"`
 
 	enabledSetByUser bool
 }
@@ -3436,18 +3436,18 @@ type ServiceNameResourceAttributeConfig struct {
 	OverrideValue *string `mapstructure:"override_value"`
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
-	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	MetricsInclude []strmatch.Config `mapstructure:"metrics_include"`
 	// Experimental: MetricsExclude defines a list of filters for attribute values.
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
-	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	MetricsExclude []strmatch.Config `mapstructure:"metrics_exclude"`
 	// Experimental: EventsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only events with matching resource attribute values will be emitted.
-	EventsInclude []filter.Config `mapstructure:"events_include"`
+	EventsInclude []strmatch.Config `mapstructure:"events_include"`
 	// Experimental: EventsExclude defines a list of filters for attribute values.
 	// If the list is not empty, events with matching resource attribute values will not be emitted.
 	// EventsInclude has higher priority than EventsExclude.
-	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+	EventsExclude []strmatch.Config `mapstructure:"events_exclude"`
 
 	enabledSetByUser bool
 }
@@ -3471,18 +3471,18 @@ type ServiceNamespaceResourceAttributeConfig struct {
 	OverrideValue *string `mapstructure:"override_value"`
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
-	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	MetricsInclude []strmatch.Config `mapstructure:"metrics_include"`
 	// Experimental: MetricsExclude defines a list of filters for attribute values.
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
-	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	MetricsExclude []strmatch.Config `mapstructure:"metrics_exclude"`
 	// Experimental: EventsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only events with matching resource attribute values will be emitted.
-	EventsInclude []filter.Config `mapstructure:"events_include"`
+	EventsInclude []strmatch.Config `mapstructure:"events_include"`
 	// Experimental: EventsExclude defines a list of filters for attribute values.
 	// If the list is not empty, events with matching resource attribute values will not be emitted.
 	// EventsInclude has higher priority than EventsExclude.
-	EventsExclude []filter.Config `mapstructure:"events_exclude"`
+	EventsExclude []strmatch.Config `mapstructure:"events_exclude"`
 
 	enabledSetByUser bool
 }

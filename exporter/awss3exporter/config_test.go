@@ -594,16 +594,16 @@ func TestCompressionSettings(t *testing.T) {
 		wantLevel   configcompression.Level
 		wantError   string
 	}{
-		{name: "default gzip", compression: "gzip", wantLevel: configcompression.DefaultCompressionLevel},
-		{name: "default zstd", compression: "zstd", wantLevel: 3},
-		{name: "default zlib", compression: "zlib", wantLevel: configcompression.DefaultCompressionLevel},
+		{name: "default gzip", compression: "gzip", wantLevel: 0},
+		{name: "default zstd", compression: "zstd", wantLevel: 0},
+		{name: "default zlib", compression: "zlib", wantLevel: 0},
 		{name: "custom deflate", compression: "deflate", settings: map[string]any{"level": 1}, wantLevel: 1},
-		{name: "empty settings", compression: "gzip", settings: map[string]any{}, wantLevel: configcompression.DefaultCompressionLevel},
+		{name: "empty settings", compression: "gzip", settings: map[string]any{}, wantLevel: 0},
 		{name: "explicit zero", compression: "gzip", settings: map[string]any{"level": 0}, wantLevel: 0},
 		{name: "custom zstd", compression: "zstd", settings: map[string]any{"level": 6}, wantLevel: 6},
 		{name: "invalid gzip level", compression: "gzip", settings: map[string]any{"level": 10}, wantError: "unsupported parameters"},
-		{name: "level without compression", compression: "none", settings: map[string]any{"level": 0}, wantError: "compression_settings.level requires"},
-		{name: "level with lz4", compression: "lz4", settings: map[string]any{"level": 1}, wantError: "compression_settings.level requires"},
+		{name: "zero level without compression", compression: "none", settings: map[string]any{"level": 0}, wantLevel: 0},
+		{name: "level with lz4", compression: "lz4", settings: map[string]any{"level": 1}, wantError: "unsupported parameters"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -619,13 +619,13 @@ func TestCompressionSettings(t *testing.T) {
 				return
 			}
 			require.NoError(t, cfg.Validate())
-			assert.Equal(t, tc.wantLevel, cfg.S3Uploader.compressionParams().Level)
+			assert.Equal(t, tc.wantLevel, cfg.S3Uploader.CompressionSettings.Level)
 
 			roundTrip := confmap.New()
 			require.NoError(t, roundTrip.Marshal(cfg))
 			decoded := createDefaultConfig().(*Config)
 			require.NoError(t, roundTrip.Unmarshal(decoded))
-			assert.Equal(t, tc.wantLevel, decoded.S3Uploader.compressionParams().Level)
+			assert.Equal(t, tc.wantLevel, decoded.S3Uploader.CompressionSettings.Level)
 		})
 	}
 }
