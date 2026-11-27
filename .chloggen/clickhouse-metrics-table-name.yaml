@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: exporter/clickhouse
+note: Honor the deprecated `metrics_table_name` option again; it was ignored because the default config pre-filled `metrics_tables` names.
+issues: [53425]
+subtext:
+change_logs: [user]
