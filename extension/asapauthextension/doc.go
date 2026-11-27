@@ -3,7 +3,7 @@
 
 //go:generate make mdatagen
 
-// Deprecated: asapauthextension has depedencies which rely on go 1.26 which will no longer be supported when the next version is
+// Deprecated: asapauthextension has dependencies which rely on go 1.26 which will no longer be supported when the next version is
 // available.
 //
 // This package is being deprecated and removed. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/51868 for more details.
