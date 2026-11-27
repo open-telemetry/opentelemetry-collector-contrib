@@ -13,6 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/openinference"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/openllmetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/otelsemconv"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/genainormalizerprocessor/internal/springai"
 )
 
 // valueTransformer applies source-specific value-level normalization into
@@ -51,6 +52,9 @@ func newSourceNormalizer(src Source) sourceNormalizer {
 	case SourceOpenLLMetry:
 		sn.lookupTable = openllmetry.LookupTable
 		sn.transformValue = openllmetry.Transform
+	case SourceSpringAI:
+		sn.lookupTable = springai.LookupTable
+		sn.aggregators = []attributeAggregator{springai.Aggregator{}}
 	default:
 		sn.lookupTable = src.Mappings
 		if len(src.ValueMappings) > 0 {
