@@ -405,17 +405,259 @@ func TestTimeseriesInfo_IsResetExponentialHistogram(t *testing.T) {
 			expectedReset: true,
 		},
 		{
-			name: "Scale mismatch",
+			name: "Scale decrease (downscale) is not a reset",
 			setupTsi: func() *TimeseriesInfo {
 				tsi := &TimeseriesInfo{}
-				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, Scale: 2, PreviousPositive: ExponentialHistogramBucketInfo{}, PreviousNegative: ExponentialHistogramBucketInfo{}}
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{
+					PreviousCount:     10,
+					PreviousSum:       50,
+					PreviousZeroCount: 2,
+					Scale:             2,
+					PreviousPositive:  ExponentialHistogramBucketInfo{Offset: 0, BucketCounts: []uint64{1, 2, 3, 2}},
+					PreviousNegative:  ExponentialHistogramBucketInfo{Offset: -2, BucketCounts: []uint64{1, 1}},
+				}
 				return tsi
 			},
 			setupEh: func() pmetric.ExponentialHistogramDataPoint {
 				eh := pmetric.NewExponentialHistogramDataPoint()
 				eh.SetCount(15)
 				eh.SetSum(60)
+				eh.SetZeroCount(2)
 				eh.SetScale(1)
+				eh.Positive().SetOffset(0)
+				eh.Positive().BucketCounts().FromRaw([]uint64{3, 7, 1})
+				eh.Negative().SetOffset(-1)
+				eh.Negative().BucketCounts().FromRaw([]uint64{2, 2})
+				return eh
+			},
+			expectedReset: false,
+		},
+		{
+			name: "Scale decrease with negative offset spanning boundary is not a reset",
+			setupTsi: func() *TimeseriesInfo {
+				tsi := &TimeseriesInfo{}
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{
+					PreviousCount:    6,
+					PreviousSum:      20,
+					Scale:            1,
+					PreviousPositive: ExponentialHistogramBucketInfo{},
+					PreviousNegative: ExponentialHistogramBucketInfo{Offset: -3, BucketCounts: []uint64{2, 1, 3}},
+				}
+				return tsi
+			},
+			setupEh: func() pmetric.ExponentialHistogramDataPoint {
+				eh := pmetric.NewExponentialHistogramDataPoint()
+				eh.SetCount(8)
+				eh.SetSum(25)
+				eh.SetScale(0)
+				eh.Negative().SetOffset(-2)
+				eh.Negative().BucketCounts().FromRaw([]uint64{2, 5, 1})
+				return eh
+			},
+			expectedReset: false,
+		},
+		{
+			name: "Scale decrease with decreased bucket count is a reset",
+			setupTsi: func() *TimeseriesInfo {
+				tsi := &TimeseriesInfo{}
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{
+					PreviousCount:    10,
+					PreviousSum:      50,
+					Scale:            2,
+					PreviousPositive: ExponentialHistogramBucketInfo{Offset: 0, BucketCounts: []uint64{2, 3, 5}},
+					PreviousNegative: ExponentialHistogramBucketInfo{},
+				}
+				return tsi
+			},
+			setupEh: func() pmetric.ExponentialHistogramDataPoint {
+				eh := pmetric.NewExponentialHistogramDataPoint()
+				eh.SetCount(12)
+				eh.SetSum(60)
+				eh.SetScale(1)
+				eh.Positive().SetOffset(0)
+				eh.Positive().BucketCounts().FromRaw([]uint64{4, 8})
+				return eh
+			},
+			expectedReset: true,
+		},
+		{
+			name: "Scale increase is a reset",
+			setupTsi: func() *TimeseriesInfo {
+				tsi := &TimeseriesInfo{}
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{PreviousCount: 10, PreviousSum: 50, Scale: 1, PreviousPositive: ExponentialHistogramBucketInfo{}, PreviousNegative: ExponentialHistogramBucketInfo{}}
+				return tsi
+			},
+			setupEh: func() pmetric.ExponentialHistogramDataPoint {
+				eh := pmetric.NewExponentialHistogramDataPoint()
+				eh.SetCount(15)
+				eh.SetSum(60)
+				eh.SetScale(2)
+				return eh
+			},
+			expectedReset: true,
+		},
+		{
+			name: "ZeroThreshold increase moving buckets into zero count is not a reset",
+			setupTsi: func() *TimeseriesInfo {
+				tsi := &TimeseriesInfo{}
+				// At scale 0, bucket -1 covers (0.5, 1], bucket 0 covers (1, 2], bucket 1 covers (2, 4].
+				// Increasing ZeroThreshold from 0 to 2.0 moves buckets -1 and 0 into ZeroCount.
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{
+					PreviousCount:         10,
+					PreviousSum:           50,
+					PreviousZeroCount:     1,
+					PreviousZeroThreshold: 0,
+					Scale:                 0,
+					PreviousPositive:      ExponentialHistogramBucketInfo{Offset: -1, BucketCounts: []uint64{2, 3, 4}},
+					PreviousNegative:      ExponentialHistogramBucketInfo{},
+				}
+				return tsi
+			},
+			setupEh: func() pmetric.ExponentialHistogramDataPoint {
+				eh := pmetric.NewExponentialHistogramDataPoint()
+				eh.SetCount(12)
+				eh.SetSum(55)
+				eh.SetZeroCount(6)
+				eh.SetZeroThreshold(2.0)
+				eh.SetScale(0)
+				eh.Positive().SetOffset(1)
+				eh.Positive().BucketCounts().FromRaw([]uint64{6})
+				return eh
+			},
+			expectedReset: false,
+		},
+		{
+			name: "ZeroThreshold increase with ZeroCount below trimmed zero count is a reset",
+			setupTsi: func() *TimeseriesInfo {
+				tsi := &TimeseriesInfo{}
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{
+					PreviousCount:         10,
+					PreviousSum:           50,
+					PreviousZeroCount:     1,
+					PreviousZeroThreshold: 0,
+					Scale:                 0,
+					PreviousPositive:      ExponentialHistogramBucketInfo{Offset: -1, BucketCounts: []uint64{2, 3, 4}},
+					PreviousNegative:      ExponentialHistogramBucketInfo{},
+				}
+				return tsi
+			},
+			setupEh: func() pmetric.ExponentialHistogramDataPoint {
+				eh := pmetric.NewExponentialHistogramDataPoint()
+				eh.SetCount(12)
+				eh.SetSum(55)
+				eh.SetZeroCount(5) // 1 + 2 + 3 = 6 expected
+				eh.SetZeroThreshold(2.0)
+				eh.SetScale(0)
+				eh.Positive().SetOffset(1)
+				eh.Positive().BucketCounts().FromRaw([]uint64{7})
+				return eh
+			},
+			expectedReset: true,
+		},
+		{
+			name: "ZeroThreshold increase combined with scale decrease is not a reset",
+			setupTsi: func() *TimeseriesInfo {
+				tsi := &TimeseriesInfo{}
+				// At scale 1: bucket -2 covers (0.5, sqrt(2)/2], -1 covers (sqrt(2)/2, 1], 0 covers (1, sqrt(2)],
+				// 1 covers (sqrt(2), 2], 2 covers (2, 2*sqrt(2)], 3 covers (2*sqrt(2), 4].
+				// Increasing ZeroThreshold to 2.0 trims buckets <= 1 (2 + 3 + 1 + 4 = 10) into ZeroCount,
+				// leaving bucket 2 (count 1) -> downscaled to scale 0 bucket [1] with count 1.
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{
+					PreviousCount:         12,
+					PreviousSum:           50,
+					PreviousZeroCount:     1,
+					PreviousZeroThreshold: 0,
+					Scale:                 1,
+					PreviousPositive:      ExponentialHistogramBucketInfo{Offset: -2, BucketCounts: []uint64{2, 3, 1, 4, 1}},
+					PreviousNegative:      ExponentialHistogramBucketInfo{},
+				}
+				return tsi
+			},
+			setupEh: func() pmetric.ExponentialHistogramDataPoint {
+				eh := pmetric.NewExponentialHistogramDataPoint()
+				eh.SetCount(15)
+				eh.SetSum(60)
+				eh.SetZeroCount(11)
+				eh.SetZeroThreshold(2.0)
+				eh.SetScale(0)
+				eh.Positive().SetOffset(1)
+				eh.Positive().BucketCounts().FromRaw([]uint64{4})
+				return eh
+			},
+			expectedReset: false,
+		},
+		{
+			name: "ZeroThreshold decrease is a reset",
+			setupTsi: func() *TimeseriesInfo {
+				tsi := &TimeseriesInfo{}
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{
+					PreviousCount:         10,
+					PreviousSum:           50,
+					PreviousZeroCount:     5,
+					PreviousZeroThreshold: 1.0,
+					Scale:                 0,
+					PreviousPositive:      ExponentialHistogramBucketInfo{Offset: 1, BucketCounts: []uint64{5}},
+					PreviousNegative:      ExponentialHistogramBucketInfo{},
+				}
+				return tsi
+			},
+			setupEh: func() pmetric.ExponentialHistogramDataPoint {
+				eh := pmetric.NewExponentialHistogramDataPoint()
+				eh.SetCount(12)
+				eh.SetSum(55)
+				eh.SetZeroCount(5)
+				eh.SetZeroThreshold(0.5)
+				eh.SetScale(0)
+				eh.Positive().SetOffset(1)
+				eh.Positive().BucketCounts().FromRaw([]uint64{7})
+				return eh
+			},
+			expectedReset: true,
+		},
+		{
+			name: "Offset shift to lower offset at same scale is not a reset",
+			setupTsi: func() *TimeseriesInfo {
+				tsi := &TimeseriesInfo{}
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{
+					PreviousCount:    6,
+					PreviousSum:      30,
+					Scale:            1,
+					PreviousPositive: ExponentialHistogramBucketInfo{Offset: 2, BucketCounts: []uint64{2, 4}},
+					PreviousNegative: ExponentialHistogramBucketInfo{},
+				}
+				return tsi
+			},
+			setupEh: func() pmetric.ExponentialHistogramDataPoint {
+				eh := pmetric.NewExponentialHistogramDataPoint()
+				eh.SetCount(10)
+				eh.SetSum(35)
+				eh.SetScale(1)
+				eh.Positive().SetOffset(0)
+				eh.Positive().BucketCounts().FromRaw([]uint64{1, 1, 2, 5, 1})
+				return eh
+			},
+			expectedReset: false,
+		},
+		{
+			name: "Offset shift with dropped bucket count is a reset",
+			setupTsi: func() *TimeseriesInfo {
+				tsi := &TimeseriesInfo{}
+				tsi.ExponentialHistogram = ExponentialHistogramInfo{
+					PreviousCount:    6,
+					PreviousSum:      30,
+					Scale:            1,
+					PreviousPositive: ExponentialHistogramBucketInfo{Offset: 2, BucketCounts: []uint64{2, 4}},
+					PreviousNegative: ExponentialHistogramBucketInfo{},
+				}
+				return tsi
+			},
+			setupEh: func() pmetric.ExponentialHistogramDataPoint {
+				eh := pmetric.NewExponentialHistogramDataPoint()
+				eh.SetCount(10)
+				eh.SetSum(35)
+				eh.SetScale(1)
+				eh.Positive().SetOffset(3) // Bucket 2 had count 2, now missing
+				eh.Positive().BucketCounts().FromRaw([]uint64{5, 5})
 				return eh
 			},
 			expectedReset: true,
@@ -457,6 +699,106 @@ func TestTimeseriesInfo_IsResetExponentialHistogram(t *testing.T) {
 			tsi := tt.setupTsi()
 			eh := tt.setupEh()
 			assert.Equal(t, tt.expectedReset, tsi.IsResetExponentialHistogram(eh))
+		})
+	}
+}
+
+func TestExponentialHistogramBucketInfo_Downscale(t *testing.T) {
+	tests := []struct {
+		name           string
+		initial        ExponentialHistogramBucketInfo
+		bitsLost       uint32
+		expectedOffset int32
+		expectedCounts []uint64
+	}{
+		{
+			name:           "empty buckets",
+			initial:        ExponentialHistogramBucketInfo{Offset: 5, BucketCounts: nil},
+			bitsLost:       2,
+			expectedOffset: 5,
+			expectedCounts: nil,
+		},
+		{
+			name:           "zero bits lost",
+			initial:        ExponentialHistogramBucketInfo{Offset: 1, BucketCounts: []uint64{2, 3}},
+			bitsLost:       0,
+			expectedOffset: 1,
+			expectedCounts: []uint64{2, 3},
+		},
+		{
+			name:           "positive offset downscale by 1",
+			initial:        ExponentialHistogramBucketInfo{Offset: 1, BucketCounts: []uint64{1, 2, 3, 4}},
+			bitsLost:       1,
+			expectedOffset: 0,
+			expectedCounts: []uint64{1, 5, 4},
+		},
+		{
+			name:           "negative offset downscale by 1",
+			initial:        ExponentialHistogramBucketInfo{Offset: -3, BucketCounts: []uint64{2, 1, 3}},
+			bitsLost:       1,
+			expectedOffset: -2,
+			expectedCounts: []uint64{2, 4},
+		},
+		{
+			name:           "downscale by 2 bits",
+			initial:        ExponentialHistogramBucketInfo{Offset: 2, BucketCounts: []uint64{1, 2, 3, 4, 5}},
+			bitsLost:       2,
+			expectedOffset: 0,
+			expectedCounts: []uint64{3, 12},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.initial.Downscale(tt.bitsLost)
+			assert.Equal(t, tt.expectedOffset, got.Offset)
+			assert.Equal(t, tt.expectedCounts, got.BucketCounts)
+		})
+	}
+}
+
+func TestExponentialHistogramBucketInfo_TrimZeros(t *testing.T) {
+	tests := []struct {
+		name            string
+		initial         ExponentialHistogramBucketInfo
+		thresholdBucket int32
+		expectedTrimmed uint64
+		expectedOffset  int32
+		expectedCounts  []uint64
+	}{
+		{
+			name:            "threshold before all buckets",
+			initial:         ExponentialHistogramBucketInfo{Offset: 2, BucketCounts: []uint64{3, 4}},
+			thresholdBucket: 1,
+			expectedTrimmed: 0,
+			expectedOffset:  2,
+			expectedCounts:  []uint64{3, 4},
+		},
+		{
+			name:            "threshold trims prefix",
+			initial:         ExponentialHistogramBucketInfo{Offset: -1, BucketCounts: []uint64{2, 3, 4, 5}},
+			thresholdBucket: 0,
+			expectedTrimmed: 5,
+			expectedOffset:  1,
+			expectedCounts:  []uint64{4, 5},
+		},
+		{
+			name:            "threshold trims all buckets",
+			initial:         ExponentialHistogramBucketInfo{Offset: -1, BucketCounts: []uint64{2, 3}},
+			thresholdBucket: 5,
+			expectedTrimmed: 5,
+			expectedOffset:  0,
+			expectedCounts:  nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := tt.initial
+			trimmed := b.TrimZeros(tt.thresholdBucket)
+			assert.Equal(t, tt.expectedTrimmed, trimmed)
+			assert.Equal(t, tt.expectedOffset, b.Offset)
+			assert.Equal(t, tt.expectedCounts, b.BucketCounts)
 		})
 	}
 }

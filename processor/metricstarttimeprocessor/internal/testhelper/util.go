@@ -174,6 +174,31 @@ func ExponentialHistogramPointNoValue(attributes []*KV, startTimestamp, timestam
 	return hdp
 }
 
+func ExponentialHistogramPointWithThreshold(
+	attributes []*KV,
+	startTimestamp, timestamp pcommon.Timestamp,
+	scale int32,
+	zeroThreshold float64,
+	zeroCount, count uint64,
+	sum float64,
+	positiveOffset int32,
+	positiveBuckets []uint64,
+	negativeOffset int32,
+	negativeBuckets []uint64,
+) pmetric.ExponentialHistogramDataPoint {
+	hdp := ExponentialHistogramPointRaw(attributes, startTimestamp, timestamp)
+	hdp.SetScale(scale)
+	hdp.SetZeroThreshold(zeroThreshold)
+	hdp.SetZeroCount(zeroCount)
+	hdp.SetCount(count)
+	hdp.SetSum(sum)
+	hdp.Positive().SetOffset(positiveOffset)
+	hdp.Positive().BucketCounts().FromRaw(positiveBuckets)
+	hdp.Negative().SetOffset(negativeOffset)
+	hdp.Negative().BucketCounts().FromRaw(negativeBuckets)
+	return hdp
+}
+
 // exponentialHistogramPointSimplified let's you define an exponential
 // histogram with just a few parameters.
 // Scale and ZeroCount are set to the provided values.
