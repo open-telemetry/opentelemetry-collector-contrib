@@ -144,7 +144,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordRedisClusterUptimeDataPoint(ts, 1)
-
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisCmdCallsDataPoint(ts, 1, "cmd-val")
 			if tt.name == "reaggregate_set" {
@@ -153,7 +153,7 @@ func TestMetricsBuilder(t *testing.T) {
 				mb.RecordRedisCmdCallsDataPoint(ts+1, 3, "cmd-val-2")
 				assert.Equal(t, 2, mb.metricRedisCmdCalls.data.Sum().DataPoints().Len())
 			}
-
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisCmdLatencyDataPoint(ts, 1, "cmd-val", AttributePercentileP50)
 			if tt.name == "reaggregate_set" {
@@ -162,7 +162,7 @@ func TestMetricsBuilder(t *testing.T) {
 				mb.RecordRedisCmdLatencyDataPoint(ts+1, 3, "cmd-val-2", AttributePercentileP99)
 				assert.Equal(t, 2, mb.metricRedisCmdLatency.data.Gauge().DataPoints().Len())
 			}
-
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisCmdUsecDataPoint(ts, 1, "cmd-val")
 			if tt.name == "reaggregate_set" {
