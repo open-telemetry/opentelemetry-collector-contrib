@@ -52,6 +52,7 @@ The following exporter configuration parameters are supported.
 | `endpoint`              | Custom endpoint for the SQS service                                                                                                        |             | Optional |
 | `max_number_of_messages`          | Maximum number of messages to retrieve in a single SQS request                                                                             | 10          | Optional |
 | `wait_time_seconds`             | Wait time in seconds for long polling SQS requests                                                                                         | 20          | Optional |
+| `client_concurrency` | Number of independent SQS polling workers. Each worker processes its received messages sequentially. Must be positive. | 1 | Optional |
 | `visibility_timeout_seconds` | Sets the SQS visibility timeout and renews it while received messages are waiting or processing. Valid values: 1–43200. Requires `sqs:ChangeMessageVisibility`. | Queue default, without renewal | Optional |
 | `encodings:`            | An array of entries with the following properties:                                                                                         |             | Optional |
 | `extension`             | Extension to use for decoding a key with a matching suffix.                                                                                |             | Required |
@@ -80,6 +81,18 @@ sqs:
 
 **Note:** You must configure your S3 bucket to send event notifications to the SQS queue.
 Time-based configuration (`starttime`/`endtime`) and SQS configuration cannot be used together.
+
+Use `sqs.client_concurrency` to process multiple S3 objects concurrently in one receiver. Each worker
+polls independently and processes one object at a time. The default of `1` preserves sequential
+processing. With multiple workers, ordering across messages is not guaranteed.
+
+Each worker can fetch up to `max_number_of_messages` messages per poll. Set this to `1` for large
+objects to avoid reserving messages that will wait behind another object. Size the queue's visibility
+timeout for processing and pipeline delays, or set `sqs.visibility_timeout_seconds` to renew it. Increasing concurrency increases memory use because
+each worker downloads and decodes its own object. Encoding extensions used with multiple workers
+timeout for processing and pipeline delays, or set `sqs.visibility_timeout_seconds` to renew it. 
+Increasing concurrency increases memory use becauseeach worker downloads and decodes its own  object.
+Encoding extensions used with multiple workers must support concurrent decoding.
 
 Set `sqs.visibility_timeout_seconds` to renew message visibility during long-running downloads or
 pipeline processing. Renewal also covers messages waiting behind another message in the same poll.

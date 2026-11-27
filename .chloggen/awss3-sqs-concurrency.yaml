@@ -1,0 +1,5 @@
+change_type: enhancement
+component: receiver/aws_s3
+note: Add sqs.client_concurrency for independent SQS polling workers, with safe concurrent text decoding.
+issues: [53141]
+change_logs: [user, api]

@@ -56,7 +56,7 @@ func (e *textExtension) Start(_ context.Context, _ component.Host) error {
 	}
 
 	e.textEncoder = &textLogCodec{
-		decoder:               enc.NewDecoder(),
+		encoding:              enc,
 		marshalingSeparator:   e.config.MarshalingSeparator,
 		unmarshalingSeparator: unmarshallingSeparator,
 	}

@@ -120,6 +120,7 @@ func TestNewS3SQSReader(t *testing.T) {
 		// check all defaults are set
 		assert.Equal(t, int32(10), r.maxNumberOfMessages)
 		assert.Equal(t, int32(20), r.waitTimeSeconds)
+		assert.Equal(t, 1, r.clientConcurrency)
 		assert.Zero(t, r.visibilityTimeoutSeconds)
 	})
 
