@@ -97,6 +97,21 @@ processors:
           - set(attributes["datadog.log.source"], "otel")
 ```
 
+### Report logs delivery errors
+
+By default, the exporter hands logs to a pipeline that sends them in the background, so errors from the Datadog logs intake do not reach the Collector: they are not retried according to `retry_on_failure` and are not counted in `otelcol_exporter_send_failed_log_records`.
+
+To send logs from the exporter itself instead, enable the alpha feature gate `datadog.logsagentexporter.UseSyncSender`:
+
+```
+--feature-gates=+datadog.logsagentexporter.UseSyncSender
+```
+
+With the feature gate enabled:
+- Errors from the logs intake are returned to the Collector and counted in `otelcol_exporter_send_failed_log_records`. Errors that retrying cannot fix, such as a 403 response, drop the logs. For the other errors, the log records that failed are retried according to `retry_on_failure`.
+- Each request is limited by the `timeout` option.
+- Unless you configure them, `sending_queue` batches log records and sets its consumers like the background pipeline did.
+
 ### My Collector K8s pod is getting rebooted on startup when I don't manually set a hostname under `exporters::datadog::hostname`
 
 This is due to a bug with underlying hostname detection blocking the `health_check` extension from responding to liveness/readiness probes on startup. To fix, either set `hostname_detection_timeout` to be less than the pod/daemonset `livenessProbe: failureThreshold * periodSeconds` so that the timeout for hostname detection on startup takes less time than the control plane waits before restarting the pod, or leave `hostname_detection_timeout` at the default `25s` value and double-check the `livenessProbe` and `readinessProbe` settings and ensure that the control plane will in fact wait long enough for startup to complete before restarting the pod.

@@ -544,6 +544,7 @@ func (f *factory) createLogsExporter(
 
 	var pusher consumer.ConsumeLogsFunc
 	var logsAgent logsagentpipeline.LogsAgent
+	var syncSettings *logsSyncSettings
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostnameDetectionTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
@@ -577,23 +578,24 @@ func (f *factory) createLogsExporter(
 			return nil
 		}
 	default:
-		la, exp, err := newLogsAgentExporter(ctx, set, cfg, hostProvider, f.gatewayUsage)
+		la, exp, ss, err := newLogsAgentExporter(ctx, set, cfg, hostProvider, f.gatewayUsage)
 		if err != nil {
 			cancel()
 			return nil, err
 		}
 		logsAgent = la
+		syncSettings = ss
 		pusher = exp.ConsumeLogs
 	}
+	timeout, queue := logsExporterHelperSettings(cfg, syncSettings)
 	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
 		pusher,
-		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0 * time.Second}),
+		exporterhelper.WithTimeout(timeout),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
-		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithQueue(queue),
 		exporterhelper.WithShutdown(func(shutdownCtx context.Context) error {
 			// Stop the logs agent before canceling ctx. cancel() pre-cancels
 			// the context that pipeline goroutines were started with, causing

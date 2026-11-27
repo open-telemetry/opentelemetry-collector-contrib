@@ -115,6 +115,15 @@ type Config struct {
 
 	// Non-fatal warnings found during configuration loading.
 	warnings []error
+
+	// queueNumConsumersSet records whether sending_queue::num_consumers is set in the configuration.
+	queueNumConsumersSet bool
+}
+
+// IsQueueNumConsumersSet reports whether sending_queue::num_consumers is set in the configuration,
+// rather than taken from the exporterhelper defaults.
+func (c *Config) IsQueueNumConsumersSet() bool {
+	return c.queueNumConsumersSet
 }
 
 // LogWarnings logs warning messages that were generated on unmarshaling.
@@ -301,6 +310,9 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 
 	c.API.Key = configopaque.String(strings.TrimSpace(string(c.API.Key)))
 	c.Hostname = strings.TrimSpace(c.Hostname)
+
+	// The exporterhelper default can't be told apart from an explicit value once unmarshaled.
+	c.queueNumConsumersSet = configMap.IsSet("sending_queue::num_consumers")
 
 	// If an endpoint is not explicitly set, override it based on the site.
 	if !configMap.IsSet("metrics::endpoint") {

@@ -471,6 +471,46 @@ func TestUnmarshalHostnameWhitespace(t *testing.T) {
 	assert.Equal(t, "my-hostname", cfg.Hostname)
 }
 
+func TestUnmarshalRecordsExplicitQueueNumConsumers(t *testing.T) {
+	tests := []struct {
+		name string
+		conf map[string]any
+		want bool
+	}{
+		{
+			name: "no sending_queue",
+			conf: map[string]any{},
+			want: false,
+		},
+		{
+			name: "sending_queue without num_consumers",
+			conf: map[string]any{"sending_queue": map[string]any{"queue_size": 100}},
+			want: false,
+		},
+		{
+			name: "explicit num_consumers",
+			conf: map[string]any{"sending_queue": map[string]any{"num_consumers": 4}},
+			want: true,
+		},
+		{
+			// An explicit value equal to the exporterhelper default can't be told apart from the
+			// default once the configuration is unmarshaled.
+			name: "explicit num_consumers equal to the default",
+			conf: map[string]any{"sending_queue": map[string]any{"num_consumers": exporterhelper.NewDefaultQueueConfig().NumConsumers}},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := CreateDefaultConfig().(*Config)
+
+			require.NoError(t, cfg.Unmarshal(confmap.NewFromStringMap(tt.conf)))
+
+			assert.Equal(t, tt.want, cfg.IsQueueNumConsumersSet())
+		})
+	}
+}
+
 // Test that the factory creates the default configuration
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := CreateDefaultConfig()
