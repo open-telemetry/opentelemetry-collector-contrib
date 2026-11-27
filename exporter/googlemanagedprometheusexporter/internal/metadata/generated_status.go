@@ -21,5 +21,10 @@ const (
 
 // NewDefaultSendingQueueConfig returns the sending queue default declared in metadata.yaml.
 func NewDefaultSendingQueueConfig() configoptional.Optional[exporterhelper.QueueBatchConfig] {
-	return configoptional.Some(exporterhelper.NewDefaultQueueConfig())
+	cfg := exporterhelper.NewDefaultQueueConfig()
+	batchCfg := *cfg.Batch.GetOrInsertDefault()
+	batchCfg.MinSize = 200
+	batchCfg.MaxSize = 200
+	cfg.Batch = configoptional.Some(batchCfg)
+	return configoptional.Some(cfg)
 }
