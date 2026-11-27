@@ -60,7 +60,7 @@ func newRedisScraperWithClient(client client, settings receiver.Settings, cfg *C
 	}
 	rs := &redisScraper{
 		client:     client,
-		redisSvc:   newRedisSvc(client),
+		redisSvc:   newRedisSvc(client, settings.TelemetrySettings.Logger, clusterMetricsEnabled(cfg.MetricsBuilderConfig.Metrics)),
 		settings:   settings.TelemetrySettings,
 		mb:         metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		configInfo: configInfo,
@@ -69,6 +69,24 @@ func newRedisScraperWithClient(client client, settings receiver.Settings, cfg *C
 		rs.Scrape,
 		scraper.WithShutdown(rs.shutdown),
 	)
+}
+
+// clusterMetricsEnabled reports whether at least one redis.cluster.* metric is enabled,
+// so the scraper knows whether CLUSTER INFO's output is needed at all.
+func clusterMetricsEnabled(m metadata.MetricsConfig) bool {
+	return m.RedisClusterClusterEnabled.Enabled ||
+		m.RedisClusterKnownNodes.Enabled ||
+		m.RedisClusterLinksBufferLimitExceededCount.Enabled ||
+		m.RedisClusterNodeCount.Enabled ||
+		m.RedisClusterNodeUptime.Enabled ||
+		m.RedisClusterSlotsAssigned.Enabled ||
+		m.RedisClusterSlotsFail.Enabled ||
+		m.RedisClusterSlotsOk.Enabled ||
+		m.RedisClusterSlotsPfail.Enabled ||
+		m.RedisClusterState.Enabled ||
+		m.RedisClusterStatsMessagesReceived.Enabled ||
+		m.RedisClusterStatsMessagesSent.Enabled ||
+		m.RedisClusterUptime.Enabled
 }
 
 func (rs *redisScraper) shutdown(context.Context) error {
@@ -143,21 +161,16 @@ func (rs *redisScraper) recordCommonMetrics(ts pcommon.Timestamp, inf info, reco
 			recordDataPoint(ts, val)
 
 		case func(pcommon.Timestamp, int64, metadata.AttributeClusterState):
-			val, err := strconv.ParseInt(infoVal, 10, 64)
-			if err != nil {
-				rs.settings.Logger.Warn("failed to parse info int val", zap.String("key", infoKey),
-					zap.String("val", infoVal), zap.Error(err))
-				continue
+			// cluster_state is a string ("ok"/"fail"), not a number, so unlike the other
+			// cases it can't go through strconv.ParseInt. The gauge value is always 1;
+			// health is conveyed entirely via the AttributeClusterState attribute, mirroring
+			// how the redis.mode metric records its own enum-like attribute.
+			if state, ok := metadata.MapAttributeClusterState[infoVal]; ok {
+				recordDataPoint(ts, 1, state)
+			} else {
+				rs.settings.Logger.Warn("failed to parse info val", zap.String("key", infoKey),
+					zap.String("val", infoVal))
 			}
-			var state metadata.AttributeClusterState
-			if infoKey == "cluster_state" {
-				if infoVal == "ok" {
-					state = metadata.AttributeClusterStateOk
-				} else {
-					state = metadata.AttributeClusterStateFail
-				}
-			}
-			recordDataPoint(ts, val, state)
 		}
 	}
 }
