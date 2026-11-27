@@ -649,7 +649,7 @@ func (c *collector) validateMetrics(name, description string, metricType *dto.Me
 	emf.lastSeen = now
 	c.metricFamilies.Store(name, emf)
 	if emf.mf.GetHelp() != description {
-		c.logger.Info(
+		c.logger.Debug(
 			"Instrument description conflict, using existing",
 			zap.String("instrument", name),
 			zap.String("existing", emf.mf.GetHelp()),
