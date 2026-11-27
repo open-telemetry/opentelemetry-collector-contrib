@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -25,6 +26,7 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
+		TimeoutSettings:         exporterhelper.NewDefaultTimeoutConfig(),
 		AWSSessionSettings:      awsutil.CreateDefaultSessionConfig(),
 		skipTimestampValidation: metadata.ExporterAwsxraySkiptimestampvalidationFeatureGate.IsEnabled(),
 	}

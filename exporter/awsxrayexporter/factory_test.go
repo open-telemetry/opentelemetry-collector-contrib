@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/featuregate"
 
@@ -33,6 +34,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &Config{
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			NumberOfWorkers:       8,
 			Endpoint:              "",
@@ -58,6 +60,7 @@ func TestCreateDefaultConfigWithSkipTimestampValidation(t *testing.T) {
 
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &Config{
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			NumberOfWorkers:       8,
 			Endpoint:              "",
