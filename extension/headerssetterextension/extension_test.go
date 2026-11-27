@@ -119,6 +119,21 @@ var (
 			},
 		},
 		{
+			// No auth data in the context.
+			cfg: &Config{
+				HeadersConfig: []HeaderConfig{
+					{
+						Key:           &headername,
+						Action:        INSERT,
+						FromAttribute: new("tenant"),
+					},
+				},
+			},
+			expectedHeaders: map[string]string{
+				"header_name": "",
+			},
+		},
+		{
 			cfg: &Config{
 				HeadersConfig: []HeaderConfig{
 					{
