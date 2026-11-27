@@ -86,6 +86,25 @@ func getAttributes(reader *sdkmetric.ManualReader, name string) ([]attribute.Set
 	return ret, err
 }
 
+func TestHeartbeatCounterOverrideUnit(t *testing.T) {
+	reader := sdkmetric.NewManualReader()
+	provider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	const customName = "custom_heartbeat_count"
+	counter, err := heartbeatCounter(provider.Meter("test"), nil, map[string]string{
+		defaultHBSentMetricsName: customName,
+	}, defaultHBSentMetricsName, "number of heartbeats sent")
+	require.NoError(t, err)
+	counter.Add(t.Context(), 1)
+
+	var metrics metricdata.ResourceMetrics
+	require.NoError(t, reader.Collect(t.Context(), &metrics))
+	require.Len(t, metrics.ScopeMetrics, 1)
+	require.Len(t, metrics.ScopeMetrics[0].Metrics, 1)
+	got := metrics.ScopeMetrics[0].Metrics[0]
+	assert.Equal(t, customName, got.Name)
+	assert.Equal(t, "{heartbeat}", got.Unit)
+}
+
 func Test_newHeartbeater_disabled(t *testing.T) {
 	config := createTestConfig(map[string]string{}, false)
 	config.Heartbeat.Interval = 0

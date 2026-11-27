@@ -51,7 +51,7 @@ Number of heartbeats failed by the Splunk HEC exporter.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {heartbeat} | Sum | Int | true | Development |
 
 ### otelcol_exporter_splunkhec_heartbeats_sent
 
@@ -59,4 +59,4 @@ Number of heartbeats sent by the Splunk HEC exporter.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {heartbeat} | Sum | Int | true | Development |
