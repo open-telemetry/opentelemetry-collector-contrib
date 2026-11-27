@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: pkg/stanza
+note: Fix container parser recombining partial lines across stdout and stderr streams.
+issues: [52471]
+subtext:
+change_logs: [user]
