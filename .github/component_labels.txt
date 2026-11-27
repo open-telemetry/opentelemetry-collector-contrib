@@ -123,6 +123,7 @@ extension/storage/redisstorageextension extension/storage/redisstorage
 extension/sumologicextension extension/sumologic
 extension/tailstorage/pebbletailstorageextension extension/tailstorage/pebbletailstorage
 internal/aws internal/aws
+internal/canonicaljson internal/canonicaljson
 internal/collectd internal/collectd
 internal/common internal/common
 internal/coreinternal internal/core

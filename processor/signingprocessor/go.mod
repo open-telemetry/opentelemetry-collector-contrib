@@ -4,8 +4,8 @@ go 1.26.0
 
 require (
 	github.com/gowebpki/jcs v1.0.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/canonicaljson v0.0.0
 	github.com/openbao/openbao/api/v2 v2.7.1
-	github.com/probityai/agent-evidence-vectors/jcsvectors v0.1.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.72.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/component/componenttest v0.166.1-0.20261126161120-4c6c46bf6bc6
@@ -107,3 +107,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.2 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/canonicaljson => ../../internal/canonicaljson

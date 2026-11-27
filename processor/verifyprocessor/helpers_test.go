@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
@@ -189,60 +188,6 @@ func TestCertificateHelpers(t *testing.T) {
 	// TrimSpace: a ref with surrounding whitespace (e.g. from an env var) must still match.
 	assert.True(t, certificateRefMatches(cert, "  "+full+"\n"))
 	assert.True(t, certificateRefMatches(cert, "\t"+fingerprint(cert)+" "))
-}
-
-func TestValueToInterfaceAndSerializeFields(t *testing.T) {
-	p := newVerifyProc(t, &Config{FailureMode: failureModeMark, VerificationProfile: "default"}, &staticProvider{hmacKey: []byte("k")})
-
-	ld := plog.NewLogs()
-	lr := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	lr.SetEventName("evt")
-	lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Unix(2, 0)))
-	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1, 0)))
-	var tid pcommon.TraceID
-	tid[0] = 1
-	lr.SetTraceID(tid)
-	var sid pcommon.SpanID
-	sid[0] = 2
-	lr.SetSpanID(sid)
-	lr.Body().SetInt(7)
-	lr.Attributes().PutDouble("d", 1.5)
-	lr.Attributes().PutBool("b", true)
-	lr.Attributes().PutEmptyBytes("bin").FromRaw([]byte{1, 2})
-	slice := lr.Attributes().PutEmptySlice("s")
-	slice.AppendEmpty().SetStr("x")
-	m := lr.Attributes().PutEmptyMap("m")
-	m.PutStr("k", "v")
-	lr.Attributes().PutEmpty("empty")
-
-	payload, err := p.serializeLogRecord(lr)
-	require.NoError(t, err)
-	s := string(payload)
-	assert.Contains(t, s, "event_name")
-	assert.Contains(t, s, "observed_timestamp")
-	assert.Contains(t, s, "trace_id")
-	assert.Contains(t, s, "span_id")
-	assert.Contains(t, s, "intValue")
-	assert.Contains(t, s, "doubleValue")
-	assert.Contains(t, s, "boolValue")
-	assert.Contains(t, s, "bytesValue")
-
-	nested := pcommon.NewValueMap()
-	cur := nested.Map()
-	for range jsonMaxDepth + 1 {
-		next := cur.PutEmptyMap("n")
-		cur = next
-	}
-	_, err = p.valueToInterface(nested, 0)
-	require.Error(t, err)
-
-	bad := pcommon.NewValueStr(string([]byte{0xff, 0xfe}))
-	_, err = p.valueToInterface(bad, 0)
-	require.Error(t, err)
-
-	lr.SetEventName(string([]byte{0xff}))
-	_, err = p.serializeLogRecord(lr)
-	require.Error(t, err)
 }
 
 func TestResourceKeyMaterialAndErrorFormatting(t *testing.T) {
