@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/filter"
+	"go.opentelemetry.io/collector/strmatch"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 
@@ -524,7 +524,7 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 						Name:       "pods",
 						Mode:       k8sinventory.WatchMode,
 						Namespaces: []string{"default"},
-						ExcludeNamespaces: []filter.Config{{
+						ExcludeNamespaces: []strmatch.Config{{
 							Regex: "namespace-to-ignore",
 						}},
 					},
