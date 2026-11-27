@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap"
-	otelconftelemetry "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 )
@@ -21,7 +20,7 @@ func TestTelemetryResourceConfigUnmarshal(t *testing.T) {
 			"custom.attr":  "value",
 		})
 
-		var cfg otelconftelemetry.ResourceConfig
+		var cfg ResourceConfig
 		require.NoError(t, conf.Unmarshal(&cfg))
 		assert.Empty(t, cfg.Attributes)
 		assert.Equal(t, "my-service", cfg.LegacyAttributes["service.name"])
@@ -41,7 +40,7 @@ func TestTelemetryResourceConfigUnmarshal(t *testing.T) {
 			},
 		})
 
-		var cfg otelconftelemetry.ResourceConfig
+		var cfg ResourceConfig
 		require.NoError(t, conf.Unmarshal(&cfg))
 		require.NoError(t, confmap.Validate(&cfg))
 		require.NotNil(t, cfg.SchemaUrl)
@@ -55,7 +54,7 @@ func TestTelemetryResourceConfigUnmarshal(t *testing.T) {
 			"attributes_list": "ignored",
 		})
 
-		var cfg otelconftelemetry.ResourceConfig
+		var cfg ResourceConfig
 		require.NoError(t, conf.Unmarshal(&cfg))
 		require.ErrorContains(t, confmap.Validate(&cfg), "resource::attributes_list is not currently supported")
 	})
@@ -68,7 +67,7 @@ func TestTelemetryResourceConfigUnmarshal(t *testing.T) {
 			"legacy.attr": "value",
 		})
 
-		var cfg otelconftelemetry.ResourceConfig
+		var cfg ResourceConfig
 		require.NoError(t, conf.Unmarshal(&cfg))
 		require.ErrorContains(t, confmap.Validate(&cfg), "resource::attributes cannot be used together with legacy inline resource attributes")
 	})
@@ -116,7 +115,7 @@ func TestTelemetryResourceConfigLoadDetectionDevelopment(t *testing.T) {
 
 func TestTelemetryResourceConfigMarshal(t *testing.T) {
 	schemaURL := "https://opentelemetry.io/schemas/1.38.0"
-	cfg := otelconftelemetry.ResourceConfig{
+	cfg := ResourceConfig{
 		Resource: otelconf.Resource{
 			SchemaUrl: &schemaURL,
 			Attributes: []otelconf.AttributeNameValue{
