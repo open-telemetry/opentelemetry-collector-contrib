@@ -3469,6 +3469,30 @@
   },
   {
     "computer_name": "abcde",
+    "counter": "Version Cleanup rate (KB/s)",
+    "counter_type": "272696576",
+    "instance": "",
+    "instance_raw": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Transactions",
+    "sql_instance": "d26d40521426",
+    "raw_value": "128",
+    "value": "128"
+  },
+  {
+    "computer_name": "abcde",
+    "counter": "Version Generation rate (KB/s)",
+    "counter_type": "272696576",
+    "instance": "",
+    "instance_raw": "",
+    "measurement": "sqlserver_performance",
+    "object": "SQLServer:Transactions",
+    "sql_instance": "d26d40521426",
+    "raw_value": "256",
+    "value": "256"
+  },
+  {
+    "computer_name": "abcde",
     "counter": "Query",
     "counter_type": "65792",
     "instance": "User counter 1",

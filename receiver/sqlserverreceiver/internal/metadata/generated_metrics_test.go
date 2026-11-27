@@ -243,6 +243,12 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
+			mb.RecordSqlserverDatabaseTempdbVersionStoreCleanupRateDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverDatabaseTempdbVersionStoreGenerationRateDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordSqlserverDatabaseTempdbVersionStoreSizeDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -592,6 +598,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordSqlserverTransactionDelayDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverTransactionLongestRunningTimeDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordSqlserverTransactionMirrorWriteRateDataPoint(ts, 1)
@@ -1384,6 +1393,30 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("tempdb.state")
 						assert.False(t, ok)
 					}
+				case "sqlserver.database.tempdb.version_store.cleanup.rate":
+					assert.False(t, validatedMetrics["sqlserver.database.tempdb.version_store.cleanup.rate"], "Found a duplicate in the metrics slice: sqlserver.database.tempdb.version_store.cleanup.rate")
+					validatedMetrics["sqlserver.database.tempdb.version_store.cleanup.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Rate at which row versions are removed from the snapshot isolation version store in tempdb.", mi.Description())
+					assert.Equal(t, "kBy/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.database.tempdb.version_store.generation.rate":
+					assert.False(t, validatedMetrics["sqlserver.database.tempdb.version_store.generation.rate"], "Found a duplicate in the metrics slice: sqlserver.database.tempdb.version_store.generation.rate")
+					validatedMetrics["sqlserver.database.tempdb.version_store.generation.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Rate at which new row versions are added to the snapshot isolation version store in tempdb.", mi.Description())
+					assert.Equal(t, "kBy/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "sqlserver.database.tempdb.version_store.size":
 					assert.False(t, validatedMetrics["sqlserver.database.tempdb.version_store.size"], "Found a duplicate in the metrics slice: sqlserver.database.tempdb.version_store.size")
 					validatedMetrics["sqlserver.database.tempdb.version_store.size"] = true
@@ -3093,6 +3126,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.False(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
 					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.transaction.longest_running_time":
+					assert.False(t, validatedMetrics["sqlserver.transaction.longest_running_time"], "Found a duplicate in the metrics slice: sqlserver.transaction.longest_running_time")
+					validatedMetrics["sqlserver.transaction.longest_running_time"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Age of the longest currently-open transaction on the server.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())

@@ -60,6 +60,10 @@ all_set:
     sqlserver.database.tempdb.space:
       enabled: true
       attributes: ["tempdb.state"]
+    sqlserver.database.tempdb.version_store.cleanup.rate:
+      enabled: true
+    sqlserver.database.tempdb.version_store.generation.rate:
+      enabled: true
     sqlserver.database.tempdb.version_store.size:
       enabled: true
     sqlserver.deadlock.rate:
@@ -215,6 +219,8 @@ all_set:
     sqlserver.thread_pool.task.count:
       enabled: true
     sqlserver.transaction.delay:
+      enabled: true
+    sqlserver.transaction.longest_running_time:
       enabled: true
     sqlserver.transaction.mirror_write.rate:
       enabled: true
@@ -339,6 +345,10 @@ reaggregate_set:
     sqlserver.database.tempdb.space:
       enabled: true
       attributes: []
+    sqlserver.database.tempdb.version_store.cleanup.rate:
+      enabled: true
+    sqlserver.database.tempdb.version_store.generation.rate:
+      enabled: true
     sqlserver.database.tempdb.version_store.size:
       enabled: true
     sqlserver.deadlock.rate:
@@ -495,6 +505,8 @@ reaggregate_set:
       enabled: true
     sqlserver.transaction.delay:
       enabled: true
+    sqlserver.transaction.longest_running_time:
+      enabled: true
     sqlserver.transaction.mirror_write.rate:
       enabled: true
     sqlserver.transaction.rate:
@@ -618,6 +630,10 @@ none_set:
     sqlserver.database.tempdb.space:
       enabled: false
       attributes: ["tempdb.state"]
+    sqlserver.database.tempdb.version_store.cleanup.rate:
+      enabled: false
+    sqlserver.database.tempdb.version_store.generation.rate:
+      enabled: false
     sqlserver.database.tempdb.version_store.size:
       enabled: false
     sqlserver.deadlock.rate:
@@ -773,6 +789,8 @@ none_set:
     sqlserver.thread_pool.task.count:
       enabled: false
     sqlserver.transaction.delay:
+      enabled: false
+    sqlserver.transaction.longest_running_time:
       enabled: false
     sqlserver.transaction.mirror_write.rate:
       enabled: false

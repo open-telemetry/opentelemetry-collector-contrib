@@ -857,6 +857,24 @@ metrics:
       value_type: int
     attributes: [tempdb.state]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.database.tempdb.version_store.cleanup.rate:
+    enabled: false
+    description: Rate at which row versions are removed from the snapshot isolation version store in tempdb.
+    stability: development
+    unit: kBy/s
+    gauge:
+      value_type: double
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.database.tempdb.version_store.generation.rate:
+    enabled: false
+    description: Rate at which new row versions are added to the snapshot isolation version store in tempdb.
+    stability: development
+    unit: kBy/s
+    gauge:
+      value_type: double
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.database.tempdb.version_store.size:
     enabled: false
     description: TempDB version store size.
@@ -1445,6 +1463,15 @@ metrics:
       monotonic: false
       value_type: double
     attributes: []
+  sqlserver.transaction.longest_running_time:
+    enabled: false
+    description: Age of the longest currently-open transaction on the server.
+    stability: development
+    unit: s
+    gauge:
+      value_type: double
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.transaction.mirror_write.rate:
     enabled: false
     description: Total number of mirror write transactions.
