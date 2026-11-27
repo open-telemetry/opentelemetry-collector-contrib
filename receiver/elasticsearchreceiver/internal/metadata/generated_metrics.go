@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -7730,8 +7730,8 @@ type MetricsBuilder struct {
 	metricsCapacity                                                 int                  // maximum observed number of metrics per resource.
 	metricsBuffer                                                   pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                                                       component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter                                  map[string]filter.Filter
-	resourceAttributeExcludeFilter                                  map[string]filter.Filter
+	resourceAttributeIncludeFilter                                  map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter                                  map[string]strmatch.Matcher
 	metricElasticsearchBreakerMemoryEstimated                       metricElasticsearchBreakerMemoryEstimated
 	metricElasticsearchBreakerMemoryLimit                           metricElasticsearchBreakerMemoryLimit
 	metricElasticsearchBreakerTripped                               metricElasticsearchBreakerTripped
@@ -7941,38 +7941,38 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricJvmMemoryPoolMax:                                          newMetricJvmMemoryPoolMax(mbc.Metrics.JvmMemoryPoolMax),
 		metricJvmMemoryPoolUsed:                                         newMetricJvmMemoryPoolUsed(mbc.Metrics.JvmMemoryPoolUsed),
 		metricJvmThreadsCount:                                           newMetricJvmThreadsCount(mbc.Metrics.JvmThreadsCount),
-		resourceAttributeIncludeFilter:                                  make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:                                  make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter:                                  make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter:                                  make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.ElasticsearchClusterName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["elasticsearch.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchClusterName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["elasticsearch.cluster.name"] = strmatch.New(mbc.ResourceAttributes.ElasticsearchClusterName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ElasticsearchClusterName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["elasticsearch.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchClusterName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["elasticsearch.cluster.name"] = strmatch.New(mbc.ResourceAttributes.ElasticsearchClusterName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ElasticsearchClusterUUID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["elasticsearch.cluster.uuid"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchClusterUUID.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["elasticsearch.cluster.uuid"] = strmatch.New(mbc.ResourceAttributes.ElasticsearchClusterUUID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ElasticsearchClusterUUID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["elasticsearch.cluster.uuid"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchClusterUUID.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["elasticsearch.cluster.uuid"] = strmatch.New(mbc.ResourceAttributes.ElasticsearchClusterUUID.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ElasticsearchIndexName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["elasticsearch.index.name"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchIndexName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["elasticsearch.index.name"] = strmatch.New(mbc.ResourceAttributes.ElasticsearchIndexName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ElasticsearchIndexName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["elasticsearch.index.name"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchIndexName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["elasticsearch.index.name"] = strmatch.New(mbc.ResourceAttributes.ElasticsearchIndexName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ElasticsearchNodeName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["elasticsearch.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchNodeName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["elasticsearch.node.name"] = strmatch.New(mbc.ResourceAttributes.ElasticsearchNodeName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ElasticsearchNodeName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["elasticsearch.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchNodeName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["elasticsearch.node.name"] = strmatch.New(mbc.ResourceAttributes.ElasticsearchNodeName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ElasticsearchNodeVersion.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["elasticsearch.node.version"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchNodeVersion.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["elasticsearch.node.version"] = strmatch.New(mbc.ResourceAttributes.ElasticsearchNodeVersion.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ElasticsearchNodeVersion.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["elasticsearch.node.version"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchNodeVersion.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["elasticsearch.node.version"] = strmatch.New(mbc.ResourceAttributes.ElasticsearchNodeVersion.MetricsExclude)
 	}
 
 	for _, op := range options {
