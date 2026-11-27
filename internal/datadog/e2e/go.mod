@@ -466,7 +466,7 @@ require (
 	go.opentelemetry.io/collector/scraper v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
 	go.opentelemetry.io/collector/service/hostcapabilities v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
-	go.opentelemetry.io/collector/strmatch v0.0.0-20261126142948-f0f78f7b395a // indirect
+	go.opentelemetry.io/collector/strmatch v0.0.0-20261126161120-4c6c46bf6bc6 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.21.0 // indirect
 	go.opentelemetry.io/contrib/detectors/akamai v0.0.0-20261106092722-ca27f49bc143 // indirect
 	go.opentelemetry.io/contrib/detectors/alibaba/ecs v0.0.0-20261106092722-ca27f49bc143 // indirect
