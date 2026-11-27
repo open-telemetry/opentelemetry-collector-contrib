@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestRegexParserConfigBuildParser(t *testing.T) {
@@ -373,4 +374,23 @@ func Benchmark_regexPathParser_parsePath(b *testing.B) {
 	res.attributes = got.Attributes
 	res.metricType = got.MetricType
 	res.err = err
+}
+
+func Test_regexParser_Parse_cumulativeTemporality(t *testing.T) {
+	config := RegexParserConfig{
+		Rules: []*RegexRule{
+			{
+				Regexp:     `(?P<key_svc>[^.]+)\.rpc\.count`,
+				NamePrefix: "rpc",
+				MetricType: string(CumulativeMetricType),
+			},
+		},
+	}
+	p, err := config.BuildParser()
+	require.NoError(t, err)
+
+	got, err := p.Parse("svc.rpc.count 1 1582230020")
+	require.NoError(t, err)
+	require.Equal(t, pmetric.MetricTypeSum, got.Type())
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, got.Sum().AggregationTemporality())
 }
