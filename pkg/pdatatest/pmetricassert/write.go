@@ -5,9 +5,11 @@ package pmetricassert // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"maps"
+	"os"
 	"testing"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.yaml.in/yaml/v3"
 )
 
 type writeOptions struct {
@@ -96,9 +98,66 @@ func WriteAssertionFile(tb testing.TB, path string, actual pmetric.Metrics, opts
 	for _, opt := range opts {
 		opt.apply(&o)
 	}
-	doc := normalize(actual, o)
-	if err := applyWriteAttributeMatchers(doc, o); err != nil {
+	snap := normalize(actual)
+	project(snap, o)
+	if err := applyWriteAttributeMatchers(snap, o); err != nil {
 		return err
 	}
-	return writeDocument(path, doc)
+	return writeSnapshot(path, snap)
+}
+
+// project drops the datapoint fields the write options do not opt into.
+func project(snap *snapshot, opts writeOptions) {
+	if opts.includeValues {
+		return
+	}
+	forEachMetric(snap, func(m *metricSnapshot) {
+		for i := range m.Datapoints {
+			kept := datapointSnapshot{Attributes: m.Datapoints[i].Attributes}
+			if opts.includeHistogramExplicitBounds {
+				kept.ExplicitBounds = m.Datapoints[i].ExplicitBounds
+			}
+			m.Datapoints[i] = kept
+		}
+	})
+}
+
+func writeSnapshot(path string, snap *snapshot) error {
+	compactShorthand(snap)
+	b, err := yaml.Marshal(snap)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, b, 0o600)
+}
+
+// compactShorthand is the inverse of expandShorthand: it drops a single datapoint that pins nothing.
+func compactShorthand(snap *snapshot) {
+	forEachMetric(snap, func(m *metricSnapshot) {
+		if len(m.Datapoints) == 1 && isEmptyDatapointSnapshot(m.Datapoints[0]) {
+			m.Datapoints = nil
+		}
+	})
+}
+
+func isEmptyDatapointSnapshot(dp datapointSnapshot) bool {
+	return len(dp.Attributes) == 0 &&
+		dp.IntValue == nil &&
+		dp.DoubleValue == nil &&
+		dp.Count == nil &&
+		dp.Sum == nil &&
+		dp.ExplicitBounds == nil &&
+		len(dp.BucketCounts) == 0 &&
+		dp.Min == nil &&
+		dp.Max == nil
+}
+
+func forEachMetric(snap *snapshot, fn func(*metricSnapshot)) {
+	for i := range snap.Resources {
+		for j := range snap.Resources[i].Scopes {
+			for k := range snap.Resources[i].Scopes[j].Metrics {
+				fn(&snap.Resources[i].Scopes[j].Metrics[k])
+			}
+		}
+	}
 }
