@@ -34,7 +34,7 @@ type compressingWriter struct {
 	maxFrameBytes int       // rotation mode: max bytes for a single frame
 	frame         []byte    // rotation mode: reusable EncodeAll output buffer
 	dirty         bool      // encoder has received data since last flush/creation
-	err           error     // sticky error state
+	err           error     // non-rotation mode: sticky error state
 }
 
 func newCompressingWriter(base io.WriteCloser, compression string, level int, rotation *Rotation) (*compressingWriter, error) {
@@ -106,8 +106,9 @@ func (c *compressingWriter) writeFrame(p []byte) (int, error) {
 	if c.maxFrameBytes > 0 && len(c.frame) > c.maxFrameBytes {
 		return c.writeChunkedFrames(p)
 	}
-	if _, err := c.base.Write(c.frame); err != nil {
-		c.err = err
+	n, err := c.base.Write(c.frame)
+	if err != nil {
+		c.handleWriteError(n, err)
 		return 0, err
 	}
 	return len(p), nil
@@ -126,14 +127,33 @@ func (c *compressingWriter) writeChunkedFrames(p []byte) (int, error) {
 	for len(p) > 0 {
 		n := min(chunkSize, len(p))
 		c.frame = c.encoder.EncodeAll(p[:n], c.frame[:0])
-		if _, err := c.base.Write(c.frame); err != nil {
-			c.err = err
+		wn, err := c.base.Write(c.frame)
+		if err != nil {
+			c.handleWriteError(wn, err)
 			return written, err
 		}
 		written += n
 		p = p[n:]
 	}
 	return written, nil
+}
+
+// handleWriteError handles errors from writing compressed frames. If a partial
+// write occurred (n > 0), a torn frame was left in the destination. When the
+// underlying writer supports rotation, we call Rotate() so the torn tail remains
+// isolated in the closed file while future writes continue to a fresh file.
+// If rotation is unsupported or Rotate() fails, the error is made sticky to
+// prevent appending corrupt data to the existing file.
+func (c *compressingWriter) handleWriteError(n int, err error) {
+	if n > 0 {
+		if r, ok := c.base.(interface{ Rotate() error }); ok {
+			if rotErr := r.Rotate(); rotErr != nil {
+				c.err = errors.Join(err, rotErr)
+			}
+		} else {
+			c.err = err
+		}
+	}
 }
 
 // closeAndResetEncoder finalizes the current frame and resets the encoder.
