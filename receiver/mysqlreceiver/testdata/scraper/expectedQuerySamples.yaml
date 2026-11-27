@@ -94,9 +94,6 @@ resourceLogs:
               - key: mysql.blocking.start_time
                 value:
                   stringValue: ""
-              - key: mysql.blocking.wait_duration
-                value:
-                  intValue: "0"
               - key: mysql.blocking.lock.mode
                 value:
                   stringValue: ""

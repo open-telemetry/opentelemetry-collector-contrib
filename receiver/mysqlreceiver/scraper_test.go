@@ -1329,10 +1329,6 @@ func TestScrapeQuerySamplesLockWaitDetail(t *testing.T) {
 			require.True(t, ok, "%s must be present", key)
 			assert.Equal(t, want, val.Str(), key)
 		}
-
-		waitVal, ok := attrs.Get("mysql.blocking.wait_duration")
-		require.True(t, ok, "mysql.blocking.wait_duration must be present")
-		assert.Equal(t, int64(12), waitVal.Int())
 	})
 
 	t.Run("start time is the statement timer resolved against the server boot time", func(t *testing.T) {
@@ -1387,6 +1383,9 @@ func TestScrapeQuerySamplesLockWaitDetail(t *testing.T) {
 
 func TestDeriveBlockingStartTime(t *testing.T) {
 	bootTime := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	// Two days of uptime, so a statement timer anywhere inside that window
+	// resolves to a time at or before the scrape.
+	scrapeTime := bootTime.Add(48 * time.Hour)
 
 	tests := []struct {
 		name                string
@@ -1418,11 +1417,26 @@ func TestDeriveBlockingStartTime(t *testing.T) {
 			statementTimerStart: 90_061_000_000_000_000,
 			want:                "",
 		},
+		{
+			name:                "modest skew against the server clock is tolerated",
+			bootTime:            bootTime,
+			statementTimerStart: uint64((48*time.Hour + 30*time.Second) / time.Nanosecond * 1000),
+			want:                "2026-01-03T00:00:30Z",
+		},
+		{
+			// A timer further ahead than the skew allowance means the anchor and
+			// the timer disagree -- a clock step moved the anchor, or the
+			// picosecond timer wrapped.
+			name:                "a start time implausibly past the scrape is dropped",
+			bootTime:            bootTime,
+			statementTimerStart: uint64((72 * time.Hour) / time.Nanosecond * 1000),
+			want:                "",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, deriveBlockingStartTime(tt.bootTime, tt.statementTimerStart))
+			assert.Equal(t, tt.want, deriveBlockingStartTime(tt.bootTime, scrapeTime, tt.statementTimerStart))
 		})
 	}
 }
@@ -2014,13 +2028,12 @@ func (c *mockClient) getQuerySamples(uint64, bool, bool) ([]querySample, error) 
 		if len(text) > 20 {
 			s.blockerDetails = text[20]
 		}
-		if len(text) > 26 {
+		if len(text) > 25 {
 			s.blockingLockMode = text[21]
 			s.blockingLockType = text[22]
 			s.blockingObjectSchema = text[23]
 			s.blockingObjectName = text[24]
 			s.blockingStatementTimerStart, _ = strconv.ParseUint(text[25], 10, 64)
-			s.blockingWaitDuration, _ = parseInt(text[26])
 		}
 
 		samples = append(samples, s)

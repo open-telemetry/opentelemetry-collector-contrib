@@ -191,11 +191,8 @@ attributes:
     description: The schema of the table whose lock this session is waiting on, from performance_schema.data_locks.OBJECT_SCHEMA. Empty string when not blocked or when blocking isn't measurable on this engine/version.
     type: string
   mysql.blocking.start_time:
-    description: UTC timestamp (RFC3339) of when the statement that is waiting on a lock started. InnoDB exposes no lock-wait start time without the global PROCESS privilege, so this is the start of the waiting statement, which is at or before the lock wait itself began. Empty string when not blocked or when blocking isn't measurable on this engine/version.
+    description: UTC timestamp (RFC3339) of when the statement that is waiting on a lock started. InnoDB exposes no lock-wait start time without the global PROCESS privilege, so this is the start of the waiting statement, which is at or before the lock wait itself began. Empty string when not blocked, when blocking isn't measurable on this engine/version, or when the value could not be resolved to a plausible timestamp. For elapsed wait time, use mysql.events_statements_current.timer_wait on the same event.
     type: string
-  mysql.blocking.wait_duration:
-    description: Whole seconds the statement that is waiting on a lock has been executing. Shares the statement-start basis of mysql.blocking.start_time, so it is an upper bound on the lock wait itself. 0 when not blocked or when blocking isn't measurable on this engine/version.
-    type: int
   mysql.client.name:
     description: The client driver's self-reported identity at connection time, e.g. "MySQL Connector/J" or "libmysql". Empty if the client reported no connect attributes or the connect-attrs feature is disabled server-side.
     type: string
@@ -419,7 +416,6 @@ events:
       - mysql.blocking.blocker.count
       - mysql.blocking.blocker.details
       - mysql.blocking.start_time
-      - mysql.blocking.wait_duration
       - mysql.blocking.lock.mode
       - mysql.blocking.lock.type
       - mysql.blocking.object.schema

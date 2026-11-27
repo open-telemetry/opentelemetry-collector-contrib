@@ -728,17 +728,36 @@ func TestQuerySampleTemplateBlockingBranches(t *testing.T) {
 	t.Run("lock detail is read from the waiter's own request row", func(t *testing.T) {
 		rendered := render(t, true)
 
-		assert.Contains(t, rendered, "LEFT JOIN performance_schema.data_locks AS requested_lock")
-		assert.Contains(t, rendered, "requesting_wait.REQUESTING_THREAD_ID = thread.thread_id")
+		// Driven from data_lock_waits, which has one row per actual wait, so the
+		// far larger data_locks is probed by key rather than scanned per thread.
+		assert.Contains(t, rendered, "FROM performance_schema.data_lock_waits AS requesting_wait")
+		assert.Contains(t, rendered, "requested.ENGINE_LOCK_ID = requesting_wait.REQUESTING_ENGINE_LOCK_ID")
+		assert.Contains(t, rendered, ") AS requested_lock ON requested_lock.thread_id = thread.thread_id")
 		assert.Contains(t, rendered, "AS blocking_lock_mode")
 		assert.Contains(t, rendered, "AS blocking_object_name")
 		assert.Contains(t, rendered, "AS blocking_statement_timer_start")
-		assert.Contains(t, rendered, "AS blocking_wait_duration")
 		assert.Contains(t, rendered, "'idle_blocker'")
+
+		// Elapsed wait time is already on the event as
+		// statement_timer_wait_seconds and must not be emitted twice.
+		assert.NotContains(t, rendered, "blocking_wait_duration")
 
 		// LOCK_DATA holds primary-key values of the locked record, so it must
 		// never be selected without obfuscation.
-		assert.NotContains(t, rendered, "requested_lock.LOCK_DATA")
+		assert.NotContains(t, rendered, "requested.LOCK_DATA")
+	})
+
+	t.Run("both sides of a block sort ahead of ordinary activity", func(t *testing.T) {
+		rendered := render(t, true)
+
+		// Without this, LIMIT can keep a victim and drop its blocker, leaving
+		// consumers with a blocker id they cannot resolve.
+		orderBy := strings.Index(rendered, "\nORDER BY (")
+		require.NotEqual(t, -1, orderBy, "the blocking-aware ordering must be present")
+		limit := strings.Index(rendered, "\nLIMIT ")
+		require.NotEqual(t, -1, limit)
+		assert.Less(t, orderBy, limit, "the ordering must precede LIMIT to decide which rows survive it")
+		assert.Contains(t, rendered, ") DESC")
 	})
 
 	t.Run("engines without data_lock_waits reference none of those tables", func(t *testing.T) {
@@ -747,6 +766,7 @@ func TestQuerySampleTemplateBlockingBranches(t *testing.T) {
 		assert.NotContains(t, rendered, "data_lock_waits")
 		assert.NotContains(t, rendered, "data_locks")
 		assert.NotContains(t, rendered, "'idle_blocker'")
+		assert.NotContains(t, rendered, "\nORDER BY")
 		// The columns still exist so the result shape does not change between
 		// engines; they carry the documented not-measured values.
 		assert.Contains(t, rendered, "'' AS blocking_lock_mode")

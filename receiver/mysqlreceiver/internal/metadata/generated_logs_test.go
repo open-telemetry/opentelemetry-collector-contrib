@@ -139,7 +139,7 @@ func TestLogsBuilder(t *testing.T) {
 			lb.RecordDbServerQueryPlanEvent(ctx, timestamp, AttributeDbSystemNameMysql, "mysql.query_plan.hash-val", "db.namespace-val", AttributeMysqlQueryPlanSourceDbServerTopQuery, "mysql.query_plan-val")
 
 			allEventsCount++
-			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, AttributeDbSystemNameMysql, 23, "user.name-val", "db.namespace-val", "mysql.threads.processlist_command-val", "mysql.threads.processlist_state-val", "db.query.text-val", "mysql.events_statements_current.digest-val", "mysql.query_plan-val", "mysql.query_plan.hash-val", 14, "mysql.wait_event.type-val", "mysql.wait_event.name-val", "mysql.wait_type-val", "mysql.session.status-val", 16, 42.100000, 37.100000, "client.address-val", 11, "network.peer.address-val", 17, "mysql.client.name-val", 28, "mysql.blocking.blocker.details-val", "mysql.blocking.start_time-val", 28, "mysql.blocking.lock.mode-val", "mysql.blocking.lock.type-val", "mysql.blocking.object.schema-val", "mysql.blocking.object.name-val")
+			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, AttributeDbSystemNameMysql, 23, "user.name-val", "db.namespace-val", "mysql.threads.processlist_command-val", "mysql.threads.processlist_state-val", "db.query.text-val", "mysql.events_statements_current.digest-val", "mysql.query_plan-val", "mysql.query_plan.hash-val", 14, "mysql.wait_event.type-val", "mysql.wait_event.name-val", "mysql.wait_type-val", "mysql.session.status-val", 16, 42.100000, 37.100000, "client.address-val", 11, "network.peer.address-val", 17, "mysql.client.name-val", 28, "mysql.blocking.blocker.details-val", "mysql.blocking.start_time-val", "mysql.blocking.lock.mode-val", "mysql.blocking.lock.type-val", "mysql.blocking.object.schema-val", "mysql.blocking.object.name-val")
 
 			allEventsCount++
 			lb.RecordDbServerTopQueryEvent(ctx, timestamp, AttributeDbSystemNameMysql, "db.namespace-val", "db.query.text-val", "mysql.query_plan-val", "mysql.query_plan.hash-val", "mysql.events_statements_summary_by_digest.digest-val", 52, 56.100000, 55, 55)
@@ -282,9 +282,6 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("mysql.blocking.start_time")
 					assert.True(t, ok)
 					assert.Equal(t, "mysql.blocking.start_time-val", attrVal.Str())
-					attrVal, ok = lr.Attributes().Get("mysql.blocking.wait_duration")
-					assert.True(t, ok)
-					assert.EqualValues(t, 28, attrVal.Int())
 					attrVal, ok = lr.Attributes().Get("mysql.blocking.lock.mode")
 					assert.True(t, ok)
 					assert.Equal(t, "mysql.blocking.lock.mode-val", attrVal.Str())

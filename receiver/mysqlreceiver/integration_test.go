@@ -1134,6 +1134,7 @@ func TestIntegrationBlockingSessionAttributes(t *testing.T) {
 			require.NoError(t, scraper.start(ctx, nil))
 			defer func() { assert.NoError(t, scraper.shutdown(ctx)) }()
 
+			blockStart := time.Now().UTC()
 			blockerSessionID, cleanup := runRowLockBlock(t, cfg)
 			defer cleanup()
 
@@ -1194,12 +1195,13 @@ func TestIntegrationBlockingSessionAttributes(t *testing.T) {
 			require.True(t, ok, "mysql.blocking.start_time missing on the waiter")
 			startTime, parseErr := time.Parse(time.RFC3339, startTimeVal.Str())
 			require.NoError(t, parseErr, "mysql.blocking.start_time must be RFC3339, got %q", startTimeVal.Str())
-			assert.True(t, startTime.Before(time.Now().Add(time.Minute)),
+			// Bounded on both sides: the waiting statement began after this test
+			// created the block, and cannot have begun after the scrape read it.
+			// An anchor or timer that disagree land outside this window.
+			assert.False(t, startTime.Before(blockStart.Add(-time.Minute)),
+				"start time predates the block this test created, got %s (block started %s)", startTime, blockStart)
+			assert.False(t, startTime.After(time.Now()),
 				"the waiting statement cannot have started in the future, got %s", startTime)
-
-			waitDuration, ok := waiter.Get("mysql.blocking.wait_duration")
-			require.True(t, ok, "mysql.blocking.wait_duration missing on the waiter")
-			assert.GreaterOrEqual(t, waitDuration.Int(), int64(0))
 
 			// --- the idle blocker ---
 			var blockerStatus string

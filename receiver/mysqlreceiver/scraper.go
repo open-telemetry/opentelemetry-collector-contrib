@@ -1339,7 +1339,7 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 		}
 
 		blockerDetailsJSON, blockerCount := m.deriveBlockingCount(sample.blockerDetails)
-		blockingStartTime := deriveBlockingStartTime(serverBootTime, sample.blockingStatementTimerStart)
+		blockingStartTime := deriveBlockingStartTime(serverBootTime, now.AsTime(), sample.blockingStatementTimerStart)
 
 		m.lb.RecordDbServerQuerySampleEvent(
 			recordCtx,
@@ -1370,7 +1370,6 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			blockerCount,
 			blockerDetailsJSON,
 			blockingStartTime,
-			sample.blockingWaitDuration,
 			sample.blockingLockMode,
 			sample.blockingLockType,
 			sample.blockingObjectSchema,
@@ -1443,6 +1442,11 @@ func getDigestTextHash(digestText string) string {
 	return hex.EncodeToString(sum[:])
 }
 
+// blockingStartTimeSkewAllowance is how far past the scrape time a derived
+// blocking start time may land before it is treated as implausible rather than
+// as clock skew between the collector and the database.
+const blockingStartTimeSkewAllowance = time.Minute
+
 // anyLockWaitSampled reports whether any sample in the batch is waiting on a
 // lock, i.e. whether resolving the server boot time is worth a round trip.
 func anyLockWaitSampled(samples []querySample) bool {
@@ -1455,18 +1459,30 @@ func anyLockWaitSampled(samples []querySample) bool {
 }
 
 // deriveBlockingStartTime converts the picosecond Performance Schema timer at
-// which a waiting statement started into an absolute RFC3339 UTC timestamp.
-// Returns an empty string when the session isn't waiting on a lock, blocking
-// isn't measurable on this engine/version, or the boot time couldn't be
-// resolved -- all of which mysql.blocking.start_time documents as empty.
-func deriveBlockingStartTime(serverBootTime time.Time, statementTimerStart uint64) string {
+// which a waiting statement started into an absolute RFC3339 UTC timestamp,
+// relative to the scrape time. Returns an empty string when the session isn't
+// waiting on a lock, blocking isn't measurable on this engine/version, the boot
+// time couldn't be resolved, or the result isn't a plausible timestamp -- all of
+// which mysql.blocking.start_time documents as empty.
+func deriveBlockingStartTime(serverBootTime, scrapeTime time.Time, statementTimerStart uint64) string {
 	if statementTimerStart == 0 || serverBootTime.IsZero() {
 		return ""
 	}
 	// Picoseconds to nanoseconds; the sub-nanosecond remainder is irrelevant at
 	// the whole-second resolution consumers correlate on.
 	elapsed := time.Duration(statementTimerStart/1000) * time.Nanosecond
-	return serverBootTime.Add(elapsed).Format(time.RFC3339)
+	startTime := serverBootTime.Add(elapsed)
+	// A statement cannot have started after the scrape read it. This happens
+	// when the anchor and the timer disagree -- a clock step larger than
+	// serverBootTimeDriftTolerance moved the anchor, or the picosecond timer
+	// wrapped, which a BIGINT UNSIGNED does after roughly 213 days of uptime.
+	// Reporting nothing beats reporting a timestamp consumers would key events
+	// on. The scrape time is the collector's, so allow for modest skew against
+	// the server clock rather than comparing exactly.
+	if startTime.After(scrapeTime.Add(blockingStartTimeSkewAllowance)) {
+		return ""
+	}
+	return startTime.Format(time.RFC3339)
 }
 
 // blockerJSONEntry is one element of the raw blockers JSON produced by

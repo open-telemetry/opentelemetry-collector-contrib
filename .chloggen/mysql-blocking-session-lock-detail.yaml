@@ -17,7 +17,7 @@ issues: [53666]
 # Use pipe (|) for multiline entries.
 subtext: |
   `db.server.query_sample` now also samples idle sessions that hold a row lock another session waits on, reported as `mysql.session.status: idle_blocker`.
-  Adds `mysql.blocking.start_time`, `mysql.blocking.wait_duration`, `mysql.blocking.lock.mode`, `mysql.blocking.lock.type`, `mysql.blocking.object.schema` and `mysql.blocking.object.name`.
+  Adds `mysql.blocking.start_time`, `mysql.blocking.lock.mode`, `mysql.blocking.lock.type`, `mysql.blocking.object.schema` and `mysql.blocking.object.name`.
   `mysql.blocking.start_time` is the start of the waiting statement; InnoDB exposes no exact lock wait start without the global `PROCESS` privilege.
 
 # If your change doesn't affect end users or the exported elements of any package,

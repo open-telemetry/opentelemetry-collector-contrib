@@ -439,8 +439,6 @@ type querySample struct {
 	// blockingStatementTimerStart is picoseconds since server start at which the
 	// waiting statement began; the scraper resolves it against the boot time.
 	blockingStatementTimerStart uint64
-	// blockingWaitDuration is whole seconds the waiting statement has run.
-	blockingWaitDuration int64
 }
 
 type topQuery struct {
@@ -1330,8 +1328,6 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist, support
 				dest = append(dest, &s.blockingObjectName)
 			case "blocking_statement_timer_start":
 				dest = append(dest, &s.blockingStatementTimerStart)
-			case "blocking_wait_duration":
-				dest = append(dest, &s.blockingWaitDuration)
 			default:
 				return nil, fmt.Errorf("unknown column name %q for query samples", col)
 			}
