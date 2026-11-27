@@ -68,7 +68,7 @@ func (c *logsConsumer) Start(_ context.Context, host component.Host) error {
 	}
 	if encoding == cwlog.TypeStr {
 		c.settings.Logger.Warn(
-			"The built-in \"cwlogs\" encoding is deprecated and will be removed in a future version. " +
+			"The built-in \"cwlogs\" encoding is deprecated and will be removed in v0.168.0. " +
 				"Use the \"aws_logs_encoding\" encoding extension with format \"cloudwatch\" instead.",
 		)
 		c.unmarshaler = cwlog.NewUnmarshaler(c.settings.Logger, c.settings.BuildInfo)
