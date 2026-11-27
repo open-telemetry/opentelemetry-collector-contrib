@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -3631,8 +3631,8 @@ type MetricsBuilder struct {
 	metricsCapacity                                      int                  // maximum observed number of metrics per resource.
 	metricsBuffer                                        pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                                            component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter                       map[string]filter.Filter
-	resourceAttributeExcludeFilter                       map[string]filter.Filter
+	resourceAttributeIncludeFilter                       map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter                       map[string]strmatch.Matcher
 	metricSnowflakeBillingCloudServiceTotal              metricSnowflakeBillingCloudServiceTotal
 	metricSnowflakeBillingTotalCreditTotal               metricSnowflakeBillingTotalCreditTotal
 	metricSnowflakeBillingVirtualWarehouseTotal          metricSnowflakeBillingVirtualWarehouseTotal
@@ -3728,14 +3728,14 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSnowflakeStorageStageBytesTotal:                newMetricSnowflakeStorageStageBytesTotal(mbc.Metrics.SnowflakeStorageStageBytesTotal),
 		metricSnowflakeStorageStorageBytesTotal:              newMetricSnowflakeStorageStorageBytesTotal(mbc.Metrics.SnowflakeStorageStorageBytesTotal),
 		metricSnowflakeTotalElapsedTimeAvg:                   newMetricSnowflakeTotalElapsedTimeAvg(mbc.Metrics.SnowflakeTotalElapsedTimeAvg),
-		resourceAttributeIncludeFilter:                       make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:                       make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter:                       make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter:                       make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.SnowflakeAccountName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["snowflake.account.name"] = filter.CreateFilter(mbc.ResourceAttributes.SnowflakeAccountName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["snowflake.account.name"] = strmatch.New(mbc.ResourceAttributes.SnowflakeAccountName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.SnowflakeAccountName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["snowflake.account.name"] = filter.CreateFilter(mbc.ResourceAttributes.SnowflakeAccountName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["snowflake.account.name"] = strmatch.New(mbc.ResourceAttributes.SnowflakeAccountName.MetricsExclude)
 	}
 
 	for _, op := range options {
