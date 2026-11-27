@@ -151,12 +151,12 @@ func (r *awss3Receiver) receive(ctx context.Context, key string, data io.Reader)
 		return err
 	}
 	return leaser.LeaseReader(func(reader xcompression.ResettableReader) (err error) {
-		if err := reader.Reset(data); err != nil {
-			return err
-		}
 		defer func() {
 			err = errors.Join(err, reader.Close())
 		}()
+		if err := reader.Reset(data); err != nil {
+			return err
+		}
 		return r.processAndDrain(ctx, key, reader)
 	})
 }
