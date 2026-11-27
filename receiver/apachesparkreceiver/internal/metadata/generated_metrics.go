@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -4690,8 +4690,8 @@ type MetricsBuilder struct {
 	metricsCapacity                                          int                  // maximum observed number of metrics per resource.
 	metricsBuffer                                            pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                                                component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter                           map[string]filter.Filter
-	resourceAttributeExcludeFilter                           map[string]filter.Filter
+	resourceAttributeIncludeFilter                           map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter                           map[string]strmatch.Matcher
 	metricSparkDriverBlockManagerDiskUsage                   metricSparkDriverBlockManagerDiskUsage
 	metricSparkDriverBlockManagerMemoryUsage                 metricSparkDriverBlockManagerMemoryUsage
 	metricSparkDriverCodeGeneratorCompilationAverageTime     metricSparkDriverCodeGeneratorCompilationAverageTime
@@ -4843,44 +4843,44 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSparkStageTaskActive:                               newMetricSparkStageTaskActive(mbc.Metrics.SparkStageTaskActive),
 		metricSparkStageTaskResult:                               newMetricSparkStageTaskResult(mbc.Metrics.SparkStageTaskResult),
 		metricSparkStageTaskResultSize:                           newMetricSparkStageTaskResultSize(mbc.Metrics.SparkStageTaskResultSize),
-		resourceAttributeIncludeFilter:                           make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:                           make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter:                           make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter:                           make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.SparkApplicationID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["spark.application.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkApplicationID.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["spark.application.id"] = strmatch.New(mbc.ResourceAttributes.SparkApplicationID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.SparkApplicationID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["spark.application.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkApplicationID.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["spark.application.id"] = strmatch.New(mbc.ResourceAttributes.SparkApplicationID.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.SparkApplicationName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["spark.application.name"] = filter.CreateFilter(mbc.ResourceAttributes.SparkApplicationName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["spark.application.name"] = strmatch.New(mbc.ResourceAttributes.SparkApplicationName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.SparkApplicationName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["spark.application.name"] = filter.CreateFilter(mbc.ResourceAttributes.SparkApplicationName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["spark.application.name"] = strmatch.New(mbc.ResourceAttributes.SparkApplicationName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.SparkExecutorID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["spark.executor.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkExecutorID.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["spark.executor.id"] = strmatch.New(mbc.ResourceAttributes.SparkExecutorID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.SparkExecutorID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["spark.executor.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkExecutorID.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["spark.executor.id"] = strmatch.New(mbc.ResourceAttributes.SparkExecutorID.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.SparkJobID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["spark.job.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkJobID.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["spark.job.id"] = strmatch.New(mbc.ResourceAttributes.SparkJobID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.SparkJobID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["spark.job.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkJobID.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["spark.job.id"] = strmatch.New(mbc.ResourceAttributes.SparkJobID.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.SparkStageAttemptID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["spark.stage.attempt.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkStageAttemptID.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["spark.stage.attempt.id"] = strmatch.New(mbc.ResourceAttributes.SparkStageAttemptID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.SparkStageAttemptID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["spark.stage.attempt.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkStageAttemptID.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["spark.stage.attempt.id"] = strmatch.New(mbc.ResourceAttributes.SparkStageAttemptID.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.SparkStageID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["spark.stage.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkStageID.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["spark.stage.id"] = strmatch.New(mbc.ResourceAttributes.SparkStageID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.SparkStageID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["spark.stage.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkStageID.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["spark.stage.id"] = strmatch.New(mbc.ResourceAttributes.SparkStageID.MetricsExclude)
 	}
 
 	for _, op := range options {

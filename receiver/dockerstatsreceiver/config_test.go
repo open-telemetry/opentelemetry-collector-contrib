@@ -17,8 +17,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.opentelemetry.io/collector/strmatch"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
@@ -81,7 +81,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 
-				ContainerLabelsToResourceAttributes: []filter.Config{
+				ContainerLabelsToResourceAttributes: []strmatch.Config{
 					{Strict: "my.container.label"},
 					{Regex: "my.container.prefix.*"},
 				},
@@ -172,14 +172,14 @@ func TestApiVersionCustomError(t *testing.T) {
 func TestValidateContainerLabelsToResourceAttributes(t *testing.T) {
 	tests := []struct {
 		name    string
-		filters []filter.Config
+		filters []strmatch.Config
 		wantErr string
 	}{
-		{name: "valid strict", filters: []filter.Config{{Strict: "app"}}},
-		{name: "valid regexp", filters: []filter.Config{{Regex: "^com\\.example\\."}}},
-		{name: "empty entry", filters: []filter.Config{{}}, wantErr: "must specify either strict or regex"},
-		{name: "strict and regexp", filters: []filter.Config{{Strict: "app", Regex: "app"}}, wantErr: "strict and regex cannot be used together"},
-		{name: "invalid regexp", filters: []filter.Config{{Regex: "("}}, wantErr: "error parsing regexp"},
+		{name: "valid strict", filters: []strmatch.Config{{Strict: "app"}}},
+		{name: "valid regexp", filters: []strmatch.Config{{Regex: "^com\\.example\\."}}},
+		{name: "empty entry", filters: []strmatch.Config{{}}, wantErr: "must specify either strict or regex"},
+		{name: "strict and regexp", filters: []strmatch.Config{{Strict: "app", Regex: "app"}}, wantErr: "strict and regex cannot be used together"},
+		{name: "invalid regexp", filters: []strmatch.Config{{Regex: "("}}, wantErr: "error parsing regexp"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

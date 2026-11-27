@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -305,8 +305,8 @@ type MetricsBuilder struct {
 	metricsCapacity                int                  // maximum observed number of metrics per resource.
 	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                      component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter map[string]filter.Filter
-	resourceAttributeExcludeFilter map[string]filter.Filter
+	resourceAttributeIncludeFilter map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter map[string]strmatch.Matcher
 	metricDnscheckDuration         metricDnscheckDuration
 	metricDnscheckError            metricDnscheckError
 	metricDnscheckStatus           metricDnscheckStatus
@@ -338,26 +338,26 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricDnscheckDuration:         newMetricDnscheckDuration(mbc.Metrics.DnscheckDuration),
 		metricDnscheckError:            newMetricDnscheckError(mbc.Metrics.DnscheckError),
 		metricDnscheckStatus:           newMetricDnscheckStatus(mbc.Metrics.DnscheckStatus),
-		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter: make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter: make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.DNSDomain.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["dns.domain"] = filter.CreateFilter(mbc.ResourceAttributes.DNSDomain.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["dns.domain"] = strmatch.New(mbc.ResourceAttributes.DNSDomain.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.DNSDomain.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["dns.domain"] = filter.CreateFilter(mbc.ResourceAttributes.DNSDomain.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["dns.domain"] = strmatch.New(mbc.ResourceAttributes.DNSDomain.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.DNSRecordType.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["dns.record.type"] = filter.CreateFilter(mbc.ResourceAttributes.DNSRecordType.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["dns.record.type"] = strmatch.New(mbc.ResourceAttributes.DNSRecordType.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.DNSRecordType.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["dns.record.type"] = filter.CreateFilter(mbc.ResourceAttributes.DNSRecordType.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["dns.record.type"] = strmatch.New(mbc.ResourceAttributes.DNSRecordType.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.DNSServer.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["dns.server"] = filter.CreateFilter(mbc.ResourceAttributes.DNSServer.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["dns.server"] = strmatch.New(mbc.ResourceAttributes.DNSServer.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.DNSServer.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["dns.server"] = filter.CreateFilter(mbc.ResourceAttributes.DNSServer.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["dns.server"] = strmatch.New(mbc.ResourceAttributes.DNSServer.MetricsExclude)
 	}
 
 	for _, op := range options {

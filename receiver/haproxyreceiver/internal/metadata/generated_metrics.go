@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -1959,8 +1959,8 @@ type MetricsBuilder struct {
 	metricsCapacity                     int                  // maximum observed number of metrics per resource.
 	metricsBuffer                       pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                           component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter      map[string]filter.Filter
-	resourceAttributeExcludeFilter      map[string]filter.Filter
+	resourceAttributeIncludeFilter      map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter      map[string]strmatch.Matcher
 	metricHaproxyActive                 metricHaproxyActive
 	metricHaproxyBackup                 metricHaproxyBackup
 	metricHaproxyBytesInput             metricHaproxyBytesInput
@@ -2052,32 +2052,32 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricHaproxySessionsRate:           newMetricHaproxySessionsRate(mbc.Metrics.HaproxySessionsRate),
 		metricHaproxySessionsTotal:          newMetricHaproxySessionsTotal(mbc.Metrics.HaproxySessionsTotal),
 		metricHaproxyWeight:                 newMetricHaproxyWeight(mbc.Metrics.HaproxyWeight),
-		resourceAttributeIncludeFilter:      make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:      make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter:      make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter:      make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.HaproxyAddr.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["haproxy.addr"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyAddr.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["haproxy.addr"] = strmatch.New(mbc.ResourceAttributes.HaproxyAddr.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.HaproxyAddr.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["haproxy.addr"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyAddr.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["haproxy.addr"] = strmatch.New(mbc.ResourceAttributes.HaproxyAddr.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.HaproxyProxyName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["haproxy.proxy_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyProxyName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["haproxy.proxy_name"] = strmatch.New(mbc.ResourceAttributes.HaproxyProxyName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.HaproxyProxyName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["haproxy.proxy_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyProxyName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["haproxy.proxy_name"] = strmatch.New(mbc.ResourceAttributes.HaproxyProxyName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.HaproxyServerState.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["haproxy.server.state"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyServerState.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["haproxy.server.state"] = strmatch.New(mbc.ResourceAttributes.HaproxyServerState.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.HaproxyServerState.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["haproxy.server.state"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyServerState.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["haproxy.server.state"] = strmatch.New(mbc.ResourceAttributes.HaproxyServerState.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.HaproxyServiceName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["haproxy.service_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyServiceName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["haproxy.service_name"] = strmatch.New(mbc.ResourceAttributes.HaproxyServiceName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.HaproxyServiceName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["haproxy.service_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyServiceName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["haproxy.service_name"] = strmatch.New(mbc.ResourceAttributes.HaproxyServiceName.MetricsExclude)
 	}
 
 	for _, op := range options {

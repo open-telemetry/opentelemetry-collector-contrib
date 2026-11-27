@@ -27,6 +27,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
@@ -288,7 +290,7 @@ func (s *mongodbScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 		snapshots[i] = fetchCurrentOp(ctx, m.client)
 	})
 	for i, m := range s.members {
-		s.recordMemberHealth(m, s.emitCurrentOp(ctx, snapshots[i], now))
+		s.recordMemberHealth(m, s.emitCurrentOp(snapshots[i], now))
 	}
 
 	return s.lb.Emit(), nil
@@ -329,14 +331,14 @@ func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now
 		s.logger.Error("Failed to get current operations", zap.Error(snap.opErr))
 		return
 	}
-	if err := s.emitCurrentOp(ctx, snap, now); err != nil {
+	if err := s.emitCurrentOp(snap, now); err != nil {
 		s.logger.Debug("Failed to extract server address and port for logs", zap.Error(err))
 	}
 }
 
 // emitCurrentOp turns a snapshot into query sample log records. It returns the snapshot's error, or
 // the error resolving the node's address, without logging it; callers decide how to report it.
-func (s *mongodbScraper) emitCurrentOp(ctx context.Context, snap currentOpSnapshot, now pcommon.Timestamp) error {
+func (s *mongodbScraper) emitCurrentOp(snap currentOpSnapshot, now pcommon.Timestamp) error {
 	if snap.statusErr != nil {
 		return fmt.Errorf("failed to get server status: %w", snap.statusErr)
 	}
@@ -349,7 +351,7 @@ func (s *mongodbScraper) emitCurrentOp(ctx context.Context, snap currentOpSnapsh
 		return fmt.Errorf("failed to extract server address and port: %w", err)
 	}
 
-	s.processCurrentOp(ctx, snap.operations, now)
+	s.processCurrentOp(snap.operations, now)
 
 	rb := s.lb.NewResourceBuilder()
 	setResourceAttributes(rb, serverAddress, serverPort, s.mongoVersion)
@@ -357,7 +359,7 @@ func (s *mongodbScraper) emitCurrentOp(ctx context.Context, snap currentOpSnapsh
 	return nil
 }
 
-func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson.M, now pcommon.Timestamp) {
+func (s *mongodbScraper) processCurrentOp(operations []bson.M, now pcommon.Timestamp) {
 	emitted := uint64(0)
 	for _, op := range operations {
 		if emitted >= s.config.QuerySampleCollection.MaxRowsPerQuery {
@@ -369,6 +371,10 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		namespace := getValue[string](op, namespaceKey)
 		databaseName := getDBFromNamespace(namespace)
 		command := getValue[bson.D](op, commandKey)
+		recordCtx := context.Background()
+		if comment, ok := lookup(command, commentKey); ok {
+			recordCtx = contextWithTraceContextComment(comment)
+		}
 		opType := getValue[string](op, opKey)
 		queryTruncated, commandComment, operationName := extractCommandMetadata(command, opType)
 		preparedReadConflictCount := getInt64Value(op, prepareReadConflictsKey)
@@ -421,7 +427,7 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		}
 
 		s.lb.RecordDbServerQuerySampleEvent(
-			ctx,
+			recordCtx,
 			now,
 			clientAddress,
 			clientPort,
@@ -457,6 +463,42 @@ func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson
 		emitted++
 	}
 	s.logger.Debug("Processed MongoDB current operations", zap.Int("total_operations", len(operations)))
+}
+
+// contextWithTraceContextComment extracts propagated context from the top-level
+// string fields in a document-valued MongoDB comment. Query samples must not
+// inherit the collector's scrape span when no application context is present.
+func contextWithTraceContextComment(comment any) context.Context {
+	carrier := make(propagation.MapCarrier)
+	add := func(key string, value any) {
+		if key == "originalComment" {
+			return
+		}
+		if str, ok := value.(string); ok {
+			carrier.Set(key, str)
+		}
+	}
+	switch value := comment.(type) {
+	case bson.D:
+		for _, elem := range value {
+			add(elem.Key, elem.Value)
+		}
+	case bson.M:
+		for key, val := range value {
+			add(key, val)
+		}
+	case map[string]any:
+		for key, val := range value {
+			add(key, val)
+		}
+	default:
+		return context.Background()
+	}
+	ctx := (propagation.TraceContext{}).Extract(context.Background(), carrier)
+	if !trace.SpanContextFromContext(ctx).IsValid() {
+		return context.Background()
+	}
+	return ctx
 }
 
 func extractOperationID(op bson.M) string {
@@ -522,14 +564,27 @@ func extractCommandMetadata(command bson.D, opType string) (bool, []any, string)
 		case commentKey:
 			if values, ok := elem.Value.(bson.A); ok {
 				for _, value := range values {
-					comments = append(comments, stringifyCommandComment(value))
+					if comment, ok := applicationCommandComment(value); ok {
+						comments = append(comments, stringifyCommandComment(comment))
+					}
 				}
-			} else {
-				comments = append(comments, stringifyCommandComment(elem.Value))
+			} else if comment, ok := applicationCommandComment(elem.Value); ok {
+				comments = append(comments, stringifyCommandComment(comment))
 			}
 		}
 	}
 	return truncated, comments, operationName
+}
+
+// applicationCommandComment removes propagation fields from a document-valued
+// comment when it contains a valid traceparent. In that case, only the
+// application's original comment is reported, if present.
+func applicationCommandComment(value any) (any, bool) {
+	if !trace.SpanContextFromContext(contextWithTraceContextComment(value)).IsValid() {
+		return value, true
+	}
+	originalComment, ok := lookup(value, "originalComment")
+	return originalComment, ok && originalComment != nil
 }
 
 func stringifyCommandComment(value any) string {

@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -4633,8 +4633,8 @@ type MetricsBuilder struct {
 	metricsCapacity                               int                  // maximum observed number of metrics per resource.
 	metricsBuffer                                 pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                                     component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter                map[string]filter.Filter
-	resourceAttributeExcludeFilter                map[string]filter.Filter
+	resourceAttributeIncludeFilter                map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter                map[string]strmatch.Matcher
 	metricSaphanaAlertCount                       metricSaphanaAlertCount
 	metricSaphanaBackupLatest                     metricSaphanaBackupLatest
 	metricSaphanaColumnMemoryUsed                 metricSaphanaColumnMemoryUsed
@@ -4750,20 +4750,20 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSaphanaVolumeOperationCount:             newMetricSaphanaVolumeOperationCount(mbc.Metrics.SaphanaVolumeOperationCount),
 		metricSaphanaVolumeOperationSize:              newMetricSaphanaVolumeOperationSize(mbc.Metrics.SaphanaVolumeOperationSize),
 		metricSaphanaVolumeOperationTime:              newMetricSaphanaVolumeOperationTime(mbc.Metrics.SaphanaVolumeOperationTime),
-		resourceAttributeIncludeFilter:                make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:                make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter:                make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter:                make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.DbSystem.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["db.system"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystem.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["db.system"] = strmatch.New(mbc.ResourceAttributes.DbSystem.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.DbSystem.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["db.system"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystem.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["db.system"] = strmatch.New(mbc.ResourceAttributes.DbSystem.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.SaphanaHost.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["saphana.host"] = filter.CreateFilter(mbc.ResourceAttributes.SaphanaHost.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["saphana.host"] = strmatch.New(mbc.ResourceAttributes.SaphanaHost.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.SaphanaHost.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["saphana.host"] = filter.CreateFilter(mbc.ResourceAttributes.SaphanaHost.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["saphana.host"] = strmatch.New(mbc.ResourceAttributes.SaphanaHost.MetricsExclude)
 	}
 
 	for _, op := range options {
