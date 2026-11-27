@@ -339,12 +339,19 @@ func defaultClientConfig() confighttp.ClientConfig {
 	return client
 }
 
+// defaultQueueSettings returns the default queue settings, with batching enabled.
+func defaultQueueSettings() configoptional.Optional[exporterhelper.QueueBatchConfig] {
+	cfg := exporterhelper.NewDefaultQueueConfig()
+	cfg.Batch = configoptional.Some(*cfg.Batch.GetOrInsertDefault())
+	return configoptional.Some(cfg)
+}
+
 // CreateDefaultConfig creates the default exporter configuration
 func CreateDefaultConfig() component.Config {
 	return &Config{
 		ClientConfig:  defaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		QueueSettings: defaultQueueSettings(),
 
 		API: APIConfig{
 			Site: "datadoghq.com",
