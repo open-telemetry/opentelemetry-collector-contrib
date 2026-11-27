@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -716,8 +716,8 @@ type MetricsBuilder struct {
 	metricsCapacity                     int                  // maximum observed number of metrics per resource.
 	metricsBuffer                       pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                           component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter      map[string]filter.Filter
-	resourceAttributeExcludeFilter      map[string]filter.Filter
+	resourceAttributeIncludeFilter      map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter      map[string]strmatch.Matcher
 	metricNsxtNodeCPUUtilization        metricNsxtNodeCPUUtilization
 	metricNsxtNodeFilesystemUsage       metricNsxtNodeFilesystemUsage
 	metricNsxtNodeFilesystemUtilization metricNsxtNodeFilesystemUtilization
@@ -757,32 +757,32 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricNsxtNodeMemoryUsage:           newMetricNsxtNodeMemoryUsage(mbc.Metrics.NsxtNodeMemoryUsage),
 		metricNsxtNodeNetworkIo:             newMetricNsxtNodeNetworkIo(mbc.Metrics.NsxtNodeNetworkIo),
 		metricNsxtNodeNetworkPacketCount:    newMetricNsxtNodeNetworkPacketCount(mbc.Metrics.NsxtNodeNetworkPacketCount),
-		resourceAttributeIncludeFilter:      make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:      make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter:      make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter:      make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.DeviceID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["device.id"] = filter.CreateFilter(mbc.ResourceAttributes.DeviceID.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["device.id"] = strmatch.New(mbc.ResourceAttributes.DeviceID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.DeviceID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["device.id"] = filter.CreateFilter(mbc.ResourceAttributes.DeviceID.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["device.id"] = strmatch.New(mbc.ResourceAttributes.DeviceID.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.NsxtNodeID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["nsxt.node.id"] = filter.CreateFilter(mbc.ResourceAttributes.NsxtNodeID.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["nsxt.node.id"] = strmatch.New(mbc.ResourceAttributes.NsxtNodeID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.NsxtNodeID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["nsxt.node.id"] = filter.CreateFilter(mbc.ResourceAttributes.NsxtNodeID.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["nsxt.node.id"] = strmatch.New(mbc.ResourceAttributes.NsxtNodeID.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.NsxtNodeName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["nsxt.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.NsxtNodeName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["nsxt.node.name"] = strmatch.New(mbc.ResourceAttributes.NsxtNodeName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.NsxtNodeName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["nsxt.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.NsxtNodeName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["nsxt.node.name"] = strmatch.New(mbc.ResourceAttributes.NsxtNodeName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.NsxtNodeType.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["nsxt.node.type"] = filter.CreateFilter(mbc.ResourceAttributes.NsxtNodeType.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["nsxt.node.type"] = strmatch.New(mbc.ResourceAttributes.NsxtNodeType.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.NsxtNodeType.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["nsxt.node.type"] = filter.CreateFilter(mbc.ResourceAttributes.NsxtNodeType.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["nsxt.node.type"] = strmatch.New(mbc.ResourceAttributes.NsxtNodeType.MetricsExclude)
 	}
 
 	for _, op := range options {
