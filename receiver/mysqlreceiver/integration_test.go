@@ -1006,14 +1006,10 @@ func TestIntegrationQuerySampleAttributes(t *testing.T) {
 	}
 }
 
-// runRowLockBlock creates a real InnoDB row-lock block: one connection updates
-// a row and stays idle inside its transaction, a second connection tries to
-// update the same row and waits. It returns the blocker's session id and a
-// cleanup function that rolls the transaction back and closes both connections.
-//
-// This is the shape of blocking the Active Blocks view is built around, and the
-// one the pre-#51308 query-sample statement could not see: the blocker has no
-// processlist_state, command 'Sleep' and an 'idle' wait event.
+// runRowLockBlock creates a real InnoDB row-lock block: one connection updates a
+// row and stays idle inside its transaction, a second waits on the same row. It
+// returns the blocker's session id and a cleanup function. The idle blocker is
+// the case the activity predicates alone cannot see.
 func runRowLockBlock(t *testing.T, cfg *Config) (blockerSessionID int64, cleanup func()) {
 	t.Helper()
 
@@ -1034,8 +1030,7 @@ func runRowLockBlock(t *testing.T, cfg *Config) (blockerSessionID int64, cleanup
 	require.NoError(t, blockerC.Connect())
 	blockerDB := blockerC.(*mySQLClient).client
 
-	// A single connection from the pool, so the transaction and the session id
-	// below belong to the same thread.
+	// One pinned connection, so the transaction and the session id match.
 	blockerConn, err := blockerDB.Conn(context.Background()) //nolint:usetesting // the connection must outlive any per-test context
 	require.NoError(t, err)
 	require.NoError(t, blockerConn.QueryRowContext(context.Background(), "SELECT CONNECTION_ID()").Scan(&blockerSessionID)) //nolint:usetesting // same reason
@@ -1045,7 +1040,6 @@ func runRowLockBlock(t *testing.T, cfg *Config) (blockerSessionID int64, cleanup
 	_, err = blockerConn.ExecContext(context.Background(), "UPDATE lock_target SET v = v + 1 WHERE id = 1") //nolint:usetesting // same reason
 	require.NoError(t, err)
 	// The blocker now holds the row lock and goes idle inside its transaction.
-
 	waiterCfg := *cfg
 	waiterCfg.Database = "otel"
 	waiterC, err := newMySQLClient(&waiterCfg)
@@ -1059,8 +1053,7 @@ func runRowLockBlock(t *testing.T, cfg *Config) (blockerSessionID int64, cleanup
 		_, _ = waiterDB.ExecContext(context.Background(), "UPDATE lock_target SET v = v + 1 WHERE id = 1") //nolint:usetesting // t.Context() would cancel the statement when the test ends, unblocking the waiter prematurely
 	}()
 
-	// Wait until InnoDB has registered the lock wait, so the scrape that
-	// follows is guaranteed to see both sides of it.
+	// Wait for InnoDB to register the lock wait, so the scrape sees both sides.
 	require.Eventually(t, func() bool {
 		var count int
 		_ = blockerConn.QueryRowContext(context.Background(), "SELECT COUNT(*) FROM performance_schema.data_lock_waits").Scan(&count) //nolint:usetesting // same reason
@@ -1076,15 +1069,10 @@ func runRowLockBlock(t *testing.T, cfg *Config) (blockerSessionID int64, cleanup
 	}
 }
 
-// TestIntegrationBlockingSessionAttributes verifies the blocking-session
-// attributes against a real row-lock block on a server that has
-// performance_schema.data_lock_waits:
-//
-//   - the waiter reports its blocker, the lock it wants and the object it is on
-//   - mysql.blocking.start_time is an RFC3339 UTC timestamp in the past, and is
-//     identical across two scrapes of the same wait
-//   - the idle blocker is sampled at all, and is marked 'idle_blocker' so it is
-//     not counted as an active session
+// TestIntegrationBlockingSessionAttributes verifies the blocking attributes
+// against a real row-lock block: the waiter reports its blocker, lock and
+// object, the start time is stable across scrapes, and the idle blocker is
+// sampled as 'idle_blocker'.
 func TestIntegrationBlockingSessionAttributes(t *testing.T) {
 	testCases := []struct {
 		name  string
@@ -1231,9 +1219,8 @@ func TestIntegrationBlockingSessionAttributes(t *testing.T) {
 			assert.Equal(t, "idle_blocker", blockerStatus,
 				"an idle blocker must be distinguishable from a session doing work")
 
-			// --- stability across scrapes ---
-			// dbmon-style consumers key a blocking event on the start time, so a
-			// value that moves between scrapes splits one wait into many events.
+			// Consumers key a blocking event on the start time, so a value that
+			// moves between scrapes splits one wait into many events.
 			time.Sleep(1200 * time.Millisecond)
 			for _, attrs := range scrape() {
 				count, hasCount := attrs.Get("mysql.blocking.blocker.count")
