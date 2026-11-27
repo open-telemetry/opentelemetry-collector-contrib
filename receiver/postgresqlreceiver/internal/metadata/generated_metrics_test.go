@@ -104,7 +104,6 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["postgresql.vector.search.duration"] = mb.metricPostgresqlVectorSearchDuration.config.AggregationStrategy
 			aggMap["postgresql.vector.search.rows_returned"] = mb.metricPostgresqlVectorSearchRowsReturned.config.AggregationStrategy
 			aggMap["postgresql.wal.delay"] = mb.metricPostgresqlWalDelay.config.AggregationStrategy
-			aggMap["postgresql.wal.lag"] = mb.metricPostgresqlWalLag.config.AggregationStrategy
 
 			expectedWarnings := 0
 			if tt.metricsSet != testDataSetReag {
@@ -452,7 +451,7 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlWalAgeDataPoint(ts, 1)
-
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlWalDelayDataPoint(ts, 1, AttributeWalOperationLagFlush, "replication_client-val")
 			if tt.name == "reaggregate_set" {
@@ -460,15 +459,6 @@ func TestMetricsBuilder(t *testing.T) {
 				// a different timestamp is a different key: must not merge with the above.
 				mb.RecordPostgresqlWalDelayDataPoint(ts+1, 3, AttributeWalOperationLagReplay, "replication_client-val-2")
 				assert.Equal(t, 2, mb.metricPostgresqlWalDelay.data.Gauge().DataPoints().Len())
-			}
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordPostgresqlWalLagDataPoint(ts, 1, AttributeWalOperationLagFlush, "replication_client-val")
-			if tt.name == "reaggregate_set" {
-				mb.RecordPostgresqlWalLagDataPoint(ts, 3, AttributeWalOperationLagReplay, "replication_client-val-2")
-				// a different timestamp is a different key: must not merge with the above.
-				mb.RecordPostgresqlWalLagDataPoint(ts+1, 3, AttributeWalOperationLagReplay, "replication_client-val-2")
-				assert.Equal(t, 2, mb.metricPostgresqlWalLag.data.Gauge().DataPoints().Len())
 			}
 
 			rb := mb.NewResourceBuilder()
@@ -522,7 +512,6 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricPostgresqlVectorSearchDuration.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlVectorSearchRowsReturned.aggDataPoints)
 				assert.Empty(t, mb.metricPostgresqlWalDelay.aggDataPoints)
-				assert.Empty(t, mb.metricPostgresqlWalLag.aggDataPoints)
 			}
 
 			if tt.expectEmpty {
@@ -2406,53 +2395,6 @@ func TestMetricsBuilder(t *testing.T) {
 							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 						case "max":
 							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
-						}
-						_, ok := dp.Attributes().Get("operation")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("replication_client")
-						assert.False(t, ok)
-					}
-				case "postgresql.wal.lag":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["postgresql.wal.lag"], "Found a duplicate in the metrics slice: postgresql.wal.lag")
-						validatedMetrics["postgresql.wal.lag"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.", mi.Description())
-						assert.Equal(t, "s", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						walOperationLagAttrVal, ok := dp.Attributes().Get("operation")
-						assert.True(t, ok)
-						assert.Equal(t, "flush", walOperationLagAttrVal.Str())
-						replicationClientAttrVal, ok := dp.Attributes().Get("replication_client")
-						assert.True(t, ok)
-						assert.Equal(t, "replication_client-val", replicationClientAttrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["postgresql.wal.lag"], "Found a duplicate in the metrics slice: postgresql.wal.lag")
-						validatedMetrics["postgresql.wal.lag"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
-						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
-						assert.Equal(t, "Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.", mi.Description())
-						assert.Equal(t, "s", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["postgresql.wal.lag"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
 						}
 						_, ok := dp.Attributes().Get("operation")
 						assert.False(t, ok)

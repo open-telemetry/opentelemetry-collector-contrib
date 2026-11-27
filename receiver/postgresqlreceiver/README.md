@@ -345,10 +345,10 @@ The full list of settings exposed for this receiver are documented in [config.go
 
 ## Connection pool feature
 
-The feature gate `receiver.postgresql.connectionPool` allows to enable the creation & reuse of a pool per database for the connections instead of creating & closing on each scrape.
+The feature enables the creation & reuse of a pool per database for the connections instead of creating & closing on each scrape.
 This is generally a useful optimization but also alleviates the volume of generated audit logs when the PostgreSQL instance is configured with `log_connections=on` and/or `log_disconnections=on`.
 
-When this feature gate is enabled, the following optional settings are available nested under `connection_pool` to help configure the connection pools:
+The following optional settings are available nested under `connection_pool` to help configure the connection pools:
 
 - `max_idle_time`: The maximum amount of time a connection may be idle before being closed.
 - `max_lifetime`: The maximum amount of time a connection may be reused.

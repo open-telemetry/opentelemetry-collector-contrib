@@ -21,14 +21,16 @@ override_value_enabled: true
 feature_gates:
   - id: postgresqlreceiver.preciselagmetrics
     description: Metric `postgresql.wal.lag` is replaced by more precise `postgresql.wal.delay`.
-    stage: beta
+    stage: stable
     from_version: "v0.89.0"
+    to_version: "v0.166.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831
 
   - id: receiver.postgresql.connectionPool
     description: Use of connection pooling
-    stage: beta
+    stage: stable
     from_version: "v0.96.0"
+    to_version: "v0.166.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831
 
   - id: receiver.postgresql.separateSchemaAttr
@@ -794,20 +796,10 @@ metrics:
     attributes: [wal_operation_lag, replication_client]
     description: Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
     stability: development
-    enabled: false
-    unit: s
-    gauge:
-      value_type: double
-    extended_documentation: |
-      This metric requires WAL to be enabled with at least one replica.
-  postgresql.wal.lag:
-    attributes: [wal_operation_lag, replication_client]
-    description: Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
-    stability: development
     enabled: true
     unit: s
     gauge:
-      value_type: int
+      value_type: double
     extended_documentation: |
       This metric requires WAL to be enabled with at least one replica.
 

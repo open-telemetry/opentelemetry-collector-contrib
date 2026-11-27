@@ -296,7 +296,7 @@ This metric requires WAL to be enabled with at least one replica.
 | ---- | ----------- | ---------- | --------- |
 | s | Gauge | Int | Development |
 
-### postgresql.wal.lag
+### postgresql.wal.delay
 
 Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
 
@@ -304,7 +304,7 @@ This metric requires WAL to be enabled with at least one replica.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| s | Gauge | Int | Development |
+| s | Gauge | Double | Development |
 
 #### Attributes
 
@@ -630,23 +630,6 @@ additionally require pgvector 0.7.0 or later.
 | postgresql.distance.function.name | The vector distance (similarity) function used by the query, one of the pgvector distance functions. | Str: ``cosine``, ``l2``, ``inner_product``, ``l1``, ``hamming``, ``jaccard`` | Recommended | - |
 | db.namespace | The database namespace, following the `{database}|{schema}` format defined by OpenTelemetry semantic conventions for PostgreSQL. | Any Str | Recommended | - |
 
-### postgresql.wal.delay
-
-Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
-
-This metric requires WAL to be enabled with at least one replica.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| s | Gauge | Double | Development |
-
-#### Attributes
-
-| Name | Description | Values | Requirement Level | Semantic Convention |
-| ---- | ----------- | ------ | ----------------- | ------------------- |
-| operation | The operation which is responsible for the lag. | Str: ``flush``, ``replay``, ``write`` | Recommended | - |
-| replication_client | The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket. | Any Str | Recommended | - |
-
 ## Default Events
 
 The following events are emitted by default. Each of them can be disabled by applying the following configuration:
@@ -762,8 +745,8 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `postgresqlreceiver.preciselagmetrics` | beta | Metric `postgresql.wal.lag` is replaced by more precise `postgresql.wal.delay`. | v0.89.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831) |
-| `receiver.postgresql.connectionPool` | beta | Use of connection pooling | v0.96.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831) |
+| `postgresqlreceiver.preciselagmetrics` | stable | Metric `postgresql.wal.lag` is replaced by more precise `postgresql.wal.delay`. | v0.89.0 | v0.166.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831) |
+| `receiver.postgresql.connectionPool` | stable | Use of connection pooling | v0.96.0 | v0.166.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831) |
 | `receiver.postgresql.separateSchemaAttr` | alpha | Moves Schema Names into dedicated Attribute | v0.122.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559) |
 | `receiver.postgresql.useOTelSemconv` | alpha | When enabled, uses a single resource per server with a service.instance.id (UUID v5) resource attribute, aligning with OpenTelemetry semantic conventions. When disabled, uses the legacy per-entity resource model with postgresql.database.name, postgresql.table.name, postgresql.index.name, and postgresql.schema.name resource attributes. | v0.156.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45347) |
 

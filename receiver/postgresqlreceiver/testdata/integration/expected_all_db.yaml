@@ -157,6 +157,15 @@ resourceMetrics:
             stringValue: otel
     scopeMetrics:
       - metrics:
+          - description: The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.
+            name: postgresql.backends
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
           - description: Number of times disk blocks were found already in the buffer cache. 
             name: postgresql.blks_hit
             sum:
@@ -375,6 +384,15 @@ resourceMetrics:
             stringValue: otel2
     scopeMetrics:
       - metrics:
+          - description: The number of backend processes associated with each database. Counts backends across all connection states (active, idle, idle-in-transaction) and all backend types, including non-client backends such as autovacuum and parallel workers.
+            name: postgresql.backends
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
           - description: Number of times disk blocks were found already in the buffer cache. 
             name: postgresql.blks_hit
             sum:
