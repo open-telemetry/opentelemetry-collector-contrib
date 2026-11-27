@@ -4,6 +4,8 @@
 package reader
 
 import (
+	"compress/gzip"
+	"strings"
 	"testing"
 	"time"
 
@@ -199,7 +201,7 @@ func TestTokenizationTooLongWithTruncate(t *testing.T) {
 		[]byte("aaa"),
 	}
 
-	f, sink := testFactory(t, withMaxLogSize(10), withTruncateOnMaxLogSize(true))
+	f, sink := testFactory(t, withMaxLogSize(10), withTruncateOnMaxLogSize())
 
 	temp := filetest.OpenTemp(t, t.TempDir())
 	_, err := temp.Write(fileContent)
@@ -235,7 +237,7 @@ func TestTokenizationMultilineWithTruncate(t *testing.T) {
 	}
 
 	sCfg := split.Config{LineStartPattern: `>`, OmitPattern: true}
-	f, sink := testFactory(t, withSplitConfig(sCfg), withMaxLogSize(100), withTruncateOnMaxLogSize(true))
+	f, sink := testFactory(t, withSplitConfig(sCfg), withMaxLogSize(100), withTruncateOnMaxLogSize())
 
 	temp := filetest.OpenTemp(t, t.TempDir())
 	_, err := temp.Write(fileContent)
@@ -273,7 +275,7 @@ func TestTokenizationMultilineOversizedWithTruncate(t *testing.T) {
 	}
 
 	sCfg := split.Config{LineStartPattern: `>`, OmitPattern: true}
-	f, sink := testFactory(t, withSplitConfig(sCfg), withMaxLogSize(10), withTruncateOnMaxLogSize(true))
+	f, sink := testFactory(t, withSplitConfig(sCfg), withMaxLogSize(10), withTruncateOnMaxLogSize())
 
 	temp := filetest.OpenTemp(t, t.TempDir())
 	_, err := temp.Write(fileContent)
@@ -290,6 +292,114 @@ func TestTokenizationMultilineOversizedWithTruncate(t *testing.T) {
 	for _, expected := range expected {
 		require.Equal(t, expected, sink.NextToken(t))
 	}
+}
+
+// TestTokenizationTruncateAcrossPolls tests that the remainder of a truncated entry is skipped
+// when the rest of the entry is written after the poll that truncated it.
+func TestTokenizationTruncateAcrossPolls(t *testing.T) {
+	lineStart := withSplitConfig(split.Config{LineStartPattern: "^START"})
+	testCases := []struct {
+		name string
+		opts []testFactoryOpt
+		// writes holds the data written before each poll, and expected the tokens emitted by that poll.
+		writes   []string
+		expected [][]string
+		// wait is the time between polls.
+		wait time.Duration
+	}{
+		{
+			name:     "RemainderInNextPoll",
+			writes:   []string{strings.Repeat("a", 15), "bbbbb\nnext\n"},
+			expected: [][]string{{"aaaaaaaaaa"}, {"next"}},
+		},
+		{
+			name:     "RemainderInNextPollWithoutFlushPeriod",
+			opts:     []testFactoryOpt{withFlushPeriod(0)},
+			writes:   []string{strings.Repeat("a", 15), "bbbbb\nnext\n"},
+			expected: [][]string{{"aaaaaaaaaa"}, {"next"}},
+		},
+		{
+			name:     "RemainderEndsAtEndOfPoll",
+			writes:   []string{strings.Repeat("a", 15), "bbbbb\n", "next\n"},
+			expected: [][]string{{"aaaaaaaaaa"}, nil, {"next"}},
+		},
+		{
+			name:     "RemainderLargerThanBuffer",
+			opts:     []testFactoryOpt{withMaxLogSize(1024), withFlushPeriod(0)},
+			writes:   []string{strings.Repeat("a", 2000), strings.Repeat("b", 8000), strings.Repeat("b", 8000), strings.Repeat("b", 8000), "\nnext\n"},
+			expected: [][]string{{strings.Repeat("a", 1024)}, nil, nil, nil, {"next"}},
+		},
+		{
+			// The flush period does not end the entry: only the next boundary does.
+			name:     "RemainderAfterFlushPeriod",
+			opts:     []testFactoryOpt{withFlushPeriod(100 * time.Millisecond)},
+			writes:   []string{strings.Repeat("a", 15), "", "bbbbb\nnext\n"},
+			expected: [][]string{{"aaaaaaaaaa"}, nil, {"next"}},
+			wait:     200 * time.Millisecond,
+		},
+		{
+			name:     "LineStartRemainderInNextPoll",
+			opts:     []testFactoryOpt{lineStart},
+			writes:   []string{"START " + strings.Repeat("a", 20) + "\nSTA", "RT bb\nSTART cc\n"},
+			expected: [][]string{{"START aaaa"}, {"START bb"}},
+		},
+		{
+			// An entry of exactly max_log_size at the end of a poll may be complete, so the next entry is kept.
+			name:     "LineStartExactLength",
+			opts:     []testFactoryOpt{lineStart},
+			writes:   []string{"START ccc\n", "START dd\nSTART e\n"},
+			expected: [][]string{{"START ccc"}, {"START dd"}},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			f, sink := testFactory(t, append([]testFactoryOpt{withMaxLogSize(10), withTruncateOnMaxLogSize()}, tc.opts...)...)
+
+			temp := filetest.OpenTemp(t, t.TempDir())
+			fp, err := f.NewFingerprint(temp)
+			require.NoError(t, err)
+			r, err := f.NewReader(temp, fp)
+			require.NoError(t, err)
+
+			for i, data := range tc.writes {
+				if i > 0 {
+					time.Sleep(tc.wait)
+					// Each poll reads with a new reader created from the metadata of the previous one.
+					r, err = f.NewReaderFromMetadata(temp, r.Metadata)
+					require.NoError(t, err)
+				}
+				filetest.WriteString(t, temp, data)
+				r.ReadToEnd(t.Context())
+				for _, token := range tc.expected[i] {
+					require.Equal(t, token, string(sink.NextToken(t)))
+				}
+				sink.ExpectNoCallsUntil(t, 10*time.Millisecond)
+			}
+		})
+	}
+}
+
+// TestTokenizationTruncateGzip tests that the remainder of a truncated entry at the end of
+// a gzip stream is not emitted.
+func TestTokenizationTruncateGzip(t *testing.T) {
+	f, sink := testFactory(t, withMaxLogSize(10), withTruncateOnMaxLogSize(), withCompression("gzip"))
+
+	temp := filetest.OpenTempWithPattern(t, t.TempDir(), "*.gz")
+	gzipWriter := gzip.NewWriter(temp)
+	_, err := gzipWriter.Write([]byte("x\n" + strings.Repeat("a", 25)))
+	require.NoError(t, err)
+	require.NoError(t, gzipWriter.Close())
+
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+	r, err := f.NewReader(temp, fp)
+	require.NoError(t, err)
+
+	r.ReadToEnd(t.Context())
+	require.Equal(t, "x", string(sink.NextToken(t)))
+	require.Equal(t, "aaaaaaaaaa", string(sink.NextToken(t)))
+	sink.ExpectNoCallsUntil(t, 10*time.Millisecond)
 }
 
 func TestHeaderFingerprintIncluded(t *testing.T) {

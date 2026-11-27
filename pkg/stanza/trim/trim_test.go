@@ -276,12 +276,59 @@ func TestToLengthWithTruncate(t *testing.T) {
 				splittest.ExpectAdvanceToken(len(" extra "), " extra "),
 			},
 		},
+		{
+			// The implicit last step expects the remainder to be kept at EOF,
+			// because the rest of the entry may be written later.
+			name:      "KeepRemainderAtEOF",
+			input:     []byte("aaaaaaaaaaaaaaa"),
+			baseFunc:  splittest.ScanLinesStrict,
+			maxLength: 10,
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(10, "aaaaaaaaaa"),
+			},
+		},
+		{
+			name:      "SkipRemainderLongerThanMaxLength",
+			input:     []byte("aaaaaaaaaabbbbbbbbbbbb\nnext\n"),
+			baseFunc:  splittest.ScanLinesStrict,
+			maxLength: 10,
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(10, "aaaaaaaaaa"),
+				// About the last half of maxLength bytes is kept, 4-byte aligned, in case it holds the start of a boundary.
+				splittest.ExpectAdvanceNil(4),
+				splittest.ExpectAdvanceNil(len("bbbbbbbb\n")),
+				splittest.ExpectAdvanceToken(len("next\n"), "next"),
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		skipping := false
 		splitFunc := ToLengthWithTruncate(tc.baseFunc, tc.maxLength, &skipping)
 		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
+	}
+}
+
+// scanUTF16LELines splits on a UTF-16LE newline and only looks at two-byte aligned positions.
+func scanUTF16LELines(data []byte, _ bool) (int, []byte, error) {
+	for i := 0; i+1 < len(data); i += 2 {
+		if data[i] == '\n' && data[i+1] == 0 {
+			return i + 2, data[:i], nil
+		}
+	}
+	return 0, nil, nil
+}
+
+func TestToLengthWithTruncateKeepsEncodingAlignment(t *testing.T) {
+	// maxLength/2 is odd here, so keeping the last half of maxLength bytes would split a code unit.
+	skipping := true
+	splitFunc := ToLengthWithTruncate(scanUTF16LELines, 14, &skipping)
+	for _, size := range []int{14, 16, 18} {
+		advance, token, err := splitFunc(make([]byte, size), false)
+		assert.NoError(t, err)
+		assert.Nil(t, token)
+		assert.Positive(t, advance)
+		assert.Zero(t, advance%4, "advance %d for %d bytes is not aligned", advance, size)
 	}
 }
 
