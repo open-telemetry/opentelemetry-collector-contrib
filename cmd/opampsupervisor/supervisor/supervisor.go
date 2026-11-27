@@ -36,7 +36,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	telemetryconfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
@@ -1506,7 +1505,7 @@ func normalizeTelemetryResourceConfig(conf *confmap.Conf) error {
 		return nil
 	}
 
-	var resourceCfg otelconftelemetry.ResourceConfig
+	var resourceCfg config.ResourceConfig
 	if err := confmap.NewFromStringMap(resourceMap).Unmarshal(&resourceCfg); err != nil {
 		return err
 	}
