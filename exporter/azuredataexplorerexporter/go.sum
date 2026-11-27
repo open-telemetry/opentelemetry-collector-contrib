@@ -2,6 +2,8 @@ github.com/Azure/azure-kusto-go/azkustodata v1.2.3 h1:ibMvbLBn4tTc1lwgjK7+HmJQnq
 github.com/Azure/azure-kusto-go/azkustodata v1.2.3/go.mod h1:nVZRkSE5p7eT2k9jMWSo9Uosi/H6Lig2pxtETP+rX/U=
 github.com/Azure/azure-kusto-go/azkustoingest v1.2.3 h1:hZddNEkCTsOBrwXZPLKS/o8NVGspUQm+lJp48UFvRCQ=
 github.com/Azure/azure-kusto-go/azkustoingest v1.2.3/go.mod h1:CIZGnDgHJ46JNNE+Hk/w7KTv1roMd3modXrdmSNKpTI=
+github.com/Azure/azure-kusto-go/azkustoingestv2 v0.0.0-20261120090152-a74fc0891363 h1:9QgXuQVIs/OrARkof8fEJ8P+y9wDmDB51TAWFUBRHFI=
+github.com/Azure/azure-kusto-go/azkustoingestv2 v0.0.0-20261120090152-a74fc0891363/go.mod h1:/Lu1afnvo/Jo2YPPDTZ3mjHnn3QmryNGVzQYOHDwEos=
 github.com/Azure/azure-sdk-for-go/sdk/azcore v1.22.0 h1:aokoqcHvaGjiM3VpjKDfMMnF/8epJ+Q1HLJ7CudztqE=
 github.com/Azure/azure-sdk-for-go/sdk/azcore v1.22.0/go.mod h1:/WYEx9pcM9Y+Dd/APJaNlSvVSvzl54rrMdZT5+Oi2LM=
 github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.14.0 h1:CU4+EJeJi3TKYWEcYuSdWsjzw0nVsK/H0MSQOiPcymU=
@@ -16,6 +18,8 @@ github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage v1.8.1 
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage v1.8.1/go.mod h1:Ng3urmn6dYe8gnbCMoHHVl5APYz2txho3koEkV2o2HA=
 github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.3 h1:ZJJNFaQ86GVKQ9ehwqyAFE6pIfyicpuJ8IkVaPBc6/4=
 github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.3/go.mod h1:URuDvhmATVKqHBH9/0nOiNKk0+YcwfQ3WkK5PqHKxc8=
+github.com/Azure/azure-sdk-for-go/sdk/storage/azdatalake v1.4.4 h1:7QtoGxKm6mPhsWzEZtrn3tQF1hmMMZblngnqNoE61I8=
+github.com/Azure/azure-sdk-for-go/sdk/storage/azdatalake v1.4.4/go.mod h1:juYrzH1q6A+g9ZZbGh0OmjS7zaMq3rFDrPhVnYSgFMA=
 github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue v1.0.1 h1:qvrrnQ2mIjwY7IVlQuNB0ma43Nr74+9ZTZJ60KlmlV4=
 github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue v1.0.1/go.mod h1:FkF/Az07vR3S4sBdjCuisznWfFWOD8u6Ibm/g/oyDAk=
 github.com/AzureAD/microsoft-authentication-extensions-for-go/cache v0.1.1 h1:WJTmL004Abzc5wDB5VtZG2PJk5ndYDgVacGqfirKxjM=

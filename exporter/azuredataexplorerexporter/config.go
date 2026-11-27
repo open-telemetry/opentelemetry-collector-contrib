@@ -34,6 +34,7 @@ type Config struct {
 	LogTableMapping    string                                                   `mapstructure:"logs_table_json_mapping"`
 	TraceTableMapping  string                                                   `mapstructure:"traces_table_json_mapping"`
 	IngestionType      string                                                   `mapstructure:"ingestion_type"`
+	EnableIngestV2     bool                                                     `mapstructure:"enable_ingest_v2"`
 }
 
 // Validate checks if the exporter configuration is valid

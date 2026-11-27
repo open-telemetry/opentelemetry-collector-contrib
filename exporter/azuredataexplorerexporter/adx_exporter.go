@@ -6,6 +6,7 @@ package azuredataexplorerexporter // import "github.com/open-telemetry/opentelem
 import (
 	"context"
 	"errors"
+	"io"
 	"strconv"
 	"strings"
 
@@ -25,6 +26,7 @@ type adxDataProducer struct {
 	ingestor      azkustoingest.Ingestor     // ingestion for logs, traces and metrics
 	ingestOptions []azkustoingest.FileOption // options for the ingestion
 	logger        *zap.Logger                // logger for tracing the flow
+	v2            *ingestV2State
 }
 
 const nextline = "\n"
@@ -60,6 +62,16 @@ func (e *adxDataProducer) metricsDataPusher(ctx context.Context, metrics pmetric
 
 func (e *adxDataProducer) ingestData(ctx context.Context, b []string) error {
 	ingestReader := strings.NewReader(strings.Join(b, nextline))
+
+	if e.v2 != nil {
+		useV2, err := e.v2.selectIngestion(ctx)
+		if err != nil {
+			return err
+		}
+		if useV2 {
+			return e.v2.ingest(ctx, io.NopCloser(ingestReader))
+		}
+	}
 
 	if _, err := e.ingestor.FromReader(ctx, ingestReader, e.ingestOptions...); err != nil {
 		e.logger.Error("Error performing managed data ingestion.", zap.Error(err))
@@ -127,6 +139,9 @@ func (e *adxDataProducer) tracesDataPusher(ctx context.Context, traceData ptrace
 func (e *adxDataProducer) Close(context.Context) error {
 	// Close the ingestor and client connections
 	err := e.ingestor.Close()
+	if e.v2 != nil {
+		err = errors.Join(err, e.v2.close())
+	}
 	if err != nil {
 		e.logger.Warn("Error closing connections", zap.Error(err))
 	} else {
@@ -167,11 +182,18 @@ func newExporter(config *Config, logger *zap.Logger, telemetryDataType int, vers
 		}
 		ingestor = qi
 	}
-	return &adxDataProducer{
+	producer := &adxDataProducer{
 		ingestOptions: ingestOptions,
 		ingestor:      ingestor,
 		logger:        logger,
-	}, nil
+	}
+	if config.EnableIngestV2 && !strings.EqualFold(config.IngestionType, managedIngestType) {
+		producer.v2, err = newIngestV2State(config, version, tableName, telemetryDataType, logger)
+		if err != nil {
+			return nil, errors.Join(err, ingestor.Close())
+		}
+	}
+	return producer, nil
 }
 
 // Fetches the corresponding ingestionRef if the mapping is provided
