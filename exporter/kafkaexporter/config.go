@@ -25,6 +25,9 @@ var _ component.Config = (*Config)(nil)
 var (
 	errRecordPartitionerMultipleSet = errors.New("at most one record_partitioner strategy may be configured")
 	errRecordPartitionerMissing     = errors.New("no partitioner type configured")
+	errPartitionAwareRequiresKey    = errors.New("partition_aware_batching requires at least one partition_* option")
+	errPartitionAwareRequiresSticky = errors.New("partition_aware_batching requires the sticky_key record partitioner")
+	errPartitionAwareCacheSize      = errors.New("partition_aware_batching::topic_cache_size must be greater than zero")
 )
 
 var errLogsPartitionExclusive = errors.New(
@@ -45,9 +48,22 @@ var (
 )
 
 const (
-	HasherSaramaCompat = "sarama_compat"
-	HasherMurmur2      = "murmur2"
+	HasherSaramaCompat                  = "sarama_compat"
+	HasherMurmur2                       = "murmur2"
+	defaultPartitionAwareTopicCacheSize = 1000
 )
+
+// PartitionAwareBatchingConfig configures batching by destination Kafka partition.
+type PartitionAwareBatchingConfig struct {
+	// Enabled groups telemetry by destination topic and partition before marshaling.
+	Enabled bool `mapstructure:"enabled"`
+
+	// TopicCacheSize bounds the number of observed topic partition counts retained.
+	TopicCacheSize int `mapstructure:"topic_cache_size"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
 
 // RecordPartitionerConfig configures the strategy used to assign Kafka records to partitions.
 // At most one field should be set.
@@ -184,6 +200,9 @@ type Config struct {
 	// attributes are not used for the key when this option is enabled.
 	PartitionLogsByTraceID bool `mapstructure:"partition_logs_by_trace_id"`
 
+	// PartitionAwareBatching configures grouping by destination Kafka partition.
+	PartitionAwareBatching PartitionAwareBatchingConfig `mapstructure:"partition_aware_batching"`
+
 	// RecordPartitioner configures how Kafka records are assigned to partitions.
 	// The default ("sarama_compatible") retains the legacy Sarama-compatible hashing
 	// behavior. Set to "sticky", "round_robin", or "least_backup" to use one of the
@@ -206,6 +225,20 @@ func (c *Config) Validate() error {
 	}
 	if err := c.RecordPartitioner.Validate(); err != nil {
 		return fmt.Errorf("record_partitioner: %w", err)
+	}
+	if c.PartitionAwareBatching.Enabled {
+		if c.PartitionAwareBatching.TopicCacheSize <= 0 {
+			return errPartitionAwareCacheSize
+		}
+		if !c.PartitionTracesByID &&
+			!c.PartitionMetricsByResourceAttributes &&
+			!c.PartitionLogsByResourceAttributes &&
+			!c.PartitionLogsByTraceID {
+			return errPartitionAwareRequiresKey
+		}
+		if c.RecordPartitioner.StickyKey == nil {
+			return errPartitionAwareRequiresSticky
+		}
 	}
 	if err := validateBatchPartitionerKeys(c); err != nil {
 		return err

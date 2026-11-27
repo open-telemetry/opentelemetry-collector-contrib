@@ -1597,10 +1597,20 @@ func configureExporter[T any](tb testing.TB,
 	cluster, kcfg := kafkatest.NewCluster(tb, kfake.SeedTopics(1, topics...))
 
 	// Create a kgo.Client using the broker addresses from the fake cluster.
+	partitioner, err := buildPartitioner(cfg.RecordPartitioner, host)
+	require.NoError(tb, err)
+	if cfg.PartitionAwareBatching.Enabled {
+		exp.partitioner = newPartitionAwarePartitioner(
+			partitioner,
+			cfg.PartitionAwareBatching.TopicCacheSize,
+		)
+		partitioner = exp.partitioner
+	}
 	kgoClientOpts := []kgo.Opt{
 		kgo.SeedBrokers(kcfg.Brokers...),
 		kgo.ClientID(cfg.ClientConfig.ClientID),
 		kgo.WithHooks(kafkaclient.NewStatusReporter(host)),
+		kgo.RecordPartitioner(partitioner),
 	}
 
 	client, err := kafka.NewFranzSyncProducer(tb.Context(), host, kcfg,

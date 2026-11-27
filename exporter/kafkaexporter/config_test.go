@@ -84,6 +84,10 @@ func TestLoadConfig(t *testing.T) {
 				PartitionMetricsByResourceAttributes: true,
 				PartitionLogsByResourceAttributes:    true,
 				PartitionLogsByTraceID:               false,
+				PartitionAwareBatching: PartitionAwareBatchingConfig{
+					Enabled:        true,
+					TopicCacheSize: 1000,
+				},
 				RecordPartitioner: (RecordPartitionerConfig{
 					StickyKey: &StickyKeyPartitionerConfig{
 						Hasher: "sarama_compat",
@@ -317,6 +321,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, confmap.Validate(cfg))
+			tt.expected.(*Config).PartitionAwareBatching.TopicCacheSize = defaultPartitionAwareTopicCacheSize
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

@@ -42,6 +42,13 @@ type messenger[T any] interface {
 	// type (plog.Logs, etc.)
 	partitionData(T) iter.Seq2[[]byte, T]
 
+	partitionAwareRecords(
+		context.Context,
+		T,
+		*partitionAwarePartitioner,
+		func(kgo.Record),
+	) (bool, error)
+
 	// marshalData marshals a pdata type into zero or more messages,
 	// invoking yield once per message with its key and value.
 	marshalData(data T, yield func(key, value []byte)) error
@@ -71,6 +78,7 @@ type kafkaExporter[T any] struct {
 	newMessenger func(host component.Host) (messenger[T], error)
 	messenger    messenger[T]
 	producer     *kafkaclient.FranzSyncProducer
+	partitioner  *partitionAwarePartitioner
 	recordsPool  sync.Pool
 }
 
@@ -111,9 +119,16 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 		return err
 	}
 
-	partitionerOpt, err := buildPartitionerOpt(e.cfg.RecordPartitioner, host)
+	partitioner, err := buildPartitioner(e.cfg.RecordPartitioner, host)
 	if err != nil {
 		return fmt.Errorf("failed to configure record partitioner: %w", err)
+	}
+	if e.cfg.PartitionAwareBatching.Enabled {
+		e.partitioner = newPartitionAwarePartitioner(
+			partitioner,
+			e.cfg.PartitionAwareBatching.TopicCacheSize,
+		)
+		partitioner = e.partitioner
 	}
 
 	clientCtx, clientCancel := context.WithCancel(context.Background())
@@ -126,7 +141,7 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 		e.logger,
 		kgo.WithContext(clientCtx),
 		kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb), kafkaclient.NewStatusReporter(host)),
-		partitionerOpt,
+		kgo.RecordPartitioner(partitioner),
 	)
 	if err != nil {
 		clientCancel()
@@ -162,33 +177,10 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 		clear(buf.pointers)
 		e.recordsPool.Put(buf)
 	}()
-	metadataKey := e.messenger.getMessageKey(ctx)
-	for partitionKey, data := range e.messenger.partitionData(data) {
-		topic := e.messenger.getTopic(ctx, data)
-		err := e.messenger.marshalData(data, func(key, value []byte) {
-			// Marshalers may set the key, but a non-nil partition key
-			// from partitionData takes precedence. The metadata-derived key
-			// is mutually exclusive with partition_* flags (validated at config
-			// time), so it applies when partitionData yields nil.
-			if partitionKey != nil {
-				key = partitionKey
-			} else if metadataKey != nil {
-				key = metadataKey
-			}
-			buf.space = append(buf.space, kgo.Record{
-				Topic: topic,
-				Key:   key,
-				Value: value,
-			})
-		})
-		if err != nil {
-			err = fmt.Errorf("error exporting to topic %q: %w", topic, err)
-			e.logger.Error("kafka records marshal data failed",
-				zap.String("topic", topic),
-				zap.Error(err),
-			)
-			return consumererror.NewPermanent(err)
-		}
+	if err := e.convertData(ctx, data, func(record kgo.Record) {
+		buf.space = append(buf.space, record)
+	}); err != nil {
+		return err
 	}
 	// Build the pointer slice from space. We do this once here rather
 	// than in lockstep with each append, since append may reallocate
@@ -216,6 +208,53 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 		e.logger.Debug("kafka records exported",
 			zap.Int("records", len(buf.pointers)),
 		)
+	}
+	return nil
+}
+
+func (e *kafkaExporter[T]) convertData(ctx context.Context, data T, yield func(kgo.Record)) error {
+	if e.cfg.PartitionAwareBatching.Enabled && e.partitioner != nil {
+		batched, err := e.messenger.partitionAwareRecords(
+			ctx,
+			data,
+			e.partitioner,
+			yield,
+		)
+		if err != nil {
+			return consumererror.NewPermanent(err)
+		}
+		if batched {
+			return nil
+		}
+	}
+
+	metadataKey := e.messenger.getMessageKey(ctx)
+	for partitionKey, sub := range e.messenger.partitionData(data) {
+		topic := e.messenger.getTopic(ctx, sub)
+		err := e.messenger.marshalData(sub, func(key, value []byte) {
+			// Marshalers may set the key, but a non-nil partition key
+			// from partitionData takes precedence. The metadata-derived key
+			// is mutually exclusive with partition_* flags (validated at config
+			// time), so it applies when partitionData yields nil.
+			if partitionKey != nil {
+				key = partitionKey
+			} else if metadataKey != nil {
+				key = metadataKey
+			}
+			yield(kgo.Record{
+				Topic: topic,
+				Key:   key,
+				Value: value,
+			})
+		})
+		if err != nil {
+			err = fmt.Errorf("error exporting to topic %q: %w", topic, err)
+			e.logger.Error("kafka records marshal data failed",
+				zap.String("topic", topic),
+				zap.Error(err),
+			)
+			return consumererror.NewPermanent(err)
+		}
 	}
 	return nil
 }
@@ -432,6 +471,15 @@ func newProfilesExporter(config Config, set exporter.Settings) *kafkaExporter[pp
 type kafkaProfilesMessenger struct {
 	config    Config
 	marshaler marshaler.ProfilesMarshaler
+}
+
+func (*kafkaProfilesMessenger) partitionAwareRecords(
+	context.Context,
+	pprofile.Profiles,
+	*partitionAwarePartitioner,
+	func(kgo.Record),
+) (bool, error) {
+	return false, nil
 }
 
 func (e *kafkaProfilesMessenger) marshalData(ld pprofile.Profiles, yield func(key, value []byte)) error {

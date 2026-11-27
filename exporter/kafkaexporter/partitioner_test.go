@@ -88,7 +88,7 @@ func TestRecordPartitionerConfig_Validate(t *testing.T) {
 	}
 }
 
-func TestBuildPartitionerOpt(t *testing.T) {
+func TestBuildPartitioner(t *testing.T) {
 	extID := component.MustNewID("my_partitioner")
 	customPartitioner := kgo.RoundRobinPartitioner()
 	ext := &mockPartitionerExtension{partitioner: customPartitioner}
@@ -150,10 +150,10 @@ func TestBuildPartitionerOpt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			opt, err := buildPartitionerOpt(tt.cfg, tt.host)
+			partitioner, err := buildPartitioner(tt.cfg, tt.host)
 			if tt.wantErr == "" {
 				require.NoError(t, err)
-				require.NotNil(t, opt)
+				require.NotNil(t, partitioner)
 			} else {
 				require.Error(t, err)
 				require.ErrorContains(t, err, tt.wantErr)
@@ -174,7 +174,7 @@ func newPartitioningProducer(
 	t.Helper()
 	cluster, kcfg := kafkatest.NewCluster(t, kfake.SeedTopics(int32(numPartitions), topic))
 
-	partOpt, err := buildPartitionerOpt(cfg, host)
+	partitioner, err := buildPartitioner(cfg, host)
 	require.NoError(t, err)
 
 	producerCfg := configkafka.NewDefaultProducerConfig()
@@ -182,7 +182,7 @@ func newPartitioningProducer(
 	client, err := kafka.NewFranzSyncProducer(
 		t.Context(), host, kcfg, producerCfg,
 		5*time.Second, zap.NewNop(),
-		partOpt,
+		kgo.RecordPartitioner(partitioner),
 	)
 	require.NoError(t, err)
 	t.Cleanup(client.Close)

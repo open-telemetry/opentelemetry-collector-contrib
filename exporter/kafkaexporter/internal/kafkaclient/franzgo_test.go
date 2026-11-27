@@ -195,6 +195,13 @@ func TestExportData_MessageTooLarge(t *testing.T) {
 	assert.Contains(t, err.Error(), "exceeds max")
 }
 
+func TestPlannedPartitionContext(t *testing.T) {
+	ctx := WithPlannedPartition(t.Context(), 3)
+	partition, ok := PlannedPartition(ctx)
+	require.True(t, ok)
+	require.Equal(t, 3, partition)
+}
+
 func TestExportData_AttachesHeaders(t *testing.T) {
 	const topic = "test-topic"
 	cluster, err := kfake.NewCluster(kfake.SeedTopics(1, topic))

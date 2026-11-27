@@ -59,6 +59,9 @@ The following settings can be optionally configured:
 - `partition_metrics_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in metric messages sent to kafka.
 - `partition_logs_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in log messages sent to kafka.
 - `partition_logs_by_trace_id` (default = false): configures the exporter to partition log messages by trace ID, if the log record has one associated. Note: `partition_logs_by_resource_attributes` and `partition_logs_by_trace_id` are mutually exclusive, and enabling both will lead to an error.
+- `partition_aware_batching`: configures grouping telemetry by destination Kafka partition. See [Partition-aware batching](#partition-aware-batching).
+  - `enabled` (default = false): enables partition-aware batching. Requires at least one `partition_*` option and the built-in `sticky_key` record partitioner.
+  - `topic_cache_size` (default = 1000): maximum number of observed topic partition counts retained. Least-recently-used topics are evicted.
 - `record_partitioner`: Configures the Kafka record partitioning strategy. **At most one** option may be set. If multiple partitioners are configured, an error will be returned. If none is configured, the default is `sticky_key` with a Sarama-compatible hasher (preserving previous behavior).
   - `sticky_key`: Uses a sticky-key partitioner.
     - `hasher`: The hash algorithm used for key-based partition assignment.
@@ -275,6 +278,20 @@ The Kafka record key can be set in the following ways, in order of precedence:
 The exporter supports multiple strategies to control how records are distributed across kafka partitions within a topic.
 
 Available strategies for partitioning are `sticky_key`, `sticky`, `round_robin`, `least_backup` and `extension`
+
+### Partition-aware batching
+
+By default, every key produced by a `partition_*` option is split, marshaled, and written as a separate Kafka record. Enabling `partition_aware_batching::enabled` instead groups telemetry by its actual `(topic, partition)` destination and emits a record for each group. This preserves key affinity while reducing marshaling and record overhead for high-cardinality keys.
+
+The option supports the `sticky_key` partitioner with either the `sarama_compat` or `murmur2` hasher. It is opt-in because one record may contain telemetry for several keys that hash to the same partition. The record carries the first key in the group and is explicitly pinned to the planned partition. Consumers must therefore treat the record key as a partition-affinity hint, not as a description of every item in the payload.
+
+The exporter learns partition counts from keyed records while producing. Until a topic's count is known, or when a nil key cannot be planned deterministically, it uses the existing per-key behavior. A partition-count change updates planning for subsequent exports; already-built records remain pinned to their previously valid partition. If a planned partition is no longer valid, the representative key is rehashed against the current count.
+
+Partition counts are retained in a bounded least-recently-used cache. When `topic_cache_size` is reached, the least-recently-used topic is evicted. Its next export temporarily uses the existing per-key behavior while relearning the partition count.
+
+Partition-aware batching can create larger records than the existing per-key behavior. It does not split partition batches by `producer::max_message_bytes`; franz-go retains responsibility for enforcing that limit and returns a message-too-large error when a record exceeds it. To bound pdata before partition-aware conversion, configure `sending_queue::batch::sizer` as `bytes` and set `sending_queue::batch::max_size` conservatively below `producer::max_message_bytes`. Exporterhelper measures serialized OTLP protobuf size, not the selected Kafka payload's exact wire size, so allow headroom for other encodings, record keys, headers, and Kafka protocol overhead.
+
+Encodings that emit records per telemetry item, such as `raw` logs and Jaeger traces, retain the existing per-item behavior.
 
 ### Using custom partitioner
 

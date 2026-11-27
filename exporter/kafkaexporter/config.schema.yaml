@@ -1,4 +1,15 @@
 $defs:
+  partition_aware_batching_config:
+    description: PartitionAwareBatchingConfig configures batching by destination Kafka partition.
+    type: object
+    properties:
+      enabled:
+        description: Enabled groups telemetry by destination topic and partition before marshaling.
+        type: boolean
+      topic_cache_size:
+        description: TopicCacheSize bounds the number of observed topic partition counts retained.
+        type: integer
+        minimum: 1
   record_partitioner_config:
     description: RecordPartitionerConfig configures the strategy used to assign Kafka records to partitions. At most one field should be set.
     type: object
@@ -57,6 +68,9 @@ properties:
   metrics:
     description: Metrics holds configuration about how metrics should be sent to Kafka.
     $ref: signal_config
+  partition_aware_batching:
+    description: PartitionAwareBatching configures grouping by destination Kafka partition.
+    $ref: partition_aware_batching_config
   partition_logs_by_resource_attributes:
     description: PartitionLogsByResourceAttributes controls the partitioning of logs messages by resource. If this is true, then the message key will be set to a hash of the resource's identifying attributes.
     type: boolean

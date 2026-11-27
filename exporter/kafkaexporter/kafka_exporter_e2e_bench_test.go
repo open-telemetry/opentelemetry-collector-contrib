@@ -39,11 +39,14 @@ func configureExporterBench[T any](
 	require.NoError(b, err)
 	exp.tb = tb
 
+	partitioner, err := buildPartitioner(cfg.RecordPartitioner, componenttest.NewNopHost())
+	require.NoError(b, err)
 	client, err := kafka.NewFranzSyncProducer(
 		b.Context(), componenttest.NewNopHost(), kcfg,
 		cfg.Producer, 1*time.Second, zap.NewNop(),
 		kgo.SeedBrokers(kcfg.Brokers...),
 		kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb)),
+		kgo.RecordPartitioner(partitioner),
 	)
 	require.NoError(b, err)
 

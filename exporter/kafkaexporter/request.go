@@ -9,7 +9,6 @@ import (
 	"fmt"
 
 	"github.com/twmb/franz-go/pkg/kgo"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.uber.org/zap"
 
@@ -29,29 +28,12 @@ func newRequestConverter[T any](exp *kafkaExporter[T]) xexporterhelper.RequestCo
 			return nil, errors.New("kafkaexporter: not started")
 		}
 		var records []*kgo.Record
-		metadataKey := exp.messenger.getMessageKey(ctx)
-		for partitionKey, sub := range exp.messenger.partitionData(data) {
-			topic := exp.messenger.getTopic(ctx, sub)
-			err := exp.messenger.marshalData(sub, func(key, value []byte) {
-				if partitionKey != nil {
-					key = partitionKey
-				} else if metadataKey != nil {
-					key = metadataKey
-				}
-				records = append(records, &kgo.Record{
-					Topic: topic,
-					Key:   key,
-					Value: value,
-				})
-			})
-			if err != nil {
-				err = fmt.Errorf("error exporting to topic %q: %w", topic, err)
-				exp.logger.Error("kafka marshal failed (request path)",
-					zap.String("topic", topic),
-					zap.Error(err),
-				)
-				return nil, consumererror.NewPermanent(err)
-			}
+		err := exp.convertData(ctx, data, func(record kgo.Record) {
+			records = append(records, &record)
+		})
+		if err != nil {
+			exp.logger.Error("kafka marshal failed (request path)", zap.Error(err))
+			return nil, err
 		}
 		return kafkarequest.New(records), nil
 	}
