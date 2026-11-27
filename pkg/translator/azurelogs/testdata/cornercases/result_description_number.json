@@ -1,0 +1,25 @@
+{
+  "records": [
+    {
+      "time": "2022-11-11T04:48:27.6767145Z",
+      "resourceId": "/RESOURCE_ID",
+      "operationName": "Pull",
+      "category": "ContainerRegistryRepositoryEvents",
+      "resultDescription": "Success"
+    },
+    {
+      "time": "2022-11-11T04:48:27.6767145Z",
+      "resourceId": "/RESOURCE_ID",
+      "operationName": "Pull",
+      "category": "ContainerRegistryRepositoryEvents",
+      "resultDescription": 200
+    },
+    {
+      "time": "2022-11-11T04:48:27.6767145Z",
+      "resourceId": "/RESOURCE_ID",
+      "operationName": "Pull",
+      "category": "ContainerRegistryRepositoryEvents",
+      "resultDescription": null
+    }
+  ]
+}

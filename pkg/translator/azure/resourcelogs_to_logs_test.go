@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -345,7 +346,7 @@ func TestExtractRawAttributes(t *testing.T) {
 				Category:          "category",
 				ResultType:        &resultType,
 				ResultSignature:   &resultSignature,
-				ResultDescription: &resultDescription,
+				ResultDescription: (*stringOrNumber)(&resultDescription),
 				DurationMs:        &goodDuration,
 				CallerIPAddress:   &callerIPAddress,
 				CorrelationID:     &correlationID,
@@ -481,4 +482,35 @@ func TestUnmarshalLogs(t *testing.T) {
 			assert.NoError(t, plogtest.CompareLogs(tt.expected, logs))
 		})
 	}
+}
+
+func TestUnmarshalLogsResultDescriptionNumber(t *testing.T) {
+	// A record whose resultDescription is a JSON number must not make the
+	// whole message fail to decode: every record is kept and the number is
+	// emitted as its decimal text, like a string value.
+	data, err := os.ReadFile(filepath.Join("testdata", "log-result-description-number.json"))
+	require.NoError(t, err)
+
+	sut := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
+	logs, err := sut.UnmarshalLogs(data)
+	require.NoError(t, err)
+	require.Equal(t, 3, logs.LogRecordCount())
+
+	records := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+
+	desc, ok := records.At(0).Attributes().Get(azureResultDescription)
+	require.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeStr, desc.Type())
+	assert.Equal(t, "Success", desc.Str())
+
+	desc, ok = records.At(1).Attributes().Get(azureResultDescription)
+	require.True(t, ok)
+	assert.Equal(t, pcommon.ValueTypeStr, desc.Type())
+	assert.Equal(t, "200", desc.Str())
+
+	_, ok = records.At(2).Attributes().Get(azureResultDescription)
+	assert.False(t, ok)
 }

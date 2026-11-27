@@ -149,7 +149,7 @@ type azureLogRecord struct {
 	Category          string          `json:"category"`
 	ResultType        *string         `json:"resultType"`
 	ResultSignature   *string         `json:"resultSignature"`
-	ResultDescription *string         `json:"resultDescription"`
+	ResultDescription *stringOrNumber `json:"resultDescription"`
 	DurationMs        *json.Number    `json:"durationMs"`
 	CallerIPAddress   *string         `json:"callerIpAddress"`
 	CorrelationID     *string         `json:"correlationId"`
@@ -158,6 +158,28 @@ type azureLogRecord struct {
 	Location          *string         `json:"location"`
 	Properties        json.RawMessage `json:"properties"`
 	EventProperties   json.RawMessage `json:"EventProperties"`
+}
+
+// stringOrNumber is a string field that some Azure services send as a JSON
+// number (for example resultDescription in Container Registry logs).
+// A number is kept as its JSON text, so the attribute stays a string.
+type stringOrNumber string
+
+func (s *stringOrNumber) UnmarshalJSON(data []byte) error {
+	if len(data) > 0 && data[0] != '"' {
+		var n json.Number
+		if err := json.Unmarshal(data, &n); err != nil {
+			return err
+		}
+		*s = stringOrNumber(n.String())
+		return nil
+	}
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
+		return err
+	}
+	*s = stringOrNumber(str)
+	return nil
 }
 
 // getProperties returns whichever properties field is populated,
@@ -374,7 +396,7 @@ func addCommonSchema(log *azureLogRecord, record plog.LogRecord) {
 	putStrPtr(string(conventions.CloudAccountIDKey), log.TenantID, record)
 	putStrPtr(attributeAzureResultType, log.ResultType, record)
 	putStrPtr(attributeAzureResultSignature, log.ResultSignature, record)
-	putStrPtr(attributeAzureResultDescription, log.ResultDescription, record)
+	putStrPtr(attributeAzureResultDescription, (*string)(log.ResultDescription), record)
 	putStrPtr(string(conventions.NetworkPeerAddressKey), log.CallerIPAddress, record)
 	putStrPtr(attributeAzureLocation, log.Location, record)
 
@@ -423,7 +445,7 @@ func extractRawAttributes(log *azureLogRecord, rawRecord json.RawMessage) map[st
 		}
 	}
 
-	setIf(attrs, azureResultDescription, log.ResultDescription)
+	setIf(attrs, azureResultDescription, (*string)(log.ResultDescription))
 	setIf(attrs, azureResultSignature, log.ResultSignature)
 	setIf(attrs, azureResultType, log.ResultType)
 	setIf(attrs, azureTenantID, log.TenantID)
