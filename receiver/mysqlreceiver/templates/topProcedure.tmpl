@@ -4,9 +4,12 @@ SELECT
     LOWER(`object_type`),
     `count_star`,
     `sum_timer_wait`,
+{{- if .supportsCPUTime }}
     `sum_cpu_time`,
+{{- else }}
+    0,
+{{- end }}
     `sum_errors`,
-    `min_timer_wait`,
     `max_timer_wait`,
     `sum_rows_affected`,
     `sum_rows_examined`,

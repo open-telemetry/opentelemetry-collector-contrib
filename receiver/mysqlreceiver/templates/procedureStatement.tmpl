@@ -3,9 +3,13 @@ SELECT
     `object_name`,
     LOWER(`object_type`),
     `sql_text`,
-    `timer_start`,
+    `timer_end`,
     `timer_wait`,
+{{- if .supportsCPUTime }}
     COALESCE(`cpu_time`, 0),
+{{- else }}
+    0,
+{{- end }}
     `rows_examined`,
     `rows_sent`,
     `rows_affected`
@@ -15,6 +19,5 @@ WHERE `nesting_event_id` IS NOT NULL
     AND `object_name` IS NOT NULL
     AND `sql_text` IS NOT NULL
     AND `end_event_id` IS NOT NULL
-    AND `timer_start` > {{ .sinceTimerStart }}
-ORDER BY `timer_start`
+ORDER BY `timer_end` DESC
 LIMIT {{ .limit }}

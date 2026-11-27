@@ -37,10 +37,11 @@ const (
 // replaced SHOW SLAVE STATUS. Initialized at package load; panics on bad literal.
 var minMySQLReplicaStatusVersion = version.Must(version.NewVersion("8.0.22"))
 
-// minMySQLProcedureStatsVersion is the MySQL version that added the SUM_CPU_TIME column to
-// performance_schema.events_statements_summary_by_program, which the top-procedure query selects.
-// MariaDB has no such table.
-var minMySQLProcedureStatsVersion = version.Must(version.NewVersion("8.0.28"))
+// minMySQLProcedureCPUTimeVersion is the MySQL version that added the SUM_CPU_TIME column to
+// performance_schema.events_statements_summary_by_program and the CPU_TIME column to
+// performance_schema.events_statements_history. The table itself exists on older MySQL and on
+// MariaDB, so only the CPU time column is optional.
+var minMySQLProcedureCPUTimeVersion = version.Must(version.NewVersion("8.0.28"))
 
 // minMySQLPerfSchemaLogStatusVersion is the MySQL version at which
 // performance_schema.log_status was introduced.
@@ -107,13 +108,19 @@ func (v dbVersion) supportsQuerySampleText() bool {
 	return v.product == dbProductMySQL && !v.version.LessThan(minMySQLQuerySampleTextVersion)
 }
 
-// supportsProcedureStats reports whether performance_schema.events_statements_summary_by_program
-// has every column the top-procedure query reads (MySQL 8.0.28+, never MariaDB).
+// supportsProcedureStats reports whether the server exposes per-routine statistics. The summary
+// table exists on every supported MySQL and MariaDB version, so this only requires a detected version.
 func (v dbVersion) supportsProcedureStats() bool {
+	return v.isValid()
+}
+
+// supportsProcedureCPUTime reports whether the per-routine and per-statement CPU time columns exist
+// (MySQL 8.0.28+, never MariaDB). Where they are absent CPU time is reported as 0.
+func (v dbVersion) supportsProcedureCPUTime() bool {
 	if !v.isValid() {
 		return false
 	}
-	return v.product == dbProductMySQL && !v.version.LessThan(minMySQLProcedureStatsVersion)
+	return v.product == dbProductMySQL && !v.version.LessThan(minMySQLProcedureCPUTimeVersion)
 }
 
 // supportsReplicaStatus reports whether the server uses SHOW REPLICA STATUS
@@ -215,9 +222,9 @@ type client interface {
 	// getProcedureDefinitions returns the bodies of the given routines from information_schema.ROUTINES.
 	// Routines the user may not see, or whose body is hidden, are omitted or returned with an empty body.
 	getProcedureDefinitions(routines []topProcedure) ([]procedureDefinition, error)
-	// getProcedureStatements returns up to limit finished statements run inside routines whose
-	// timer_start is greater than sinceTimerStart, oldest first.
-	getProcedureStatements(sinceTimerStart uint64, limit uint64) ([]procedureStatement, error)
+	// getProcedureStatements returns up to limit of the most recently finished statements run inside
+	// routines, newest first. Each row carries timer_end so the caller can skip rows already reported.
+	getProcedureStatements(limit uint64) ([]procedureStatement, error)
 	// supportsProcesslist controls whether the performance_schema.processlist JOIN
 	// is included to populate client.port and network.peer.port (MySQL 8.0.22+).
 	// supportsDataLockWaits controls whether mysql.blocking.blocker.details/
@@ -464,7 +471,7 @@ type procedureStatement struct {
 	name         string
 	objectType   string
 	sqlText      string
-	timerStart   uint64 // picoseconds, a global monotonic counter
+	timerEnd     uint64 // picoseconds, a monotonic counter that restarts from 0 when the server restarts
 	timerWait    int64  // picoseconds
 	cpuTime      int64  // picoseconds
 	rowsExamined int64
@@ -473,7 +480,7 @@ type procedureStatement struct {
 }
 
 // topProcedure is one row of performance_schema.events_statements_summary_by_program. The
-// counters are cumulative since server start, except min/max duration which are lifetime values.
+// counters are cumulative since server start, except max duration which is a lifetime value.
 type topProcedure struct {
 	schemaName         string
 	name               string
@@ -482,7 +489,6 @@ type topProcedure struct {
 	sumTimerWait       int64 // picoseconds
 	sumCPUTime         int64 // picoseconds
 	sumErrors          int64
-	minTimerWait       int64 // picoseconds
 	maxTimerWait       int64 // picoseconds
 	sumRowsAffected    int64
 	sumRowsExamined    int64
@@ -1276,7 +1282,7 @@ func (c *mySQLClient) getTopProcedures(limit uint64) ([]topProcedure, error) {
 		return nil, fmt.Errorf("failed to parse top procedure template: %w", err)
 	}
 	buf := bytes.Buffer{}
-	if err = tmpl.Execute(&buf, map[string]any{"topNValue": limit}); err != nil {
+	if err = tmpl.Execute(&buf, map[string]any{"topNValue": limit, "supportsCPUTime": c.dbVersion.supportsProcedureCPUTime()}); err != nil {
 		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}
 
@@ -1297,7 +1303,6 @@ func (c *mySQLClient) getTopProcedures(limit uint64) ([]topProcedure, error) {
 			&p.sumTimerWait,
 			&p.sumCPUTime,
 			&p.sumErrors,
-			&p.minTimerWait,
 			&p.maxTimerWait,
 			&p.sumRowsAffected,
 			&p.sumRowsExamined,
@@ -1568,13 +1573,13 @@ func (c *mySQLClient) Close() error {
 //go:embed templates/procedureStatement.tmpl
 var procedureStatementTemplate string
 
-func (c *mySQLClient) getProcedureStatements(sinceTimerStart, limit uint64) ([]procedureStatement, error) {
+func (c *mySQLClient) getProcedureStatements(limit uint64) ([]procedureStatement, error) {
 	tmpl, err := template.New("procedureStatement").Option("missingkey=error").Parse(procedureStatementTemplate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse procedure statement template: %w", err)
 	}
 	buf := bytes.Buffer{}
-	if err = tmpl.Execute(&buf, map[string]any{"sinceTimerStart": sinceTimerStart, "limit": limit}); err != nil {
+	if err = tmpl.Execute(&buf, map[string]any{"limit": limit, "supportsCPUTime": c.dbVersion.supportsProcedureCPUTime()}); err != nil {
 		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}
 
@@ -1592,7 +1597,7 @@ func (c *mySQLClient) getProcedureStatements(sinceTimerStart, limit uint64) ([]p
 			&st.name,
 			&st.objectType,
 			&st.sqlText,
-			&st.timerStart,
+			&st.timerEnd,
 			&st.timerWait,
 			&st.cpuTime,
 			&st.rowsExamined,

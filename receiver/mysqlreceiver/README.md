@@ -121,7 +121,7 @@ service:
   - `top_procedure_count` (optional, default = `100`): The maximum number of routines reported in a single run, ranked by their elapsed-time delta over the interval. Must not exceed `max_procedure_sample_count`.
   - `collection_interval` (optional, default = `60s`): The interval at which procedures are emitted. It throttles the query in the same way as `top_query_collection.collection_interval` and sets the window the deltas cover.
 
-  - `definition_max_length` (optional, default = `1000`): Maximum characters of the obfuscated routine body reported on `db.server.procedure_definition`.
+  - `definition_max_length` (optional, default = `1000`): Maximum characters (at most `100000`) of the obfuscated routine body and statement text reported on `db.server.procedure_definition` and `db.server.procedure_statement`.
 
 ### Example Configuration
 
@@ -199,13 +199,13 @@ events:
 
 - **Source:** `performance_schema.events_statements_summary_by_program`, filtered to `PROCEDURE`
   and `FUNCTION`. No grant beyond `SELECT ON performance_schema.*` is needed.
-- **Versions:** MySQL 8.0.28+ (the release that added `SUM_CPU_TIME`). Older MySQL and all MariaDB
-  versions emit nothing for this event.
+- **Versions:** all supported MySQL and MariaDB versions. `mysql.procedure.cpu_time` is only available
+  on MySQL 8.0.28+ and is reported as `0` on older MySQL and on MariaDB.
 - **Identity:** MySQL has no numeric routine ID. A routine is identified by `db.namespace` (the
-  routine's schema), `mysql.procedure.name` and `mysql.procedure.type`.
+  routine's schema), `db.stored_procedure.name` and `mysql.procedure.type`.
 - **Deltas:** execution count, elapsed and CPU time, error count and row counters are deltas over
-  the collection interval. `mysql.procedure.min_duration` and `mysql.procedure.max_duration` are
-  lifetime values since server start or table truncation. Durations are in seconds.
+  the collection interval. `mysql.procedure.max_duration` is a lifetime value since server start or table
+  truncation. Durations are in seconds.
 - **Counter resets:** a counter that drops (server restart, table truncate) is treated as a reset
   and the current value is reported as the delta.
 - **Seeding scrape:** the first scrape only primes the delta cache and reports nothing. Routines
@@ -223,10 +223,16 @@ events:
     (default 10) statements per thread, and a thread's rows disappear when its connection closes. Counts are
     therefore a sample, lower than the real number of executions, and short-lived connections are missed.
     Raise the size (a server start option) to improve coverage.
+  - A statement appears in the history only when it finishes, so each routine tracks the end time of the
+    last statement it emitted. A routine reported for the first time also emits the statements already in
+    the history. After a server restart the end times start again from 0, and the tracked value is reset
+    when the newest row of a routine is older than it.
+  - It needs the `events_statements_current` and `events_statements_history` consumers, which are enabled by
+    default on MySQL and disabled by default on MariaDB. Without them the event emits nothing.
   - There is no logical-read figure.
 - **Procedure body (`db.server.procedure_definition`):** a separate event, disabled by default, that
   needs `db.server.top_procedure` enabled. One record is emitted per routine reported on
-  `db.server.top_procedure`, joined to it by `db.namespace`, `mysql.procedure.name` and
+  `db.server.top_procedure`, joined to it by `db.namespace`, `db.stored_procedure.name` and
   `mysql.procedure.type`. The body is read from `information_schema.ROUTINES.ROUTINE_DEFINITION`
   for the reported routines only, obfuscated (literals replaced, as for query text) and truncated to
   `definition_max_length` characters. It needs the `SHOW_ROUTINE` privilege (MySQL 8.0.20+):
@@ -243,8 +249,6 @@ events:
   ```sql
   UPDATE performance_schema.setup_consumers SET ENABLED = 'YES' WHERE NAME = 'events_statements_cpu';
   ```
-- **Min duration:** `mysql.procedure.min_duration` can report `0` for routines first run since server
-  start, so do not rely on it. `mysql.procedure.max_duration` is reliable.
 
 ### Query plan availability by version
 

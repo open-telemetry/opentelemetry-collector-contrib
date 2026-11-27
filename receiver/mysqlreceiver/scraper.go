@@ -78,9 +78,12 @@ type mySQLScraper struct {
 
 	// warnedHiddenDefinitions limits the missing SHOW_ROUTINE warning to once per scraper.
 	warnedHiddenDefinitions bool
-	// lastProcedureStatementStart is the highest timer_start already emitted on
+	// procedureStatementEnd holds, per routine, the highest timer_end already emitted on
 	// db.server.procedure_statement, so history rows seen in an earlier scrape are not counted twice.
-	lastProcedureStatementStart uint64
+	// It is kept per routine so a routine that is first reported later still emits the statements
+	// already in the history, and it is keyed on timer_end because a statement appears in the history
+	// only when it finishes, which can be after a later-starting statement finished.
+	procedureStatementEnd map[routineKey]uint64
 
 	// Feature gates regarding resource attributes
 	renameCommands bool
@@ -375,7 +378,6 @@ func (m *mySQLScraper) scrapeTopProcedures(now pcommon.Timestamp, errs *scrapere
 			float64(c.elapsed)/picosPerSecond,
 			float64(c.cpu)/picosPerSecond,
 			c.errCount,
-			float64(c.p.minTimerWait)/picosPerSecond,
 			float64(c.p.maxTimerWait)/picosPerSecond,
 			c.affected,
 			c.examined,
@@ -390,9 +392,13 @@ func (m *mySQLScraper) scrapeTopProcedures(now pcommon.Timestamp, errs *scrapere
 		m.scrapeProcedureDefinitions(now, reported, errs)
 	}
 	if len(reported) > 0 && m.config.LogsBuilderConfig.Events.DbServerProcedureStatement.Enabled {
-		m.scrapeProcedureStatements(now, reported, errs)
+		m.scrapeProcedureStatements(now, reported, procedures, errs)
 	}
 }
+
+// routineKey identifies a stored routine. MySQL has no numeric routine ID, and a procedure and a
+// function may share a name, so the type is part of the key.
+type routineKey struct{ schema, typ, name string }
 
 // maxProcedureStatementRows caps how many history rows one scrape reads. The history table holds
 // events_statements_history_size rows per thread, so this is only reached on very busy servers.
@@ -402,18 +408,47 @@ const maxProcedureStatementRows = 10000
 // just reported on db.server.top_procedure. Rows come from events_statements_history, which is a
 // sample (last N statements per thread), so counts are not exact. Statements have no digest inside a
 // routine, so they are grouped by obfuscated text. A statement that cannot be obfuscated is dropped.
-func (m *mySQLScraper) scrapeProcedureStatements(now pcommon.Timestamp, reported []topProcedure, errs *scrapererror.ScrapeErrors) {
-	stmts, err := m.sqlclient.getProcedureStatements(m.lastProcedureStatementStart, maxProcedureStatementRows)
+func (m *mySQLScraper) scrapeProcedureStatements(now pcommon.Timestamp, reported, sampled []topProcedure, errs *scrapererror.ScrapeErrors) {
+	stmts, err := m.sqlclient.getProcedureStatements(maxProcedureStatementRows)
 	if err != nil {
 		m.logger.Error("Failed to fetch procedure statements", zap.Error(err))
 		errs.AddPartial(1, err)
 		return
 	}
 
-	type routineKey struct{ schema, typ, name string }
+	// Forget routines that are no longer sampled so the watermark map stays bounded. A routine that is
+	// merely idle this interval is still sampled, so it keeps its watermark.
+	if m.procedureStatementEnd == nil {
+		m.procedureStatementEnd = map[routineKey]uint64{}
+	}
+	known := make(map[routineKey]struct{}, len(sampled))
+	for _, p := range sampled {
+		known[routineKey{p.schemaName, p.objectType, p.name}] = struct{}{}
+	}
+	for rk := range m.procedureStatementEnd {
+		if _, ok := known[rk]; !ok {
+			delete(m.procedureStatementEnd, rk)
+		}
+	}
+
 	wanted := make(map[routineKey]struct{}, len(reported))
 	for _, r := range reported {
 		wanted[routineKey{r.schemaName, r.objectType, r.name}] = struct{}{}
+	}
+
+	// The newest row of each reported routine, to detect a server restart: timers restart from 0, so a
+	// newest row older than the watermark means the watermark belongs to the previous server run.
+	newest := map[routineKey]uint64{}
+	for _, st := range stmts {
+		rk := routineKey{st.schemaName, st.objectType, st.name}
+		if _, ok := wanted[rk]; ok && st.timerEnd > newest[rk] {
+			newest[rk] = st.timerEnd
+		}
+	}
+	for rk, n := range newest {
+		if n < m.procedureStatementEnd[rk] {
+			m.procedureStatementEnd[rk] = 0
+		}
 	}
 
 	type groupKey struct {
@@ -427,11 +462,8 @@ func (m *mySQLScraper) scrapeProcedureStatements(now pcommon.Timestamp, reported
 	groups := map[groupKey]*group{}
 	var order []groupKey
 	for _, st := range stmts {
-		if st.timerStart > m.lastProcedureStatementStart {
-			m.lastProcedureStatementStart = st.timerStart
-		}
 		rk := routineKey{st.schemaName, st.objectType, st.name}
-		if _, ok := wanted[rk]; !ok {
+		if _, ok := wanted[rk]; !ok || st.timerEnd <= m.procedureStatementEnd[rk] {
 			continue
 		}
 		text, obfErr := m.obfuscator.obfuscateSQLString(st.sqlText)
@@ -455,6 +487,13 @@ func (m *mySQLScraper) scrapeProcedureStatements(now pcommon.Timestamp, reported
 		g.examined += st.rowsExamined
 		g.sent += st.rowsSent
 		g.affected += st.rowsAffected
+	}
+	// Advance the watermarks only after every row is judged against the old value. Only reported
+	// routines advance, so a routine reported for the first time later still emits its earlier rows.
+	for rk, n := range newest {
+		if n > m.procedureStatementEnd[rk] {
+			m.procedureStatementEnd[rk] = n
+		}
 	}
 
 	const picosPerSecond = 1_000_000_000_000.0

@@ -1435,7 +1435,7 @@ type mockClient struct {
 	topProceduresErr             error
 	procedureStatements          []procedureStatement
 	procedureStatementsErr       error
-	statementSince               []uint64
+	statementCalls               int
 	definitions                  []procedureDefinition
 	definitionsErr               error
 	definitionCalls              [][]topProcedure

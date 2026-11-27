@@ -5,6 +5,7 @@ package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -19,6 +20,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dbauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
 )
+
+// maxDefinitionLength is the largest accepted top_procedure_collection.definition_max_length.
+const maxDefinitionLength = 100000
 
 const (
 	defaultStatementEventsDigestTextLimit = 120
@@ -144,6 +148,11 @@ func (cfg *Config) Validate() error {
 		err = multierr.Append(err, errors.New(ErrQueryPlanWithoutSource))
 	}
 
+	// The length is converted to int when text is truncated, so an unbounded value could wrap to a
+	// negative number and panic.
+	if cfg.TopProcedureCollection.DefinitionMaxLength > maxDefinitionLength {
+		err = multierr.Append(err, fmt.Errorf("invalid config: 'top_procedure_collection.definition_max_length' must be at most %d", maxDefinitionLength))
+	}
 	if cfg.TopProcedureCollection.MaxProcedureSampleCount > 10000 {
 		err = multierr.Append(err, errors.New("invalid config: 'top_procedure_collection.max_procedure_sample_count' must be between 1 and 10000"))
 	}

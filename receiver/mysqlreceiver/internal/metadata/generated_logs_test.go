@@ -136,10 +136,10 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 
 			allEventsCount++
-			lb.RecordDbServerProcedureDefinitionEvent(ctx, timestamp, AttributeDbSystemNameMysql, "db.namespace-val", "mysql.procedure.name-val", AttributeMysqlProcedureTypeProcedure, "mysql.procedure.definition-val")
+			lb.RecordDbServerProcedureDefinitionEvent(ctx, timestamp, AttributeDbSystemNameMysql, "db.namespace-val", "db.stored_procedure.name-val", AttributeMysqlProcedureTypeProcedure, "mysql.procedure.definition-val")
 
 			allEventsCount++
-			lb.RecordDbServerProcedureStatementEvent(ctx, timestamp, AttributeDbSystemNameMysql, "db.namespace-val", "mysql.procedure.name-val", AttributeMysqlProcedureTypeProcedure, "mysql.procedure.statement-val", 31, 34.100000, 24.100000, 29, 25, 29)
+			lb.RecordDbServerProcedureStatementEvent(ctx, timestamp, AttributeDbSystemNameMysql, "db.namespace-val", "db.stored_procedure.name-val", AttributeMysqlProcedureTypeProcedure, "db.query.text-val", 31, 34.100000, 24.100000, 29, 25, 29)
 
 			allEventsCount++
 			lb.RecordDbServerQueryPlanEvent(ctx, timestamp, AttributeDbSystemNameMysql, "mysql.query_plan.hash-val", "db.namespace-val", AttributeMysqlQueryPlanSourceDbServerTopQuery, "mysql.query_plan-val")
@@ -148,7 +148,7 @@ func TestLogsBuilder(t *testing.T) {
 			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, AttributeDbSystemNameMysql, 23, "user.name-val", "db.namespace-val", "mysql.threads.processlist_command-val", "mysql.threads.processlist_state-val", "db.query.text-val", "mysql.events_statements_current.digest-val", "mysql.query_plan-val", "mysql.query_plan.hash-val", 14, "mysql.wait_event.type-val", "mysql.wait_event.name-val", "mysql.wait_type-val", "mysql.session.status-val", 16, 42.100000, 37.100000, "client.address-val", 11, "network.peer.address-val", 17, "mysql.client.name-val", 28, "mysql.blocking.blocker.details-val")
 
 			allEventsCount++
-			lb.RecordDbServerTopProcedureEvent(ctx, timestamp, AttributeDbSystemNameMysql, "db.namespace-val", "mysql.procedure.name-val", AttributeMysqlProcedureTypeProcedure, 31, 34.100000, 24.100000, 27, 28.100000, 28.100000, 29, 29, 25, 33, 31)
+			lb.RecordDbServerTopProcedureEvent(ctx, timestamp, AttributeDbSystemNameMysql, "db.namespace-val", "db.stored_procedure.name-val", AttributeMysqlProcedureTypeProcedure, 31, 34.100000, 24.100000, 27, 28.100000, 29, 29, 25, 33, 31)
 
 			allEventsCount++
 			lb.RecordDbServerTopQueryEvent(ctx, timestamp, AttributeDbSystemNameMysql, "db.namespace-val", "db.query.text-val", "mysql.query_plan-val", "mysql.query_plan.hash-val", "mysql.events_statements_summary_by_digest.digest-val", 52, 56.100000, 55, 55)
@@ -197,9 +197,9 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("db.namespace")
 					assert.True(t, ok)
 					assert.Equal(t, "db.namespace-val", attrVal.Str())
-					attrVal, ok = lr.Attributes().Get("mysql.procedure.name")
+					attrVal, ok = lr.Attributes().Get("db.stored_procedure.name")
 					assert.True(t, ok)
-					assert.Equal(t, "mysql.procedure.name-val", attrVal.Str())
+					assert.Equal(t, "db.stored_procedure.name-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("mysql.procedure.type")
 					assert.True(t, ok)
 					assert.Equal(t, "procedure", attrVal.Str())
@@ -219,15 +219,15 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("db.namespace")
 					assert.True(t, ok)
 					assert.Equal(t, "db.namespace-val", attrVal.Str())
-					attrVal, ok = lr.Attributes().Get("mysql.procedure.name")
+					attrVal, ok = lr.Attributes().Get("db.stored_procedure.name")
 					assert.True(t, ok)
-					assert.Equal(t, "mysql.procedure.name-val", attrVal.Str())
+					assert.Equal(t, "db.stored_procedure.name-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("mysql.procedure.type")
 					assert.True(t, ok)
 					assert.Equal(t, "procedure", attrVal.Str())
-					attrVal, ok = lr.Attributes().Get("mysql.procedure.statement")
+					attrVal, ok = lr.Attributes().Get("db.query.text")
 					assert.True(t, ok)
-					assert.Equal(t, "mysql.procedure.statement-val", attrVal.Str())
+					assert.Equal(t, "db.query.text-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("mysql.procedure.execution_count")
 					assert.True(t, ok)
 					assert.EqualValues(t, 31, attrVal.Int())
@@ -363,9 +363,9 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("db.namespace")
 					assert.True(t, ok)
 					assert.Equal(t, "db.namespace-val", attrVal.Str())
-					attrVal, ok = lr.Attributes().Get("mysql.procedure.name")
+					attrVal, ok = lr.Attributes().Get("db.stored_procedure.name")
 					assert.True(t, ok)
-					assert.Equal(t, "mysql.procedure.name-val", attrVal.Str())
+					assert.Equal(t, "db.stored_procedure.name-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("mysql.procedure.type")
 					assert.True(t, ok)
 					assert.Equal(t, "procedure", attrVal.Str())
@@ -381,9 +381,6 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("mysql.procedure.error_count")
 					assert.True(t, ok)
 					assert.EqualValues(t, 27, attrVal.Int())
-					attrVal, ok = lr.Attributes().Get("mysql.procedure.min_duration")
-					assert.True(t, ok)
-					assert.Equal(t, 28.100000, attrVal.Double())
 					attrVal, ok = lr.Attributes().Get("mysql.procedure.max_duration")
 					assert.True(t, ok)
 					assert.Equal(t, 28.100000, attrVal.Double())

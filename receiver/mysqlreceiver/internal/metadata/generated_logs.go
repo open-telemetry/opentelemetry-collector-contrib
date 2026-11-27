@@ -18,7 +18,7 @@ type eventDbServerProcedureDefinition struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerProcedureDefinition) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, mysqlProcedureNameAttributeValue string, mysqlProcedureTypeAttributeValue string, mysqlProcedureDefinitionAttributeValue string) {
+func (e *eventDbServerProcedureDefinition) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, dbStoredProcedureNameAttributeValue string, mysqlProcedureTypeAttributeValue string, mysqlProcedureDefinitionAttributeValue string) {
 	if !e.config.Enabled {
 		return
 	}
@@ -32,7 +32,7 @@ func (e *eventDbServerProcedureDefinition) recordEvent(ctx context.Context, time
 	}
 	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
 	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
-	dp.Attributes().PutStr("mysql.procedure.name", mysqlProcedureNameAttributeValue)
+	dp.Attributes().PutStr("db.stored_procedure.name", dbStoredProcedureNameAttributeValue)
 	dp.Attributes().PutStr("mysql.procedure.type", mysqlProcedureTypeAttributeValue)
 	dp.Attributes().PutStr("mysql.procedure.definition", mysqlProcedureDefinitionAttributeValue)
 
@@ -58,7 +58,7 @@ type eventDbServerProcedureStatement struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerProcedureStatement) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, mysqlProcedureNameAttributeValue string, mysqlProcedureTypeAttributeValue string, mysqlProcedureStatementAttributeValue string, mysqlProcedureExecutionCountAttributeValue int64, mysqlProcedureTotalElapsedTimeAttributeValue float64, mysqlProcedureCPUTimeAttributeValue float64, mysqlProcedureRowsExaminedAttributeValue int64, mysqlProcedureRowsSentAttributeValue int64, mysqlProcedureRowsAffectedAttributeValue int64) {
+func (e *eventDbServerProcedureStatement) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, dbStoredProcedureNameAttributeValue string, mysqlProcedureTypeAttributeValue string, dbQueryTextAttributeValue string, mysqlProcedureExecutionCountAttributeValue int64, mysqlProcedureTotalElapsedTimeAttributeValue float64, mysqlProcedureCPUTimeAttributeValue float64, mysqlProcedureRowsExaminedAttributeValue int64, mysqlProcedureRowsSentAttributeValue int64, mysqlProcedureRowsAffectedAttributeValue int64) {
 	if !e.config.Enabled {
 		return
 	}
@@ -72,9 +72,9 @@ func (e *eventDbServerProcedureStatement) recordEvent(ctx context.Context, times
 	}
 	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
 	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
-	dp.Attributes().PutStr("mysql.procedure.name", mysqlProcedureNameAttributeValue)
+	dp.Attributes().PutStr("db.stored_procedure.name", dbStoredProcedureNameAttributeValue)
 	dp.Attributes().PutStr("mysql.procedure.type", mysqlProcedureTypeAttributeValue)
-	dp.Attributes().PutStr("mysql.procedure.statement", mysqlProcedureStatementAttributeValue)
+	dp.Attributes().PutStr("db.query.text", dbQueryTextAttributeValue)
 	dp.Attributes().PutInt("mysql.procedure.execution_count", mysqlProcedureExecutionCountAttributeValue)
 	dp.Attributes().PutDouble("mysql.procedure.total_elapsed_time", mysqlProcedureTotalElapsedTimeAttributeValue)
 	dp.Attributes().PutDouble("mysql.procedure.cpu_time", mysqlProcedureCPUTimeAttributeValue)
@@ -204,7 +204,7 @@ type eventDbServerTopProcedure struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDbServerTopProcedure) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, mysqlProcedureNameAttributeValue string, mysqlProcedureTypeAttributeValue string, mysqlProcedureExecutionCountAttributeValue int64, mysqlProcedureTotalElapsedTimeAttributeValue float64, mysqlProcedureCPUTimeAttributeValue float64, mysqlProcedureErrorCountAttributeValue int64, mysqlProcedureMinDurationAttributeValue float64, mysqlProcedureMaxDurationAttributeValue float64, mysqlProcedureRowsAffectedAttributeValue int64, mysqlProcedureRowsExaminedAttributeValue int64, mysqlProcedureRowsSentAttributeValue int64, mysqlProcedureSortMergePassesAttributeValue int64, mysqlProcedureTmpDiskTablesAttributeValue int64) {
+func (e *eventDbServerTopProcedure) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue string, dbNamespaceAttributeValue string, dbStoredProcedureNameAttributeValue string, mysqlProcedureTypeAttributeValue string, mysqlProcedureExecutionCountAttributeValue int64, mysqlProcedureTotalElapsedTimeAttributeValue float64, mysqlProcedureCPUTimeAttributeValue float64, mysqlProcedureErrorCountAttributeValue int64, mysqlProcedureMaxDurationAttributeValue float64, mysqlProcedureRowsAffectedAttributeValue int64, mysqlProcedureRowsExaminedAttributeValue int64, mysqlProcedureRowsSentAttributeValue int64, mysqlProcedureSortMergePassesAttributeValue int64, mysqlProcedureTmpDiskTablesAttributeValue int64) {
 	if !e.config.Enabled {
 		return
 	}
@@ -218,13 +218,12 @@ func (e *eventDbServerTopProcedure) recordEvent(ctx context.Context, timestamp p
 	}
 	dp.Attributes().PutStr("db.system.name", dbSystemNameAttributeValue)
 	dp.Attributes().PutStr("db.namespace", dbNamespaceAttributeValue)
-	dp.Attributes().PutStr("mysql.procedure.name", mysqlProcedureNameAttributeValue)
+	dp.Attributes().PutStr("db.stored_procedure.name", dbStoredProcedureNameAttributeValue)
 	dp.Attributes().PutStr("mysql.procedure.type", mysqlProcedureTypeAttributeValue)
 	dp.Attributes().PutInt("mysql.procedure.execution_count", mysqlProcedureExecutionCountAttributeValue)
 	dp.Attributes().PutDouble("mysql.procedure.total_elapsed_time", mysqlProcedureTotalElapsedTimeAttributeValue)
 	dp.Attributes().PutDouble("mysql.procedure.cpu_time", mysqlProcedureCPUTimeAttributeValue)
 	dp.Attributes().PutInt("mysql.procedure.error_count", mysqlProcedureErrorCountAttributeValue)
-	dp.Attributes().PutDouble("mysql.procedure.min_duration", mysqlProcedureMinDurationAttributeValue)
 	dp.Attributes().PutDouble("mysql.procedure.max_duration", mysqlProcedureMaxDurationAttributeValue)
 	dp.Attributes().PutInt("mysql.procedure.rows_affected", mysqlProcedureRowsAffectedAttributeValue)
 	dp.Attributes().PutInt("mysql.procedure.rows_examined", mysqlProcedureRowsExaminedAttributeValue)
@@ -465,13 +464,13 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 }
 
 // RecordDbServerProcedureDefinitionEvent adds a log record of db.server.procedure_definition event.
-func (lb *LogsBuilder) RecordDbServerProcedureDefinitionEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, dbNamespaceAttributeValue string, mysqlProcedureNameAttributeValue string, mysqlProcedureTypeAttributeValue AttributeMysqlProcedureType, mysqlProcedureDefinitionAttributeValue string) {
-	lb.eventDbServerProcedureDefinition.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), dbNamespaceAttributeValue, mysqlProcedureNameAttributeValue, mysqlProcedureTypeAttributeValue.String(), mysqlProcedureDefinitionAttributeValue)
+func (lb *LogsBuilder) RecordDbServerProcedureDefinitionEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, dbNamespaceAttributeValue string, dbStoredProcedureNameAttributeValue string, mysqlProcedureTypeAttributeValue AttributeMysqlProcedureType, mysqlProcedureDefinitionAttributeValue string) {
+	lb.eventDbServerProcedureDefinition.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), dbNamespaceAttributeValue, dbStoredProcedureNameAttributeValue, mysqlProcedureTypeAttributeValue.String(), mysqlProcedureDefinitionAttributeValue)
 }
 
 // RecordDbServerProcedureStatementEvent adds a log record of db.server.procedure_statement event.
-func (lb *LogsBuilder) RecordDbServerProcedureStatementEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, dbNamespaceAttributeValue string, mysqlProcedureNameAttributeValue string, mysqlProcedureTypeAttributeValue AttributeMysqlProcedureType, mysqlProcedureStatementAttributeValue string, mysqlProcedureExecutionCountAttributeValue int64, mysqlProcedureTotalElapsedTimeAttributeValue float64, mysqlProcedureCPUTimeAttributeValue float64, mysqlProcedureRowsExaminedAttributeValue int64, mysqlProcedureRowsSentAttributeValue int64, mysqlProcedureRowsAffectedAttributeValue int64) {
-	lb.eventDbServerProcedureStatement.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), dbNamespaceAttributeValue, mysqlProcedureNameAttributeValue, mysqlProcedureTypeAttributeValue.String(), mysqlProcedureStatementAttributeValue, mysqlProcedureExecutionCountAttributeValue, mysqlProcedureTotalElapsedTimeAttributeValue, mysqlProcedureCPUTimeAttributeValue, mysqlProcedureRowsExaminedAttributeValue, mysqlProcedureRowsSentAttributeValue, mysqlProcedureRowsAffectedAttributeValue)
+func (lb *LogsBuilder) RecordDbServerProcedureStatementEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, dbNamespaceAttributeValue string, dbStoredProcedureNameAttributeValue string, mysqlProcedureTypeAttributeValue AttributeMysqlProcedureType, dbQueryTextAttributeValue string, mysqlProcedureExecutionCountAttributeValue int64, mysqlProcedureTotalElapsedTimeAttributeValue float64, mysqlProcedureCPUTimeAttributeValue float64, mysqlProcedureRowsExaminedAttributeValue int64, mysqlProcedureRowsSentAttributeValue int64, mysqlProcedureRowsAffectedAttributeValue int64) {
+	lb.eventDbServerProcedureStatement.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), dbNamespaceAttributeValue, dbStoredProcedureNameAttributeValue, mysqlProcedureTypeAttributeValue.String(), dbQueryTextAttributeValue, mysqlProcedureExecutionCountAttributeValue, mysqlProcedureTotalElapsedTimeAttributeValue, mysqlProcedureCPUTimeAttributeValue, mysqlProcedureRowsExaminedAttributeValue, mysqlProcedureRowsSentAttributeValue, mysqlProcedureRowsAffectedAttributeValue)
 }
 
 // RecordDbServerQueryPlanEvent adds a log record of db.server.query_plan event.
@@ -485,8 +484,8 @@ func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, times
 }
 
 // RecordDbServerTopProcedureEvent adds a log record of db.server.top_procedure event.
-func (lb *LogsBuilder) RecordDbServerTopProcedureEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, dbNamespaceAttributeValue string, mysqlProcedureNameAttributeValue string, mysqlProcedureTypeAttributeValue AttributeMysqlProcedureType, mysqlProcedureExecutionCountAttributeValue int64, mysqlProcedureTotalElapsedTimeAttributeValue float64, mysqlProcedureCPUTimeAttributeValue float64, mysqlProcedureErrorCountAttributeValue int64, mysqlProcedureMinDurationAttributeValue float64, mysqlProcedureMaxDurationAttributeValue float64, mysqlProcedureRowsAffectedAttributeValue int64, mysqlProcedureRowsExaminedAttributeValue int64, mysqlProcedureRowsSentAttributeValue int64, mysqlProcedureSortMergePassesAttributeValue int64, mysqlProcedureTmpDiskTablesAttributeValue int64) {
-	lb.eventDbServerTopProcedure.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), dbNamespaceAttributeValue, mysqlProcedureNameAttributeValue, mysqlProcedureTypeAttributeValue.String(), mysqlProcedureExecutionCountAttributeValue, mysqlProcedureTotalElapsedTimeAttributeValue, mysqlProcedureCPUTimeAttributeValue, mysqlProcedureErrorCountAttributeValue, mysqlProcedureMinDurationAttributeValue, mysqlProcedureMaxDurationAttributeValue, mysqlProcedureRowsAffectedAttributeValue, mysqlProcedureRowsExaminedAttributeValue, mysqlProcedureRowsSentAttributeValue, mysqlProcedureSortMergePassesAttributeValue, mysqlProcedureTmpDiskTablesAttributeValue)
+func (lb *LogsBuilder) RecordDbServerTopProcedureEvent(ctx context.Context, timestamp pcommon.Timestamp, dbSystemNameAttributeValue AttributeDbSystemName, dbNamespaceAttributeValue string, dbStoredProcedureNameAttributeValue string, mysqlProcedureTypeAttributeValue AttributeMysqlProcedureType, mysqlProcedureExecutionCountAttributeValue int64, mysqlProcedureTotalElapsedTimeAttributeValue float64, mysqlProcedureCPUTimeAttributeValue float64, mysqlProcedureErrorCountAttributeValue int64, mysqlProcedureMaxDurationAttributeValue float64, mysqlProcedureRowsAffectedAttributeValue int64, mysqlProcedureRowsExaminedAttributeValue int64, mysqlProcedureRowsSentAttributeValue int64, mysqlProcedureSortMergePassesAttributeValue int64, mysqlProcedureTmpDiskTablesAttributeValue int64) {
+	lb.eventDbServerTopProcedure.recordEvent(ctx, timestamp, dbSystemNameAttributeValue.String(), dbNamespaceAttributeValue, dbStoredProcedureNameAttributeValue, mysqlProcedureTypeAttributeValue.String(), mysqlProcedureExecutionCountAttributeValue, mysqlProcedureTotalElapsedTimeAttributeValue, mysqlProcedureCPUTimeAttributeValue, mysqlProcedureErrorCountAttributeValue, mysqlProcedureMaxDurationAttributeValue, mysqlProcedureRowsAffectedAttributeValue, mysqlProcedureRowsExaminedAttributeValue, mysqlProcedureRowsSentAttributeValue, mysqlProcedureSortMergePassesAttributeValue, mysqlProcedureTmpDiskTablesAttributeValue)
 }
 
 // RecordDbServerTopQueryEvent adds a log record of db.server.top_query event.
