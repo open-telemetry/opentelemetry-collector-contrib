@@ -143,6 +143,8 @@ All attributes are also mapped to custom properties if they are booleans or stri
 
 All links are mapped to property `_MS.links` with JSON array string.
 
+Custom property values are truncated to 8192 characters. The GenAI content attributes `gen_ai.input.messages`, `gen_ai.output.messages`, `gen_ai.system_instructions`, `gen_ai.tool.definitions`, `gen_ai.tool.call.arguments`, `gen_ai.tool.call.result` and `gen_ai.evaluation.explanation` are truncated to 256 KiB instead, matching the Azure Monitor SDK exporters. This applies to span, span event and log record properties.
+
 #### Span Events
 
 Span events are optionally saved to the Application Insights `traces` table.
