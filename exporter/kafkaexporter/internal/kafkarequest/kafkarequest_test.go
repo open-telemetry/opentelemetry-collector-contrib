@@ -14,6 +14,8 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
 )
 
 func rec(key, value []byte, headers ...kgo.RecordHeader) *kgo.Record {
@@ -63,6 +65,32 @@ func TestRecordsAccessor(t *testing.T) {
 func TestOnErrorReturnsSelf(t *testing.T) {
 	r := New([]*kgo.Record{rec(nil, []byte("v"))})
 	assert.Same(t, r, r.OnError(errors.New("anything")))
+}
+
+func TestOnError_FiltersRetryableRecords(t *testing.T) {
+	recA := rec(nil, []byte("acknowledged"))
+	recB := rec(nil, []byte("permanent_fail"))
+	recC := rec(nil, []byte("retryable"))
+	r := New([]*kgo.Record{recA, recB, recC})
+
+	err := kafkaclient.NewRecordsError(errors.New("mixed batch error"), []*kgo.Record{recC}, true)
+	ret := r.OnError(err)
+
+	require.NotSame(t, r, ret)
+	kr, ok := ret.(*Request)
+	require.True(t, ok)
+	require.Len(t, kr.Records(), 1)
+	assert.Same(t, recC, kr.Records()[0])
+	assert.Equal(t, len("retryable"), kr.BytesSize())
+}
+
+func TestOnError_EmptyRetryableReturnsSelf(t *testing.T) {
+	recA := rec(nil, []byte("acknowledged"))
+	r := New([]*kgo.Record{recA})
+
+	err := kafkaclient.NewRecordsError(errors.New("no retryable records"), nil, true)
+	ret := r.OnError(err)
+	assert.Same(t, r, ret)
 }
 
 func TestMergeSplit_NoSplit(t *testing.T) {

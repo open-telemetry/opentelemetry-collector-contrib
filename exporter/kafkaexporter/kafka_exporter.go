@@ -209,6 +209,12 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 				zap.Int("max_message_bytes", msgTooLarge.MaxMessageBytes),
 			)
 		}
+		// On the default pdata path, the batch cannot be narrowed down to retryable records.
+		// If any record in the batch encountered a permanent failure, classify the error as permanent
+		// to avoid retrying already acknowledged records and non-retryable failures.
+		if recErr, ok := errors.AsType[*kafkaclient.RecordsError](err); ok && recErr.HasPermanent() {
+			return consumererror.NewPermanent(err)
+		}
 		return err
 	}
 	// TODO move this logging to a kgo hook, so we capture topic and partition details.

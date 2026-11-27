@@ -100,6 +100,28 @@ type RecordHeader struct {
 	_ struct{}
 }
 
+// RecordsError reports produce errors for a batch of Kafka records,
+// retaining references to the records that encountered retryable failures.
+type RecordsError struct {
+	err          error
+	retryable    []*kgo.Record
+	hasPermanent bool
+}
+
+// NewRecordsError constructs a RecordsError.
+func NewRecordsError(err error, retryable []*kgo.Record, hasPermanent bool) *RecordsError {
+	return &RecordsError{
+		err:          err,
+		retryable:    retryable,
+		hasPermanent: hasPermanent,
+	}
+}
+
+func (e *RecordsError) Error() string                   { return e.err.Error() }
+func (e *RecordsError) Unwrap() error                   { return e.err }
+func (e *RecordsError) RetryableRecords() []*kgo.Record { return e.retryable }
+func (e *RecordsError) HasPermanent() bool              { return e.hasPermanent }
+
 // FranzSyncProducer is a wrapper around the franz-go client that implements
 // the Producer interface. Allowing us to use the franz-go client while
 // maintaining compatibility with the existing Kafka exporter code.
@@ -168,9 +190,14 @@ func (p *FranzSyncProducer) ExportData(ctx context.Context, records []*kgo.Recor
 	}
 	for _, r := range records {
 		r.Headers = headers
+		r.Context = nil
 	}
 	result := p.client.ProduceSync(ctx, records...)
-	var errs []error
+	var (
+		errs             []error
+		retryableRecords []*kgo.Record
+		hasPermanent     bool
+	)
 	for _, r := range result {
 		if r.Err == nil {
 			continue
@@ -183,13 +210,26 @@ func (p *FranzSyncProducer) ExportData(ctx context.Context, records []*kgo.Recor
 			err = fmt.Errorf("error exporting to topic %q: %w", r.Record.Topic, r.Err)
 		}
 		// check if its defined as a non-retriable error by franzgo
-		kgoErr := &kerr.Error{}
+		var kgoErr *kerr.Error
 		if errors.As(r.Err, &kgoErr) && !kgoErr.Retriable {
-			err = consumererror.NewPermanent(err)
+			hasPermanent = true
+		} else {
+			retryableRecords = append(retryableRecords, r.Record)
 		}
 		errs = append(errs, err)
 	}
-	return errors.Join(errs...)
+	if len(errs) == 0 {
+		return nil
+	}
+	joinedErr := errors.Join(errs...)
+	if len(retryableRecords) > 0 {
+		return &RecordsError{
+			err:          joinedErr,
+			retryable:    retryableRecords,
+			hasPermanent: hasPermanent,
+		}
+	}
+	return consumererror.NewPermanent(joinedErr)
 }
 
 // Close shuts down the producer, unblocking any in-flight ExportData call.
