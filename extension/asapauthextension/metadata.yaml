@@ -8,7 +8,11 @@ description: |
 status:
   class: extension
   stability:
-    beta: [extension]
+    deprecated: [extension]
+  deprecation:
+    extension:
+      migration: "This extension has depedencies which rely on go 1.26 which will no longer be supported when the next version is available. It is being deprecated and removed."
+      date: "2026-11-27"
   distributions: [contrib]
   codeowners:
     active: [jamesmoessis, MovieStoreGuy]
