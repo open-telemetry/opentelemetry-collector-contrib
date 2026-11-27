@@ -26,7 +26,31 @@ type ResettableReader interface {
 	Reset(r io.Reader) error
 }
 
-var _ ResettableReader = (*gzip.Reader)(nil)
+type gzipCompressReader struct {
+	gzip.Reader
+	ready bool
+}
+
+var _ ResettableReader = (*gzipCompressReader)(nil)
+
+func (r *gzipCompressReader) Reset(src io.Reader) error {
+	if err := r.Reader.Reset(src); err != nil {
+		// A failed reset can retain the source and leave the decompressor uninitialized.
+		r.Reader = gzip.Reader{}
+		r.ready = false
+		return err
+	}
+	r.ready = true
+	return nil
+}
+
+func (r *gzipCompressReader) Close() error {
+	if !r.ready {
+		return nil
+	}
+	r.ready = false
+	return r.Reader.Close()
+}
 
 // Reader decompresses input data into a destination.
 type Reader interface {
@@ -82,8 +106,8 @@ func newCompressReaderPool[RR ResettableReader](supplier func() RR) *compressRea
 }
 
 func newGZIPCompressReaderPool(_ configcompression.CompressionParams) Reader {
-	return newCompressReaderPool(func() *gzip.Reader {
-		return new(gzip.Reader)
+	return newCompressReaderPool(func() *gzipCompressReader {
+		return new(gzipCompressReader)
 	})
 }
 
@@ -139,13 +163,35 @@ func newLZ4CompressReaderPool(_ configcompression.CompressionParams) Reader {
 	})
 }
 
+// zstdInput lets a lease detach its source even if the decoder retains its
+// stream frame after resetting.
+type zstdInput struct {
+	io.Reader
+}
+
 func newZSTDCompressReaderPool(_ configcompression.CompressionParams) Reader {
 	return newCompressReaderPool(func() *readAdapter[*zstd.Decoder] {
 		r, _ := zstd.NewReader(bytes.NewBuffer(nil))
+		var input *zstdInput
 		return newReadAdapter(
 			r,
-			withReadAdapterReset(func(zr *zstd.Decoder, r io.Reader) error {
-				return zr.Reset(r)
+			withReadAdapterClose(func(zr *zstd.Decoder) error {
+				if err := zr.Reset(bytes.NewBuffer(nil)); err != nil {
+					return err
+				}
+				if input != nil {
+					input.Reader = nil
+					input = nil
+				}
+				return nil
+			}),
+			withReadAdapterReset(func(zr *zstd.Decoder, src io.Reader) error {
+				next := &zstdInput{Reader: src}
+				if err := zr.Reset(next); err != nil {
+					return err
+				}
+				input = next
+				return nil
 			}),
 		)
 	})
