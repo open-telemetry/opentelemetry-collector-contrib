@@ -31,6 +31,11 @@ func TestLoadConfig(t *testing.T) {
 			file:     "config_max_connections.yaml",
 			expected: &Config{MaxConnections: 5},
 		},
+		{
+			name:     "refuse_over_limit",
+			file:     "config_refuse_over_limit.yaml",
+			expected: &Config{MaxConnections: 5, RefuseOverLimit: true},
+		},
 	}
 
 	for _, tt := range tests {
@@ -53,4 +58,11 @@ func TestValidateRejectsNegativeMaxConnections(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.MaxConnections = -1
 	require.ErrorIs(t, cfg.Validate(), errNegativeMaxConnections)
+}
+
+func TestValidateRejectsRefuseWithoutLimit(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MaxConnections = 0
+	cfg.RefuseOverLimit = true
+	require.ErrorIs(t, cfg.Validate(), errRefuseWithoutLimit)
 }

@@ -5,7 +5,10 @@ package fluentforwardreceiver // import "github.com/open-telemetry/opentelemetry
 
 import "errors"
 
-var errNegativeMaxConnections = errors.New("max_connections must be greater than or equal to 0")
+var (
+	errNegativeMaxConnections = errors.New("max_connections must be greater than or equal to 0")
+	errRefuseWithoutLimit     = errors.New("refuse_over_limit requires max_connections to be greater than 0")
+)
 
 // Config defines configuration for the fluentforward receiver.
 type Config struct {
@@ -14,9 +17,15 @@ type Config struct {
 	// domain socket).
 	ListenAddress string `mapstructure:"endpoint"`
 
-	// MaxConnections caps simultaneously open connections. Connections over
-	// the cap wait in the accept backlog until a slot frees. 0 means no limit.
+	// MaxConnections caps simultaneously open connections. By default,
+	// connections over the cap wait in the accept backlog until a slot frees.
+	// 0 means no limit.
 	MaxConnections int `mapstructure:"max_connections"`
+
+	// RefuseOverLimit closes connections over MaxConnections on accept
+	// instead of queueing them, so long-lived clients reconnect, possibly to
+	// another instance, rather than waiting on a slot that may never free.
+	RefuseOverLimit bool `mapstructure:"refuse_over_limit"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -26,6 +35,9 @@ type Config struct {
 func (c *Config) Validate() error {
 	if c.MaxConnections < 0 {
 		return errNegativeMaxConnections
+	}
+	if c.RefuseOverLimit && c.MaxConnections == 0 {
+		return errRefuseWithoutLimit
 	}
 	return nil
 }
