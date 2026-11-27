@@ -16,7 +16,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	eventsv1 "k8s.io/api/events/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
@@ -39,6 +40,7 @@ func TestNewReceiver(t *testing.T) {
 	}
 	scheme := runtime.NewScheme()
 	_ = corev1.AddToScheme(scheme)
+	_ = eventsv1.AddToScheme(scheme)
 	rCfg.makeDynamicClient = func(k8sconfig.APIConfig) (dynamic.Interface, error) {
 		return dynamicfake.NewSimpleDynamicClient(scheme), nil
 	}
@@ -97,7 +99,9 @@ func TestDropEventsOlderThanStartupTime(t *testing.T) {
 	recv := r.(*k8seventsReceiver)
 	recv.ctx = t.Context()
 	k8sEvent := getEvent("Normal")
-	k8sEvent.FirstTimestamp = v1.Time{Time: time.Now().Add(-time.Hour)}
+	// Make the event appear old by setting EventTime in the past (eventsv1 has no FirstTimestamp).
+	k8sEvent.Series = nil
+	k8sEvent.EventTime = metav1.MicroTime{Time: time.Now().Add(-time.Hour)}
 	recv.handleEvent(k8sEvent, apiWatch.Added)
 
 	assert.Equal(t, 0, sink.LogRecordCount())
@@ -118,11 +122,14 @@ func TestAllowEvent(t *testing.T) {
 	shouldAllowEvent := recv.allowEvent(k8sEvent)
 	assert.True(t, shouldAllowEvent)
 
-	k8sEvent.FirstTimestamp = v1.Time{Time: time.Now().Add(-time.Hour)}
+	// Old series.lastObservedTime → event appears old.
+	k8sEvent.Series.LastObservedTime = metav1.MicroTime{Time: time.Now().Add(-time.Hour)}
 	shouldAllowEvent = recv.allowEvent(k8sEvent)
 	assert.False(t, shouldAllowEvent)
 
-	k8sEvent.FirstTimestamp = v1.Time{}
+	// Zero series + zero eventTime → event appears old (zero time is before startTime).
+	k8sEvent.Series = nil
+	k8sEvent.EventTime = metav1.MicroTime{}
 	shouldAllowEvent = recv.allowEvent(k8sEvent)
 	assert.False(t, shouldAllowEvent)
 }
@@ -139,6 +146,7 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 	}
 	scheme := runtime.NewScheme()
 	_ = corev1.AddToScheme(scheme)
+	_ = eventsv1.AddToScheme(scheme)
 	cfg.makeDynamicClient = func(k8sconfig.APIConfig) (dynamic.Interface, error) {
 		return dynamicfake.NewSimpleDynamicClient(scheme), nil
 	}
@@ -197,6 +205,7 @@ func TestReceiverWithLeaderElectionAndStorage(t *testing.T) {
 	}
 	scheme := runtime.NewScheme()
 	_ = corev1.AddToScheme(scheme)
+	_ = eventsv1.AddToScheme(scheme)
 	cfg.makeDynamicClient = func(k8sconfig.APIConfig) (dynamic.Interface, error) {
 		return dynamicfake.NewSimpleDynamicClient(scheme), nil
 	}
@@ -258,29 +267,28 @@ func TestReceiverWithLeaderElectionAndStorage(t *testing.T) {
 	recv.mu.Unlock()
 }
 
-func getEvent(eventType string) *corev1.Event {
-	return &corev1.Event{
-		InvolvedObject: corev1.ObjectReference{
+func getEvent(eventType string) *eventsv1.Event {
+	return &eventsv1.Event{
+		Regarding: corev1.ObjectReference{
 			APIVersion: "v1",
 			Kind:       "Pod",
 			Name:       "test-34bcd-rn54",
 			Namespace:  "test",
 			UID:        types.UID("059f3edc-b5a9"),
 		},
-		Reason:         "testing_event_1",
-		Count:          2,
-		FirstTimestamp: v1.Now(),
-		Type:           eventType,
-		Message:        "testing event message",
-		ObjectMeta: v1.ObjectMeta{
+		Reason:    "testing_event_1",
+		EventTime: metav1.MicroTime{Time: time.Now()},
+		Series: &eventsv1.EventSeries{
+			Count:            2,
+			LastObservedTime: metav1.MicroTime{Time: time.Now()},
+		},
+		Type: eventType,
+		Note: "testing event message",
+		ObjectMeta: metav1.ObjectMeta{
 			UID:               types.UID("289686f9-a5c0"),
 			Name:              "1",
 			Namespace:         "test",
-			CreationTimestamp: v1.Now(),
-		},
-		Source: corev1.EventSource{
-			Component: "testComponent",
-			Host:      "testHost",
+			CreationTimestamp: metav1.Now(),
 		},
 		ReportingController: "some-controller",
 		ReportingInstance:   "some-instance",
@@ -322,6 +330,7 @@ func TestStartWithDynamicClientError(t *testing.T) {
 func TestStartWithUnknownLeaderElector(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = corev1.AddToScheme(scheme)
+	_ = eventsv1.AddToScheme(scheme)
 
 	leaderID := component.MustNewID("unknown_elector")
 
@@ -396,9 +405,8 @@ func TestAllowEventWithZeroTimestamp(t *testing.T) {
 	recv := r.(*k8seventsReceiver)
 
 	k8sEvent := getEvent("Normal")
-	k8sEvent.EventTime = v1.MicroTime{}
-	k8sEvent.LastTimestamp = v1.Time{}
-	k8sEvent.FirstTimestamp = v1.Time{}
+	k8sEvent.Series = nil
+	k8sEvent.EventTime = metav1.MicroTime{}
 
 	shouldAllowEvent := recv.allowEvent(k8sEvent)
 	assert.False(t, shouldAllowEvent)
@@ -427,6 +435,7 @@ func TestReceiverStorageInitialization(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			scheme := runtime.NewScheme()
 			_ = corev1.AddToScheme(scheme)
+			_ = eventsv1.AddToScheme(scheme)
 
 			rCfg := createDefaultConfig().(*Config)
 			rCfg.Storage = tt.storageID
@@ -469,6 +478,7 @@ func TestReceiverStorageInitialization(t *testing.T) {
 func TestStartWithStorageExtensionNotFound(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = corev1.AddToScheme(scheme)
+	_ = eventsv1.AddToScheme(scheme)
 
 	storageID := new(storagetest.NewStorageID("file_storage"))
 
@@ -498,6 +508,7 @@ func TestStartWithStorageExtensionNotFound(t *testing.T) {
 func TestStartWatchersMultipleNamespaces(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = corev1.AddToScheme(scheme)
+	_ = eventsv1.AddToScheme(scheme)
 
 	fakeClient := dynamicfake.NewSimpleDynamicClient(scheme)
 
@@ -566,6 +577,7 @@ func TestDedupIntervalNegativeDropsAllModified(t *testing.T) {
 func TestDedupIntervalPositiveThrottlesModified(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = corev1.AddToScheme(scheme)
+	_ = eventsv1.AddToScheme(scheme)
 
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.DedupInterval = 100 * time.Millisecond
@@ -604,6 +616,7 @@ func TestDedupIntervalPositiveThrottlesModified(t *testing.T) {
 func TestDedupCacheRecreatedAfterShutdown(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = corev1.AddToScheme(scheme)
+	_ = eventsv1.AddToScheme(scheme)
 
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.DedupInterval = 5 * time.Minute
@@ -637,6 +650,7 @@ func TestDedupCacheRecreatedAfterShutdown(t *testing.T) {
 func TestDedupFilteredCounter(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = corev1.AddToScheme(scheme)
+	_ = eventsv1.AddToScheme(scheme)
 
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.DedupInterval = 1 * time.Hour
