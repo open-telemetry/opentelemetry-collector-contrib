@@ -40,4 +40,14 @@ func addMemoryMetrics(
 			memoryMetrics.NodeUtilization(mb, currentTime, float64(*s.UsageBytes)/nodeMemoryLimit)
 		}
 	}
+	// The semantic conventions use the memory working set as the numerator,
+	// since that is what the kubelet uses for eviction decisions.
+	if s.WorkingSetBytes != nil {
+		if memoryMetrics.LimitUtilizationV1 != nil && r.memoryLimit > 0 {
+			memoryMetrics.LimitUtilizationV1(mb, currentTime, float64(*s.WorkingSetBytes)/float64(r.memoryLimit))
+		}
+		if memoryMetrics.RequestUtilizationV1 != nil && r.memoryRequest > 0 {
+			memoryMetrics.RequestUtilizationV1(mb, currentTime, float64(*s.WorkingSetBytes)/float64(r.memoryRequest))
+		}
+	}
 }

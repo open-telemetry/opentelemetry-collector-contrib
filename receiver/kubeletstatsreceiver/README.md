@@ -473,16 +473,39 @@ otherwise the Collector fails to start because no version of the migrated metric
 
 This follows the migration pattern described by the respective Collector [RFC](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/semconv-feature-gates.md#proposed-mechanism).
 
-The metric names are unchanged. The breaking changes between the 2 schemas are the following:
+For the following metrics the names are unchanged, but the type changes between the 2 schemas:
 - `container.memory.available`: Gauge -> non-monotonic cumulative Sum (UpDownCounter)
 - `container.memory.rss`: Gauge -> non-monotonic cumulative Sum (UpDownCounter)
 - `container.memory.usage`: Gauge -> non-monotonic cumulative Sum (UpDownCounter)
 - `container.memory.working_set`: Gauge -> non-monotonic cumulative Sum (UpDownCounter)
 
+The following CPU and memory limit and request utilization metrics are migrated to new names:
+
+| Legacy metric | Semantic conventions metric |
+| ------------- | --------------------------- |
+| `k8s.pod.cpu_limit_utilization` | `k8s.pod.cpu.limit.utilization` |
+| `k8s.pod.cpu_request_utilization` | `k8s.pod.cpu.request.utilization` |
+| `k8s.pod.memory_limit_utilization` | `k8s.pod.memory.limit.utilization` |
+| `k8s.pod.memory_request_utilization` | `k8s.pod.memory.request.utilization` |
+| `k8s.container.cpu_limit_utilization` | `k8s.container.cpu.limit.utilization` |
+| `k8s.container.cpu_request_utilization` | `k8s.container.cpu.request.utilization` |
+| `k8s.container.memory_limit_utilization` | `k8s.container.memory.limit.utilization` |
+| `k8s.container.memory_request_utilization` | `k8s.container.memory.request.utilization` |
+
+The memory metrics also change how they are calculated: the legacy metrics
+use the memory usage as the numerator, while the semantic conventions metrics
+use the memory working set, which is what the kubelet uses for eviction
+decisions. The memory usage includes reclaimable page cache, so the legacy
+metrics can report a much higher utilization than the memory pressure the
+workload is actually under. The CPU metrics are only renamed.
+
+Because these metrics have new names, the legacy and new versions can be emitted side by side
+while dashboards and alerts are migrated, by enabling only `receiver.kubelet_stats.EmitV1K8sConventions`.
+
 The list of migrated metrics will grow as more metrics reach release candidate status in the semantic conventions.
 
 When `receiver.kubelet_stats.EmitV1K8sConventions` is enabled, the new version of each migrated metric is enabled
-whenever its legacy version is enabled. Because the legacy and new versions of the metrics above share the same name
+whenever its legacy version is enabled. Because the legacy and new versions of the memory metrics with unchanged names share the same name
 but have a different type, they cannot be emitted side by side: enabling `receiver.kubelet_stats.EmitV1K8sConventions`
 alone already replaces the legacy version with the new one, and a warning is logged at startup.
 Dashboards and alerts that rely on these metrics being Gauges should be reviewed before enabling the feature gate.
