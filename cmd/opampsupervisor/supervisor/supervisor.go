@@ -95,10 +95,20 @@ type configState struct {
 	mergedConfig string
 	// true if the server provided configmap was empty
 	configMapIsEmpty bool
+	// The remote config mergedConfig was composed from. It is not compared by equal, so
+	// that the same config with a new hash does not restart the agent.
+	remoteConfig *protobufs.AgentRemoteConfig
 }
 
 func (c *configState) equal(other *configState) bool {
 	return other.mergedConfig == c.mergedConfig && other.configMapIsEmpty == c.configMapIsEmpty
+}
+
+// configApply is the config the agent was last given, and how giving it went.
+type configApply struct {
+	config *configState
+	// APPLYING until the result is known, then APPLIED or FAILED.
+	status protobufs.RemoteConfigStatuses
 }
 
 type agentStartStatus string
@@ -168,11 +178,14 @@ type Supervisor struct {
 
 	// A channel to indicate there is a new config to apply.
 	hasNewConfig chan struct{}
-	// configApplyPending is true from the time a new config is requested until it is
-	// reported as applied. A remote config that composes to the pending config is
-	// applied again instead of being reported as applied, because a failed attempt
-	// leaves the agent running its previous config.
-	configApplyPending atomic.Bool
+	// remoteConfigMu orders taking in a config from the server with the result of giving
+	// the agent a config. remoteConfig and cfgState are changed under it, and a result is
+	// recorded and reported under it, so a status is reported for the remote config the
+	// agent was given and never after a newer status. It guards configApply.
+	remoteConfigMu sync.Mutex
+	// configApply is the config the agent was last given. A remote config that composes
+	// to it is reported as applied only once giving it to the agent has succeeded.
+	configApply configApply
 	// configApplyTimeout is the maximum time to wait for the agent to apply a new config.
 	// After this time passes without the agent reporting health as OK, the agent is considered unhealthy.
 	configApplyTimeout time.Duration
@@ -429,7 +442,17 @@ func (s *Supervisor) Start(ctx context.Context) error {
 	}
 
 	s.configWriteMu.Lock()
+	s.remoteConfigMu.Lock()
 	err = s.loadAndWriteInitialMergedConfig()
+	if err == nil {
+		// The agent is started with the config file. It runs the composed config only if
+		// the file holds it, since failing to write the file is not fatal here.
+		cfgState, ok := s.cfgState.Load().(*configState)
+		if data, readErr := os.ReadFile(s.agentConfigFilePath()); ok && readErr == nil && string(data) == cfgState.mergedConfig {
+			s.configApply = configApply{config: cfgState, status: protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED}
+		}
+	}
+	s.remoteConfigMu.Unlock()
 	s.configWriteMu.Unlock()
 	if err != nil {
 		return fmt.Errorf("failed loading initial config: %w", err)
@@ -1101,7 +1124,9 @@ func (s *Supervisor) onConnect(ctx context.Context) {
 		return
 	}
 	s.configWriteMu.Lock()
+	s.remoteConfigMu.Lock()
 	err := s.loadAndWriteInitialMergedConfig()
+	s.remoteConfigMu.Unlock()
 	s.configWriteMu.Unlock()
 	if err != nil {
 		s.telemetrySettings.Logger.Error("failed loading initial config", zap.Error(err))
@@ -1564,6 +1589,8 @@ func normalizeTelemetryResourceConfig(conf *confmap.Conf) error {
 // loadAndWriteInitialMergedConfig loads and writes the initial config by
 // merging the last received remote config, last received own metrics config,
 // and any local configs.
+// remoteConfigMu must be held, since the OpAMP client is already started and can
+// receive a remote config meanwhile.
 func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 	if !s.initialOpampConnSuccess.Load() && !s.hasAgentConfigState() && s.config.Agent.FallbackEnabled() && !s.hasPersistedRemoteConfig() {
 		err := s.loadAndWriteFallbackConfig()
@@ -1587,7 +1614,7 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 	}
 
 	// write the initial merged config to disk
-	if err := s.writeAgentConfig(); err != nil {
+	if err := s.writeAgentConfig(s.cfgState.Load().(*configState)); err != nil {
 		s.telemetrySettings.Logger.Error("Failed to write agent config.", zap.Error(err))
 	}
 
@@ -1665,7 +1692,8 @@ func (s *Supervisor) remoteConfigForStartup(lastReceivedRemoteConfig *protobufs.
 
 // restoreLastWorkingRemoteConfig attempts to restore the last working remote
 // config if is available. In case the restoration works, it signals to the
-// Supervisor that there's new configuration.
+// Supervisor that there's new configuration. remoteConfigMu must be held, so that
+// a remote config received after the failure is not replaced.
 func (s *Supervisor) restoreLastWorkingRemoteConfig() bool {
 	restored, err := s.composeWithLastWorkingRemoteConfig()
 	if err != nil {
@@ -1706,7 +1734,7 @@ func (s *Supervisor) composeWithLastWorkingRemoteConfig() (bool, error) {
 		return false, fmt.Errorf("compose last working remote config: %w", err)
 	}
 
-	if err := s.writeAgentConfig(); err != nil {
+	if err := s.writeAgentConfig(s.cfgState.Load().(*configState)); err != nil {
 		return false, fmt.Errorf("write last working remote config: %w", err)
 	}
 
@@ -1873,6 +1901,7 @@ func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteCo
 	newConfigState := &configState{
 		mergedConfig:     string(newMergedConfigBytes),
 		configMapIsEmpty: (incomingConfig != nil && !hasIncomingConfigMap),
+		remoteConfig:     incomingConfig,
 	}
 
 	configChanged = false
@@ -1901,6 +1930,10 @@ func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteCo
 		// Only store after successful validation (or if validation is disabled/skipped)
 		s.cfgState.Store(newConfigState)
 		configChanged = true
+	} else {
+		// The same config now belongs to incomingConfig, which the result of applying
+		// it is reported for.
+		s.cfgState.Store(newConfigState)
 	}
 
 	return configChanged, nil
@@ -1990,7 +2023,7 @@ func (s *Supervisor) loadAndWriteFallbackConfig() error {
 		s.telemetrySettings.Logger.Error("Failed to compose fallback config", zap.Error(err))
 		return err
 	}
-	if err := s.writeAgentConfig(); err != nil {
+	if err := s.writeAgentConfig(s.cfgState.Load().(*configState)); err != nil {
 		s.telemetrySettings.Logger.Error("Failed to write fallback config", zap.Error(err))
 		return err
 	}
@@ -2015,8 +2048,9 @@ func (s *Supervisor) handleRestartCommand() error {
 	return err
 }
 
-func (s *Supervisor) startAgent() (agentStartStatus, error) {
-	if s.cfgState.Load().(*configState).configMapIsEmpty {
+// startAgent starts the agent for cfgState, unless that config is empty.
+func (s *Supervisor) startAgent(cfgState *configState) (agentStartStatus, error) {
+	if cfgState.configMapIsEmpty {
 		// Don't start the agent if there is no config to run
 		s.telemetrySettings.Logger.Info("No config present, not starting agent.")
 		// need to manually trigger updating effective config
@@ -2042,27 +2076,17 @@ func (s *Supervisor) startAgent() (agentStartStatus, error) {
 }
 
 func (s *Supervisor) runAgentProcess() {
-	// The remote config the agent was last asked to run, which every status reported here
-	// is for. A remote config that arrives while it is applied reports its own result: from
-	// the apply it queues, or at once when it is rejected. Once a different remote config
-	// has arrived, a result for this one is not reported, so that it does not replace the
-	// status of the newer config.
-	applyingRemoteConfig := s.remoteConfig.Load()
-	superseded := func() bool {
-		latest := s.remoteConfig.Load()
-		// The server can send the same config again, for example after reconnecting.
-		return latest != applyingRemoteConfig && !proto.Equal(latest, applyingRemoteConfig)
-	}
-
 	if _, err := os.Stat(s.agentConfigFilePath()); err == nil {
 		// We have an effective config file saved previously. Use it to start the agent.
 		s.telemetrySettings.Logger.Debug("Effective config found, starting agent initial time")
-		_, err := s.startAgent()
+		_, err := s.startAgent(s.cfgState.Load().(*configState))
 		if err != nil {
 			s.telemetrySettings.Logger.Error("starting agent failed", zap.Error(err))
-			if !superseded() {
-				s.saveAndReportConfigStatus(applyingRemoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+			s.remoteConfigMu.Lock()
+			if remoteConfig, ok := s.recordConfigApplyResult(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED); ok {
+				s.saveAndReportConfigStatus(remoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
 			}
+			s.remoteConfigMu.Unlock()
 		}
 	}
 
@@ -2075,8 +2099,10 @@ func (s *Supervisor) runAgentProcess() {
 	for {
 		select {
 		case <-s.hasNewConfig:
-			s.configApplyPending.Store(true)
-			applyingRemoteConfig = s.remoteConfig.Load()
+			s.remoteConfigMu.Lock()
+			applying := s.cfgState.Load().(*configState)
+			s.configApply = configApply{config: applying, status: protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING}
+			s.remoteConfigMu.Unlock()
 			s.lastHealthFromClient.Store(nil)
 			s.telemetrySettings.Logger.Debug("agent has new config", zap.String("previous_health", s.lastHealthFromClient.Load().String()))
 			if !configApplyTimeoutTimer.Stop() {
@@ -2086,42 +2112,46 @@ func (s *Supervisor) runAgentProcess() {
 				}
 			}
 			configApplyTimeoutTimer.Reset(s.config.Agent.ConfigApplyTimeout)
-			restartTimer.Stop()
 
 			var applyErr error
 			if s.config.Agent.UseHUPConfigReload {
-				applyErr = s.hupReloadAgent()
+				applyErr = s.hupReloadAgent(applying)
 			} else {
-				applyErr = s.stopAgentApplyConfig()
+				applyErr = s.stopAgentApplyConfig(applying)
 			}
 			if applyErr != nil {
 				s.telemetrySettings.Logger.Error("Failed to apply new config to agent", zap.Error(applyErr))
 				// The agent is still running its previous config, so its health must not
-				// report the new config as applied when the timer fires.
+				// report the new config as applied when the timer fires. A restart it is
+				// waiting for after a crash still has to happen.
 				configApplyTimeoutTimer.Stop()
-				stale := superseded()
-				reportedLastWorking := false
-				if !stale {
-					reportedLastWorking = s.reportActiveConfigStatus(applyingRemoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, applyErr.Error())
+				s.remoteConfigMu.Lock()
+				if remoteConfig, ok := s.recordConfigApplyResult(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED); ok &&
+					!s.reportActiveConfigStatus(remoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, applyErr.Error()) {
+					s.restoreLastWorkingRemoteConfig()
 				}
+				s.remoteConfigMu.Unlock()
 				if healthErr := s.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: applyErr.Error()}); healthErr != nil {
 					s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(healthErr))
 				}
-				if !stale && !reportedLastWorking {
-					s.restoreLastWorkingRemoteConfig()
-				}
 				continue
 			}
+			// The agent is started with the new config below, instead of after the backoff.
+			restartTimer.Stop()
 
 			s.telemetrySettings.Logger.Debug("Agent is not running, starting new instance")
 			// This call to [startAgent] is useful for both the normal config reload
 			// and the HUP one. It takes care of not starting the agent if the config
 			// is empty and also of starting it when the config changes from empty
 			// to non-empty.
-			status, err := s.startAgent()
+			status, err := s.startAgent(applying)
 			if err != nil {
 				s.telemetrySettings.Logger.Error("starting agent with new config failed", zap.Error(err))
-				if !superseded() && !s.reportActiveConfigStatus(applyingRemoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error()) && s.restoreLastWorkingRemoteConfig() {
+				s.remoteConfigMu.Lock()
+				remoteConfig, ok := s.recordConfigApplyResult(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED)
+				restored := ok && !s.reportActiveConfigStatus(remoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error()) && s.restoreLastWorkingRemoteConfig()
+				s.remoteConfigMu.Unlock()
+				if restored {
 					continue
 				}
 				// The agent process never started, so no exit event will trigger a
@@ -2132,12 +2162,11 @@ func (s *Supervisor) runAgentProcess() {
 				// not starting agent because of nop config: clear timer, report applied status, report healthy status
 				s.telemetrySettings.Logger.Debug("No config present, nothing to apply")
 				configApplyTimeoutTimer.Stop()
-				// Stopping the agent can take a while, and a remote config that arrived
-				// meanwhile must keep its own status.
-				if !superseded() {
-					s.configApplyPending.Store(false)
-					s.saveAndReportConfigStatus(applyingRemoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+				s.remoteConfigMu.Lock()
+				if remoteConfig, ok := s.recordConfigApplyResult(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED); ok {
+					s.saveAndReportConfigStatus(remoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
 				}
+				s.remoteConfigMu.Unlock()
 				if err := s.SetHealth(&protobufs.ComponentHealth{Healthy: true, LastError: ""}); err != nil {
 					s.telemetrySettings.Logger.Error("Could not report healthy status to OpAMP server", zap.Error(err))
 				}
@@ -2193,7 +2222,11 @@ func (s *Supervisor) runAgentProcess() {
 				failureMsg := fmt.Sprintf("Agent exited unexpectedly with exit code %d while applying configuration", s.commander.ExitCode())
 				// When the restored last working remote config crashes as well, skip
 				// restoring it again and retry it on the regular restart backoff.
-				if !superseded() && !s.reportActiveConfigStatus(applyingRemoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, s.appendCollectorCrashDetails(failureMsg)) && s.restoreLastWorkingRemoteConfig() {
+				s.remoteConfigMu.Lock()
+				remoteConfig, ok := s.recordConfigApplyResult(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED)
+				restored := ok && !s.reportActiveConfigStatus(remoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, s.appendCollectorCrashDetails(failureMsg)) && s.restoreLastWorkingRemoteConfig()
+				s.remoteConfigMu.Unlock()
+				if restored {
 					continue
 				}
 			}
@@ -2209,27 +2242,28 @@ func (s *Supervisor) runAgentProcess() {
 
 		case <-restartTimer.C:
 			s.telemetrySettings.Logger.Debug("Agent starting after start backoff")
-			_, err := s.startAgent()
+			_, err := s.startAgent(s.cfgState.Load().(*configState))
 			if err != nil {
 				s.telemetrySettings.Logger.Error("restarting agent failed", zap.Error(err))
-				if !superseded() {
-					s.reportActiveConfigStatus(applyingRemoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+				s.remoteConfigMu.Lock()
+				if remoteConfig, ok := s.recordConfigApplyResult(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED); ok {
+					s.reportActiveConfigStatus(remoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
 				}
+				s.remoteConfigMu.Unlock()
 			}
 
 		case <-configApplyTimeoutTimer.C:
-			if superseded() {
-				continue
-			}
 			lastHealth := s.lastHealthFromClient.Load()
+			s.remoteConfigMu.Lock()
 			if lastHealth == nil || !lastHealth.Healthy {
-				if !s.reportActiveConfigStatus(applyingRemoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, "Config apply timeout exceeded") {
+				if remoteConfig, ok := s.recordConfigApplyResult(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED); ok &&
+					!s.reportActiveConfigStatus(remoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, "Config apply timeout exceeded") {
 					s.restoreLastWorkingRemoteConfig()
 				}
-				continue
+			} else if remoteConfig, ok := s.recordConfigApplyResult(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED); ok {
+				s.reportActiveConfigStatus(remoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
 			}
-			s.configApplyPending.Store(false)
-			s.reportActiveConfigStatus(applyingRemoteConfig, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+			s.remoteConfigMu.Unlock()
 
 		case <-s.doneChan:
 			err := s.commander.Stop(s.runCtx)
@@ -2292,17 +2326,17 @@ func (s *Supervisor) waitForAgentReady() error {
 // 3. The agent traps the HUP signal, but does nothing. On the next health
 // report the agent will be consiered healthy and ready, even though it might
 // be running on old configuration.
-func (s *Supervisor) hupReloadAgent() error {
+func (s *Supervisor) hupReloadAgent(cfgState *configState) error {
 	s.agentRestarting.Store(true)
 	defer s.agentRestarting.Store(false)
 	defer s.resetAgentReady()
 
 	// If we have an empty config, the agent should be stopped.
-	if s.cfgState.Load().(*configState).configMapIsEmpty {
-		return s.stopAgentApplyConfig()
+	if cfgState.configMapIsEmpty {
+		return s.stopAgentApplyConfig(cfgState)
 	}
 
-	if err := s.writeAgentConfig(); err != nil {
+	if err := s.writeAgentConfig(cfgState); err != nil {
 		return fmt.Errorf("failed to write agent new config: %w", err)
 	}
 
@@ -2333,8 +2367,7 @@ func (s *Supervisor) reloadAgentConfig() error {
 	return nil
 }
 
-func (s *Supervisor) writeAgentConfig() error {
-	cfgState := s.cfgState.Load().(*configState)
+func (s *Supervisor) writeAgentConfig(cfgState *configState) error {
 	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfgState.mergedConfig), 0o600); err != nil {
 		return err
 	}
@@ -2389,13 +2422,13 @@ func (s *Supervisor) validateConfig(configContent string) error {
 	return nil
 }
 
-// stopAgentApplyConfig writes the new config and stops the agent so that it starts
-// with it. The config is written first, so the agent keeps running its previous
-// config when the write fails. An agent that cannot be stopped also keeps running
-// its previous config, and starting it again would be a no-op that looks like a
+// stopAgentApplyConfig writes cfgState and stops the agent so that it starts with
+// it. The config is written first, so the agent keeps running its previous config
+// when the write fails. An agent that cannot be stopped also keeps running its
+// previous config, and starting it again would be a no-op that looks like a
 // successful apply.
-func (s *Supervisor) stopAgentApplyConfig() error {
-	if err := s.writeAgentConfig(); err != nil {
+func (s *Supervisor) stopAgentApplyConfig(cfgState *configState) error {
+	if err := s.writeAgentConfig(cfgState); err != nil {
 		return fmt.Errorf("failed to write agent new config: %w", err)
 	}
 
@@ -2586,6 +2619,21 @@ func (s *Supervisor) reportActiveConfigStatus(remoteConfig *protobufs.AgentRemot
 	return false
 }
 
+// recordConfigApplyResult records status as the result of giving the agent
+// configApply.config, and returns the remote config to report it for. That is the
+// latest remote config received, when the config was composed from it, so the same
+// config received again with a new hash takes over the result. ok is false when the
+// latest remote config composes to a different config, or could not be composed, since
+// it reports its own status. remoteConfigMu must be held.
+func (s *Supervisor) recordConfigApplyResult(status protobufs.RemoteConfigStatuses) (remoteConfig *protobufs.AgentRemoteConfig, ok bool) {
+	s.configApply.status = status
+	current, _ := s.cfgState.Load().(*configState)
+	if current == nil || s.configApply.config == nil || !current.equal(s.configApply.config) || current.remoteConfig != s.remoteConfig.Load() {
+		return nil, false
+	}
+	return current.remoteConfig, true
+}
+
 // reportLastWorkingRemoteConfigStatus reports the last working remote config status to the server.
 func (s *Supervisor) reportLastWorkingRemoteConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) {
 	remoteConfig := s.lastWorkingRemoteConfig.Load()
@@ -2650,6 +2698,7 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	defer span.End()
 	configChanged := false
 
+	s.remoteConfigMu.Lock()
 	if msg.AgentIdentification != nil {
 		configChanged = s.processAgentIdentificationMessage(msg.AgentIdentification) || configChanged
 	}
@@ -2665,6 +2714,7 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 			OwnLogs:    msg.OwnLogsConnSettings,
 		}) || configChanged
 	}
+	s.remoteConfigMu.Unlock()
 
 	// Update the agent config if any messages have touched the config
 	if configChanged {
@@ -2713,6 +2763,7 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 }
 
 // processRemoteConfigMessage processes an AgentRemoteConfig message, returning true if the agent config has changed.
+// remoteConfigMu must be held.
 func (s *Supervisor) processRemoteConfigMessage(ctx context.Context, msg *protobufs.AgentRemoteConfig) bool {
 	_, span := s.getTracer().Start(ctx, "processRemoteConfigMessage")
 	defer span.End()
@@ -2742,16 +2793,22 @@ func (s *Supervisor) processRemoteConfigMessage(ctx context.Context, msg *protob
 		s.saveAndReportConfigStatus(clonedMsg, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
 		return false
 	}
-	if !configChanged && s.configApplyPending.Load() {
-		// The same config has not been applied yet, so apply it again instead of
-		// reporting it as applied.
+	given := s.configApply
+	if !configChanged && (given.config == nil || !given.config.equal(s.cfgState.Load().(*configState)) ||
+		given.status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED) {
+		// The agent was not given this config, or giving it failed, so apply it again
+		// instead of reporting it as applied.
 		configChanged = true
 	}
-	if configChanged {
-		s.configApplyPending.Store(true)
+	switch {
+	case configChanged:
 		// only report applying if the config has changed and will run agent with new config
 		s.saveAndReportConfigStatus(clonedMsg, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, "")
-	} else {
+	case given.status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING:
+		// The agent is being given this config, and the result is reported for clonedMsg,
+		// so the agent is not restarted again.
+		s.saveAndReportConfigStatus(clonedMsg, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, "")
+	default:
 		// if the config has not changed report applied status, we should still report a status to the server in this case
 		s.saveAndReportConfigStatus(clonedMsg, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
 	}

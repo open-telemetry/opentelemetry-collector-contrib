@@ -524,8 +524,27 @@ func TestSupervisorKeepsStatusOfRemoteConfigReceivedWhileStopping(t *testing.T) 
 		t.Skip("Relies on SIGHUP and on interrupting the agent")
 	}
 
-	for _, hupReload := range []bool{true, false} {
-		t.Run(fmt.Sprintf("hup_reload=%t", hupReload), func(t *testing.T) {
+	emptyConfig := &protobufs.AgentConfigMap{}
+	nopConfig := &protobufs.AgentConfigMap{ConfigMap: map[string]*protobufs.AgentConfigObject{
+		"": {Body: []byte("receivers:\n  nop/b: {}\n")},
+	}}
+	for _, tt := range []struct {
+		name      string
+		hupReload bool
+		// stopping is a config that stops the agent, which takes a second to exit once
+		// interrupted. HUP reload stops the agent only for an empty config.
+		stopping *protobufs.AgentConfigMap
+		// queued, when set, is received while the agent is stopping, so it is applied
+		// once the agent has stopped.
+		queued *protobufs.AgentConfigMap
+	}{
+		{name: "hup_reload=true", hupReload: true, stopping: emptyConfig},
+		{name: "hup_reload=false", stopping: emptyConfig},
+		{name: "hup_reload=true/config queued", hupReload: true, stopping: emptyConfig, queued: nopConfig},
+		{name: "hup_reload=false/config queued", stopping: emptyConfig, queued: nopConfig},
+		{name: "hup_reload=false/empty config queued", stopping: nopConfig, queued: emptyConfig},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
 			endpoint, messages := newConfigStatusTestServer(t)
 			stopMarker := filepath.Join(t.TempDir(), "stopping")
 			cfg := newTestSupervisorConfig(t)
@@ -541,7 +560,7 @@ func TestSupervisorKeepsStatusOfRemoteConfigReceivedWhileStopping(t *testing.T) 
 			}
 			cfg.Agent.BootstrapTimeout = 5 * time.Second
 			cfg.Agent.StopGracePeriod = 5 * time.Second
-			cfg.Agent.UseHUPConfigReload = hupReload
+			cfg.Agent.UseHUPConfigReload = tt.hupReload
 			reported := recordRemoteConfigStatuses(t, messages)
 
 			s, err := NewSupervisor(t.Context(), zap.NewNop(), cfg)
@@ -557,16 +576,24 @@ func TestSupervisorKeepsStatusOfRemoteConfigReceivedWhileStopping(t *testing.T) 
 			}})
 			require.Eventually(t, reported("HA", protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED), 10*time.Second, 20*time.Millisecond)
 
-			// The empty config stops the agent, which takes a second to exit once interrupted.
 			require.NoError(t, os.RemoveAll(stopMarker))
 			s.onMessage(t.Context(), &types.MessageData{RemoteConfig: &protobufs.AgentRemoteConfig{
-				ConfigHash: []byte("HE"),
-				Config:     &protobufs.AgentConfigMap{},
+				ConfigHash: []byte("HS"),
+				Config:     tt.stopping,
 			}})
 			require.Eventually(t, func() bool {
 				_, statErr := os.Stat(stopMarker)
 				return statErr == nil
 			}, 10*time.Second, 10*time.Millisecond)
+
+			lastValid, lastValidHash := tt.stopping, "HS"
+			if tt.queued != nil {
+				s.onMessage(t.Context(), &types.MessageData{RemoteConfig: &protobufs.AgentRemoteConfig{
+					ConfigHash: []byte("HQ"),
+					Config:     tt.queued,
+				}})
+				lastValid, lastValidHash = tt.queued, "HQ"
+			}
 
 			// An invalid config arrives while the agent is still stopping.
 			s.onMessage(t.Context(), &types.MessageData{RemoteConfig: &protobufs.AgentRemoteConfig{
@@ -577,12 +604,26 @@ func TestSupervisorKeepsStatusOfRemoteConfigReceivedWhileStopping(t *testing.T) 
 			}})
 			require.Eventually(t, reported("HB", protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED), 10*time.Second, 20*time.Millisecond)
 
-			// Once the agent has stopped, the empty config's result must not be reported with
-			// the invalid config's hash.
-			require.Never(t, reported("HB", protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED), 3*time.Second, 50*time.Millisecond)
+			// Once the agent runs the last valid config, its result must not have been
+			// reported with the invalid config's hash.
+			require.Eventually(t, func() bool {
+				s.remoteConfigMu.Lock()
+				defer s.remoteConfigMu.Unlock()
+				return s.configApply.status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED &&
+					s.configApply.config != nil && string(s.configApply.config.remoteConfig.GetConfigHash()) == lastValidHash
+			}, 10*time.Second, 20*time.Millisecond)
+			require.Never(t, reported("HB", protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED), time.Second, 50*time.Millisecond)
 			lastStatus := s.persistentState.GetLastRemoteConfigStatus()
 			require.Equal(t, "HB", string(lastStatus.GetLastRemoteConfigHash()))
 			require.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, lastStatus.GetStatus())
+
+			// The agent runs the last valid config, so receiving it again is reported as
+			// applied.
+			s.onMessage(t.Context(), &types.MessageData{RemoteConfig: &protobufs.AgentRemoteConfig{
+				ConfigHash: []byte("HL"),
+				Config:     lastValid,
+			}})
+			require.Eventually(t, reported("HL", protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED), 5*time.Second, 20*time.Millisecond)
 		})
 	}
 }
@@ -639,13 +680,7 @@ func TestSupervisorKeepsStatusOfRemoteConfigReceivedBeforeRestart(t *testing.T) 
 
 	// The agent crashes, and the restart after the backoff cannot start it again.
 	require.NoError(t, os.Remove(executable))
-	pid, err := os.ReadFile(pidFile)
-	require.NoError(t, err)
-	agentPID, err := strconv.Atoi(string(pid))
-	require.NoError(t, err)
-	agent, err := os.FindProcess(agentPID)
-	require.NoError(t, err)
-	require.NoError(t, agent.Kill())
+	killTestAgent(t, pidFile)
 	require.Eventually(t, received(func(message *protobufs.AgentToServer) bool {
 		return strings.HasPrefix(message.GetHealth().GetLastError(), "cannot start the agent")
 	}), 15*time.Second, 50*time.Millisecond)
@@ -658,6 +693,176 @@ func TestSupervisorKeepsStatusOfRemoteConfigReceivedBeforeRestart(t *testing.T) 
 	lastStatus := s.persistentState.GetLastRemoteConfigStatus()
 	require.Equal(t, "HB", string(lastStatus.GetLastRemoteConfigHash()))
 	require.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, lastStatus.GetStatus())
+}
+
+func TestSupervisorDoesNotReapplyRemoteConfigReceivedAgainWhileApplying(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Relies on SIGHUP")
+	}
+
+	for _, hupReload := range []bool{true, false} {
+		t.Run(fmt.Sprintf("hup_reload=%t", hupReload), func(t *testing.T) {
+			endpoint, messages := newConfigStatusTestServer(t)
+			pidFile := filepath.Join(t.TempDir(), "agent.pid")
+			cfg := newTestSupervisorConfig(t)
+			cfg.Capabilities.AcceptsRemoteConfig = true
+			cfg.Server.Endpoint = endpoint
+			cfg.Agent.Executable = os.Args[0]
+			cfg.Agent.Env = map[string]string{
+				supervisorRestartHelperEnv: "opamp-healthy",
+				supervisorPIDFileEnv:       pidFile,
+				// The race detector delays the exit of the agent process by a second by
+				// default, which outlasts the stop grace period when it is restarted.
+				"GORACE": "atexit_sleep_ms=0",
+			}
+			cfg.Agent.BootstrapTimeout = 5 * time.Second
+			// Leaves time to receive the config again before it is confirmed.
+			cfg.Agent.ConfigApplyTimeout = 2 * time.Second
+			cfg.Agent.UseHUPConfigReload = hupReload
+			reported := recordRemoteConfigStatuses(t, messages)
+
+			s, err := NewSupervisor(t.Context(), zap.NewNop(), cfg)
+			require.NoError(t, err)
+			require.NoError(t, s.Start(t.Context()))
+			t.Cleanup(s.Shutdown)
+			configB := &protobufs.AgentConfigMap{ConfigMap: map[string]*protobufs.AgentConfigObject{
+				"": {Body: []byte("receivers:\n  nop/b: {}\n")},
+			}}
+
+			s.onMessage(t.Context(), &types.MessageData{RemoteConfig: &protobufs.AgentRemoteConfig{
+				ConfigHash: []byte("HA"),
+				Config: &protobufs.AgentConfigMap{ConfigMap: map[string]*protobufs.AgentConfigObject{
+					"": {Body: []byte("receivers:\n  nop/a: {}\n")},
+				}},
+			}})
+			require.Eventually(t, reported("HA", protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED), 10*time.Second, 20*time.Millisecond)
+
+			// The agent is given config B: written, then reloaded or restarted.
+			pidA := testAgentPID(pidFile)
+			s.onMessage(t.Context(), &types.MessageData{RemoteConfig: &protobufs.AgentRemoteConfig{
+				ConfigHash: []byte("HB"),
+				Config:     configB,
+			}})
+			require.Eventually(t, func() bool {
+				data, readErr := os.ReadFile(s.agentConfigFilePath())
+				pid := testAgentPID(pidFile)
+				return readErr == nil && strings.Contains(string(data), "nop/b") && (hupReload || (pid != "" && pid != pidA))
+			}, 10*time.Second, 20*time.Millisecond)
+			pidB := testAgentPID(pidFile)
+			written, err := os.Stat(s.agentConfigFilePath())
+			require.NoError(t, err)
+
+			// The server sends config B again before it is confirmed, with the same hash and
+			// with a new one.
+			s.onMessage(t.Context(), &types.MessageData{RemoteConfig: &protobufs.AgentRemoteConfig{
+				ConfigHash: []byte("HB"),
+				Config:     configB,
+			}})
+			s.onMessage(t.Context(), &types.MessageData{RemoteConfig: &protobufs.AgentRemoteConfig{
+				ConfigHash: []byte("HB2"),
+				Config:     configB,
+			}})
+			require.Eventually(t, reported("HB2", protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED), 10*time.Second, 20*time.Millisecond)
+
+			// The agent was given config B only once.
+			require.Equal(t, pidB, testAgentPID(pidFile))
+			rewritten, err := os.Stat(s.agentConfigFilePath())
+			require.NoError(t, err)
+			require.True(t, written.ModTime().Equal(rewritten.ModTime()), "the agent config was written again")
+		})
+	}
+}
+
+func TestSupervisorRestartsAgentWhenApplyFailsDuringRestartBackoff(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Relies on SIGHUP and on file permissions to make writing the config fail")
+	}
+	if os.Geteuid() == 0 {
+		t.Skip("File permissions do not stop root from writing the config")
+	}
+
+	for _, hupReload := range []bool{true, false} {
+		t.Run(fmt.Sprintf("hup_reload=%t", hupReload), func(t *testing.T) {
+			endpoint, messages := newConfigStatusTestServer(t)
+			pidFile := filepath.Join(t.TempDir(), "agent.pid")
+			cfg := newTestSupervisorConfig(t)
+			cfg.Capabilities.AcceptsRemoteConfig = true
+			cfg.Server.Endpoint = endpoint
+			cfg.Agent.Executable = os.Args[0]
+			cfg.Agent.Env = map[string]string{
+				supervisorRestartHelperEnv: "opamp-healthy",
+				supervisorPIDFileEnv:       pidFile,
+				// The race detector delays the exit of the agent process by a second by
+				// default, which outlasts the stop grace period when it is restarted.
+				"GORACE": "atexit_sleep_ms=0",
+			}
+			cfg.Agent.BootstrapTimeout = 5 * time.Second
+			cfg.Agent.UseHUPConfigReload = hupReload
+			received := recordAgentToServer(t, messages)
+
+			s, err := NewSupervisor(t.Context(), zap.NewNop(), cfg)
+			require.NoError(t, err)
+			require.NoError(t, s.Start(t.Context()))
+			t.Cleanup(s.Shutdown)
+
+			s.onMessage(t.Context(), &types.MessageData{RemoteConfig: &protobufs.AgentRemoteConfig{
+				ConfigHash: []byte("HA"),
+				Config: &protobufs.AgentConfigMap{ConfigMap: map[string]*protobufs.AgentConfigObject{
+					"": {Body: []byte("receivers:\n  nop/a: {}\n")},
+				}},
+			}})
+			require.Eventually(t, received(hasRemoteConfigStatus("HA", protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED)), 10*time.Second, 20*time.Millisecond)
+
+			// The agent crashes, and waits for the restart backoff.
+			pidA := testAgentPID(pidFile)
+			killTestAgent(t, pidFile)
+			require.Eventually(t, received(func(message *protobufs.AgentToServer) bool {
+				return strings.Contains(message.GetHealth().GetLastError(), "exited unexpectedly")
+			}), 10*time.Second, 20*time.Millisecond)
+
+			// Writing config B fails during the backoff, then the config file becomes
+			// writable again.
+			require.NoError(t, os.Chmod(s.agentConfigFilePath(), 0o400))
+			s.onMessage(t.Context(), &types.MessageData{RemoteConfig: &protobufs.AgentRemoteConfig{
+				ConfigHash: []byte("HB"),
+				Config: &protobufs.AgentConfigMap{ConfigMap: map[string]*protobufs.AgentConfigObject{
+					"": {Body: []byte("receivers:\n  nop/b: {}\n")},
+				}},
+			}})
+			require.Eventually(t, received(hasRemoteConfigStatus("HB", protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED)), 10*time.Second, 20*time.Millisecond)
+			require.NoError(t, os.Chmod(s.agentConfigFilePath(), 0o600))
+
+			// The agent is still restarted after the backoff, with config A.
+			require.Eventually(t, func() bool {
+				pid := testAgentPID(pidFile)
+				return pid != "" && pid != pidA
+			}, 15*time.Second, 50*time.Millisecond)
+			data, err := os.ReadFile(s.agentConfigFilePath())
+			require.NoError(t, err)
+			require.Contains(t, string(data), "nop/a")
+			require.False(t, received(hasRemoteConfigStatus("HB", protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED))())
+		})
+	}
+}
+
+// testAgentPID returns the process ID the test agent last wrote to pidFile, or an empty
+// string before it wrote one.
+func testAgentPID(pidFile string) string {
+	pid, err := os.ReadFile(pidFile)
+	if err != nil {
+		return ""
+	}
+	return string(pid)
+}
+
+// killTestAgent kills the test agent that wrote its process ID to pidFile.
+func killTestAgent(t *testing.T, pidFile string) {
+	t.Helper()
+	pid, err := strconv.Atoi(testAgentPID(pidFile))
+	require.NoError(t, err)
+	agent, err := os.FindProcess(pid)
+	require.NoError(t, err)
+	require.NoError(t, agent.Kill())
 }
 
 // recordAgentToServer collects the messages the test server receives. It returns a
@@ -2269,11 +2474,13 @@ service:
 			NonIdentifyingAttributes: []*protobufs.KeyValue{},
 		})
 
-		// store the initial merged config
-		s.cfgState.Store(&configState{
+		// store the initial merged config, which the agent runs
+		initialConfigState := &configState{
 			mergedConfig:     mergedConfig,
 			configMapIsEmpty: false,
-		})
+		}
+		s.cfgState.Store(initialConfigState)
+		s.configApply = configApply{config: initialConfigState, status: protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED}
 
 		s.onMessage(t.Context(), &types.MessageData{
 			RemoteConfig: remoteConfig,
@@ -2289,7 +2496,7 @@ service:
 		assert.Equal(t, mergedConfig, s.cfgState.Load().(*configState).mergedConfig)
 	})
 
-	t.Run("RemoteConfig - Apply an unchanged config again until it is applied", func(t *testing.T) {
+	t.Run("RemoteConfig - Apply an unchanged config again only when the agent does not run it", func(t *testing.T) {
 		var statuses []*protobufs.RemoteConfigStatus
 		mc := &mockOpAMPClient{
 			setRemoteConfigStatusFunc: func(rcs *protobufs.RemoteConfigStatus) error {
@@ -2349,19 +2556,38 @@ service:
 			}
 		}
 
+		// giveToAgent records the config as given to the agent, with the given result.
+		giveToAgent := func(status protobufs.RemoteConfigStatuses) {
+			s.configApply = configApply{config: s.cfgState.Load().(*configState), status: status}
+		}
+
 		status, applyRequested := sendConfig("H1")
 		assert.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, status)
 		assert.True(t, applyRequested)
 
-		// The first attempt has not been applied, for example because writing the config
-		// failed, so the same config with a new hash is applied again.
+		// The agent has not been given the config yet, so it is applied again.
 		status, applyRequested = sendConfig("H2")
 		assert.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, status)
 		assert.True(t, applyRequested)
 
-		// Once the config is applied, the same config with a new hash is reported as applied.
-		s.configApplyPending.Store(false)
+		// The agent is being given the config, and that reports its result, so the agent
+		// is not restarted again.
+		giveToAgent(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING)
 		status, applyRequested = sendConfig("H3")
+		assert.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, status)
+		assert.False(t, applyRequested)
+
+		// Giving the agent the config failed, for example because writing it failed, so
+		// it is applied again instead of reported as applied.
+		giveToAgent(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED)
+		status, applyRequested = sendConfig("H4")
+		assert.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, status)
+		assert.True(t, applyRequested)
+
+		// Once the agent runs the config, the same config with a new hash is reported as
+		// applied.
+		giveToAgent(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED)
+		status, applyRequested = sendConfig("H5")
 		assert.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, status)
 		assert.False(t, applyRequested)
 	})
