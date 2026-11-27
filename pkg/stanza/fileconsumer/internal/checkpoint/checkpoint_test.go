@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
@@ -256,6 +257,37 @@ func TestLoadLegacyJSON(t *testing.T) {
 	reloaded, err = Load(t.Context(), p, zap.NewNop())
 	require.NoError(t, err)
 	require.Equal(t, testData, reloaded)
+}
+
+func TestLoadLegacyJSONLogsDeprecationWarning(t *testing.T) {
+	testData := []*reader.Metadata{
+		{
+			Fingerprint: fingerprint.New([]byte("test-file")),
+			Offset:      1024,
+		},
+	}
+
+	p := testutil.NewUnscopedMockPersister()
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	require.NoError(t, enc.Encode(len(testData)))
+	for _, rmd := range testData {
+		require.NoError(t, enc.Encode(rmd))
+	}
+	require.NoError(t, p.Set(t.Context(), knownFilesKey, buf.Bytes()))
+
+	// JSON load warns once.
+	core, logs := observer.New(zap.WarnLevel)
+	_, err := Load(t.Context(), p, zap.New(core))
+	require.NoError(t, err)
+	assert.Equal(t, 1, logs.FilterMessageSnippet("deprecated").Len(), "expected a deprecation warning when reading a JSON checkpoint")
+
+	// After rewrite to protobuf, load does not warn.
+	require.NoError(t, Save(t.Context(), p, testData))
+	core, logs = observer.New(zap.WarnLevel)
+	_, err = Load(t.Context(), p, zap.New(core))
+	require.NoError(t, err)
+	assert.Equal(t, 0, logs.FilterMessageSnippet("deprecated").Len(), "protobuf checkpoint load must not warn")
 }
 
 // TestMigrateHeaderAttributesWithProtobuf ensures deprecated header attributes
