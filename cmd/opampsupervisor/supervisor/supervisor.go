@@ -2068,20 +2068,23 @@ func (s *Supervisor) runAgentProcess() {
 			configApplyTimeoutTimer.Reset(s.config.Agent.ConfigApplyTimeout)
 			restartTimer.Stop()
 
+			var applyErr error
 			if s.config.Agent.UseHUPConfigReload {
-				if hupErr := s.hupReloadAgent(); hupErr != nil {
-					s.telemetrySettings.Logger.Error("Failed to HUP restart agent", zap.Error(hupErr))
-					reportedLastWorking := s.reportActiveConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, hupErr.Error())
-					if healthErr := s.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: hupErr.Error()}); healthErr != nil {
-						s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(healthErr))
-					}
-					if !reportedLastWorking {
-						s.restoreLastWorkingRemoteConfig()
-					}
-					continue
-				}
+				applyErr = s.hupReloadAgent()
 			} else {
-				s.stopAgentApplyConfig()
+				applyErr = s.stopAgentApplyConfig()
+			}
+			if applyErr != nil {
+				configApplyTimeoutTimer.Stop()
+				s.telemetrySettings.Logger.Error("Failed to apply agent config", zap.Error(applyErr))
+				reportedLastWorking := s.reportActiveConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, applyErr.Error())
+				if healthErr := s.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: applyErr.Error()}); healthErr != nil {
+					s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(healthErr))
+				}
+				if !reportedLastWorking {
+					s.restoreLastWorkingRemoteConfig()
+				}
+				continue
 			}
 
 			s.telemetrySettings.Logger.Debug("Agent is not running, starting new instance")
@@ -2259,8 +2262,7 @@ func (s *Supervisor) hupReloadAgent() error {
 
 	// If we have an empty config, the agent should be stopped.
 	if s.cfgState.Load().(*configState).configMapIsEmpty {
-		s.stopAgentApplyConfig()
-		return nil
+		return s.stopAgentApplyConfig()
 	}
 
 	if err := s.writeAgentConfig(); err != nil {
@@ -2350,16 +2352,22 @@ func (s *Supervisor) validateConfig(configContent string) error {
 	return nil
 }
 
-func (s *Supervisor) stopAgentApplyConfig() {
+func (s *Supervisor) stopAgentApplyConfig() error {
 	s.telemetrySettings.Logger.Debug("Stopping the agent to apply new config")
-	err := s.commander.Stop(s.runCtx)
-	if err != nil {
-		s.telemetrySettings.Logger.Error("Could not stop agent process", zap.Error(err))
+	if err := s.commander.Stop(s.runCtx); err != nil {
+		return fmt.Errorf("could not stop agent process: %w", err)
+	}
+
+	// This exit was requested. Do not handle it as a crash if writing fails.
+	select {
+	case <-s.commander.Exited():
+	default:
 	}
 
 	if err := s.writeAgentConfig(); err != nil {
-		s.telemetrySettings.Logger.Error("Failed to write agent config", zap.Error(err))
+		return fmt.Errorf("failed to write agent config: %w", err)
 	}
+	return nil
 }
 
 func (s *Supervisor) Shutdown() {

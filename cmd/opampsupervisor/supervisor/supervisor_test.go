@@ -5176,3 +5176,68 @@ service:
 		require.Equal(t, expectedMergedConfigMulti, gotConfig)
 	})
 }
+
+func TestRunAgentProcessReportsConfigWriteFailure(t *testing.T) {
+	for _, useHUP := range []bool{false, true} {
+		t.Run(fmt.Sprintf("HUP reload=%t", useHUP), func(t *testing.T) {
+			dir := t.TempDir()
+			state, err := loadOrCreatePersistentState(filepath.Join(dir, persistentStateFileName), "", zap.NewNop())
+			require.NoError(t, err)
+
+			cfg := config.DefaultSupervisor()
+			cfg.Storage.Directory = filepath.Join(dir, "missing")
+			cfg.Capabilities.AcceptsRemoteConfig = true
+			cfg.Agent.UseHUPConfigReload = useHUP
+
+			cmd, err := commander.NewCommander(zap.NewNop(), filepath.Join(dir, "agent.log"), cfg.Agent)
+			require.NoError(t, err)
+
+			metrics, err := telemetry.NewMetrics(metric.NewMeterProvider())
+			require.NoError(t, err)
+
+			statuses := make(chan *protobufs.RemoteConfigStatus, 1)
+			s := Supervisor{
+				config:            cfg,
+				commander:         cmd,
+				telemetrySettings: newNopTelemetrySettings(),
+				cfgState:          &atomic.Value{},
+				metrics:           metrics,
+				persistentState:   state,
+				runCtx:            t.Context(),
+				hasNewConfig:      make(chan struct{}, 1),
+				doneChan:          make(chan struct{}),
+				opampClient: &mockOpAMPClient{
+					setHealthFunc:             func(*protobufs.ComponentHealth) {},
+					updateEffectiveConfigFunc: func(context.Context) error { return nil },
+					setRemoteConfigStatusFunc: func(status *protobufs.RemoteConfigStatus) error {
+						statuses <- status
+						return nil
+					},
+				},
+			}
+			hash := []byte("candidate")
+			s.remoteConfig.Store(&protobufs.AgentRemoteConfig{ConfigHash: hash})
+			s.cfgState.Store(&configState{configMapIsEmpty: true})
+
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				s.runAgentProcess()
+			}()
+			t.Cleanup(func() {
+				close(s.doneChan)
+				<-done
+			})
+			s.hasNewConfig <- struct{}{}
+
+			select {
+			case status := <-statuses:
+				require.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, status.GetStatus())
+				require.Equal(t, hash, status.GetLastRemoteConfigHash())
+				require.Contains(t, status.GetErrorMessage(), "failed to write agent config")
+			case <-time.After(5 * time.Second):
+				t.Fatal("timed out waiting for remote config status")
+			}
+		})
+	}
+}
