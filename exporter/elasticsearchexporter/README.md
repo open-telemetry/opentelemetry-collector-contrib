@@ -596,6 +596,26 @@ set to `delta` or `cumulative`. This matches the ES OTLP endpoint. This field is
 `temporality` is a time series dimension: cumulative and delta series with the same name and attributes are stored as **separate**
 time series. This allows aggregations to apply the correct semantics (sum for delta, and subtraction for cumulative).
 
+### Exemplars
+
+In OTel mapping mode, metric [exemplars](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#exemplars) are sent to Elasticsearch when connected to Elasticsearch 9.6.0 or later.
+Each exemplar is written as its own document to a dedicated `exemplars-<dataset>-<namespace>` data stream (separate from
+the `metrics-*` stream), matching the Elasticsearch OTLP endpoint. The exemplar document carries the parent series
+dimensions (`resource.*`, `scope.*`, `attributes.*`, `unit`,`metric_name`, `temporality`) plus the exemplar's `value`,
+`trace_id`, `span_id`, and `filtered_attributes`.
+
+Exemplars are attached to gauge, sum, histogram, exponential histogram datapoints, summary has no exemplars.
+
+This feature is behind the feature gate `exporter.elasticsearch.Exemplars` (alpha, disabled by default). To enable:
+
+```sh 
+--feature-gates=exporter.elasticsearch.Exemplars
+```
+
+Support is detected automatically via [version detection](#elasticsearch-version-detection):
+when the feature gate is disabled, or the version detection is disabled (`version_detection.enabled: false`), or the
+connected Elasticsearch is older than 9.6.0, exemplars are dropped. Exemplars are only sent in OTel mapping mode.
+
 ### Metrics dynamic templates
 
 For metrics, the exporter sends **per-document `dynamic_templates`** with each bulk index action so that Elasticsearch can apply the correct mapping to metric fields. It uses the [bulk API `dynamic_templates` parameter](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-bulk):
@@ -935,3 +955,22 @@ warnings above. To resolve this, you can either:
 - Apply a `cumulativetodelta` processor.
 
 For more details, see [Metrics data ingestion](https://www.elastic.co/docs/reference/opentelemetry/compatibility/limitations#metrics-data-ingestion).
+
+### "histogram <metric-name> bounds are not sorted or are not unique, ignoring"
+
+Symptom: `elasticsearchexporter` logs a warning under `validation errors` similar to:
+
+```
+warn    elasticsearchexporter/exporter.go:387  validation errors
+{
+  "otelcol.component.id": "elasticsearch/otel",
+  "otelcol.component.kind": "exporter",
+  "otelcol.signal": "metrics",
+  "error": "histogram \"<metric-name>\" bounds are not sorted or are not unique, ignoring"
+}
+```
+
+Explicit-bounds histograms must have strictly increasing (sorted and unique)
+`explicitBounds`. Data points that violate this are dropped, matching the
+behavior of the Elasticsearch OTLP endpoint. Check the source that produced the
+metric.

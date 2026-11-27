@@ -21,11 +21,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.opentelemetry.io/collector/strmatch"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -251,7 +251,7 @@ func TestScrapeV2(t *testing.T) {
 				cfgBuilder: newTestConfigBuilder().
 					withDefaultLabels().
 					withMetrics(allMetricsEnabled).
-					withLabelMatchers(filter.Config{Regex: ".*"}).
+					withLabelMatchers(strmatch.Config{Regex: ".*"}).
 					withAPIVersion(dockerAPIVersion),
 			},
 			{
@@ -271,7 +271,7 @@ func TestScrapeV2(t *testing.T) {
 				cfgBuilder: newTestConfigBuilder().
 					withDefaultLabels().
 					withMetrics(allMetricsEnabled).
-					withLabelMatchers(filter.Config{Regex: ".*"}).
+					withLabelMatchers(strmatch.Config{Regex: ".*"}).
 					withAPIVersion(dockerAPIVersion),
 			},
 			{
@@ -347,7 +347,7 @@ func TestScrapeV2(t *testing.T) {
 					withDefaultLabels().
 					withMetrics(allMetricsEnabled).
 					withResourceAttributes(allResourceAttributesEnabled).
-					withLabelMatchers(filter.Config{Strict: "app"}).
+					withLabelMatchers(strmatch.Config{Strict: "app"}).
 					withAPIVersion(dockerAPIVersion),
 			},
 		}
@@ -633,7 +633,7 @@ func (cb *testConfigBuilder) withDefaultLabels() *testConfigBuilder {
 	return cb
 }
 
-func (cb *testConfigBuilder) withLabelMatchers(filters ...filter.Config) *testConfigBuilder {
+func (cb *testConfigBuilder) withLabelMatchers(filters ...strmatch.Config) *testConfigBuilder {
 	cb.config.ContainerLabelsToResourceAttributes = filters
 	return cb
 }

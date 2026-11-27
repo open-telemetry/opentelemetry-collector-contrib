@@ -8,7 +8,7 @@ import (
 
 var ReceiverPrometheusRemoteWriteDisableJobSplitFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheus_remote_write.disableJobSplit",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, the prometheusremotewritereceiver will disable the splitting of the job label by '/' to derive service.namespace and service.name, instead mapping the entire job string to service.name."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/53277"),
 	featuregate.WithRegisterFromVersion("v0.166.0"),

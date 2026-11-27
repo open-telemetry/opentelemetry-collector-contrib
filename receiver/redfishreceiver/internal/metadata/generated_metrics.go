@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -1357,8 +1357,8 @@ type MetricsBuilder struct {
 	metricsCapacity                int                  // maximum observed number of metrics per resource.
 	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                      component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter map[string]filter.Filter
-	resourceAttributeExcludeFilter map[string]filter.Filter
+	resourceAttributeIncludeFilter map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter map[string]strmatch.Matcher
 	metricChassisPowerstate        metricChassisPowerstate
 	metricChassisStatusHealth      metricChassisStatusHealth
 	metricChassisStatusState       metricChassisStatusState
@@ -1408,20 +1408,20 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricTemperatureReading:       newMetricTemperatureReading(mbc.Metrics.TemperatureReading),
 		metricTemperatureStatusHealth:  newMetricTemperatureStatusHealth(mbc.Metrics.TemperatureStatusHealth),
 		metricTemperatureStatusState:   newMetricTemperatureStatusState(mbc.Metrics.TemperatureStatusState),
-		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter: make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter: make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.HostName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["host.name"] = strmatch.New(mbc.ResourceAttributes.HostName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.HostName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["host.name"] = strmatch.New(mbc.ResourceAttributes.HostName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.URLFull.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["url.full"] = filter.CreateFilter(mbc.ResourceAttributes.URLFull.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["url.full"] = strmatch.New(mbc.ResourceAttributes.URLFull.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.URLFull.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["url.full"] = filter.CreateFilter(mbc.ResourceAttributes.URLFull.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["url.full"] = strmatch.New(mbc.ResourceAttributes.URLFull.MetricsExclude)
 	}
 
 	for _, op := range options {

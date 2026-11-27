@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/mongodb
+note: Extract W3C trace context from document-valued MongoDB query comments and add it to `db.server.query_sample` log records.
+issues: [53572]
+subtext:
+change_logs: [user]

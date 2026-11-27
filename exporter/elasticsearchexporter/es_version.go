@@ -149,3 +149,14 @@ func supportsCumulativeHistograms(v *semver.Version) bool {
 	core := semver.New(v.Major(), v.Minor(), v.Patch(), "", "")
 	return !core.LessThan(minCumulativeHistogramVersion)
 }
+
+var minExemplarsVersion = semver.New(9, 6, 0, "", "")
+
+func supportsExemplars(v *semver.Version) bool {
+	if v == nil {
+		return false
+	}
+
+	core := semver.New(v.Major(), v.Minor(), v.Patch(), "", "")
+	return !core.LessThan(minExemplarsVersion)
+}

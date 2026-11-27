@@ -8,6 +8,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
@@ -61,6 +62,10 @@ func createDefaultConfig() component.Config {
 			RetryMode:         DefaultRetryMode,
 			RetryMaxAttempts:  DefaultRetryMaxAttempts,
 			RetryMaxBackoff:   DefaultRetryMaxBackoff,
+			Compression:       "",
+			CompressionSettings: configcompression.CompressionParams{
+				Level: 0,
+			},
 		},
 		MarshalerName: "otlp_json",
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
