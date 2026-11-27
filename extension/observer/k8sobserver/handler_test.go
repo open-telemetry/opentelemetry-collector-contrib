@@ -4,6 +4,8 @@
 package k8sobserver
 
 import (
+	"cmp"
+	"slices"
 	"sync"
 	"testing"
 
@@ -23,10 +25,18 @@ func newTestHandler() *handler {
 	return h
 }
 
+func sortEndpoints(eps []observer.Endpoint) []observer.Endpoint {
+	slices.SortFunc(eps, func(a, b observer.Endpoint) int {
+		return cmp.Compare(a.ID, b.ID)
+	})
+	return eps
+}
+
 func TestPodEndpointsAdded(t *testing.T) {
 	th := newTestHandler()
 	th.OnAdd(podWithNamedPorts, true)
-	assert.ElementsMatch(t, []observer.Endpoint{
+
+	expected := []observer.Endpoint{
 		{
 			ID:     "test-1/pod-2-UID",
 			Target: "1.2.3.4",
@@ -35,6 +45,39 @@ func TestPodEndpointsAdded(t *testing.T) {
 				Namespace: "default",
 				UID:       "pod-2-UID",
 				Labels:    map[string]string{"env": "prod"},
+			},
+		},
+		{
+			ID:     "test-1/pod-2-UID/init-container-3",
+			Target: "1.2.3.4",
+			Details: &observer.PodContainer{
+				Name:        "init-container-3",
+				Image:       "init-container-image-3",
+				ContainerID: "a808232bb4a57d421bb16f20dc9ab2a441343cb0aae8c369dc375838c7a49fd7",
+				Pod: observer.Pod{
+					Name:      "pod-2",
+					Namespace: "default",
+					UID:       "pod-2-UID",
+					Labels:    map[string]string{"env": "prod"},
+				},
+			},
+		},
+		{
+			ID:     "test-1/pod-2-UID/http(1003)",
+			Target: "1.2.3.4:1003",
+			Details: &observer.Port{
+				Name: "http",
+				Pod: observer.Pod{
+					Name:      "pod-2",
+					Namespace: "default",
+					UID:       "pod-2-UID",
+					Labels:    map[string]string{"env": "prod"},
+				},
+				Port:           1003,
+				Transport:      observer.ProtocolTCP,
+				ContainerName:  "init-container-3",
+				ContainerID:    "a808232bb4a57d421bb16f20dc9ab2a441343cb0aae8c369dc375838c7a49fd7",
+				ContainerImage: "init-container-image-3",
 			},
 		},
 		{
@@ -70,7 +113,9 @@ func TestPodEndpointsAdded(t *testing.T) {
 				ContainerImage: "container-image-2",
 			},
 		},
-	}, th.ListEndpoints())
+	}
+
+	assert.Equal(t, sortEndpoints(expected), sortEndpoints(th.ListEndpoints()))
 }
 
 func TestPodEndpointsRemoved(t *testing.T) {
@@ -91,17 +136,18 @@ func TestPodEndpointsChanged(t *testing.T) {
 	changedLabels.Labels["new-label"] = "value"
 	th.OnUpdate(podWithNamedPorts, changedLabels)
 
-	endpoints := th.ListEndpoints()
+	endpoints := sortEndpoints(th.ListEndpoints())
 	require.ElementsMatch(t,
-		[]observer.EndpointID{"test-1/pod-2-UID", "test-1/pod-2-UID/container-2", "test-1/pod-2-UID/https(443)"},
-		[]observer.EndpointID{endpoints[0].ID, endpoints[1].ID, endpoints[2].ID},
+		[]observer.EndpointID{"test-1/pod-2-UID", "test-1/pod-2-UID/init-container-3", "test-1/pod-2-UID/http(1003)", "test-1/pod-2-UID/container-2", "test-1/pod-2-UID/https(443)"},
+		[]observer.EndpointID{endpoints[0].ID, endpoints[1].ID, endpoints[2].ID, endpoints[3].ID, endpoints[4].ID},
 	)
 
 	// Running state changed, one added and one removed.
 	updatedPod := podWithNamedPorts.DeepCopy()
 	updatedPod.Labels["updated-label"] = "true"
 	th.OnUpdate(podWithNamedPorts, updatedPod)
-	require.ElementsMatch(t, []observer.Endpoint{
+
+	expected := []observer.Endpoint{
 		{
 			ID:     "test-1/pod-2-UID",
 			Target: "1.2.3.4",
@@ -110,6 +156,39 @@ func TestPodEndpointsChanged(t *testing.T) {
 				Namespace: "default",
 				UID:       "pod-2-UID",
 				Labels:    map[string]string{"env": "prod", "updated-label": "true"},
+			},
+		},
+		{
+			ID:     "test-1/pod-2-UID/init-container-3",
+			Target: "1.2.3.4",
+			Details: &observer.PodContainer{
+				Name:        "init-container-3",
+				Image:       "init-container-image-3",
+				ContainerID: "a808232bb4a57d421bb16f20dc9ab2a441343cb0aae8c369dc375838c7a49fd7",
+				Pod: observer.Pod{
+					Name:      "pod-2",
+					Namespace: "default",
+					UID:       "pod-2-UID",
+					Labels:    map[string]string{"env": "prod", "updated-label": "true"},
+				},
+			},
+		},
+		{
+			ID:     "test-1/pod-2-UID/http(1003)",
+			Target: "1.2.3.4:1003",
+			Details: &observer.Port{
+				Name: "http",
+				Pod: observer.Pod{
+					Name:      "pod-2",
+					Namespace: "default",
+					UID:       "pod-2-UID",
+					Labels:    map[string]string{"env": "prod", "updated-label": "true"},
+				},
+				Port:           1003,
+				Transport:      observer.ProtocolTCP,
+				ContainerName:  "init-container-3",
+				ContainerID:    "a808232bb4a57d421bb16f20dc9ab2a441343cb0aae8c369dc375838c7a49fd7",
+				ContainerImage: "init-container-image-3",
 			},
 		},
 		{
@@ -131,7 +210,8 @@ func TestPodEndpointsChanged(t *testing.T) {
 			ID:     "test-1/pod-2-UID/https(443)",
 			Target: "1.2.3.4:443",
 			Details: &observer.Port{
-				Name: "https", Pod: observer.Pod{
+				Name: "https",
+				Pod: observer.Pod{
 					Name:      "pod-2",
 					Namespace: "default",
 					UID:       "pod-2-UID",
@@ -144,7 +224,9 @@ func TestPodEndpointsChanged(t *testing.T) {
 				ContainerImage: "container-image-2",
 			},
 		},
-	}, th.ListEndpoints())
+	}
+
+	require.Equal(t, sortEndpoints(expected), sortEndpoints(th.ListEndpoints()))
 }
 
 func TestServiceEndpointsAdded(t *testing.T) {
