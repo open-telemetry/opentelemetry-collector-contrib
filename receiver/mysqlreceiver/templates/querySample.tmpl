@@ -149,7 +149,16 @@
     -- event intact for monitoring users without that privilege, rather than
     -- failing the whole query.
     ''
-    {{- end}} AS blocker_details
+    {{- end}} AS blocker_details,
+    -- statement.EVENT_ID is an internal counter scoped to this thread that
+    -- increases monotonically and changes only when a new statement begins --
+    -- unlike activity_event_id above, which follows the current wait rather
+    -- than the statement. Paired with internal_thread_id, forms a compact,
+    -- stable per-execution key for deduplicating a statement's rows across
+    -- scrape cycles. Present unconditionally since Performance Schema
+    -- statement instrumentation was introduced (MySQL 5.6+, MariaDB), so no
+    -- version gate.
+    COALESCE(statement.EVENT_ID, 0) AS statement_event_id
 FROM
     performance_schema.threads AS thread
     LEFT JOIN performance_schema.events_statements_current AS statement ON statement.thread_id = thread.thread_id

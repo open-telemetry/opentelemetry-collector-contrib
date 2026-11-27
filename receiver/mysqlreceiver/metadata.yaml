@@ -191,6 +191,9 @@ attributes:
   mysql.events_statements_current.digest:
     description: The statement digest SHA-256 value as a string of 64 hexadecimal characters, or empty if the statements_digest consumer is no.
     type: string
+  mysql.events_statements_current.event_id:
+    description: statement.EVENT_ID from events_statements_current, an internal counter scoped to this thread that increases monotonically and changes only when a new statement begins. Paired with mysql.threads.thread_id, forms a compact, stable per-execution key for deduplicating a statement's rows across scrape cycles. Distinct from mysql.event_id, which follows the current wait event rather than the statement.
+    type: int
   mysql.events_statements_current.timer_wait:
     description: Elapsed time the current statement has been executing, in seconds.
     type: double
@@ -400,6 +403,7 @@ events:
       - mysql.client.name
       - mysql.blocking.blocker.count
       - mysql.blocking.blocker.details
+      - mysql.events_statements_current.event_id
 
   db.server.top_query:
     enabled: false
