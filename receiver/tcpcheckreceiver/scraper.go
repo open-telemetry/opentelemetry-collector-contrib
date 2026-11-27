@@ -4,12 +4,13 @@ package tcpcheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"errors"
+	"net"
 	"strings"
 	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -22,7 +23,7 @@ type scraper struct {
 	cfg                *Config
 	settings           component.TelemetrySettings
 	mb                 *metadata.MetricsBuilder
-	getConnectionState func(tcpConfig *confignet.TCPAddrConfig) (tcpConnectionState, error)
+	getConnectionState func(context.Context, *TargetConfig) (tcpConnectionState, error)
 	errorCounts        map[string]int64
 }
 
@@ -32,12 +33,29 @@ type tcpConnectionState struct {
 	Network    string // Network type (e.g., "tcp")
 }
 
-func getConnectionState(tcpConfig *confignet.TCPAddrConfig) (tcpConnectionState, error) {
-	conn, err := tcpConfig.Dial(context.Background())
+func getConnectionState(ctx context.Context, tcpConfig *TargetConfig) (tcpConnectionState, error) {
+	if tcpConfig.DialerConfig.Timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, tcpConfig.DialerConfig.Timeout)
+		defer cancel()
+	}
+	conn, err := tcpConfig.Dial(ctx)
 	if err != nil {
 		return tcpConnectionState{}, err
 	}
 	defer conn.Close()
+	if len(tcpConfig.QueryResponse) > 0 {
+		if deadline, ok := ctx.Deadline(); ok {
+			if err := conn.SetDeadline(deadline); err != nil {
+				return tcpConnectionState{}, err
+			}
+		}
+		stop := context.AfterFunc(ctx, func() { conn.Close() })
+		defer stop()
+		if err := runQueryResponse(ctx, conn, tcpConfig); err != nil {
+			return tcpConnectionState{}, err
+		}
+	}
 	state := tcpConnectionState{
 		LocalAddr:  conn.LocalAddr().String(),
 		RemoteAddr: conn.RemoteAddr().String(),
@@ -64,13 +82,13 @@ func (*scraper) errorListener(ctx context.Context, eQueue <-chan error, eOut cha
 	}
 }
 
-func (s *scraper) scrapeEndpoint(ctx context.Context, tcpConfig *confignet.TCPAddrConfig, wg *sync.WaitGroup, mux *sync.Mutex, errChan chan<- error) {
+func (s *scraper) scrapeEndpoint(ctx context.Context, tcpConfig *TargetConfig, wg *sync.WaitGroup, mux *sync.Mutex, errChan chan<- error) {
 	defer wg.Done()
 	const pointValue int64 = 1
 	const failPointValue int64 = 0
 
 	start := time.Now()
-	_, err := s.getConnectionState(tcpConfig)
+	_, err := s.getConnectionState(ctx, tcpConfig)
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	duration := time.Since(start).Milliseconds()
@@ -82,8 +100,14 @@ func (s *scraper) scrapeEndpoint(ctx context.Context, tcpConfig *confignet.TCPAd
 		// Convert error to appropriate error code
 		var errorCode metadata.AttributeErrorCode
 		errMsg := strings.ToLower(err.Error())
+		var stepErr *queryResponseError
+		var netErr net.Error
 
 		switch {
+		case errors.As(err, &stepErr) && (errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &netErr) && netErr.Timeout())):
+			errorCode = metadata.AttributeErrorCodeStepTimeout
+		case errors.Is(err, errExpectMismatch):
+			errorCode = metadata.AttributeErrorCodeExpectMismatch
 		case strings.Contains(errMsg, "connection refused") ||
 			strings.Contains(errMsg, "connection reset by peer") ||
 			strings.Contains(errMsg, "no route to host") ||

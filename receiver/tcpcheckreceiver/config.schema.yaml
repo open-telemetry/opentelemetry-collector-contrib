@@ -1,3 +1,34 @@
+$defs:
+  query_response:
+    description: QueryResponse defines a step that expects a response before sending data.
+    type: object
+    properties:
+      expect:
+        description: Expect is a regular expression to match in the response stream.
+        type: string
+      expect_bytes:
+        description: ExpectBytes contains base64-encoded bytes to find in the response stream.
+        type: string
+      send:
+        description: Send is written verbatim, with capture references expanded from this step's Expect.
+        type: string
+      send_bytes:
+        description: SendBytes contains base64-encoded bytes and is mutually exclusive with Send.
+        type: string
+  target_config:
+    description: TargetConfig defines a TCP endpoint and optional application-level checks.
+    type: object
+    properties:
+      max_read_size:
+        description: MaxReadSize limits the buffered response bytes per expect operation. Zero uses 64 KiB.
+        type: integer
+      query_response:
+        description: QueryResponse is an ordered sequence of expect and send operations.
+        type: array
+        items:
+          $ref: query_response
+    allOf:
+      - $ref: go.opentelemetry.io/collector/config/confignet.tcp_addr_config
 description: Config defines the configuration for the various elements of the receiver agent.
 type: object
 properties:
@@ -5,7 +36,7 @@ properties:
     type: array
     items:
       x-pointer: true
-      $ref: go.opentelemetry.io/collector/config/confignet.tcp_addr_config
+      $ref: target_config
 allOf:
   - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
   - $ref: ./internal/metadata.metrics_builder_config
