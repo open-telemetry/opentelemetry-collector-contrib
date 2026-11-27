@@ -196,6 +196,7 @@ Top-Query collection specific options (only useful when top-query collection are
       - However, the top queries collection will only run after 60 seconds have passed since the last collection.
     - For instance, you have global `collection_interval` as `10s` and `top_query_collection.collection_interval` as `5s`.
       - In this case, `top_query_collection.collection_internal` will make no effects to the collection
+- `collect_full_query_text`, `allowed_comment_keys` (optional): See [full query text and comment tags](#full-query-text-and-comment-tags) below.
 
 By default, `db.server.top_query` carries the query's execution plan in its `sqlserver.query_plan`
 attribute. Execution plans can be large, so an oversized plan can push its record past a
@@ -218,6 +219,51 @@ dropping the row. This event collects nothing unless `db.server.top_procedure` i
 
 Query sample collection related options (only useful when query sample is enabled)
 - `max_rows_per_query`: (optional, default = `100`) use this to limit rows returned by the sampling query.
+- `collect_full_query_text`, `allowed_comment_keys` (optional): See [full query text and comment tags](#full-query-text-and-comment-tags) below.
+
+### Full query text and comment tags
+
+`db.query.text` covers only the statement that ran, because SQL Server's DMVs bound it by byte
+offset. Two options recover more, set inside `top_query_collection` and/or
+`query_sample_collection` so each event opts in independently:
+
+- `collect_full_query_text` (optional, default = `false`): report the whole SQL batch the statement
+  came from in `db.query.text`, rather than just the statement. No new attribute is added. Read the
+  warning below before enabling this on `db.server.top_query`.
+- `allowed_comment_keys` (optional, default = unset): export these keys from the statement's leading
+  `/* key=value */` comment as `db.query.comment_tags`, a comma-separated string, attributing a query
+  to the application that ran it. Only the keys listed here are exported. Left unset, the attribute
+  is present but empty.
+
+Either option works without the other. `db.query.text` is always obfuscated, and obfuscation strips
+comments, so `db.query.comment_tags` is the only place comment metadata survives.
+
+```yaml
+    receivers:
+      sql_server:
+        top_query_collection:
+          allowed_comment_keys:
+            - application_name
+            - application_id
+        query_sample_collection:
+          collect_full_query_text: true
+          allowed_comment_keys:
+            - application_name
+            - application_id
+```
+
+> [!WARNING]
+> List only low-cardinality keys, such as an application name or id. `db.server.top_query` aggregates
+> by query, so a key whose value differs per execution gives every execution its own record.
+
+> [!WARNING]
+> On `db.server.top_query`, `collect_full_query_text` makes a record's text broader than its metrics.
+> `sys.dm_exec_query_stats` is keyed per statement while the batch text is per batch, so every record
+> from a multi-statement batch reports the same `db.query.text` while keeping its own metrics. No
+> metric or record count changes, but the records can no longer be told apart by text: group by
+> `sqlserver.query_hash` instead. `db.server.query_sample` reads `sys.dm_exec_requests`, a single
+> request, and is unaffected.
+
 Example:
 
 ```yaml
