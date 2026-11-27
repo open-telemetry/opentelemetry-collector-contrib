@@ -58,6 +58,12 @@ type fileTracker struct {
 
 	maxBatchFiles int
 
+	// keepFilesOpen controls whether file handles are retained between poll cycles.
+	// It is resolved once when the tracker is built (see the manager's
+	// keepFilesOpenBetweenPolls) so that EndConsume does not depend on global state,
+	// which keeps tests parallelizable.
+	keepFilesOpen bool
+
 	currentPollFiles  *fileset.Fileset[*reader.Reader]
 	previousPollFiles *fileset.Fileset[*reader.Reader]
 	knownFiles        []*fileset.Fileset[*reader.Metadata]
@@ -68,7 +74,7 @@ type fileTracker struct {
 	archive archive.Archive
 }
 
-func NewFileTracker(ctx context.Context, set component.TelemetrySettings, maxBatchFiles, pollsToArchive int, persister operator.Persister) Tracker {
+func NewFileTracker(ctx context.Context, set component.TelemetrySettings, maxBatchFiles, pollsToArchive int, persister operator.Persister, keepFilesOpen bool) Tracker {
 	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
 	for i := range knownFiles {
 		knownFiles[i] = fileset.New[*reader.Metadata](maxBatchFiles)
@@ -78,6 +84,7 @@ func NewFileTracker(ctx context.Context, set component.TelemetrySettings, maxBat
 	t := &fileTracker{
 		set:               set,
 		maxBatchFiles:     maxBatchFiles,
+		keepFilesOpen:     keepFilesOpen,
 		currentPollFiles:  fileset.New[*reader.Reader](maxBatchFiles),
 		previousPollFiles: fileset.New[*reader.Reader](maxBatchFiles),
 		knownFiles:        knownFiles,
@@ -159,6 +166,48 @@ func (t *fileTracker) ClosePreviousFiles() (filesClosed int) {
 		t.knownFiles[0].Add(r.Close())
 		filesClosed++
 	}
+	return filesClosed
+}
+
+// EndConsume closes the files from the previous poll and promotes the current
+// poll's files to be the previous poll's files.
+//
+// When keepFilesOpen is true, the previous poll's files are closed first and then the
+// current poll's files are promoted while still open, so that we can detect and read
+// "lost" files, which have been moved out of the matching pattern. On Windows, files
+// are opened with FILE_SHARE_DELETE so they can still be moved or deleted while we hold
+// the handle; the handle is released within a couple of polls once the file is no
+// longer matched, so it is never held perpetually.
+//
+// When keepFilesOpen is false, the current poll's files are promoted and then closed
+// immediately, so no handles are held open between polls.
+func (t *fileTracker) EndConsume() (filesClosed int) {
+	spare := t.previousPollFiles
+
+	if t.keepFilesOpen {
+		filesClosed = t.ClosePreviousFiles()
+
+		// t.currentPollFiles -> t.previousPollFiles
+		t.previousPollFiles = t.currentPollFiles
+		t.previousPollFiles.Reindex()
+	} else {
+		// t.currentPollFiles -> t.previousPollFiles
+		t.previousPollFiles = t.currentPollFiles
+		t.previousPollFiles.Reindex()
+
+		// Close the just-promoted files so nothing is kept open between polls.
+		filesClosed = t.ClosePreviousFiles()
+	}
+
+	if spare == nil {
+		t.currentPollFiles = fileset.New[*reader.Reader](t.maxBatchFiles)
+	} else {
+		spare.Reset()
+		t.currentPollFiles = spare
+	}
+
+	t.unmatchedFiles = t.unmatchedFiles[:0]
+	t.unmatchedFps = t.unmatchedFps[:0]
 	return filesClosed
 }
 
