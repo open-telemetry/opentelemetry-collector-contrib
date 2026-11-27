@@ -1279,3 +1279,84 @@ func (*testTelemetry) len(got metricdata.ResourceMetrics) int {
 func (tt *testTelemetry) Shutdown(ctx context.Context) error {
 	return tt.meterProvider.Shutdown(ctx)
 }
+
+// A trace decided at ingest time in span-ingest mode must not be counted as
+// dropped too early by the tick that fires after decision_wait.
+func TestMetricsSpanIngestDecidedTraceIsNotCountedAsDroppedTooEarly(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		policy  PolicyCfg
+		options func(sampled, nonSampled cache.Cache) []Option
+	}{
+		{
+			name: "sampled",
+			policy: PolicyCfg{
+				sharedPolicyCfg: sharedPolicyCfg{Name: "always", Type: AlwaysSample},
+			},
+			options: func(sampled, _ cache.Cache) []Option {
+				return []Option{WithSampledDecisionCache(sampled)}
+			},
+		},
+		{
+			name: "dropped",
+			policy: PolicyCfg{
+				sharedPolicyCfg: sharedPolicyCfg{Name: "drop", Type: Drop},
+				DropCfg: DropCfg{
+					SubPolicyCfg: []AndSubPolicyCfg{
+						{sharedPolicyCfg: sharedPolicyCfg{Name: "always", Type: AlwaysSample}},
+					},
+				},
+			},
+			options: func(_, nonSampled cache.Cache) []Option {
+				return []Option{WithNonSampledDecisionCache(nonSampled)}
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := setupTestTelemetry()
+			controller := newTestTSPController()
+
+			sampledCache, err := cache.NewLRUDecisionCache(200)
+			require.NoError(t, err)
+			nonSampledCache, err := cache.NewLRUDecisionCache(200)
+			require.NoError(t, err)
+
+			cfg := Config{
+				SamplingStrategy: samplingStrategySpanIngest,
+				DecisionWait:     1,
+				NumTraces:        100,
+				PolicyCfgs:       []PolicyCfg{tc.policy},
+				Options: append(
+					[]Option{withTestController(controller)},
+					tc.options(sampledCache, nonSampledCache)...,
+				),
+			}
+			cs := &consumertest.TracesSink{}
+			proc, err := newTracesProcessor(t.Context(), s.newSettings(), cs, cfg)
+			require.NoError(t, err)
+			require.NoError(t, proc.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() {
+				require.NoError(t, proc.Shutdown(t.Context()))
+			}()
+
+			require.NoError(t, proc.ConsumeTraces(t.Context(), simpleTraces()))
+
+			controller.waitForTick() // the first tick always gets an empty batch
+			controller.waitForTick()
+
+			var md metricdata.ResourceMetrics
+			require.NoError(t, s.reader.Collect(t.Context(), &md))
+
+			metricdatatest.AssertEqual(t, metricdata.Metrics{
+				Name:        "otelcol_processor_tail_sampling_sampling_trace_dropped_too_early",
+				Description: "Count of traces that needed to be dropped before the configured wait time [Development]",
+				Unit:        "{traces}",
+				Data: metricdata.Sum[int64]{
+					IsMonotonic: true,
+					Temporality: metricdata.CumulativeTemporality,
+					DataPoints:  []metricdata.DataPoint[int64]{{Value: 0}},
+				},
+			}, s.getMetric("otelcol_processor_tail_sampling_sampling_trace_dropped_too_early", md), metricdatatest.IgnoreTimestamp())
+		})
+	}
+}
