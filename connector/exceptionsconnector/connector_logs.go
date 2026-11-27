@@ -161,7 +161,7 @@ func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, s
 	// Add configured dimension attributes to the log record.
 	for _, d := range c.dimensions {
 		if v, ok := pdatautil.GetDimensionValue(d, spanAttrs, eventAttrs, resourceAttrs); ok {
-			logRecord.Attributes().PutStr(d.Name, v.Str())
+			v.CopyTo(logRecord.Attributes().PutEmpty(d.Name))
 		}
 	}
 

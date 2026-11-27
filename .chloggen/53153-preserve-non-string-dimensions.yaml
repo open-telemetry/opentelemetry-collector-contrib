@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: connector/exceptions
+note: Preserve non-string dimension types and values in generated exception logs
+issues: [53153]
+subtext:
+change_logs: [user]
