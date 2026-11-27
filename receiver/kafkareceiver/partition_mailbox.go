@@ -29,6 +29,11 @@ type partitionMailbox struct {
 	notify chan struct{}
 	// pendingRewind is the earliest offset that the poll loop must fetch again.
 	pendingRewind *kgo.EpochOffset
+	// pendingSkip is a fetch position that moves the partition past a batch
+	// the receiver could not decompress. It is separate from pendingRewind
+	// because a rewind keeps the earliest offset, while a skip moves forward
+	// and the latest skip wins.
+	pendingSkip *kgo.EpochOffset
 }
 
 // queuedBatch is a batch waiting for the worker and the bytes it counts against
@@ -65,9 +70,10 @@ func (m *partitionMailbox) enqueue(batch kgo.FetchTopicPartition, pause func(par
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// PollRecords may return work while a rewind is pending or after the mailbox
-	// reaches capacity. Remember the earliest rejected record so it is fetched again.
-	if m.pendingRewind != nil || m.full() {
+	// PollRecords may return work while an offset change is pending or after the
+	// mailbox reaches capacity. Remember the earliest rejected record so it is
+	// fetched again.
+	if m.hasPendingOffsetChangeLocked() || m.full() {
 		m.requestRewindLocked(batch.Records[0], false)
 		pause(partitionPauseRewind)
 		return false
@@ -97,10 +103,10 @@ func (m *partitionMailbox) dequeue(resume func()) (kgo.FetchTopicPartition, bool
 	queued := m.batches[0]
 	m.batches = slices.Delete(m.batches, 0, 1)
 	m.queuedBytes -= queued.size
-	// A pending rewind must move the fetch position before fetching resumes.
-	// Calling resume under the lock also prevents it from overtaking an older
-	// pause operation.
-	if m.pendingRewind == nil && !m.full() {
+	// A pending offset change must move the fetch position before fetching
+	// resumes. Calling resume under the lock also prevents it from overtaking
+	// an older pause operation.
+	if !m.hasPendingOffsetChangeLocked() && !m.full() {
 		resume()
 	}
 	return queued.batch, true
@@ -144,19 +150,45 @@ func (m *partitionMailbox) full() bool {
 func (m *partitionMailbox) hasPendingOffsetChange() bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return m.pendingRewind != nil
+	return m.hasPendingOffsetChangeLocked()
 }
 
-// takeOffsetChange returns and clears the pending rewind.
+// hasPendingOffsetChangeLocked reports whether the fetch position must change.
+// The caller holds m.mu.
+func (m *partitionMailbox) hasPendingOffsetChangeLocked() bool {
+	return m.pendingRewind != nil || m.pendingSkip != nil
+}
+
+// requestOffsetChange records a fetch position that moves the partition past a
+// batch it could not decompress. The offset is applied by the poll loop, so
+// it cannot race the processing or the commit of the records that share the
+// poll. A later skip replaces an earlier one, because both move forward and
+// the later offset is the one the partition has to reach.
+func (m *partitionMailbox) requestOffsetChange(offset *kgo.EpochOffset) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.pendingSkip = offset
+	m.notifyLocked()
+}
+
+// takeOffsetChange returns and clears the pending fetch position change.
+// A rewind takes precedence over a skip, because a rewind moves the partition
+// back and the records between the rewind and the skip are still wanted.
 func (m *partitionMailbox) takeOffsetChange() *kgo.EpochOffset {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if m.pendingRewind == nil {
+	if m.pendingRewind != nil {
+		offset := m.pendingRewind
+		m.pendingRewind = nil
+		return offset
+	}
+	if m.pendingSkip == nil {
 		return nil
 	}
-	offset := m.pendingRewind
-	m.pendingRewind = nil
+	offset := m.pendingSkip
+	m.pendingSkip = nil
 	return offset
 }
 
@@ -176,6 +208,7 @@ func (m *partitionMailbox) discard() {
 	m.clearLocked()
 	m.telemetry.setWaiting(false)
 	m.pendingRewind = nil
+	m.pendingSkip = nil
 }
 
 // waitForData checks under the queue lock so enqueue cannot leave an idle
@@ -183,7 +216,7 @@ func (m *partitionMailbox) discard() {
 func (m *partitionMailbox) waitForData() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.telemetry.setWaiting(m.ctx.Err() == nil && len(m.batches) == 0 && m.pendingRewind == nil)
+	m.telemetry.setWaiting(m.ctx.Err() == nil && len(m.batches) == 0 && !m.hasPendingOffsetChangeLocked())
 }
 
 // clearLocked drops every waiting batch while the caller holds m.mu.

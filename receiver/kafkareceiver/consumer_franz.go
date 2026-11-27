@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
@@ -325,6 +326,13 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 		)
 		// Report recoverable error while consuming.
 		c.reportRecoverable(err)
+
+		// An oversized decompressed batch leaves the partition permanently
+		// stalled unless it is skipped or the limit is raised. Handle it
+		// here so a single bad batch cannot silently jam a partition.
+		if tooLarge, ok := errors.AsType[*kgo.ErrDecompressTooLarge](err); ok {
+			c.handleDecompressTooLarge(ctx, tooLarge)
+		}
 	})
 	// Fetch errors are per partition. Records polled for other partitions
 	// have already advanced their fetch cursors, so they must be processed
@@ -397,6 +405,90 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 		}
 	}
 	return true
+}
+
+// handleDecompressTooLarge applies the on_decompress_too_large action when a
+// fetched record batch decompressed beyond max_decompress_batch_bytes:
+// "stall" keeps polling (the partition stays blocked on the batch), "skip"
+// drops the batch and advances the partition, "fatal" reports a permanent
+// error and stops the receiver. Every action counts the batch on the
+// kafka_receiver_fetch_err_decompress_too_large metric.
+func (c *franzConsumer) handleDecompressTooLarge(ctx context.Context, tooLarge *kgo.ErrDecompressTooLarge) {
+	c.telemetryBuilder.KafkaReceiverFetchErrDecompressTooLarge.Add(
+		ctx,
+		1,
+		metric.WithAttributeSet(attribute.NewSet(
+			attribute.String("topic", tooLarge.Topic),
+			attribute.Int64("partition", int64(tooLarge.Partition)),
+			attribute.String("action", string(c.config.ConsumerConfig.OnDecompressTooLarge)),
+		)),
+	)
+	switch c.config.ConsumerConfig.OnDecompressTooLarge {
+	case configkafka.OnDecompressTooLargeSkip:
+		c.settings.Logger.Warn(
+			"skipping record batch that exceeds max_decompress_batch_bytes",
+			zap.String("topic", tooLarge.Topic),
+			zap.Int64("partition", int64(tooLarge.Partition)),
+			zap.Int64("offset", tooLarge.Offset),
+			zap.Int64("next_offset", tooLarge.NextOffset),
+		)
+		c.skipDecompressedBatch(tooLarge)
+	case configkafka.OnDecompressTooLargeFatal:
+		componentstatus.ReportStatus(c.host, componentstatus.NewFatalErrorEvent(tooLarge))
+	case configkafka.OnDecompressTooLargeStall:
+		// Keep the default franz-go behavior: partition stays
+		// stalled on this batch until the limit is raised or the
+		// consumer is recreated.
+	}
+}
+
+// skipDecompressedBatch moves the partition past the oversized batch.
+//
+// The offset change must not be applied while records of the same partition
+// are still being processed. Calling SetOffsets directly from the fetch error
+// handler advances the partition to NextOffset while earlier records are still
+// in flight, and the commit that follows then marks those records as consumed
+// even though they never reached the pipeline.
+//
+// With independent partition workers the change is handed to the worker, which
+// applies it once it has drained the batches it already holds. The sequential
+// path has no worker, but it processes every record of a poll before polling
+// again, so no record of the partition is in flight at this point.
+func (c *franzConsumer) skipDecompressedBatch(tooLarge *kgo.ErrDecompressTooLarge) {
+	tp := topicPartition{topic: tooLarge.Topic, partition: tooLarge.Partition}
+
+	c.mu.RLock()
+	pc := c.assignments[tp]
+	c.mu.RUnlock()
+	if pc == nil {
+		// The partition is not assigned to this consumer, so there is no
+		// partition to move. franz-go ignores SetOffsets for a partition that
+		// is not being consumed.
+		c.settings.Logger.Debug(
+			"cannot skip oversized record batch, partition is not assigned",
+			zap.String("topic", tooLarge.Topic),
+			zap.Int64("partition", int64(tooLarge.Partition)),
+		)
+		return
+	}
+
+	if pc.mailbox == nil {
+		// Sequential path: the poll loop waits for every record of the
+		// previous poll to be processed before it polls again, so nothing of
+		// this partition is in flight.
+		c.client.SetOffsets(map[string]map[int32]kgo.EpochOffset{
+			tooLarge.Topic: {tooLarge.Partition: {Epoch: tooLarge.Epoch, Offset: tooLarge.NextOffset}},
+		})
+		return
+	}
+
+	// Independent path: the worker owns the fetch position of its partition.
+	// It applies the change once the batches it already holds are processed,
+	// so the records before the oversized batch are not skipped.
+	pc.mailbox.requestOffsetChange(&kgo.EpochOffset{
+		Epoch:  tooLarge.Epoch,
+		Offset: tooLarge.NextOffset,
+	})
 }
 
 // pollRecords records the active poll cancellation function so a worker can

@@ -24,6 +24,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 	"github.com/twmb/franz-go/pkg/kversion"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -2085,4 +2086,213 @@ func produceUndecodableBatch(t *testing.T, client *kgo.Client, topic string, par
 	resp, err := req.RequestWith(t.Context(), client)
 	require.NoError(t, err)
 	require.NoError(t, kerr.ErrorForCode(resp.Topics[0].Partitions[0].ErrorCode))
+}
+
+// TestOnDecompressTooLarge exercises the on_decompress_too_large consumer
+// setting by calling handleDecompressTooLarge directly. Driving the error
+// through a kfake cluster needs a fetch response holding a compressed batch
+// whose decompressed size exceeds MaxDecompressBatchBytes, and kfake in the
+// version pinned here rejects compressed ProduceRequests from raw clients,
+// so the handler is exercised with a synthetic ErrDecompressTooLarge.
+func TestOnDecompressTooLarge(t *testing.T) {
+	const (
+		topic     = "too_large"
+		partition = int32(0)
+		offset    = int64(41)
+		next      = int64(43)
+	)
+
+	newConsumer := func(t *testing.T, action configkafka.OnDecompressTooLargeAction) (*franzConsumer, *componenttest.Telemetry, *observer.ObservedLogs) {
+		t.Helper()
+		cfg := createDefaultConfig().(*Config)
+		cfg.ConsumerConfig.OnDecompressTooLarge = action
+		settings, tel, logs := mustNewSettings(t)
+		c, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, nil)
+		require.NoError(t, err)
+		return c, tel, logs
+	}
+
+	tooLarge := &kgo.ErrDecompressTooLarge{
+		Topic:      topic,
+		Partition:  partition,
+		Offset:     offset,
+		Epoch:      7,
+		NextOffset: next,
+	}
+
+	t.Run("skip advances past the oversized batch", func(t *testing.T) {
+		// The client must actually be consuming the partition, otherwise
+		// SetOffsets is a no-op and the test would pass without proving
+		// anything. The fake cluster is used so the partition is really
+		// assigned and the fetch position can be read back.
+		cluster, clientConfig := kafkatest.NewCluster(t, kfake.SeedTopics(1, topic))
+		kafkaClient := mustNewClient(t, cluster)
+		t.Cleanup(func() { deleteConsumerGroups(t, kafkaClient) })
+
+		cfg := createDefaultConfig().(*Config)
+		cfg.ClientConfig = clientConfig
+		cfg.ConsumerConfig.GroupID = t.Name()
+		cfg.ConsumerConfig.InitialOffset = "earliest"
+		cfg.ConsumerConfig.MaxFetchWait = 10 * time.Millisecond
+		cfg.ConsumerConfig.OnDecompressTooLarge = configkafka.OnDecompressTooLargeSkip
+		settings, tel, logs := mustNewSettings(t)
+		consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
+			return func(context.Context, *kgo.Record, attribute.Set, *partitionTelemetry) error {
+				return nil
+			}, nil
+		}
+		c, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, consumeFn)
+		require.NoError(t, err)
+		require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
+		defer func() { require.NoError(t, c.Shutdown(t.Context())) }()
+
+		// Wait until the partition is assigned, otherwise the offset change
+		// has nowhere to go.
+		require.Eventually(t, func() bool {
+			c.mu.RLock()
+			defer c.mu.RUnlock()
+			return c.assignments[topicPartition{topic: topic, partition: partition}] != nil
+		}, 5*time.Second, 10*time.Millisecond, "partition was never assigned")
+
+		c.handleDecompressTooLarge(t.Context(), tooLarge)
+
+		// Skip must log the skip with the batch offsets and tell the
+		// client to continue after the batch.
+		require.Positive(t, logs.FilterMessage("skipping record batch that exceeds max_decompress_batch_bytes").Len(),
+			"skip must log the dropped batch")
+		entry := logs.FilterMessage("skipping record batch that exceeds max_decompress_batch_bytes").All()[0]
+		require.Equal(t, offset, entry.ContextMap()["offset"])
+		require.Equal(t, next, entry.ContextMap()["next_offset"])
+
+		// The partition must end up fetching from the offset after the
+		// oversized batch.
+		require.Eventually(t, func() bool {
+			return c.client.UncommittedOffsets()[topic][partition].Offset == next
+		}, 5*time.Second, 10*time.Millisecond, "partition did not move past the oversized batch")
+
+		// The metric must count the batch with action="skip".
+		metadatatest.AssertEqualKafkaReceiverFetchErrDecompressTooLarge(t, tel, []metricdata.DataPoint[int64]{{
+			Value: 1,
+			Attributes: attribute.NewSet(
+				attribute.String("topic", topic),
+				attribute.Int64("partition", int64(partition)),
+				attribute.String("action", "skip"),
+			),
+		}}, metricdatatest.IgnoreTimestamp())
+	})
+
+	t.Run("skip does not advance past records that are still being processed", func(t *testing.T) {
+		// The offset change must not be applied while records of the same
+		// partition are still in flight. Advancing the partition to the
+		// offset after the oversized batch would let the commit that follows
+		// mark those records as consumed even though they never reached the
+		// pipeline.
+		//
+		// The independent partition worker is used here because it is the
+		// path where records are in flight while the offset change arrives.
+		consumer, kafkaClient, partitionConsumer, _ := newIndependentConsumer(t, topic, 1, MessageMarking{After: true}, false)
+		consumer.config.ConsumerConfig.OnDecompressTooLarge = configkafka.OnDecompressTooLargeSkip
+
+		// The worker owns the fetch position of its partition, so it needs
+		// the mailbox the worker loop uses to carry offset changes.
+		partitionConsumer.mailbox = newPartitionMailbox(
+			partitionConsumer.ctx,
+			consumer.config.PartitionProcessing.MaxPrefetch.Batches,
+			consumer.config.PartitionProcessing.MaxPrefetch.Bytes,
+		)
+		partitionConsumer.mailbox.telemetry = partitionConsumer.telemetry
+
+		// A record before the oversized batch is still being processed.
+		entered := make(chan struct{}, 1)
+		release := make(chan struct{})
+		consumer.consumeMessage = func(_ context.Context, _ *kgo.Record, _ attribute.Set, _ *partitionTelemetry) error {
+			entered <- struct{}{}
+			<-release
+			return nil
+		}
+
+		// The batch with the record that is still in flight.
+		batch := kgo.FetchTopicPartition{Topic: topic}
+		batch.Records = append(batch.Records, &kgo.Record{
+			Topic: topic, Partition: 0, Offset: offset,
+		})
+		batch.HighWatermark = next
+
+		done := make(chan partitionBatchResult, 1)
+		go func() {
+			done <- consumer.processPartitionBatch(partitionConsumer, batch)
+		}()
+
+		select {
+		case <-entered:
+		case <-time.After(10 * time.Second):
+			t.Fatal("the record never reached the pipeline")
+		}
+
+		// The oversized batch is reported while the record above is still in
+		// flight.
+		consumer.handleDecompressTooLarge(t.Context(), tooLarge)
+
+		// The partition must not have moved past the oversized batch yet,
+		// because the record before it has not been processed. Moving it now
+		// would let the commit that follows mark that record as consumed
+		// even though it never reached the pipeline.
+		for _, markedOffset := range kafkaClient.MarkedOffsets()[topic] {
+			require.NotEqual(t, next, markedOffset.Offset,
+				"the partition moved past the oversized batch while a record was still in flight")
+		}
+
+		// The change waits for the worker, which applies it once the records
+		// it holds are processed.
+		require.Eventually(t, func() bool {
+			return partitionConsumer.mailbox.hasPendingOffsetChange()
+		}, 5*time.Second, 10*time.Millisecond, "the offset change was not handed to the partition worker")
+
+		// Let the record finish.
+		close(release)
+		<-done
+	})
+
+	t.Run("stall takes no action", func(t *testing.T) {
+		c, tel, logs := newConsumer(t, configkafka.OnDecompressTooLargeStall)
+		// No client on purpose: stall must not touch the franz client.
+
+		c.handleDecompressTooLarge(t.Context(), tooLarge)
+
+		require.Zero(t, logs.FilterMessage("skipping record batch that exceeds max_decompress_batch_bytes").Len(),
+			"stall must not log a skip")
+		metadatatest.AssertEqualKafkaReceiverFetchErrDecompressTooLarge(t, tel, []metricdata.DataPoint[int64]{{
+			Value: 1,
+			Attributes: attribute.NewSet(
+				attribute.String("topic", topic),
+				attribute.Int64("partition", int64(partition)),
+				attribute.String("action", "stall"),
+			),
+		}}, metricdatatest.IgnoreTimestamp())
+	})
+
+	t.Run("fatal reports a permanent status error", func(t *testing.T) {
+		c, tel, _ := newConsumer(t, configkafka.OnDecompressTooLargeFatal)
+
+		events := make(chan *componentstatus.Event, 4)
+		c.host = &statusReporterHost{report: func(e *componentstatus.Event) { events <- e }}
+
+		c.handleDecompressTooLarge(t.Context(), tooLarge)
+
+		select {
+		case e := <-events:
+			require.Equal(t, componentstatus.StatusFatalError, e.Status())
+			require.ErrorIs(t, e.Err(), tooLarge)
+		default:
+			t.Fatal("expected a fatal status event from the fatal action")
+		}
+		metadatatest.AssertEqualKafkaReceiverFetchErrDecompressTooLarge(t, tel, []metricdata.DataPoint[int64]{{
+			Value: 1,
+			Attributes: attribute.NewSet(
+				attribute.String("topic", topic),
+				attribute.Int64("partition", int64(partition)),
+				attribute.String("action", "fatal"),
+			),
+		}}, metricdatatest.IgnoreTimestamp())
+	})
 }

@@ -124,6 +124,27 @@ Reported only for currently assigned partitions after processing at least one re
 | topic | The Kafka topic. | Any Str | - |
 | partition | The Kafka topic partition. | Any Int | - |
 
+### otelcol_kafka_receiver_fetch_err_decompress_too_large
+
+The total number of fetched record batches that decompressed beyond max_decompress_batch_bytes.
+
+Only produced when franz-go is enabled. The "action" attribute reports
+how the batch was handled: "skip" means the batch was dropped via
+SetOffsets, "fatal" means the receiver stopped with a permanent error,
+"stall" means the partition remained blocked on the batch.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
+| action | The action taken in response to an error condition. | Str: ``stall``, ``skip``, ``fatal`` | - |
+
 ### otelcol_kafka_receiver_latency
 
 The time it took in ms to receive a batch of messages.
