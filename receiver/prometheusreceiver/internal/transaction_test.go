@@ -586,7 +586,7 @@ func TestAppendSTZeroSample(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, tr.Commit())
-	expectedResource := CreateResource("test", "0.0.0.0:8855", "", "", labels.FromStrings(model.SchemeLabel, "http"))
+	expectedResource := CreateResource("test", "0.0.0.0:8855", "localhost:8080", "http", labels.FromStrings(model.SchemeLabel, "http"))
 	mds := sink.AllMetrics()
 	require.Len(t, mds, 1)
 	gotResource := mds[0].ResourceMetrics().At(0).Resource()
@@ -621,7 +621,7 @@ func TestAppendHistogramCTZeroSample(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, tr.Commit())
-	expectedResource := CreateResource("test", "0.0.0.0:8855", "", "", labels.FromStrings(model.SchemeLabel, "http"))
+	expectedResource := CreateResource("test", "0.0.0.0:8855", "localhost:8080", "http", labels.FromStrings(model.SchemeLabel, "http"))
 	mds := sink.AllMetrics()
 	require.Len(t, mds, 1)
 	gotResource := mds[0].ResourceMetrics().At(0).Resource()
@@ -2350,11 +2350,6 @@ func TestTransactionAppendFailedScrapeWithReason(t *testing.T) {
 }
 
 func TestTransactionInitWithUseTargetURLFeatureGate(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(mdata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), true))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(mdata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), false))
-	})
-
 	relabeledTarget := scrape.NewTarget(
 		labels.FromMap(map[string]string{
 			model.JobLabel:      "my-job",
@@ -2370,29 +2365,62 @@ func TestTransactionInitWithUseTargetURLFeatureGate(t *testing.T) {
 		nil,
 	)
 
-	ctx := scrape.ContextWithMetricMetadataStore(
-		scrape.ContextWithTarget(t.Context(), relabeledTarget),
-		testMetadataStore(testMetadata),
-	)
+	tests := []struct {
+		name           string
+		enabled        bool
+		wantAttributes map[string]any
+	}{
+		{
+			name:    "feature gate enabled (default)",
+			enabled: true,
+			wantAttributes: map[string]any{
+				"service.name":        "my-job",
+				"service.instance.id": "logical-instance-1",
+				"server.address":      "example.com",
+				"server.port":         "8443",
+				"url.scheme":          "https",
+			},
+		},
+		{
+			name:    "feature gate disabled",
+			enabled: false,
+			wantAttributes: map[string]any{
+				"service.name":        "my-job",
+				"service.instance.id": "logical-instance-1",
+				"server.address":      "logical-instance-1",
+				"server.port":         "",
+				"url.scheme":          "http",
+			},
+		},
+	}
 
-	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(ctx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
-	_, err := tr.Append(0, labels.FromMap(map[string]string{
-		model.JobLabel:        "my-job",
-		model.InstanceLabel:   "logical-instance-1",
-		model.MetricNameLabel: "counter_test",
-	}), 0, time.Now().UnixMilli(), 1.0, nil, nil, storage.AOptions{})
-	require.NoError(t, err)
-	require.NoError(t, tr.Commit())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			prev := mdata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.IsEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(mdata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), tt.enabled))
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(mdata.ReceiverPrometheusUseTargetURLForServerAddressFeatureGate.ID(), prev))
+			})
 
-	mds := sink.AllMetrics()
-	require.Len(t, mds, 1)
-	gotAttrs := mds[0].ResourceMetrics().At(0).Resource().Attributes()
-	require.Equal(t, map[string]any{
-		"service.name":        "my-job",
-		"service.instance.id": "logical-instance-1",
-		"server.address":      "example.com",
-		"server.port":         "8443",
-		"url.scheme":          "https",
-	}, gotAttrs.AsRaw())
+			ctx := scrape.ContextWithMetricMetadataStore(
+				scrape.ContextWithTarget(t.Context(), relabeledTarget),
+				testMetadataStore(testMetadata),
+			)
+
+			sink := new(consumertest.MetricsSink)
+			tr := newTransaction(ctx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
+			_, err := tr.Append(0, labels.FromMap(map[string]string{
+				model.JobLabel:        "my-job",
+				model.InstanceLabel:   "logical-instance-1",
+				model.MetricNameLabel: "counter_test",
+			}), 0, time.Now().UnixMilli(), 1.0, nil, nil, storage.AOptions{})
+			require.NoError(t, err)
+			require.NoError(t, tr.Commit())
+
+			mds := sink.AllMetrics()
+			require.Len(t, mds, 1)
+			gotAttrs := mds[0].ResourceMetrics().At(0).Resource().Attributes()
+			require.Equal(t, tt.wantAttributes, gotAttrs.AsRaw())
+		})
+	}
 }
