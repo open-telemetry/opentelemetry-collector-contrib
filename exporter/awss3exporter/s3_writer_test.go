@@ -125,7 +125,7 @@ func TestUploadManagerCompressionLevel(t *testing.T) {
 		if !assert.NoError(t, err) {
 			return
 		}
-		assert.Greater(t, len(body), len(payload), "gzip level 0 stores the payload without compression")
+		assert.Less(t, len(body), len(payload), "gzip default compression level compresses the payload")
 		reader, err := gzip.NewReader(bytes.NewReader(body))
 		if !assert.NoError(t, err) {
 			return
@@ -144,7 +144,7 @@ func TestUploadManagerCompressionLevel(t *testing.T) {
 	conf.S3Uploader.AccessKey = "test-key"
 	conf.S3Uploader.SecretKey = "test-secret"
 	conf.S3Uploader.Compression = configcompression.TypeGzip
-	conf.S3Uploader.CompressionSettings.Level = new(configcompression.Level)
+	conf.S3Uploader.CompressionSettings.Level = configcompression.DefaultCompressionLevel
 
 	sm, err := newUploadManager(t.Context(), conf, zap.NewNop(), "logs", "otlp", true)
 	require.NoError(t, err)
