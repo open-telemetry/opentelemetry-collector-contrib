@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -489,8 +489,8 @@ type MetricsBuilder struct {
 	metricsCapacity                    int                  // maximum observed number of metrics per resource.
 	metricsBuffer                      pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                          component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter     map[string]filter.Filter
-	resourceAttributeExcludeFilter     map[string]filter.Filter
+	resourceAttributeIncludeFilter     map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter     map[string]strmatch.Matcher
 	metricSystemdServiceCPUTime        metricSystemdServiceCPUTime
 	metricSystemdServiceMemoryUsage    metricSystemdServiceMemoryUsage
 	metricSystemdServiceMemoryUsageMax metricSystemdServiceMemoryUsageMax
@@ -526,14 +526,14 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSystemdServiceMemoryUsageMax: newMetricSystemdServiceMemoryUsageMax(mbc.Metrics.SystemdServiceMemoryUsageMax),
 		metricSystemdServiceRestarts:       newMetricSystemdServiceRestarts(mbc.Metrics.SystemdServiceRestarts),
 		metricSystemdUnitState:             newMetricSystemdUnitState(mbc.Metrics.SystemdUnitState),
-		resourceAttributeIncludeFilter:     make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:     make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter:     make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter:     make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.SystemdUnitName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["systemd.unit.name"] = filter.CreateFilter(mbc.ResourceAttributes.SystemdUnitName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["systemd.unit.name"] = strmatch.New(mbc.ResourceAttributes.SystemdUnitName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.SystemdUnitName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["systemd.unit.name"] = filter.CreateFilter(mbc.ResourceAttributes.SystemdUnitName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["systemd.unit.name"] = strmatch.New(mbc.ResourceAttributes.SystemdUnitName.MetricsExclude)
 	}
 
 	for _, op := range options {

@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -465,8 +465,8 @@ type MetricsBuilder struct {
 	metricsCapacity                int                  // maximum observed number of metrics per resource.
 	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                      component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter map[string]filter.Filter
-	resourceAttributeExcludeFilter map[string]filter.Filter
+	resourceAttributeIncludeFilter map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter map[string]strmatch.Matcher
 	metricSshcheckDuration         metricSshcheckDuration
 	metricSshcheckError            metricSshcheckError
 	metricSshcheckSftpDuration     metricSshcheckSftpDuration
@@ -504,14 +504,14 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSshcheckSftpError:        newMetricSshcheckSftpError(mbc.Metrics.SshcheckSftpError),
 		metricSshcheckSftpStatus:       newMetricSshcheckSftpStatus(mbc.Metrics.SshcheckSftpStatus),
 		metricSshcheckStatus:           newMetricSshcheckStatus(mbc.Metrics.SshcheckStatus),
-		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter: make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter: make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.SSHEndpoint.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["ssh.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.SSHEndpoint.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["ssh.endpoint"] = strmatch.New(mbc.ResourceAttributes.SSHEndpoint.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.SSHEndpoint.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["ssh.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.SSHEndpoint.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["ssh.endpoint"] = strmatch.New(mbc.ResourceAttributes.SSHEndpoint.MetricsExclude)
 	}
 
 	for _, op := range options {
