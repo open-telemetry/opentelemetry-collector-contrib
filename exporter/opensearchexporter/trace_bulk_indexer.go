@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
@@ -19,19 +20,55 @@ import (
 )
 
 type traceBulkIndexer struct {
-	bulkAction  string
-	pipeline    string
-	model       mappingModel
-	errs        []error
-	bulkIndexer opensearchutil.BulkIndexer
+	bulkAction     string
+	pipeline       string
+	model          mappingModel
+	mu             sync.Mutex
+	errs           []error
+	permanentErrs  []error
+	retryErrs      []error
+	retryTraces    ptrace.Traces
+	hasRetryTraces bool
+	bulkIndexer    opensearchutil.BulkIndexer
 }
 
 func newTraceBulkIndexer(bulkAction string, model mappingModel, pipeline string) *traceBulkIndexer {
-	return &traceBulkIndexer{bulkAction: bulkAction, pipeline: pipeline, model: model, errs: nil, bulkIndexer: nil}
+	return &traceBulkIndexer{bulkAction: bulkAction, pipeline: pipeline, model: model}
 }
 
 func (tbi *traceBulkIndexer) joinedError() error {
-	return errors.Join(tbi.errs...)
+	tbi.mu.Lock()
+	defer tbi.mu.Unlock()
+
+	var retryConsumerErr error
+	if len(tbi.retryErrs) > 0 {
+		retryConsumerErr = consumererror.NewTraces(errors.Join(tbi.retryErrs...), tbi.retryTraces)
+	}
+	return joinBulkIndexerErrors(retryConsumerErr, tbi.errs, tbi.permanentErrs)
+}
+
+func joinBulkIndexerErrors(retryConsumerErr error, errs, permanentErrs []error) error {
+	joined := make([]error, 0, len(errs)+2)
+	if retryConsumerErr != nil {
+		joined = append(joined, retryConsumerErr)
+	}
+	joined = append(joined, errs...)
+	hasRetryable := retryConsumerErr != nil || len(errs) > 0
+	if permErr := combinePermanentErrors(permanentErrs, !hasRetryable); permErr != nil {
+		joined = append(joined, permErr)
+	}
+	return errors.Join(joined...)
+}
+
+func combinePermanentErrors(permanentErrs []error, markPermanent bool) error {
+	permErr := errors.Join(permanentErrs...)
+	if permErr == nil || !markPermanent {
+		return permErr
+	}
+	if consumererror.IsPermanent(permErr) {
+		return permErr
+	}
+	return consumererror.NewPermanent(permErr)
 }
 
 func (tbi *traceBulkIndexer) start(client *opensearchapi.Client) error {
@@ -43,7 +80,9 @@ func (tbi *traceBulkIndexer) start(client *opensearchapi.Client) error {
 func (tbi *traceBulkIndexer) close(ctx context.Context) {
 	closeErr := tbi.bulkIndexer.Close(ctx)
 	if closeErr != nil {
+		tbi.mu.Lock()
 		tbi.errs = append(tbi.errs, closeErr)
+		tbi.mu.Unlock()
 	}
 }
 
@@ -54,11 +93,20 @@ func (tbi *traceBulkIndexer) onIndexerError(_ context.Context, indexerErr error)
 }
 
 func (tbi *traceBulkIndexer) appendPermanentError(e error) {
-	tbi.errs = append(tbi.errs, consumererror.NewPermanent(e))
+	tbi.mu.Lock()
+	defer tbi.mu.Unlock()
+	tbi.permanentErrs = append(tbi.permanentErrs, e)
 }
 
 func (tbi *traceBulkIndexer) appendRetryTraceError(err error, trace ptrace.Traces) {
-	tbi.errs = append(tbi.errs, consumererror.NewTraces(err, trace))
+	tbi.mu.Lock()
+	defer tbi.mu.Unlock()
+	if !tbi.hasRetryTraces {
+		tbi.retryTraces = ptrace.NewTraces()
+		tbi.hasRetryTraces = true
+	}
+	tbi.retryErrs = append(tbi.retryErrs, err)
+	trace.ResourceSpans().MoveAndAppendTo(tbi.retryTraces.ResourceSpans())
 }
 
 func (tbi *traceBulkIndexer) submit(ctx context.Context, td ptrace.Traces, ir *indexResolver, cfg *Config, timestamp time.Time) {
