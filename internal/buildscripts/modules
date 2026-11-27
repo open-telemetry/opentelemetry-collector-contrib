@@ -71,6 +71,8 @@ beta_modules=(
   "go.opentelemetry.io/collector/service/hostcapabilities"
   "go.opentelemetry.io/collector/service/telemetry/telemetrytest"
   "go.opentelemetry.io/collector/filter"
+  # TODO: enable after v0.167.0 release
+  # "go.opentelemetry.io/collector/strmatch"
 )
 
 stable_modules=(

@@ -14,7 +14,7 @@ import (
 	"github.com/moby/moby/api/types/container"
 	"github.com/testcontainers/testcontainers-go"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
+	"go.opentelemetry.io/collector/strmatch"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -49,7 +49,7 @@ func TestIntegration(t *testing.T) {
 			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
-				rCfg.MetricsBuilderConfig.ResourceAttributes.ContainerName.MetricsInclude = []filter.Config{{Strict: "dockerstatsreceiver-test"}}
+				rCfg.MetricsBuilderConfig.ResourceAttributes.ContainerName.MetricsInclude = []strmatch.Config{{Strict: "dockerstatsreceiver-test"}}
 				rCfg.MetricsBuilderConfig.Metrics.ContainerStateHealthStatus.Enabled = true
 			},
 		),
