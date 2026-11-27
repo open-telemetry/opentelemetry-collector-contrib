@@ -145,3 +145,18 @@ func TestPersistentState_SetLastRemoteConfigStatus(t *testing.T) {
 	}, loadedState.GetLastRemoteConfigStatus())
 	require.FileExists(t, f)
 }
+
+func TestPersistentState_SetAllPackagesHash(t *testing.T) {
+	f := filepath.Join(t.TempDir(), "state.yaml")
+	state, err := createNewPersistentState(f, "", zap.NewNop())
+	require.NoError(t, err)
+	require.Nil(t, state.GetAllPackagesHash())
+
+	hash := []byte{0x01, 0x02, 0xab}
+	require.NoError(t, state.SetAllPackagesHash(hash))
+	require.Equal(t, hash, state.GetAllPackagesHash())
+
+	loadedState, err := loadPersistentState(f, zap.NewNop())
+	require.NoError(t, err)
+	require.Equal(t, hash, loadedState.GetAllPackagesHash())
+}

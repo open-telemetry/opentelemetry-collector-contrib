@@ -10,6 +10,7 @@ import (
 	"github.com/sigstore/sigstore-go/pkg/bundle"
 	"github.com/sigstore/sigstore-go/pkg/fulcio/certificate"
 	"github.com/sigstore/sigstore-go/pkg/root"
+	"github.com/sigstore/sigstore-go/pkg/tuf"
 	"github.com/sigstore/sigstore-go/pkg/verify"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
@@ -19,7 +20,7 @@ import (
 // signature is a Sigstore bundle (the `.sigstore.json` file published
 // alongside a release artifact) carrying the signing certificate, signature,
 // Rekor transparency log entry, and signed timestamp. Verification is fully
-// offline against the Sigstore trusted root fetched at startup.
+// offline against the Sigstore trusted root fetched when the verifier is built.
 type cosignVerifier struct {
 	verifier   *verify.Verifier
 	identities []verify.PolicyOption
@@ -28,11 +29,15 @@ type cosignVerifier struct {
 var _ Verifier = &cosignVerifier{}
 
 // newCosignVerifier fetches the public Sigstore trusted root via TUF and
-// returns a verifier for the configured identities.
+// returns a verifier for the configured identities. The supervisor builds it
+// once per package update, so the root is fresh for each update and the
+// network is never touched at startup.
 func newCosignVerifier(cfg config.CosignSignatureVerifier) (Verifier, error) {
-	// Public Sigstore only; add a trusted_root path option when
-	// someone needs a private Sigstore instance or air-gapped startup.
-	trustedRoot, err := root.FetchTrustedRoot()
+	// Public Sigstore only; add a trusted_root path option when someone needs a
+	// private Sigstore instance or an air-gapped host. Cached TUF metadata under
+	// $HOME/.sigstore/root is reused until it expires, so a transient outage of
+	// the Sigstore CDN does not fail an update.
+	trustedRoot, err := root.FetchTrustedRootWithOptions(tuf.DefaultOptions().WithForceCache())
 	if err != nil {
 		return nil, fmt.Errorf("fetch sigstore trusted root: %w", err)
 	}
