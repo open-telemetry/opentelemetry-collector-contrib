@@ -263,9 +263,19 @@ type SamplerConfig struct {
 	// has the form `<scope>.attributes["<name>"]` where scope is one of
 	// resource, scope, span, root, or any. Values are collected across the
 	// accumulated trace, so the fingerprint reflects the whole trace rather
-	// than any single span.
+	// than any single span. Duration selectors `span.duration`,
+	// `root.span.duration`, and `trace.duration` are also accepted and require
+	// DurationBuckets.
 	// Used by: adaptive_percentage, adaptive_throughput.
 	FingerprintAttributes []string `mapstructure:"fingerprint_attributes"`
+
+	// DurationBuckets are ascending latency cut points used when a
+	// fingerprint selector is `span.duration`, `root.span.duration`, or
+	// `trace.duration`. Durations map to half-open buckets such as
+	// `<2ms`, `2ms-24ms`, and `>=1s`. Required when any duration selector is
+	// present; must be unset otherwise.
+	// Used by: adaptive_percentage, adaptive_throughput.
+	DurationBuckets []time.Duration `mapstructure:"duration_buckets"`
 
 	// MaxKeys caps the number of distinct sampling keys the sampler tracks.
 	// Omitting the field defaults to defaultMaxKeys; explicitly setting it
@@ -447,8 +457,12 @@ func (s *SamplerConfig) validate(ruleName string) error {
 		if len(s.FingerprintAttributes) == 0 {
 			return fmt.Errorf("rule %q: fingerprint_attributes must contain at least one entry", ruleName)
 		}
-		if _, err := sampler.ParseSelectors(s.FingerprintAttributes); err != nil {
+		selectors, err := sampler.ParseSelectors(s.FingerprintAttributes)
+		if err != nil {
 			return fmt.Errorf("rule %q: %w", ruleName, err)
+		}
+		if err := s.validateDurationBuckets(ruleName, selectors); err != nil {
+			return err
 		}
 		if s.Weight < 0 || s.Weight >= 1 {
 			return fmt.Errorf("rule %q: weight must be in [0, 1)", ruleName)
@@ -460,6 +474,7 @@ func (s *SamplerConfig) validate(ruleName string) error {
 			"algorithm":              true,
 			"goal_percentage":        true,
 			"fingerprint_attributes": true,
+			"duration_buckets":       true,
 			"max_keys":               true,
 			"adjustment_interval":    true,
 			"weight":                 true,
@@ -471,8 +486,12 @@ func (s *SamplerConfig) validate(ruleName string) error {
 		if len(s.FingerprintAttributes) == 0 {
 			return fmt.Errorf("rule %q: fingerprint_attributes must contain at least one entry", ruleName)
 		}
-		if _, err := sampler.ParseSelectors(s.FingerprintAttributes); err != nil {
+		selectors, err := sampler.ParseSelectors(s.FingerprintAttributes)
+		if err != nil {
 			return fmt.Errorf("rule %q: %w", ruleName, err)
+		}
+		if err := s.validateDurationBuckets(ruleName, selectors); err != nil {
+			return err
 		}
 		if s.MaxKeys != nil && *s.MaxKeys < 0 {
 			return fmt.Errorf("rule %q: max_keys must be non-negative", ruleName)
@@ -490,6 +509,7 @@ func (s *SamplerConfig) validate(ruleName string) error {
 				"goal_throughput":             true,
 				"initial_sampling_percentage": true,
 				"fingerprint_attributes":      true,
+				"duration_buckets":            true,
 				"max_keys":                    true,
 				"adjustment_interval":         true,
 				"weight":                      true,
@@ -506,6 +526,7 @@ func (s *SamplerConfig) validate(ruleName string) error {
 				"goal_throughput":             true,
 				"initial_sampling_percentage": true,
 				"fingerprint_attributes":      true,
+				"duration_buckets":            true,
 				"max_keys":                    true,
 				"update_frequency":            true,
 				"lookback_frequency":          true,
@@ -516,6 +537,21 @@ func (s *SamplerConfig) validate(ruleName string) error {
 	default:
 		return fmt.Errorf("rule %q: unknown sampler.type %q", ruleName, s.Type)
 	}
+}
+
+func (s *SamplerConfig) validateDurationBuckets(ruleName string, selectors []sampler.Selector) error {
+	hasDuration := sampler.HasDurationSelector(selectors)
+	switch {
+	case hasDuration && len(s.DurationBuckets) == 0:
+		return fmt.Errorf("rule %q: duration_buckets is required when fingerprint_attributes includes a duration selector", ruleName)
+	case !hasDuration && len(s.DurationBuckets) > 0:
+		return fmt.Errorf("rule %q: duration_buckets requires a span.duration, root.span.duration, or trace.duration fingerprint selector", ruleName)
+	case len(s.DurationBuckets) > 0:
+		if err := sampler.ValidateDurationBuckets(s.DurationBuckets); err != nil {
+			return fmt.Errorf("rule %q: %w", ruleName, err)
+		}
+	}
+	return nil
 }
 
 // effectiveAlgorithm returns the algorithm a adaptive_* sampler should use,
@@ -564,6 +600,9 @@ func (s *SamplerConfig) rejectUnusedFields(ruleName, typeName string, allowed ma
 		return err
 	}
 	if err := set("fingerprint_attributes", len(s.FingerprintAttributes) > 0); err != nil {
+		return err
+	}
+	if err := set("duration_buckets", len(s.DurationBuckets) > 0); err != nil {
 		return err
 	}
 	if err := set("max_keys", s.MaxKeys != nil); err != nil {

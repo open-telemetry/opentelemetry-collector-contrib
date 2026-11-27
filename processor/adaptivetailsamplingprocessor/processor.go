@@ -1045,7 +1045,7 @@ func (p *adaptiveTailSamplingProcessor) evaluate(ctx context.Context, pt *pendin
 				}
 			}
 			start := time.Now()
-			key = sampler.ExtractKey(pt.spans, r.fingerprint, isRoot)
+			key = sampler.ExtractKey(pt.spans, r.fingerprint, isRoot, r.durationBuckets)
 			p.telemetry.ProcessorAdaptiveTailSamplingFingerprintDuration.Record(ctx, time.Since(start).Microseconds(), r.ruleAttrSet)
 		}
 		rate := max(r.sampler.GetSampleRate(key, pt.spanCount), 1)
