@@ -27,6 +27,10 @@ This receiver tails and parses logs from files.
 
 ## Configuration
 
+Use `file_log` as the receiver type. `filelog` is a deprecated alias. The examples below use paths for a Unix host;
+adapt paths and permissions for your deployment. Patterns in `include` and `exclude` support glob matching, including
+`**` for recursive matching. Use absolute paths to avoid depending on the Collector's working directory.
+
 | Field                                 | Default                              | Description                                                                                                                                                                                                                                                     |
 |---------------------------------------|--------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `include`                             | required                             | A list of file glob patterns that match the file paths to be read.                                                                                                                                                                                              |
@@ -71,17 +75,23 @@ This receiver tails and parses logs from files.
 | `retry_on_failure.max_elapsed_time`   | `5m`                                 | Maximum amount of [time](#time-parameters) (including retries) spent trying to send a logs batch to a downstream consumer. Once this value is reached, the data is discarded. Retrying never stops if set to `0`.                                               |
 | `ordering_criteria.regex`             |                                      | Regular expression used for sorting, should contain a named capture groups that are to be used in `regex_key`.                                                                                                                                                  |
 | `ordering_criteria.group_by`          |                                      | Regular expression used for grouping, which is done pre-sorting. Should contain a named capture groups.                                                                                                                                                         |
-| `ordering_criteria.top_n`             | 1                                    | The number of files to track when using file ordering. The top N files are tracked after applying the ordering criteria.                                                                                                                                        |
+| `ordering_criteria.top_n`             | 1                                    | Maximum files selected per group when sorting. `0` selects all files; negative values are invalid. If omitted, defaults to `1` unless `filelog.requireExplicitTopN` is enabled, which requires an explicit value.                                                                                                                                        |
+| `ordering_criteria.sort_by` | [] | List of sort rules applied to matched files. See [File ordering](#file-ordering). |
 | `ordering_criteria.sort_by.regex_key` |                                      | Regular expression named capture group defined in `ordering_criteria.regex` to use for sorting.                                                                                                                                                                         |
 | `ordering_criteria.sort_by.sort_type` |                                      | Type of sorting to be performed (e.g., `numeric`, `alphabetical`, `timestamp`, `mtime`)                                                                                                                                                                         |
-| `ordering_criteria.sort_by.location`  |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the location of the timestamp of the file.                                                                                                                                                               |
-| `ordering_criteria.sort_by.format`    |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the strptime format of the timestamp being sorted.                                                                                                                                                       |
-| `ordering_criteria.sort_by.ascending` |                                      | Sort direction                                                                                                                                                                                                                                                  |
+| `ordering_criteria.sort_by.location`  |                                      | Relevant if `sort_type` is set to `timestamp`. Time zone used to parse the timestamp; defaults to `UTC`.                                                                                                                                                               |
+| `ordering_criteria.sort_by.layout`    |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the strptime format of the timestamp being sorted.                                                                                                                                                       |
+| `ordering_criteria.sort_by.ascending` |                                      | `true` sorts ascending; the default `false` sorts descending.                                                                                                                                                                                                                                                  |
 | `compression`                         |                                      | Indicate the compression format of input files. If set accordingly, files will be read using a reader that uncompresses the file before scanning its content. Options are  ``, `gzip`, or `auto`. `auto` auto-detects file compression type. Currently, gzip files are the only compressed files auto-detected, based on its headers [See RFC 1952](https://www.rfc-editor.org/rfc/rfc1952#section-2.3). `auto` option is useful when ingesting a mix of compressed and uncompressed files with the same filelogreceiver.              |
 | `polls_to_archive`                    |  `0`                                    | This settings controls the number of poll cycles to store on disk, rather than being discarded. By default, the receiver will purge the record of readers that have existed for 3 generations. Refer [archiving](#archiving) and [polling](../../pkg/stanza/fileconsumer/design.md#polling) for more details. **Note: This feature is experimental.** |
 | `on_truncate`                         | `ignore`                             | Behavior when a file with the same fingerprint is detected but with a smaller size (indicating a copytruncate rotation). Options are `ignore`, `read_whole_file`, or `read_new`. See [handling copytruncate rotation](#handling-copytruncate-rotation) for more details.                                                                              |
 
 Note that _by default_, no logs will be read from a file that is not actively being written to because `start_at` defaults to `end`.
+
+The embedded file input also accepts the operator fields `id` (default `file_input`), `type` (default `file_input`), and
+`output` (default: the next operator, or the receiver output if none). Keep `type: file_input`; use `operators` to
+configure parsing and transformations. An explicit `output` is a list of operator IDs and overrides the default
+connection.
 
 ### Operators
 
@@ -96,10 +106,37 @@ Each [operator](../../pkg/stanza/docs/operators/README.md#what-is-an-operator) p
 
 If set, the `multiline` configuration block instructs the `file_input` operator to split log entries on a pattern other than newlines.
 
-The `multiline` configuration block must contain exactly one of `line_start_pattern` or `line_end_pattern`. These are regex patterns that
+To enable multiline splitting, set exactly one of `line_start_pattern` or `line_end_pattern`. These are regex patterns that
 match either the beginning of a new log entry, or the end of a log entry.
 
-The `omit_pattern` setting can be used to omit the start/end pattern from each entry.
+The `omit_pattern` setting (default `false`) can be used to omit the start/end pattern from each entry.
+Both pattern fields default to an empty string. With neither pattern set, records are split on newlines.
+
+### File ordering
+
+`ordering_criteria.sort_by` is a list of sort rules. Its nested settings in the table above apply to each list item.
+Sorting selects files to read; it does not guarantee ordering of emitted records across files, which are read
+concurrently. A positive `top_n` limits selection per group, or across all matches when `group_by` is unset. Set `top_n:
+0` explicitly to retain all matching files.
+
+For example, to select the two most recently modified files:
+
+```yaml
+receivers:
+  file_log:
+    include: [/var/log/myapp/*.log]
+    ordering_criteria:
+      top_n: 2
+      sort_by:
+        - sort_type: mtime
+          ascending: false
+```
+
+For `timestamp` sorting, use `layout` with strptime directives, such as `%Y-%m-%d`, and `location` with a time zone such
+as `UTC`. Numeric, alphabetical, and timestamp sorting require `ordering_criteria.regex` and a `regex_key` naming a
+capture group in that expression. Modification-time sorting does not require a regular expression. When grouping is
+configured, the first captured group identifies the group; paths that do not match the grouping expression are excluded
+when filtering is applied.
 
 ### Supported encodings
 
@@ -139,7 +176,7 @@ All time parameters must have the unit of time specified. e.g.: `200ms`, `1s`, `
 
 ### Log Rotation
 
-File Log Receiver can read files that are being rotated. It supports both common rotation strategies: **move/create** (the file is renamed and a new file is created) and **copy/truncate** (the file is copied to a backup and the original is truncated). The receiver tracks files by their internal identity (inode) and content fingerprint, allowing it to handle both strategies transparently and continue reading data even if the new filename no longer matches the `include` pattern.
+File Log Receiver can read files that are being rotated. It supports both common rotation strategies: **move/create** (the file is renamed and a new file is created) and **copy/truncate** (the file is copied to a backup and the original is truncated). The receiver tracks files using content fingerprints and retains open handles to finish reading files moved outside the `include` pattern when possible. See [Known limitations](#known-limitations) for cases where rotation can cause data loss.
 
 #### File Attribute Behavior During Rotation
 
@@ -161,8 +198,8 @@ For more details, see [issue #38454](https://github.com/open-telemetry/opentelem
 
 When log files are rotated using the `copytruncate` strategy (where the file is copied and then truncated in place), the receiver can detect when a file has been truncated by comparing the stored offset with the current file size. The `on_truncate` setting controls how the receiver behaves when truncation is detected:
 
-- `ignore` (default): The receiver keeps the original offset and will not read any data until the file grows past the original offset. This prevents duplicate log ingestion when a file is rotated.
-- `read_whole_file`: The receiver resets the offset to 0 and reads the entire file from the beginning. Use this mode when you want to ensure no data loss, even if it means potentially re-reading some logs.
+- `ignore` (default): The receiver keeps the original offset and will not read any data until the file grows past the original offset. This avoids re-reading the retained prefix, but can skip new records below the original offset.
+- `read_whole_file`: The receiver resets the offset to 0 and reads the entire file from the beginning. This can recover content still present in the truncated file, but can also re-read records and cannot recover deleted content.
 - `read_new`: The receiver updates the offset to the current file size (the position after truncation). This allows reading new data that is written after the truncation without re-reading existing content.
 
 **Example configuration:**
@@ -256,7 +293,7 @@ receivers:
 ```
 
 The above configuration will be able to read gzip compressed log files by setting the `compression` option to `gzip`.
-When this option is set, all files ending with that suffix are scanned using a gzip reader that decompresses the file content
+When `compression: gzip` is set, every matched file is scanned using a gzip reader that decompresses the file content
 before scanning through it. Please note that if the compressed file is expected to be updated, the additional compressed logs must be appended to the
 compressed file, rather than recompressing the whole content and overwriting the previous file.
 
@@ -310,7 +347,7 @@ Attributes:
 ## Offset tracking
 
 The `storage` setting allows you to define the proper storage extension for storing file offsets.
-While the storage parameter can ensure that log files are consumed accurately, it is possible that
+Stored offsets allow reading to resume after a restart, but it is possible that
 logs are dropped while moving downstream through other components in the collector.
 For additional resiliency, see [Fault tolerant log collection example](../../examples/fault-tolerant-logs-collection/README.md)
 
@@ -332,6 +369,144 @@ This is useful when `exclude_older_than` setting is used and the user wants the 
 
 Note that if the `polls_to_archive` setting is used without specifying `storage`, the receiver will revert to the default behavior i.e. purge the record of readers that have existed for 3 generations.
 
+## Production deployment
+
+Run the receiver on a host with access to the log files. In Kubernetes, a common deployment is one Collector agent per
+node using a DaemonSet, with the node's log directories mounted into the agent. Mount logs read-only unless
+`delete_after_read` is deliberately enabled. The Collector user needs permission to traverse the parent directories and
+read the files and symlink targets.
+
+For Kubernetes container logs, use the [container parser](../../pkg/stanza/docs/operators/container.md) to handle
+container runtime log formats and partial records:
+
+```yaml
+receivers:
+  file_log:
+    include: [/var/log/pods/*/*/*.log]
+    include_file_path: true
+    operators:
+      - type: container
+```
+
+Scale collection by assigning disjoint sets of files to receiver instances. Multiple Collectors reading the same files
+do not coordinate offsets or divide the work, and can produce duplicate logs. Do not share a checkpoint database between
+Collector processes. Keep ownership of files and their checkpoint storage together when moving a workload.
+
+Tune `max_concurrent_files` against the host's file descriptor limit and available memory. Reader buffers, fingerprints,
+multiline records, and operators all contribute to memory usage. Reducing `poll_interval` can reduce discovery latency
+at the cost of more filesystem work. Broad recursive globs can make each poll expensive. Benchmark with representative
+file counts, record sizes, and rotation rates before increasing concurrency or `max_log_size`.
+
+Retain source logs long enough to cover downstream outages and catch-up time. Enable `retry_on_failure` to apply
+backpressure when downstream components reject data. A finite `max_elapsed_time` discards a batch when retries expire;
+`0` retries indefinitely for retryable errors, but cannot prevent source files from being rotated or deleted while
+collection is stalled. Use persistent exporter queues where logs must survive a restart after leaving the receiver; see
+the [fault tolerant collection example](../../examples/fault-tolerant-logs-collection/README.md).
+
+### Persistent storage and restart
+
+This complete example stores checkpoints with the [File Storage
+extension](../../extension/storage/filestorage/README.md). It uses the debug exporter for local inspection; replace it
+with your production exporter and configure its delivery guarantees.
+
+```yaml
+extensions:
+  file_storage:
+    directory: /var/lib/otelcol/file_storage
+    create_directory: true
+
+receivers:
+  file_log:
+    include: [/var/log/myapp/*.log]
+    start_at: beginning
+    storage: file_storage
+    retry_on_failure:
+      enabled: true
+      max_elapsed_time: 0
+
+exporters:
+  debug: {}
+
+service:
+  extensions: [file_storage]
+  pipelines:
+    logs:
+      receivers: [file_log]
+      exporters: [debug]
+```
+
+The storage directory must be writable and must survive Collector or container replacement. Use a persistent volume or a
+persistent host directory, and monitor free space and checkpoint write errors. Keep the receiver ID, storage extension
+ID, and storage directory consistent across restarts so the receiver can find its checkpoints. Checkpoints record
+reading positions, not copies of log contents.
+
+Stop the Collector gracefully, for example with `SIGTERM` on Unix, and allow the process to exit before restarting it.
+Configure the service manager or Kubernetes termination grace period to allow shutdown to finish. The receiver stops
+polling, waits for readers to stop, closes files, and saves offsets. Forced termination can leave older checkpoints and
+cause records to be read again.
+
+On startup, restored offsets take precedence over `start_at`. When stored offsets are loaded, newly discovered files are
+read from the beginning. Without restored offsets, `start_at` determines the initial read position; files discovered
+after the initial poll are read from the beginning. Losing checkpoint storage can therefore replay existing files with
+`start_at: beginning`, or skip their existing contents with `start_at: end`. Persistence does not provide exactly-once
+delivery.
+
+## Compatibility
+
+The receiver reads files through the host operating system and does not connect to a versioned logging service or
+require a particular application version. Compatibility depends on the file format, encoding, filesystem access, and
+rotation behavior. Configure parsers for the format your application writes; changing that format may require changing
+operators. Supported encodings and compression formats are listed in [Configuration](#configuration).
+
+Use a Collector distribution that includes this receiver and any configured storage extension, operators, processors,
+and exporters. The receiver and its Stanza implementation are released together; this document describes the version in
+this checkout. Consult the documentation and release notes for your deployed version when upgrading, including feature
+gate changes and the storage extension's compatibility requirements.
+
+On Windows, file owner and permission attributes are unsupported. `acquire_fs_lock` is Unix-only and `file_cache_advise`
+is Linux-only. Move/create rotation on Windows can fail when an open file cannot be renamed. Validate rotation with the
+actual operating system and logging application.
+
+For network filesystems, verify that reads, modification times, and rotation are visible promptly; the receiver cannot
+compensate for filesystem caching or unavailable mounts.
+
+## Emitted logs
+
+The receiver emits logs, not application metrics or traces. By default, each newline-delimited record becomes a string
+body, with surrounding whitespace removed. Multiline, encoding, whitespace, and size settings can change this behavior.
+`encoding: nop` produces a byte body. The observed timestamp records when the entry was created. Timestamp, severity,
+trace ID, and span ID are populated only when configured operators extract or set them.
+
+By default, `log.file.name` is a log record attribute. Other file attributes are opt-in through the `include_file_*`
+settings in the configuration table. The receiver does not add resource attributes by default. Use `resource`,
+operators, or downstream processors to set resource attributes such as `service.name`. Configured `attributes` and
+parsed fields are log record attributes unless explicitly moved to the resource. Header attributes are added to each
+record from that file.
+
+With the default `pkg.stanza.addDefaultScopeName` feature gate, entries without an operator-assigned scope use
+`github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver` as the instrumentation scope name
+and the Collector build version as its version.
+
+## Known limitations
+
+- Files with identical initial `fingerprint_size` bytes can be treated as the same file. Increase the fingerprint size
+  when files share a long common header. Changing it can cause re-ingestion.
+- There is no general ordering guarantee across files. File selection order is not record order.
+- Files created and removed between polls can be missed. When rotation moves files outside the include patterns and
+  concurrency limits require closing their handles, unread records can be lost. Keep rotated files within the watched
+  patterns and retain them long enough to be consumed.
+- Copy/truncate can lose records written between copying and truncating, or records in a backup outside the watched
+  patterns. `on_truncate` cannot recover content that is no longer accessible.
+- A partial or multiline record can be emitted after `force_flush_period` without another line arriving. Oversized
+  records are split or truncated according to `max_log_size_behavior`.
+- `delete_after_read` deletes source files after reading, not after confirmation that the backend has durably stored the
+  logs. Use it only when this loss of the source copy is acceptable.
+- Avoid collecting the Collector's own exported debug logs: this can create a feedback loop. Narrow `include` patterns
+  or use `exclude` to keep those files out of the pipeline.
+
+See the [file consumer design](../../pkg/stanza/fileconsumer/design.md) for details of fingerprinting, rotation, and
+checkpoint tracking.
+
 ## Troubleshooting
 
 ### Tracking symlinked files
@@ -341,10 +516,34 @@ to set the value of the `poll_interval` setting to something lower than the syml
 ### Telemetry metrics
 Enabling [Collector metrics](https://opentelemetry.io/docs/collector/internal-telemetry/#configure-internal-metrics)
 will also provide telemetry metrics for the state of the receiver's file consumption.
-Specifically, the `otelcol_fileconsumer_open_files` and `otelcol_fileconsumer_reading_files` metrics
-are provided.
+The receiver provides these file-consumption instruments in addition to standard receiver telemetry:
+
+| Instrument | Type | Unit | Description |
+| --- | --- | --- | --- |
+| `otelcol_fileconsumer_open_files` | Non-monotonic sum (UpDownCounter) | `1` | Number of open files, including handles retained for rotation tracking. |
+| `otelcol_fileconsumer_reading_files` | Non-monotonic sum (UpDownCounter) | `1` | Number of open files currently being read. This can return to zero between polls. |
+
+These instruments have no file-specific metric attributes. Collector internal telemetry identifies the component through
+its telemetry context; the exported names and labels depend on the configured internal telemetry exporter. Both
+instruments have development stability and are not an ingestion lag or delivery guarantee. Also monitor Collector logs
+for file access, parser, and checkpoint errors, and standard receiver/exporter telemetry for downstream failures.
 
 ## Feature Gates
+
+Beta gates listed below are enabled by default; alpha gates are disabled by default. Use the Collector's
+`--feature-gates` flag to enable a gate by ID or disable it with a leading `-`, for example
+`--feature-gates=filelog.requireExplicitTopN,-filelog.allowFileDeletion`.
+
+File deletion must be enabled to use `delete_after_read`, header parsing to use `header`, and modification-time sorting
+to use `sort_type: mtime`. Enable `filelog.requireExplicitTopN` to reject an omitted file selection limit instead of
+silently selecting one file. On Windows, disable `filelog.windows.caseInsensitive` if your deployment requires
+case-sensitive glob matching.
+
+The receiver also uses [shared Stanza feature gates](../../pkg/stanza/documentation.md#feature-gates). In particular,
+`pkg.stanza.addDefaultScopeName` controls the default instrumentation scope, and `stanza.synchronousLogEmitter` makes
+emission synchronous to avoid the asynchronous emitter's in-memory buffering window on abrupt shutdown. Consider
+enabling the latter when durability is more important than its potential performance cost; see the [Stanza
+explanation](../../pkg/stanza/README.md#feature-gates). Neither gate guarantees backend delivery.
 
 ### List
 
@@ -354,7 +553,7 @@ This component has the following feature gates:
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
 | `filelog.allowFileDeletion` | beta | When enabled, allows usage of the `delete_after_read` setting. | v0.70.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314) |
 | `filelog.allowHeaderMetadataParsing` | beta | When enabled, allows usage of the `header` setting. | v0.73.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198) |
-| `filelog.mtimeSortType` | beta | When enabled, allows usage of `ordering_criteria.mode` = `mtime`. | v0.89.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812) |
+| `filelog.mtimeSortType` | beta | When enabled, allows usage of `ordering_criteria.sort_by[].sort_type` = `mtime`. | v0.89.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812) |
 | `filelog.requireExplicitTopN` | alpha | When enabled, requires `ordering_criteria.top_n` to be set explicitly when `ordering_criteria.sort_by` is configured. When disabled, an unset `top_n` falls back to the legacy default of 1. | v0.159.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47444) |
 | `filelog.windows.caseInsensitive` | beta | On Windows, make matching patterns in include/exclude case insensitive. | v0.142.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/43777) |
 
