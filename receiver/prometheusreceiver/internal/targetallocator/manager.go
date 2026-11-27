@@ -276,7 +276,7 @@ func instantiateShard(body []byte, lookup func(string) (string, bool)) []byte {
 func getScrapeConfigHash(jobToScrapeConfig map[string]*promconfig.ScrapeConfig) (uint64, error) {
 	var err error
 	hash := fnv.New64()
-	yamlEncoder := yaml.NewEncoder(hash)
+	yamlEncoder := yaml.NewEncoder(hash, sharedpromconfig.UnredactedYAMLOptions()...)
 
 	jobKeys := make([]string, 0, len(jobToScrapeConfig))
 	for jobName := range jobToScrapeConfig {

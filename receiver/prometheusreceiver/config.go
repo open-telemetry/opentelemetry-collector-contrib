@@ -4,7 +4,6 @@
 package prometheusreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -24,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/apiserver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/sharedpromconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/targetallocator"
 )
 
@@ -186,20 +186,7 @@ func copyStaticConfig(dst *PromConfig, src any) {
 }
 
 func reloadPromConfig(dst *PromConfig, src any) error {
-	yamlOut, err := yaml.MarshalWithOptions(
-		src,
-		yaml.CustomMarshaler(func(s commonconfig.Secret) ([]byte, error) {
-			return json.Marshal(string(s))
-		}),
-		// URL.MarshalYAML redacts the password, so emit the full URL instead.
-		yaml.CustomMarshaler(marshalUnredactedURL),
-		yaml.CustomMarshaler(func(u *commonconfig.URL) ([]byte, error) {
-			if u == nil {
-				return []byte("null"), nil
-			}
-			return marshalUnredactedURL(*u)
-		}),
-	)
+	yamlOut, err := yaml.MarshalWithOptions(src, sharedpromconfig.UnredactedYAMLOptions()...)
 	if err != nil {
 		return fmt.Errorf("prometheus receiver: failed to marshal config to yaml: %w", err)
 	}
@@ -211,13 +198,6 @@ func reloadPromConfig(dst *PromConfig, src any) error {
 	copyStaticConfig((*PromConfig)(newCfg), src)
 	*dst = PromConfig(*newCfg)
 	return nil
-}
-
-func marshalUnredactedURL(u commonconfig.URL) ([]byte, error) {
-	if u.URL == nil {
-		return []byte("null"), nil
-	}
-	return json.Marshal(u.String())
 }
 
 func validateHTTPClientConfig(cfg *commonconfig.HTTPClientConfig) error {
