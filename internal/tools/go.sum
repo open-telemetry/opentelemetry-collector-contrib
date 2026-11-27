@@ -696,8 +696,8 @@ go.opentelemetry.io/collector/receiver/receivertest v0.166.0 h1:Tcy6jIOfy7J8Nf/C
 go.opentelemetry.io/collector/receiver/receivertest v0.166.0/go.mod h1:yLnjuCrsXOLytJNHdUN5FBlumgsFPdANMEIDAocIrRk=
 go.opentelemetry.io/collector/receiver/xreceiver v0.166.0 h1:QOn2Rg0xlMqw1kKdnENAEsU37fOALf94og43fN6bXms=
 go.opentelemetry.io/collector/receiver/xreceiver v0.166.0/go.mod h1:QN8hfj9R5+JeGChV96VnLBXpnCfhgP7+4+8K07ZAwOY=
-go.opentelemetry.io/collector/strmatch v0.0.0-20261126142948-f0f78f7b395a h1:pfFud/bFNpjOoxJik/XUpd47S+QBAdHJZqfUdTkV4Oc=
-go.opentelemetry.io/collector/strmatch v0.0.0-20261126142948-f0f78f7b395a/go.mod h1:Fnarkpn8zZQwdr/HBW4NRdw4MEnFOjdRQhzeJXbS4Js=
+go.opentelemetry.io/collector/strmatch v0.0.0-20261126161120-4c6c46bf6bc6 h1:DjQZPnnnuuByCXzSzcsxKe13QYc/ETxtHR9WvnoUGik=
+go.opentelemetry.io/collector/strmatch v0.0.0-20261126161120-4c6c46bf6bc6/go.mod h1:Fnarkpn8zZQwdr/HBW4NRdw4MEnFOjdRQhzeJXbS4Js=
 go.opentelemetry.io/otel v1.47.0 h1:j7ALJ/zgkS7Z6aeJW09p8VC9804bC+PpeTfCD4XPnOM=
 go.opentelemetry.io/otel v1.47.0/go.mod h1:8wS9O2qfXrYrzp6hIF/HOYJJf/wIhFPhR2xLuP+iXQU=
 go.opentelemetry.io/otel/log v1.47.0 h1:cOTS1CcLbSQeZKanGJ+0JpF/+t4PELi3O3bbl2lqCcI=

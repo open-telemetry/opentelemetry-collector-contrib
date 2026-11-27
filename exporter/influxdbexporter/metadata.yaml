@@ -11,7 +11,11 @@ status:
     emeritus: [jacobmarble]
 
 sending_queue:
-  support: default
+  support: has_overrides
+  overrides:
+    enabled: true
+    batch:
+      enabled: true
 
 tests:
   expect_consumer_error: true

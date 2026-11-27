@@ -79,12 +79,11 @@ func TestLoadConfig(t *testing.T) {
 				CumulativeNormalization: false,
 			},
 		},
-		QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
-			queue := exporterhelper.NewDefaultQueueConfig()
-			queue.NumConsumers = 2
-			queue.QueueSize = 10
-			queue.Sizer = exporterhelper.RequestSizerTypeRequests
+		QueueSettings: func() configoptional.Optional[exporterhelper.QueueBatchConfig] {
+			queue := metadata.NewDefaultSendingQueueConfig()
+			queue.Get().NumConsumers = 2
+			queue.Get().QueueSize = 10
 			return queue
-		}()),
+		}(),
 	}, r1)
 }

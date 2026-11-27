@@ -71,8 +71,8 @@ go.opentelemetry.io/collector/scraper v0.166.1-0.20261126161120-4c6c46bf6bc6 h1:
 go.opentelemetry.io/collector/scraper v0.166.1-0.20261126161120-4c6c46bf6bc6/go.mod h1:jjynYtFBW+foPz6mJ7dN+mbudGjv8wQKxARcjS8pBqk=
 go.opentelemetry.io/collector/scraper/scrapertest v0.166.1-0.20261126161120-4c6c46bf6bc6 h1:RUz0NR0RQ2TbVg+itBkCSkLACMBepAa9gG7+P0HrGVc=
 go.opentelemetry.io/collector/scraper/scrapertest v0.166.1-0.20261126161120-4c6c46bf6bc6/go.mod h1:bfa687coATbpZYaMnaE0dqi7/0V2DTQ9Gik9Oin3bmg=
-go.opentelemetry.io/collector/strmatch v0.0.0-20261126142948-f0f78f7b395a h1:pfFud/bFNpjOoxJik/XUpd47S+QBAdHJZqfUdTkV4Oc=
-go.opentelemetry.io/collector/strmatch v0.0.0-20261126142948-f0f78f7b395a/go.mod h1:Fnarkpn8zZQwdr/HBW4NRdw4MEnFOjdRQhzeJXbS4Js=
+go.opentelemetry.io/collector/strmatch v0.0.0-20261126161120-4c6c46bf6bc6 h1:DjQZPnnnuuByCXzSzcsxKe13QYc/ETxtHR9WvnoUGik=
+go.opentelemetry.io/collector/strmatch v0.0.0-20261126161120-4c6c46bf6bc6/go.mod h1:Fnarkpn8zZQwdr/HBW4NRdw4MEnFOjdRQhzeJXbS4Js=
 go.opentelemetry.io/otel v1.47.0 h1:j7ALJ/zgkS7Z6aeJW09p8VC9804bC+PpeTfCD4XPnOM=
 go.opentelemetry.io/otel v1.47.0/go.mod h1:8wS9O2qfXrYrzp6hIF/HOYJJf/wIhFPhR2xLuP+iXQU=
 go.opentelemetry.io/otel/log v1.47.0 h1:cOTS1CcLbSQeZKanGJ+0JpF/+t4PELi3O3bbl2lqCcI=

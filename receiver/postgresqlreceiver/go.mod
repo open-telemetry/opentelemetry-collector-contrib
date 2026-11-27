@@ -34,7 +34,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/scraper v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.166.1-0.20261126161120-4c6c46bf6bc6
-	go.opentelemetry.io/collector/strmatch v0.0.0-20261126142948-f0f78f7b395a
+	go.opentelemetry.io/collector/strmatch v0.0.0-20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/otel v1.47.0
 	go.opentelemetry.io/otel/trace v1.47.0
 	go.uber.org/goleak v1.3.0

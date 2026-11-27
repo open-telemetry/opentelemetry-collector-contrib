@@ -12,7 +12,6 @@ import (
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -37,7 +36,7 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: defaultTimeout},
-		QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		QueueSettings:   metadata.NewDefaultSendingQueueConfig(),
 		GMPConfig: GMPConfig{
 			MetricConfig: MetricConfig{
 				Config:                  googlemanagedprometheus.DefaultConfig(),

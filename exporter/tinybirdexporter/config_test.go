@@ -17,6 +17,8 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tinybirdexporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -41,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 					return cfg
 				}(),
 				RetryConfig: configretry.NewDefaultBackOffConfig(),
-				QueueConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				QueueConfig: metadata.NewDefaultSendingQueueConfig(),
 				Token:       "test-token",
 				Metrics: metricSignalConfigs{
 					MetricsGauge:                SignalConfig{Datasource: "gauge"},
