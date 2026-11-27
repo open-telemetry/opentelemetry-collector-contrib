@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: exporter/awsemf
+note: Ensure ForceFlush is called on all pushers even if an earlier pusher errors
+issues: [53235]
+subtext: Collect errors from all pushers using errors.Join instead of returning early on the first pusher error.
+change_logs: [user]

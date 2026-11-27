@@ -137,16 +137,19 @@ func (emf *emfExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics)
 	}
 
 	if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
+		var errs []error
 		for _, emfPusher := range emf.listPushers() {
 			returnError := emfPusher.ForceFlush(ctx)
 			if returnError != nil {
-				// TODO now we only have one logPusher, so it's ok to return after first error occurred
 				err := wrapErrorIfBadRequest(returnError)
 				if err != nil {
 					emf.config.logger.Error("Error force flushing logs. Skipping to next logPusher.", zap.Error(err))
+					errs = append(errs, err)
 				}
-				return err
 			}
+		}
+		if len(errs) > 0 {
+			return errors.Join(errs...)
 		}
 	}
 
