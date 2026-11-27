@@ -4,6 +4,8 @@
 package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 
 import (
+	"strings"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.uber.org/zap"
 )
@@ -108,10 +110,11 @@ func extractStorageUsage(stats *DiskStats) (uint64, uint64) {
 	}
 
 	for _, blockStat := range stats.IoServiceBytesRecursives {
-		switch op := blockStat.Op; op {
-		case "Read":
+		// cgroup v1 hosts report the op as "Read"/"Write", cgroup v2 hosts (for example Amazon Linux 2023) as "read"/"write".
+		switch {
+		case strings.EqualFold(blockStat.Op, "Read"):
 			readBytes += aws.ToUint64(blockStat.Value)
-		case "Write":
+		case strings.EqualFold(blockStat.Op, "Write"):
 			writeBytes += aws.ToUint64(blockStat.Value)
 
 		default:

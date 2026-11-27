@@ -391,26 +391,36 @@ func TestAggregateTaskMetrics(t *testing.T) {
 func TestExtractStorageUsage(t *testing.T) {
 	v := uint64(100)
 	v2 := uint64(200)
-	disk := &DiskStats{
-		IoServiceBytesRecursives: []IoServiceBytesRecursive{
-			{Op: "Read", Value: &v},
-			{Op: "Write", Value: &v},
-			{Op: "Total", Value: &v},
+	diskStats := func(read, write, total string) *DiskStats {
+		return &DiskStats{
+			IoServiceBytesRecursives: []IoServiceBytesRecursive{
+				{Op: read, Value: &v},
+				{Op: write, Value: &v},
+				{Op: total, Value: &v},
 
-			{Op: "Read", Value: &v2},
-			{Op: "Write", Value: &v2},
-			{Op: "Total", Value: &v2},
-		},
+				{Op: read, Value: &v2},
+				{Op: write, Value: &v2},
+				{Op: total, Value: &v2},
+			},
+		}
 	}
-	read, write := extractStorageUsage(disk)
-
-	require.Equal(t, v+v2, read)
-	require.Equal(t, v+v2, write)
-
-	read, write = extractStorageUsage(nil)
-	v = uint64(0)
-	require.Equal(t, v, read)
-	require.Equal(t, v, write)
+	tests := []struct {
+		name      string
+		stats     *DiskStats
+		wantRead  uint64
+		wantWrite uint64
+	}{
+		{name: "cgroup v1 ops", stats: diskStats("Read", "Write", "Total"), wantRead: v + v2, wantWrite: v + v2},
+		{name: "cgroup v2 lowercase ops", stats: diskStats("read", "write", "total"), wantRead: v + v2, wantWrite: v + v2},
+		{name: "nil stats", stats: nil, wantRead: 0, wantWrite: 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			read, write := extractStorageUsage(tt.stats)
+			require.Equal(t, tt.wantRead, read)
+			require.Equal(t, tt.wantWrite, write)
+		})
+	}
 }
 
 func TestExtractStorageUsageDereferenceCheck(t *testing.T) {
