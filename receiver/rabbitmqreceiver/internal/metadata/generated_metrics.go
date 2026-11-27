@@ -4927,11 +4927,35 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.RabbitmqNodeName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["rabbitmq.node.name"] = strmatch.New(mbc.ResourceAttributes.RabbitmqNodeName.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.RabbitmqQueueAutoDelete.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["rabbitmq.queue.auto_delete"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqQueueAutoDelete.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.RabbitmqQueueAutoDelete.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["rabbitmq.queue.auto_delete"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqQueueAutoDelete.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.RabbitmqQueueDurable.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["rabbitmq.queue.durable"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqQueueDurable.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.RabbitmqQueueDurable.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["rabbitmq.queue.durable"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqQueueDurable.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.RabbitmqQueueName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["rabbitmq.queue.name"] = strmatch.New(mbc.ResourceAttributes.RabbitmqQueueName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.RabbitmqQueueName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["rabbitmq.queue.name"] = strmatch.New(mbc.ResourceAttributes.RabbitmqQueueName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.RabbitmqQueuePolicyExpires.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["rabbitmq.queue.policy.expires"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqQueuePolicyExpires.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.RabbitmqQueuePolicyExpires.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["rabbitmq.queue.policy.expires"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqQueuePolicyExpires.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.RabbitmqQueuePolicyName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["rabbitmq.queue.policy.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqQueuePolicyName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.RabbitmqQueuePolicyName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["rabbitmq.queue.policy.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqQueuePolicyName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.RabbitmqVhostName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["rabbitmq.vhost.name"] = strmatch.New(mbc.ResourceAttributes.RabbitmqVhostName.MetricsInclude)

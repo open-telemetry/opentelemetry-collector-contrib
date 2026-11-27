@@ -40,20 +40,30 @@ var messageStatMetrics = []string{
 
 // rabbitmqScraper handles scraping of RabbitMQ metrics
 type rabbitmqScraper struct {
-	client   client
-	logger   *zap.Logger
-	cfg      *Config
-	settings component.TelemetrySettings
-	mb       *metadata.MetricsBuilder
+	client        client
+	logger        *zap.Logger
+	cfg           *Config
+	settings      component.TelemetrySettings
+	mb            *metadata.MetricsBuilder
+	argumentRules []resolvedExtractRule
 }
 
 // newScraper creates a new scraper
 func newScraper(logger *zap.Logger, cfg *Config, settings receiver.Settings) *rabbitmqScraper {
+	// Config.Validate has already confirmed every rule's key_regex compiles, so an
+	// error here would indicate a bug, not bad user input; fall back to no extraction
+	// rather than fail scraper construction.
+	argumentRules, err := resolveExtractRules(cfg.Queues.Extract.Arguments)
+	if err != nil {
+		logger.Warn("failed to resolve queue argument extraction rules", zap.Error(err))
+	}
+
 	return &rabbitmqScraper{
-		logger:   logger,
-		cfg:      cfg,
-		settings: settings.TelemetrySettings,
-		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
+		logger:        logger,
+		cfg:           cfg,
+		settings:      settings.TelemetrySettings,
+		mb:            metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
+		argumentRules: argumentRules,
 	}
 }
 
@@ -186,8 +196,18 @@ func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pcommon.Timestam
 	rb.SetRabbitmqQueueName(queue.Name)
 	rb.SetRabbitmqNodeName(queue.Node)
 	rb.SetRabbitmqVhostName(queue.VHost)
+	rb.SetRabbitmqQueueDurable(queue.Durable)
+	rb.SetRabbitmqQueueAutoDelete(queue.AutoDelete)
+	if queue.Policy != "" {
+		rb.SetRabbitmqQueuePolicyName(queue.Policy)
+	}
+	if expires, ok := convertValToInt64(queue.EffectivePolicyDefinition["expires"]); ok {
+		rb.SetRabbitmqQueuePolicyExpires(expires)
+	}
 	setClusterName(rb, clusterName)
-	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	resource := rb.Emit()
+	applyArgumentExtraction(r.argumentRules, queue.Arguments, resource)
+	r.mb.EmitForResource(metadata.WithResource(resource))
 }
 
 // collectNode collects metrics for a specific RabbitMQ node
