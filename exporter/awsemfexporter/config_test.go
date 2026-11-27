@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,6 +40,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
+				Timeout: new(15 * time.Second),
 				AWSSessionSettings: awsutil.AWSSessionSettings{
 					NumberOfWorkers:       8,
 					Endpoint:              "",
@@ -60,6 +62,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "resource_attr_to_label"),
 			expected: &Config{
+				Timeout: new(5 * time.Second),
 				AWSSessionSettings: awsutil.AWSSessionSettings{
 					NumberOfWorkers:       8,
 					Endpoint:              "",
@@ -83,6 +86,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "metric_descriptors"),
 			expected: &Config{
+				Timeout: new(5 * time.Second),
 				AWSSessionSettings: awsutil.AWSSessionSettings{
 					NumberOfWorkers:       8,
 					Endpoint:              "",
@@ -119,6 +123,21 @@ func TestLoadConfig(t *testing.T) {
 
 			assert.NoError(t, confmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestTimeoutConfigValidate(t *testing.T) {
+	for _, timeout := range []string{"0s", "-1s"} {
+		t.Run(timeout, func(t *testing.T) {
+			cfg := NewFactory().CreateDefaultConfig()
+			require.NoError(t, confmap.NewFromStringMap(map[string]any{"timeout": timeout}).Unmarshal(cfg))
+			err := confmap.Validate(cfg)
+			if timeout == "-1s" {
+				require.ErrorContains(t, err, "timeout value must be greater than or equal to 0")
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }

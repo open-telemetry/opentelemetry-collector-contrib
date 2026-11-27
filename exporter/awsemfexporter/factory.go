@@ -34,6 +34,7 @@ func createDefaultConfig() component.Config {
 		defaultDimensionRollupOption = "ZeroAndSingleDimensionRollup"
 	}
 	return &Config{
+		Timeout:                         new(exporterhelper.NewDefaultTimeoutConfig().Timeout),
 		AWSSessionSettings:              awsutil.CreateDefaultSessionConfig(),
 		LogGroupName:                    "",
 		LogStreamName:                   "",
@@ -55,11 +56,16 @@ func createMetricsExporter(ctx context.Context, params exporter.Settings, config
 		return nil, err
 	}
 
+	timeoutConfig := exporterhelper.NewDefaultTimeoutConfig()
+	if expCfg.Timeout != nil {
+		timeoutConfig.Timeout = *expCfg.Timeout
+	}
 	exporter, err := exporterhelper.NewMetrics(
 		ctx,
 		params,
 		config,
 		emfExp.pushMetricsData,
+		exporterhelper.WithTimeout(timeoutConfig),
 		exporterhelper.WithShutdown(emfExp.shutdown),
 	)
 	if err != nil {
