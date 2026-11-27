@@ -123,14 +123,17 @@ func mapJournalEntryAttributes(e *entry.Entry, body map[string]any) {
 		case "MESSAGE":
 			e.Body = v
 		case "PRIORITY":
-			p, ok := v.(string)
-			if !ok {
-				break
+			if p, ok := v.(string); ok {
+				if sev, ok := priorityToSeverity[p]; ok {
+					e.Severity = sev
+					e.SeverityText = priorityToSeverityText[p]
+					continue
+				}
 			}
-			if sev, ok := priorityToSeverity[p]; ok {
-				e.Severity = sev
-				e.SeverityText = priorityToSeverityText[p]
+			if e.Attributes == nil {
+				e.Attributes = make(map[string]any)
 			}
+			e.Attributes["journald."+k] = v
 		default:
 			if attrKey, ok := attributeMapping[k]; ok {
 				if cv, ok := convertFieldValue(attrKey, v); ok {

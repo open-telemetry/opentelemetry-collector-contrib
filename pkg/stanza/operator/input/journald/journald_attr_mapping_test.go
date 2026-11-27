@@ -178,13 +178,29 @@ func TestMapJournalEntryAttributes_UnknownPriority(t *testing.T) {
 	mapJournalEntryAttributes(e, map[string]any{"PRIORITY": "8"})
 	assert.Equal(t, entry.Default, e.Severity)
 	assert.Empty(t, e.SeverityText)
+	assert.Equal(t, "8", e.Attributes["journald.PRIORITY"])
 }
 
 func TestMapJournalEntryAttributes_NonStringPriority(t *testing.T) {
 	e := entry.New()
-	// PRIORITY as a non-string (e.g. JSON number decoded as float64) should be ignored
+	// PRIORITY as a non-string (e.g. JSON number decoded as float64) does not set the severity
 	mapJournalEntryAttributes(e, map[string]any{"PRIORITY": float64(6)})
 	assert.Equal(t, entry.Default, e.Severity)
+	assert.Equal(t, float64(6), e.Attributes["journald.PRIORITY"])
+}
+
+func TestMapJournalEntryAttributes_RepeatedPriorityKeepsOriginal(t *testing.T) {
+	e := entry.New()
+	mapJournalEntryAttributes(e, map[string]any{"PRIORITY": []any{"3", "6"}})
+	assert.Equal(t, entry.Default, e.Severity)
+	assert.Equal(t, []any{"3", "6"}, e.Attributes["journald.PRIORITY"])
+}
+
+func TestMapJournalEntryAttributes_KnownPriorityNotInAttributes(t *testing.T) {
+	e := entry.New()
+	mapJournalEntryAttributes(e, map[string]any{"PRIORITY": "3"})
+	assert.Equal(t, entry.Error, e.Severity)
+	assert.NotContains(t, e.Attributes, "journald.PRIORITY")
 }
 
 func TestMapJournalEntryAttributes_KnownLogAttributes(t *testing.T) {
