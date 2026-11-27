@@ -163,8 +163,8 @@ func newLZ4CompressReaderPool(_ configcompression.CompressionParams) Reader {
 	})
 }
 
-// zstdInput lets a lease detach its source even if the decoder retains its
-// stream frame after resetting.
+// zstdInput detaches its source by switching to an empty reader, even if the
+// decoder retains its stream frame after resetting.
 type zstdInput struct {
 	io.Reader
 }
@@ -180,7 +180,7 @@ func newZSTDCompressReaderPool(_ configcompression.CompressionParams) Reader {
 					return err
 				}
 				if input != nil {
-					input.Reader = nil
+					input.Reader = bytes.NewReader(nil)
 					input = nil
 				}
 				return nil
