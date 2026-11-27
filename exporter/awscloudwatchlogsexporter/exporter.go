@@ -235,9 +235,14 @@ func logToCWLog(resourceAttrs map[string]any, scope pcommon.InstrumentationScope
 		}
 	}
 
+	timestamp := log.Timestamp()
+	if timestamp == 0 {
+		timestamp = log.ObservedTimestamp()
+	}
+
 	return &cwlogs.Event{
 		InputLogEvent: types.InputLogEvent{
-			Timestamp: aws.Int64(int64(log.Timestamp()) / int64(time.Millisecond)), // in milliseconds
+			Timestamp: aws.Int64(int64(timestamp) / int64(time.Millisecond)), // in milliseconds
 			Message:   aws.String(string(bodyJSON)),
 		},
 		StreamKey: cwlogs.StreamKey{
