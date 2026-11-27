@@ -18,6 +18,10 @@ func (scale Scale) Idx(v float64) int {
 
 	// Special case for power-of-two values.
 	if frac, exp := math.Frexp(v); frac == 0.5 {
+		if scale <= 0 {
+			// exp-2 is the index at scale 0. negative scales merge 2^-scale of those.
+			return (exp - 2) >> -scale
+		}
 		return ((exp - 1) << scale) - 1
 	}
 
@@ -34,6 +38,14 @@ func (scale Scale) Idx(v float64) int {
 func (scale Scale) Bounds(index int) (minVal, maxVal float64) {
 	// from: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#all-scales-use-the-logarithm-function
 	lower := func(index int) float64 {
+		// a boundary that is a power of two is computed exactly, as Exp may
+		// round it. at scale <= 0, every boundary is one
+		switch {
+		case scale <= 0:
+			return math.Ldexp(1, index<<-scale)
+		case index%(1<<scale) == 0:
+			return math.Ldexp(1, index>>scale)
+		}
 		inverseFactor := math.Ldexp(math.Ln2, int(-scale))
 		return math.Exp(float64(index) * inverseFactor)
 	}

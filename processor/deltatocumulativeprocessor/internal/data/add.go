@@ -111,6 +111,11 @@ func (Adder) Exponential(state, dp pmetric.ExponentialHistogramDataPoint) error 
 	if state.ZeroThreshold() != dp.ZeroThreshold() {
 		hi, lo := expo.HiLo(state, dp, H.ZeroThreshold)
 		expo.WidenZero(lo, hi.ZeroThreshold())
+		// lo was widened to the upper boundary of a bucket, which may be above
+		// hi's threshold. widen hi too, so it does not keep that bucket.
+		if lo.ZeroThreshold() > hi.ZeroThreshold() {
+			expo.WidenZero(hi, lo.ZeroThreshold())
+		}
 	}
 
 	expo.Merge(state.Positive(), dp.Positive())
