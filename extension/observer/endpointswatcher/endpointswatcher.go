@@ -32,6 +32,7 @@ type EndpointsWatcher struct {
 	existingEndpoints sync.Map
 	stop              chan struct{}
 	once              *sync.Once
+	stopOnce          *sync.Once
 	logger            *zap.Logger
 }
 
@@ -43,6 +44,7 @@ func New(endpointsLister EndpointsLister, refreshInterval time.Duration, logger 
 		toNotify:          sync.Map{},
 		stop:              make(chan struct{}),
 		once:              &sync.Once{},
+		stopOnce:          &sync.Once{},
 		logger:            logger,
 	}
 }
@@ -170,8 +172,12 @@ func (ew *EndpointsWatcher) updateEndpoints(notify observer.Notify, endpoints []
 
 // StopListAndWatch polling the ListEndpoints.
 func (ew *EndpointsWatcher) StopListAndWatch() {
-	if ew.stop != nil {
-		close(ew.stop)
+	if ew.stopOnce != nil {
+		ew.stopOnce.Do(func() {
+			if ew.stop != nil {
+				close(ew.stop)
+			}
+		})
 	}
 }
 
