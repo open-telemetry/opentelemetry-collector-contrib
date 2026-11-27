@@ -293,6 +293,7 @@ func Test_receive_traces(t *testing.T) {
 					consumer: tracesConsumer,
 				},
 			}
+			require.NoError(t, r.initDecompression())
 			var input io.Reader
 			if tt.args.data != nil {
 				input = bytes.NewReader(tt.args.data)
@@ -416,6 +417,7 @@ func Test_receive_configuredDecompression(t *testing.T) {
 				},
 				decompression: tt.decompression,
 			}
+			require.NoError(t, r.initDecompression())
 			err = r.receive(t.Context(), tt.key, bytes.NewReader(tt.data))
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -428,7 +430,8 @@ func Test_receive_configuredDecompression(t *testing.T) {
 }
 
 func Test_decompress_unsupported(t *testing.T) {
-	_, err := decompressionLeaser(configcompression.TypeSnappy)
+	r := &awss3Receiver{decompression: configcompression.TypeSnappy}
+	err := r.receive(t.Context(), "object", bytes.NewReader(nil))
 	assert.ErrorContains(t, err, `unsupported decompression type "snappy"`)
 }
 
@@ -606,6 +609,7 @@ func Test_receive_metrics(t *testing.T) {
 					consumer: tracesConsumer,
 				},
 			}
+			require.NoError(t, r.initDecompression())
 			var input io.Reader
 			if tt.args.data != nil {
 				input = bytes.NewReader(tt.args.data)
@@ -794,6 +798,7 @@ func Test_receive_logs(t *testing.T) {
 					consumer: tracesConsumer,
 				},
 			}
+			require.NoError(t, r.initDecompression())
 			var input io.Reader
 			if tt.args.data != nil {
 				input = bytes.NewReader(tt.args.data)

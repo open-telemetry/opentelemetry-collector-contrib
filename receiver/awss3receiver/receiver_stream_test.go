@@ -41,7 +41,7 @@ func newStreamTestReceiver(t *testing.T, processor receiverProcessor, ext compon
 		ReceiverCreateSettings: settings,
 	})
 	require.NoError(t, err)
-	return &awss3Receiver{
+	r := &awss3Receiver{
 		logger:        zap.NewNop(),
 		obsrecv:       obs,
 		dataProcessor: processor,
@@ -50,6 +50,8 @@ func newStreamTestReceiver(t *testing.T, processor receiverProcessor, ext compon
 			suffix:    ".txt",
 		}},
 	}
+	require.NoError(t, r.initDecompression())
+	return r
 }
 
 func newTextExtension(t *testing.T) extension.Extension {

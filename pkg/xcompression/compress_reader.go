@@ -26,31 +26,7 @@ type ResettableReader interface {
 	Reset(r io.Reader) error
 }
 
-type gzipCompressReader struct {
-	gzip.Reader
-	ready bool
-}
-
-var _ ResettableReader = (*gzipCompressReader)(nil)
-
-func (r *gzipCompressReader) Reset(src io.Reader) error {
-	if err := r.Reader.Reset(src); err != nil {
-		// A failed reset can retain the source and leave the decompressor uninitialized.
-		r.Reader = gzip.Reader{}
-		r.ready = false
-		return err
-	}
-	r.ready = true
-	return nil
-}
-
-func (r *gzipCompressReader) Close() error {
-	if !r.ready {
-		return nil
-	}
-	r.ready = false
-	return r.Reader.Close()
-}
+var _ ResettableReader = (*gzip.Reader)(nil)
 
 // Reader decompresses input data into a destination.
 type Reader interface {
@@ -106,8 +82,8 @@ func newCompressReaderPool[RR ResettableReader](supplier func() RR) *compressRea
 }
 
 func newGZIPCompressReaderPool(_ configcompression.CompressionParams) Reader {
-	return newCompressReaderPool(func() *gzipCompressReader {
-		return new(gzipCompressReader)
+	return newCompressReaderPool(func() *gzip.Reader {
+		return new(gzip.Reader)
 	})
 }
 
@@ -168,10 +144,6 @@ func newZSTDCompressReaderPool(_ configcompression.CompressionParams) Reader {
 		r, _ := zstd.NewReader(bytes.NewBuffer(nil))
 		return newReadAdapter(
 			r,
-			withReadAdapterClose(func(zr *zstd.Decoder) error {
-				// Release the input and stop decoding before returning the reader to the pool.
-				return zr.Reset(nil)
-			}),
 			withReadAdapterReset(func(zr *zstd.Decoder, r io.Reader) error {
 				return zr.Reset(r)
 			}),

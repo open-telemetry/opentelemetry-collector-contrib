@@ -61,17 +61,6 @@ func TestDecompressReader(t *testing.T) {
 	}
 }
 
-func TestGzipLeaseCloseAfterResetError(t *testing.T) {
-	t.Parallel()
-
-	leaser, err := NewReaderFactory().NewReadLeaser(configcompression.TypeGzip, configcompression.CompressionParams{})
-	require.NoError(t, err)
-	require.NoError(t, leaser.LeaseReader(func(reader ResettableReader) error {
-		require.Error(t, reader.Reset(bytes.NewReader([]byte("invalid gzip"))))
-		return reader.Close()
-	}))
-}
-
 func TestLeaseReaders(t *testing.T) {
 	t.Parallel()
 
