@@ -94,7 +94,7 @@ The total number of collections that have occurred.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| name | The names for the parallel scavenge and garbage first garbage collectors. | Str: ``PS_MarkSweep``, ``PS_Scavenge``, ``G1_Young_Generation``, ``G1_Old_Generation`` | Required | - |
+| name | The names of the JVM garbage collectors, as reported by Flink. | Str: ``PS_MarkSweep``, ``PS_Scavenge``, ``G1_Young_Generation``, ``G1_Old_Generation``, ``G1_Concurrent_GC``, ``Copy``, ``MarkSweepCompact``, ``ZGC_Cycles``, ``ZGC_Pauses``, ``ZGC_Minor_Cycles``, ``ZGC_Minor_Pauses``, ``ZGC_Major_Cycles``, ``ZGC_Major_Pauses``, ``Shenandoah_Cycles``, ``Shenandoah_Pauses`` | Required | - |
 
 ### flink.jvm.gc.collections.time
 
@@ -108,7 +108,7 @@ The total time spent performing garbage collection.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| name | The names for the parallel scavenge and garbage first garbage collectors. | Str: ``PS_MarkSweep``, ``PS_Scavenge``, ``G1_Young_Generation``, ``G1_Old_Generation`` | Required | - |
+| name | The names of the JVM garbage collectors, as reported by Flink. | Str: ``PS_MarkSweep``, ``PS_Scavenge``, ``G1_Young_Generation``, ``G1_Old_Generation``, ``G1_Concurrent_GC``, ``Copy``, ``MarkSweepCompact``, ``ZGC_Cycles``, ``ZGC_Pauses``, ``ZGC_Minor_Cycles``, ``ZGC_Minor_Pauses``, ``ZGC_Major_Cycles``, ``ZGC_Major_Pauses``, ``Shenandoah_Cycles``, ``Shenandoah_Pauses`` | Required | - |
 
 ### flink.jvm.memory.direct.total_capacity
 
