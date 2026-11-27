@@ -17,6 +17,7 @@ import (
 	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
+	stanzametadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp/internal/metadata"
@@ -140,13 +141,14 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	tcpInput := &Input{
-		InputOperator:   inputOperator,
-		address:         c.ListenAddress,
-		MaxLogSize:      int(c.MaxLogSize),
-		addAttributes:   c.AddAttributes,
-		OneLogPerPacket: c.OneLogPerPacket,
-		encoding:        enc,
-		splitFunc:       splitFunc,
+		InputOperator:              inputOperator,
+		address:                    c.ListenAddress,
+		MaxLogSize:                 int(c.MaxLogSize),
+		addAttributes:              c.AddAttributes,
+		useStableNetworkAttributes: stanzametadata.PkgStanzaTCPUseStableNetworkAttributesFeatureGate.IsEnabled(),
+		OneLogPerPacket:            c.OneLogPerPacket,
+		encoding:                   enc,
+		splitFunc:                  splitFunc,
 		backoff: backoff.Backoff{
 			Max: 3 * time.Second,
 		},
