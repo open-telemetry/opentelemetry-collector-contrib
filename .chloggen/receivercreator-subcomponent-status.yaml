@@ -1,0 +1,12 @@
+change_type: enhancement
+
+component: receiver/receiver_creator
+
+note: Report the status of dynamically started sub-receivers using the `otel.subcomponent.id` status event attribute, so they show up in status consumers like the healthcheckv2 extension.
+
+issues: [39053]
+
+subtext: |
+  Only StatusOK (on successful start) and StatusRecoverableError (on start failure) are reported. Stop events are intentionally not reported, since receiver_creator's sub-receivers share its own InstanceID, and StatusStopped is a terminal state with no valid transitions out.
+
+change_logs: [user]
