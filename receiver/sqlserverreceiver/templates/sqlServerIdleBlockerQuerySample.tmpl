@@ -43,7 +43,17 @@ SELECT TOP(@top)
   '' AS procedure_id,
   '' AS procedure_name
 FROM sys.dm_exec_sessions s
-LEFT JOIN sys.dm_exec_connections c ON s.session_id = c.session_id
+-- A session using MARS has more than one row in sys.dm_exec_connections, and this query has
+-- no request row to join on, so pick exactly one connection per session, preferring the one
+-- with a most_recent_sql_handle (the statement text is read from it), then the most recently active.
+OUTER APPLY (
+  SELECT TOP (1) conn.client_net_address, conn.client_tcp_port, conn.most_recent_sql_handle
+  FROM sys.dm_exec_connections conn
+  WHERE conn.session_id = s.session_id
+  ORDER BY CASE WHEN conn.most_recent_sql_handle IS NULL THEN 1 ELSE 0 END,
+    CASE WHEN conn.last_read > conn.last_write THEN conn.last_read ELSE conn.last_write END DESC,
+    CASE WHEN conn.net_transport = 'Session' THEN 1 ELSE 0 END
+) AS c
 OUTER APPLY sys.dm_exec_sql_text(c.most_recent_sql_handle) AS o
 WHERE s.session_id IN (%s);
 

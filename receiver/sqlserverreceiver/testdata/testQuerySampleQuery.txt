@@ -66,7 +66,9 @@
       END, '') AS procedure_name
 FROM sys.dm_exec_requests r
 INNER JOIN sys.dm_exec_sessions s ON r.session_id = s.session_id
-INNER JOIN sys.dm_exec_connections c ON s.session_id = c.session_id
+-- Join on the request's own connection_id: with MARS a session has several rows in
+-- sys.dm_exec_connections, and joining on session_id returns each request once per row.
+INNER JOIN sys.dm_exec_connections c ON c.connection_id = r.connection_id
 OUTER APPLY sys.dm_exec_sql_text(r.plan_handle) AS o
 OUTER APPLY sys.dm_exec_input_buffer(r.session_id, r.request_id) AS ib
 WHERE (o.TEXT IS NULL OR o.TEXT NOT LIKE N'/* otel-collector */%')
