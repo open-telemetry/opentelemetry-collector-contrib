@@ -1292,6 +1292,141 @@ func TestScrapeQuerySamplesBlockers(t *testing.T) {
 	})
 }
 
+func TestScrapeQuerySamplesLockWaitDetail(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.Password = "otel"
+	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+
+	// query_samples_lock_wait.txt encodes a session waiting on an exclusive
+	// record lock, with a statement that started 90061 seconds (25h 1m 1s)
+	// after the server booted.
+	bootTime := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	newScraper := func(t *testing.T, mc *mockClient) *mySQLScraper {
+		t.Helper()
+		scraper, err := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, nil, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		require.NoError(t, err)
+		scraper.sqlclient = mc
+		return scraper
+	}
+
+	t.Run("lock mode, type and object are reported for a waiting session", func(t *testing.T) {
+		scraper := newScraper(t, &mockClient{querySamplesFile: "query_samples_lock_wait", serverBootTime: bootTime})
+
+		result, err := scraper.scrapeQuerySampleFunc(t.Context())
+		require.NoError(t, err)
+		attrs := result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+
+		for key, want := range map[string]string{
+			"mysql.blocking.lock.mode":     "X,REC_NOT_GAP",
+			"mysql.blocking.lock.type":     "RECORD",
+			"mysql.blocking.object.schema": "adventureworks",
+			"mysql.blocking.object.name":   "t",
+		} {
+			val, ok := attrs.Get(key)
+			require.True(t, ok, "%s must be present", key)
+			assert.Equal(t, want, val.Str(), key)
+		}
+
+		waitVal, ok := attrs.Get("mysql.blocking.wait_duration")
+		require.True(t, ok, "mysql.blocking.wait_duration must be present")
+		assert.Equal(t, int64(12), waitVal.Int())
+	})
+
+	t.Run("start time is the statement timer resolved against the server boot time", func(t *testing.T) {
+		mc := &mockClient{querySamplesFile: "query_samples_lock_wait", serverBootTime: bootTime}
+		scraper := newScraper(t, mc)
+
+		result, err := scraper.scrapeQuerySampleFunc(t.Context())
+		require.NoError(t, err)
+		attrs := result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+
+		startVal, ok := attrs.Get("mysql.blocking.start_time")
+		require.True(t, ok, "mysql.blocking.start_time must be present")
+		assert.Equal(t, "2026-01-02T01:01:01Z", startVal.Str())
+		assert.Equal(t, 1, mc.serverBootTimeCallCount, "the boot time anchors the whole batch, so it is resolved once per scrape")
+	})
+
+	t.Run("start time is empty when the boot time could not be resolved", func(t *testing.T) {
+		mc := &mockClient{
+			querySamplesFile:  "query_samples_lock_wait",
+			serverBootTimeErr: errors.New("no SELECT on performance_schema.global_status"),
+		}
+		scraper := newScraper(t, mc)
+
+		result, err := scraper.scrapeQuerySampleFunc(t.Context())
+		require.NoError(t, err, "an unresolvable boot time must not fail the scrape")
+		attrs := result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+
+		startVal, ok := attrs.Get("mysql.blocking.start_time")
+		require.True(t, ok, "mysql.blocking.start_time must still be present")
+		assert.Empty(t, startVal.Str())
+
+		// The rest of the lock detail does not depend on the boot time.
+		modeVal, ok := attrs.Get("mysql.blocking.lock.mode")
+		require.True(t, ok)
+		assert.Equal(t, "X,REC_NOT_GAP", modeVal.Str())
+	})
+
+	t.Run("a session that is not waiting on a lock reports empty detail and no boot time lookup", func(t *testing.T) {
+		mc := &mockClient{querySamplesFile: "query_samples_blocked", serverBootTime: bootTime}
+		scraper := newScraper(t, mc)
+
+		result, err := scraper.scrapeQuerySampleFunc(t.Context())
+		require.NoError(t, err)
+		attrs := result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+
+		startVal, ok := attrs.Get("mysql.blocking.start_time")
+		require.True(t, ok, "mysql.blocking.start_time must be present")
+		assert.Empty(t, startVal.Str())
+		assert.Zero(t, mc.serverBootTimeCallCount, "no sample carries a lock wait, so the lookup is not worth a round trip")
+	})
+}
+
+func TestDeriveBlockingStartTime(t *testing.T) {
+	bootTime := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name                string
+		bootTime            time.Time
+		statementTimerStart uint64
+		want                string
+	}{
+		{
+			name:                "picosecond timer resolves to an absolute RFC3339 UTC timestamp",
+			bootTime:            bootTime,
+			statementTimerStart: 90_061_000_000_000_000,
+			want:                "2026-01-02T01:01:01Z",
+		},
+		{
+			name:                "sub-second remainder is truncated, not rounded up",
+			bootTime:            bootTime,
+			statementTimerStart: 1_999_000_000_000,
+			want:                "2026-01-01T00:00:01Z",
+		},
+		{
+			name:                "not waiting on a lock",
+			bootTime:            bootTime,
+			statementTimerStart: 0,
+			want:                "",
+		},
+		{
+			name:                "boot time unresolved",
+			bootTime:            time.Time{},
+			statementTimerStart: 90_061_000_000_000_000,
+			want:                "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, deriveBlockingStartTime(tt.bootTime, tt.statementTimerStart))
+		})
+	}
+}
+
 func TestScrapeTopQueryInterval(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Username = "otel"
@@ -1439,6 +1574,12 @@ type mockClient struct {
 	activeSessionCount           int64
 	activeSessionErr             error
 	activeSessionCountCallCount  int
+	// serverBootTime anchors the picosecond statement timers carried by
+	// query-sample fixtures. The zero value stands for "could not be
+	// resolved", which blanks mysql.blocking.start_time.
+	serverBootTime          time.Time
+	serverBootTimeErr       error
+	serverBootTimeCallCount int
 	// dbVersionOverride allows tests to simulate MySQL <8 or MariaDB.
 	// Nil means "MySQL 8.0.27" (default, preserves all existing test behavior).
 	dbVersionOverride *dbVersion
@@ -1826,6 +1967,11 @@ func (c *mockClient) getReplicaStatusStats(_ bool) ([]replicaStatusStats, error)
 	return stats, nil
 }
 
+func (c *mockClient) getServerBootTime() (time.Time, error) {
+	c.serverBootTimeCallCount++
+	return c.serverBootTime, c.serverBootTimeErr
+}
+
 // Generate a function for getQuerySamples to read data from a static file
 func (c *mockClient) getQuerySamples(uint64, bool, bool) ([]querySample, error) {
 	var samples []querySample
@@ -1867,6 +2013,14 @@ func (c *mockClient) getQuerySamples(uint64, bool, bool) ([]querySample, error) 
 		}
 		if len(text) > 20 {
 			s.blockerDetails = text[20]
+		}
+		if len(text) > 26 {
+			s.blockingLockMode = text[21]
+			s.blockingLockType = text[22]
+			s.blockingObjectSchema = text[23]
+			s.blockingObjectName = text[24]
+			s.blockingStatementTimerStart, _ = strconv.ParseUint(text[25], 10, 64)
+			s.blockingWaitDuration, _ = parseInt(text[26])
 		}
 
 		samples = append(samples, s)
