@@ -61,7 +61,7 @@ exporter/coralogixexporter/                                      @open-telemetry
 exporter/datadogexporter/                                        @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @jade-guiton-dd @IbraheemA
 exporter/datasetexporter/                                        @open-telemetry/collector-contrib-approvers @atoulme
 exporter/dorisexporter/                                          @open-telemetry/collector-contrib-approvers @joker-star-l
-exporter/elasticsearchexporter/                                  @open-telemetry/collector-contrib-approvers @JaredTan95 @blakerouse @carsonip @lahsivjar
+exporter/elasticsearchexporter/                                  @open-telemetry/collector-contrib-approvers @JaredTan95 @blakerouse @carsonip @lahsivjar @osullivandonal
 exporter/faroexporter/                                           @open-telemetry/collector-contrib-approvers @dehaansa @rlankfo @mar4uk
 exporter/fileexporter/                                           @open-telemetry/collector-contrib-approvers @paulojmdias
 exporter/googlecloudexporter/                                    @open-telemetry/collector-contrib-approvers @aabmass @dashpole @braydonk @jsuereth @psx95 @ridwanmsharif

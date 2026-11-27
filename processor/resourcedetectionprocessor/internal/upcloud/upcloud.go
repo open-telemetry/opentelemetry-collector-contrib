@@ -7,28 +7,34 @@ package upcloud // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
+	upclouddetector "go.opentelemetry.io/contrib/detectors/upcloud"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/upcloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/sdkbridge"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/upcloud/internal/metadata"
 )
 
-// newUpcloudProvider is overridden in tests to point the provider at a fake server.
-var newUpcloudProvider = upcloud.NewProvider
+// newResourceDetector is overridden in tests to substitute a fake SDK detector.
+var newResourceDetector = func() sdkresource.Detector {
+	return upclouddetector.NewResourceDetector()
+}
 
 // Ensure Detector implements internal.Detector.
 var _ internal.Detector = (*Detector)(nil)
 
-// Detector is a Upcloud metadata detector.
+// Detector is a Upcloud metadata detector. Detection is delegated to the upstream SDK
+// detector so that the attributes reported here match the ones the collector's own
+// telemetry reports.
 type Detector struct {
-	provider              upcloud.Provider
+	detector              sdkresource.Detector
 	logger                *zap.Logger
-	rb                    *metadata.ResourceBuilder
+	resourceAttributes    metadata.ResourceAttributesConfig
 	failOnMissingMetadata bool
 }
 
@@ -37,16 +43,19 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig, failOnMissi
 	cfg := dcfg.(Config)
 
 	return &Detector{
-		provider:              newUpcloudProvider(),
+		detector:              newResourceDetector(),
 		logger:                p.Logger,
-		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		resourceAttributes:    cfg.ResourceAttributes,
 		failOnMissingMetadata: failOnMissingMetadata || cfg.FailOnMissingMetadata,
 	}, nil
 }
 
 // Detect queries the Upcloud metadata service and returns a populated resource.
 func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
-	md, err := d.provider.Metadata(ctx)
+	// A partial result still came from a reachable metadata service, so the bridge keeps
+	// what it did return. fail_on_missing_metadata covers an unusable metadata service,
+	// not individual fields absent from its response.
+	res, schemaURL, err := sdkbridge.Detect(ctx, d.detector)
 	if err != nil {
 		d.logger.Debug("Upcloud metadata unavailable", zap.Error(err))
 		if d.failOnMissingMetadata {
@@ -55,10 +64,15 @@ func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 		return pcommon.NewResource(), "", nil
 	}
 
-	d.rb.SetCloudProvider(md.CloudName)
-	d.rb.SetCloudRegion(md.Region)
-	d.rb.SetHostID(md.InstanceID)
-	d.rb.SetHostName(md.Hostname)
+	// The SDK detector reports an empty resource and no error when not running on Upcloud.
+	if res.Attributes().Len() == 0 {
+		d.logger.Debug("Upcloud detector: not running on an Upcloud server")
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", errors.New("upcloud metadata unavailable")
+		}
+		return pcommon.NewResource(), "", nil
+	}
 
-	return d.rb.Emit(), conventions.SchemaURL, nil
+	sdkbridge.RemoveDisabledAttributes(res, d.resourceAttributes)
+	return res, schemaURL, nil
 }

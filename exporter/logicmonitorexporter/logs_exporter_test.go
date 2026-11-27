@@ -43,7 +43,7 @@ func Test_NewLogsExporter(t *testing.T) {
 			}{
 				config: &Config{
 					ClientConfig: clientConfig,
-					APIToken:     APIToken{AccessID: "testid", AccessKey: "testkey"},
+					APIToken:     APIToken{AccessID: "testid", AccessKey: "test-key-at-least-14-bytes"},
 				},
 				logger: zaptest.NewLogger(t),
 			},
@@ -73,7 +73,7 @@ func TestPushLogData(t *testing.T) {
 	clientConfig.Endpoint = ts.URL
 	cfg := &Config{
 		ClientConfig: clientConfig,
-		APIToken:     APIToken{AccessID: "testid", AccessKey: "testkey"},
+		APIToken:     APIToken{AccessID: "testid", AccessKey: "test-key-at-least-14-bytes"},
 	}
 
 	tests := []struct {

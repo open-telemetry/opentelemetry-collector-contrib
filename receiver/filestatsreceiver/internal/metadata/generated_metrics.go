@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -409,8 +409,8 @@ type MetricsBuilder struct {
 	metricsCapacity                int                  // maximum observed number of metrics per resource.
 	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                      component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter map[string]filter.Filter
-	resourceAttributeExcludeFilter map[string]filter.Filter
+	resourceAttributeIncludeFilter map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter map[string]strmatch.Matcher
 	metricFileAtime                metricFileAtime
 	metricFileCount                metricFileCount
 	metricFileCtime                metricFileCtime
@@ -446,20 +446,20 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricFileCtime:                newMetricFileCtime(mbc.Metrics.FileCtime),
 		metricFileMtime:                newMetricFileMtime(mbc.Metrics.FileMtime),
 		metricFileSize:                 newMetricFileSize(mbc.Metrics.FileSize),
-		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter: make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter: make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.FileName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["file.name"] = filter.CreateFilter(mbc.ResourceAttributes.FileName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["file.name"] = strmatch.New(mbc.ResourceAttributes.FileName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.FileName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["file.name"] = filter.CreateFilter(mbc.ResourceAttributes.FileName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["file.name"] = strmatch.New(mbc.ResourceAttributes.FileName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.FilePath.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["file.path"] = filter.CreateFilter(mbc.ResourceAttributes.FilePath.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["file.path"] = strmatch.New(mbc.ResourceAttributes.FilePath.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.FilePath.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["file.path"] = filter.CreateFilter(mbc.ResourceAttributes.FilePath.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["file.path"] = strmatch.New(mbc.ResourceAttributes.FilePath.MetricsExclude)
 	}
 
 	for _, op := range options {

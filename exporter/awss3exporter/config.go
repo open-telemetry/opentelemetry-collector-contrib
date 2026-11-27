@@ -5,6 +5,7 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
@@ -54,10 +55,11 @@ type S3UploaderConfig struct {
 	ACL string `mapstructure:"acl"`
 
 	StorageClass string `mapstructure:"storage_class"`
-	// Compression sets the algorithm used to process the payload
-	// before uploading to S3.
-	// Valid values are: `gzip`, `zstd`, or no value set.
+	// Compression sets the algorithm used before uploading to S3.
+	// Supported values are gzip, zstd, zlib, deflate, snappy, x-snappy-framed, lz4, and none.
 	Compression configcompression.Type `mapstructure:"compression"`
+	// CompressionSettings configures the selected compression algorithm.
+	CompressionSettings configcompression.CompressionParams `mapstructure:"compression_settings,omitempty"`
 
 	// RetryMode specifies the retry mode for S3 client, default is "standard".
 	// Valid values are: "standard", "adaptive", or "nop".
@@ -142,11 +144,8 @@ func (c *Config) Validate() error {
 		errs = multierr.Append(errs, errors.New("invalid ACL"))
 	}
 
-	compression := c.S3Uploader.Compression
-	if compression.IsCompressed() {
-		if compression != configcompression.TypeGzip && compression != configcompression.TypeZstd {
-			errs = multierr.Append(errs, errors.New("unknown compression type"))
-		}
+	if err := c.S3Uploader.Compression.ValidateParams(c.S3Uploader.CompressionSettings); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("invalid compression settings: %w", err))
 	}
 
 	if c.S3Uploader.RetryMode != "nop" && c.S3Uploader.RetryMode != "standard" && c.S3Uploader.RetryMode != "adaptive" {

@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/strmatch"
 	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 )
@@ -1812,8 +1812,8 @@ type MetricsBuilder struct {
 	metricsCapacity                        int                  // maximum observed number of metrics per resource.
 	metricsBuffer                          pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                              component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter         map[string]filter.Filter
-	resourceAttributeExcludeFilter         map[string]filter.Filter
+	resourceAttributeIncludeFilter         map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter         map[string]strmatch.Matcher
 	metricProcessContextSwitches           metricProcessContextSwitches
 	metricProcessContextSwitchesV1         metricProcessContextSwitchesV1
 	metricProcessCPUTime                   metricProcessCPUTime
@@ -1883,62 +1883,62 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 		metricProcessUnixFileDescriptorCountV1: newMetricProcessUnixFileDescriptorCountV1(mbc.Metrics.ProcessUnixFileDescriptorCountV1),
 		metricProcessUptime:                    newMetricProcessUptime(mbc.Metrics.ProcessUptime),
 		metricProcessWindowsHandleCountV1:      newMetricProcessWindowsHandleCountV1(mbc.Metrics.ProcessWindowsHandleCountV1),
-		resourceAttributeIncludeFilter:         make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:         make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter:         make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter:         make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.ProcessCgroup.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["process.cgroup"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCgroup.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["process.cgroup"] = strmatch.New(mbc.ResourceAttributes.ProcessCgroup.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ProcessCgroup.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["process.cgroup"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCgroup.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["process.cgroup"] = strmatch.New(mbc.ResourceAttributes.ProcessCgroup.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ProcessCommand.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["process.command"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCommand.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["process.command"] = strmatch.New(mbc.ResourceAttributes.ProcessCommand.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ProcessCommand.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["process.command"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCommand.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["process.command"] = strmatch.New(mbc.ResourceAttributes.ProcessCommand.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ProcessCommandLine.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["process.command_line"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCommandLine.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["process.command_line"] = strmatch.New(mbc.ResourceAttributes.ProcessCommandLine.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ProcessCommandLine.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["process.command_line"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCommandLine.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["process.command_line"] = strmatch.New(mbc.ResourceAttributes.ProcessCommandLine.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ProcessExecutableName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["process.executable.name"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessExecutableName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["process.executable.name"] = strmatch.New(mbc.ResourceAttributes.ProcessExecutableName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ProcessExecutableName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["process.executable.name"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessExecutableName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["process.executable.name"] = strmatch.New(mbc.ResourceAttributes.ProcessExecutableName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ProcessExecutablePath.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["process.executable.path"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessExecutablePath.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["process.executable.path"] = strmatch.New(mbc.ResourceAttributes.ProcessExecutablePath.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ProcessExecutablePath.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["process.executable.path"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessExecutablePath.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["process.executable.path"] = strmatch.New(mbc.ResourceAttributes.ProcessExecutablePath.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ProcessLinuxCgroup.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["process.linux.cgroup"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessLinuxCgroup.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["process.linux.cgroup"] = strmatch.New(mbc.ResourceAttributes.ProcessLinuxCgroup.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ProcessLinuxCgroup.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["process.linux.cgroup"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessLinuxCgroup.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["process.linux.cgroup"] = strmatch.New(mbc.ResourceAttributes.ProcessLinuxCgroup.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ProcessOwner.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["process.owner"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessOwner.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["process.owner"] = strmatch.New(mbc.ResourceAttributes.ProcessOwner.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ProcessOwner.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["process.owner"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessOwner.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["process.owner"] = strmatch.New(mbc.ResourceAttributes.ProcessOwner.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ProcessParentPid.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["process.parent_pid"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessParentPid.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["process.parent_pid"] = strmatch.New(mbc.ResourceAttributes.ProcessParentPid.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ProcessParentPid.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["process.parent_pid"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessParentPid.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["process.parent_pid"] = strmatch.New(mbc.ResourceAttributes.ProcessParentPid.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ProcessPid.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["process.pid"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessPid.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["process.pid"] = strmatch.New(mbc.ResourceAttributes.ProcessPid.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ProcessPid.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["process.pid"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessPid.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["process.pid"] = strmatch.New(mbc.ResourceAttributes.ProcessPid.MetricsExclude)
 	}
 	if ScraperProcessEmitV1SystemConventionsFeatureGate.IsEnabled() {
 		if mb.metricProcessContextSwitches.config.Enabled && !mb.metricProcessContextSwitchesV1.config.enabledSetByUser {

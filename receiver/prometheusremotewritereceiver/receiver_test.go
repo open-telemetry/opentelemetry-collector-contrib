@@ -1426,8 +1426,7 @@ func TestTranslateV2(t *testing.T) {
 				expected := pmetric.NewMetrics()
 				rm1 := expected.ResourceMetrics().AppendEmpty()
 				rmAttributes1 := rm1.Resource().Attributes()
-				rmAttributes1.PutStr("service.namespace", "service-x")
-				rmAttributes1.PutStr("service.name", "test")
+				rmAttributes1.PutStr("service.name", "service-x/test")
 				rmAttributes1.PutStr("service.instance.id", "107cn001")
 
 				sm1 := rm1.ScopeMetrics().AppendEmpty()
@@ -1557,8 +1556,7 @@ func TestTranslateV2(t *testing.T) {
 				expected := pmetric.NewMetrics()
 				rm1 := expected.ResourceMetrics().AppendEmpty()
 				rmAttributes1 := rm1.Resource().Attributes()
-				rmAttributes1.PutStr("service.namespace", "service-x")
-				rmAttributes1.PutStr("service.name", "test")
+				rmAttributes1.PutStr("service.name", "service-x/test")
 				rmAttributes1.PutStr("service.instance.id", "107cn001")
 
 				sm1 := rm1.ScopeMetrics().AppendEmpty()
@@ -1685,8 +1683,7 @@ func TestTranslateV2(t *testing.T) {
 				expected := pmetric.NewMetrics()
 				rm1 := expected.ResourceMetrics().AppendEmpty()
 				rmAttributes1 := rm1.Resource().Attributes()
-				rmAttributes1.PutStr("service.namespace", "service-x")
-				rmAttributes1.PutStr("service.name", "test")
+				rmAttributes1.PutStr("service.name", "service-x/test")
 				rmAttributes1.PutStr("service.instance.id", "107cn001")
 
 				sm1 := rm1.ScopeMetrics().AppendEmpty()
@@ -1770,8 +1767,7 @@ func TestTranslateV2(t *testing.T) {
 
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "production")
-				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.name", "production/service_a")
 				attrs.PutStr("service.instance.id", "host1")
 				attrs.PutStr("machine_type", "n1-standard-1")
 				attrs.PutStr("cloud_provider", "gcp")
@@ -1889,8 +1885,7 @@ func TestTranslateV2(t *testing.T) {
 
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "production")
-				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.name", "production/service_a")
 				attrs.PutStr("service.instance.id", "host1")
 				attrs.PutStr("resource_label", "resource_value")
 
@@ -1970,8 +1965,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.name", "service-x/test")
 				attrs.PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -2086,8 +2080,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.name", "service-x/test")
 				attrs.PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -2403,8 +2396,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.name", "service-x/test")
 				attrs.PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -2758,8 +2750,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.name", "service-x/test")
 				attrs.PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -2921,8 +2912,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "production")
-				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.name", "production/service_a")
 				attrs.PutStr("service.instance.id", "host1")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -3010,8 +3000,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.name", "service-x/test")
 				attrs.PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -3078,8 +3067,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.name", "service-x/test")
 				attrs.PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -3153,8 +3141,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.name", "service-x/test")
 				attrs.PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -3300,8 +3287,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.name", "service-x/test")
 				attrs.PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -3371,8 +3357,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "service-x")
-				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.name", "service-x/test")
 				attrs.PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -3684,8 +3669,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "production")
-				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.name", "production/service_a")
 				attrs.PutStr("service.instance.id", "host1")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -3825,8 +3809,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "production")
-				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.name", "production/service_a")
 				attrs.PutStr("service.instance.id", "host1")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -3915,8 +3898,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "production")
-				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.name", "production/service_a")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
 				sm.Scope().SetName("OpenTelemetry Collector")
@@ -4023,8 +4005,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "production")
-				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.name", "production/service_a")
 				attrs.PutStr("service.instance.id", "host1")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -4404,8 +4385,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "production")
-				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.name", "production/service_a")
 				attrs.PutStr("service.instance.id", "host1")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -4524,8 +4504,7 @@ func TestTranslateV2(t *testing.T) {
 			expectedMetrics: func() pmetric.Metrics {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
-				rm.Resource().Attributes().PutStr("service.namespace", "production")
-				rm.Resource().Attributes().PutStr("service.name", "service_a")
+				rm.Resource().Attributes().PutStr("service.name", "production/service_a")
 				rm.Resource().Attributes().PutStr("service.instance.id", "host1")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -4607,8 +4586,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "production")
-				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.name", "production/service_a")
 				attrs.PutStr("service.instance.id", "host1")
 				attrs.PutStr("machine_type", "n1-standard-1")
 				attrs.PutStr("cloud_provider", "gcp")
@@ -4649,8 +4627,7 @@ func TestTranslateV2(t *testing.T) {
 			expectedMetrics: func() pmetric.Metrics {
 				expected := pmetric.NewMetrics()
 				rm := expected.ResourceMetrics().AppendEmpty()
-				rm.Resource().Attributes().PutStr("service.namespace", "service-x")
-				rm.Resource().Attributes().PutStr("service.name", "test")
+				rm.Resource().Attributes().PutStr("service.name", "service-x/test")
 				rm.Resource().Attributes().PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -4695,8 +4672,7 @@ func TestTranslateV2(t *testing.T) {
 			expectedMetrics: func() pmetric.Metrics {
 				expected := pmetric.NewMetrics()
 				rm := expected.ResourceMetrics().AppendEmpty()
-				rm.Resource().Attributes().PutStr("service.namespace", "service-x")
-				rm.Resource().Attributes().PutStr("service.name", "test")
+				rm.Resource().Attributes().PutStr("service.name", "service-x/test")
 				rm.Resource().Attributes().PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -4751,8 +4727,7 @@ func TestTranslateV2(t *testing.T) {
 			expectedMetrics: func() pmetric.Metrics {
 				expected := pmetric.NewMetrics()
 				rm := expected.ResourceMetrics().AppendEmpty()
-				rm.Resource().Attributes().PutStr("service.namespace", "service-x")
-				rm.Resource().Attributes().PutStr("service.name", "test")
+				rm.Resource().Attributes().PutStr("service.name", "service-x/test")
 				rm.Resource().Attributes().PutStr("service.instance.id", "107cn001")
 
 				sm := rm.ScopeMetrics().AppendEmpty()
@@ -6405,8 +6380,7 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "production")
-				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.name", "production/service_a")
 				attrs.PutStr("service.instance.id", "host1")
 				attrs.PutStr("machine_type", "n1-standard-1")
 				attrs.PutStr("cloud_provider", "gcp")
@@ -6440,8 +6414,7 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 				metrics := pmetric.NewMetrics()
 				rm := metrics.ResourceMetrics().AppendEmpty()
 				attrs := rm.Resource().Attributes()
-				attrs.PutStr("service.namespace", "production")
-				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.name", "production/service_a")
 				attrs.PutStr("service.instance.id", "host1")
 				attrs.PutStr("region", "us-central1")
 
@@ -6650,8 +6623,7 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 		metrics := pmetric.NewMetrics()
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		attrs := rm.Resource().Attributes()
-		attrs.PutStr("service.namespace", "production")
-		attrs.PutStr("service.name", "service_a")
+		attrs.PutStr("service.name", "production/service_a")
 		attrs.PutStr("service.instance.id", "host1")
 		attrs.PutStr("machine_type", "n1-standard-1")
 		attrs.PutStr("cloud_provider", "gcp")
@@ -6679,8 +6651,7 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 		metrics := pmetric.NewMetrics()
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		attrs := rm.Resource().Attributes()
-		attrs.PutStr("service.namespace", "production")
-		attrs.PutStr("service.name", "service_b")
+		attrs.PutStr("service.name", "production/service_b")
 		attrs.PutStr("service.instance.id", "host2")
 
 		sm := rm.ScopeMetrics().AppendEmpty()
@@ -6704,8 +6675,7 @@ func TestLRUCacheResourceMetrics(t *testing.T) {
 		metrics := pmetric.NewMetrics()
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		attrs := rm.Resource().Attributes()
-		attrs.PutStr("service.namespace", "production")
-		attrs.PutStr("service.name", "service_a")
+		attrs.PutStr("service.name", "production/service_a")
 		attrs.PutStr("service.instance.id", "host1")
 
 		sm := rm.ScopeMetrics().AppendEmpty()

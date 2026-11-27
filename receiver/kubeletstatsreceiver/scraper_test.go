@@ -1095,7 +1095,7 @@ func TestClientErrors(t *testing.T) {
 		podsFail              bool
 		extraMetadataLabels   []kubelet.MetadataLabel
 		metricGroupsToCollect map[kubelet.MetricGroup]bool
-		numLogs               int
+		expectedErr           string
 	}{
 		{
 			name:                  "no_errors_without_metadata",
@@ -1103,7 +1103,6 @@ func TestClientErrors(t *testing.T) {
 			podsFail:              false,
 			extraMetadataLabels:   nil,
 			metricGroupsToCollect: allMetricGroups,
-			numLogs:               0,
 		},
 		{
 			name:                  "no_errors_with_metadata",
@@ -1111,7 +1110,6 @@ func TestClientErrors(t *testing.T) {
 			podsFail:              false,
 			extraMetadataLabels:   []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
 			metricGroupsToCollect: allMetricGroups,
-			numLogs:               0,
 		},
 		{
 			name:                  "stats_summary_endpoint_error",
@@ -1119,7 +1117,7 @@ func TestClientErrors(t *testing.T) {
 			podsFail:              false,
 			extraMetadataLabels:   nil,
 			metricGroupsToCollect: allMetricGroups,
-			numLogs:               1,
+			expectedErr:           "call to /stats/summary endpoint failed",
 		},
 		{
 			name:                  "pods_endpoint_error",
@@ -1127,7 +1125,7 @@ func TestClientErrors(t *testing.T) {
 			podsFail:              true,
 			extraMetadataLabels:   []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
 			metricGroupsToCollect: allMetricGroups,
-			numLogs:               1,
+			expectedErr:           "call to /pods endpoint failed",
 		},
 	}
 	for _, test := range tests {
@@ -1153,12 +1151,13 @@ func TestClientErrors(t *testing.T) {
 			require.NoError(t, err)
 
 			_, err = r.ScrapeMetrics(t.Context())
-			if test.numLogs == 0 {
+			if test.expectedErr == "" {
 				require.NoError(t, err)
 			} else {
-				require.Error(t, err)
+				require.ErrorContains(t, err, test.expectedErr)
 			}
-			require.Equal(t, test.numLogs, observedLogs.Len())
+			// The scraper must not log endpoint errors itself; scraperhelper logs the returned error.
+			require.Equal(t, 0, observedLogs.Len())
 		})
 	}
 }
