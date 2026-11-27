@@ -61,6 +61,9 @@ func (c *Config) Validate() error {
 			return err
 		}
 	}
+	if c.RefreshInterval <= 0 {
+		return errors.New("refresh_interval must be positive")
+	}
 	return nil
 }
 
