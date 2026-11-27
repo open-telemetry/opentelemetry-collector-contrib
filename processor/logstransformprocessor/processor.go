@@ -77,7 +77,7 @@ func (ltp *logsTransformProcessor) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) error {
+func (ltp *logsTransformProcessor) Start(_ context.Context, _ component.Host) error {
 	wkrCount := int(math.Max(1, float64(runtime.NumCPU())))
 	ltp.fromConverter = adapter.NewFromPdataConverter(ltp.set, wkrCount)
 
@@ -94,7 +94,7 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) 
 	if err != nil {
 		return err
 	}
-	ltp.startConverterLoop(ctx)
+	ltp.startConverterLoop()
 	ltp.startFromConverter()
 
 	return nil
@@ -111,13 +111,18 @@ func (ltp *logsTransformProcessor) startFromConverter() {
 
 // startConverterLoop starts the converter loop, which reads all the logs translated by the fromConverter and then forwards
 // them to pipeline
-func (ltp *logsTransformProcessor) startConverterLoop(ctx context.Context) {
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	go ltp.converterLoop(ctx, wg)
+func (ltp *logsTransformProcessor) startConverterLoop() {
+	// The context passed to Start may be cancelled once Start returns, so the
+	// long-running loop gets its own context.
+	ctx, cancel := context.WithCancel(context.Background())
+	var wg sync.WaitGroup
+	wg.Go(func() { ltp.converterLoop(ctx) })
 
 	ltp.shutdownFns = append(ltp.shutdownFns, func(_ context.Context) error {
+		// fromConverter.Stop closes the channel the loop reads from, so the loop
+		// drains it and exits before the context is cancelled.
 		wg.Wait()
+		cancel()
 		return nil
 	})
 }
@@ -149,9 +154,7 @@ func (ltp *logsTransformProcessor) ConsumeLogs(_ context.Context, ld plog.Logs) 
 
 // converterLoop reads the log entries produced by the fromConverter and sends them
 // into the pipeline
-func (ltp *logsTransformProcessor) converterLoop(ctx context.Context, wg *sync.WaitGroup) {
-	defer wg.Done()
-
+func (ltp *logsTransformProcessor) converterLoop(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
