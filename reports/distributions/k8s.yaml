@@ -75,6 +75,7 @@ components:
         - network
         - nfs
         - paging
+        - pressure
         - process
         - processes
         - system

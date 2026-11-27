@@ -30,6 +30,8 @@ properties:
         $ref: ./internal/scraper/nfsscraper.config
       paging:
         $ref: ./internal/scraper/pagingscraper.config
+      pressure:
+        $ref: ./internal/scraper/pressurescraper.config
       process:
         $ref: ./internal/scraper/processscraper.config
       processes:

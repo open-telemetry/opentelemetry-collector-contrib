@@ -58,6 +58,7 @@ The available scrapers are:
 | [network]    | All                          | Network interface I/O metrics & TCP connection metrics |
 | [nfs]        | Linux                        | NFS server and client metrics                          |
 | [paging]     | All                          | Paging/Swap space utilization and I/O metrics          |
+| [pressure]   | Linux                        | Pressure Stall Information (PSI) metrics               |
 | [processes]  | Linux, Mac, FreeBSD, OpenBSD | Process count metrics                                  |
 | [process]    | Linux, Windows, Mac, FreeBSD | Per process CPU, Memory, and Disk I/O metrics          |
 | [system]     | Linux, Windows, Mac          | Miscellaneous system metrics                           |
@@ -71,6 +72,7 @@ The available scrapers are:
 [network]: ./internal/scraper/networkscraper/documentation.md
 [nfs]: ./internal/scraper/nfsscraper/documentation.md
 [paging]: ./internal/scraper/pagingscraper/documentation.md
+[pressure]: ./internal/scraper/pressurescraper/documentation.md
 [processes]: ./internal/scraper/processesscraper/documentation.md
 [process]: ./internal/scraper/processscraper/documentation.md
 [system]: ./internal/scraper/systemscraper/documentation.md
