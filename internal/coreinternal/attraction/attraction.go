@@ -377,7 +377,10 @@ func getAttributeValueFromContext(ctx context.Context, key string) (pcommon.Valu
 
 	switch {
 	case key == clientAddressKey:
-		vals = []string{clientutil.Address(ci)}
+		// Address returns "" when the client has no address; treat that as not found.
+		if addr := clientutil.Address(ci); addr != "" {
+			vals = []string{addr}
+		}
 	case strings.HasPrefix(key, metadataPrefix):
 		mdKey := strings.TrimPrefix(key, metadataPrefix)
 		vals = ci.Metadata.Get(mdKey)
