@@ -144,6 +144,10 @@ func newZSTDCompressReaderPool(_ configcompression.CompressionParams) Reader {
 		r, _ := zstd.NewReader(bytes.NewBuffer(nil))
 		return newReadAdapter(
 			r,
+			withReadAdapterClose(func(zr *zstd.Decoder) error {
+				// Release the input and stop decoding before returning the reader to the pool.
+				return zr.Reset(nil)
+			}),
 			withReadAdapterReset(func(zr *zstd.Decoder, r io.Reader) error {
 				return zr.Reset(r)
 			}),

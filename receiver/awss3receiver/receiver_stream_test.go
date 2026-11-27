@@ -366,6 +366,11 @@ func TestReceiveCompressedStreams(t *testing.T) {
 					wantErr: true,
 				},
 				{
+					name:        "valid_after_truncated",
+					body:        body,
+					wantRecords: 1,
+				},
+				{
 					name:        "empty",
 					body:        compression.compress(nil),
 					wantRecords: 0,

@@ -428,7 +428,7 @@ func Test_receive_configuredDecompression(t *testing.T) {
 }
 
 func Test_decompress_unsupported(t *testing.T) {
-	_, err := newDecompressor(configcompression.TypeSnappy, bytes.NewReader([]byte("test")))
+	_, err := decompressionLeaser(configcompression.TypeSnappy)
 	assert.ErrorContains(t, err, `unsupported decompression type "snappy"`)
 }
 

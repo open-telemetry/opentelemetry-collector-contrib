@@ -4,14 +4,13 @@
 package awss3receiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver"
 
 import (
-	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 
-	"github.com/klauspost/compress/zstd"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/consumer"
@@ -23,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression"
 )
 
 type encodingExtension struct {
@@ -127,12 +127,11 @@ func (r *awss3Receiver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (r *awss3Receiver) receive(ctx context.Context, key string, data io.Reader) (err error) {
+func (r *awss3Receiver) receive(ctx context.Context, key string, data io.Reader) error {
 	if data == nil {
 		return nil
 	}
-	err = ctx.Err()
-	if err != nil {
+	if err := ctx.Err(); err != nil {
 		return err
 	}
 	algorithm := r.decompression
@@ -144,40 +143,51 @@ func (r *awss3Receiver) receive(ctx context.Context, key string, data io.Reader)
 		key = strings.TrimSuffix(key, ".zst")
 		algorithm = configcompression.TypeZstd
 	}
-	if algorithm.IsCompressed() {
-		var decompressor io.ReadCloser
-		decompressor, err = newDecompressor(algorithm, data)
-		if err != nil {
+	if !algorithm.IsCompressed() {
+		return r.processAndDrain(ctx, key, data)
+	}
+	leaser, err := decompressionLeaser(algorithm)
+	if err != nil {
+		return err
+	}
+	return leaser.LeaseReader(func(reader xcompression.ResettableReader) (err error) {
+		if err := reader.Reset(data); err != nil {
 			return err
 		}
 		defer func() {
-			err = errors.Join(err, decompressor.Close())
+			err = errors.Join(err, reader.Close())
 		}()
-		data = decompressor
-	}
-	err = r.dataProcessor.processReceivedData(ctx, r, key, data)
-	if err != nil {
+		return r.processAndDrain(ctx, key, reader)
+	})
+}
+
+func (r *awss3Receiver) processAndDrain(ctx context.Context, key string, data io.Reader) error {
+	if err := r.dataProcessor.processReceivedData(ctx, r, key, data); err != nil {
 		return err
 	}
 	// A decoder may stop before the end of the object. Read through EOF to
 	// validate the download and compression checksum before acknowledging it.
-	err = copyReader(ctx, io.Discard, data)
-	if err != nil {
+	if err := copyReader(ctx, io.Discard, data); err != nil {
 		return err
 	}
 	return ctx.Err()
 }
 
-func newDecompressor(algorithm configcompression.Type, data io.Reader) (io.ReadCloser, error) {
+var (
+	gzipLeaser = sync.OnceValues(func() (xcompression.ReadLeaser, error) {
+		return xcompression.NewReaderFactory().NewReadLeaser(configcompression.TypeGzip, configcompression.CompressionParams{})
+	})
+	zstdLeaser = sync.OnceValues(func() (xcompression.ReadLeaser, error) {
+		return xcompression.NewReaderFactory().NewReadLeaser(configcompression.TypeZstd, configcompression.CompressionParams{})
+	})
+)
+
+func decompressionLeaser(algorithm configcompression.Type) (xcompression.ReadLeaser, error) {
 	switch algorithm {
 	case configcompression.TypeGzip:
-		return gzip.NewReader(data)
+		return gzipLeaser()
 	case configcompression.TypeZstd:
-		decoder, err := zstd.NewReader(data)
-		if err != nil {
-			return nil, err
-		}
-		return decoder.IOReadCloser(), nil
+		return zstdLeaser()
 	default:
 		return nil, fmt.Errorf("unsupported decompression type %q", algorithm)
 	}
