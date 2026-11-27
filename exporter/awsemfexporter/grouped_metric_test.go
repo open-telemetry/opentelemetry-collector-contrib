@@ -565,3 +565,47 @@ func generateTestMetricMetadata(namespace string, timestamp int64, logGroup, log
 		instrumentationScopeName: instrumentationScopeName,
 	}
 }
+
+func TestAddToGroupedMetricPerDatapointLogStreamPattern(t *testing.T) {
+	emfCalcs := setupEmfCalculators()
+	defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
+	groupedMetrics := make(map[any]*groupedMetric)
+
+	md := pmetric.NewMetrics()
+	metric := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric.SetName("test-metric")
+	gauge := metric.SetEmptyGauge()
+
+	dp1 := gauge.DataPoints().AppendEmpty()
+	dp1.SetDoubleValue(1.0)
+	dp1.Attributes().PutStr("PodName", "pod-1")
+
+	dp2 := gauge.DataPoints().AppendEmpty()
+	dp2.SetDoubleValue(2.0)
+	dp2.Attributes().PutStr("PodName", "pod-2")
+
+	cfg := &Config{
+		LogGroupName:  "test-group",
+		LogStreamName: "stream-{PodName}",
+		logger:        zap.NewNop(),
+	}
+
+	metadata := cWMetricMetadata{
+		groupedMetricMetadata: groupedMetricMetadata{
+			namespace: "test-ns",
+			logGroup:  "test-group",
+			logStream: "stream-undefined",
+		},
+	}
+
+	err := addToGroupedMetric(metric, groupedMetrics, metadata, false, nil, cfg, emfCalcs)
+	require.NoError(t, err)
+
+	streams := make(map[string]bool)
+	for _, gm := range groupedMetrics {
+		streams[gm.metadata.logStream] = true
+	}
+
+	assert.True(t, streams["stream-pod-1"], "stream-pod-1 should be present")
+	assert.True(t, streams["stream-pod-2"], "stream-pod-2 should be present")
+}
