@@ -21,15 +21,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
-// newCache creates a new cache with the given size.
+// newCache creates a cache with one entry per statement.
 // If the size is less or equal to 0, it will be set to 1.
 // It will never return an error.
-func newCache(size int) *lru.Cache[string, float64] {
+func newCache(size int) *lru.Cache[string, statementSnapshot] {
 	if size <= 0 {
 		size = 1
 	}
 	// lru will only return error when the size is less than 0
-	cache, _ := lru.New[string, float64](size)
+	cache, _ := lru.New[string, statementSnapshot](size)
 	return cache
 }
 
@@ -170,6 +170,6 @@ func createLogsReceiver(
 func newTopQueryScraper(params receiver.Settings, cfg *Config, clientFactory postgreSQLClientFactory) (*postgreSQLScraper, error) {
 	// Deltas are calculated for every fetched statement before selecting the top queries.
 	return newPostgreSQLScraper(params, cfg, clientFactory,
-		newCache(int(cfg.TopQueryCollection.MaxRowsPerQuery*10*2)),
+		newCache(int(cfg.TopQueryCollection.MaxRowsPerQuery*2)),
 		newTTLCache[string](cfg.TopQueryCollection.QueryPlanCacheSize, cfg.TopQueryCollection.QueryPlanCacheTTL))
 }

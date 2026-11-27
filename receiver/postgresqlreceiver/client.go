@@ -77,7 +77,7 @@ type client interface {
 	listDatabases(ctx context.Context) ([]string, error)
 	getVersion(ctx context.Context) (string, error)
 	getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, float64, error)
-	getTopQuery(ctx context.Context, limit int64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, error)
+	getTopQuery(ctx context.Context, limit int64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, time.Time, error)
 	explainQuery(ctx context.Context, query, queryID string, logger *zap.Logger) (string, error)
 }
 
@@ -1656,19 +1656,52 @@ var topQueryTemplate string
 
 var topQueryTmpl = template.Must(template.New("topQuery").Option("missingkey=error").Parse(topQueryTemplate))
 
+const statStatementsCapabilitiesQuery = `/* otel-collector-ignore */ SELECT EXISTS (
+  SELECT 1 FROM pg_catalog.pg_attribute
+  WHERE attrelid = pg_catalog.to_regclass('pg_stat_statements_info')
+    AND attname = 'stats_reset' AND NOT attisdropped
+), EXISTS (
+  SELECT 1 FROM pg_catalog.pg_attribute
+  WHERE attrelid = pg_catalog.to_regclass('pg_stat_statements')
+    AND attname = 'toplevel' AND NOT attisdropped
+);`
+
+const statStatementsResetQuery = "/* otel-collector-ignore */ SELECT stats_reset FROM pg_stat_statements_info;"
+
+func (c *postgreSQLClient) getStatStatementsState(ctx context.Context) (time.Time, bool, error) {
+	var resetAvailable, toplevel bool
+	if err := c.client.QueryRowContext(ctx, statStatementsCapabilitiesQuery).Scan(&resetAvailable, &toplevel); err != nil {
+		return time.Time{}, false, fmt.Errorf("check pg_stat_statements capabilities: %w", err)
+	}
+	if !resetAvailable {
+		return time.Time{}, toplevel, nil
+	}
+	var reset time.Time
+	if err := c.client.QueryRowContext(ctx, statStatementsResetQuery).Scan(&reset); err != nil {
+		return time.Time{}, false, fmt.Errorf("get pg_stat_statements reset timestamp: %w", err)
+	}
+	return reset, toplevel, nil
+}
+
 // getTopQuery implements client.
-func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, error) {
+func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, time.Time, error) {
+	statsReset, toplevel, err := c.getStatStatementsState(ctx)
+	if err != nil {
+		return nil, time.Time{}, err
+	}
+
 	buf := bytes.Buffer{}
 
 	// TODO: Only get query after the oldest query we got from the previous sample query colelction.
 	// For instance, if from the last sample query we got queries executed between 8:00 ~ 8:15,
 	// in this query, we should only gather query after 8:15
-	if err := topQueryTmpl.Execute(&buf, map[string]any{
+	if err = topQueryTmpl.Execute(&buf, map[string]any{
 		"limit":             limit,
+		"toplevel":          toplevel,
 		"excludedDatabases": quoteDatabaseList(excludedDatabases),
 	}); err != nil {
 		logger.Error("failed to execute template", zap.Error(err))
-		return []map[string]any{}, fmt.Errorf("failed executing template: %w", err)
+		return nil, time.Time{}, fmt.Errorf("failed executing template: %w", err)
 	}
 
 	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, buf.String(), logger, sqlquery.TelemetryConfig{})
@@ -1677,10 +1710,22 @@ func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, exclude
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			logger.Error("failed getting log rows", zap.Error(err))
-			return []map[string]any{}, fmt.Errorf("getTopQuery failed getting log rows: %w", err)
+			return nil, time.Time{}, fmt.Errorf("getTopQuery failed getting log rows: %w", err)
 		}
 		// in case the sql returned rows contains null value, we just log a warning and continue
 		logger.Warn("problems encountered getting log rows", zap.Error(err))
+	}
+
+	// Discard rows if a reset ran while they were being fetched.
+	if !statsReset.IsZero() {
+		var resetAfter time.Time
+		resetErr := c.client.QueryRowContext(ctx, statStatementsResetQuery).Scan(&resetAfter)
+		if resetErr != nil {
+			return nil, time.Time{}, fmt.Errorf("verify pg_stat_statements reset timestamp: %w", resetErr)
+		}
+		if !statsReset.Equal(resetAfter) {
+			return nil, time.Time{}, errors.New("pg_stat_statements reset during top query collection")
+		}
 	}
 
 	errs := make([]error, 0)
@@ -1742,5 +1787,5 @@ func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, exclude
 		finalAttributes = append(finalAttributes, currentAttributes)
 	}
 
-	return finalAttributes, errors.Join(errs...)
+	return finalAttributes, statsReset, errors.Join(errs...)
 }

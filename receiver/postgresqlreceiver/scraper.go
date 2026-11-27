@@ -72,7 +72,7 @@ type postgreSQLScraper struct {
 	// the map answers membership checks. Read these, not config.ExcludeDatabases.
 	excludedDatabases []string
 	excludes          map[string]struct{}
-	cache             *lru.Cache[string, float64]
+	cache             *lru.Cache[string, statementSnapshot]
 	// if enabled, uses a separated attribute for the schema
 	separateSchemaAttr     bool
 	useOTelSemconv         bool
@@ -111,7 +111,7 @@ func newPostgreSQLScraper(
 	settings receiver.Settings,
 	config *Config,
 	clientFactory postgreSQLClientFactory,
-	cache *lru.Cache[string, float64],
+	cache *lru.Cache[string, statementSnapshot],
 	queryPlanCache *expirable.LRU[string, string],
 ) (*postgreSQLScraper, error) {
 	excludedDatabases := config.ExcludeDatabases
@@ -461,37 +461,32 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 
 	p.ensureDBVersion(ctx, defaultDbClient)
 
-	rows, err := defaultDbClient.getTopQuery(ctx, limit, p.excludedDatabases, logger)
+	rows, statsReset, err := defaultDbClient.getTopQuery(ctx, limit, p.excludedDatabases, logger)
 	if err != nil {
 		logger.Error("failed to get top query", zap.Error(err))
 		mux.addPartial(err)
 		return
 	}
 
-	type updatedOnlyInfo struct {
-		finalConverter func(float64) any
-	}
-
 	convertToInt := func(f float64) any {
 		return int64(f)
 	}
 
-	updatedOnly := map[string]updatedOnlyInfo{
-		totalExecTimeColumnName:     {},
-		totalPlanTimeColumnName:     {},
-		rowsColumnName:              {finalConverter: convertToInt},
-		callsColumnName:             {finalConverter: convertToInt},
-		sharedBlksDirtiedColumnName: {finalConverter: convertToInt},
-		sharedBlksHitColumnName:     {finalConverter: convertToInt},
-		sharedBlksReadColumnName:    {finalConverter: convertToInt},
-		sharedBlksWrittenColumnName: {finalConverter: convertToInt},
-		tempBlksReadColumnName:      {finalConverter: convertToInt},
-		tempBlksWrittenColumnName:   {finalConverter: convertToInt},
+	updatedOnly := map[string]func(float64) any{
+		totalExecTimeColumnName:     nil,
+		totalPlanTimeColumnName:     nil,
+		rowsColumnName:              convertToInt,
+		callsColumnName:             convertToInt,
+		sharedBlksDirtiedColumnName: convertToInt,
+		sharedBlksHitColumnName:     convertToInt,
+		sharedBlksReadColumnName:    convertToInt,
+		sharedBlksWrittenColumnName: convertToInt,
+		tempBlksReadColumnName:      convertToInt,
+		tempBlksWrittenColumnName:   convertToInt,
 	}
 
-	pq := make(priorityqueue.PriorityQueue[map[string]any, float64], 0)
-
-	for i, row := range rows {
+	queries := make(map[string]map[string]any, len(rows))
+	for _, row := range rows {
 		// The template filters excluded databases server side; this guards the EXPLAIN
 		// connection below in case a row slips through, before the row touches the cache.
 		if database, _ := row[string(conventions.DBNamespaceKey)].(string); p.isExcluded(database) {
@@ -528,10 +523,14 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		// pg_stat_statements is keyed on (userid, dbid, queryid, toplevel). userid is
 		// used here instead of rolname because rolname is empty once the role is
 		// dropped, which would collide two different dropped roles onto one key.
-		// toplevel is not selected, so this key still doesn't distinguish it.
-		cacheKeyPrefix := database + "\x00" + userid + "\x00" + queryID.(string) + "\x00"
+		statementKey := database + "\x00" + userid + "\x00" + queryID.(string)
+		cacheKey := statementKey
+		if toplevel, ok := row[dbAttributePrefix+"toplevel"]; ok {
+			cacheKey += "\x00" + toplevel.(string)
+		}
 
-		for columnName, info := range updatedOnly {
+		current := make(statementCounters, len(updatedOnly))
+		for columnName := range updatedOnly {
 			var valInAtts float64
 			_val := row[dbAttributePrefix+columnName]
 			if i, ok := _val.(int64); ok {
@@ -539,21 +538,31 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 			} else {
 				valInAtts = _val.(float64)
 			}
-			cacheKey := cacheKeyPrefix + columnName
-			valInCache, exist := p.cache.Get(cacheKey)
-			valDelta := valInAtts
-			if exist {
-				valDelta = valInAtts - valInCache
+			current[columnName] = valInAtts
+		}
+		previous, _ := p.cache.Get(cacheKey)
+		snapshot := statementSnapshot{counters: current, statsReset: statsReset}
+		deltas := statementDelta(previous, snapshot)
+		p.cache.Add(cacheKey, snapshot)
+		merged, exists := queries[statementKey]
+		if !exists {
+			merged = row
+			queries[statementKey] = merged
+		}
+		for columnName := range updatedOnly {
+			value := deltas[columnName]
+			if exists {
+				value += merged[dbAttributePrefix+columnName].(float64)
 			}
-			finalValue := float64(0)
-			if valDelta > 0 {
-				p.cache.Add(cacheKey, valInAtts)
-				finalValue = valDelta
-			}
-			if info.finalConverter != nil {
-				row[dbAttributePrefix+columnName] = info.finalConverter(finalValue)
-			} else {
-				row[dbAttributePrefix+columnName] = finalValue
+			merged[dbAttributePrefix+columnName] = value
+		}
+	}
+
+	pq := make(priorityqueue.PriorityQueue[map[string]any, float64], 0, len(queries))
+	for _, row := range queries {
+		for columnName, convert := range updatedOnly {
+			if convert != nil {
+				row[dbAttributePrefix+columnName] = convert(row[dbAttributePrefix+columnName].(float64))
 			}
 		}
 		if row[dbAttributePrefix+totalExecTimeColumnName] == 0.0 {
@@ -562,7 +571,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory p
 		item := priorityqueue.QueueItem[map[string]any, float64]{
 			Value:    row,
 			Priority: row[dbAttributePrefix+totalExecTimeColumnName].(float64),
-			Index:    i,
+			Index:    len(pq),
 		}
 		pq.Push(&item)
 	}
