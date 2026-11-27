@@ -134,11 +134,21 @@ processors:
         # convert all cumulative sum or histogram metrics to delta
 ```
 
-## Histogram sums that are NaN
+## Histogram sums that are NaN or unset
 
-A `NaN` sum on a histogram or exponential histogram data point is treated as a sum that was not recorded. The data
-point keeps its `NaN` sum, and the last sum that was not `NaN` stays as the baseline, so the next data point with a
-sum is diffed against it. The sums of the delta data points therefore add up to the growth of the cumulative sum.
+A `NaN` sum on a histogram or exponential histogram data point, and a data point without a sum, are treated as a sum
+that was not recorded. The data point keeps its `NaN` or unset sum, and the last sum that was recorded stays as the
+baseline, so the next data point with a sum is diffed against it. Once a sum has been recorded, the sums of the delta
+data points therefore add up to the growth of the cumulative sum.
+
+A data point without a sum and without observations (`count` of 0) has a sum of 0, as OTLP requires, so it counts as a
+recorded sum. If a stream starts, or restarts after a reset, with a data point that has observations but no sum, there
+is no recorded sum to diff against, so the sum of the next delta data point is not known and it is emitted without a
+sum. The sum is not reported as 0, since that would claim that the observations of the interval summed to 0. The data
+point after it is diffed against the recorded sum as usual.
+
+A data point that is dropped because its bucket boundaries changed becomes the new baseline. If it has no sum, the last
+recorded sum stays as the baseline.
 
 ## Troubleshooting
 

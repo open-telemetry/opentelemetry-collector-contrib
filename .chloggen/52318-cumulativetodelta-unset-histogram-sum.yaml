@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: processor/cumulative_to_delta
+
+note: Treat a histogram or exponential histogram data point without a sum as a sum that was not recorded, so the next sum is no longer diffed against 0
+
+issues: [52318]
+
+subtext:
+
+change_logs: [user]

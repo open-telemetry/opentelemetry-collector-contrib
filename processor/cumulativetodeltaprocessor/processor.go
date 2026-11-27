@@ -245,6 +245,30 @@ func (ctdp *cumulativeToDeltaProcessor) recordDropped(ctx context.Context, id tr
 	}
 }
 
+// trackedSum returns the sum of a histogram data point as the tracker should see it. A point without
+// a sum reads as 0 in pdata, which would be diffed as a real sum, so it is reported as NaN instead,
+// unless it has no observations: OTLP requires the sum to be 0 when the count is 0, so it is known.
+func trackedSum(hasSum bool, sum float64, count uint64) float64 {
+	if !hasSum && count > 0 {
+		return math.NaN()
+	}
+	return sum
+}
+
+// setDeltaSum writes the delta sum of a converted histogram data point. A data point that had no sum, or a NaN
+// one, keeps it as it was. A delta sum that is NaN is not known, because the baseline it was diffed against had
+// no sum, so the sum is removed rather than reported as 0.
+func setDeltaSum(hasSum bool, sum, deltaSum float64, set func(float64), remove func()) {
+	if !hasSum || math.IsNaN(sum) {
+		return
+	}
+	if math.IsNaN(deltaSum) {
+		remove()
+		return
+	}
+	set(deltaSum)
+}
+
 func (ctdp *cumulativeToDeltaProcessor) convertNumberDataPoints(ctx context.Context, dps pmetric.NumberDataPointSlice, baseIdentity tracking.MetricIdentity) {
 	attrs := metricTypeAttrs[pmetric.MetricTypeSum]
 	dps.RemoveIf(func(dp pmetric.NumberDataPoint) bool {
@@ -305,7 +329,7 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(ctx context.C
 			ObservedTimestamp: dp.Timestamp(),
 			HistogramValue: &tracking.HistogramPoint{
 				Count:        dp.Count(),
-				Sum:          dp.Sum(),
+				Sum:          trackedSum(dp.HasSum(), dp.Sum(), dp.Count()),
 				BucketBounds: dp.ExplicitBounds().AsRaw(),
 				BucketCounts: dp.BucketCounts().AsRaw(),
 			},
@@ -321,9 +345,7 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(ctx context.C
 			ctdp.telemetry.CumulativetodeltaDatapoints.Add(ctx, 1, attrs)
 			dp.SetStartTimestamp(delta.StartTimestamp)
 			dp.SetCount(delta.HistogramValue.Count)
-			if dp.HasSum() && !math.IsNaN(dp.Sum()) {
-				dp.SetSum(delta.HistogramValue.Sum)
-			}
+			setDeltaSum(dp.HasSum(), dp.Sum(), delta.HistogramValue.Sum, dp.SetSum, dp.RemoveSum)
 			dp.ExplicitBounds().FromRaw(delta.HistogramValue.BucketBounds)
 			dp.BucketCounts().FromRaw(delta.HistogramValue.BucketCounts)
 			dp.RemoveMin()
@@ -352,7 +374,7 @@ func (ctdp *cumulativeToDeltaProcessor) convertExponentialHistogramDataPoints(ct
 			ObservedTimestamp: dp.Timestamp(),
 			ExponentialHistogramValue: &tracking.ExponentialHistogramPoint{
 				Count:         dp.Count(),
-				Sum:           dp.Sum(),
+				Sum:           trackedSum(dp.HasSum(), dp.Sum(), dp.Count()),
 				Scale:         dp.Scale(),
 				ZeroCount:     dp.ZeroCount(),
 				ZeroThreshold: dp.ZeroThreshold(),
@@ -376,9 +398,7 @@ func (ctdp *cumulativeToDeltaProcessor) convertExponentialHistogramDataPoints(ct
 			ctdp.telemetry.CumulativetodeltaDatapoints.Add(ctx, 1, attrs)
 			dp.SetStartTimestamp(delta.StartTimestamp)
 			dp.SetCount(delta.ExponentialHistogramPoint.Count)
-			if dp.HasSum() && !math.IsNaN(dp.Sum()) {
-				dp.SetSum(delta.ExponentialHistogramPoint.Sum)
-			}
+			setDeltaSum(dp.HasSum(), dp.Sum(), delta.ExponentialHistogramPoint.Sum, dp.SetSum, dp.RemoveSum)
 			// Scale and ZeroThreshold are unchanged
 			dp.SetZeroCount(delta.ExponentialHistogramPoint.ZeroCount)
 			dp.Positive().SetOffset(delta.ExponentialHistogramPoint.Positive.Offset)

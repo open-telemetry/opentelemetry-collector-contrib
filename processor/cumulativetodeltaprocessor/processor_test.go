@@ -1053,6 +1053,223 @@ func TestCumulativeToDeltaExponentialHistogramNaNSum(t *testing.T) {
 	require.NoError(t, mgp.Shutdown(t.Context()))
 }
 
+// TestCumulativeToDeltaHistogramUnsetSum checks how a data point without a sum is handled. It is not read as a
+// sum of 0, which would make the next sum be diffed against 0 and repeat what was already emitted, and a delta whose
+// sum is not known is emitted without one rather than with a sum of 0.
+func TestCumulativeToDeltaHistogramUnsetSum(t *testing.T) {
+	now := time.Now()
+
+	// expectation is what a point of the stream is expected to come out as.
+	type expectation struct {
+		dropped bool
+		// sum is the delta sum, nil when the data point is emitted without one.
+		sum *float64
+	}
+	emitted := func(sum *float64) expectation { return expectation{sum: sum} }
+	dropped := expectation{dropped: true}
+
+	// point is a cumulative data point. A nil sum is a point without a sum. Bounds are only used by histograms.
+	type point struct {
+		count  uint64
+		sum    *float64
+		bounds []float64
+	}
+	oneBound, twoBounds := []float64{1}, []float64{1, 5}
+
+	streams := []struct {
+		name         string
+		initialValue tracking.InitialValue
+		// histogramOnly streams use a change of the bucket layout, which exponential histograms do not have.
+		histogramOnly bool
+		// startedBeforeProcessor is whether the stream started before the processor did, which is what makes
+		// InitialValueAuto drop its first point.
+		startedBeforeProcessor bool
+		points                 []point
+		expected               []expectation
+	}{
+		{
+			name:         "unset sum in the middle",
+			initialValue: tracking.InitialValueKeep,
+			points:       []point{{10, new(1000.0), oneBound}, {20, nil, oneBound}, {30, new(1200.0), oneBound}, {40, new(1300.0), oneBound}},
+			expected:     []expectation{emitted(new(1000.0)), emitted(nil), emitted(new(200.0)), emitted(new(100.0))},
+		},
+		{
+			name:         "consecutive unset sums",
+			initialValue: tracking.InitialValueKeep,
+			points:       []point{{10, new(1000.0), oneBound}, {20, nil, oneBound}, {30, nil, oneBound}, {40, new(1300.0), oneBound}},
+			expected:     []expectation{emitted(new(1000.0)), emitted(nil), emitted(nil), emitted(new(300.0))},
+		},
+		{
+			// OTLP requires the sum to be 0 when the count is 0, so the first point has a known sum
+			// even though it is unset, and the next sum is a real delta.
+			name:         "unset sum on an empty first point",
+			initialValue: tracking.InitialValueKeep,
+			points:       []point{{0, nil, oneBound}, {10, new(500.0), oneBound}, {20, new(700.0), oneBound}},
+			expected:     []expectation{emitted(nil), emitted(new(500.0)), emitted(new(200.0))},
+		},
+		{
+			// With observations the sum is unknown, so there is nothing to diff the next sum against and
+			// the delta is emitted without a sum. It must not say that the 10 observations summed to 0.
+			name:         "unset sum on a first point with observations",
+			initialValue: tracking.InitialValueKeep,
+			points:       []point{{10, nil, oneBound}, {20, new(500.0), oneBound}, {30, new(700.0), oneBound}},
+			expected:     []expectation{emitted(nil), emitted(nil), emitted(new(200.0))},
+		},
+		{
+			// The first point is dropped, but it is still the baseline of the next one.
+			name:                   "initial value auto with an unset sum on the dropped first point",
+			initialValue:           tracking.InitialValueAuto,
+			startedBeforeProcessor: true,
+			points:                 []point{{10, nil, oneBound}, {20, new(500.0), oneBound}, {30, new(700.0), oneBound}},
+			expected:               []expectation{dropped, emitted(nil), emitted(new(200.0))},
+		},
+		{
+			// The point after the reset becomes the baseline and has observations but no sum, so the
+			// delta of the next point is emitted without a sum, and the pre-reset sum is not used.
+			name:         "reset to a point with observations and no sum",
+			initialValue: tracking.InitialValueKeep,
+			points:       []point{{10, new(1000.0), oneBound}, {20, new(2000.0), oneBound}, {5, nil, oneBound}, {15, new(150.0), oneBound}, {25, new(250.0), oneBound}},
+			expected:     []expectation{emitted(new(1000.0)), emitted(new(1000.0)), dropped, emitted(nil), emitted(new(100.0))},
+		},
+		{
+			// The point with the new bucket layout has no sum and is dropped, but it becomes the baseline of
+			// the next one. The sum recorded before it is kept, so the 1000 is not lost.
+			name:          "bucket layout change on a point without a sum",
+			initialValue:  tracking.InitialValueKeep,
+			histogramOnly: true,
+			points:        []point{{10, new(1000.0), oneBound}, {20, nil, twoBounds}, {30, new(1300.0), twoBounds}},
+			expected:      []expectation{emitted(new(1000.0)), dropped, emitted(new(300.0))},
+		},
+		{
+			// Same, but the point with the new bucket layout has a sum, which is the new baseline.
+			name:          "bucket layout change on a point with a sum",
+			initialValue:  tracking.InitialValueKeep,
+			histogramOnly: true,
+			points:        []point{{10, new(1000.0), oneBound}, {20, new(1100.0), twoBounds}, {30, new(1300.0), twoBounds}},
+			expected:      []expectation{emitted(new(1000.0)), dropped, emitted(new(200.0))},
+		},
+	}
+
+	histogram := func(points []point, start time.Time) pmetric.Metrics {
+		md := pmetric.NewMetrics()
+		m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m.SetName("metric_1")
+		h := m.SetEmptyHistogram()
+		h.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		for i, p := range points {
+			dp := h.DataPoints().AppendEmpty()
+			dp.SetStartTimestamp(pcommon.NewTimestampFromTime(start))
+			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(time.Duration(i+2) * time.Second)))
+			dp.SetCount(p.count)
+			if p.sum != nil {
+				dp.SetSum(*p.sum)
+			}
+			dp.ExplicitBounds().FromRaw(p.bounds)
+			buckets := make([]uint64, len(p.bounds)+1)
+			buckets[0] = p.count
+			dp.BucketCounts().FromRaw(buckets)
+		}
+		return md
+	}
+	exponentialHistogram := func(points []point, start time.Time) pmetric.Metrics {
+		expPoints := make([]testExponentialHistogramPoint, 0, len(points))
+		for i, p := range points {
+			expPoints = append(expPoints, testExponentialHistogramPoint{
+				startTs:         int64(start.Sub(now) / time.Second),
+				ts:              int64(i + 2),
+				count:           p.count,
+				sum:             p.sum,
+				positiveBuckets: []uint64{p.count},
+			})
+		}
+		return testExponentialHistogramMetrics{
+			metrics: []testExponentialHistogramMetric{{name: "metric_1", cumulative: true, points: expPoints}},
+		}.generateMetrics(now)
+	}
+	histogramSums := func(m pmetric.Metric) []*float64 {
+		var out []*float64
+		dps := m.Histogram().DataPoints()
+		for i := range dps.Len() {
+			out = append(out, optionalSum(dps.At(i).HasSum(), dps.At(i).Sum()))
+		}
+		return out
+	}
+	exponentialHistogramSums := func(m pmetric.Metric) []*float64 {
+		var out []*float64
+		dps := m.ExponentialHistogram().DataPoints()
+		for i := range dps.Len() {
+			out = append(out, optionalSum(dps.At(i).HasSum(), dps.At(i).Sum()))
+		}
+		return out
+	}
+
+	for _, typ := range []struct {
+		name string
+		// hasBucketLayout is whether the type has explicit bucket bounds, so a stream may change them.
+		hasBucketLayout bool
+		metrics         func(points []point, start time.Time) pmetric.Metrics
+		sums            func(pmetric.Metric) []*float64
+	}{
+		{name: "histogram", hasBucketLayout: true, metrics: histogram, sums: histogramSums},
+		{name: "exponential_histogram", metrics: exponentialHistogram, sums: exponentialHistogramSums},
+	} {
+		for _, stream := range streams {
+			if stream.histogramOnly && !typ.hasBucketLayout {
+				continue
+			}
+			t.Run(typ.name+"/"+stream.name, func(t *testing.T) {
+				next := new(consumertest.MetricsSink)
+				mgp, err := NewFactory().CreateMetrics(
+					t.Context(),
+					processortest.NewNopSettings(metadata.Type),
+					&Config{InitialValue: stream.initialValue},
+					next,
+				)
+				require.NoError(t, err)
+				require.NoError(t, mgp.Start(t.Context(), componenttest.NewNopHost()))
+				// A stream that started after the processor did is a new counter, which InitialValueAuto keeps.
+				start := now.Add(time.Second)
+				if stream.startedBeforeProcessor {
+					start = now.Add(-time.Hour)
+				}
+				require.NoError(t, mgp.ConsumeMetrics(t.Context(), typ.metrics(stream.points, start)))
+
+				got := next.AllMetrics()
+				require.Len(t, got, 1)
+				actual := typ.sums(got[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0))
+
+				// Dropped points are removed, so the emitted ones are matched in order.
+				var expected []*float64
+				for _, e := range stream.expected {
+					if !e.dropped {
+						expected = append(expected, e.sum)
+					}
+				}
+				require.Len(t, actual, len(expected))
+				for i := range expected {
+					if expected[i] == nil {
+						assert.Nil(t, actual[i], "emitted point %d has no sum", i)
+						continue
+					}
+					if assert.NotNil(t, actual[i], "emitted point %d has a sum", i) {
+						assert.InDelta(t, *expected[i], *actual[i], 1e-9, "emitted point %d", i)
+					}
+				}
+
+				require.NoError(t, mgp.Shutdown(t.Context()))
+			})
+		}
+	}
+}
+
+// optionalSum returns the sum of a data point, or nil when it has none.
+func optionalSum(hasSum bool, sum float64) *float64 {
+	if !hasSum {
+		return nil
+	}
+	return &sum
+}
+
 func generateTestSumMetrics(tm testSumMetric) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	now := time.Now()
