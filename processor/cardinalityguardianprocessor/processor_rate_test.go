@@ -26,7 +26,7 @@ func TestTracker_ConstantRateDetected(t *testing.T) {
 	for epoch := range 4 {
 		dropped := 0
 		for v := range newPerEpoch {
-			if tracker.insert(rotationBenchmarkHash(epoch, v), limit) {
+			if tracker.insert(rotationBenchmarkHash(epoch, v), limit, metricInfo{}) {
 				dropped++
 			}
 		}
@@ -45,7 +45,7 @@ func TestTracker_StableSetNotEnforced(t *testing.T) {
 	for epoch := range 4 {
 		dropped := 0
 		for v := range stableValues {
-			if tracker.insert(rotationBenchmarkHash(0, v), limit) {
+			if tracker.insert(rotationBenchmarkHash(0, v), limit, metricInfo{}) {
 				dropped++
 			}
 		}
@@ -74,7 +74,7 @@ func TestCardinalityProcessor_ConstantRateEnforced(t *testing.T) {
 	droppedByEpoch := make([]int, 4)
 	for epoch := range 4 {
 		for i := range newPerEpoch {
-			if p.shouldDrop("api.request", "session_id", pcommon.NewValueStr(fmt.Sprintf("e%d-%d", epoch, i))) {
+			if p.shouldDrop("api.request", "session_id", pcommon.NewValueStr(fmt.Sprintf("e%d-%d", epoch, i)), metricInfo{}) {
 				droppedByEpoch[epoch]++
 			}
 		}
@@ -121,9 +121,9 @@ func TestTracker_OvershootBoundedByBackoff(t *testing.T) {
 				for v := range int(limit) * 4 {
 					if interleaveRepeats {
 						// Advances sinceRefresh without growing the window.
-						tracker.insert(rotationBenchmarkHash(0, 0), limit)
+						tracker.insert(rotationBenchmarkHash(0, 0), limit, metricInfo{})
 					}
-					if !tracker.insert(rotationBenchmarkHash(1, v), limit) {
+					if !tracker.insert(rotationBenchmarkHash(1, v), limit, metricInfo{}) {
 						passed++
 					}
 				}
@@ -159,18 +159,18 @@ func TestTracker_OvershootBoundedByBackoff(t *testing.T) {
 
 			passed := uint64(0)
 			for v := range limit {
-				require.False(t, tracker.insert(rotationBenchmarkHash(1, int(v)), limit),
+				require.False(t, tracker.insert(rotationBenchmarkHash(1, int(v)), limit, metricInfo{}),
 					"the first %d new values are the allowance and must pass", limit)
 				passed++
 			}
 
 			// A repeat forces a refresh at exactly the limit.
-			require.False(t, tracker.insert(rotationBenchmarkHash(1, 0), limit),
+			require.False(t, tracker.insert(rotationBenchmarkHash(1, 0), limit, metricInfo{}),
 				"a repeat is not growth and must never be enforced")
 			require.Equal(t, limit, tracker.delta(),
 				"the construction must land growth exactly on the limit, or this is not the worst case")
 
-			for v := limit; !tracker.insert(rotationBenchmarkHash(1, int(v)), limit); v++ {
+			for v := limit; !tracker.insert(rotationBenchmarkHash(1, int(v)), limit, metricInfo{}); v++ {
 				passed++
 				require.Less(t, passed, limit*2, "enforcement never began")
 			}
@@ -190,18 +190,18 @@ func TestTracker_RepeatsThenGrowthEnforced(t *testing.T) {
 		t.Run(fmt.Sprintf("repeats_%d", repeats), func(t *testing.T) {
 			tracker := newTracker()
 			for v := range baseValues {
-				tracker.insert(rotationBenchmarkHash(0, v), limit)
+				tracker.insert(rotationBenchmarkHash(0, v), limit, metricInfo{})
 			}
 			require.False(t, tracker.rotate())
 
 			for epoch := 1; epoch <= 3; epoch++ {
 				dropped := 0
 				for i := range repeats {
-					tracker.insert(rotationBenchmarkHash(epoch-1, i%baseValues), limit)
+					tracker.insert(rotationBenchmarkHash(epoch-1, i%baseValues), limit, metricInfo{})
 				}
-				tracker.insert(rotationBenchmarkHash(epoch-1, 0), limit) // duplicate
+				tracker.insert(rotationBenchmarkHash(epoch-1, 0), limit, metricInfo{}) // duplicate
 				for v := range newPerEpoch {
-					if tracker.insert(rotationBenchmarkHash(epoch, v), limit) {
+					if tracker.insert(rotationBenchmarkHash(epoch, v), limit, metricInfo{}) {
 						dropped++
 					}
 				}
@@ -231,7 +231,7 @@ func TestCardinalityProcessor_RepeatsThenGrowthEnforced(t *testing.T) {
 	const baseValues, newPerEpoch = 10, 60
 	send := func(epoch, i int) bool {
 		return p.shouldDrop("api.request", "session_id",
-			pcommon.NewValueStr(fmt.Sprintf("e%d-%d", epoch, i)))
+			pcommon.NewValueStr(fmt.Sprintf("e%d-%d", epoch, i)), metricInfo{})
 	}
 	for i := range baseValues {
 		send(0, i)

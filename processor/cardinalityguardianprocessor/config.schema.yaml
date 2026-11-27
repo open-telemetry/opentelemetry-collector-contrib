@@ -34,6 +34,9 @@ properties:
     type: array
     items:
       type: string
+  read_only:
+    description: ReadOnly tracks cardinality and reports it through the telemetry gauges without changing data. EnforcementMode is ignored while it is true.
+    type: boolean
   top_offenders_count:
-    description: TopOffendersCount is the number of highest-delta (metric, label) pairs to report via the "otelcol_processor_cardinality_top_offenders" gauge. The snapshot is computed once per epoch rotation, so it adds no hot-path cost. Set to 0 to disable the Top-N gauge entirely. Must be ≥ 0.
+    description: TopOffendersCount is the number of highest-delta (metric, label) pairs to report via the "otelcol_processor_cardinality_top_offenders" gauge, and of highest distinct-value pairs via "otelcol_processor_cardinality_top_distinct". The snapshots are computed once per epoch rotation, so they add no hot-path cost. Set to 0 to disable both Top-N gauges. Must be ≥ 0.
     type: integer
