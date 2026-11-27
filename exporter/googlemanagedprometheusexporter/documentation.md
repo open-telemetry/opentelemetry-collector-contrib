@@ -19,8 +19,8 @@ sending_queue:
         enabled: true          # OVERRIDE
         flush_timeout: 200ms   # default
         sizer: items           # default
-        min_size: 8192         # default
-        max_size: 0            # default
+        min_size: 200          # OVERRIDE
+        max_size: 200          # OVERRIDE
         partition:
             metadata_keys: []  # default
 ```

@@ -23,6 +23,8 @@ const (
 func NewDefaultSendingQueueConfig() configoptional.Optional[exporterhelper.QueueBatchConfig] {
 	cfg := exporterhelper.NewDefaultQueueConfig()
 	batchCfg := *cfg.Batch.GetOrInsertDefault()
+	batchCfg.MinSize = 200
+	batchCfg.MaxSize = 200
 	cfg.Batch = configoptional.Some(batchCfg)
 	return configoptional.Some(cfg)
 }
