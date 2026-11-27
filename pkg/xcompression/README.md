@@ -13,6 +13,9 @@ The factories support gzip, zlib, raw DEFLATE, LZ4, Snappy, and Zstandard.
 An empty compression type or `none` returns `Nop`, which copies bytes without
 compression. The writer factory also accepts `x-snappy-framed` as a Snappy alias.
 
+For gzip, zlib, and raw DEFLATE, the writer factory treats a compression level
+of `0` as unset and uses the codec default of `-1`.
+
 ## Usage
 
 ```go

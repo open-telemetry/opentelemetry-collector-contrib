@@ -45,12 +45,25 @@ func NewWriterFactory() *WriterFactory {
 
 // NewWriter returns a Writer for typ, configured with params. It returns an error
 // when typ is not supported or the writer cannot be constructed.
+// For gzip, zlib, and deflate, a zero level selects the default level.
 func (cwf *WriterFactory) NewWriter(typ configcompression.Type, params configcompression.CompressionParams) (Writer, error) {
 	constructor, ok := cwf.constructors[typ]
 	if !ok {
 		return nil, fmt.Errorf("no configured compression writer for %q", typ)
 	}
-	return constructor.New(params)
+	return constructor.New(withDefaultLevel(typ, params))
+}
+
+// withDefaultLevel replaces an unset level with the default level of typ.
+func withDefaultLevel(typ configcompression.Type, params configcompression.CompressionParams) configcompression.CompressionParams {
+	if params.Level != 0 {
+		return params
+	}
+	switch typ {
+	case configcompression.TypeGzip, configcompression.TypeZlib, configcompression.TypeDeflate:
+		params.Level = configcompression.DefaultCompressionLevel
+	}
+	return params
 }
 
 // NewWriteLeaser returns a [WriteLeaser] for typ, configured with params.
