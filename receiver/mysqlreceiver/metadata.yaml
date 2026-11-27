@@ -178,6 +178,21 @@ attributes:
   mysql.blocking.blocker.details:
     description: A JSON array of {thread_id, session_id} tuples, one per concurrent InnoDB row-lock blocker for this session. Unordered. session_id is null when that blocker could not be resolved (e.g. it disconnected between reads). "[]" when measured and not blocked, empty string when blocking isn't measurable on this engine/version (MariaDB, MySQL <8.0.11).
     type: string
+  mysql.blocking.lock.mode:
+    description: The InnoDB mode of the lock this session is waiting to acquire, from performance_schema.data_locks.LOCK_MODE (e.g. X, S, X,REC_NOT_GAP, IX). Empty string when not blocked or when blocking isn't measurable on this engine/version.
+    type: string
+  mysql.blocking.lock.type:
+    description: The kind of lock resource this session is waiting on, from performance_schema.data_locks.LOCK_TYPE (RECORD or TABLE). Empty string when not blocked or when blocking isn't measurable on this engine/version.
+    type: string
+  mysql.blocking.object.name:
+    description: The name of the table whose lock this session is waiting on, from performance_schema.data_locks.OBJECT_NAME. Empty string when not blocked or when blocking isn't measurable on this engine/version.
+    type: string
+  mysql.blocking.object.schema:
+    description: The schema of the table whose lock this session is waiting on, from performance_schema.data_locks.OBJECT_SCHEMA. Empty string when not blocked or when blocking isn't measurable on this engine/version.
+    type: string
+  mysql.blocking.start_time:
+    description: UTC timestamp (RFC3339) of when the statement that is waiting on a lock started. InnoDB exposes no lock-wait start time without the global PROCESS privilege, so this is the start of the waiting statement, which is at or before the lock wait itself began. Empty string when not blocked, when blocking isn't measurable on this engine/version, or when the value could not be resolved to a plausible timestamp. For elapsed wait time, use mysql.events_statements_current.timer_wait on the same event.
+    type: string
   mysql.client.name:
     description: The client driver's self-reported identity at connection time, e.g. "MySQL Connector/J" or "libmysql". Empty if the client reported no connect attributes or the connect-attrs feature is disabled server-side.
     type: string
@@ -242,7 +257,7 @@ attributes:
     description: The unique identifier for the session associated with the event.
     type: int
   mysql.session.status:
-    description: Simplified session status, either 'waiting', 'running' or 'other'.
+    description: Simplified session status, either 'waiting', 'running', 'idle_blocker' or 'other'. 'idle_blocker' marks a session that is idle itself but holds a row lock another session is waiting on; such sessions are sampled only so the blocker can be identified, and are not executing work.
     type: string
   mysql.threads.processlist_command:
     description: The type of command the thread is executing on behalf of the client for foreground threads, or `Sleep` if the session is idle.
@@ -400,6 +415,11 @@ events:
       - mysql.client.name
       - mysql.blocking.blocker.count
       - mysql.blocking.blocker.details
+      - mysql.blocking.start_time
+      - mysql.blocking.lock.mode
+      - mysql.blocking.lock.type
+      - mysql.blocking.object.schema
+      - mysql.blocking.object.name
 
   db.server.top_query:
     enabled: false

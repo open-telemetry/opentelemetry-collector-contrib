@@ -10,6 +10,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"math"
 	"net"
 	"regexp"
 	"strconv"
@@ -201,6 +202,8 @@ type client interface {
 	// blocker.count are populated from performance_schema.data_lock_waits
 	// (MySQL 8.0.11+ only).
 	getQuerySamples(limit uint64, supportsProcesslist, supportsDataLockWaits bool) ([]querySample, error)
+	// getServerBootTime anchors the picosecond timers on query samples to wall clock.
+	getServerBootTime() (time.Time, error)
 	explainQuery(digestText, sampleStatement, schema, digest string, logger *zap.Logger) string
 	Close() error
 }
@@ -211,7 +214,15 @@ type mySQLClient struct {
 	statementEventsLimit           int
 	statementEventsTimeLimit       time.Duration
 	dbVersion                      dbVersion
+	// serverBootTime is zero until first resolved; see getServerBootTime.
+	serverBootTime time.Time
 }
+
+// serverBootTimeDriftTolerance is how far a new boot time reading may sit from
+// the cached one before replacing it. Uptime has one-second granularity, so
+// readings jitter by up to a second without a restart; more than this is a
+// restart, which invalidates the old anchor.
+const serverBootTimeDriftTolerance = 2 * time.Second
 
 type ioWaitsStats struct {
 	schema      string
@@ -418,6 +429,16 @@ type querySample struct {
 	// and not blocked, empty string when blocking isn't measurable on this
 	// engine/version (MariaDB, MySQL <8.0.11).
 	blockerDetails string
+	// The lock this thread is waiting to acquire, from its own pending request
+	// row in performance_schema.data_locks. Empty when not blocked or not
+	// measurable on this engine/version.
+	blockingLockMode     string
+	blockingLockType     string
+	blockingObjectSchema string
+	blockingObjectName   string
+	// blockingStatementTimerStart is picoseconds since server start at which the
+	// waiting statement began; the scraper resolves it against the boot time.
+	blockingStatementTimerStart uint64
 }
 
 type topQuery struct {
@@ -1201,6 +1222,27 @@ func (c *mySQLClient) getTopQueries(topNValue, lookbackTime uint64, supportsSamp
 	return topQueries, nil
 }
 
+// getServerBootTime returns the UTC time the server started, cached within
+// serverBootTimeDriftTolerance so derived timestamps stay stable across scrapes.
+func (c *mySQLClient) getServerBootTime() (time.Time, error) {
+	var bootEpochSeconds float64
+	// Evaluated server-side, so collector clock skew doesn't matter, and
+	// UNIX_TIMESTAMP keeps it time-zone neutral.
+	query := "/* otel-collector-ignore */ SELECT UNIX_TIMESTAMP(NOW(6)) - VARIABLE_VALUE FROM performance_schema.global_status WHERE VARIABLE_NAME = 'Uptime'"
+	if err := c.client.QueryRow(query).Scan(&bootEpochSeconds); err != nil {
+		return c.serverBootTime, err
+	}
+
+	whole, fraction := math.Modf(bootEpochSeconds)
+	candidate := time.Unix(int64(whole), int64(fraction*float64(time.Second))).UTC()
+
+	if c.serverBootTime.IsZero() ||
+		candidate.Sub(c.serverBootTime).Abs() > serverBootTimeDriftTolerance {
+		c.serverBootTime = candidate
+	}
+	return c.serverBootTime, nil
+}
+
 //go:embed templates/querySample.tmpl
 var querySampleTemplate string
 
@@ -1276,6 +1318,16 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist, support
 				dest = append(dest, &s.clientName)
 			case "blocker_details":
 				dest = append(dest, &s.blockerDetails)
+			case "blocking_lock_mode":
+				dest = append(dest, &s.blockingLockMode)
+			case "blocking_lock_type":
+				dest = append(dest, &s.blockingLockType)
+			case "blocking_object_schema":
+				dest = append(dest, &s.blockingObjectSchema)
+			case "blocking_object_name":
+				dest = append(dest, &s.blockingObjectName)
+			case "blocking_statement_timer_start":
+				dest = append(dest, &s.blockingStatementTimerStart)
 			default:
 				return nil, fmt.Errorf("unknown column name %q for query samples", col)
 			}

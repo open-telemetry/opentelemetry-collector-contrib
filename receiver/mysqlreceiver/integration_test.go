@@ -1005,3 +1005,235 @@ func TestIntegrationQuerySampleAttributes(t *testing.T) {
 		})
 	}
 }
+
+// runRowLockBlock creates a real InnoDB row-lock block: one connection updates a
+// row and stays idle inside its transaction, a second waits on the same row. It
+// returns the blocker's session id and a cleanup function. The idle blocker is
+// the case the activity predicates alone cannot see.
+func runRowLockBlock(t *testing.T, cfg *Config) (blockerSessionID int64, cleanup func()) {
+	t.Helper()
+
+	setupC, err := newMySQLClient(cfg)
+	require.NoError(t, err)
+	require.NoError(t, setupC.Connect())
+	setupDB := setupC.(*mySQLClient).client
+	_, err = setupDB.Exec("CREATE TABLE IF NOT EXISTS otel.lock_target (id INT PRIMARY KEY, v INT) ENGINE=InnoDB")
+	require.NoError(t, err)
+	_, err = setupDB.Exec("REPLACE INTO otel.lock_target (id, v) VALUES (1, 0)")
+	require.NoError(t, err)
+	setupC.Close()
+
+	blockerCfg := *cfg
+	blockerCfg.Database = "otel"
+	blockerC, err := newMySQLClient(&blockerCfg)
+	require.NoError(t, err)
+	require.NoError(t, blockerC.Connect())
+	blockerDB := blockerC.(*mySQLClient).client
+
+	// One pinned connection, so the transaction and the session id match.
+	blockerConn, err := blockerDB.Conn(context.Background()) //nolint:usetesting // the connection must outlive any per-test context
+	require.NoError(t, err)
+	require.NoError(t, blockerConn.QueryRowContext(context.Background(), "SELECT CONNECTION_ID()").Scan(&blockerSessionID)) //nolint:usetesting // same reason
+
+	_, err = blockerConn.ExecContext(context.Background(), "START TRANSACTION") //nolint:usetesting // same reason
+	require.NoError(t, err)
+	_, err = blockerConn.ExecContext(context.Background(), "UPDATE lock_target SET v = v + 1 WHERE id = 1") //nolint:usetesting // same reason
+	require.NoError(t, err)
+	// The blocker now holds the row lock and goes idle inside its transaction.
+	waiterCfg := *cfg
+	waiterCfg.Database = "otel"
+	waiterC, err := newMySQLClient(&waiterCfg)
+	require.NoError(t, err)
+	require.NoError(t, waiterC.Connect())
+	waiterDB := waiterC.(*mySQLClient).client
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		_, _ = waiterDB.ExecContext(context.Background(), "UPDATE lock_target SET v = v + 1 WHERE id = 1") //nolint:usetesting // t.Context() would cancel the statement when the test ends, unblocking the waiter prematurely
+	}()
+
+	// Wait for InnoDB to register the lock wait, so the scrape sees both sides.
+	require.Eventually(t, func() bool {
+		var count int
+		_ = blockerConn.QueryRowContext(context.Background(), "SELECT COUNT(*) FROM performance_schema.data_lock_waits").Scan(&count) //nolint:usetesting // same reason
+		return count > 0
+	}, 10*time.Second, 200*time.Millisecond, "timed out waiting for the row lock wait to appear in performance_schema.data_lock_waits")
+
+	return blockerSessionID, func() {
+		_, _ = blockerConn.ExecContext(context.Background(), "ROLLBACK") //nolint:usetesting // same reason
+		<-done
+		blockerConn.Close()
+		blockerC.Close()
+		waiterC.Close()
+	}
+}
+
+// TestIntegrationBlockingSessionAttributes verifies the blocking attributes
+// against a real row-lock block: the waiter reports its blocker, lock and
+// object, the start time is stable across scrapes, and the idle blocker is
+// sampled as 'idle_blocker'.
+func TestIntegrationBlockingSessionAttributes(t *testing.T) {
+	testCases := []struct {
+		name  string
+		image string
+	}{
+		{name: "MySQL-8.0.33", image: "mysql:8.0.33"},
+		{name: "MySQL-8.4", image: "mysql:8.4"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
+
+			ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+				ContainerRequest: testcontainers.ContainerRequest{
+					Image:        tc.image,
+					ExposedPorts: []string{mysqlPort},
+					Cmd: []string{
+						"--performance_schema=ON",
+						"--max_digest_length=4096",
+						"--performance_schema_max_digest_length=4096",
+						"--performance_schema_max_sql_text_length=4096",
+					},
+					WaitingFor: wait.ForAll(
+						wait.ForListeningPort(mysqlPort).WithStartupTimeout(2*time.Minute),
+						wait.ForLog("ready for connections").WithStartupTimeout(2*time.Minute),
+					),
+					Env: map[string]string{
+						"MYSQL_ROOT_PASSWORD": "otel",
+						"MYSQL_DATABASE":      "otel",
+						"MYSQL_USER":          "otel",
+						"MYSQL_PASSWORD":      "otel",
+					},
+				},
+				Started: true,
+			})
+			testcontainers.CleanupContainer(t, ctr)
+			if err != nil && strings.Contains(err.Error(), "No such image") {
+				t.Skipf("image %s not available locally: %v", tc.image, err)
+			}
+			require.NoError(t, err)
+
+			host, err := ctr.Host(ctx)
+			require.NoError(t, err)
+			mappedPort, err := ctr.MappedPort(ctx, mysqlPort)
+			require.NoError(t, err)
+
+			cfg := containerConfig(host, mappedPort.Port())
+			runPerfSchemaSetup(t, cfg)
+
+			scraper, err := newMySQLScraper(
+				receivertest.NewNopSettings(metadata.Type),
+				cfg,
+				nil,
+				newCache[int64](int(cfg.TopQueryCollection.MaxQuerySampleCount*2*2)),
+				newTTLCache[string](cfg.TopQueryCollection.QueryPlanCacheSize, 0),
+			)
+			require.NoError(t, err)
+			require.NoError(t, scraper.start(ctx, nil))
+			defer func() { assert.NoError(t, scraper.shutdown(ctx)) }()
+
+			blockStart := time.Now().UTC()
+			blockerSessionID, cleanup := runRowLockBlock(t, cfg)
+			defer cleanup()
+
+			scrape := func() []pcommon.Map {
+				t.Helper()
+				logs, scrapeErr := scraper.scrapeQuerySampleFunc(ctx)
+				require.NoError(t, scrapeErr)
+				var attrs []pcommon.Map
+				for i := range logs.ResourceLogs().Len() {
+					rl := logs.ResourceLogs().At(i)
+					for j := range rl.ScopeLogs().Len() {
+						sl := rl.ScopeLogs().At(j)
+						for k := range sl.LogRecords().Len() {
+							attrs = append(attrs, sl.LogRecords().At(k).Attributes())
+						}
+					}
+				}
+				return attrs
+			}
+
+			records := scrape()
+			require.NotEmpty(t, records, "expected at least one query sample record")
+
+			// --- the waiter ---
+			var waiter pcommon.Map
+			var waiterFound bool
+			for _, attrs := range records {
+				if count, ok := attrs.Get("mysql.blocking.blocker.count"); ok && count.Int() > 0 {
+					waiter = attrs
+					waiterFound = true
+					break
+				}
+			}
+			require.True(t, waiterFound, "expected a sample reporting at least one blocker")
+
+			details, ok := waiter.Get("mysql.blocking.blocker.details")
+			require.True(t, ok, "mysql.blocking.blocker.details missing on the waiter")
+			assert.Contains(t, details.Str(), fmt.Sprintf(`"session_id":%d`, blockerSessionID),
+				"the waiter must name the session holding the row lock")
+
+			lockMode, ok := waiter.Get("mysql.blocking.lock.mode")
+			require.True(t, ok, "mysql.blocking.lock.mode missing on the waiter")
+			assert.NotEmpty(t, lockMode.Str(), "a waiting session must report the lock mode it is requesting")
+
+			lockType, ok := waiter.Get("mysql.blocking.lock.type")
+			require.True(t, ok, "mysql.blocking.lock.type missing on the waiter")
+			assert.Contains(t, []string{"RECORD", "TABLE"}, lockType.Str())
+
+			schema, ok := waiter.Get("mysql.blocking.object.schema")
+			require.True(t, ok, "mysql.blocking.object.schema missing on the waiter")
+			assert.Equal(t, "otel", schema.Str())
+
+			object, ok := waiter.Get("mysql.blocking.object.name")
+			require.True(t, ok, "mysql.blocking.object.name missing on the waiter")
+			assert.Equal(t, "lock_target", object.Str())
+
+			startTimeVal, ok := waiter.Get("mysql.blocking.start_time")
+			require.True(t, ok, "mysql.blocking.start_time missing on the waiter")
+			startTime, parseErr := time.Parse(time.RFC3339, startTimeVal.Str())
+			require.NoError(t, parseErr, "mysql.blocking.start_time must be RFC3339, got %q", startTimeVal.Str())
+			// Bounded on both sides: the waiting statement began after this test
+			// created the block, and cannot have begun after the scrape read it.
+			// An anchor or timer that disagree land outside this window.
+			assert.False(t, startTime.Before(blockStart.Add(-time.Minute)),
+				"start time predates the block this test created, got %s (block started %s)", startTime, blockStart)
+			assert.False(t, startTime.After(time.Now()),
+				"the waiting statement cannot have started in the future, got %s", startTime)
+
+			// --- the idle blocker ---
+			var blockerStatus string
+			var blockerFound bool
+			for _, attrs := range records {
+				sessionID, hasSession := attrs.Get("mysql.session.id")
+				if !hasSession || sessionID.Int() != blockerSessionID {
+					continue
+				}
+				blockerFound = true
+				if status, hasStatus := attrs.Get("mysql.session.status"); hasStatus {
+					blockerStatus = status.Str()
+				}
+			}
+			require.True(t, blockerFound,
+				"the idle blocker (session %d) must be sampled, otherwise consumers can only ever show it as an unknown session", blockerSessionID)
+			assert.Equal(t, "idle_blocker", blockerStatus,
+				"an idle blocker must be distinguishable from a session doing work")
+
+			// Consumers key a blocking event on the start time, so a value that
+			// moves between scrapes splits one wait into many events.
+			time.Sleep(1200 * time.Millisecond)
+			for _, attrs := range scrape() {
+				count, hasCount := attrs.Get("mysql.blocking.blocker.count")
+				if !hasCount || count.Int() == 0 {
+					continue
+				}
+				again, hasStart := attrs.Get("mysql.blocking.start_time")
+				require.True(t, hasStart)
+				assert.Equal(t, startTimeVal.Str(), again.Str(),
+					"mysql.blocking.start_time must not move while the same statement keeps waiting")
+			}
+		})
+	}
+}

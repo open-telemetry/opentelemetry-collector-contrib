@@ -18,6 +18,17 @@
     COALESCE(statement.digest, '') AS fingerprint,
     COALESCE(wait.event_id, statement.event_id, 0) AS activity_event_id,
     CASE
+        {{- if .supportsDataLockWaits}}
+        -- A session that is idle itself but holds a lock someone else wants. It
+        -- only reaches this query through the blocker branch of the WHERE clause
+        -- (the main predicates exclude 'Sleep' and 'Daemon'), so any such row is
+        -- a blocker rather than ordinary activity. Reported explicitly, instead
+        -- of the 'waiting' its idle wait row would otherwise produce, so
+        -- consumers counting active sessions can exclude it without having to
+        -- infer idleness from processlist_command. SQL Server reports the same
+        -- case as command 'IDLE_BLOCKER'.
+        WHEN thread.processlist_command IN ('Sleep', 'Daemon') THEN 'idle_blocker'
+        {{- end}}
         WHEN wait.thread_id IS NOT NULL
             AND wait.end_event_id IS NULL THEN 'waiting'
         -- actively executing on CPU
@@ -149,7 +160,42 @@
     -- event intact for monitoring users without that privilege, rather than
     -- failing the whole query.
     ''
-    {{- end}} AS blocker_details
+    {{- end}} AS blocker_details,
+    {{- if .supportsDataLockWaits}}
+    -- The lock this session is waiting to acquire, from its own pending request
+    -- row in data_locks (see the requested_lock join below). LOCK_DATA is
+    -- deliberately not selected: it holds the primary-key values of the locked
+    -- record, which is customer data and would need obfuscating.
+    COALESCE(requested_lock.lock_mode, '') AS blocking_lock_mode,
+    COALESCE(requested_lock.lock_type, '') AS blocking_lock_type,
+    COALESCE(requested_lock.object_schema, '') AS blocking_object_schema,
+    COALESCE(requested_lock.object_name, '') AS blocking_object_name,
+    -- blocking_statement_timer_start is picoseconds since server start at which
+    -- the waiting statement began; Go converts it to a wall-clock timestamp
+    -- against a server boot time cached across scrapes. InnoDB's only exact lock
+    -- wait start is information_schema.INNODB_TRX.trx_wait_started, which needs
+    -- the global PROCESS privilege this receiver avoids depending on, so the
+    -- statement start stands in for it -- it is at or before the lock wait
+    -- itself began. Reporting TIMER_START rather than a per-scrape
+    -- UTC_TIMESTAMP() - elapsed subtraction is what makes the value stable
+    -- across scrapes, so consumers can correlate repeated reads of one wait.
+    -- Elapsed wait time is not repeated here: for a lock waiter it is already
+    -- carried by statement_timer_wait_seconds above.
+    CASE
+        WHEN requested_lock.thread_id IS NOT NULL
+        THEN COALESCE(statement.timer_start, 0)
+        ELSE 0
+    END AS blocking_statement_timer_start
+    {{- else}}
+    -- Lock wait detail shares blocker_details' PROCESS dependency on
+    -- MySQL <8.0.11 and MariaDB, so it reports the same "not measured"
+    -- values -- empty string and 0 -- rather than failing the whole query.
+    '' AS blocking_lock_mode,
+    '' AS blocking_lock_type,
+    '' AS blocking_object_schema,
+    '' AS blocking_object_name,
+    0 AS blocking_statement_timer_start
+    {{- end}}
 FROM
     performance_schema.threads AS thread
     LEFT JOIN performance_schema.events_statements_current AS statement ON statement.thread_id = thread.thread_id
@@ -160,6 +206,33 @@ FROM
     -- regardless of how the client spelled them, so '= traceparent' matches any case.
     LEFT JOIN performance_schema.user_variables_by_thread AS uvt ON uvt.thread_id = thread.thread_id AND uvt.VARIABLE_NAME = 'traceparent'
     LEFT JOIN performance_schema.session_connect_attrs AS attrs ON attrs.PROCESSLIST_ID = thread.PROCESSLIST_ID AND attrs.ATTR_NAME = '_client_name'
+    {{- if .supportsDataLockWaits}}
+    -- requested_lock is the pending lock request of each waiting thread. It is
+    -- driven from data_lock_waits, which holds one row per actual wait, and
+    -- probes data_locks by its unique ENGINE_LOCK_ID, so the much larger
+    -- data_locks is never scanned per candidate thread. GROUP BY collapses the
+    -- one row per blocker that data_lock_waits produces for a single waiter --
+    -- all of them repeat the same REQUESTING_ENGINE_LOCK_ID, because a
+    -- transaction waits on exactly one request at a time -- so this stays
+    -- 1:0..1 per thread and cannot fan out the sample.
+    LEFT JOIN (
+        SELECT
+            requesting_wait.REQUESTING_THREAD_ID AS thread_id,
+            requested.LOCK_MODE AS lock_mode,
+            requested.LOCK_TYPE AS lock_type,
+            requested.OBJECT_SCHEMA AS object_schema,
+            requested.OBJECT_NAME AS object_name
+        FROM performance_schema.data_lock_waits AS requesting_wait
+        JOIN performance_schema.data_locks AS requested
+            ON requested.ENGINE_LOCK_ID = requesting_wait.REQUESTING_ENGINE_LOCK_ID
+        GROUP BY
+            requesting_wait.REQUESTING_THREAD_ID,
+            requested.LOCK_MODE,
+            requested.LOCK_TYPE,
+            requested.OBJECT_SCHEMA,
+            requested.OBJECT_NAME
+    ) AS requested_lock ON requested_lock.thread_id = thread.thread_id
+    {{- end}}
     {{- if .supportsProcesslist}}
     -- performance_schema.processlist.HOST returns "host:port" for TCP/IP connections,
     -- enabling population of client.port. Available MySQL 8.0.22+; lock-free unlike
@@ -167,11 +240,34 @@ FROM
     LEFT JOIN performance_schema.processlist AS pl ON pl.ID = thread.PROCESSLIST_ID
     {{- end}}
 WHERE
-    thread.processlist_state IS NOT NULL
-    AND thread.processlist_command NOT IN ('Sleep', 'Daemon')
+    (
+        (
+            thread.processlist_state IS NOT NULL
+            AND thread.processlist_command NOT IN ('Sleep', 'Daemon')
+            AND (wait.EVENT_NAME != 'idle' OR wait.EVENT_NAME IS NULL)
+            AND (wait.operation != 'idle' OR wait.operation IS NULL)
+            AND COALESCE(statement.sql_text, thread.PROCESSLIST_info) != ''
+        )
+        {{- if .supportsDataLockWaits}}
+        -- The classic row-lock blocker is idle in the middle of a transaction:
+        -- no processlist_state, command 'Sleep', an 'idle' wait and often no
+        -- current statement text, so it fails every predicate above and would
+        -- never be sampled. Without a sample of its own, consumers can resolve
+        -- a blocker's thread and session id from blocker_details but nothing
+        -- else, and the blocker shows up as an unknown session. Admitting any
+        -- thread that appears as a blocker fixes that, and the branch has to sit
+        -- outside the group above rather than being ANDed into it, or it is dead
+        -- code. The blocker's statement text comes from the row
+        -- events_statements_current keeps after a statement completes, i.e. the
+        -- last thing the blocker ran, matching what SQL Server reports from
+        -- most_recent_sql_handle and Oracle from PREV_SQL_ID.
+        OR thread.thread_id IN (
+            SELECT blocking_wait.BLOCKING_THREAD_ID
+            FROM performance_schema.data_lock_waits AS blocking_wait
+        )
+        {{- end}}
+    )
     AND thread.processlist_id != CONNECTION_ID()
-    AND (wait.EVENT_NAME != 'idle' OR wait.EVENT_NAME IS NULL)
-    AND (wait.operation != 'idle' OR wait.operation IS NULL)
     -- events_waits_current can have multiple rows per thread, thus we use EVENT_ID to identify the row we want to use.
     -- Additionally, we want the row with the highest EVENT_ID which reflects the most recent and current wait.
     AND (
@@ -181,6 +277,22 @@ WHERE
           FROM  performance_schema.events_waits_current AS current_waits
           Where current_waits.thread_id = thread.thread_id
     ) OR wait.event_id is NULL)
-    AND COALESCE(statement.sql_text, thread.PROCESSLIST_info) != ''
-    AND COALESCE(statement.sql_text, thread.PROCESSLIST_info) NOT LIKE '/* otel-collector-ignore */%'
+    -- Defaulted to '' because an idle blocker admitted by the branch above can
+    -- have no statement text at all, and NULL NOT LIKE ... is NULL, which would
+    -- filter the row back out.
+    AND COALESCE(statement.sql_text, thread.PROCESSLIST_info, '') NOT LIKE '/* otel-collector-ignore */%'
+{{- if .supportsDataLockWaits}}
+-- Without an ordering, which rows survive LIMIT is the optimizer's choice, and
+-- sampling a victim while dropping its blocker leaves consumers with an
+-- unresolvable blocker id -- the exact failure the blocker branch above exists
+-- to remove. Both sides of a block therefore sort ahead of ordinary activity.
+-- The IN list is uncorrelated, so it is materialized once rather than per row.
+ORDER BY (
+    requested_lock.thread_id IS NOT NULL
+    OR thread.thread_id IN (
+        SELECT ordering_wait.BLOCKING_THREAD_ID
+        FROM performance_schema.data_lock_waits AS ordering_wait
+    )
+) DESC
+{{- end}}
 LIMIT {{ .limit }}

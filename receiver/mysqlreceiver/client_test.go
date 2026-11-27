@@ -4,11 +4,14 @@
 package mysqlreceiver
 
 import (
+	"bytes"
 	"database/sql"
 	"database/sql/driver"
+	"errors"
 	"regexp"
 	"strings"
 	"testing"
+	"text/template"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -689,6 +692,170 @@ func TestGetActiveSessionCount(t *testing.T) {
 	require.NoError(t, mock.ExpectationsWereMet())
 
 	assert.Equal(t, int64(7), got)
+}
+
+// TestQuerySampleTemplateBlockingBranches checks the structure of the rendered
+// query-sample statement, which decides which sessions are sampled at all.
+func TestQuerySampleTemplateBlockingBranches(t *testing.T) {
+	render := func(t *testing.T, supportsDataLockWaits bool) string {
+		t.Helper()
+		tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
+		buf := bytes.Buffer{}
+		require.NoError(t, tmpl.Execute(&buf, map[string]any{
+			"limit":                 uint64(100),
+			"supportsProcesslist":   true,
+			"supportsDataLockWaits": supportsDataLockWaits,
+		}))
+		return buf.String()
+	}
+
+	t.Run("the idle-blocker branch sits outside the activity predicates", func(t *testing.T) {
+		rendered := render(t, true)
+
+		// ANDing the blocker exception under processlist_state IS NOT NULL makes
+		// it dead code, since an idle blocker has no state. The group of
+		// activity predicates must therefore be closed before the OR.
+		lastActivityPredicate := strings.Index(rendered, "AND COALESCE(statement.sql_text, thread.PROCESSLIST_info) != ''")
+		require.NotEqual(t, -1, lastActivityPredicate, "activity predicates must be present")
+		blockerBranch := strings.Index(rendered, "OR thread.thread_id IN (")
+		require.NotEqual(t, -1, blockerBranch, "the idle-blocker branch must be present")
+		require.Greater(t, blockerBranch, lastActivityPredicate)
+
+		between := rendered[lastActivityPredicate:blockerBranch]
+		assert.Contains(t, between, ")", "the activity predicate group must be closed before the OR, or the branch never matches")
+	})
+
+	t.Run("lock detail is read from the waiter's own request row", func(t *testing.T) {
+		rendered := render(t, true)
+
+		// Driven from data_lock_waits, which has one row per actual wait, so the
+		// far larger data_locks is probed by key rather than scanned per thread.
+		assert.Contains(t, rendered, "FROM performance_schema.data_lock_waits AS requesting_wait")
+		assert.Contains(t, rendered, "requested.ENGINE_LOCK_ID = requesting_wait.REQUESTING_ENGINE_LOCK_ID")
+		assert.Contains(t, rendered, ") AS requested_lock ON requested_lock.thread_id = thread.thread_id")
+		assert.Contains(t, rendered, "AS blocking_lock_mode")
+		assert.Contains(t, rendered, "AS blocking_object_name")
+		assert.Contains(t, rendered, "AS blocking_statement_timer_start")
+		assert.Contains(t, rendered, "'idle_blocker'")
+
+		// Elapsed wait time is already on the event as
+		// statement_timer_wait_seconds and must not be emitted twice.
+		assert.NotContains(t, rendered, "blocking_wait_duration")
+
+		// LOCK_DATA holds primary-key values of the locked record, so it must
+		// never be selected without obfuscation.
+		assert.NotContains(t, rendered, "requested.LOCK_DATA")
+	})
+
+	t.Run("both sides of a block sort ahead of ordinary activity", func(t *testing.T) {
+		rendered := render(t, true)
+
+		// Without this, LIMIT can keep a victim and drop its blocker, leaving
+		// consumers with a blocker id they cannot resolve.
+		orderBy := strings.Index(rendered, "\nORDER BY (")
+		require.NotEqual(t, -1, orderBy, "the blocking-aware ordering must be present")
+		limit := strings.Index(rendered, "\nLIMIT ")
+		require.NotEqual(t, -1, limit)
+		assert.Less(t, orderBy, limit, "the ordering must precede LIMIT to decide which rows survive it")
+		assert.Contains(t, rendered, ") DESC")
+	})
+
+	t.Run("engines without data_lock_waits reference none of those tables", func(t *testing.T) {
+		rendered := render(t, false)
+
+		assert.NotContains(t, rendered, "data_lock_waits")
+		assert.NotContains(t, rendered, "data_locks")
+		assert.NotContains(t, rendered, "'idle_blocker'")
+		assert.NotContains(t, rendered, "\nORDER BY")
+		// The columns still exist so the result shape does not change between
+		// engines; they carry the documented not-measured values.
+		assert.Contains(t, rendered, "'' AS blocking_lock_mode")
+		assert.Contains(t, rendered, "0 AS blocking_statement_timer_start")
+	})
+}
+
+func TestGetServerBootTime(t *testing.T) {
+	const query = "/* otel-collector-ignore */ SELECT UNIX_TIMESTAMP(NOW(6)) - VARIABLE_VALUE FROM performance_schema.global_status WHERE VARIABLE_NAME = 'Uptime'"
+
+	// A fixed epoch second with a fractional part, so the conversion from the
+	// decimal MySQL returns is exercised rather than assumed.
+	const firstReading = 1767225600.5
+	firstBootTime := time.Date(2026, 1, 1, 0, 0, 0, 500_000_000, time.UTC)
+
+	expectReading := func(mock sqlmock.Sqlmock, value float64) {
+		mock.ExpectQuery(regexp.QuoteMeta(query)).
+			WillReturnRows(sqlmock.NewRows([]string{"boot_epoch_seconds"}).AddRow(value))
+	}
+
+	t.Run("resolves the boot time from NOW() minus Uptime", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer db.Close()
+		expectReading(mock, firstReading)
+
+		c := &mySQLClient{client: db}
+		got, err := c.getServerBootTime()
+		require.NoError(t, err)
+		require.NoError(t, mock.ExpectationsWereMet())
+
+		assert.Equal(t, firstBootTime, got)
+	})
+
+	t.Run("sub-tolerance drift is ignored so derived timestamps stay stable", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer db.Close()
+		expectReading(mock, firstReading)
+		// Uptime has one-second granularity, so a reading a second away from
+		// the first is the same running server, not a restart.
+		expectReading(mock, firstReading+1)
+
+		c := &mySQLClient{client: db}
+		_, err = c.getServerBootTime()
+		require.NoError(t, err)
+
+		got, err := c.getServerBootTime()
+		require.NoError(t, err)
+		require.NoError(t, mock.ExpectationsWereMet())
+
+		assert.Equal(t, firstBootTime, got, "the cached anchor must survive Uptime's one-second jitter")
+	})
+
+	t.Run("a restart moves the anchor", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer db.Close()
+		expectReading(mock, firstReading)
+		expectReading(mock, firstReading+3600)
+
+		c := &mySQLClient{client: db}
+		_, err = c.getServerBootTime()
+		require.NoError(t, err)
+
+		got, err := c.getServerBootTime()
+		require.NoError(t, err)
+		require.NoError(t, mock.ExpectationsWereMet())
+
+		assert.Equal(t, firstBootTime.Add(time.Hour), got, "a boot time an hour later is a restart, and the old anchor is wrong")
+	})
+
+	t.Run("a failed read returns the error and leaves the cached anchor intact", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer db.Close()
+		expectReading(mock, firstReading)
+		mock.ExpectQuery(regexp.QuoteMeta(query)).WillReturnError(errors.New("connection lost"))
+
+		c := &mySQLClient{client: db}
+		_, err = c.getServerBootTime()
+		require.NoError(t, err)
+
+		got, err := c.getServerBootTime()
+		require.Error(t, err)
+		require.NoError(t, mock.ExpectationsWereMet())
+
+		assert.Equal(t, firstBootTime, got)
+	})
 }
 
 func TestGetInnodbRedoLogStatsFromLogStatus(t *testing.T) {
