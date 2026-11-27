@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -183,6 +184,20 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:          component.NewIDWithName(metadata.Type, "max_resources_per_batch_negative_value"),
 			expectedErr: errInvalidMaxResPerBatch.Error(),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "valid_min_lookback_range"),
+			expected: func() component.Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.SubscriptionIDs = []string{"test"}
+				cfg.Credentials = defaultCredentials
+				cfg.MinLookbackRange = 30 * time.Minute
+				return cfg
+			}(),
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "min_lookback_range_negative_value"),
+			expectedErr: errInvalidMinLookbackRange.Error(),
 		},
 	}
 

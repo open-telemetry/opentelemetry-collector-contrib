@@ -429,6 +429,7 @@ func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Con
 	}
 
 	// Prepare the map of metrics by composite key.
+	previousMetrics := s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey
 	s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey = map[metricsCompositeKey]*azureResourceMetrics{}
 
 	clientMetricsDefinitions, clientErr := armmonitor.NewMetricDefinitionsClient(subscriptionID, s.cred, s.clientOptionsResolver.GetArmMonitorClientOptions())
@@ -459,6 +460,7 @@ func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Con
 		s.collectMetricDefinitionsByType(ctx, subscriptionID, resourceType, resourceIDs[0], clientMetricsDefinitions, opts, nil)
 	}
 
+	keepLastEmittedTimestamps(previousMetrics, s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey)
 	s.resourceTypes[subscriptionID][resourceType].metricsDefinitionsUpdated = time.Now()
 	s.settings.Logger.Info("Loaded the list of Azure Metrics Definitions",
 		zap.Int("metrics_definitions_count", len(s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey)),
@@ -566,14 +568,16 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 		// for timestamp" errors on Prometheus-compatible backends (Thanos, Mimir, Cortex…).
 		// This mirrors the guard already present in the non-batch scraper (scraper.go).
 		// Note: the guard is best-effort. metricsByCompositeKey is reset whenever the
-		// metrics definitions cache (CacheResourcesDefinitions, default 24h) expires,
-		// so at most one duplicating scrape may happen right after each expiration and on restarts.
+		// metrics definitions cache (CacheResourcesDefinitions, default 24h) expires, so the
+		// scrape right after an expiration queries the same window again. The emitted
+		// timestamps are kept across the refresh, so it doesn't emit them again; only a
+		// restart may cause duplicates.
 		if now.Sub(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[compositeKey.timeGrain]) {
 			continue
 		}
 		metricsByGrain.metricsValuesUpdated = now
 
-		startTime := now.Add(time.Duration(-timeGrains[compositeKey.timeGrain]) * time.Second * 4) // times 4 because for some resources, data are missing for the very latest timestamp. The processing will keep only the latest timestamp with data.
+		startTime := now.Add(-queryLookback(compositeKey.timeGrain, s.cfg.MinLookbackRange))
 
 		for region := range s.regions[subscriptionID] {
 			clientMetrics, clientErr := s.GetMetricsBatchValuesClient(region)

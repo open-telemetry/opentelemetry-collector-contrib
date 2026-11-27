@@ -46,6 +46,7 @@ func TestNewFactory(t *testing.T) {
 					MaximumNumberOfRecordsPerResource: 10,
 					Credentials:                       servicePrincipal,
 					Cloud:                             defaultCloud,
+					MinLookbackRange:                  defaultMinLookbackRange,
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())
