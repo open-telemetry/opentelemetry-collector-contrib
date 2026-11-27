@@ -35,6 +35,7 @@ The following settings can be configured:
   - `routing_key` (default = otlp_spans for traces, otlp_metrics for metrics, otlp_logs for logs): Routing key used to route exported messages to RabbitMQ consumers
   - `exchange`: Name of the exchange used to route messages. If omitted, the [default exchange](https://www.rabbitmq.com/tutorials/amqp-concepts#exchange-default) is used which routes to a queue with the same as the routing key. Only [direct exchanges](https://www.rabbitmq.com/tutorials/amqp-concepts#exchange-direct) are currently supported. Note that this component does not handle queue creation or binding.
 - `durable` (default = true): Whether to instruct RabbitMQ to make messages [durable](https://www.rabbitmq.com/docs/queues#durability) by writing to disk
+- `compression` (default = none): Compresses message bodies with `gzip` or `zstd` and sets the message's `content_encoding` property to the algorithm used, so consumers know how to decode them
 - `encoding_extension`: (defaults to OTLP protobuf format): ID of the [encoding extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding) to use to marshal data
 - `retry_on_failure`:
   - `enabled` (default = false)
