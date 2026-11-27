@@ -132,3 +132,5 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages => ../opampcustommessages
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status => ../../pkg/status
+
+replace github.com/open-telemetry/opamp-go => github.com/cazorla19/opamp-go v0.25.1-0.20261126100620-9c10c51e1619

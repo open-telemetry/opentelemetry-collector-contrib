@@ -17,6 +17,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 
 	"github.com/google/uuid"
@@ -103,12 +104,28 @@ type opampAgent struct {
 	readyCh              chan struct{}
 }
 
+// pendingRestart is a restart command received by the extension instance
+// running before the reload, together with that instance's UID.
+type pendingRestart struct {
+	command *protobufs.ServerToAgentCommand
+	// instanceUID is reused by the new extension instance, so the Server
+	// recognizes the restarted Agent and its COMPLETED status as the result
+	// of the original command.
+	instanceUID uuid.UUID
+}
+
 var (
 	_ opampcustommessages.CustomCapabilityRegistry = (*opampAgent)(nil)
 	_ extensioncapabilities.Dependent              = (*opampAgent)(nil)
 	_ extensioncapabilities.ConfigSnapshotWatcher  = (*opampAgent)(nil)
 	_ extensioncapabilities.PipelineWatcher        = (*opampAgent)(nil)
 	_ extensioncapabilities.ComponentStatusWatcher = (*opampAgent)(nil)
+
+	// pendingRestartCommand is the restart command whose completion has not
+	// been reported yet. A restart reloads the Collector, which replaces this
+	// extension with a new instance, so it must outlive the instance that
+	// received the command.
+	pendingRestartCommand atomic.Pointer[pendingRestart]
 
 	// identifyingAttributes is the list of semantic convention keys that are used
 	// for the agent description's identifying attributes.
@@ -279,7 +296,30 @@ func (o *opampAgent) Register(capability string, opts ...opampcustommessages.Cus
 func (o *opampAgent) Ready() error {
 	o.setHealth(&protobufs.ComponentHealth{Healthy: true})
 	close(o.readyCh)
+	o.reportRestartCompleted()
 	return nil
+}
+
+// reportRestartCompleted reports the pending restart command, if any, as
+// COMPLETED to the OpAMP server. It is called once all pipelines are running
+// after the reload triggered by the restart command.
+func (o *opampAgent) reportRestartCompleted() {
+	if !o.capabilities.AcceptsRestartCommand || o.opampClient == nil {
+		return
+	}
+	pending := pendingRestartCommand.Swap(nil)
+	if pending == nil {
+		return
+	}
+	command := pending.command
+	err := o.opampClient.SetCommandStatus(&protobufs.CommandStatus{
+		CommandId: command.CommandId,
+		Type:      command.Type,
+		Status:    protobufs.CommandStatuses_CommandStatuses_COMPLETED,
+	})
+	if err != nil {
+		o.logger.Error("Could not report restart command status", zap.Error(err))
+	}
 }
 
 func (o *opampAgent) NotReady() error {
@@ -344,6 +384,9 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		if err != nil {
 			return nil, fmt.Errorf("could not parse configured instance id: %w", err)
 		}
+	} else if pending := pendingRestartCommand.Load(); pending != nil {
+		// Keep the identity of the instance that received the restart command.
+		uid = pending.instanceUID
 	} else {
 		var err error
 		uid, err = uuid.NewV7()
@@ -525,7 +568,7 @@ func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
 func (o *opampAgent) onCommand(_ context.Context, command *protobufs.ServerToAgentCommand) error {
 	if command.GetType() != protobufs.CommandType_CommandType_Restart {
 		o.logger.Debug("ignoring non-restart command")
-		return nil
+		return fmt.Errorf("command %s: %w", command.GetType(), types.ErrCommandUnsupported)
 	}
 
 	if o.capabilities.AcceptsRestartCommand {
@@ -534,7 +577,12 @@ func (o *opampAgent) onCommand(_ context.Context, command *protobufs.ServerToAge
 		if err != nil {
 			return fmt.Errorf("finding current process from pid: %w", err)
 		}
-		return collectorProcess.Signal(syscall.SIGHUP)
+		pendingRestartCommand.Store(&pendingRestart{command: command, instanceUID: o.instanceUID})
+		if err := collectorProcess.Signal(syscall.SIGHUP); err != nil {
+			pendingRestartCommand.Store(nil)
+			return err
+		}
+		return nil
 	}
 	return nil
 }

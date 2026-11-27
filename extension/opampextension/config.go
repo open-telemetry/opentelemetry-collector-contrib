@@ -109,8 +109,11 @@ func (caps Capabilities) toAgentCapabilities() protobufs.AgentCapabilities {
 	if caps.ReportsAvailableComponents {
 		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents
 	}
+	// AcceptsRestartCommand enables both the AcceptsRestartCommand and ReportsCommandStatus
+	// OpAMP capabilities, so the server knows when a restart has completed.
 	if caps.AcceptsRestartCommand {
-		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
+		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand |
+			protobufs.AgentCapabilities_AgentCapabilities_ReportsCommandStatus
 	}
 	if caps.ReportsHeartbeat {
 		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat
