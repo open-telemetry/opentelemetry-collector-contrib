@@ -26,3 +26,4 @@ resourceLogs:
             severityText: info
             timeUnixNano: "1234567890000000"
         scope: {}
+    schemaUrl: https://opentelemetry.io/schemas/1.43.0
