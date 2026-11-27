@@ -52,7 +52,7 @@ const (
 	// does not select one with WithVersion. Renovate watches the line below
 	// and opens an update PR when a new Weaver release appears.
 	//
-	// renovate: datasource=docker depName=otel/weaver
+	// renovate: datasource=github-releases depName=open-telemetry/weaver
 	defaultWeaverVersion = "v0.28.0"
 
 	// defaultRegistryVersion is the semantic-conventions release that the
