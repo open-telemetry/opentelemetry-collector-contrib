@@ -47,12 +47,12 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "override-config"),
 			expected: &Config{
 				ClientConfig: clientConfig,
-				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
-					queue := exporterhelper.NewDefaultQueueConfig()
-					queue.NumConsumers = 3
-					queue.QueueSize = 10
+				QueueSettings: func() configoptional.Optional[exporterhelper.QueueBatchConfig] {
+					queue := metadata.NewDefaultSendingQueueConfig()
+					queue.Get().NumConsumers = 3
+					queue.Get().QueueSize = 10
 					return queue
-				}()),
+				}(),
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     1 * time.Second,
