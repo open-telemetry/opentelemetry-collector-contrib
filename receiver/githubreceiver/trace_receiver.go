@@ -134,7 +134,7 @@ func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Requ
 	ctx := gtr.obsrecv.StartTracesOp(req.Context())
 
 	for k, v := range gtr.cfg.WebHook.RequiredHeaders {
-		if req.Header.Get(k) != string(v) {
+		if !v.Equal(req.Header.Get(k)) {
 			gtr.logger.Sugar().Debugf("required header check failed", zap.String("header", k))
 			http.Error(w, "invalid request", http.StatusBadRequest)
 			return
