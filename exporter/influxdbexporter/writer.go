@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 var _ otel2influx.InfluxWriter = (*influxHTTPWriter)(nil)
@@ -204,6 +206,11 @@ func (b *influxHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 	switch {
 	case res.StatusCode >= 200 && res.StatusCode < 300: // Success
 		break
+	case res.StatusCode == http.StatusTooManyRequests || res.StatusCode == http.StatusServiceUnavailable: // Throttled
+		// A missing or invalid Retry-After gives 0, which falls back to the default backoff.
+		retryAfter, _ := strconv.Atoi(res.Header.Get("Retry-After"))
+		err = fmt.Errorf("line protocol write returned %q %q", res.Status, string(body))
+		return exporterhelper.NewThrottleRetry(err, time.Duration(retryAfter)*time.Second)
 	case res.StatusCode >= 500 && res.StatusCode < 600: // Retryable error
 		return fmt.Errorf("line protocol write returned %q %q", res.Status, string(body))
 	default: // Terminal error

@@ -4,6 +4,7 @@
 package influxdbexporter
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -18,6 +19,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func Test_influxHTTPWriterBatch_optimizeTags(t *testing.T) {
@@ -207,4 +210,53 @@ func Test_composeWriteURL_doesNotPanic(t *testing.T) {
 		_, err := composeWriteURL(cfg)
 		assert.NoError(t, err)
 	})
+}
+
+func Test_influxHTTPWriterBatch_WriteBatch_statusCodes(t *testing.T) {
+	writeErr := func(code int) error {
+		return fmt.Errorf("line protocol write returned %q %q", fmt.Sprintf("%d %s", code, http.StatusText(code)), "")
+	}
+	tests := []struct {
+		name       string
+		statusCode int
+		retryAfter string
+		wantErr    error
+	}{
+		{name: "success", statusCode: http.StatusNoContent},
+		{name: "bad request is permanent", statusCode: http.StatusBadRequest, wantErr: consumererror.NewPermanent(writeErr(http.StatusBadRequest))},
+		{name: "too many requests is throttled", statusCode: http.StatusTooManyRequests, wantErr: exporterhelper.NewThrottleRetry(writeErr(http.StatusTooManyRequests), 0)},
+		{name: "too many requests honors retry-after", statusCode: http.StatusTooManyRequests, retryAfter: "30", wantErr: exporterhelper.NewThrottleRetry(writeErr(http.StatusTooManyRequests), 30*time.Second)},
+		{name: "invalid retry-after is ignored", statusCode: http.StatusTooManyRequests, retryAfter: "soon", wantErr: exporterhelper.NewThrottleRetry(writeErr(http.StatusTooManyRequests), 0)},
+		{name: "service unavailable honors retry-after", statusCode: http.StatusServiceUnavailable, retryAfter: "10", wantErr: exporterhelper.NewThrottleRetry(writeErr(http.StatusServiceUnavailable), 10*time.Second)},
+		{name: "internal server error is retryable", statusCode: http.StatusInternalServerError, wantErr: writeErr(http.StatusInternalServerError)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				if tt.retryAfter != "" {
+					w.Header().Set("Retry-After", tt.retryAfter)
+				}
+				w.WriteHeader(tt.statusCode)
+			}))
+			t.Cleanup(server.Close)
+
+			clientConfig := confighttp.NewDefaultClientConfig()
+			clientConfig.Endpoint = server.URL
+			influxWriter, err := newInfluxHTTPWriter(
+				new(common.NoopLogger),
+				&Config{
+					ClientConfig:    clientConfig,
+					PayloadMaxLines: 10,
+					PayloadMaxBytes: 1000,
+				},
+				componenttest.NewNopTelemetrySettings(),
+			)
+			require.NoError(t, err)
+			influxWriter.httpClient = server.Client()
+
+			batch := influxWriter.NewBatch()
+			require.NoError(t, batch.EnqueuePoint(t.Context(), "m", nil, map[string]any{"f": int64(1)}, time.Unix(1, 0), common.InfluxMetricValueTypeUntyped))
+			assert.Equal(t, tt.wantErr, batch.WriteBatch(t.Context()))
+		})
+	}
 }
