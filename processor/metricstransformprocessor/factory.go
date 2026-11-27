@@ -132,6 +132,14 @@ func validateConfiguration(config *Config) error {
 			if op.AggregationType != "" && !op.AggregationType.IsValid() {
 				return fmt.Errorf("operation %v: %q must be in %q", i+1, aggregationTypeFieldName, aggregateutil.AggregationTypes)
 			}
+
+			if op.Action != aggregateLabels && op.KeepLabels {
+				return fmt.Errorf("operation %v: %q is only valid while %q is %v", i+1, keepLabelsFieldName, actionFieldName, aggregateLabels)
+			}
+
+			if op.LabelSet != nil && op.KeepLabels {
+				return fmt.Errorf("operation %v: %q and %q cannot be used together, use one or the other", i+1, labelSetFieldName, keepLabelsFieldName)
+			}
 		}
 	}
 	return nil

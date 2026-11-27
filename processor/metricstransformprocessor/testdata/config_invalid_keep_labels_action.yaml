@@ -1,0 +1,9 @@
+metrics_transform:
+  transforms:
+    - include: name
+      action: update
+      operations:
+      - action: update_label
+        label: label1
+        new_label: label2
+        keep_labels: true

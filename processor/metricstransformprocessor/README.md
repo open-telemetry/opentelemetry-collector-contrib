@@ -105,8 +105,10 @@ processors:
             new_value: <new_value>
             # label_value specifies the label value for which points should be deleted; if action is delete_label_value, label_value is required
             label_value: <label_value>
-            # label_set contains a list of labels that will remain after aggregation; if action is aggregate_labels, label_set is required
+            # label_set contains a list of labels that will remain after aggregation, used when action is aggregate_labels; if label_set is absent or null, all labels are removed unless keep_labels is true
             label_set: [labels...]
+            # keep_labels aggregates data points with identical labels while preserving all of them, used when action is aggregate_labels; defaults to false and cannot be combined with label_set
+            keep_labels: {true, false}
             # aggregation_type defines how data points will be aggregated; if action is aggregate_labels or aggregate_label_values, aggregation_type is required
             aggregation_type: {sum, mean, min, max, count, median}
             # experimental_scale specifies the scalar to apply to values. Scaling exponential histograms inherently involves some loss of accuracy. 
