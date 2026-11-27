@@ -286,8 +286,8 @@ go.opentelemetry.io/collector/service/hostcapabilities v0.166.1-0.20261126161120
 go.opentelemetry.io/collector/service/hostcapabilities v0.166.1-0.20261126161120-4c6c46bf6bc6/go.mod h1:RaKi9uTlR6PQiEklJLNtO2HZFn2bosXKENNqxoparN0=
 go.opentelemetry.io/collector/service/telemetry/telemetrytest v0.166.0 h1:QjtRYF8Dzhe1WTOjAqtRjTxwKm5k8Tbs0O8kDoIAOPY=
 go.opentelemetry.io/collector/service/telemetry/telemetrytest v0.166.0/go.mod h1:GSxCJTHoiZ8axkodZhQ27iJ34T+JJohmmXCR539xPe0=
-go.opentelemetry.io/collector/strmatch v0.0.0-20261126142948-f0f78f7b395a h1:pfFud/bFNpjOoxJik/XUpd47S+QBAdHJZqfUdTkV4Oc=
-go.opentelemetry.io/collector/strmatch v0.0.0-20261126142948-f0f78f7b395a/go.mod h1:Fnarkpn8zZQwdr/HBW4NRdw4MEnFOjdRQhzeJXbS4Js=
+go.opentelemetry.io/collector/strmatch v0.0.0-20261126161120-4c6c46bf6bc6 h1:DjQZPnnnuuByCXzSzcsxKe13QYc/ETxtHR9WvnoUGik=
+go.opentelemetry.io/collector/strmatch v0.0.0-20261126161120-4c6c46bf6bc6/go.mod h1:Fnarkpn8zZQwdr/HBW4NRdw4MEnFOjdRQhzeJXbS4Js=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0 h1:LxwW/9ctSCv+QkE/cLR7M91ZIkXNMqJtEMi1vCw9U8s=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0/go.mod h1:tOsftB4SslBwwErVEPaenU2RpThXWPIU8DoJHEC4dyw=
 go.opentelemetry.io/contrib/otelconf v0.27.0 h1:Xqr0TevsjDCw/oPt3eF831cz3imXxkczd6aV2hlHOrw=

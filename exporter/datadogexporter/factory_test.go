@@ -20,10 +20,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -210,7 +208,7 @@ func TestOnlyMetadata(t *testing.T) {
 	cfg := &datadogconfig.Config{
 		ClientConfig:  defaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		QueueSettings: metadata.NewDefaultSendingQueueConfig(),
 
 		API:          datadogconfig.APIConfig{Key: "aaaaaaa"},
 		Metrics:      datadogconfig.MetricsConfig{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL}},
