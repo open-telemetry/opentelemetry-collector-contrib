@@ -19,6 +19,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
@@ -312,27 +314,40 @@ func TestScrape_CpuUtilization(t *testing.T) {
 	}
 }
 
-// Error in calculation should be returned as PartialScrapeError
-func TestScrape_CpuUtilizationError(t *testing.T) {
-	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()})
+// Check that a core going offline between scrapes doesn't break utilization.
+func TestScrape_CpuUtilization_CoreOfflineBetweenScrapes(t *testing.T) {
+	set := scrapertest.NewNopSettings(metadata.Type)
+	core, observedLogs := observer.New(zap.WarnLevel)
+	set.Logger = zap.New(core)
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
+	mbc.Metrics.SystemCPUUtilization.Enabled = true
+	mbc.Metrics.SystemCPULogicalCount.Enabled = false
+	scraper := newCPUScraper(t.Context(), set, &Config{MetricsBuilderConfig: mbc})
 	// mock times function to force an error in next scrape
 	scraper.times = func(context.Context, bool) ([]cpu.TimesStat, error) {
-		return []cpu.TimesStat{{CPU: "1", System: 1, User: 2}}, nil
+		return []cpu.TimesStat{{CPU: "cpu0", System: 1, User: 2}}, nil
 	}
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
 
 	_, err = scraper.scrape(t.Context())
+	require.NoError(t, err, "Error in scrape 1: %v", err)
+	// There shouldn't have been any warnings for the first scrape.
+	warningsScrape1 := observedLogs.FilterLevelExact(zap.WarnLevel).All()
+	require.Empty(t, warningsScrape1)
+
 	// Force error not finding CPU info
 	scraper.times = func(context.Context, bool) ([]cpu.TimesStat, error) {
 		return []cpu.TimesStat{}, nil
 	}
-	require.NoError(t, err, "Failed to scrape metrics: %v", err)
 	// 2nd scrape will trigger utilization metrics calculation
 	md, err := scraper.scrape(t.Context())
-	var partialScrapeErr scrapererror.PartialScrapeError
-	assert.ErrorAs(t, err, &partialScrapeErr)
-	assert.Equal(t, 0, md.MetricCount())
+	require.NoError(t, err, "Error in scrape 2: %v", err)
+	// We should see a warning that cpu0 could not be found.
+	warningsScrape2 := observedLogs.FilterLevelExact(zap.WarnLevel).All()
+	require.Len(t, warningsScrape2, 1)
+	require.Contains(t, warningsScrape2[0].ContextMap()["error"], "cpu0")
+	require.Equal(t, 0, md.MetricCount())
 }
 
 func TestScrape_CpuUtilizationStandard(t *testing.T) {

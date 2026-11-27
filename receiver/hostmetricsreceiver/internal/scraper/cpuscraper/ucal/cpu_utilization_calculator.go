@@ -9,6 +9,7 @@ import (
 
 	"github.com/shirou/gopsutil/v4/cpu"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.uber.org/zap"
 )
 
 var ErrTimeStatNotFound = errors.New("cannot find TimesStat for cpu")
@@ -30,24 +31,60 @@ type CPUUtilization struct {
 // It requires 2 []cpu.TimesStat and spend time to be able to calculate the difference
 type CPUUtilizationCalculator struct {
 	previousCPUTimes []cpu.TimesStat
+	logger           *zap.Logger
+}
+
+func NewCPUUtilizationCalculator(logger *zap.Logger) *CPUUtilizationCalculator {
+	c := &CPUUtilizationCalculator{logger: logger}
+	if logger == nil {
+		c.logger = zap.NewNop()
+	}
+	return c
 }
 
 // CalculateAndRecord calculates the cpu utilization for the different cpu states comparing previously
 // stored []cpu.TimesStat and time.Time and current []cpu.TimesStat and current time.Time
 // If no previous data is stored it will return empty slice of CPUUtilization and no error
-func (c *CPUUtilizationCalculator) CalculateAndRecord(now pcommon.Timestamp, cpuTimes []cpu.TimesStat, recorder func(pcommon.Timestamp, CPUUtilization)) error {
+func (c *CPUUtilizationCalculator) CalculateAndRecord(now pcommon.Timestamp, cpuTimes []cpu.TimesStat, recorder func(pcommon.Timestamp, CPUUtilization)) {
+	// If this is not the first scrape, we are able to calculate the deltas
+	// and report utilization values.
 	if c.previousCPUTimes != nil {
 		for _, previousCPUTime := range c.previousCPUTimes {
+			// Check the CPU times from this scrape for the new times of the current CPU.
 			currentCPUTime, err := cpuTimeForCPU(previousCPUTime.CPU, cpuTimes)
+			// If the current scrape does not have a times entry for a previously seen CPU,
+			// then we have to skip it. We can only report a utilization value for a core
+			// if we have a time for it within the previous scrape interval. Our only choice
+			// is to not report a value for that core this scrape.
+			//
+			// In some scenarios, such as CPU Hotplugging or LXC container reconfiguration,
+			// CPU cores that used to be present won't be anymore. Sometimes the entire set
+			// of CPUs changes, and in that scenario no points will end up being recorded
+			// for this scrape.
+			//
+			// We opt just to log a warning so the user can see what happened, and continue.
+			// We want this to be a warning rather than an error because this can be a perfectly
+			// reasonable occurrence and the Collector has no way to know if that's the case.
 			if err != nil {
-				return fmt.Errorf("getting time for cpu %s: %w", previousCPUTime.CPU, err)
+				c.logger.Warn(
+					"could not get time for cpu, utilization will not be recorded",
+					zap.Error(err),
+				)
+				continue
 			}
+
+			// If we have a previous time and current time for the CPU, record the delta
+			// and record the metric for this core with the utilization calculation.
 			recorder(now, cpuUtilization(previousCPUTime, currentCPUTime))
 		}
 	}
-	c.previousCPUTimes = cpuTimes
 
-	return nil
+	// Update the previous scrape times. This has to be done every scrape. We need to ensure
+	// we always report the same time delta in our utilization calculations for the lifetime
+	// of this timeseries. So even if a core was missed for some reason, we can't hold it and
+	// try to read later. We have to opt not to report it for this scrape, and maybe it comes
+	// back in future scrapes or maybe it doesn't.
+	c.previousCPUTimes = cpuTimes
 }
 
 // cpuUtilization calculates the difference between 2 cpu.TimesStat using spent time between them
