@@ -5,12 +5,11 @@ package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 	"fmt"
-	"io"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -18,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver/internal/metadata"
 )
 
@@ -37,6 +37,7 @@ type blobReceiver struct {
 	logsEncoding       string
 	tracesEncoding     string
 	compression        string
+	gzipReader         xcompression.Reader
 	logsUnmarshaler    plog.Unmarshaler
 	tracesUnmarshaler  ptrace.Unmarshaler
 	nextLogsConsumer   consumer.Logs
@@ -141,13 +142,11 @@ func (b *blobReceiver) decompress(data []byte) ([]byte, error) {
 		return data, nil
 	}
 
-	reader, err := gzip.NewReader(bytes.NewReader(data))
-	if err != nil {
+	var payload bytes.Buffer
+	if _, err := b.gzipReader.DecompressBytes(&payload, data); err != nil {
 		return nil, err
 	}
-	defer reader.Close()
-
-	return io.ReadAll(reader)
+	return payload.Bytes(), nil
 }
 
 // Returns a new instance of the log receiver
@@ -161,12 +160,21 @@ func newReceiver(set receiver.Settings, eventHandler eventHandler, logsEncoding,
 		return nil, err
 	}
 
+	var gzipReader xcompression.Reader
+	if compression != CompressionNone {
+		gzipReader, err = xcompression.NewReaderFactory().NewReader(configcompression.TypeGzip, configcompression.CompressionParams{})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &blobReceiver{
 		blobEventHandler: eventHandler,
 		logger:           set.Logger,
 		logsEncoding:     logsEncoding,
 		tracesEncoding:   tracesEncoding,
 		compression:      compression,
+		gzipReader:       gzipReader,
 		obsrecv:          obsrecv,
 	}, nil
 }
