@@ -125,6 +125,9 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 	for routingID, mds := range batches {
 		exp, endpoint, err := e.loadBalancer.exporterAndEndpoint([]byte(routingID))
 		if err != nil {
+			for exp := range metricsByExporter {
+				exp.consumeWG.Done()
+			}
 			return err
 		}
 
