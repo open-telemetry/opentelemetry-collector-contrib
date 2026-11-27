@@ -48,6 +48,8 @@ The Following settings are optional:
 
 - `is_monotonic_counter` (default value is false, or true if the `receiver.statsd.monotonicCounterDefault` feature gate is enabled): Set all counter-type metrics the statsd receiver received as monotonic.
 
+- `counter_type` (default value is `int`): How counter values are represented in the exported metrics. `int` truncates values to integers, `float` preserves fractional values, and `stochastic_int` keeps the integer type while rounding probabilistically so that values are statistically accurate over time.
+
 - `timer_histogram_mapping:`(default value is below): Specify what OTLP type to convert received timing/histogram data to.
 
 
