@@ -1,0 +1,8 @@
+change_type: bug_fix
+component: pkg/translator/azure
+note: Skip trace records with an invalid trace, span or parent ID instead of silently dropping the rest of the batch
+issues: [52077]
+subtext: |
+  An invalid ID made `UnmarshalTraces` return early with a nil error, so every record after it was lost.
+  Records with an invalid ID are now skipped, the same way records with an invalid timestamp already are.
+change_logs: [user]
