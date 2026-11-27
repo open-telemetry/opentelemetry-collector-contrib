@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -1860,8 +1860,8 @@ type MetricsBuilder struct {
 	metricsCapacity                         int                  // maximum observed number of metrics per resource.
 	metricsBuffer                           pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                               component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter          map[string]filter.Filter
-	resourceAttributeExcludeFilter          map[string]filter.Filter
+	resourceAttributeIncludeFilter          map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter          map[string]strmatch.Matcher
 	metricFlinkJobCheckpointCount           metricFlinkJobCheckpointCount
 	metricFlinkJobCheckpointInProgress      metricFlinkJobCheckpointInProgress
 	metricFlinkJobLastCheckpointSize        metricFlinkJobLastCheckpointSize
@@ -1945,50 +1945,50 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricFlinkOperatorRecordCount:          newMetricFlinkOperatorRecordCount(mbc.Metrics.FlinkOperatorRecordCount),
 		metricFlinkOperatorWatermarkOutput:      newMetricFlinkOperatorWatermarkOutput(mbc.Metrics.FlinkOperatorWatermarkOutput),
 		metricFlinkTaskRecordCount:              newMetricFlinkTaskRecordCount(mbc.Metrics.FlinkTaskRecordCount),
-		resourceAttributeIncludeFilter:          make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:          make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter:          make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter:          make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.FlinkJobID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["flink.job.id"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkJobID.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["flink.job.id"] = strmatch.New(mbc.ResourceAttributes.FlinkJobID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.FlinkJobID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["flink.job.id"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkJobID.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["flink.job.id"] = strmatch.New(mbc.ResourceAttributes.FlinkJobID.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.FlinkJobName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["flink.job.name"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkJobName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["flink.job.name"] = strmatch.New(mbc.ResourceAttributes.FlinkJobName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.FlinkJobName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["flink.job.name"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkJobName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["flink.job.name"] = strmatch.New(mbc.ResourceAttributes.FlinkJobName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.FlinkResourceType.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["flink.resource.type"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkResourceType.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["flink.resource.type"] = strmatch.New(mbc.ResourceAttributes.FlinkResourceType.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.FlinkResourceType.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["flink.resource.type"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkResourceType.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["flink.resource.type"] = strmatch.New(mbc.ResourceAttributes.FlinkResourceType.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.FlinkSubtaskIndex.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["flink.subtask.index"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkSubtaskIndex.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["flink.subtask.index"] = strmatch.New(mbc.ResourceAttributes.FlinkSubtaskIndex.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.FlinkSubtaskIndex.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["flink.subtask.index"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkSubtaskIndex.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["flink.subtask.index"] = strmatch.New(mbc.ResourceAttributes.FlinkSubtaskIndex.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.FlinkTaskName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["flink.task.name"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkTaskName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["flink.task.name"] = strmatch.New(mbc.ResourceAttributes.FlinkTaskName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.FlinkTaskName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["flink.task.name"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkTaskName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["flink.task.name"] = strmatch.New(mbc.ResourceAttributes.FlinkTaskName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.FlinkTaskmanagerID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["flink.taskmanager.id"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkTaskmanagerID.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["flink.taskmanager.id"] = strmatch.New(mbc.ResourceAttributes.FlinkTaskmanagerID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.FlinkTaskmanagerID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["flink.taskmanager.id"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkTaskmanagerID.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["flink.taskmanager.id"] = strmatch.New(mbc.ResourceAttributes.FlinkTaskmanagerID.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.HostName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["host.name"] = strmatch.New(mbc.ResourceAttributes.HostName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.HostName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["host.name"] = strmatch.New(mbc.ResourceAttributes.HostName.MetricsExclude)
 	}
 
 	for _, op := range options {

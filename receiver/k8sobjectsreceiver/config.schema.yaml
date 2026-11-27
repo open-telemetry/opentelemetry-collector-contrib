@@ -7,7 +7,7 @@ $defs:
       exclude_namespaces:
         type: array
         items:
-          $ref: go.opentelemetry.io/collector/filter.config
+          $ref: go.opentelemetry.io/collector/strmatch.config
       exclude_watch_type:
         type: array
         items:
