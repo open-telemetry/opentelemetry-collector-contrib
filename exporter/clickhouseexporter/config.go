@@ -209,8 +209,13 @@ func (cfg *Config) buildDSN() (string, error) {
 	queryParams.Set("client_info_product", productInfo)
 
 	// Override username and password if specified in config.
-	if cfg.Username != "" {
-		dsnURL.User = url.UserPassword(cfg.Username, string(cfg.Password))
+	// When only the password is set, keep the username from the endpoint.
+	if cfg.Username != "" || cfg.Password != "" {
+		username := cfg.Username
+		if username == "" && dsnURL.User != nil {
+			username = dsnURL.User.Username()
+		}
+		dsnURL.User = url.UserPassword(username, string(cfg.Password))
 	}
 
 	dsnURL.RawQuery = queryParams.Encode()
