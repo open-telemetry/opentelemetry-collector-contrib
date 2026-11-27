@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -40,7 +41,7 @@ func (*mockAccumulator) Accumulate(pmetric.ResourceMetrics) (n int) {
 
 func (*mockAccumulator) cleanupExpired() {}
 
-func (a *mockAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []string, []string, []string, []pcommon.Map) {
+func (a *mockAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []string, []string, []string, []pcommon.Map, []pcommon.Map) {
 	rAttrs := make([]pcommon.Map, len(a.metrics))
 	scopeNames := make([]string, len(a.metrics))
 	scopeVersions := make([]string, len(a.metrics))
@@ -53,8 +54,12 @@ func (a *mockAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []string, 
 		scopeSchemaURLs[i] = a.scopeSchemaURLs[i]
 		scopeAttributes[i] = a.scopeAttributes[i]
 	}
+	var targetInfos []pcommon.Map
+	if len(a.metrics) > 0 {
+		targetInfos = []pcommon.Map{a.resourceAttributes}
+	}
 
-	return a.metrics, rAttrs, scopeNames, scopeVersions, scopeSchemaURLs, scopeAttributes
+	return a.metrics, rAttrs, scopeNames, scopeVersions, scopeSchemaURLs, scopeAttributes, targetInfos
 }
 
 func TestConvertInvalidDataType(t *testing.T) {
@@ -1369,4 +1374,333 @@ func TestConvertExponentialHistogramZeroThreshold(t *testing.T) {
 			require.Equal(t, []int64{1}, h.NegativeDelta)
 		})
 	}
+}
+
+func TestTargetInfoConflictResolution(t *testing.T) {
+	makeRM := func(job, instance, env, metricName string, ts pcommon.Timestamp) pmetric.ResourceMetrics {
+		rm := pmetric.NewResourceMetrics()
+		attrs := rm.Resource().Attributes()
+		attrs.PutStr("service.name", job)
+		attrs.PutStr("service.instance.id", instance)
+		attrs.PutStr("deployment.environment.name", env)
+
+		m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m.SetName(metricName)
+		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp.SetDoubleValue(1)
+		dp.SetTimestamp(ts)
+		return rm
+	}
+
+	tests := []struct {
+		name    string
+		rms     []pmetric.ResourceMetrics
+		wantEnv string
+	}{
+		{
+			name: "different metrics, second resource has newer timestamp",
+			rms: []pmetric.ResourceMetrics{
+				makeRM("svc", "inst-1", "old-env", "metric_a", 100),
+				makeRM("svc", "inst-1", "new-env", "metric_b", 200),
+			},
+			wantEnv: "new-env",
+		},
+		{
+			name: "different metrics, first resource has newer timestamp",
+			rms: []pmetric.ResourceMetrics{
+				makeRM("svc", "inst-1", "new-env", "metric_a", 200),
+				makeRM("svc", "inst-1", "old-env", "metric_b", 100),
+			},
+			wantEnv: "new-env",
+		},
+		{
+			name: "different metrics, equal timestamps keeps last-seen resource",
+			rms: []pmetric.ResourceMetrics{
+				makeRM("svc", "inst-1", "first-env", "metric_a", 100),
+				makeRM("svc", "inst-1", "second-env", "metric_b", 100),
+			},
+			wantEnv: "second-env",
+		},
+		{
+			name: "same metric, first resource has newer timestamp",
+			rms: []pmetric.ResourceMetrics{
+				makeRM("svc", "inst-1", "new-env", "metric_a", 200),
+				makeRM("svc", "inst-1", "old-env", "metric_a", 100),
+			},
+			wantEnv: "new-env",
+		},
+		{
+			name: "same metric, equal timestamps keeps last-seen resource",
+			rms: []pmetric.ResourceMetrics{
+				makeRM("svc", "inst-1", "first-env", "metric_a", 100),
+				makeRM("svc", "inst-1", "second-env", "metric_a", 100),
+			},
+			wantEnv: "second-env",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Run multiple times to ensure determinism regardless of sync.Map iteration order.
+			for range 20 {
+				c := newCollector(&Config{MetricExpiration: time.Minute}, zap.NewNop())
+				for _, rm := range tt.rms {
+					c.processMetrics(rm)
+				}
+
+				ch := make(chan prometheus.Metric, 10)
+				c.Collect(ch)
+				close(ch)
+
+				var targetInfos []*io_prometheus_client.Metric
+				for m := range ch {
+					if strings.Contains(m.Desc().String(), `fqName: "target_info"`) {
+						pbMetric := &io_prometheus_client.Metric{}
+						require.NoError(t, m.Write(pbMetric))
+						targetInfos = append(targetInfos, pbMetric)
+					}
+				}
+
+				require.Len(t, targetInfos, 1)
+				labels := map[string]string{}
+				for _, l := range targetInfos[0].GetLabel() {
+					labels[l.GetName()] = l.GetValue()
+				}
+				require.Equal(t, map[string]string{
+					"job":                         "svc",
+					"instance":                    "inst-1",
+					"deployment_environment_name": tt.wantEnv,
+				}, labels)
+			}
+		})
+	}
+
+	collectTargetInfos := func(t *testing.T, c *collector) []map[string]string {
+		t.Helper()
+		ch := make(chan prometheus.Metric, 64)
+		go func() {
+			defer close(ch)
+			c.Collect(ch)
+		}()
+		var out []map[string]string
+		for m := range ch {
+			if !strings.Contains(m.Desc().String(), `fqName: "target_info"`) {
+				continue
+			}
+			pbMetric := &io_prometheus_client.Metric{}
+			require.NoError(t, m.Write(pbMetric))
+			labels := map[string]string{}
+			for _, l := range pbMetric.GetLabel() {
+				labels[l.GetName()] = l.GetValue()
+			}
+			out = append(out, labels)
+		}
+		return out
+	}
+
+	t.Run("keeps latest timestamp across separate scrapes", func(t *testing.T) {
+		c := newCollector(&Config{MetricExpiration: time.Minute}, zap.NewNop())
+		c.processMetrics(makeRM("svc", "inst-1", "newer-env", "metric_a", 200))
+		require.Equal(t, []map[string]string{{
+			"job":                         "svc",
+			"instance":                    "inst-1",
+			"deployment_environment_name": "newer-env",
+		}}, collectTargetInfos(t, c))
+
+		// Subsequent batch with older timestamp must not overwrite cached target_info.
+		c.processMetrics(makeRM("svc", "inst-1", "older-env", "metric_b", 100))
+		require.Equal(t, []map[string]string{{
+			"job":                         "svc",
+			"instance":                    "inst-1",
+			"deployment_environment_name": "newer-env",
+		}}, collectTargetInfos(t, c))
+
+		// Newer batch replaces cached target_info.
+		c.processMetrics(makeRM("svc", "inst-1", "newest-env", "metric_b", 300))
+		require.Equal(t, []map[string]string{{
+			"job":                         "svc",
+			"instance":                    "inst-1",
+			"deployment_environment_name": "newest-env",
+		}}, collectTargetInfos(t, c))
+	})
+
+	t.Run("refused, NoRecordedValue-only, and stale-only batches do not overwrite cached target_info", func(t *testing.T) {
+		c := newCollector(&Config{MetricExpiration: time.Minute}, zap.NewNop())
+		c.processMetrics(makeRM("svc", "inst-1", "env-1", "metric_a", 200))
+
+		// Non-monotonic delta sum with higher timestamp is refused.
+		refusedRM := pmetric.NewResourceMetrics()
+		attrs := refusedRM.Resource().Attributes()
+		attrs.PutStr("service.name", "svc")
+		attrs.PutStr("service.instance.id", "inst-1")
+		attrs.PutStr("deployment.environment.name", "refused-env")
+		m := refusedRM.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m.SetName("bad_sum")
+		sum := m.SetEmptySum()
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		sum.SetIsMonotonic(false)
+		dp := sum.DataPoints().AppendEmpty()
+		dp.SetDoubleValue(1)
+		dp.SetTimestamp(500)
+		c.processMetrics(refusedRM)
+
+		// NoRecordedValue-only and older-timestamp stale-only batches are also ignored.
+		staleFlagRM := makeRM("svc", "inst-1", "stale-flag-env", "metric_other", 500)
+		staleFlagRM.ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+		c.processMetrics(staleFlagRM)
+		c.processMetrics(makeRM("svc", "inst-1", "stale-ts-env", "metric_a", 100))
+
+		require.Equal(t, []map[string]string{{
+			"job":                         "svc",
+			"instance":                    "inst-1",
+			"deployment_environment_name": "env-1",
+		}}, collectTargetInfos(t, c))
+	})
+
+	t.Run("expired target_info is evicted and replaced by subsequent older-timestamp batch", func(t *testing.T) {
+		c := newCollector(&Config{MetricExpiration: time.Minute}, zap.NewNop())
+		c.processMetrics(makeRM("svc", "inst-1", "expired-env", "metric_a", 500))
+
+		a := c.accumulator.(*lastValueAccumulator)
+		past := time.Now().Add(-2 * time.Minute)
+		a.targetInfosMu.Lock()
+		for k, entry := range a.targetInfos {
+			entry.updated = past
+			a.targetInfos[k] = entry
+		}
+		a.targetInfosMu.Unlock()
+
+		c.processMetrics(makeRM("svc", "inst-1", "fresh-env", "metric_b", 100))
+		require.Equal(t, []map[string]string{{
+			"job":                         "svc",
+			"instance":                    "inst-1",
+			"deployment_environment_name": "fresh-env",
+		}}, collectTargetInfos(t, c))
+
+		// Expiring without a replacement evicts target_info during Collect.
+		a.targetInfosMu.Lock()
+		for k, entry := range a.targetInfos {
+			entry.updated = past
+			a.targetInfos[k] = entry
+		}
+		a.targetInfosMu.Unlock()
+		require.Empty(t, collectTargetInfos(t, c))
+	})
+
+	t.Run("multiple distinct targets are preserved", func(t *testing.T) {
+		c := newCollector(&Config{MetricExpiration: time.Minute}, zap.NewNop())
+		c.processMetrics(makeRM("svc-a", "inst-1", "env-a-old", "metric_a", 100))
+		c.processMetrics(makeRM("svc-a", "inst-1", "env-a-new", "metric_a2", 200))
+		c.processMetrics(makeRM("svc-b", "inst-2", "env-b", "metric_b", 150))
+
+		require.ElementsMatch(t, []map[string]string{
+			{
+				"job":                         "svc-a",
+				"instance":                    "inst-1",
+				"deployment_environment_name": "env-a-new",
+			},
+			{
+				"job":                         "svc-b",
+				"instance":                    "inst-2",
+				"deployment_environment_name": "env-b",
+			},
+		}, collectTargetInfos(t, c))
+	})
+
+	t.Run("non-gauge metric types and zero timestamps", func(t *testing.T) {
+		c := newCollector(&Config{MetricExpiration: time.Minute}, zap.NewNop())
+
+		// Zero-timestamp Sum first, then strictly ascending timestamps across all non-gauge
+		// types (including existing-series updates) so every accumulate* maxTS path is falsifiable.
+		newRM := func(env, name string) (pmetric.ResourceMetrics, pmetric.Metric) {
+			rm := pmetric.NewResourceMetrics()
+			rm.Resource().Attributes().PutStr("service.name", "svc")
+			rm.Resource().Attributes().PutStr("service.instance.id", "inst-1")
+			rm.Resource().Attributes().PutStr("deployment.environment.name", env)
+			m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+			m.SetName(name)
+			return rm, m
+		}
+
+		addSum := func(env string, ts pcommon.Timestamp) {
+			rm, m := newRM(env, "sum_metric")
+			sum := m.SetEmptySum()
+			sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+			sum.SetIsMonotonic(true)
+			dp := sum.DataPoints().AppendEmpty()
+			dp.SetDoubleValue(1)
+			dp.SetTimestamp(ts)
+			c.processMetrics(rm)
+		}
+
+		addSum("sum-zero-ts", 0)
+		require.Equal(t, "sum-zero-ts", collectTargetInfos(t, c)[0]["deployment_environment_name"])
+
+		c.processMetrics(makeRM("svc", "inst-1", "gauge-100", "gauge_metric", 100))
+		require.Equal(t, "gauge-100", collectTargetInfos(t, c)[0]["deployment_environment_name"])
+
+		// Updates existing sum_metric (ok == true branch) and beats gauge-100.
+		addSum("sum-200", 200)
+		require.Equal(t, "sum-200", collectTargetInfos(t, c)[0]["deployment_environment_name"])
+
+		summaryRM, summ := newRM("summary-300", "summary_metric")
+		sdp := summ.SetEmptySummary().DataPoints().AppendEmpty()
+		sdp.SetTimestamp(300)
+		sdp.SetCount(1)
+		sdp.SetSum(1)
+		c.processMetrics(summaryRM)
+		require.Equal(t, "summary-300", collectTargetInfos(t, c)[0]["deployment_environment_name"])
+
+		addHist := func(env string, ts pcommon.Timestamp) {
+			rm, m := newRM(env, "hist_metric")
+			hist := m.SetEmptyHistogram()
+			hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+			hdp := hist.DataPoints().AppendEmpty()
+			hdp.SetTimestamp(ts)
+			hdp.SetCount(1)
+			hdp.SetSum(1)
+			hdp.ExplicitBounds().FromRaw([]float64{1})
+			hdp.BucketCounts().FromRaw([]uint64{1, 0})
+			c.processMetrics(rm)
+		}
+		addHist("hist-400", 400)
+		addHist("hist-450", 450) // existing-series update
+		require.Equal(t, "hist-450", collectTargetInfos(t, c)[0]["deployment_environment_name"])
+
+		// Older gauge must not overwrite hist-450.
+		c.processMetrics(makeRM("svc", "inst-1", "gauge-425", "gauge_metric", 425))
+		require.Equal(t, "hist-450", collectTargetInfos(t, c)[0]["deployment_environment_name"])
+
+		addExp := func(env string, ts pcommon.Timestamp) {
+			rm, m := newRM(env, "exp_metric")
+			eh := m.SetEmptyExponentialHistogram()
+			eh.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+			edp := eh.DataPoints().AppendEmpty()
+			edp.SetTimestamp(ts)
+			edp.SetCount(1)
+			edp.SetSum(1)
+			c.processMetrics(rm)
+		}
+		addExp("exp-500", 500)
+		addExp("exp-550", 550) // existing-series update
+		require.Equal(t, "exp-550", collectTargetInfos(t, c)[0]["deployment_environment_name"])
+	})
+
+	t.Run("concurrent Accumulate, Collect, and cleanupExpired are race-free", func(t *testing.T) {
+		c := newCollector(&Config{MetricExpiration: time.Minute}, zap.NewNop())
+		a := c.accumulator.(*lastValueAccumulator)
+		var wg sync.WaitGroup
+		for worker := range 4 {
+			wg.Go(func() {
+				for i := range 25 {
+					c.processMetrics(makeRM("svc", fmt.Sprintf("inst-%d", i%3), fmt.Sprintf("env-%d-%d", worker, i), fmt.Sprintf("metric_%d", worker), pcommon.Timestamp(i+1)))
+				}
+			})
+		}
+		for range 25 {
+			_ = collectTargetInfos(t, c)
+			a.cleanupExpired()
+		}
+		wg.Wait()
+	})
 }

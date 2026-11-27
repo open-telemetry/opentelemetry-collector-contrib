@@ -804,6 +804,18 @@ func TestPrometheusExporter_BackgroundCleanup(t *testing.T) {
 			scopeAttributes: pcommon.NewMap(),
 			updated:         time.Now().Add(time.Hour),
 		})
+		a.targetInfosMu.Lock()
+		a.targetInfos["stale_target"] = cachedTargetInfo{
+			attrs:   pcommon.NewMap(),
+			ts:      100,
+			updated: time.Now().Add(-10 * time.Minute),
+		}
+		a.targetInfos["fresh_target"] = cachedTargetInfo{
+			attrs:   pcommon.NewMap(),
+			ts:      100,
+			updated: time.Now().Add(time.Hour),
+		}
+		a.targetInfosMu.Unlock()
 
 		gaugeType := io_prometheus_client.MetricType_GAUGE
 		c.metricFamilies.Store("stale_metric", metricFamily{
@@ -851,6 +863,13 @@ func TestPrometheusExporter_BackgroundCleanup(t *testing.T) {
 		assert.True(t, ok, "fresh_metric should not have been evicted")
 		_, ok = a.registeredMetrics.Load("fresh_acc_key")
 		assert.True(t, ok, "fresh_accumulated should not have been evicted")
+
+		a.targetInfosMu.Lock()
+		_, staleTargetFound := a.targetInfos["stale_target"]
+		_, freshTargetFound := a.targetInfos["fresh_target"]
+		a.targetInfosMu.Unlock()
+		assert.False(t, staleTargetFound, "stale_target should have been evicted")
+		assert.True(t, freshTargetFound, "fresh_target should not have been evicted")
 	})
 }
 
