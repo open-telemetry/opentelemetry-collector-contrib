@@ -119,6 +119,7 @@ func TestParseW3CTraceState(t *testing.T) {
 			"other":   "something",
 			"unknown": "value",
 		}, nil},
+		{strings.Repeat("x=y,", hardMaxNumPairs-1) + "ot=th:1", ns, "1", nil, nil}, // the maximum number of members
 
 		// syntax errors
 		{"-1=2", ns, ns, nil, strconv.ErrSyntax}, // invalid key char
