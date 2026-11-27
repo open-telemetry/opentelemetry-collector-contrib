@@ -235,6 +235,171 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 				return td
 			}(),
 		},
+		{
+			name: "span ok status spec uppercase",
+			zs: []*zipkinmodel.SpanModel{
+				{
+					SpanContext: zipkinmodel.SpanContext{
+						TraceID: convertTraceID(
+							[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+						),
+						ID: convertSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}),
+					},
+					Name: "min.data",
+					Tags: map[string]string{
+						"otel.status_code": "OK",
+					},
+					Timestamp: time.Unix(1596911098, 294000000),
+					Duration:  1000000,
+					Shared:    false,
+				},
+			},
+			td: func() ptrace.Traces {
+				td := ptrace.NewTraces()
+				span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+				span.SetTraceID(
+					[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+				)
+				span.SetSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
+				span.SetName("min.data")
+				span.Status().SetCode(ptrace.StatusCodeOk)
+				span.SetStartTimestamp(1596911098294000000)
+				span.SetEndTimestamp(1596911098295000000)
+				return td
+			}(),
+		},
+		{
+			name: "span error status spec uppercase",
+			zs: []*zipkinmodel.SpanModel{
+				{
+					SpanContext: zipkinmodel.SpanContext{
+						TraceID: convertTraceID(
+							[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+						),
+						ID: convertSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}),
+					},
+					Name: "min.data",
+					Tags: map[string]string{
+						"otel.status_code": "ERROR",
+					},
+					Timestamp: time.Unix(1596911098, 294000000),
+					Duration:  1000000,
+					Shared:    false,
+				},
+			},
+			td: func() ptrace.Traces {
+				td := ptrace.NewTraces()
+				span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+				span.SetTraceID(
+					[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+				)
+				span.SetSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
+				span.SetName("min.data")
+				span.Status().SetCode(ptrace.StatusCodeError)
+				span.SetStartTimestamp(1596911098294000000)
+				span.SetEndTimestamp(1596911098295000000)
+				return td
+			}(),
+		},
+		{
+			name: "span ok status proto enum",
+			zs: []*zipkinmodel.SpanModel{
+				{
+					SpanContext: zipkinmodel.SpanContext{
+						TraceID: convertTraceID(
+							[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+						),
+						ID: convertSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}),
+					},
+					Name: "min.data",
+					Tags: map[string]string{
+						"otel.status_code": "STATUS_CODE_OK",
+					},
+					Timestamp: time.Unix(1596911098, 294000000),
+					Duration:  1000000,
+					Shared:    false,
+				},
+			},
+			td: func() ptrace.Traces {
+				td := ptrace.NewTraces()
+				span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+				span.SetTraceID(
+					[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+				)
+				span.SetSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
+				span.SetName("min.data")
+				span.Status().SetCode(ptrace.StatusCodeOk)
+				span.SetStartTimestamp(1596911098294000000)
+				span.SetEndTimestamp(1596911098295000000)
+				return td
+			}(),
+		},
+		{
+			name: "span ok status lowercase",
+			zs: []*zipkinmodel.SpanModel{
+				{
+					SpanContext: zipkinmodel.SpanContext{
+						TraceID: convertTraceID(
+							[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+						),
+						ID: convertSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}),
+					},
+					Name: "min.data",
+					Tags: map[string]string{
+						"otel.status_code": "ok",
+					},
+					Timestamp: time.Unix(1596911098, 294000000),
+					Duration:  1000000,
+					Shared:    false,
+				},
+			},
+			td: func() ptrace.Traces {
+				td := ptrace.NewTraces()
+				span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+				span.SetTraceID(
+					[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+				)
+				span.SetSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
+				span.SetName("min.data")
+				span.Status().SetCode(ptrace.StatusCodeOk)
+				span.SetStartTimestamp(1596911098294000000)
+				span.SetEndTimestamp(1596911098295000000)
+				return td
+			}(),
+		},
+		{
+			name: "span unknown status code",
+			zs: []*zipkinmodel.SpanModel{
+				{
+					SpanContext: zipkinmodel.SpanContext{
+						TraceID: convertTraceID(
+							[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+						),
+						ID: convertSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}),
+					},
+					Name: "min.data",
+					Tags: map[string]string{
+						"otel.status_code": "UNKNOWN_VALUE",
+					},
+					Timestamp: time.Unix(1596911098, 294000000),
+					Duration:  1000000,
+					Shared:    false,
+				},
+			},
+			td: func() ptrace.Traces {
+				td := ptrace.NewTraces()
+				span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+				span.SetTraceID(
+					[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80},
+				)
+				span.SetSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
+				span.SetName("min.data")
+				span.Status().SetCode(ptrace.StatusCodeUnset)
+				span.SetStartTimestamp(1596911098294000000)
+				span.SetEndTimestamp(1596911098295000000)
+				return td
+			}(),
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

@@ -124,6 +124,12 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 			zs:   []*zipkinmodel.SpanModel{zipkinOneSpan(ptrace.StatusCodeUnset)},
 			err:  nil,
 		},
+		{
+			name: "oneSpanUnknownStatus",
+			td:   generateTraceOneSpanOneTraceID(ptrace.StatusCode(99)),
+			zs:   []*zipkinmodel.SpanModel{zipkinOneSpan(ptrace.StatusCode(99))},
+			err:  nil,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -288,9 +294,9 @@ func zipkinOneSpan(status ptrace.StatusCode) *zipkinmodel.SpanModel {
 
 	switch status {
 	case ptrace.StatusCodeOk:
-		spanTags["otel.status_code"] = "STATUS_CODE_OK"
+		spanTags["otel.status_code"] = "OK"
 	case ptrace.StatusCodeError:
-		spanTags["otel.status_code"] = "STATUS_CODE_ERROR"
+		spanTags["otel.status_code"] = "ERROR"
 		spanTags["otel.status_description"] = "error message"
 		spanTags[tracetranslator.TagError] = "true"
 		spanErr = errors.New("error message")
