@@ -120,6 +120,9 @@ func createMetricsExporter(ctx context.Context,
 	if config.(*Config).MarshalerName == SumoIC {
 		return nil, errors.New("metrics are not supported by sumo_ic output format")
 	}
+	if config.(*Config).MarshalerName == Body {
+		return nil, errors.New("metrics are not supported by body output format")
+	}
 
 	metricsExporter, err := exporterhelper.NewMetrics(ctx, params,
 		config,
@@ -157,6 +160,9 @@ func createTracesExporter(ctx context.Context,
 
 	if config.(*Config).MarshalerName == SumoIC {
 		return nil, errors.New("traces are not supported by sumo_ic output format")
+	}
+	if config.(*Config).MarshalerName == Body {
+		return nil, errors.New("traces are not supported by body output format")
 	}
 
 	tracesExporter, err := exporterhelper.NewTraces(ctx,

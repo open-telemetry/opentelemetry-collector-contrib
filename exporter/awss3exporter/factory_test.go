@@ -54,6 +54,7 @@ func TestCreateLogs(t *testing.T) {
 }
 
 func TestUnsupportedMarshalerOptions(t *testing.T) {
+	// SumoIC not supported for metrics or traces
 	cfg := createDefaultConfig()
 	cfg.(*Config).MarshalerName = SumoIC
 	exp, err := createMetricsExporter(
@@ -71,4 +72,25 @@ func TestUnsupportedMarshalerOptions(t *testing.T) {
 	)
 	assert.Error(t, err)
 	require.Nil(t, exp2)
+
+	// Body not supported for metrics or traces
+	cfgBody := createDefaultConfig()
+	cfgBody.(*Config).MarshalerName = Body
+	expBodyMetrics, err := createMetricsExporter(
+		t.Context(),
+		exportertest.NewNopSettings(metadata.Type),
+		cfgBody,
+	)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "metrics are not supported by body output format")
+	require.Nil(t, expBodyMetrics)
+
+	expBodyTraces, err := createTracesExporter(
+		t.Context(),
+		exportertest.NewNopSettings(metadata.Type),
+		cfgBody,
+	)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "traces are not supported by body output format")
+	require.Nil(t, expBodyTraces)
 }
