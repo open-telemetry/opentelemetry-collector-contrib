@@ -29,6 +29,12 @@ type Config struct {
 	// MaxStorageSizeMiB limits the amount of Pebble storage that may be used.
 	// Zero means unlimited.
 	MaxStorageSizeMiB int `mapstructure:"max_storage_size_mib"`
+	// CacheSizeMiB is the size of the Pebble block cache in MiB. Zero uses
+	// the default of 4 MiB.
+	CacheSizeMiB int `mapstructure:"cache_size_mib"`
+	// MemTableSizeMiB is the size of a Pebble memtable in MiB. Zero uses the
+	// default of 8 MiB.
+	MemTableSizeMiB int `mapstructure:"memtable_size_mib"`
 	// OnReadError selects what Take does when a stored batch of the trace
 	// cannot be read or decoded. Defaults to drop_trace.
 	OnReadError ReadErrorPolicy `mapstructure:"on_read_error"`
@@ -42,6 +48,12 @@ func (c *Config) Validate() error {
 	}
 	if c.MaxStorageSizeMiB < 0 {
 		return errors.New("max_storage_size_mib must be greater than or equal to zero")
+	}
+	if c.CacheSizeMiB < 0 {
+		return errors.New("cache_size_mib must be greater than or equal to zero")
+	}
+	if c.MemTableSizeMiB < 0 {
+		return errors.New("memtable_size_mib must be greater than or equal to zero")
 	}
 	switch c.OnReadError {
 	case "", ReadErrorPolicyDropTrace, ReadErrorPolicyReturnPartial:
