@@ -4,6 +4,8 @@
 package azuredataexplorerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"strconv"
@@ -59,9 +61,24 @@ func (e *adxDataProducer) metricsDataPusher(ctx context.Context, metrics pmetric
 }
 
 func (e *adxDataProducer) ingestData(ctx context.Context, b []string) error {
-	ingestReader := strings.NewReader(strings.Join(b, nextline))
+	// The ingest options declare the payload as gzip (azkustoingest.CompressionType(GZIP)). The client trusts that: it does not
+	// compress a payload declared as compressed, and a streaming request always carries Content-Encoding: gzip. Handing it plain
+	// JSON therefore made every streaming request fail with a 400 and the managed ingestor fall back to queued ingestion, which
+	// uploaded the uncompressed payload. So the payload has to be gzip here.
+	var compressed bytes.Buffer
+	zw := gzip.NewWriter(&compressed)
+	if _, err := zw.Write([]byte(strings.Join(b, nextline))); err != nil {
+		e.logger.Error("Error compressing data for ingestion.", zap.Error(err))
+		return err
+	}
+	if err := zw.Close(); err != nil {
+		e.logger.Error("Error compressing data for ingestion.", zap.Error(err))
+		return err
+	}
 
-	if _, err := e.ingestor.FromReader(ctx, ingestReader, e.ingestOptions...); err != nil {
+	// A *bytes.Reader, not the buffer: when a queued upload fails the client seeks the reader back to the start and retries
+	// against another storage container, and a *bytes.Buffer cannot seek. It reuses the same bytes, so nothing is copied.
+	if _, err := e.ingestor.FromReader(ctx, bytes.NewReader(compressed.Bytes()), e.ingestOptions...); err != nil {
 		e.logger.Error("Error performing managed data ingestion.", zap.Error(err))
 		return err
 	}

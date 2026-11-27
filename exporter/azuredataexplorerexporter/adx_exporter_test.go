@@ -4,6 +4,8 @@
 package azuredataexplorerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"io"
 	"math/rand/v2"
@@ -175,6 +177,38 @@ func TestIngestedDataRecordCount(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// The ingest options declare the payload as gzip, and the Kusto client neither compresses such a payload nor lets a
+// streaming request go out unlabelled, so the exporter itself must hand over gzip. Plain JSON here fails every
+// streaming request with a 400 and silently falls back to queued ingestion.
+func TestIngestedPayloadIsGzip(t *testing.T) {
+	logger := zaptest.NewLogger(t)
+	ingestor := &mockingestor{}
+	adxDataProducer := &adxDataProducer{
+		ingestor: ingestor,
+		logger:   logger,
+	}
+
+	for name, push := range map[string]func() error{
+		"metrics": func() error { return adxDataProducer.metricsDataPusher(t.Context(), createMetricsData(5)) },
+		"logs":    func() error { return adxDataProducer.logsDataPusher(t.Context(), createLogsData()) },
+		"traces":  func() error { return adxDataProducer.tracesDataPusher(t.Context(), createTracesData()) },
+	} {
+		t.Run(name, func(t *testing.T) {
+			ingestor.raw = nil
+			require.NoError(t, push())
+			require.Greater(t, len(ingestor.raw), 2)
+			assert.Equal(t, []byte{0x1f, 0x8b}, ingestor.raw[:2], "payload must start with the gzip magic number")
+			assert.True(t, ingestor.seekable, "the reader must be seekable: the client retries a failed queued upload against another storage container by seeking back to the start")
+
+			zr, err := gzip.NewReader(bytes.NewReader(ingestor.raw))
+			require.NoError(t, err)
+			plain, err := io.ReadAll(zr)
+			require.NoError(t, err)
+			assert.True(t, strings.HasPrefix(string(plain), "{"), "decompressed payload should be JSON lines")
+		})
+	}
+}
+
 func TestIngestDataPropagatesContext(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 	ingestor := &mockingestor{}
@@ -285,13 +319,20 @@ func TestCreateKcsb(t *testing.T) {
 }
 
 type mockingestor struct {
-	records []string
-	lastCtx context.Context
+	records  []string
+	raw      []byte // the payload exactly as the exporter handed it over
+	seekable bool   // whether the reader the exporter handed over can seek
+	lastCtx  context.Context
 }
 
 func (m *mockingestor) FromReader(ctx context.Context, reader io.Reader, _ ...azkustoingest.FileOption) (*azkustoingest.Result, error) {
 	m.lastCtx = ctx
-	bufbytes, _ := io.ReadAll(reader)
+	_, m.seekable = reader.(io.Seeker)
+	m.raw, _ = io.ReadAll(reader)
+	bufbytes := m.raw
+	if zr, err := gzip.NewReader(bytes.NewReader(m.raw)); err == nil {
+		bufbytes, _ = io.ReadAll(zr)
+	}
 	metricjson := string(bufbytes)
 	m.SetRecords(strings.Split(metricjson, "\n"))
 	return &azkustoingest.Result{}, nil
