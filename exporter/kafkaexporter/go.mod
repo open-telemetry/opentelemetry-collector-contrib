@@ -4,6 +4,7 @@ go 1.26.0
 
 require (
 	github.com/gogo/protobuf v1.3.2
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/jaegertracing/jaeger-idl v0.14.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.166.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.166.0
@@ -76,7 +77,6 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
-	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.7.6 // indirect

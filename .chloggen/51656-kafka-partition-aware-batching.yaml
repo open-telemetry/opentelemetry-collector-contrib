@@ -1,0 +1,6 @@
+change_type: enhancement
+component: exporter/kafka
+note: Add opt-in partition-aware batching for keyed telemetry.
+issues: [51656]
+subtext: Groups telemetry by destination topic and partition while preserving key affinity, with a bounded LRU cache for topic partition counts.
+change_logs: [user]

@@ -114,6 +114,24 @@ type FranzSyncProducer struct {
 	propagatorFields []string
 }
 
+type plannedPartitionContextKey struct{}
+
+// WithPlannedPartition marks a record context with a partition selected before
+// producing. The Kafka exporter partitioner uses this to keep a partition-aware
+// batch on the partition for which it was built.
+func WithPlannedPartition(ctx context.Context, partition int) context.Context {
+	return context.WithValue(ctx, plannedPartitionContextKey{}, partition)
+}
+
+// PlannedPartition returns a partition selected before producing.
+func PlannedPartition(ctx context.Context) (int, bool) {
+	if ctx == nil {
+		return 0, false
+	}
+	partition, ok := ctx.Value(plannedPartitionContextKey{}).(int)
+	return partition, ok
+}
+
 // NewFranzSyncProducer Franz-go producer from a kgo.Client and a Messenger.
 // clientCancel must cancel the context passed to kgo.WithContext when the client was created;
 // it is called by Close to unblock any in-flight ProduceSync calls.
@@ -168,6 +186,12 @@ func (p *FranzSyncProducer) ExportData(ctx context.Context, records []*kgo.Recor
 	}
 	for _, r := range records {
 		r.Headers = headers
+		if partition, ok := PlannedPartition(r.Context); ok {
+			// Request conversion may happen before queueing. Rebase the marker
+			// onto the current export context so hooks observe this attempt's
+			// context rather than the converter's potentially expired context.
+			r.Context = WithPlannedPartition(ctx, partition)
+		}
 	}
 	result := p.client.ProduceSync(ctx, records...)
 	var errs []error

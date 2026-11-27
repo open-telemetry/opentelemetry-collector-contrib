@@ -21,6 +21,8 @@ type pdataLogsMarshaler struct {
 	marshaler plog.Marshaler
 }
 
+func (pdataLogsMarshaler) SupportsPartitionAwareBatching() {}
+
 // NewPdataLogsMarshaler returns a new LogsMarshaler that marshals
 // plog.Logs using the given plog.Marshaler. This can be used with
 // the standard OTLP marshalers in the plog package, or with encoding
@@ -42,6 +44,8 @@ type pdataMetricsMarshaler struct {
 	marshaler pmetric.Marshaler
 }
 
+func (pdataMetricsMarshaler) SupportsPartitionAwareBatching() {}
+
 // NewPdataMetricsMarshaler returns a new MetricsMarshaler that marshals
 // pmetric.Metrics using the given pmetric.Marshaler. This can be used
 // with the standard OTLP marshalers in the pmetric package, or with
@@ -62,6 +66,8 @@ func (p pdataMetricsMarshaler) MarshalMetrics(ld pmetric.Metrics, yield func(key
 type pdataTracesMarshaler struct {
 	marshaler ptrace.Marshaler
 }
+
+func (pdataTracesMarshaler) SupportsPartitionAwareBatching() {}
 
 // NewPdataTracesMarshaler returns a new TracesMarshaler that marshals
 // ptrace.Traces using the given ptrace.Marshaler. This can be used
