@@ -85,14 +85,57 @@ processors:
       #   certificate: certificate           # PEM or base64-encoded PEM
       #   # hmac_key:  hmac_key              # field value must be standard base64
 
-    # Optional dead-letter queue for verification failures.
-    # Note: dead_letter persistence is not yet implemented. Setting
-    # enabled: true produces a warning; failures are not written to storage.
+    # Persistent storage for verification failures.
+    # One JSON entry per failed record, in the named storage extension.
+    # Entries are not replayed into the pipeline.
     dead_letter:
       enabled: false
       # storage: file_storage
-      # key_prefix: audit_verify_dlq/
+      # key_prefix: audit_verify_dlq/   # default: dead_letter/
+      # include_record: true             # default: true
+      # include_resource: false          # default: false
+      # max_entry_size_bytes: 1048576    # default: 1 MiB, minimum: 1 KiB, maximum: 8 MiB
+      # fail_on_storage_error: false     # default: false
+      # reasons:                         # empty: every reason
+      #   - integrity_mismatch
+      # failure_modes:                   # empty: the active failure_mode
+      #   - strict
 ```
+
+When `dead_letter.enabled` is true, each matching verification failure is stored
+in the extension named by `storage`. The storage key is
+`{key_prefix}{instance}-{unix_nano}-{sequence}`. `instance` is a random 16
+character hex id created when the processor is constructed. The sequence is
+local to that process. Two collectors can use the same `key_prefix` on one
+storage extension without overwriting each other. A local `file_storage`
+directory is already separate per host.
+
+The processor keeps these entries for the operator. It does not replay them into the pipeline, and it exposes no list or delete API.
+
+The operator owns retention. Entries stay in the storage extension until they are deleted there. `ttl`, `deduplicate_by_record_id`, `maintain_index`, and `partition_by_stream` are not supported yet. A non-zero `ttl`, or any of those flags set to true, fails config validation.
+
+Read and delete entries in the storage extension, under `key_prefix` (default `dead_letter/`). `file_storage` writes one bbolt file per processor instance. The client name is `dead_letter`, or `dead_letter-<pipeline id>` when the collector sets a pipeline id. The file is `processor_verify_<name>_<client name>` (`processor_verify__dead_letter` when the processor name and pipeline id are empty). `/` in the pipeline id is stored as `~002F`, so pipelines `logs/a` and `logs/b` that share one `verify` processor use `processor_verify__dead_letter-logs~002Fa` and `processor_verify__dead_letter-logs~002Fb`. On Redis the same client name is the key prefix in front of `key_prefix`.
+
+The JSON value has `reason`, `error` (when the failure has one), `failure_mode`,
+`profile`, `log_id` (from `audit.record.id`), `resource_index`, `scope_index`,
+`record_index`, `algorithm`, and `recorded_at`.
+`logs` is an OTLP JSON document.
+`include_record` adds the log record as it was received, before verification
+stamps. `include_resource` adds the resource to that document. An empty `reasons` or `failure_modes` list stores every failure.
+If the entry is larger than `max_entry_size_bytes`, `logs` is dropped and
+`truncated` is set. `max_entry_size_bytes` must be from 1024 to 8388608. If the
+entry is still too large, that record is not stored. The processor keeps
+writing the other failures in the batch. With `fail_on_storage_error: true` it
+then returns a permanent error and does not export or stamp the batch. With
+`fail_on_storage_error: false` it logs the size error and continues with
+`failure_mode`.
+
+> **Warning:** With `fail_on_storage_error: true`, an entry that is still larger than `max_entry_size_bytes` after `logs` is removed rejects the whole batch. Other failures in that batch are stored first. The batch is then not stamped or exported, including records that were stored and records that passed verification. The same payload will not fit on a later retry.
+
+`fail_on_storage_error: false` logs other storage errors and continues with
+`failure_mode`. Write failures are logged once per batch with the number of
+failed entries and the first error. `true` returns the storage error immediately and does not export
+or stamp the batch. A later retry can write another entry for the same record.
 
 ## Key source providers
 

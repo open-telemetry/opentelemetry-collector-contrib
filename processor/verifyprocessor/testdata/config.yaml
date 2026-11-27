@@ -63,8 +63,9 @@ verify/dead_letter:
     enabled: true
     storage: file_storage
     key_prefix: audit_verify_dlq/
+    include_record: true
+    max_entry_size_bytes: 1048576
     reasons:
       - integrity_mismatch
       - missing_integrity_value
-    partition_by_stream: true
     fail_on_storage_error: true

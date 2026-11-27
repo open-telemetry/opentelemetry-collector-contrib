@@ -20,12 +20,14 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"unicode/utf8"
 
 	"github.com/gowebpki/jcs"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor"
@@ -139,10 +141,13 @@ func recordLogID(lr plog.LogRecord) string {
 }
 
 type verifyProcessor struct {
-	config       *Config
-	logger       *zap.Logger
-	nextConsumer consumer.Logs
-	provider     KeyMaterialProvider
+	config        *Config
+	settings      processor.Settings
+	nextConsumer  consumer.Logs
+	provider      KeyMaterialProvider
+	storageClient storage.Client
+	dlqSeq        atomic.Uint64
+	dlqInstance   string
 }
 
 func newProcessor(ctx context.Context, cfg *Config, nextConsumer consumer.Logs, settings processor.Settings) (*verifyProcessor, error) {
@@ -150,16 +155,17 @@ func newProcessor(ctx context.Context, cfg *Config, nextConsumer consumer.Logs, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize key material provider: %w", err)
 	}
-
-	if cfg.DeadLetter.Enabled {
-		settings.Logger.Warn("dead_letter.enabled is set but dead-letter persistence is not yet implemented; verification failures will not be written to storage")
+	instance, err := newDeadLetterInstance()
+	if err != nil {
+		return nil, fmt.Errorf("dead letter instance: %w", err)
 	}
 
 	return &verifyProcessor{
 		config:       cfg,
-		logger:       settings.Logger,
+		settings:     settings,
 		nextConsumer: nextConsumer,
 		provider:     provider,
+		dlqInstance:  instance,
 	}, nil
 }
 
@@ -167,12 +173,28 @@ func (*verifyProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
-func (*verifyProcessor) Start(_ context.Context, _ component.Host) error {
+func (p *verifyProcessor) Start(ctx context.Context, host component.Host) error {
+	if !p.config.DeadLetter.Enabled {
+		return nil
+	}
+	if p.config.DeadLetter.StorageID == nil {
+		return errDeadLetterNeedsStorage
+	}
+	client, err := getStorageClient(ctx, host, *p.config.DeadLetter.StorageID, p.settings)
+	if err != nil {
+		return fmt.Errorf("dead letter storage: %w", err)
+	}
+	p.storageClient = client
 	return nil
 }
 
-func (*verifyProcessor) Shutdown(_ context.Context) error {
-	return nil
+func (p *verifyProcessor) Shutdown(ctx context.Context) error {
+	if p.storageClient == nil {
+		return nil
+	}
+	client := p.storageClient
+	p.storageClient = nil
+	return client.Close(ctx)
 }
 
 type recordOutcome struct {
@@ -184,6 +206,13 @@ func (p *verifyProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	resourceLogs := ld.ResourceLogs()
 	var failures []logFailure
 	stamp := p.config.FailureMode == failureModeMark || p.config.FailureMode == failureModeDrop
+
+	type verifiedResource struct {
+		rl            plog.ResourceLogs
+		scopeOutcomes [][]recordOutcome
+	}
+	verified := make([]verifiedResource, 0, resourceLogs.Len())
+	var deadLetterErrs deadLetterWriteErrors
 
 	for i := 0; i < resourceLogs.Len(); i++ {
 		rl := resourceLogs.At(i)
@@ -202,7 +231,8 @@ func (p *verifyProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		scopeLogs := rl.ScopeLogs()
 		scopeOutcomes := make([][]recordOutcome, scopeLogs.Len())
 		for j := 0; j < scopeLogs.Len(); j++ {
-			records := scopeLogs.At(j).LogRecords()
+			sl := scopeLogs.At(j)
+			records := sl.LogRecords()
 			outcomes := make([]recordOutcome, records.Len())
 			for k := 0; k < records.Len(); k++ {
 				lr := records.At(k)
@@ -211,31 +241,49 @@ func (p *verifyProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 					fail = p.verifyLogRecord(lr, algorithm)
 				}
 				outcomes[k] = recordOutcome{fail: fail, id: recordLogID(lr)}
-				if fail != nil {
-					p.logger.Debug("log record verification failed",
-						zap.String("reason", fail.reason),
-						zap.Error(fail.err),
-					)
-					if p.config.FailureMode != failureModeMark {
-						failures = append(failures, logFailure{
-							logID:    outcomes[k].id,
-							resource: i,
-							scope:    j,
-							record:   k,
-						})
+				if fail == nil {
+					continue
+				}
+				p.settings.Logger.Debug("log record verification failed",
+					zap.String("reason", fail.reason),
+					zap.Error(fail.err),
+				)
+				if err := p.writeDeadLetter(ctx, rl, sl, lr, i, j, k, algorithm, outcomes[k].id, fail); err != nil {
+					if !errors.Is(err, errDeadLetterTooLarge) && p.config.DeadLetter.failOnStorageError() {
+						return fmt.Errorf("dead letter write: %w", err)
 					}
+					deadLetterErrs.add(fail.reason, err)
+				}
+				if p.config.FailureMode != failureModeMark {
+					failures = append(failures, logFailure{
+						logID:    outcomes[k].id,
+						resource: i,
+						scope:    j,
+						record:   k,
+					})
 				}
 			}
 			scopeOutcomes[j] = outcomes
 		}
+		verified = append(verified, verifiedResource{rl: rl, scopeOutcomes: scopeOutcomes})
+	}
 
-		if stamp {
-			p.applyHierarchicalStamps(rl, scopeOutcomes)
+	deadLetterErrs.log(p.settings.Logger)
+	if deadLetterErrs.tooLarge != nil && p.config.DeadLetter.failOnStorageError() {
+		return consumererror.NewPermanent(fmt.Errorf("dead letter write: %w", deadLetterErrs.tooLarge))
+	}
+
+	if stamp {
+		for _, item := range verified {
+			p.applyHierarchicalStamps(item.rl, item.scopeOutcomes)
 		}
+	}
 
-		if p.config.FailureMode == failureModeDrop {
+	if p.config.FailureMode == failureModeDrop {
+		for _, item := range verified {
+			scopeLogs := item.rl.ScopeLogs()
 			for j := 0; j < scopeLogs.Len(); j++ {
-				outcomes := scopeOutcomes[j]
+				outcomes := item.scopeOutcomes[j]
 				recordIdx := 0
 				scopeLogs.At(j).LogRecords().RemoveIf(func(plog.LogRecord) bool {
 					idx := recordIdx

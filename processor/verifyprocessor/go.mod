@@ -4,6 +4,8 @@ go 1.26.0
 
 require (
 	github.com/gowebpki/jcs v1.0.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.166.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.166.0
 	github.com/openbao/openbao/api/v2 v2.7.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.72.1-0.20261126161120-4c6c46bf6bc6
@@ -13,7 +15,10 @@ require (
 	go.opentelemetry.io/collector/consumer v1.72.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/consumer/consumererror v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/consumer/consumertest v0.166.1-0.20261126161120-4c6c46bf6bc6
+	go.opentelemetry.io/collector/extension/extensiontest v0.166.1-0.20261126161120-4c6c46bf6bc6
+	go.opentelemetry.io/collector/extension/xextension v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/pdata v1.72.1-0.20261126161120-4c6c46bf6bc6
+	go.opentelemetry.io/collector/pipeline v1.72.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/processor v1.72.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/processor/processortest v0.166.1-0.20261126161120-4c6c46bf6bc6
 	go.uber.org/goleak v1.3.0
@@ -72,14 +77,15 @@ require (
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
+	go.etcd.io/bbolt v1.5.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
+	go.opentelemetry.io/collector/extension v1.72.1-0.20261126161120-4c6c46bf6bc6 // indirect
 	go.opentelemetry.io/collector/featuregate v1.72.1-0.20261126161120-4c6c46bf6bc6 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
-	go.opentelemetry.io/collector/pipeline v1.72.1-0.20261126161120-4c6c46bf6bc6 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.166.1-0.20261126161120-4c6c46bf6bc6 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
@@ -109,3 +115,7 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.2 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage => ../../extension/storage/filestorage

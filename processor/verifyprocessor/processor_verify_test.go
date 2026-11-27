@@ -34,7 +34,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processortest"
-	"go.uber.org/zap"
 )
 
 type staticProvider struct {
@@ -82,11 +81,14 @@ func fingerprint(cert *x509.Certificate) string {
 
 func newVerifyProc(t *testing.T, cfg *Config, prov KeyMaterialProvider) *verifyProcessor {
 	t.Helper()
+	instance, err := newDeadLetterInstance()
+	require.NoError(t, err)
 	return &verifyProcessor{
 		config:       cfg,
-		logger:       zap.NewNop(),
+		settings:     processortest.NewNopSettings(typ),
 		nextConsumer: consumertest.NewNop(),
 		provider:     prov,
+		dlqInstance:  instance,
 	}
 }
 
