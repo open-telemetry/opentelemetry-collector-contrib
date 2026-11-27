@@ -117,6 +117,7 @@ func (rw *resourceWatcher) shouldWatchResourceForMetadataOnly() bool {
 }
 
 func (rw *resourceWatcher) prepareSharedInformerFactory() error {
+	rw.informerFactories = nil
 	factories := rw.getInformerFactories()
 
 	// Map of supported group version kinds by name of a kind.

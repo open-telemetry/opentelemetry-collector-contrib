@@ -6,6 +6,7 @@ package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -36,8 +37,11 @@ type kubernetesReceiver struct {
 	config          *Config
 	settings        receiver.Settings
 	metricsConsumer consumer.Metrics
-	cancel          context.CancelFunc
 	obsrecv         *receiverhelper.ObsReport
+
+	mu      sync.Mutex
+	cancel  context.CancelFunc
+	stopped bool
 }
 
 type getExporters interface {
@@ -45,26 +49,14 @@ type getExporters interface {
 }
 
 func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.Host) error {
-	ge, ok := host.(getExporters)
-	if !ok {
-		return errors.New("unable to get exporters")
-	}
-	exporters := ge.GetExporters()
-
-	// Setup metadata exporters before initializing watchers to avoid concurrent access
-	if err := kr.resourceWatcher.setupMetadataExporters(
-		exporters[pipeline.SignalMetrics], kr.config.MetadataExporters,
-	); err != nil {
-		return err
-	}
-
 	if err := kr.resourceWatcher.initialize(); err != nil {
 		return err
 	}
 
+	informerFactories := kr.resourceWatcher.informerFactories
 	go func() {
 		kr.settings.Logger.Info("Starting shared informers and wait for initial cache sync.")
-		for _, informer := range kr.resourceWatcher.informerFactories {
+		for _, informer := range informerFactories {
 			if informer == nil {
 				continue
 			}
@@ -103,7 +95,18 @@ func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.
 }
 
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
-	ctx, kr.cancel = context.WithCancel(ctx)
+	ge, ok := host.(getExporters)
+	if !ok {
+		return errors.New("unable to get exporters")
+	}
+	exporters := ge.GetExporters()
+
+	// Setup metadata exporters before initializing watchers to avoid concurrent access
+	if err := kr.resourceWatcher.setupMetadataExporters(
+		exporters[pipeline.SignalMetrics], kr.config.MetadataExporters,
+	); err != nil {
+		return err
+	}
 
 	// if extension is defined start with k8s leader elector
 	if kr.config.K8sLeaderElector != nil {
@@ -125,6 +128,13 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 
 		leaderElectorExt.SetCallBackFuncs(
 			func(ctx context.Context) {
+				kr.mu.Lock()
+				if kr.stopped {
+					kr.mu.Unlock()
+					return
+				}
+				ctx, kr.cancel = context.WithCancel(ctx)
+				kr.mu.Unlock()
 				if err := kr.startReceiver(ctx, host); err != nil {
 					kr.settings.Logger.Error("Failed to start receiver", zap.Error(err))
 				}
@@ -134,6 +144,9 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 		)
 	} else {
 		kr.settings.Logger.Info("Starting k8sClusterReceiver without leader election")
+		kr.mu.Lock()
+		ctx, kr.cancel = context.WithCancel(ctx)
+		kr.mu.Unlock()
 		if err := kr.startReceiver(ctx, host); err != nil {
 			return err
 		}
@@ -144,12 +157,18 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 
 func (kr *kubernetesReceiver) stopReceiver() {
 	kr.settings.Logger.Info("Stopping the receiver")
+	kr.mu.Lock()
+	defer kr.mu.Unlock()
 	if kr.cancel != nil {
 		kr.cancel()
+		kr.cancel = nil
 	}
 }
 
 func (kr *kubernetesReceiver) Shutdown(context.Context) error {
+	kr.mu.Lock()
+	kr.stopped = true
+	kr.mu.Unlock()
 	kr.stopReceiver()
 	return nil
 }

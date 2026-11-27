@@ -5,6 +5,7 @@ package k8sclusterreceiver
 
 import (
 	"context"
+	"errors"
 	"os"
 	"slices"
 	"sync/atomic"
@@ -22,9 +23,11 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest"
@@ -135,6 +138,107 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 	// lost election
 	fakeLeaderElection.InvokeOnStopping()
 	require.NoError(t, kr.Shutdown(t.Context()))
+}
+
+// The fake leader elector passes a context that is never canceled to the start callback, like the k8s_leader_elector
+// extension does when it already holds the lease at the time the receiver registers its callbacks.
+func TestReceiverWithLeaderElectionStopsCollecting(t *testing.T) {
+	t.Run("lease lost", func(t *testing.T) {
+		kr, fakeLeaderElection, sink := startReceiverWithFakeLeaderElection(t, newFakeClientWithAllResources())
+		fakeLeaderElection.InvokeOnLeading()
+		requireMoreMetrics(t, sink)
+
+		fakeLeaderElection.InvokeOnStopping()
+		requireNoMoreMetrics(t, sink)
+		require.NoError(t, kr.Shutdown(t.Context()))
+	})
+
+	t.Run("shutdown", func(t *testing.T) {
+		kr, fakeLeaderElection, sink := startReceiverWithFakeLeaderElection(t, newFakeClientWithAllResources())
+		fakeLeaderElection.InvokeOnLeading()
+		requireMoreMetrics(t, sink)
+
+		require.NoError(t, kr.Shutdown(t.Context()))
+		requireNoMoreMetrics(t, sink)
+	})
+
+	t.Run("lease regained", func(t *testing.T) {
+		kr, fakeLeaderElection, sink := startReceiverWithFakeLeaderElection(t, newFakeClientWithAllResources())
+		fakeLeaderElection.InvokeOnLeading()
+		requireMoreMetrics(t, sink)
+
+		fakeLeaderElection.InvokeOnStopping()
+		requireNoMoreMetrics(t, sink)
+
+		fakeLeaderElection.InvokeOnLeading()
+		requireMoreMetrics(t, sink)
+
+		fakeLeaderElection.InvokeOnStopping()
+		requireNoMoreMetrics(t, sink)
+		require.NoError(t, kr.Shutdown(t.Context()))
+	})
+
+	t.Run("lease acquired after shutdown", func(t *testing.T) {
+		kr, fakeLeaderElection, sink := startReceiverWithFakeLeaderElection(t, newFakeClientWithAllResources())
+		require.NoError(t, kr.Shutdown(t.Context()))
+
+		fakeLeaderElection.InvokeOnLeading()
+		requireNoMoreMetrics(t, sink)
+		require.Empty(t, sink.AllMetrics())
+	})
+
+	t.Run("lease lost before initial sync", func(t *testing.T) {
+		client := newFakeClientWithAllResources()
+		var failLists atomic.Bool
+		var failedLists atomic.Int32
+		failLists.Store(true)
+		client.PrependReactor("list", "*", func(k8stesting.Action) (bool, runtime.Object, error) {
+			if !failLists.Load() {
+				return false, nil, nil
+			}
+			failedLists.Add(1)
+			return true, nil, errors.New("list failed")
+		})
+		kr, fakeLeaderElection, sink := startReceiverWithFakeLeaderElection(t, client)
+		fakeLeaderElection.InvokeOnLeading()
+		require.Eventually(t, func() bool {
+			return failedLists.Load() > 0
+		}, 20*time.Second, 100*time.Millisecond, "informers not started")
+
+		fakeLeaderElection.InvokeOnStopping()
+		failLists.Store(false)
+
+		fakeLeaderElection.InvokeOnLeading()
+		requireMoreMetrics(t, sink)
+
+		fakeLeaderElection.InvokeOnStopping()
+		require.NoError(t, kr.Shutdown(t.Context()))
+	})
+}
+
+func startReceiverWithFakeLeaderElection(t *testing.T, client *fake.Clientset) (*kubernetesReceiver, *k8sleaderelectortest.FakeLeaderElection, *consumertest.MetricsSink) {
+	sink := new(consumertest.MetricsSink)
+	kr := setupReceiver(client, nil, sink, nil, 10*time.Second, componenttest.NewTelemetry(), nil, component.MustNewID("k8s_leader_elector"))
+	createPods(t, client, 2, false)
+
+	fakeLeaderElection := &k8sleaderelectortest.FakeLeaderElection{}
+	require.NoError(t, kr.Start(t.Context(), &k8sleaderelectortest.FakeHost{FakeLeaderElection: fakeLeaderElection}))
+	return kr, fakeLeaderElection, sink
+}
+
+func requireMoreMetrics(t *testing.T, sink *consumertest.MetricsSink) {
+	batches := len(sink.AllMetrics())
+	require.Eventually(t, func() bool {
+		return len(sink.AllMetrics()) > batches
+	}, 20*time.Second, 100*time.Millisecond, "metrics not collected")
+}
+
+// requireNoMoreMetrics allows one more batch, for a collection that was in progress when the receiver stopped.
+func requireNoMoreMetrics(t *testing.T, sink *consumertest.MetricsSink) {
+	batches := len(sink.AllMetrics()) + 1
+	require.Never(t, func() bool {
+		return len(sink.AllMetrics()) > batches
+	}, 3*time.Second, 100*time.Millisecond, "metrics still collected")
 }
 
 func TestNamespacedReceiver(t *testing.T) {
