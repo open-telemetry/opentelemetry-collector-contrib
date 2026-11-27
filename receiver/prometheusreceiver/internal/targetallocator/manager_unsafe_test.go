@@ -273,6 +273,74 @@ func TestGetScrapeConfigHash(t *testing.T) {
 	assert.Equal(t, hash1, hash2)
 }
 
+func TestSyncRotatedScrapeCredentials(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		auth  func(string) map[string]any
+		value func(*promconfig.ScrapeConfig) string
+	}{
+		{
+			name: "bearer token",
+			auth: func(value string) map[string]any {
+				return map[string]any{"authorization": map[string]string{"credentials": value}}
+			},
+			value: func(cfg *promconfig.ScrapeConfig) string {
+				return string(cfg.HTTPClientConfig.Authorization.Credentials)
+			},
+		},
+		{
+			name: "basic auth password",
+			auth: func(value string) map[string]any {
+				return map[string]any{"basic_auth": map[string]string{"username": "test", "password": value}}
+			},
+			value: func(cfg *promconfig.ScrapeConfig) string { return string(cfg.HTTPClientConfig.BasicAuth.Password) },
+		},
+		{
+			name: "proxy URL password",
+			auth: func(value string) map[string]any {
+				return map[string]any{"proxy_url": "http://test:" + value + "@proxy.example"}
+			},
+			value: func(cfg *promconfig.ScrapeConfig) string {
+				password, _ := cfg.HTTPClientConfig.ProxyURL.User.Password()
+				return password
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var credential atomic.Value
+			credential.Store("first")
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				job := tc.auth(credential.Load().(string))
+				job["job_name"] = "test"
+				_ = json.NewEncoder(w).Encode(map[string]any{"test": job})
+			}))
+			defer server.Close()
+
+			cfg := &Config{CollectorID: "collector"}
+			cfg.ClientConfig.Endpoint = server.URL
+			promCfg, err := promconfig.Load("", nil)
+			require.NoError(t, err)
+			m := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, sharedpromconfig.NewConfig(promCfg))
+			m.scrapeManager, m.discoveryManager = initPrometheusManagers(t.Context(), t)
+			defer m.scrapeManager.Stop()
+
+			var hash uint64
+			for _, poll := range []struct {
+				credential string
+				updates    int64
+			}{{"first", 1}, {"second", 2}, {"second", 2}} {
+				credential.Store(poll.credential)
+				hash, err = m.sync(hash, server.Client())
+				require.NoError(t, err)
+				jobs := m.promCfg.Get().ScrapeConfigs
+				require.Len(t, jobs, 1)
+				require.Equal(t, poll.credential, tc.value(jobs[0]))
+				require.Equal(t, poll.updates, m.configUpdateCount.Load())
+			}
+		})
+	}
+}
+
 func TestTargetAllocatorJobRetrieval(t *testing.T) {
 	for _, tc := range []struct {
 		desc      string
