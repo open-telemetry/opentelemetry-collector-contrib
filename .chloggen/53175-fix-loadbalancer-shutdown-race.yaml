@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: exporter/load_balancing
+note: Fix race condition, concurrent map crash, and exporter leak on shutdown during backend changes
+issues: [53175]
+subtext:
+change_logs: [user]
