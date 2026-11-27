@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/filter"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 // ContainerCPUTimeMetricConfig provides config for the container.cpu.time metric.
@@ -1881,11 +1881,11 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
-	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	MetricsInclude []strmatch.Config `mapstructure:"metrics_include"`
 	// Experimental: MetricsExclude defines a list of filters for attribute values.
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
-	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	MetricsExclude []strmatch.Config `mapstructure:"metrics_exclude"`
 
 	enabledSetByUser bool
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func TestQuerySignature_StableForSameInput(t *testing.T) {
@@ -16,6 +17,40 @@ func TestQuerySignature_StableForSameInput(t *testing.T) {
 	require.Equal(t, first, second)
 	require.NotEqual(t, querySignature("foo"), querySignature("bar"))
 	require.Len(t, querySignature("anything"), 16)
+}
+
+func TestContextWithTraceContextComment(t *testing.T) {
+	const traceparent = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+	wantTraceID, err := trace.TraceIDFromHex("4bf92f3577b34da6a3ce929d0e0e4736")
+	require.NoError(t, err)
+	wantSpanID, err := trace.SpanIDFromHex("00f067aa0ba902b7")
+	require.NoError(t, err)
+
+	tests := []struct {
+		name    string
+		comment any
+		valid   bool
+	}{
+		{name: "ordered document", comment: bson.D{{Key: "traceparent", Value: traceparent}, {Key: "tracestate", Value: "congo=t61rcWkgMzE"}}, valid: true},
+		{name: "map document", comment: bson.M{"traceparent": traceparent}, valid: true},
+		{name: "application comment only", comment: bson.D{{Key: "job", Value: "monthly rollup"}}, valid: false},
+		{name: "original comment is not a carrier field", comment: bson.D{{Key: "originalComment", Value: bson.D{{Key: "traceparent", Value: traceparent}}}}, valid: false},
+		{name: "non-string traceparent", comment: bson.D{{Key: "traceparent", Value: int32(1)}}, valid: false},
+		{name: "invalid traceparent", comment: bson.D{{Key: "traceparent", Value: "invalid"}}, valid: false},
+		{name: "legacy string comment", comment: "legacy comment", valid: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			spanContext := trace.SpanContextFromContext(contextWithTraceContextComment(tt.comment))
+			if !tt.valid {
+				require.False(t, spanContext.IsValid())
+				return
+			}
+			require.True(t, spanContext.IsValid())
+			require.Equal(t, wantTraceID, spanContext.TraceID())
+			require.Equal(t, wantSpanID, spanContext.SpanID())
+		})
+	}
 }
 
 func TestIsExplainable(t *testing.T) {
