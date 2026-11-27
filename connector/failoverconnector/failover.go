@@ -4,11 +4,16 @@
 package failoverconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector"
 
 import (
+	"context"
 	"errors"
 
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/state"
 )
 
@@ -30,6 +35,8 @@ type baseFailoverRouter[C any] struct {
 	done        chan struct{}
 	conditions  Condition
 	logger      *zap.Logger
+
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 // getCurrentConsumer returns the consumer for the current healthy level
@@ -64,15 +71,35 @@ func (f *baseFailoverRouter[C]) shouldFailoverOnError(err error) bool {
 	return true
 }
 
+// registerTelemetry registers the callback that reports which priority level currently receives data
+func (f *baseFailoverRouter[C]) registerTelemetry(set connector.Settings) error {
+	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return err
+	}
+	f.telemetryBuilder = tb
+
+	attrs := metric.WithAttributes(attribute.String("connector", set.ID.String()))
+	return tb.RegisterConnectorFailoverActiveLevelCallback(func(_ context.Context, o metric.Int64Observer) error {
+		current := f.pS.CurrentPipeline()
+		if current >= len(f.cfg.PipelinePriority) {
+			current = -1
+		}
+		o.Observe(int64(current), attrs)
+		return nil
+	})
+}
+
 func (f *baseFailoverRouter[C]) Shutdown() {
 	select {
 	case <-f.done:
 	default:
 		close(f.done)
 	}
+	f.telemetryBuilder.Shutdown()
 }
 
-func newBaseFailoverRouter[C any](provider consumerProvider[C], cfg *Config, logger *zap.Logger) (*baseFailoverRouter[C], error) {
+func newBaseFailoverRouter[C any](provider consumerProvider[C], cfg *Config, set connector.Settings) (*baseFailoverRouter[C], error) {
 	done := make(chan struct{})
 	notifyRetry := make(chan struct{}, 1)
 	pSConstants := state.PSConstants{
@@ -89,7 +116,7 @@ func newBaseFailoverRouter[C any](provider consumerProvider[C], cfg *Config, log
 	}
 
 	selector := state.NewPipelineSelector(notifyRetry, done, pSConstants)
-	return &baseFailoverRouter[C]{
+	f := &baseFailoverRouter[C]{
 		consumers:   consumers,
 		cfg:         cfg,
 		pS:          selector,
@@ -97,8 +124,12 @@ func newBaseFailoverRouter[C any](provider consumerProvider[C], cfg *Config, log
 		done:        done,
 		notifyRetry: notifyRetry,
 		conditions:  buildCondition(cfg.Condition.Get()),
-		logger:      logger,
-	}, nil
+		logger:      set.Logger,
+	}
+	if err := f.registerTelemetry(set); err != nil {
+		return nil, err
+	}
+	return f, nil
 }
 
 // For Testing
