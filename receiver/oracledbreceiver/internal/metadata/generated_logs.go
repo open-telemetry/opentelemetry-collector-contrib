@@ -6,10 +6,10 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -307,8 +307,8 @@ type LogsBuilder struct {
 	logsBuffer                     plog.Logs
 	logRecordsBuffer               plog.LogRecordSlice
 	buildInfo                      component.BuildInfo // contains version information.
-	resourceAttributeIncludeFilter map[string]filter.Filter
-	resourceAttributeExcludeFilter map[string]filter.Filter
+	resourceAttributeIncludeFilter map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter map[string]strmatch.Matcher
 	eventDbServerQueryPlan         eventDbServerQueryPlan
 	eventDbServerQuerySample       eventDbServerQuerySample
 	eventDbServerSessionWaitSample eventDbServerSessionWaitSample
@@ -332,80 +332,80 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 		eventDbServerSessionWaitSample: newEventDbServerSessionWaitSample(lbc.Events.DbServerSessionWaitSample),
 		eventDbServerTopProcedure:      newEventDbServerTopProcedure(lbc.Events.DbServerTopProcedure),
 		eventDbServerTopQuery:          newEventDbServerTopQuery(lbc.Events.DbServerTopQuery),
-		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter: make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter: make(map[string]strmatch.Matcher),
 	}
 	if lbc.ResourceAttributes.HostName.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["host.name"] = filter.CreateFilter(lbc.ResourceAttributes.HostName.EventsInclude)
+		lb.resourceAttributeIncludeFilter["host.name"] = strmatch.New(lbc.ResourceAttributes.HostName.EventsInclude)
 	}
 	if lbc.ResourceAttributes.HostName.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["host.name"] = filter.CreateFilter(lbc.ResourceAttributes.HostName.EventsExclude)
+		lb.resourceAttributeExcludeFilter["host.name"] = strmatch.New(lbc.ResourceAttributes.HostName.EventsExclude)
 	}
 	if lbc.ResourceAttributes.OracleDbEdition.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["oracle.db.edition"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbEdition.EventsInclude)
+		lb.resourceAttributeIncludeFilter["oracle.db.edition"] = strmatch.New(lbc.ResourceAttributes.OracleDbEdition.EventsInclude)
 	}
 	if lbc.ResourceAttributes.OracleDbEdition.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["oracle.db.edition"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbEdition.EventsExclude)
+		lb.resourceAttributeExcludeFilter["oracle.db.edition"] = strmatch.New(lbc.ResourceAttributes.OracleDbEdition.EventsExclude)
 	}
 	if lbc.ResourceAttributes.OracleDbHostingType.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["oracle.db.hosting_type"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbHostingType.EventsInclude)
+		lb.resourceAttributeIncludeFilter["oracle.db.hosting_type"] = strmatch.New(lbc.ResourceAttributes.OracleDbHostingType.EventsInclude)
 	}
 	if lbc.ResourceAttributes.OracleDbHostingType.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["oracle.db.hosting_type"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbHostingType.EventsExclude)
+		lb.resourceAttributeExcludeFilter["oracle.db.hosting_type"] = strmatch.New(lbc.ResourceAttributes.OracleDbHostingType.EventsExclude)
 	}
 	if lbc.ResourceAttributes.OracleDbOpenMode.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["oracle.db.open_mode"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbOpenMode.EventsInclude)
+		lb.resourceAttributeIncludeFilter["oracle.db.open_mode"] = strmatch.New(lbc.ResourceAttributes.OracleDbOpenMode.EventsInclude)
 	}
 	if lbc.ResourceAttributes.OracleDbOpenMode.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["oracle.db.open_mode"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbOpenMode.EventsExclude)
+		lb.resourceAttributeExcludeFilter["oracle.db.open_mode"] = strmatch.New(lbc.ResourceAttributes.OracleDbOpenMode.EventsExclude)
 	}
 	if lbc.ResourceAttributes.OracleDbRole.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["oracle.db.role"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbRole.EventsInclude)
+		lb.resourceAttributeIncludeFilter["oracle.db.role"] = strmatch.New(lbc.ResourceAttributes.OracleDbRole.EventsInclude)
 	}
 	if lbc.ResourceAttributes.OracleDbRole.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["oracle.db.role"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbRole.EventsExclude)
+		lb.resourceAttributeExcludeFilter["oracle.db.role"] = strmatch.New(lbc.ResourceAttributes.OracleDbRole.EventsExclude)
 	}
 	if lbc.ResourceAttributes.OracleDbVersion.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["oracle.db.version"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbVersion.EventsInclude)
+		lb.resourceAttributeIncludeFilter["oracle.db.version"] = strmatch.New(lbc.ResourceAttributes.OracleDbVersion.EventsInclude)
 	}
 	if lbc.ResourceAttributes.OracleDbVersion.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["oracle.db.version"] = filter.CreateFilter(lbc.ResourceAttributes.OracleDbVersion.EventsExclude)
+		lb.resourceAttributeExcludeFilter["oracle.db.version"] = strmatch.New(lbc.ResourceAttributes.OracleDbVersion.EventsExclude)
 	}
 	if lbc.ResourceAttributes.OracledbInstanceName.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["oracledb.instance.name"] = filter.CreateFilter(lbc.ResourceAttributes.OracledbInstanceName.EventsInclude)
+		lb.resourceAttributeIncludeFilter["oracledb.instance.name"] = strmatch.New(lbc.ResourceAttributes.OracledbInstanceName.EventsInclude)
 	}
 	if lbc.ResourceAttributes.OracledbInstanceName.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["oracledb.instance.name"] = filter.CreateFilter(lbc.ResourceAttributes.OracledbInstanceName.EventsExclude)
+		lb.resourceAttributeExcludeFilter["oracledb.instance.name"] = strmatch.New(lbc.ResourceAttributes.OracledbInstanceName.EventsExclude)
 	}
 	if lbc.ResourceAttributes.ServerAddress.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["server.address"] = filter.CreateFilter(lbc.ResourceAttributes.ServerAddress.EventsInclude)
+		lb.resourceAttributeIncludeFilter["server.address"] = strmatch.New(lbc.ResourceAttributes.ServerAddress.EventsInclude)
 	}
 	if lbc.ResourceAttributes.ServerAddress.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["server.address"] = filter.CreateFilter(lbc.ResourceAttributes.ServerAddress.EventsExclude)
+		lb.resourceAttributeExcludeFilter["server.address"] = strmatch.New(lbc.ResourceAttributes.ServerAddress.EventsExclude)
 	}
 	if lbc.ResourceAttributes.ServerPort.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["server.port"] = filter.CreateFilter(lbc.ResourceAttributes.ServerPort.EventsInclude)
+		lb.resourceAttributeIncludeFilter["server.port"] = strmatch.New(lbc.ResourceAttributes.ServerPort.EventsInclude)
 	}
 	if lbc.ResourceAttributes.ServerPort.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["server.port"] = filter.CreateFilter(lbc.ResourceAttributes.ServerPort.EventsExclude)
+		lb.resourceAttributeExcludeFilter["server.port"] = strmatch.New(lbc.ResourceAttributes.ServerPort.EventsExclude)
 	}
 	if lbc.ResourceAttributes.ServiceInstanceID.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["service.instance.id"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceInstanceID.EventsInclude)
+		lb.resourceAttributeIncludeFilter["service.instance.id"] = strmatch.New(lbc.ResourceAttributes.ServiceInstanceID.EventsInclude)
 	}
 	if lbc.ResourceAttributes.ServiceInstanceID.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["service.instance.id"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceInstanceID.EventsExclude)
+		lb.resourceAttributeExcludeFilter["service.instance.id"] = strmatch.New(lbc.ResourceAttributes.ServiceInstanceID.EventsExclude)
 	}
 	if lbc.ResourceAttributes.ServiceName.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["service.name"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceName.EventsInclude)
+		lb.resourceAttributeIncludeFilter["service.name"] = strmatch.New(lbc.ResourceAttributes.ServiceName.EventsInclude)
 	}
 	if lbc.ResourceAttributes.ServiceName.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["service.name"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceName.EventsExclude)
+		lb.resourceAttributeExcludeFilter["service.name"] = strmatch.New(lbc.ResourceAttributes.ServiceName.EventsExclude)
 	}
 	if lbc.ResourceAttributes.ServiceNamespace.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["service.namespace"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceNamespace.EventsInclude)
+		lb.resourceAttributeIncludeFilter["service.namespace"] = strmatch.New(lbc.ResourceAttributes.ServiceNamespace.EventsInclude)
 	}
 	if lbc.ResourceAttributes.ServiceNamespace.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["service.namespace"] = filter.CreateFilter(lbc.ResourceAttributes.ServiceNamespace.EventsExclude)
+		lb.resourceAttributeExcludeFilter["service.namespace"] = strmatch.New(lbc.ResourceAttributes.ServiceNamespace.EventsExclude)
 	}
 
 	return lb

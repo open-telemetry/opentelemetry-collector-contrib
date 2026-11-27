@@ -1410,10 +1410,62 @@ func TestProcessCurrentOp(t *testing.T) {
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-	scraper.processCurrentOp(t.Context(), operations, now)
+	scraper.processCurrentOp(operations, now)
 
 	logs := scraper.lb.Emit()
 	require.Equal(t, 2, logs.LogRecordCount(), "only 2 of 4 operations should produce log records")
+}
+
+func TestProcessCurrentOpExtractsTraceContextFromComment(t *testing.T) {
+	scraperCfg := createDefaultConfig().(*Config)
+	scraperCfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
+
+	operations := []bson.M{
+		{
+			"ns":     "mydb.orders",
+			"op":     "query",
+			"active": true,
+			"command": bson.D{
+				{Key: "find", Value: "orders"},
+				{Key: "comment", Value: bson.D{
+					{Key: "traceparent", Value: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"},
+					{Key: "tracestate", Value: "congo=t61rcWkgMzE"},
+					{Key: "originalComment", Value: "monthly rollup"},
+				}},
+			},
+		},
+		{
+			"ns":      "mydb.products",
+			"op":      "query",
+			"active":  true,
+			"command": bson.D{{Key: "find", Value: "products"}},
+		},
+		{
+			"ns":     "mydb.invoices",
+			"op":     "query",
+			"active": true,
+			"command": bson.D{
+				{Key: "find", Value: "invoices"},
+				{Key: "comment", Value: bson.D{
+					{Key: "traceparent", Value: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"},
+					{Key: "tracestate", Value: "congo=t61rcWkgMzE"},
+					{Key: "originalComment", Value: nil},
+				}},
+			},
+		},
+	}
+
+	scraper.processCurrentOp(operations, pcommon.NewTimestampFromTime(time.Now()))
+	records := scraper.lb.Emit().ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	require.Equal(t, 3, records.Len())
+	require.Equal(t, "4bf92f3577b34da6a3ce929d0e0e4736", records.At(0).TraceID().String())
+	require.Equal(t, "00f067aa0ba902b7", records.At(0).SpanID().String())
+	requireSliceAttribute(t, records.At(0).Attributes(), "mongodb.operation.comment", []any{"monthly rollup"})
+	require.True(t, records.At(1).TraceID().IsEmpty())
+	require.True(t, records.At(1).SpanID().IsEmpty())
+	requireSliceAttribute(t, records.At(2).Attributes(), "mongodb.operation.comment", []any{})
+	require.Equal(t, "4bf92f3577b34da6a3ce929d0e0e4736", records.At(2).TraceID().String())
 }
 
 func TestProcessCurrentOpCommandComment(t *testing.T) {
@@ -1455,7 +1507,7 @@ func TestProcessCurrentOpCommandComment(t *testing.T) {
 		},
 	}
 
-	scraper.processCurrentOp(t.Context(), operations, pcommon.NewTimestampFromTime(time.Now()))
+	scraper.processCurrentOp(operations, pcommon.NewTimestampFromTime(time.Now()))
 
 	logs := scraper.lb.Emit()
 	require.Equal(t, 4, logs.LogRecordCount())
@@ -1501,6 +1553,37 @@ func TestExtractCommandMetadata(t *testing.T) {
 				{Key: "comment", Value: bson.D{{Key: "trace", Value: "abc"}, {Key: "retry", Value: true}}},
 			},
 			expectedComments: []any{`{"trace": "abc","retry": true}`},
+		},
+		{
+			name: "propagation comment preserves original comment",
+			command: bson.D{
+				{Key: "find", Value: "orders"},
+				{Key: "comment", Value: bson.D{
+					{Key: "traceparent", Value: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"},
+					{Key: "tracestate", Value: "congo=t61rcWkgMzE"},
+					{Key: "originalComment", Value: bson.D{{Key: "job", Value: "monthly rollup"}}},
+				}},
+			},
+			expectedComments: []any{`{"job": "monthly rollup"}`},
+		},
+		{
+			name: "propagation comment without original comment",
+			command: bson.D{
+				{Key: "find", Value: "orders"},
+				{Key: "comment", Value: bson.D{{Key: "traceparent", Value: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"}}},
+			},
+			expectedComments: []any{},
+		},
+		{
+			name: "propagation comment with null original comment",
+			command: bson.D{
+				{Key: "find", Value: "orders"},
+				{Key: "comment", Value: bson.D{
+					{Key: "traceparent", Value: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"},
+					{Key: "originalComment", Value: nil},
+				}},
+			},
+			expectedComments: []any{},
 		},
 		{
 			name: "duplicate comment fields",
@@ -1581,7 +1664,7 @@ func TestProcessCurrentOpContentionAttributes(t *testing.T) {
 		},
 	}
 
-	scraper.processCurrentOp(t.Context(), operations, pcommon.NewTimestampFromTime(time.Now()))
+	scraper.processCurrentOp(operations, pcommon.NewTimestampFromTime(time.Now()))
 
 	logs := scraper.lb.Emit()
 	require.Equal(t, 2, logs.LogRecordCount())
@@ -1673,7 +1756,7 @@ func TestProcessCurrentOpMaxRowsPerQueryAppliesAfterSkipping(t *testing.T) {
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-	scraper.processCurrentOp(t.Context(), operations, now)
+	scraper.processCurrentOp(operations, now)
 
 	logs := scraper.lb.Emit()
 	require.Equal(t, 2, logs.LogRecordCount(), "skipped operations should not consume max_rows_per_query")

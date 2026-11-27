@@ -109,7 +109,7 @@ func newUploadManager(
 
 	compression := conf.S3Uploader.Compression
 	if compression.IsCompressed() {
-		writer, err := xcompression.NewWriterFactory().NewWriter(compression, conf.S3Uploader.compressionParams())
+		writer, err := xcompression.NewWriterFactory().NewWriter(compression, conf.S3Uploader.CompressionSettings)
 		if err != nil {
 			return nil, fmt.Errorf("create S3 compression writer: %w", err)
 		}

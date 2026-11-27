@@ -59,7 +59,7 @@ type S3UploaderConfig struct {
 	// Supported values are gzip, zstd, zlib, deflate, snappy, x-snappy-framed, lz4, and none.
 	Compression configcompression.Type `mapstructure:"compression"`
 	// CompressionSettings configures the selected compression algorithm.
-	CompressionSettings CompressionSettings `mapstructure:"compression_settings,omitempty"`
+	CompressionSettings configcompression.CompressionParams `mapstructure:"compression_settings,omitempty"`
 
 	// RetryMode specifies the retry mode for S3 client, default is "standard".
 	// Valid values are: "standard", "adaptive", or "nop".
@@ -76,29 +76,6 @@ type S3UploaderConfig struct {
 	// If unspecified, a default function will be used that generates a random string.
 	// Valid values are: "uuidv7"
 	UniqueKeyFuncName string `mapstructure:"unique_key_func_name"`
-}
-
-// CompressionSettings contains the optional settings for S3 object compression.
-type CompressionSettings struct {
-	// Level overrides the default compression level for the selected algorithm.
-	Level *configcompression.Level `mapstructure:"level,omitempty"`
-
-	_ struct{}
-}
-
-func (c S3UploaderConfig) compressionParams() configcompression.CompressionParams {
-	if c.CompressionSettings.Level != nil {
-		return configcompression.CompressionParams{Level: *c.CompressionSettings.Level}
-	}
-	switch c.Compression {
-	case configcompression.TypeGzip, configcompression.TypeZlib, configcompression.TypeDeflate:
-		return configcompression.CompressionParams{Level: configcompression.DefaultCompressionLevel}
-	case configcompression.TypeZstd:
-		// Match the default encoder level used by zstd.NewWriter.
-		return configcompression.CompressionParams{Level: 3}
-	default:
-		return configcompression.CompressionParams{}
-	}
 }
 
 type MarshalerType string
@@ -167,18 +144,8 @@ func (c *Config) Validate() error {
 		errs = multierr.Append(errs, errors.New("invalid ACL"))
 	}
 
-	compression := c.S3Uploader.Compression
-	switch compression {
-	case "", "none", configcompression.TypeSnappy, configcompression.TypeSnappyFramed, configcompression.TypeLz4:
-		if c.S3Uploader.CompressionSettings.Level != nil {
-			errs = multierr.Append(errs, errors.New("compression_settings.level requires gzip, zstd, zlib, or deflate compression"))
-		}
-	case configcompression.TypeGzip, configcompression.TypeZstd, configcompression.TypeZlib, configcompression.TypeDeflate:
-		if err := compression.ValidateParams(c.S3Uploader.compressionParams()); err != nil {
-			errs = multierr.Append(errs, fmt.Errorf("invalid compression settings: %w", err))
-		}
-	default:
-		errs = multierr.Append(errs, errors.New("unknown compression type"))
+	if err := c.S3Uploader.Compression.ValidateParams(c.S3Uploader.CompressionSettings); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("invalid compression settings: %w", err))
 	}
 
 	if c.S3Uploader.RetryMode != "nop" && c.S3Uploader.RetryMode != "standard" && c.S3Uploader.RetryMode != "adaptive" {
