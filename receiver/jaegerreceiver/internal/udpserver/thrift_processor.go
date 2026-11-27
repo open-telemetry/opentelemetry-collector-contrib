@@ -6,6 +6,7 @@
 package udpserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/udpserver"
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"sync"
@@ -47,7 +48,7 @@ func NewThriftProcessor(
 	}
 	protocolPool := &sync.Pool{
 		New: func() any {
-			trans := &TBufferedReadTransport{}
+			trans := &TBufferedReadTransport{readBuf: &bytes.Buffer{}}
 			return factory.GetProtocol(trans)
 		},
 	}
