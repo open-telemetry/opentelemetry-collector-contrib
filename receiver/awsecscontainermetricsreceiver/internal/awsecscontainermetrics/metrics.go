@@ -11,8 +11,12 @@ import (
 )
 
 // MetricsData generates OTLP metrics from endpoint raw data
-func MetricsData(containerStatsMap map[string]*ContainerStats, metadata ecsutil.TaskMetadata, logger *zap.Logger) []pmetric.Metrics {
-	acc := &metricDataAccumulator{}
+func MetricsData(containerStatsMap map[string]*ContainerStats, metadata ecsutil.TaskMetadata, logger *zap.Logger, trackers ...*TaskResetTracker) []pmetric.Metrics {
+	var tracker *TaskResetTracker
+	if len(trackers) > 0 {
+		tracker = trackers[0]
+	}
+	acc := &metricDataAccumulator{tracker: tracker}
 	acc.getMetricsData(containerStatsMap, metadata, logger)
 
 	return acc.mds

@@ -26,6 +26,7 @@ type awsEcsContainerMetricsReceiver struct {
 	cancel       context.CancelFunc
 	restClient   ecsutil.RestClient
 	provider     *awsecscontainermetrics.StatsProvider
+	tracker      *awsecscontainermetrics.TaskResetTracker
 }
 
 // New creates the aws ecs container metrics receiver with the given parameters.
@@ -40,6 +41,7 @@ func newAWSECSContainermetrics(
 		nextConsumer: nextConsumer,
 		config:       config,
 		restClient:   rest,
+		tracker:      awsecscontainermetrics.NewTaskResetTracker(),
 	}
 	return r, nil
 }
@@ -81,7 +83,7 @@ func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context
 	}
 
 	// TODO: report self metrics using obsreport
-	mds := awsecscontainermetrics.MetricsData(stats, metadata, aecmr.logger)
+	mds := awsecscontainermetrics.MetricsData(stats, metadata, aecmr.logger, aecmr.tracker)
 	for _, md := range mds {
 		err = aecmr.nextConsumer.ConsumeMetrics(ctx, md)
 		if err != nil {
