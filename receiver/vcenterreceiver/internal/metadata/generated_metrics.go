@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -6912,8 +6912,8 @@ type MetricsBuilder struct {
 	metricsCapacity                           int                  // maximum observed number of metrics per resource.
 	metricsBuffer                             pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                                 component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter            map[string]filter.Filter
-	resourceAttributeExcludeFilter            map[string]filter.Filter
+	resourceAttributeIncludeFilter            map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter            map[string]strmatch.Matcher
 	metricVcenterClusterCPUEffective          metricVcenterClusterCPUEffective
 	metricVcenterClusterCPULimit              metricVcenterClusterCPULimit
 	metricVcenterClusterHostCount             metricVcenterClusterHostCount
@@ -7101,80 +7101,80 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricVcenterVMVsanLatencyAvg:             newMetricVcenterVMVsanLatencyAvg(mbc.Metrics.VcenterVMVsanLatencyAvg),
 		metricVcenterVMVsanOperations:             newMetricVcenterVMVsanOperations(mbc.Metrics.VcenterVMVsanOperations),
 		metricVcenterVMVsanThroughput:             newMetricVcenterVMVsanThroughput(mbc.Metrics.VcenterVMVsanThroughput),
-		resourceAttributeIncludeFilter:            make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:            make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter:            make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter:            make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.VcenterClusterName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["vcenter.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterClusterName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["vcenter.cluster.name"] = strmatch.New(mbc.ResourceAttributes.VcenterClusterName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.VcenterClusterName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["vcenter.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterClusterName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["vcenter.cluster.name"] = strmatch.New(mbc.ResourceAttributes.VcenterClusterName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.VcenterDatacenterName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["vcenter.datacenter.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterDatacenterName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["vcenter.datacenter.name"] = strmatch.New(mbc.ResourceAttributes.VcenterDatacenterName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.VcenterDatacenterName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["vcenter.datacenter.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterDatacenterName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["vcenter.datacenter.name"] = strmatch.New(mbc.ResourceAttributes.VcenterDatacenterName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.VcenterDatastoreName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["vcenter.datastore.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterDatastoreName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["vcenter.datastore.name"] = strmatch.New(mbc.ResourceAttributes.VcenterDatastoreName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.VcenterDatastoreName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["vcenter.datastore.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterDatastoreName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["vcenter.datastore.name"] = strmatch.New(mbc.ResourceAttributes.VcenterDatastoreName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.VcenterHostName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["vcenter.host.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterHostName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["vcenter.host.name"] = strmatch.New(mbc.ResourceAttributes.VcenterHostName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.VcenterHostName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["vcenter.host.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterHostName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["vcenter.host.name"] = strmatch.New(mbc.ResourceAttributes.VcenterHostName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.VcenterResourcePoolInventoryPath.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["vcenter.resource_pool.inventory_path"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterResourcePoolInventoryPath.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["vcenter.resource_pool.inventory_path"] = strmatch.New(mbc.ResourceAttributes.VcenterResourcePoolInventoryPath.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.VcenterResourcePoolInventoryPath.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["vcenter.resource_pool.inventory_path"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterResourcePoolInventoryPath.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["vcenter.resource_pool.inventory_path"] = strmatch.New(mbc.ResourceAttributes.VcenterResourcePoolInventoryPath.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.VcenterResourcePoolName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["vcenter.resource_pool.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterResourcePoolName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["vcenter.resource_pool.name"] = strmatch.New(mbc.ResourceAttributes.VcenterResourcePoolName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.VcenterResourcePoolName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["vcenter.resource_pool.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterResourcePoolName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["vcenter.resource_pool.name"] = strmatch.New(mbc.ResourceAttributes.VcenterResourcePoolName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.VcenterVirtualAppInventoryPath.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["vcenter.virtual_app.inventory_path"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVirtualAppInventoryPath.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["vcenter.virtual_app.inventory_path"] = strmatch.New(mbc.ResourceAttributes.VcenterVirtualAppInventoryPath.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.VcenterVirtualAppInventoryPath.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["vcenter.virtual_app.inventory_path"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVirtualAppInventoryPath.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["vcenter.virtual_app.inventory_path"] = strmatch.New(mbc.ResourceAttributes.VcenterVirtualAppInventoryPath.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.VcenterVirtualAppName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["vcenter.virtual_app.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVirtualAppName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["vcenter.virtual_app.name"] = strmatch.New(mbc.ResourceAttributes.VcenterVirtualAppName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.VcenterVirtualAppName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["vcenter.virtual_app.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVirtualAppName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["vcenter.virtual_app.name"] = strmatch.New(mbc.ResourceAttributes.VcenterVirtualAppName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.VcenterVMID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["vcenter.vm.id"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMID.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["vcenter.vm.id"] = strmatch.New(mbc.ResourceAttributes.VcenterVMID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.VcenterVMID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["vcenter.vm.id"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMID.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["vcenter.vm.id"] = strmatch.New(mbc.ResourceAttributes.VcenterVMID.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.VcenterVMName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["vcenter.vm.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["vcenter.vm.name"] = strmatch.New(mbc.ResourceAttributes.VcenterVMName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.VcenterVMName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["vcenter.vm.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["vcenter.vm.name"] = strmatch.New(mbc.ResourceAttributes.VcenterVMName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.VcenterVMTemplateID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["vcenter.vm_template.id"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMTemplateID.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["vcenter.vm_template.id"] = strmatch.New(mbc.ResourceAttributes.VcenterVMTemplateID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.VcenterVMTemplateID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["vcenter.vm_template.id"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMTemplateID.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["vcenter.vm_template.id"] = strmatch.New(mbc.ResourceAttributes.VcenterVMTemplateID.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.VcenterVMTemplateName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["vcenter.vm_template.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMTemplateName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["vcenter.vm_template.name"] = strmatch.New(mbc.ResourceAttributes.VcenterVMTemplateName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.VcenterVMTemplateName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["vcenter.vm_template.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMTemplateName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["vcenter.vm_template.name"] = strmatch.New(mbc.ResourceAttributes.VcenterVMTemplateName.MetricsExclude)
 	}
 
 	for _, op := range options {

@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 	conventions "go.opentelemetry.io/otel/semconv/v1.45.0"
 	"go.uber.org/zap"
 )
@@ -4201,8 +4201,8 @@ type MetricsBuilder struct {
 	metricsCapacity                              int                  // maximum observed number of metrics per resource.
 	metricsBuffer                                pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                                    component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter               map[string]filter.Filter
-	resourceAttributeExcludeFilter               map[string]filter.Filter
+	resourceAttributeIncludeFilter               map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter               map[string]strmatch.Matcher
 	metricContainerCPUTime                       metricContainerCPUTime
 	metricContainerCPUUsage                      metricContainerCPUUsage
 	metricContainerFilesystemAvailable           metricContainerFilesystemAvailable
@@ -4382,68 +4382,68 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sVolumeInodes:                        newMetricK8sVolumeInodes(mbc.Metrics.K8sVolumeInodes),
 		metricK8sVolumeInodesFree:                    newMetricK8sVolumeInodesFree(mbc.Metrics.K8sVolumeInodesFree),
 		metricK8sVolumeInodesUsed:                    newMetricK8sVolumeInodesUsed(mbc.Metrics.K8sVolumeInodesUsed),
-		resourceAttributeIncludeFilter:               make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:               make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter:               make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter:               make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.ContainerID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["container.id"] = strmatch.New(mbc.ResourceAttributes.ContainerID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ContainerID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["container.id"] = strmatch.New(mbc.ResourceAttributes.ContainerID.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sContainerName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["k8s.container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["k8s.container.name"] = strmatch.New(mbc.ResourceAttributes.K8sContainerName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.K8sContainerName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["k8s.container.name"] = strmatch.New(mbc.ResourceAttributes.K8sContainerName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sNamespaceName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["k8s.namespace.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNamespaceName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["k8s.namespace.name"] = strmatch.New(mbc.ResourceAttributes.K8sNamespaceName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.K8sNamespaceName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.namespace.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNamespaceName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["k8s.namespace.name"] = strmatch.New(mbc.ResourceAttributes.K8sNamespaceName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sNodeName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["k8s.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["k8s.node.name"] = strmatch.New(mbc.ResourceAttributes.K8sNodeName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.K8sNodeName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["k8s.node.name"] = strmatch.New(mbc.ResourceAttributes.K8sNodeName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sNodeSystemContainerName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["k8s.node.system_container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeSystemContainerName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["k8s.node.system_container.name"] = strmatch.New(mbc.ResourceAttributes.K8sNodeSystemContainerName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.K8sNodeSystemContainerName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.node.system_container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeSystemContainerName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["k8s.node.system_container.name"] = strmatch.New(mbc.ResourceAttributes.K8sNodeSystemContainerName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["k8s.persistentvolumeclaim.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["k8s.persistentvolumeclaim.name"] = strmatch.New(mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.persistentvolumeclaim.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["k8s.persistentvolumeclaim.name"] = strmatch.New(mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sPodName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["k8s.pod.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["k8s.pod.name"] = strmatch.New(mbc.ResourceAttributes.K8sPodName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.K8sPodName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.pod.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["k8s.pod.name"] = strmatch.New(mbc.ResourceAttributes.K8sPodName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sPodUID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["k8s.pod.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodUID.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["k8s.pod.uid"] = strmatch.New(mbc.ResourceAttributes.K8sPodUID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.K8sPodUID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.pod.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodUID.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["k8s.pod.uid"] = strmatch.New(mbc.ResourceAttributes.K8sPodUID.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sVolumeName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["k8s.volume.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["k8s.volume.name"] = strmatch.New(mbc.ResourceAttributes.K8sVolumeName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.K8sVolumeName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.volume.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["k8s.volume.name"] = strmatch.New(mbc.ResourceAttributes.K8sVolumeName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sVolumeType.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["k8s.volume.type"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeType.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["k8s.volume.type"] = strmatch.New(mbc.ResourceAttributes.K8sVolumeType.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.K8sVolumeType.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.volume.type"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeType.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["k8s.volume.type"] = strmatch.New(mbc.ResourceAttributes.K8sVolumeType.MetricsExclude)
 	}
 	if ReceiverKubeletStatsEmitV1K8sConventionsFeatureGate.IsEnabled() {
 		if mb.metricContainerMemoryAvailable.config.Enabled && !mb.metricContainerMemoryAvailableV1.config.enabledSetByUser {
