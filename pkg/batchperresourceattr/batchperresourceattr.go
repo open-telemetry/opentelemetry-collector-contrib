@@ -56,7 +56,7 @@ func injectAttrMetadata(ctx context.Context, attrs pcommon.Map, attrKeys []strin
 	var injected bool
 	for _, k := range attrKeys {
 		if v, ok := attrs.Get(k); ok {
-			meta[k] = []string{v.Str()}
+			meta[k] = []string{v.AsString()}
 			injected = true
 		}
 	}
@@ -113,7 +113,7 @@ func (bt *batchTraces) ConsumeTraces(ctx context.Context, td ptrace.Traces) erro
 
 		for _, k := range bt.attrKeys {
 			if attributeValue, ok := rs.Resource().Attributes().Get(k); ok {
-				attrVal = fmt.Sprintf("%s%s%s", attrVal, separator, attributeValue.Str())
+				attrVal = fmt.Sprintf("%s%s%s", attrVal, separator, attributeValue.AsString())
 			}
 		}
 
@@ -188,7 +188,7 @@ func (bt *batchMetrics) ConsumeMetrics(ctx context.Context, td pmetric.Metrics) 
 		var attrVal string
 		for _, k := range bt.attrKeys {
 			if attributeValue, ok := rm.Resource().Attributes().Get(k); ok {
-				attrVal = fmt.Sprintf("%s%s%s", attrVal, separator, attributeValue.Str())
+				attrVal = fmt.Sprintf("%s%s%s", attrVal, separator, attributeValue.AsString())
 			}
 		}
 		indicesByAttr[attrVal] = append(indicesByAttr[attrVal], i)
@@ -262,7 +262,7 @@ func (bt *batchLogs) ConsumeLogs(ctx context.Context, td plog.Logs) error {
 		var attrVal string
 		for _, k := range bt.attrKeys {
 			if attributeValue, ok := rl.Resource().Attributes().Get(k); ok {
-				attrVal = fmt.Sprintf("%s%s%s", attrVal, separator, attributeValue.Str())
+				attrVal = fmt.Sprintf("%s%s%s", attrVal, separator, attributeValue.AsString())
 			}
 		}
 		indicesByAttr[attrVal] = append(indicesByAttr[attrVal], i)
@@ -332,7 +332,7 @@ func (bt *batchProfiles) ConsumeProfiles(ctx context.Context, pp pprofile.Profil
 		var attrVal string
 		for _, k := range bt.attrKeys {
 			if attributeValue, ok := rl.Resource().Attributes().Get(k); ok {
-				attrVal = fmt.Sprintf("%s%s%s", attrVal, separator, attributeValue.Str())
+				attrVal = fmt.Sprintf("%s%s%s", attrVal, separator, attributeValue.AsString())
 			}
 		}
 		indicesByAttr[attrVal] = append(indicesByAttr[attrVal], i)

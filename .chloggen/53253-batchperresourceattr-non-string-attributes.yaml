@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: pkg/batchperresourceattr
+note: Support non-string resource attributes (int, bool, double) when splitting batches and injecting metadata.
+issues: [53253]
+subtext:
+change_logs: [user, api]

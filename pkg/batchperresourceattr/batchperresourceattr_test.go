@@ -363,11 +363,11 @@ func sortTraces(tds []ptrace.Traces, attrKey string) {
 	sort.Slice(tds, func(i, j int) bool {
 		valI := ""
 		if av, ok := tds[i].ResourceSpans().At(0).Resource().Attributes().Get(attrKey); ok {
-			valI = av.Str()
+			valI = av.AsString()
 		}
 		valJ := ""
 		if av, ok := tds[j].ResourceSpans().At(0).Resource().Attributes().Get(attrKey); ok {
-			valJ = av.Str()
+			valJ = av.AsString()
 		}
 		return valI < valJ
 	})
@@ -400,11 +400,11 @@ func sortMetrics(tds []pmetric.Metrics, attrKey string) {
 	sort.Slice(tds, func(i, j int) bool {
 		valI := ""
 		if av, ok := tds[i].ResourceMetrics().At(0).Resource().Attributes().Get(attrKey); ok {
-			valI = av.Str()
+			valI = av.AsString()
 		}
 		valJ := ""
 		if av, ok := tds[j].ResourceMetrics().At(0).Resource().Attributes().Get(attrKey); ok {
-			valJ = av.Str()
+			valJ = av.AsString()
 		}
 		return valI < valJ
 	})
@@ -436,11 +436,11 @@ func sortLogs(tds []plog.Logs, attrKey string) {
 	sort.Slice(tds, func(i, j int) bool {
 		valI := ""
 		if av, ok := tds[i].ResourceLogs().At(0).Resource().Attributes().Get(attrKey); ok {
-			valI = av.Str()
+			valI = av.AsString()
 		}
 		valJ := ""
 		if av, ok := tds[j].ResourceLogs().At(0).Resource().Attributes().Get(attrKey); ok {
-			valJ = av.Str()
+			valJ = av.AsString()
 		}
 		return valI < valJ
 	})
@@ -770,6 +770,148 @@ func TestWithMetadataInjectionProfiles(t *testing.T) {
 			client.FromContext(sink.contexts[1]).Metadata.Get("attr_key")[0],
 		}
 		assert.ElementsMatch(t, []string{"a", "b"}, vals)
+	})
+}
+
+func TestSplitTracesNonStringAttributes(t *testing.T) {
+	inBatch := ptrace.NewTraces()
+
+	rs1 := inBatch.ResourceSpans().AppendEmpty()
+	rs1.Resource().Attributes().PutInt("tenant_id", 100)
+	rs1.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("span1")
+
+	rs2 := inBatch.ResourceSpans().AppendEmpty()
+	rs2.Resource().Attributes().PutInt("tenant_id", 200)
+	rs2.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("span2")
+
+	rs3 := inBatch.ResourceSpans().AppendEmpty()
+	rs3.Resource().Attributes().PutInt("tenant_id", 100)
+	rs3.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("span3")
+
+	sink := new(consumertest.TracesSink)
+	bpr := NewBatchPerResourceTraces("tenant_id", sink)
+	assert.NoError(t, bpr.ConsumeTraces(t.Context(), inBatch))
+
+	outBatches := sink.AllTraces()
+	require.Len(t, outBatches, 2)
+	sortTraces(outBatches, "tenant_id")
+
+	assert.Equal(t, 2, outBatches[0].ResourceSpans().Len())
+	val1, _ := outBatches[0].ResourceSpans().At(0).Resource().Attributes().Get("tenant_id")
+	assert.Equal(t, int64(100), val1.Int())
+
+	assert.Equal(t, 1, outBatches[1].ResourceSpans().Len())
+	val2, _ := outBatches[1].ResourceSpans().At(0).Resource().Attributes().Get("tenant_id")
+	assert.Equal(t, int64(200), val2.Int())
+}
+
+func TestSplitMetricsNonStringAttributes(t *testing.T) {
+	inBatch := pmetric.NewMetrics()
+
+	rm1 := inBatch.ResourceMetrics().AppendEmpty()
+	rm1.Resource().Attributes().PutBool("is_active", true)
+	rm1.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("metric1")
+
+	rm2 := inBatch.ResourceMetrics().AppendEmpty()
+	rm2.Resource().Attributes().PutBool("is_active", false)
+	rm2.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("metric2")
+
+	sink := new(consumertest.MetricsSink)
+	bpr := NewBatchPerResourceMetrics("is_active", sink)
+	assert.NoError(t, bpr.ConsumeMetrics(t.Context(), inBatch))
+
+	outBatches := sink.AllMetrics()
+	require.Len(t, outBatches, 2)
+}
+
+func TestSplitLogsNonStringAttributes(t *testing.T) {
+	inBatch := plog.NewLogs()
+
+	rl1 := inBatch.ResourceLogs().AppendEmpty()
+	rl1.Resource().Attributes().PutDouble("version", 1.5)
+	rl1.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log1")
+
+	rl2 := inBatch.ResourceLogs().AppendEmpty()
+	rl2.Resource().Attributes().PutDouble("version", 2.5)
+	rl2.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log2")
+
+	sink := new(consumertest.LogsSink)
+	bpr := NewBatchPerResourceLogs("version", sink)
+	assert.NoError(t, bpr.ConsumeLogs(t.Context(), inBatch))
+
+	outBatches := sink.AllLogs()
+	require.Len(t, outBatches, 2)
+}
+
+func TestSplitProfilesNonStringAttributes(t *testing.T) {
+	inBatch := pprofile.NewProfiles()
+
+	rp1 := inBatch.ResourceProfiles().AppendEmpty()
+	rp1.Resource().Attributes().PutInt("tenant_id", 100)
+	p1 := rp1.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	p1.Samples().AppendEmpty().Values().Append(1)
+
+	rp2 := inBatch.ResourceProfiles().AppendEmpty()
+	rp2.Resource().Attributes().PutInt("tenant_id", 200)
+	p2 := rp2.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	p2.Samples().AppendEmpty().Values().Append(2)
+
+	sink := new(consumertest.ProfilesSink)
+	bpr := NewMultiBatchPerResourceProfiles([]string{"tenant_id"}, sink)
+	assert.NoError(t, bpr.ConsumeProfiles(t.Context(), inBatch))
+
+	outBatches := sink.AllProfiles()
+	require.Len(t, outBatches, 2)
+}
+
+func TestWithMetadataInjectionNonStringAttributes(t *testing.T) {
+	t.Run("traces with int and bool attributes", func(t *testing.T) {
+		inBatch := ptrace.NewTraces()
+		rs1 := inBatch.ResourceSpans().AppendEmpty()
+		rs1.Resource().Attributes().PutInt("account_id", 42)
+		rs1.Resource().Attributes().PutBool("is_test", true)
+
+		rs2 := inBatch.ResourceSpans().AppendEmpty()
+		rs2.Resource().Attributes().PutInt("account_id", 99)
+		rs2.Resource().Attributes().PutBool("is_test", false)
+
+		sink := &ctxTracesSink{}
+		bpr := NewMultiBatchPerResourceTraces([]string{"account_id", "is_test"}, sink, WithMetadataInjection())
+		require.NoError(t, bpr.ConsumeTraces(t.Context(), inBatch))
+
+		require.Len(t, sink.contexts, 2)
+		var metas []client.Metadata
+		for _, ctx := range sink.contexts {
+			metas = append(metas, client.FromContext(ctx).Metadata)
+		}
+		found42 := false
+		found99 := false
+		for _, m := range metas {
+			if len(m.Get("account_id")) > 0 && m.Get("account_id")[0] == "42" {
+				assert.Equal(t, []string{"true"}, m.Get("is_test"))
+				found42 = true
+			}
+			if len(m.Get("account_id")) > 0 && m.Get("account_id")[0] == "99" {
+				assert.Equal(t, []string{"false"}, m.Get("is_test"))
+				found99 = true
+			}
+		}
+		assert.True(t, found42)
+		assert.True(t, found99)
+	})
+
+	t.Run("single resource with double attribute", func(t *testing.T) {
+		inBatch := plog.NewLogs()
+		rl := inBatch.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutDouble("score", 98.6)
+
+		sink := &ctxLogsSink{}
+		bpr := NewBatchPerResourceLogs("score", sink, WithMetadataInjection())
+		require.NoError(t, bpr.ConsumeLogs(t.Context(), inBatch))
+
+		require.Len(t, sink.contexts, 1)
+		meta := client.FromContext(sink.contexts[0]).Metadata
+		assert.Equal(t, []string{"98.6"}, meta.Get("score"))
 	})
 }
 
