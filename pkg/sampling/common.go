@@ -153,3 +153,15 @@ func isValidKeyChars(s string) bool {
 	}
 	return true
 }
+
+// isLowerHex returns true if every character in s is a lowercase hexadecimal
+// digit (0-9 or a-f).  The OTel spec requires lowercase hex for th and rv values.
+func isLowerHex(s string) bool {
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+			return false
+		}
+	}
+	return true
+}

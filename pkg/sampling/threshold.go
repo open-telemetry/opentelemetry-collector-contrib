@@ -67,6 +67,11 @@ func TValueToThreshold(s string) (Threshold, error) {
 		return AlwaysSampleThreshold, ErrTValueEmpty
 	}
 
+	// The OTel spec requires lowercase hex digits only for th values.
+	if !isLowerHex(s) {
+		return AlwaysSampleThreshold, strconv.ErrSyntax
+	}
+
 	// Having checked length above, there are no range errors
 	// possible.  Parse the hex string to an unsigned value.
 	unsigned, err := strconv.ParseUint(s, hexBase, 64)

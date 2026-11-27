@@ -60,6 +60,11 @@ func RValueToRandomness(s string) (Randomness, error) {
 		return Randomness{}, ErrRValueSize
 	}
 
+	// The OTel spec requires lowercase hex digits only for rv values.
+	if !isLowerHex(s) {
+		return Randomness{}, strconv.ErrSyntax
+	}
+
 	unsigned, err := strconv.ParseUint(s, hexBase, 64)
 	if err != nil {
 		return Randomness{}, err
