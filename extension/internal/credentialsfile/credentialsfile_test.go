@@ -16,6 +16,7 @@ import (
 	"go.uber.org/goleak"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestMain(m *testing.M) {
@@ -359,4 +360,72 @@ func TestFileWatcher_UpdatesOnKubernetesSymlinkSwap(t *testing.T) {
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		assert.Equal(c, "rotated", r.Value())
 	}, 5*time.Second, 50*time.Millisecond, "value was not refreshed after symlink rotation")
+}
+
+// waitForReAddFailure removes the watched file and waits until the watcher
+// has logged that re-adding the watch failed, so the test can recreate the
+// file only after that failure happened.
+func waitForReAddFailure(t *testing.T, logs *observer.ObservedLogs, f string) {
+	t.Helper()
+	require.NoError(t, os.Remove(f))
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Positive(c, logs.FilterMessageSnippet("failed to re-add watcher").Len())
+	}, 5*time.Second, 10*time.Millisecond, "watcher did not report a failed re-add")
+}
+
+// TestFileWatcher_KeepsFollowingFileAfterReAddFails verifies that the watcher
+// keeps following the file when re-adding the watch fails after a rotation,
+// e.g. because the file briefly does not exist while a Kubernetes projected
+// volume swaps its ..data symlink.
+func TestFileWatcher_KeepsFollowingFileAfterReAddFails(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	f := filepath.Join(dir, "secret")
+	require.NoError(t, os.WriteFile(f, []byte("original"), 0o600))
+
+	core, logs := observer.New(zap.DebugLevel)
+	r, err := NewValueResolver("", f, zap.New(core))
+	require.NoError(t, err)
+	require.NoError(t, r.Start(t.Context()))
+	defer func() { require.NoError(t, r.Shutdown()) }()
+
+	waitForReAddFailure(t, logs, f)
+	assert.Equal(t, "original", r.Value())
+
+	require.NoError(t, os.WriteFile(f, []byte("rotated"), 0o600))
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, "rotated", r.Value())
+	}, 5*time.Second, 50*time.Millisecond, "value was not refreshed after the re-add failed")
+
+	// The watch is back in place, so later writes are picked up as well.
+	require.NoError(t, os.WriteFile(f, []byte("rotated again"), 0o600))
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, "rotated again", r.Value())
+	}, 5*time.Second, 50*time.Millisecond, "value was not refreshed after the watch was re-added")
+}
+
+// TestFileWatcher_ShutdownWhileRetryingReAdd verifies that Shutdown returns
+// promptly while the watcher is still retrying to re-add the watch.
+func TestFileWatcher_ShutdownWhileRetryingReAdd(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	f := filepath.Join(dir, "secret")
+	require.NoError(t, os.WriteFile(f, []byte("original"), 0o600))
+
+	core, logs := observer.New(zap.DebugLevel)
+	r, err := NewValueResolver("", f, zap.New(core))
+	require.NoError(t, err)
+	require.NoError(t, r.Start(t.Context()))
+
+	waitForReAddFailure(t, logs, f)
+
+	done := make(chan error, 1)
+	go func() { done <- r.Shutdown() }()
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("Shutdown did not return while retrying to re-add the watch")
+	}
+	assert.Equal(t, "original", r.Value())
 }
