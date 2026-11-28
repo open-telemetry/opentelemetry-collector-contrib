@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build (!remove_all_resourcedetection_detectors || enable_detector_ibmcloud_vpc) && !omit_detector_ibmcloud_vpc
+
 package vpc
 
 import (
