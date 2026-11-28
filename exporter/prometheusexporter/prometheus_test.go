@@ -785,7 +785,7 @@ func TestPrometheusExporter_ContentNegotiation(t *testing.T) {
 func TestPrometheusExporter_BackgroundCleanup(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		expiration := 5 * time.Minute
-		c := newCollector(&Config{MetricExpiration: expiration}, zap.NewNop())
+		c := newCollector(&Config{MetricExpiration: expiration}, zap.NewNop(), nil)
 		a := c.accumulator.(*lastValueAccumulator)
 
 		staleMetric := pmetric.NewMetric()

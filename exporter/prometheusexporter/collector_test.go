@@ -40,6 +40,10 @@ func (*mockAccumulator) Accumulate(pmetric.ResourceMetrics) (n int) {
 
 func (*mockAccumulator) cleanupExpired() {}
 
+func (a *mockAccumulator) activeSeries() int64 {
+	return int64(len(a.metrics))
+}
+
 func (a *mockAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []string, []string, []string, []pcommon.Map) {
 	rAttrs := make([]pcommon.Map, len(a.metrics))
 	scopeNames := make([]string, len(a.metrics))
@@ -59,7 +63,7 @@ func (a *mockAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []string, 
 
 func TestConvertInvalidDataType(t *testing.T) {
 	metric := pmetric.NewMetric()
-	c := newCollector(&Config{}, zap.NewNop())
+	c := newCollector(&Config{}, zap.NewNop(), nil)
 	c.accumulator = &mockAccumulator{
 		[]pmetric.Metric{metric},
 		pcommon.NewMap(),
@@ -150,7 +154,7 @@ func TestConvertMetric(t *testing.T) {
 			case pmetric.MetricTypeHistogram:
 				metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 			}
-			c := newCollector(&Config{}, zap.NewNop())
+			c := newCollector(&Config{}, zap.NewNop(), nil)
 			for k, v := range tt.mapVals {
 				c.metricFamilies.Store(k, v)
 			}
@@ -234,7 +238,7 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 
 	pMap := pcommon.NewMap()
 
-	c := newCollector(&Config{}, zap.NewNop())
+	c := newCollector(&Config{}, zap.NewNop(), nil)
 	c.accumulator = &mockAccumulator{
 		metrics:            []pmetric.Metric{metric},
 		resourceAttributes: pMap,
@@ -266,7 +270,7 @@ func TestConvertDoubleHistogramEmptyBucketCounts(t *testing.T) {
 
 	pMap := pcommon.NewMap()
 
-	c := newCollector(&Config{}, zap.NewNop())
+	c := newCollector(&Config{}, zap.NewNop(), nil)
 	c.accumulator = &mockAccumulator{
 		metrics:            []pmetric.Metric{metric},
 		resourceAttributes: pMap,
@@ -295,7 +299,7 @@ func TestConvertMonotonicSumExemplar(t *testing.T) {
 
 	pMap := pcommon.NewMap()
 
-	c := newCollector(&Config{}, zap.NewNop())
+	c := newCollector(&Config{}, zap.NewNop(), nil)
 	c.accumulator = &mockAccumulator{
 		metrics:            []pmetric.Metric{metric},
 		resourceAttributes: pMap,
@@ -337,7 +341,7 @@ func TestConvertExponentialHistogramExemplar(t *testing.T) {
 	setTestExemplarWithDoubleValue(ex, 3.0)
 
 	pMap := pcommon.NewMap()
-	c := newCollector(&Config{}, zap.NewNop())
+	c := newCollector(&Config{}, zap.NewNop(), nil)
 	c.accumulator = &mockAccumulator{
 		metrics:            []pmetric.Metric{metric},
 		resourceAttributes: pMap,
@@ -392,7 +396,7 @@ func TestCollectMetricsLabelSanitize(t *testing.T) {
 	c := newCollector(&Config{
 		Namespace:      "test_space",
 		SendTimestamps: false,
-	}, zap.New(&loggerCore))
+	}, zap.New(&loggerCore), nil)
 	// Replace accumulator with mock for test control
 	c.accumulator = &mockAccumulator{
 		[]pmetric.Metric{metric},
@@ -453,13 +457,13 @@ func TestWithoutScopeInfoFlag(t *testing.T) {
 		Namespace:        "test_space",
 		SendTimestamps:   false,
 		WithoutScopeInfo: true,
-	}, zap.New(&loggerCore))
+	}, zap.New(&loggerCore), nil)
 	withoutScopeCollector.accumulator = ma
 	withScopeCollector := newCollector(&Config{
 		Namespace:        "test_space",
 		SendTimestamps:   false,
 		WithoutScopeInfo: false,
-	}, zap.New(&loggerCore))
+	}, zap.New(&loggerCore), nil)
 	withScopeCollector.accumulator = ma
 
 	withoutScopeCh := make(chan prometheus.Metric, 1)
@@ -508,7 +512,7 @@ func TestScopeAttributeConflictsDropped(t *testing.T) {
 	scopeAttributes.PutStr("schema_url", "should-be-dropped")
 	scopeAttributes.PutStr("custom", "should-be-kept")
 
-	c := newCollector(&Config{}, zap.NewNop())
+	c := newCollector(&Config{}, zap.NewNop(), nil)
 	m, err := c.convertMetric(metric, pcommon.NewMap(), "test.scope", "1.0.0", "https://opentelemetry.io/schemas/1.7.0", scopeAttributes)
 	require.NoError(t, err)
 
@@ -708,7 +712,7 @@ func TestCollectMetrics(t *testing.T) {
 				c := newCollector(&Config{
 					Namespace:      "test_space",
 					SendTimestamps: sendTimestamp,
-				}, zap.NewNop())
+				}, zap.NewNop(), nil)
 				// Replace accumulator with mock for test control
 				c.accumulator = &mockAccumulator{
 					[]pmetric.Metric{metric},
@@ -839,7 +843,7 @@ func TestAccumulateHistograms(t *testing.T) {
 				metric := tt.metric(ts, sendTimestamp)
 				c := newCollector(&Config{
 					SendTimestamps: sendTimestamp,
-				}, zap.NewNop())
+				}, zap.NewNop(), nil)
 				// Replace accumulator with mock for test control
 				c.accumulator = &mockAccumulator{
 					[]pmetric.Metric{metric},
@@ -979,7 +983,7 @@ func TestAccumulateExponentialHistograms(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				ts := time.Now()
 				metric := tt.metric(ts, sendTimestamp)
-				c := newCollector(&Config{SendTimestamps: sendTimestamp}, zap.NewNop())
+				c := newCollector(&Config{SendTimestamps: sendTimestamp}, zap.NewNop(), nil)
 				// Replace accumulator with mock for test control
 				c.accumulator = &mockAccumulator{
 					[]pmetric.Metric{metric},
@@ -1068,7 +1072,7 @@ func TestConvertExponentialHistogramInvalidScale(t *testing.T) {
 	dp.SetCount(0)
 	dp.SetZeroThreshold(0)
 
-	c := newCollector(&Config{}, zap.NewNop())
+	c := newCollector(&Config{}, zap.NewNop(), nil)
 	_, err := c.convertExponentialHistogram(metric, pcommon.NewMap(), "", "", "", pcommon.NewMap())
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "scale must be >= -4")
@@ -1104,7 +1108,7 @@ func TestCollectExponentialHistogramSum(t *testing.T) {
 			valid.Attributes().PutStr("series", "valid")
 			valid.SetSum(0.5)
 
-			c := newCollector(&Config{MetricExpiration: time.Minute}, zap.NewNop())
+			c := newCollector(&Config{MetricExpiration: time.Minute}, zap.NewNop(), nil)
 			c.accumulator.Accumulate(rm)
 			registry := prometheus.NewRegistry()
 			registry.MustRegister(c)
@@ -1181,7 +1185,7 @@ func TestAccumulateSummary(t *testing.T) {
 				metric := tt.metric(ts, sendTimestamp)
 				c := newCollector(&Config{
 					SendTimestamps: sendTimestamp,
-				}, zap.NewNop())
+				}, zap.NewNop(), nil)
 				// Replace accumulator with mock for test control
 				c.accumulator = &mockAccumulator{
 					[]pmetric.Metric{metric},
@@ -1299,9 +1303,10 @@ func TestTargetInfoIdentifyingResourceAttributes(t *testing.T) {
 								}
 							}
 						}
-						c := newCollector(&Config{TranslationStrategy: strategy}, zap.NewNop())
-						metrics, err := c.createTargetInfoMetrics([]pcommon.Map{attrs})
+						c := newCollector(&Config{TranslationStrategy: strategy}, zap.NewNop(), nil)
+						metrics, dropped, err := c.createTargetInfoMetrics([]pcommon.Map{attrs})
 						require.NoError(t, err)
+						require.Zero(t, dropped)
 						require.Len(t, metrics, 1)
 						var metric io_prometheus_client.Metric
 						require.NoError(t, metrics[0].Write(&metric))
@@ -1348,7 +1353,7 @@ func TestConvertExponentialHistogramZeroThreshold(t *testing.T) {
 			dp.Positive().BucketCounts().FromRaw([]uint64{1})
 			dp.Negative().SetOffset(tt.offset)
 			dp.Negative().BucketCounts().FromRaw([]uint64{1})
-			c := newCollector(&Config{}, zap.NewNop())
+			c := newCollector(&Config{}, zap.NewNop(), nil)
 			m, err := c.convertExponentialHistogram(metric, pcommon.NewMap(), "", "", "", pcommon.NewMap())
 			require.NoError(t, err)
 			out := &io_prometheus_client.Metric{}
