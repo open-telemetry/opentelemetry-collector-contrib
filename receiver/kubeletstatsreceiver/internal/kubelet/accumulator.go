@@ -4,11 +4,11 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 import (
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
@@ -34,9 +34,11 @@ var ValidMetricGroups = map[MetricGroup]bool{
 }
 
 type metricDataAccumulator struct {
-	m                     []pmetric.Metrics
-	metadata              Metadata
-	logger                *zap.Logger
+	m        []pmetric.Metrics
+	metadata Metadata
+	// errs holds one error per container or volume whose metrics were skipped
+	// because its metadata could not be resolved.
+	errs                  []error
 	metricGroupsToCollect map[MetricGroup]bool
 	allNetworkInterfaces  map[MetricGroup]bool
 	time                  time.Time
@@ -117,12 +119,7 @@ func (a *metricDataAccumulator) containerStats(sPod *stats.PodStats, s *stats.Co
 	rb := a.mbs.ContainerMetricsBuilder.NewResourceBuilder()
 	res, err := getContainerResource(rb, sPod, s, a.metadata)
 	if err != nil {
-		a.logger.Warn(
-			"failed to fetch container metrics",
-			zap.String("pod", sPod.PodRef.Name),
-			zap.String("container", s.Name),
-			zap.Error(err),
-		)
+		a.errs = append(a.errs, fmt.Errorf("failed to fetch metadata for container %q in pod %q, skipping its metrics: %w", s.Name, sPod.PodRef.Name, err))
 		return
 	}
 
@@ -150,12 +147,7 @@ func (a *metricDataAccumulator) volumeStats(sPod *stats.PodStats, s *stats.Volum
 	rb := a.mbs.OtherMetricsBuilder.NewResourceBuilder()
 	res, err := getVolumeResourceOptions(rb, sPod, s, a.metadata)
 	if err != nil {
-		a.logger.Warn(
-			"Failed to gather additional volume metadata. Skipping metric collection.",
-			zap.String("pod", sPod.PodRef.Name),
-			zap.String("volume", s.Name),
-			zap.Error(err),
-		)
+		a.errs = append(a.errs, fmt.Errorf("failed to fetch metadata for volume %q in pod %q, skipping its metrics: %w", s.Name, sPod.PodRef.Name, err))
 		return
 	}
 

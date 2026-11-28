@@ -10,9 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
@@ -26,11 +23,10 @@ func TestMetadataErrorCases(t *testing.T) {
 	tests := []struct {
 		name                            string
 		metricGroupsToCollect           map[MetricGroup]bool
-		testScenario                    func(acc metricDataAccumulator)
+		testScenario                    func(acc *metricDataAccumulator)
 		metadata                        Metadata
 		numMDs                          int
-		numLogs                         int
-		logMessages                     []string
+		errMessages                     []string
 		detailedPVCLabelsSetterOverride func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error
 	}{
 		{
@@ -54,7 +50,7 @@ func TestMetadataErrorCases(t *testing.T) {
 					},
 				},
 			}, NodeInfo{}, nil),
-			testScenario: func(acc metricDataAccumulator) {
+			testScenario: func(acc *metricDataAccumulator) {
 				now := metav1.Now()
 				podStats := &stats.PodStats{
 					PodRef: stats.PodReference{
@@ -68,10 +64,9 @@ func TestMetadataErrorCases(t *testing.T) {
 
 				acc.containerStats(podStats, containerStats)
 			},
-			numMDs:  0,
-			numLogs: 1,
-			logMessages: []string{
-				"failed to fetch container metrics",
+			numMDs: 0,
+			errMessages: []string{
+				`failed to fetch metadata for container "container1" in pod ""`,
 			},
 		},
 		{
@@ -80,7 +75,7 @@ func TestMetadataErrorCases(t *testing.T) {
 				VolumeMetricGroup: true,
 			},
 			metadata: NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, nil, NodeInfo{}, nil),
-			testScenario: func(acc metricDataAccumulator) {
+			testScenario: func(acc *metricDataAccumulator) {
 				podStats := &stats.PodStats{
 					PodRef: stats.PodReference{
 						UID: "pod-uid-123",
@@ -92,10 +87,9 @@ func TestMetadataErrorCases(t *testing.T) {
 
 				acc.volumeStats(podStats, volumeStats)
 			},
-			numMDs:  0,
-			numLogs: 1,
-			logMessages: []string{
-				"Failed to gather additional volume metadata. Skipping metric collection.",
+			numMDs: 0,
+			errMessages: []string{
+				`failed to fetch metadata for volume "volume-1" in pod ""`,
 			},
 		},
 		{
@@ -122,7 +116,7 @@ func TestMetadataErrorCases(t *testing.T) {
 					},
 				},
 			}, NodeInfo{}, nil),
-			testScenario: func(acc metricDataAccumulator) {
+			testScenario: func(acc *metricDataAccumulator) {
 				podStats := &stats.PodStats{
 					PodRef: stats.PodReference{
 						UID: "pod-uid-123",
@@ -134,10 +128,9 @@ func TestMetadataErrorCases(t *testing.T) {
 
 				acc.volumeStats(podStats, volumeStats)
 			},
-			numMDs:  0,
-			numLogs: 1,
-			logMessages: []string{
-				"Failed to gather additional volume metadata. Skipping metric collection.",
+			numMDs: 0,
+			errMessages: []string{
+				`failed to fetch metadata for volume "volume-1" in pod ""`,
 			},
 		},
 		{
@@ -170,7 +163,7 @@ func TestMetadataErrorCases(t *testing.T) {
 				// Mock failure cases.
 				return errors.New("")
 			},
-			testScenario: func(acc metricDataAccumulator) {
+			testScenario: func(acc *metricDataAccumulator) {
 				podStats := &stats.PodStats{
 					PodRef: stats.PodReference{
 						UID: "pod-uid-123",
@@ -182,23 +175,18 @@ func TestMetadataErrorCases(t *testing.T) {
 
 				acc.volumeStats(podStats, volumeStats)
 			},
-			numMDs:  0,
-			numLogs: 1,
-			logMessages: []string{
-				"Failed to gather additional volume metadata. Skipping metric collection.",
+			numMDs: 0,
+			errMessages: []string{
+				`failed to fetch metadata for volume "volume-0" in pod ""`,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			observedLogger, logs := observer.New(zapcore.WarnLevel)
-			logger := zap.New(observedLogger)
-
 			tt.metadata.DetailedPVCResourceSetter = tt.detailedPVCLabelsSetterOverride
 			acc := metricDataAccumulator{
 				metadata:              tt.metadata,
-				logger:                logger,
 				metricGroupsToCollect: tt.metricGroupsToCollect,
 				mbs: &metadata.MetricsBuilders{
 					NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
@@ -208,12 +196,12 @@ func TestMetadataErrorCases(t *testing.T) {
 				},
 			}
 
-			tt.testScenario(acc)
+			tt.testScenario(&acc)
 
 			assert.Len(t, acc.m, tt.numMDs)
-			require.Equal(t, tt.numLogs, logs.Len())
-			for i := 0; i < tt.numLogs; i++ {
-				assert.Equal(t, tt.logMessages[i], logs.All()[i].Message)
+			require.Len(t, acc.errs, len(tt.errMessages))
+			for i, msg := range tt.errMessages {
+				assert.ErrorContains(t, acc.errs[i], msg)
 			}
 		})
 	}
