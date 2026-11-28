@@ -71,9 +71,12 @@ DOCKERCMD ?= docker
 
 CURR_MOD := $(shell go list -m | tr '/' '-' )
 
-# Tools are declared in $(TOOLS_MOD_DIR)/go.mod using tool directives.
+# OpenTelemetry tools are declared in $(TOOLS_MOD_DIR)/go.mod using tool directives.
+# Third-party tools are declared in $(TOOLS_MOD_DIR)/thirdparty/go.mod, so that their
+# dependencies are resolved independently of the OpenTelemetry tools' dependencies.
 TOOLS_MOD_DIR   := $(SRC_ROOT)/internal/tools
 TOOLS_MOD_FILE  := $(TOOLS_MOD_DIR)/go.mod
+THIRDPARTY_MOD_FILE := $(TOOLS_MOD_DIR)/thirdparty/go.mod
 
 CHLOGGEN_CONFIG := .chloggen/config.yaml
 
@@ -86,31 +89,32 @@ JUNIT_OUT_DIR ?= $(TOOLS_MOD_DIR)/testresults
 # execute the binary with the GOOS/GOARCH that the Makefile is being run with.
 # This necessary for linting Windows code on non-Windows platforms, for example.
 GO_TOOL = GOOS= GOARCH= $(GOCMD) tool -modfile=$(TOOLS_MOD_FILE)
+GO_TOOL_THIRDPARTY = GOOS= GOARCH= $(GOCMD) tool -modfile=$(THIRDPARTY_MOD_FILE)
 # On Windows, `go tool -n` returns paths with backslashes (e.g. C:\Users\...)
 # which are stripped when passed to the MSYS2/Git Bash shell used by Make.
 # $(subst \,/,...) converts them to forward slashes so the shell can find the binary.
 MDATAGEN            = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/collector/cmd/mdatagen))
-ACTIONLINT          = $(subst \,/,$(shell $(GO_TOOL) -n actionlint.kjanat.dev/cmd/actionlint))
-ADDLICENSE          = $(subst \,/,$(shell $(GO_TOOL) -n github.com/google/addlicense))
-MISSPELL            = $(subst \,/,$(shell $(GO_TOOL) -n github.com/golangci/misspell/cmd/misspell -error))
-MISSPELL_CORRECTION = $(subst \,/,$(shell $(GO_TOOL) -n github.com/golangci/misspell/cmd/misspell -w))
-LINT                = $(subst \,/,$(shell $(GO_TOOL) -n github.com/golangci/golangci-lint/v2/cmd/golangci-lint))
+ACTIONLINT          = $(subst \,/,$(shell $(GO_TOOL_THIRDPARTY) -n actionlint.kjanat.dev/cmd/actionlint))
+ADDLICENSE          = $(subst \,/,$(shell $(GO_TOOL_THIRDPARTY) -n github.com/google/addlicense))
+MISSPELL            = $(subst \,/,$(shell $(GO_TOOL_THIRDPARTY) -n github.com/golangci/misspell/cmd/misspell -error))
+MISSPELL_CORRECTION = $(subst \,/,$(shell $(GO_TOOL_THIRDPARTY) -n github.com/golangci/misspell/cmd/misspell -w))
+LINT                = $(subst \,/,$(shell $(GO_TOOL_THIRDPARTY) -n github.com/golangci/golangci-lint/v2/cmd/golangci-lint))
 MULTIMOD            = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/build-tools/multimod))
 CHLOGGEN            = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/build-tools/chloggen))
 GITHUBGEN           = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/build-tools/githubgen))
-GOIMPORTS           = $(subst \,/,$(shell $(GO_TOOL) -n golang.org/x/tools/cmd/goimports))
-PORTO               = $(subst \,/,$(shell $(GO_TOOL) -n github.com/jcchavezs/porto/cmd/porto))
+GOIMPORTS           = $(subst \,/,$(shell $(GO_TOOL_THIRDPARTY) -n golang.org/x/tools/cmd/goimports))
+PORTO               = $(subst \,/,$(shell $(GO_TOOL_THIRDPARTY) -n github.com/jcchavezs/porto/cmd/porto))
 CHECKFILE           = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/build-tools/checkfile))
 CROSSLINK           = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/build-tools/crosslink))
-GOJUNIT             = $(subst \,/,$(shell $(GO_TOOL) -n github.com/jstemmer/go-junit-report/v2))
+GOJUNIT             = $(subst \,/,$(shell $(GO_TOOL_THIRDPARTY) -n github.com/jstemmer/go-junit-report/v2))
 BUILDER             = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/collector/cmd/builder))
-GOFUMPT             = $(subst \,/,$(shell $(GO_TOOL) -n mvdan.cc/gofumpt))
-GOVULNCHECK         = $(subst \,/,$(shell $(GO_TOOL) -n golang.org/x/vuln/cmd/govulncheck))
-GCI                 = $(subst \,/,$(shell $(GO_TOOL) -n github.com/daixiang0/gci))
-GOJQ                = $(subst \,/,$(shell $(GO_TOOL) -n github.com/itchyny/gojq/cmd/gojq))
-GOTESTSUM           = $(subst \,/,$(shell $(GO_TOOL) -n gotest.tools/gotestsum))
+GOFUMPT             = $(subst \,/,$(shell $(GO_TOOL_THIRDPARTY) -n mvdan.cc/gofumpt))
+GOVULNCHECK         = $(subst \,/,$(shell $(GO_TOOL_THIRDPARTY) -n golang.org/x/vuln/cmd/govulncheck))
+GCI                 = $(subst \,/,$(shell $(GO_TOOL_THIRDPARTY) -n github.com/daixiang0/gci))
+GOJQ                = $(subst \,/,$(shell $(GO_TOOL_THIRDPARTY) -n github.com/itchyny/gojq/cmd/gojq))
+GOTESTSUM           = $(subst \,/,$(shell $(GO_TOOL_THIRDPARTY) -n gotest.tools/gotestsum))
 CHECKAPI            = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/build-tools/checkapi))
-MODERNIZE           = $(subst \,/,$(shell $(GO_TOOL) -n golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize))
+MODERNIZE           = $(subst \,/,$(shell $(GO_TOOL_THIRDPARTY) -n golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize))
 SCHEMAGEN           = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/collector/cmd/schemagen))
 
 GOTESTSUM_OPT?= --rerun-fails=1

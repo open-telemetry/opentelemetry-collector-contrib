@@ -55,7 +55,7 @@ runs:
         # `go test`/`go build` lazy-fetches any module versions not present
         # in the restored cache. No OS/arch in the key: module downloads are
         # identical everywhere, so every runner reuses one cache.
-        key: gomodcache-${{ hashFiles('internal/tools/go.sum', 'testbed/go.sum') }}
+        key: gomodcache-${{ hashFiles('internal/tools/go.sum', 'internal/tools/thirdparty/go.sum', 'testbed/go.sum') }}
         restore-keys: |
           gomodcache-
 
@@ -66,7 +66,7 @@ runs:
         path: ${{ steps.go-cache-paths.outputs.gocache }}
         # GOCACHE holds compiled objects, which are genuinely OS/arch
         # specific, so this one stays scoped per runner.
-        key: gocache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('internal/tools/go.sum', 'testbed/go.sum') }}
+        key: gocache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('internal/tools/go.sum', 'internal/tools/thirdparty/go.sum', 'testbed/go.sum') }}
         restore-keys: |
           gocache-${{ runner.os }}-${{ runner.arch }}-
 
