@@ -28,14 +28,17 @@ func newSumDP(attrs pcommon.Map, isDbl bool) *sumDP {
 
 func (dp *sumDP) AggregateInt(v int64) {
 	if dp.isDbl {
-		panic("unexpected usage of sum datapoint, only integer value expected")
+		dp.dblVal += float64(v)
+		return
 	}
 	dp.intVal += v
 }
 
 func (dp *sumDP) AggregateDouble(v float64) {
 	if !dp.isDbl {
-		panic("unexpected usage of sum datapoint, only double value expected")
+		dp.isDbl = true
+		dp.dblVal = float64(dp.intVal)
+		dp.intVal = 0
 	}
 	dp.dblVal += v
 }
