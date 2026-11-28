@@ -6,6 +6,7 @@ package prometheusexporter
 import (
 	"encoding/hex"
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -1368,5 +1369,124 @@ func TestConvertExponentialHistogramZeroThreshold(t *testing.T) {
 			require.Equal(t, []int64{1}, h.PositiveDelta)
 			require.Equal(t, []int64{1}, h.NegativeDelta)
 		})
+	}
+}
+
+func TestCollectDeltaHistogramExemplars(t *testing.T) {
+	base := time.Now().Add(-10 * time.Second).Truncate(time.Millisecond)
+	t0, t1, t2 := base, base.Add(time.Second), base.Add(2*time.Second)
+
+	rm := pmetric.NewResourceMetrics()
+	sm := rm.ScopeMetrics().AppendEmpty()
+
+	m1 := sm.Metrics().AppendEmpty()
+	m1.SetName("test_delta_hist")
+	m1.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	dp1 := m1.Histogram().DataPoints().AppendEmpty()
+	dp1.ExplicitBounds().FromRaw([]float64{5, 25})
+	dp1.BucketCounts().FromRaw([]uint64{1, 1, 0})
+	dp1.SetCount(2)
+	dp1.SetSum(13.0)
+	dp1.SetStartTimestamp(pcommon.NewTimestampFromTime(t0))
+	dp1.SetTimestamp(pcommon.NewTimestampFromTime(t1))
+	appendDoubleExemplar(dp1.Exemplars(), t0.Add(100*time.Millisecond), 3.0, 1, "")
+	appendDoubleExemplar(dp1.Exemplars(), t0.Add(200*time.Millisecond), 10.0, 2, "")
+
+	m2 := sm.Metrics().AppendEmpty()
+	m2.SetName("test_delta_hist")
+	m2.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	dp2 := m2.Histogram().DataPoints().AppendEmpty()
+	dp2.ExplicitBounds().FromRaw([]float64{5, 25})
+	dp2.BucketCounts().FromRaw([]uint64{1, 0, 1})
+	dp2.SetCount(2)
+	dp2.SetSum(44.0)
+	dp2.SetStartTimestamp(pcommon.NewTimestampFromTime(t1))
+	dp2.SetTimestamp(pcommon.NewTimestampFromTime(t2))
+	appendDoubleExemplar(dp2.Exemplars(), t1.Add(100*time.Millisecond), 4.0, 3, "")
+	appendDoubleExemplar(dp2.Exemplars(), t1.Add(200*time.Millisecond), 40.0, 4, "")
+
+	c := newCollector(&Config{MetricExpiration: time.Hour}, zap.NewNop())
+	require.Equal(t, 2, c.processMetrics(rm))
+
+	ch := make(chan prometheus.Metric, 4)
+	c.Collect(ch)
+	close(ch)
+
+	var collected []prometheus.Metric
+	for m := range ch {
+		collected = append(collected, m)
+	}
+	require.Len(t, collected, 1)
+
+	out := &io_prometheus_client.Metric{}
+	require.NoError(t, collected[0].Write(out))
+
+	buckets := out.GetHistogram().GetBucket()
+	require.Len(t, buckets, 3)
+	require.Equal(t, 5.0, buckets[0].GetUpperBound())
+	exemplarsEqual(t, dp2.Exemplars().At(0), buckets[0].GetExemplar())
+	require.Equal(t, timestamppb.New(dp2.Exemplars().At(0).Timestamp().AsTime()), buckets[0].GetExemplar().GetTimestamp())
+	require.Equal(t, 25.0, buckets[1].GetUpperBound())
+	exemplarsEqual(t, dp1.Exemplars().At(1), buckets[1].GetExemplar())
+	require.Equal(t, timestamppb.New(dp1.Exemplars().At(1).Timestamp().AsTime()), buckets[1].GetExemplar().GetTimestamp())
+	require.True(t, math.IsInf(buckets[2].GetUpperBound(), 1))
+	exemplarsEqual(t, dp2.Exemplars().At(1), buckets[2].GetExemplar())
+	require.Equal(t, timestamppb.New(dp2.Exemplars().At(1).Timestamp().AsTime()), buckets[2].GetExemplar().GetTimestamp())
+}
+
+func TestCollectDeltaExponentialHistogramExemplars(t *testing.T) {
+	base := time.Now().Add(-30 * time.Second).Truncate(time.Millisecond)
+
+	rm := pmetric.NewResourceMetrics()
+	sm := rm.ScopeMetrics().AppendEmpty()
+
+	const merges = 4
+	const perMerge = 4
+	var lastExemplars []pmetric.Exemplar
+	seq := byte(0)
+	for i := range merges {
+		start := base.Add(time.Duration(i) * time.Second)
+		end := start.Add(time.Second)
+		m := sm.Metrics().AppendEmpty()
+		m.SetName("test_delta_exp_hist")
+		m.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		dp := m.ExponentialHistogram().DataPoints().AppendEmpty()
+		dp.SetScale(0)
+		dp.Positive().SetOffset(0)
+		dp.Positive().BucketCounts().FromRaw([]uint64{1})
+		dp.SetCount(1)
+		dp.SetSum(1.5)
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(start))
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(end))
+		dp.Exemplars().EnsureCapacity(perMerge)
+		for j := range perMerge {
+			seq++
+			appendDoubleExemplar(dp.Exemplars(), start.Add(time.Duration(j+1)*100*time.Millisecond), float64(seq), seq, "")
+			lastExemplars = append(lastExemplars, dp.Exemplars().At(j))
+		}
+	}
+
+	c := newCollector(&Config{MetricExpiration: time.Hour}, zap.NewNop())
+	require.Equal(t, merges, c.processMetrics(rm))
+
+	ch := make(chan prometheus.Metric, 4)
+	c.Collect(ch)
+	close(ch)
+
+	var collected []prometheus.Metric
+	for m := range ch {
+		collected = append(collected, m)
+	}
+	require.Len(t, collected, 1)
+
+	out := &io_prometheus_client.Metric{}
+	require.NoError(t, collected[0].Write(out))
+
+	gotExemplars := out.GetHistogram().GetExemplars()
+	require.Len(t, gotExemplars, maxExponentialHistogramExemplars)
+	wantExemplars := lastExemplars[len(lastExemplars)-maxExponentialHistogramExemplars:]
+	for i, want := range wantExemplars {
+		exemplarsEqual(t, want, gotExemplars[i])
+		require.Equal(t, timestamppb.New(want.Timestamp().AsTime()), gotExemplars[i].GetTimestamp())
 	}
 }
