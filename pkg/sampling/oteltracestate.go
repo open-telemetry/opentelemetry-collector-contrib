@@ -15,7 +15,8 @@ import (
 //
 // OpenTelemetry defines two specific values that convey sampling
 // probability, known as T-Value (with "th", for threshold), R-Value
-// (with key "rv", for random value), and extra values.
+// (with key "rv", for random value), a zero-count flag (with key
+// "zc"), and extra values.
 type OpenTelemetryTraceState struct {
 	commonTraceState
 
@@ -24,6 +25,10 @@ type OpenTelemetryTraceState struct {
 	rvalue    string     // 14 ASCII hex digits
 	threshold Threshold  // t value parsed, as a threshold
 	tvalue    string     // 1-14 ASCII hex digits
+
+	// zeroCount is the "zc" flag, indicating the item has an adjusted
+	// count of zero.
+	zeroCount bool
 }
 
 const (
@@ -31,6 +36,10 @@ const (
 	rValueFieldName = "rv"
 	// tValueFieldName is the OTel tracestate field for T-value
 	tValueFieldName = "th"
+	// zcFieldName is the OTel tracestate field for the zero-count flag
+	zcFieldName = "zc"
+	// zeroCountFlag is the only valid value of the zero-count flag
+	zeroCountFlag = "1"
 
 	// hardMaxOTelLength is the maximum encoded size of an OTel
 	// tracestate value.
@@ -59,6 +68,12 @@ var (
 	// equalizing sampler can decide to pass through a span
 	// indicating 1/100 sampling or it can reject the span.
 	ErrInconsistentSampling = errors.New("cannot raise existing sampling probability")
+
+	// ErrZeroCount is returned when a sampler attempts to set a
+	// threshold on a tracestate carrying the zero-count flag
+	// ("zc"). The zero-count flag and the threshold are mutually
+	// exclusive, so the tracestate was not modified.
+	ErrZeroCount = errors.New("cannot set sampling threshold when zero-count flag is set")
 )
 
 // NewOpenTelemetryTraceState returns a parsed representation of the
@@ -95,6 +110,12 @@ func NewOpenTelemetryTraceState(input string) (OpenTelemetryTraceState, error) {
 				// accumulates and is returned below.
 				otts.tvalue = ""
 				otts.threshold = AlwaysSampleThreshold
+			}
+		case zcFieldName:
+			if value == zeroCountFlag {
+				otts.zeroCount = true
+			} else {
+				err = strconv.ErrSyntax
 			}
 		default:
 			otts.kvs = append(otts.kvs, KV{
@@ -139,7 +160,12 @@ func (otts *OpenTelemetryTraceState) TValueThreshold() (Threshold, bool) {
 // accidental loss of adjusted count.
 //
 // If the change of TValue leads to inconsistency, an error is returned.
+// If the zero-count flag is set, ErrZeroCount is returned and the
+// TValue is not modified.
 func (otts *OpenTelemetryTraceState) UpdateTValueWithSampling(sampledThreshold Threshold) error {
+	if otts.zeroCount {
+		return ErrZeroCount
+	}
 	// Note: there was once a code path here that optimized for
 	// cases where a static threshold is used, in which case the
 	// call to TValue() causes an unnecessary allocation per data
@@ -181,6 +207,23 @@ func (otts *OpenTelemetryTraceState) ClearTValue() {
 	otts.threshold = Threshold{}
 }
 
+// ZeroCount returns true if the zero-count flag (key: "zc") is set,
+// meaning this item has an adjusted count of zero.  The zero-count flag
+// and the T-value are mutually exclusive; the behavior when both are
+// present is unspecified.
+func (otts *OpenTelemetryTraceState) ZeroCount() bool {
+	return otts.zeroCount
+}
+
+// SetZeroCount sets the zero-count flag (key: "zc"), for use when an
+// item must not be counted, such as one restored from an archive.
+// The zero-count flag and the T-value are mutually exclusive, so this
+// also clears the T-value.
+func (otts *OpenTelemetryTraceState) SetZeroCount() {
+	otts.ClearTValue()
+	otts.zeroCount = true
+}
+
 // SetRValue establishes explicit randomness for this TraceState.
 func (otts *OpenTelemetryTraceState) SetRValue(randomness Randomness) {
 	otts.rnd = randomness
@@ -196,7 +239,7 @@ func (otts *OpenTelemetryTraceState) ClearRValue() {
 // HasAnyValue returns true if there are any fields in this
 // tracestate, including any extra values.
 func (otts *OpenTelemetryTraceState) HasAnyValue() bool {
-	return otts.RValue() != "" || otts.TValue() != "" || len(otts.ExtraValues()) != 0
+	return otts.RValue() != "" || otts.TValue() != "" || otts.zeroCount || len(otts.ExtraValues()) != 0
 }
 
 // Serialize encodes this TraceState object.
@@ -220,6 +263,12 @@ func (otts *OpenTelemetryTraceState) Serialize(w io.StringWriter) error {
 		ser.write(tValueFieldName)
 		ser.write(":")
 		ser.write(otts.TValue())
+	}
+	if otts.zeroCount {
+		sep()
+		ser.write(zcFieldName)
+		ser.write(":")
+		ser.write(zeroCountFlag)
 	}
 	for _, kv := range otts.ExtraValues() {
 		sep()

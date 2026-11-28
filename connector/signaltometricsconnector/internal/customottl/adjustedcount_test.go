@@ -26,6 +26,8 @@ func Test_AdjustedCount(t *testing.T) {
 		{tracestate: "ot=th:0", want: 1},                    // 100% sampling
 		{tracestate: "ot=th:8", want: 2},                    // 50% sampling
 		{tracestate: "ot=th:c", want: 4},                    // 25% sampling
+		{tracestate: "ot=zc:1", want: 0},                    // zero count flag
+		{tracestate: "ot=rv:abcdabcdabcdff;zc:1", want: 0},  // zero count flag with other values
 	} {
 		t.Run("tracestate/"+tc.tracestate, func(t *testing.T) {
 			exprFunc, err := adjustedCount()

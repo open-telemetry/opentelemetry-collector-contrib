@@ -100,6 +100,8 @@ func updateExemplarThreshold(span ptrace.Span, sampleSize, groupSize int) {
 	if err := otts.UpdateTValueWithSampling(newThreshold); err != nil {
 		// ErrInconsistentSampling cannot occur here since sampleSize/groupSize
 		// is at most 1, so the new threshold is never smaller than the prior.
+		// ErrZeroCount means the span also carries the zero-count flag, which
+		// is mutually exclusive with th, so the tracestate is left untouched.
 		// Any other error indicates a malformed tracestate we don't want to
 		// overwrite.
 		return

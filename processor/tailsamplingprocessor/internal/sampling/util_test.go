@@ -126,6 +126,19 @@ func TestWriteEffectiveThreshold(t *testing.T) {
 		assert.Equal(t, "ot=th:c", firstSpanTracestate(traces))
 	})
 
+	t.Run("zero count span left unchanged", func(t *testing.T) {
+		// zc and th are mutually exclusive, so th must not be set.
+		traces := makeTracesWithTracestates("ot=zc:1")
+		WriteEffectiveThreshold(ctx, traces, th8, counter)
+		assert.Equal(t, "ot=zc:1", firstSpanTracestate(traces))
+	})
+
+	t.Run("zero count span preserves other values", func(t *testing.T) {
+		traces := makeTracesWithTracestates("ot=rv:abcdef01234567;zc:1")
+		WriteEffectiveThreshold(ctx, traces, th8, counter)
+		assert.Equal(t, "ot=rv:abcdef01234567;zc:1", firstSpanTracestate(traces))
+	})
+
 	t.Run("invalid tracestate skipped", func(t *testing.T) {
 		invalid := "ot=not_a_valid_key$"
 		traces := makeTracesWithTracestates(invalid)
