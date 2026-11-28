@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -48,7 +47,7 @@ func buildEventFromSpan(
 
 	attrs := make(map[string]any)
 	event := add_events.Event{
-		Sev: int(plog.SeverityNumberInfo),
+		Sev: dataSetLogLevelInfo,
 		Ts:  fmt.Sprintf("%d", span.StartTimestamp().AsTime().UnixNano()),
 	}
 

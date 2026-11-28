@@ -21,7 +21,7 @@ func generateTEvent1Raw() *add_events.Event {
 	return &add_events.Event{
 		Thread:     "TT",
 		Log:        "LT",
-		Sev:        9,
+		Sev:        dataSetLogLevelInfo,
 		Ts:         "1581452772000000321",
 		ServerHost: "foo",
 		Attrs: map[string]any{
@@ -50,7 +50,7 @@ func generateTEvent2Raw() *add_events.Event {
 	return &add_events.Event{
 		Thread:     "TT",
 		Log:        "LT",
-		Sev:        9,
+		Sev:        dataSetLogLevelInfo,
 		Ts:         "1581452772000000321",
 		ServerHost: "foo",
 		Attrs: map[string]any{
@@ -80,7 +80,7 @@ func generateTEvent3Raw() *add_events.Event {
 	return &add_events.Event{
 		Thread:     "TT",
 		Log:        "LT",
-		Sev:        9,
+		Sev:        dataSetLogLevelInfo,
 		Ts:         "1581452772000000321",
 		ServerHost: "valServerHost",
 		Attrs: map[string]any{
@@ -149,7 +149,7 @@ func TestBuildEventsFromSpanAttributesCollision(t *testing.T) {
 		Event: &add_events.Event{
 			Thread: "TT",
 			Log:    "LT",
-			Sev:    9,
+			Sev:    dataSetLogLevelInfo,
 			Ts:     "0",
 			Attrs: map[string]any{
 				"sca:schemaVer": 1,
@@ -205,7 +205,7 @@ func TestBuildEventsFromSpanAttributesDifferentTypes(t *testing.T) {
 		Event: &add_events.Event{
 			Thread: "TT",
 			Log:    "LT",
-			Sev:    9,
+			Sev:    dataSetLogLevelInfo,
 			Ts:     "0",
 			Attrs: map[string]any{
 				"sca:schemaVer": 1,
@@ -382,7 +382,7 @@ func TestBuildEventFromSpan(t *testing.T) {
 				Event: &add_events.Event{
 					Thread:     "TT",
 					Log:        "LT",
-					Sev:        9,
+					Sev:        dataSetLogLevelInfo,
 					Ts:         "0",
 					Attrs:      tt.expected,
 					ServerHost: testServerHost,
@@ -634,7 +634,7 @@ func generateSimpleEvent(
 	return &add_events.Event{
 		Thread:     "TT",
 		Log:        "LT",
-		Sev:        9,
+		Sev:        dataSetLogLevelInfo,
 		Ts:         fmt.Sprintf("%d", start),
 		Attrs:      attrs,
 		ServerHost: serverHost,
