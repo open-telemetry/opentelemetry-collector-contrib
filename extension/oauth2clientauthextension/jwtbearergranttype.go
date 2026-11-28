@@ -60,7 +60,7 @@ func newJwtGrantTypeConfig(cfg *Config) (*jwtGrantTypeConfig, error) {
 		TokenURL:         cfg.TokenURL,
 		SigningAlgorithm: sig,
 		Iss:              iss,
-		Subject:          cfg.ClientID,
+		Subject:          clientID,
 		Audience:         cfg.Audience,
 		PrivateClaims:    cfg.Claims,
 		EndpointParams:   cfg.EndpointParams,
