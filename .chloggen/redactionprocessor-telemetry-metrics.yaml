@@ -1,0 +1,7 @@
+change_type: enhancement
+component: processor/redaction
+note: "Add operational metrics for redacted attributes count and errors in redactionprocessor."
+issues: []
+subtext: |
+  Introduces `processor_redaction_redacted_attributes_total` and `processor_redaction_errors_total` metrics to track operational redaction counts and errors.
+change_logs: [user]

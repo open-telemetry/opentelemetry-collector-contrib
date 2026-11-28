@@ -4,13 +4,19 @@
 package redactionprocessor
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/metadatatest"
 )
 
 func TestDefaultConfiguration(t *testing.T) {
@@ -47,4 +53,24 @@ func TestCreateTestMetricsProcessor(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 	assert.True(t, tp.Capabilities().MutatesData)
+}
+
+func TestCreateProcessorInvalidRegexRecordsErrorMetric(t *testing.T) {
+	cfg := &Config{
+		BlockedValues: []string{"[invalid"},
+	}
+
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+
+	set := metadatatest.NewSettings(tel)
+
+	_, err := createTracesProcessor(t.Context(), set, cfg, consumertest.NewNop())
+	require.Error(t, err)
+
+	metadatatest.AssertEqualProcessorRedactionErrorsTotal(t, tel, []metricdata.DataPoint[int64]{
+		{
+			Value: 1,
+		},
+	}, metricdatatest.IgnoreTimestamp())
 }
