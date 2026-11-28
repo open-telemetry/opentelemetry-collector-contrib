@@ -43,7 +43,7 @@ telemetry:
       stability: alpha
       enabled: true
       description: Count of the completed bulk requests.
-      unit: "1"
+      unit: "{request}"
       sum:
         value_type: int
         monotonic: true
@@ -63,7 +63,7 @@ telemetry:
       stability: alpha
       enabled: true
       description: Count of documents flushed to Elasticsearch.
-      unit: "1"
+      unit: "{document}"
       sum:
         value_type: int
         monotonic: true
@@ -73,7 +73,7 @@ telemetry:
       stability: alpha
       enabled: true
       description: Count of Elasticsearch documents successfully received to be buffered.
-      unit: "1"
+      unit: "{document}"
       sum:
         value_type: int
         monotonic: true
@@ -83,7 +83,7 @@ telemetry:
       enabled: true
       description: Count of document retries.
       extended_documentation: Only document level retries are captured, whole bulk request retries are not captured.
-      unit: "1"
+      unit: "{document}"
       sum:
         value_type: int
         monotonic: true
@@ -101,7 +101,7 @@ telemetry:
             In contrast, `elasticsearch.docs.retried` counts documents retried
             individually within otherwise successful bulk requests due to
             document-specific failures such as mapping conflicts.
-      unit: "1"
+      unit: "{document}"
       sum:
         value_type: int
         monotonic: true

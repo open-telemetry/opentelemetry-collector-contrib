@@ -25,7 +25,7 @@ func AssertEqualElasticsearchBulkRequestsCount(t *testing.T, tt *componenttest.T
 	want := metricdata.Metrics{
 		Name:        "otelcol.elasticsearch.bulk_requests.count",
 		Description: "Count of the completed bulk requests. [Alpha]",
-		Unit:        "1",
+		Unit:        "{request}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -56,7 +56,7 @@ func AssertEqualElasticsearchDocsProcessed(t *testing.T, tt *componenttest.Telem
 	want := metricdata.Metrics{
 		Name:        "otelcol.elasticsearch.docs.processed",
 		Description: "Count of documents flushed to Elasticsearch. [Alpha]",
-		Unit:        "1",
+		Unit:        "{document}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -72,7 +72,7 @@ func AssertEqualElasticsearchDocsReceived(t *testing.T, tt *componenttest.Teleme
 	want := metricdata.Metrics{
 		Name:        "otelcol.elasticsearch.docs.received",
 		Description: "Count of Elasticsearch documents successfully received to be buffered. [Alpha]",
-		Unit:        "1",
+		Unit:        "{document}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -88,7 +88,7 @@ func AssertEqualElasticsearchDocsRetried(t *testing.T, tt *componenttest.Telemet
 	want := metricdata.Metrics{
 		Name:        "otelcol.elasticsearch.docs.retried",
 		Description: "Count of document retries. [Alpha]",
-		Unit:        "1",
+		Unit:        "{document}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -104,7 +104,7 @@ func AssertEqualElasticsearchDocsRetriedHTTPRequest(t *testing.T, tt *componentt
 	want := metricdata.Metrics{
 		Name:        "otelcol.elasticsearch.docs.retried_http_request",
 		Description: "Count of documents retried due to HTTP request-level failures. [Alpha]",
-		Unit:        "1",
+		Unit:        "{document}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,

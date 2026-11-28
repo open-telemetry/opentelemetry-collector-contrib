@@ -35,7 +35,7 @@ Count of the completed bulk requests.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Alpha |
+| {request} | Sum | Int | true | Alpha |
 
 #### Attributes
 
@@ -65,7 +65,7 @@ Count of documents flushed to Elasticsearch.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Alpha |
+| {document} | Sum | Int | true | Alpha |
 
 #### Attributes
 
@@ -83,7 +83,7 @@ Count of Elasticsearch documents successfully received to be buffered.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Alpha |
+| {document} | Sum | Int | true | Alpha |
 
 ### otelcol.elasticsearch.docs.retried
 
@@ -93,7 +93,7 @@ Only document level retries are captured, whole bulk request retries are not cap
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Alpha |
+| {document} | Sum | Int | true | Alpha |
 
 ### otelcol.elasticsearch.docs.retried_http_request
 
@@ -110,7 +110,7 @@ document-specific failures such as mapping conflicts.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Alpha |
+| {document} | Sum | Int | true | Alpha |
 
 #### Attributes
 

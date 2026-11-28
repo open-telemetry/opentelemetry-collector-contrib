@@ -67,7 +67,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ElasticsearchBulkRequestsCount, err = builder.meter.Int64Counter(
 		"otelcol.elasticsearch.bulk_requests.count",
 		metric.WithDescription("Count of the completed bulk requests. [Alpha]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{request}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ElasticsearchBulkRequestsLatency, err = builder.meter.Float64Histogram(
@@ -80,25 +80,25 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ElasticsearchDocsProcessed, err = builder.meter.Int64Counter(
 		"otelcol.elasticsearch.docs.processed",
 		metric.WithDescription("Count of documents flushed to Elasticsearch. [Alpha]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{document}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ElasticsearchDocsReceived, err = builder.meter.Int64Counter(
 		"otelcol.elasticsearch.docs.received",
 		metric.WithDescription("Count of Elasticsearch documents successfully received to be buffered. [Alpha]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{document}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ElasticsearchDocsRetried, err = builder.meter.Int64Counter(
 		"otelcol.elasticsearch.docs.retried",
 		metric.WithDescription("Count of document retries. [Alpha]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{document}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ElasticsearchDocsRetriedHTTPRequest, err = builder.meter.Int64Counter(
 		"otelcol.elasticsearch.docs.retried_http_request",
 		metric.WithDescription("Count of documents retried due to HTTP request-level failures. [Alpha]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{document}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ElasticsearchFlushedBytes, err = builder.meter.Int64Counter(
