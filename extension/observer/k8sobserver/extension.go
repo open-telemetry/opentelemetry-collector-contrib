@@ -168,7 +168,18 @@ func newObserver(config *Config, set extension.Settings) (extension.Extension, e
 			}
 		}
 	}
-	h := &handler{idNamespace: set.ID.String(), endpoints: &sync.Map{}, logger: set.Logger}
+	h := &handler{
+		idNamespace: set.ID.String(),
+		endpoints:   &sync.Map{},
+		podOptions: podEndpointOptions{
+			initContainers:       config.ObserveInitContainers,
+			ephemeralContainers:  config.ObserveEphemeralContainers,
+			terminatedContainers: config.ObserveTerminatedContainers,
+		},
+		terminatedContainerTTL: config.TerminatedContainerTTL,
+		now:                    time.Now,
+		logger:                 set.Logger,
+	}
 	obs := &k8sObserver{
 		EndpointsWatcher:      endpointswatcher.New(h, time.Second, set.Logger),
 		telemetry:             set.TelemetrySettings,

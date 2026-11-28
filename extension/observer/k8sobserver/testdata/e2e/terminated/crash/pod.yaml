@@ -1,0 +1,29 @@
+# A container that fails twice and then stays up. Every run writes five lines.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: k8sobserver-e2e-terminated-crash
+  namespace: default
+  labels:
+    app: k8sobserver-e2e-terminated
+spec:
+  terminationGracePeriodSeconds: 1
+  restartPolicy: Always
+  containers:
+    - name: app
+      image: busybox:1.37.0
+      command:
+        - /bin/sh
+        - -c
+        - |
+          run=$(( $(cat /state/run 2>/dev/null || echo 0) + 1 ))
+          echo "$run" > /state/run
+          for i in 0 1 2 3 4; do echo run=$run seq=$i; done
+          [ "$run" -lt 3 ] && exit 1
+          sleep 3600
+      volumeMounts:
+        - name: state
+          mountPath: /state
+  volumes:
+    - name: state
+      emptyDir: {}

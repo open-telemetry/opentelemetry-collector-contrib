@@ -5,6 +5,7 @@ package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -23,12 +24,15 @@ func NewFactory() extension.Factory {
 	)
 }
 
+const defaultTerminatedContainerTTL = 15 * time.Minute
+
 // CreateDefaultConfig creates the default configuration for the extension.
 func createDefaultConfig() component.Config {
 	return &Config{
-		APIConfig:    k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
-		ObservePods:  true,
-		ObserveNodes: false,
+		APIConfig:              k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+		ObservePods:            true,
+		ObserveNodes:           false,
+		TerminatedContainerTTL: defaultTerminatedContainerTTL,
 	}
 }
 

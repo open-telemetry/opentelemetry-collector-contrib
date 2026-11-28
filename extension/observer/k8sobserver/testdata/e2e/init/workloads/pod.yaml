@@ -1,0 +1,23 @@
+# An init container, a native sidecar and an app container. The init container stays up for a
+# while after it wrote its lines, so that it is seen running.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: k8sobserver-e2e-init
+  namespace: default
+  labels:
+    app: k8sobserver-e2e-init
+spec:
+  terminationGracePeriodSeconds: 1
+  initContainers:
+    - name: init
+      image: busybox:1.37.0
+      command: ["/bin/sh", "-c", "for i in 0 1 2 3 4; do echo seq=$i; done; sleep 20"]
+    - name: sidecar
+      image: busybox:1.37.0
+      restartPolicy: Always
+      command: ["/bin/sh", "-c", "for i in 0 1 2 3 4; do echo seq=$i; done; sleep 3600"]
+  containers:
+    - name: app
+      image: busybox:1.37.0
+      command: ["/bin/sh", "-c", "for i in 0 1 2 3 4; do echo seq=$i; done; sleep 3600"]

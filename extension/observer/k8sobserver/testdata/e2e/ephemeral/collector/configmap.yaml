@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-config
+  namespace: default
+data:
+  relay: |
+    exporters:
+      otlp_grpc:
+        endpoint: {{ .HostEndpoint }}:4317
+        tls:
+          insecure: true
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+      k8s_observer:
+        auth_type: serviceAccount
+        observe_pods: true
+        observe_ephemeral_containers: true
+        namespaces:
+          - default
+    receivers:
+      receiver_creator:
+        watch_observers: [k8s_observer]
+        receivers:
+          filelog:
+            rule: type == "pod.container" && pod.labels["app"] == "k8sobserver-e2e-ephemeral"
+            config:
+              include:
+                - /var/log/pods/`pod.namespace`_`pod.name`_`pod.uid`/`container_name`/*.log
+              start_at: beginning
+              include_file_path: true
+              include_file_name: false
+              operators:
+                - type: container
+                  id: container-parser
+                - type: regex_parser
+                  id: line-parser
+                  regex: '^seq=(?P<seq>\d+)$'
+            resource_attributes:
+              e2e.container.kind: '`container_kind`'
+    service:
+      extensions:
+        - health_check
+        - k8s_observer
+      pipelines:
+        logs:
+          receivers:
+            - receiver_creator
+          exporters:
+            - otlp_grpc
