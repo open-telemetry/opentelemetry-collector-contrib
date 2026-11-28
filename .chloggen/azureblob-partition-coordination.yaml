@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/azure_blob
+note: Add opt-in Event Hub partition coordination and persistent checkpoints using Azure Blob Storage.
+issues: [53641]
+subtext:
+change_logs: [user]

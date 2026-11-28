@@ -34,6 +34,10 @@ The following settings can be optionally configured:
 
 - `event_hub:`
   - `endpoint:` (no default): Azure Event Hub endpoint triggering on the `Blob Create` event. If not specified, the receiver uses polling mode.
+  - `consumer_group:` (default = `$Default`): Existing Event Hub consumer group.
+  - `blob_checkpoint_store:` (optional): Enables shared partition ownership and persistent checkpoints.
+    - `container_name:` (required when enabled): Existing checkpoint container in the receiver's storage account. Must differ from the logs and traces containers.
+  - `ignore_missing_blobs:` (default = `false`): In coordinated mode, treat `BlobNotFound` as successfully processed. See [replay and failures](#replay-and-failures) before enabling this option.
 - `auth` (default = connection_string): Specifies the used authentication method. Supported values are `connection_string`, `service_principal`, `default`.
 - `cloud` (default = "AzureCloud"): Defines which Azure Cloud to use when using the `service_principal` authentication method. Value is either `AzureCloud` or `AzureUSGovernment`.
 - `logs:`
@@ -123,3 +127,82 @@ In **Event Hub mode**, the receiver subscribes to [blob events](https://docs.mic
 
 In **polling mode**, the receiver periodically lists all blobs in the configured containers, processes each blob, and deletes it after processing.
 
+### Coordinated Event Hub consumers
+
+To distribute partitions across Collector instances, configure all instances with the same Event Hub,
+consumer group, checkpoint container, and signal configuration:
+
+```yaml
+receivers:
+  azure_blob:
+    auth: default
+    storage_account_url: https://accountName.blob.core.windows.net
+    event_hub:
+      endpoint: ${env:EVENT_HUB_CONNECTION_STRING}
+      consumer_group: otel-ingestion
+      blob_checkpoint_store:
+        container_name: otel-checkpoints
+```
+
+Create the consumer group and checkpoint container before starting the receivers. The checkpoint
+store uses the receiver's Blob Storage authentication. Grant that identity read, write, and list
+access to the checkpoint container; `Storage Blob Data Contributor` provides these permissions.
+Keep checkpoint and ownership blobs intact. Scope Event Grid notifications to the source containers
+so checkpoint writes do not generate ingestion notifications. Use a dedicated consumer group and
+do not mix coordinated and uncoordinated receivers in it.
+
+The Azure Event Hubs SDK balances partition ownership across active instances. Each assigned
+partition has a worker that processes its notifications sequentially, while different partitions
+run concurrently. With four partitions and two instances, each normally handles two partitions.
+If one stops, the survivor takes over its partitions. Additional instances beyond the partition
+count remain idle. Rebalancing is asynchronous: the SDK's default balance interval is 10 seconds
+and ownership expiration is 60 seconds. Graceful shutdown releases ownership; a crashed instance's
+ownership must expire. These intervals are not a failover deadline.
+
+Without `blob_checkpoint_store`, each receiver continues to read every partition independently
+from the latest events, without persistent checkpoints. Polling mode is unaffected.
+
+#### Replay and failures
+
+Coordinated consumers resume after the last persisted checkpoint. If a partition has no checkpoint,
+they start at its earliest retained event. This can include older notifications whose source blobs
+have already been deleted.
+
+A notification is checkpointed only after all its relevant blob events have been consumed and the
+blobs deleted. A read, decode, downstream, deletion, or checkpoint error closes the partition worker;
+the SDK reacquires it and resumes from the previous checkpoint. Later notifications on that
+partition do not advance past the failure. Other partitions continue independently. Invalid
+notifications or permanently unavailable blobs can therefore block a partition until repaired.
+Event Hub retention still limits how long notifications remain available.
+
+Exporting data, deleting a source blob, and saving a checkpoint are separate operations. If a process
+stops after deletion but before checkpointing, replay encounters a missing blob. By default this is
+an error. Setting `ignore_missing_blobs: true` allows replay to skip `BlobNotFound` and continue,
+but also skips blobs deleted before they were ever ingested. Enable it only when that policy is
+acceptable. Missing containers, authorization errors, and other storage failures are not skipped.
+
+Replayed work can produce duplicates. Ownership changes can also overlap work already in progress,
+and duplicate notifications for the same blob can occur on different partitions. Partition
+coordination does not provide an exclusive blob lock or exactly-once delivery. Use downstream
+deduplication when required. A successful consumer call means acceptance by the next pipeline
+component; in-memory processor buffers and exporter queues may not yet have delivered data to
+the destination. Configure downstream durability accordingly.
+
+## Testing coordination against Azure
+
+The integration test requires a dedicated Event Hub with at least two partitions, an unused
+consumer group, and an Azure Storage account. The Event Hub connection string must include
+`EntityPath` and allow sending and receiving. The storage connection string must allow creating
+and deleting containers. The test creates two temporary containers, uploads and deletes test
+blobs, and publishes notifications; do not point it at a production Event Hub.
+
+Set `AZUREBLOB_TEST_EVENT_HUB_CONNECTION_STRING`, `AZUREBLOB_TEST_STORAGE_CONNECTION_STRING`,
+and `AZUREBLOB_TEST_CONSUMER_GROUP`, then run from this module:
+
+```sh
+go test -tags=integration -run '^TestEventHubCoordinationIntegration$' -count=1 -timeout=10m
+```
+
+The test starts two receivers, checks balanced ownership and checkpoint progress, stops one receiver,
+checks takeover, then restarts the remaining receiver to verify checkpoint recovery. Without these
+environment variables the test is skipped.

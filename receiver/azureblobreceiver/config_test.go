@@ -173,3 +173,47 @@ func TestConfigValidate(t *testing.T) {
 		})
 	}
 }
+
+func TestEventHubCoordinationConfig(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		mutate  func(*Config)
+		wantErr string
+	}{
+		{name: "enabled"},
+		{name: "missing endpoint", mutate: func(c *Config) { c.EventHub.EndPoint = "" }, wantErr: "requires event_hub.endpoint"},
+		{name: "missing container", mutate: func(c *Config) { c.EventHub.BlobCheckpointStore.ContainerName = "" }, wantErr: "container_name is required"},
+		{name: "logs container", mutate: func(c *Config) { c.EventHub.BlobCheckpointStore.ContainerName = c.Logs.ContainerName }, wantErr: "checkpoint container must differ"},
+		{name: "traces container", mutate: func(c *Config) { c.EventHub.BlobCheckpointStore.ContainerName = c.Traces.ContainerName }, wantErr: "checkpoint container must differ"},
+		{name: "skip without coordination", mutate: func(c *Config) { c.EventHub.BlobCheckpointStore = nil; c.EventHub.IgnoreMissingBlobs = true }, wantErr: "ignore_missing_blobs requires"},
+		{name: "skip missing blobs", mutate: func(c *Config) { c.EventHub.IgnoreMissingBlobs = true }},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := getConfig().(*Config)
+			cfg.EventHub = EventHubConfig{EndPoint: eventHubString, BlobCheckpointStore: &BlobCheckpointStoreConfig{ContainerName: "checkpoints"}}
+			if tt.mutate != nil {
+				tt.mutate(cfg)
+			}
+			err := confmap.Validate(cfg)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestUnmarshalEventHubCoordination(t *testing.T) {
+	cfg := getConfig().(*Config)
+	cm := confmap.NewFromStringMap(map[string]any{
+		"event_hub": map[string]any{
+			"endpoint":              eventHubString,
+			"consumer_group":        "ingestion",
+			"blob_checkpoint_store": map[string]any{"container_name": "checkpoints"},
+			"ignore_missing_blobs":  true,
+		},
+	})
+	require.NoError(t, cm.Unmarshal(cfg))
+	assert.Equal(t, EventHubConfig{EndPoint: eventHubString, ConsumerGroup: "ingestion", BlobCheckpointStore: &BlobCheckpointStoreConfig{ContainerName: "checkpoints"}, IgnoreMissingBlobs: true}, cfg.EventHub)
+}

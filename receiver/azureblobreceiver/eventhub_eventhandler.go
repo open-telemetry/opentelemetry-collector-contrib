@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"go.uber.org/zap"
 )
 
@@ -28,9 +29,11 @@ type eventHubEventHandler struct {
 	wg                       sync.WaitGroup
 	cancelFunc               context.CancelFunc
 
-	pollRate      int
-	maxPollEvents int
-	consumerGroup string
+	pollRate           int
+	maxPollEvents      int
+	consumerGroup      string
+	checkpointStore    azeventhubs.CheckpointStore
+	ignoreMissingBlobs bool
 }
 
 var _ eventHandler = (*eventHubEventHandler)(nil)
@@ -57,6 +60,14 @@ func (p *eventHubEventHandler) run(ctx context.Context) error {
 	}
 
 	p.hub = hub
+	if p.checkpointStore != nil {
+		processorCtx, cancel := context.WithCancel(ctx)
+		p.cancelFunc = cancel
+		p.wg.Go(func() {
+			p.runCoordinated(processorCtx)
+		})
+		return nil
+	}
 
 	runtimeInfo, err := hub.GetEventHubProperties(ctx, &azeventhubs.GetEventHubPropertiesOptions{})
 	if err != nil {
@@ -138,16 +149,19 @@ func (p *eventHubEventHandler) newMessageHandler(ctx context.Context, event *aze
 		return errors.New("event hub message contains no events")
 	}
 
-	if eventDataSlice[0].EventType != blobCreatedEventType {
-		return nil
+	for _, entry := range eventDataSlice {
+		if entry.EventType != blobCreatedEventType {
+			continue
+		}
+		containerName, blobName, err := parseBlobSubject(entry.Subject)
+		if err != nil {
+			return err
+		}
+		if err := p.processBlobCreatedEventType(ctx, containerName, blobName); err != nil {
+			return err
+		}
 	}
-
-	containerName, blobName, err := parseBlobSubject(eventDataSlice[0].Subject)
-	if err != nil {
-		return err
-	}
-
-	return p.processBlobCreatedEventType(ctx, containerName, blobName)
+	return nil
 }
 
 // parseBlobSubject extracts the container and blob names from a blob event
@@ -187,6 +201,10 @@ func (p *eventHubEventHandler) processBlobCreatedEventType(ctx context.Context, 
 
 	blobData, err := p.blobClient.readBlob(ctx, containerName, blobName)
 	if err != nil {
+		if p.ignoreMissingBlobs && bloberror.HasCode(err, bloberror.BlobNotFound) {
+			p.logger.Warn("Skipping notification for missing blob", zap.String("container", containerName), zap.String("blob", blobName))
+			return nil
+		}
 		return err
 	}
 
@@ -195,6 +213,12 @@ func (p *eventHubEventHandler) processBlobCreatedEventType(ctx context.Context, 
 	}
 
 	if err := p.blobClient.deleteBlob(ctx, containerName, blobName); err != nil {
+		if p.checkpointStore != nil {
+			if p.ignoreMissingBlobs && bloberror.HasCode(err, bloberror.BlobNotFound) {
+				return nil
+			}
+			return err
+		}
 		p.logger.Error("failed to delete blob", zap.String("container", containerName), zap.String("blob", blobName), zap.Error(err))
 	}
 	return nil

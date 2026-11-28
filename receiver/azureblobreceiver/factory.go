@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2/checkpoints"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -120,7 +121,7 @@ func (f *blobReceiverFactory) getReceiver(
 }
 
 func (*blobReceiverFactory) getEventHandler(cfg *Config, logger *zap.Logger) (eventHandler, error) {
-	var bc blobClient
+	var bc *azureBlobClient
 	var err error
 
 	switch cfg.Authentication {
@@ -155,6 +156,18 @@ func (*blobReceiverFactory) getEventHandler(cfg *Config, logger *zap.Logger) (ev
 	if cfg.EventHub.EndPoint == "" {
 		return newBlobEventHandler(cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, logger), nil
 	}
-	return newEventHubEventHandler(string(cfg.EventHub.EndPoint), cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, logger),
-		nil
+	handler := newEventHubEventHandler(string(cfg.EventHub.EndPoint), cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, logger)
+	if cfg.EventHub.ConsumerGroup != "" {
+		handler.consumerGroup = cfg.EventHub.ConsumerGroup
+	}
+	if store := cfg.EventHub.BlobCheckpointStore; store != nil {
+		container := bc.serviceClient.ServiceClient().NewContainerClient(store.ContainerName)
+		checkpointStore, storeErr := checkpoints.NewBlobStore(container, nil)
+		if storeErr != nil {
+			return nil, fmt.Errorf("failed to create checkpoint store: %w", storeErr)
+		}
+		handler.checkpointStore = checkpointStore
+		handler.ignoreMissingBlobs = cfg.EventHub.IgnoreMissingBlobs
+	}
+	return handler, nil
 }

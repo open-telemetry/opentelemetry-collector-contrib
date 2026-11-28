@@ -49,8 +49,20 @@ type Config struct {
 type EventHubConfig struct {
 	// Azure Event Hub endpoint triggering on the `Blob Create` event
 	EndPoint configopaque.String `mapstructure:"endpoint"`
+	// Consumer group shared by receiver instances (default = "$Default").
+	ConsumerGroup string `mapstructure:"consumer_group"`
+	// Shared checkpoint storage enables coordinated partition ownership.
+	BlobCheckpointStore *BlobCheckpointStoreConfig `mapstructure:"blob_checkpoint_store"`
+	// Skip BlobNotFound errors during coordinated consumption, including replay after deletion.
+	IgnoreMissingBlobs bool `mapstructure:"ignore_missing_blobs"`
 	// prevent unkeyed literal initialization
 	_ struct{}
+}
+
+type BlobCheckpointStoreConfig struct {
+	// Existing container in the receiver's storage account, using the receiver's authentication.
+	ContainerName string `mapstructure:"container_name"`
+	_             struct{}
 }
 
 type LogsConfig struct {
@@ -207,6 +219,19 @@ func (c Config) Validate() (err error) {
 
 	if compErr := validateCompression(c.Compression); compErr != nil {
 		err = multierr.Append(err, compErr)
+	}
+	if store := c.EventHub.BlobCheckpointStore; store != nil {
+		if c.EventHub.EndPoint == "" {
+			err = multierr.Append(err, errors.New("event_hub.blob_checkpoint_store requires event_hub.endpoint"))
+		}
+		switch store.ContainerName {
+		case "":
+			err = multierr.Append(err, errors.New("event_hub.blob_checkpoint_store.container_name is required"))
+		case c.Logs.ContainerName, c.Traces.ContainerName:
+			err = multierr.Append(err, errors.New("checkpoint container must differ from the logs and traces containers"))
+		}
+	} else if c.EventHub.IgnoreMissingBlobs {
+		err = multierr.Append(err, errors.New("event_hub.ignore_missing_blobs requires event_hub.blob_checkpoint_store"))
 	}
 
 	return err
