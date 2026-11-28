@@ -341,6 +341,7 @@ func TestTLSSettingsAreClassified(t *testing.T) {
 		"tpm":                            "warned",
 		// Prometheus re-reads changed certificate, key and CA files itself.
 		"reload_interval": "covered by prometheus",
+		"ca_file_reload":  "covered by prometheus",
 		// Selects between an http and an https scrape.
 		"insecure": "controls scheme",
 	}
@@ -352,8 +353,11 @@ func TestTLSSettingsAreClassified(t *testing.T) {
 				"unsupportedTLSSettings, update the tls section of README.md, then add it here", key)
 		}
 	}
+	// TODO: remove once configtls.ClientConfig with ca_file_reload is pulled in.
+	// ref: https://github.com/open-telemetry/opentelemetry-collector/pull/16319
+	optional := map[string]bool{"ca_file_reload": true}
 	for key := range handled {
-		if !slices.Contains(keys, key) {
+		if !slices.Contains(keys, key) && !optional[key] {
 			t.Errorf("tls key %q is listed here but configtls.ClientConfig no longer has it", key)
 		}
 	}

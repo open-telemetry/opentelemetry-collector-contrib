@@ -59,7 +59,7 @@ target is scraped over `https`, setting `cipher_suites` (with or without
 `include_system_ca_certs_pool` together with a CA logs a warning at start,
 because these settings have no equivalent in the Prometheus scrape config.
 Certificate, key and CA files are re-read when they change, so
-`reload_interval` is not needed.
+`reload_interval` and `ca_file_reload` are not needed.
   - `insecure` (default = `true`): Unlike other HTTP clients in the Collector,
   this receiver defaults to plain `http`. The target is scraped over `https`
   when `insecure` is `false` or a `ca_file` or `ca_pem` is set; otherwise it is scraped over
