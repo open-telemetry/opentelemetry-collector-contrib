@@ -12,7 +12,7 @@ Number of heartbeat or observe errors.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {error} | Sum | Int | true | Development |
 
 ### otelcol_extension_redis_fleet_tracker_member_count
 
@@ -20,4 +20,4 @@ Current live member count observed for the fleet.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Gauge | Int | Development |
+| {member} | Gauge | Int | Development |
