@@ -10,7 +10,6 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
-	"crypto/subtle"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -176,7 +175,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 
 	if er.cfg.RequiredHeader.Key != "" {
 		requiredHeaderValue := r.Header.Get(er.cfg.RequiredHeader.Key)
-		if subtle.ConstantTimeCompare([]byte(requiredHeaderValue), []byte(er.cfg.RequiredHeader.Value)) != 1 {
+		if !er.cfg.RequiredHeader.Value.Equal(requiredHeaderValue) {
 			er.failBadReq(ctx, w, http.StatusUnauthorized, errMissingRequiredHeader)
 			er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, errMissingRequiredHeader)
 			return
