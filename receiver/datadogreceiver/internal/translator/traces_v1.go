@@ -55,7 +55,7 @@ func ToTracesV1(logger *zap.Logger, payload *idx.InternalTracerPayload, req *htt
 	// service.name is a resource attribute, so spans are grouped by service.
 	groupByService := make(map[string]ptrace.SpanSlice)
 	for _, chunk := range payload.Chunks {
-		traceID := chunkTraceID(chunk)
+		traceID := v1TraceID(chunk.TraceID)
 		for _, span := range chunk.Spans {
 			service := span.Service()
 			// Restore base service name as the service name, like for the older payload formats.
@@ -169,9 +169,7 @@ func spanToOTelV1(logger *zap.Logger, newSpan ptrace.Span, span *idx.InternalSpa
 
 	for _, l := range span.Links() {
 		link := newSpan.Links().AppendEmpty()
-		if id := l.TraceID(); len(id) == 16 {
-			link.SetTraceID(pcommon.TraceID(id))
-		}
+		link.SetTraceID(v1TraceID(l.TraceID()))
 		link.SetSpanID(uInt64ToSpanID(l.SpanID()))
 		link.TraceState().FromRaw(l.Tracestate())
 		link.SetFlags(l.Flags())
@@ -231,10 +229,11 @@ func parseLinksAndEventsTags(logger *zap.Logger, span ptrace.Span, hasNativeLink
 	attrs.Remove("_dd.span_events.has_exception")
 }
 
-// chunkTraceID returns the 128-bit trace id of a chunk. A shorter id is treated as if the missing high-order bytes were zero.
-func chunkTraceID(chunk *idx.InternalTraceChunk) pcommon.TraceID {
+// v1TraceID returns the 128-bit trace id of a v1 trace id, which is a byte string. A shorter id is treated as if the
+// missing high-order bytes were zero.
+func v1TraceID(id []byte) pcommon.TraceID {
 	var traceID pcommon.TraceID
-	copy(traceID[len(traceID)-min(len(chunk.TraceID), len(traceID)):], chunk.TraceID)
+	copy(traceID[len(traceID)-min(len(id), len(traceID)):], id)
 	return traceID
 }
 

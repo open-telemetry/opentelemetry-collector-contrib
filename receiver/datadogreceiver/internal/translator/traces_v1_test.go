@@ -112,6 +112,48 @@ func v1PayloadWithSpan(span *idx.Span, strs *idx.StringTable) *idx.InternalTrace
 	}
 }
 
+// Trace ids in the v1 format are byte strings that can be shorter than 16 bytes. A shorter id is treated as if the
+// missing high-order bytes were zero, for span links like for the trace chunk.
+func TestToTracesV1LinkTraceID(t *testing.T) {
+	for name, tc := range map[string]struct {
+		traceID []byte
+		want    pcommon.TraceID
+	}{
+		"128-bit id": {
+			traceID: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+			want:    pcommon.TraceID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+		},
+		"64-bit id": {
+			traceID: []byte{0, 0, 0, 0, 0, 0, 0x0a, 0xbc},
+			want:    pcommon.TraceID{15: 0xbc, 14: 0x0a},
+		},
+		"id without leading zero bytes": {
+			traceID: []byte{0x0a, 0xbc},
+			want:    pcommon.TraceID{15: 0xbc, 14: 0x0a},
+		},
+		"no id": {
+			traceID: nil,
+			want:    pcommon.TraceID{},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			strs := idx.NewStringTable()
+			span := &idx.Span{
+				ServiceRef: strs.Add("svc"), SpanID: 1,
+				Links: []*idx.SpanLink{{TraceID: tc.traceID, SpanID: 2}},
+			}
+
+			traces, err := ToTracesV1(zap.NewNop(), v1PayloadWithSpan(span, strs), &http.Request{Header: http.Header{}})
+			require.NoError(t, err)
+
+			links := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Links()
+			require.Equal(t, 1, links.Len())
+			assert.Equal(t, tc.want, links.At(0).TraceID())
+			assert.Equal(t, pcommon.SpanID{7: 2}, links.At(0).SpanID())
+		})
+	}
+}
+
 // The v1 format only says whether a span failed, not with which status code, so a failed gRPC span has no status code.
 func TestToTracesV1GRPCStatusCode(t *testing.T) {
 	for name, tc := range map[string]struct {
