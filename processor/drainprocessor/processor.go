@@ -52,7 +52,9 @@ type drainProcessor struct {
 
 	storageClient    storage.Client
 	stopSave         context.CancelFunc // cancels periodic save goroutine
+	saveDone         chan struct{}
 	lastSnapshotHash atomic.Uint64
+	shutdownMu       sync.Mutex
 }
 
 func newDrainProcessor(set processor.Settings, cfg *Config) (*drainProcessor, error) {
@@ -177,8 +179,14 @@ func (p *drainProcessor) Start(ctx context.Context, host component.Host) error {
 // Shutdown stops the periodic save goroutine, performs a final snapshot save,
 // and closes the storage client.
 func (p *drainProcessor) Shutdown(ctx context.Context) error {
+	p.shutdownMu.Lock()
+	defer p.shutdownMu.Unlock()
+
 	if p.stopSave != nil {
 		p.stopSave()
+		// A storage operation that ignores cancellation can block indefinitely,
+		// so shutdown cannot always honor its context deadline.
+		<-p.saveDone
 	}
 
 	var errs []error
@@ -189,6 +197,8 @@ func (p *drainProcessor) Shutdown(ctx context.Context) error {
 		}
 		if err := p.storageClient.Close(ctx); err != nil {
 			errs = append(errs, err)
+		} else {
+			p.storageClient = nil
 		}
 	}
 	return errors.Join(errs...)

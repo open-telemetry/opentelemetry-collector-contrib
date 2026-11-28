@@ -62,8 +62,11 @@ func (p *drainProcessor) loadSnapshot(ctx context.Context) bool {
 func (p *drainProcessor) startPeriodicSave(ctx context.Context) {
 	ctx, cancel := context.WithCancel(ctx)
 	p.stopSave = cancel
+	done := make(chan struct{})
+	p.saveDone = done
 
 	go func() {
+		defer close(done)
 		ticker := time.NewTicker(p.config.SaveInterval)
 		defer ticker.Stop()
 		for {
