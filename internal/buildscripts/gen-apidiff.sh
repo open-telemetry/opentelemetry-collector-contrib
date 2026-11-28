@@ -18,7 +18,7 @@ dry_run=false
 package=""
 output_dir="./internal/data/apidiff"
 repo_toplevel="$( git rev-parse --show-toplevel )"
-tools_mod_file="${repo_toplevel}/internal/tools/go.mod"
+tools_mod_file="${repo_toplevel}/internal/tools/thirdparty/go.mod"
 
 while getopts "dp:o:" o; do
     case "${o}" in
