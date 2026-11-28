@@ -34,7 +34,7 @@ func TestGroupingFileExporterShutdownReportsFlushErrors(t *testing.T) {
 
 	firstErr := errors.New("first disk full")
 	secondErr := errors.New("second disk full")
-	gfe.newFileWriter = func(path string) (*fileWriter, error) {
+	gfe.newFileWriter = func(path string, _ bool) (*fileWriter, error) {
 		err := firstErr
 		if strings.HasSuffix(path, "two.log") {
 			err = secondErr
@@ -93,8 +93,8 @@ func TestGroupingFileExporterPreservesInFlightWrite(t *testing.T) {
 
 	// Pause the export to "one" so its writer can be evicted while the export is running.
 	orig := gfe.newFileWriter
-	gfe.newFileWriter = func(path string) (*fileWriter, error) {
-		w, err := orig(path)
+	gfe.newFileWriter = func(path string, shouldAppend bool) (*fileWriter, error) {
+		w, err := orig(path, shouldAppend)
 		if err != nil || !strings.HasSuffix(path, "one.log") {
 			return w, err
 		}
@@ -160,4 +160,49 @@ func TestGroupingFileExporterConcurrentEviction(t *testing.T) {
 	wg.Wait()
 
 	require.NoError(t, gfe.Shutdown(t.Context()))
+}
+
+// Reopening an evicted file must append to it, not truncate it.
+func TestGroupingFileExporterReopenAfterEvictionAppends(t *testing.T) {
+	tmpDir := t.TempDir()
+	conf := newEvictionTestConfig(tmpDir)
+
+	gfe, ok := newFileExporter(conf, zap.NewNop()).(*groupingFileExporter)
+	require.True(t, ok)
+	require.NoError(t, gfe.Start(t.Context(), componenttest.NewNopHost()))
+
+	first := []byte(`{"resourceLogs":"one-first"}`)
+	second := []byte(`{"resourceLogs":"one-second"}`)
+
+	require.NoError(t, gfe.write(t.Context(), "one", first))
+	// MaxOpenFiles is 1, so this evicts "one".
+	require.NoError(t, gfe.write(t.Context(), "two", []byte(`{"resourceLogs":"two"}`)))
+	require.NoError(t, gfe.write(t.Context(), "one", second))
+	require.NoError(t, gfe.Shutdown(t.Context()))
+
+	content, err := os.ReadFile(tmpDir + "/one.log")
+	require.NoError(t, err)
+	assert.Contains(t, string(content), string(first), "data written before eviction was truncated")
+	assert.Contains(t, string(content), string(second))
+}
+
+// With append disabled, the first open in a run still truncates an existing file.
+func TestGroupingFileExporterFirstOpenTruncates(t *testing.T) {
+	tmpDir := t.TempDir()
+	stale := []byte("stale data from a previous run\n")
+	require.NoError(t, os.WriteFile(tmpDir+"/one.log", stale, 0o600))
+
+	conf := newEvictionTestConfig(tmpDir)
+	gfe, ok := newFileExporter(conf, zap.NewNop()).(*groupingFileExporter)
+	require.True(t, ok)
+	require.NoError(t, gfe.Start(t.Context(), componenttest.NewNopHost()))
+
+	payload := []byte(`{"resourceLogs":"one"}`)
+	require.NoError(t, gfe.write(t.Context(), "one", payload))
+	require.NoError(t, gfe.Shutdown(t.Context()))
+
+	content, err := os.ReadFile(tmpDir + "/one.log")
+	require.NoError(t, err)
+	assert.NotContains(t, string(content), string(stale))
+	assert.Contains(t, string(content), string(payload))
 }
