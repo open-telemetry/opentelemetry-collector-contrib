@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -44,6 +45,7 @@ func TestPodEndpointsAdded(t *testing.T) {
 				Name:        "container-2",
 				Image:       "container-image-2",
 				ContainerID: "a808232bb4a57d421bb16f20dc9ab2a441343cb0aae8c369dc375838c7a49fd7",
+				Kind:        "app",
 				Pod: observer.Pod{
 					Name:      "pod-2",
 					Namespace: "default",
@@ -119,6 +121,7 @@ func TestPodEndpointsChanged(t *testing.T) {
 				Name:        "container-2",
 				Image:       "container-image-2",
 				ContainerID: "a808232bb4a57d421bb16f20dc9ab2a441343cb0aae8c369dc375838c7a49fd7",
+				Kind:        "app",
 				Pod: observer.Pod{
 					Name:      "pod-2",
 					Namespace: "default",
@@ -362,4 +365,33 @@ func TestNodeEndpointsChanged(t *testing.T) {
 			},
 		},
 	}, th.ListEndpoints())
+}
+
+func TestPodEndpointsEphemeralContainerAdded(t *testing.T) {
+	th := newTestHandler()
+	th.podOptions = podEndpointOptions{ephemeralContainers: true}
+	th.OnAdd(podWithNamedPorts, true)
+	require.Len(t, th.ListEndpoints(), 3)
+
+	// An ephemeral container is added to the running pod and starts.
+	debugged := podWithNamedPorts.DeepCopy()
+	debugged.Spec.EphemeralContainers = []v1.EphemeralContainer{
+		{EphemeralContainerCommon: v1.EphemeralContainerCommon{Name: "debugger", Image: "debug-image"}},
+	}
+	debugged.Status.EphemeralContainerStatuses = []v1.ContainerStatus{
+		{Name: "debugger", ContainerID: "containerd://debugger-id", State: v1.ContainerState{Running: &v1.ContainerStateRunning{}}},
+	}
+	th.OnUpdate(podWithNamedPorts, debugged)
+	_, ok := th.endpoints.Load(observer.EndpointID("test-1/pod-2-UID/debugger"))
+	require.True(t, ok)
+	require.Len(t, th.ListEndpoints(), 4)
+
+	// It exits: its endpoint goes, the others stay.
+	exited := debugged.DeepCopy()
+	exited.Status.EphemeralContainerStatuses[0].State = v1.ContainerState{Terminated: &v1.ContainerStateTerminated{}}
+	th.OnUpdate(debugged, exited)
+	require.Len(t, th.ListEndpoints(), 3)
+
+	th.OnDelete(exited)
+	require.Empty(t, th.ListEndpoints())
 }

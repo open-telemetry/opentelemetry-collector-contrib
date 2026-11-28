@@ -49,6 +49,18 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "ephemeral-containers"),
+			expected: &Config{
+				APIConfig:                  k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
+				ObservePods:                true,
+				ObserveEphemeralContainers: true,
+			},
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_ephemeral_without_pods"),
+			expectedErr: "observe_ephemeral_containers requires observe_pods",
+		},
+		{
 			id:          component.NewIDWithName(metadata.Type, "invalid_auth"),
 			expectedErr: "invalid authType for kubernetes: not a real auth type",
 		},

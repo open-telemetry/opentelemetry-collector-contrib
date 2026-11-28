@@ -6,6 +6,7 @@ package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"fmt"
 	"net"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -14,10 +15,23 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
+// The kinds of a container, by where the pod spec declares it.
+const (
+	containerKindApp       = "app"
+	containerKindEphemeral = "ephemeral"
+)
+
+// podEndpointOptions selects the containers of a pod that get endpoints, next to its app
+// containers.
+type podEndpointOptions struct {
+	// ephemeralContainers also reports the ephemeral containers of a pod.
+	ephemeralContainers bool
+}
+
 // convertPodToEndpoints converts a pod instance into a slice of endpoints. The endpoints
 // include the pod itself as well as an endpoint for each container port that is mapped
 // to a container that is in a running state.
-func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint {
+func convertPodToEndpoints(idNamespace string, pod *v1.Pod, opts podEndpointOptions) []observer.Endpoint {
 	podID := observer.EndpointID(fmt.Sprintf("%s/%s", idNamespace, pod.UID))
 	podIP := pod.Status.PodIP
 
@@ -50,11 +64,31 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 		}
 	}
 
+	containers := pod.Spec.Containers
+	containerKinds := map[string]string{}
+	if opts.ephemeralContainers {
+		for i := range pod.Status.EphemeralContainerStatuses {
+			container := &pod.Status.EphemeralContainerStatuses[i]
+			if container.State.Running != nil {
+				runningContainers[container.Name] = containerIDWithRuntime(container)
+			}
+		}
+		containers = slices.Clone(containers)
+		for i := range pod.Spec.EphemeralContainers {
+			container := v1.Container(pod.Spec.EphemeralContainers[i].EphemeralContainerCommon)
+			containerKinds[container.Name] = containerKindEphemeral
+			containers = append(containers, container)
+		}
+	}
+
 	// Create endpoint for each named container port.
-	for i := range pod.Spec.Containers {
-		container := &pod.Spec.Containers[i]
+	for i := range containers {
+		container := &containers[i]
+		kind, ok := containerKinds[container.Name]
+		if !ok {
+			kind = containerKindApp
+		}
 		var rc runningContainer
-		var ok bool
 		if rc, ok = runningContainers[container.Name]; !ok {
 			continue
 		}
@@ -71,6 +105,7 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 				Name:        container.Name,
 				ContainerID: rc.ID,
 				Image:       container.Image,
+				Kind:        kind,
 				Pod:         podDetails,
 			},
 		})

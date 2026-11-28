@@ -30,6 +30,9 @@ type Config struct {
 	// it will only discover pod and port endpoints whose `spec.nodeName` matches the provided node name. If `true` and
 	// Node isn't specified, it will discover all available pod and port endpoints. `true` by default.
 	ObservePods bool `mapstructure:"observe_pods"`
+	// ObserveEphemeralContainers determines whether to also report pod container endpoints for ephemeral
+	// containers, such as the ones `kubectl debug` adds. Requires ObservePods. `false` by default.
+	ObserveEphemeralContainers bool `mapstructure:"observe_ephemeral_containers"`
 	// ObserveNodes determines whether to report observer k8s.node endpoints. If `true` and Node is specified
 	// it will only discover node endpoints whose `metadata.name` matches the provided node name. If `true` and
 	// Node isn't specified, it will discover all available node endpoints. `false` by default.
@@ -46,6 +49,9 @@ type Config struct {
 func (cfg *Config) Validate() error {
 	if !cfg.ObservePods && !cfg.ObserveNodes && !cfg.ObserveServices && !cfg.ObserveIngresses {
 		return errors.New("one of observe_pods, observe_nodes, observe_services and observe_ingresses must be true")
+	}
+	if cfg.ObserveEphemeralContainers && !cfg.ObservePods {
+		return errors.New("observe_ephemeral_containers requires observe_pods")
 	}
 	return nil
 }
