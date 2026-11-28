@@ -66,7 +66,7 @@ telemetry:
       enabled: true
       stability: development
       description: Number of translation operations that failed to translate metrics from Otel to Prometheus
-      unit: "1"
+      unit: "{translation}"
       sum:
         value_type: int
         monotonic: true
@@ -82,7 +82,7 @@ telemetry:
       enabled: true
       stability: development
       description: Number of Prometheus time series that were translated from OTel metrics
-      unit: "1"
+      unit: "{series}"
       sum:
         value_type: int
         monotonic: true
@@ -106,7 +106,7 @@ telemetry:
       enabled: true
       stability: development
       description: WAL lag
-      unit: "1"
+      unit: "{entry}"
       gauge:
         value_type: int
     exporter_prometheusremotewrite_wal_read_latency:
@@ -121,7 +121,7 @@ telemetry:
       enabled: true
       stability: development
       description: Number of WAL reads
-      unit: "1"
+      unit: "{read}"
       sum:
         value_type: int
         monotonic: true
@@ -129,7 +129,7 @@ telemetry:
       enabled: true
       stability: development
       description: Number of WAL reads that failed
-      unit: "1"
+      unit: "{read}"
       sum:
         value_type: int
         monotonic: true
@@ -161,7 +161,7 @@ telemetry:
       enabled: true
       stability: development
       description: Number of WAL writes
-      unit: "1"
+      unit: "{write}"
       sum:
         value_type: int
         monotonic: true
@@ -169,7 +169,7 @@ telemetry:
       enabled: true
       stability: development
       description: Number of WAL writes that failed
-      unit: "1"
+      unit: "{write}"
       sum:
         value_type: int
         monotonic: true
