@@ -41,7 +41,7 @@ type Config struct {
 
 	// ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels.
 	//
-	// Deprecated: Use ResourceConstantLabels instead.
+	// Deprecated: [v0.160.0] Use ResourceConstantLabels instead.
 	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
 
 	// ResourceConstantLabels controls which resource attributes are added as constant labels on Prometheus metrics.
@@ -55,7 +55,7 @@ type Config struct {
 
 	// AddMetricSuffixes controls whether suffixes are added to metric names. Defaults to true.
 	//
-	// Deprecated: This setting is ignored and TranslationStrategy is always used.
+	// Deprecated: [v0.132.0] This setting is ignored and TranslationStrategy is always used.
 	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
 
 	// TranslationStrategy controls how OTLP metric and attribute names are translated into Prometheus metric and label names.
