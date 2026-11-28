@@ -61,10 +61,10 @@ func TestLoadConfig(t *testing.T) {
 					Multiplier:          backoff.DefaultMultiplier,
 				},
 				QueueSettings: func() configoptional.Optional[exporterhelper.QueueBatchConfig] {
-					queue := exporterhelper.NewDefaultQueueConfig()
-					queue.NumConsumers = 2
-					queue.QueueSize = 10
-					return configoptional.Some(queue)
+					queue := metadata.NewDefaultSendingQueueConfig()
+					queue.Get().NumConsumers = 2
+					queue.Get().QueueSize = 10
+					return queue
 				}(),
 				ClientConfig: func() confighttp.ClientConfig {
 					client := confighttp.NewDefaultClientConfig()
