@@ -170,7 +170,7 @@ func (p *intervalProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 					if temporality == pmetric.AggregationTemporalityCumulative {
 						aggregateDataPoints(expHistogram.DataPoints(), cloneExpHistogram.DataPoints(), metricID, p.expHistogramLookup)
 					} else {
-						aggregateDeltaDataPoints(expHistogram.DataPoints(), cloneExpHistogram.DataPoints(), metricID, p.expHistogramLookup, data.Adder{}.Exponential)
+						aggregateDeltaDataPoints(expHistogram.DataPoints(), cloneExpHistogram.DataPoints(), metricID, p.expHistogramLookup, data.Adder{MaxBuckets: p.config.MaxBuckets}.Exponential)
 					}
 					return true
 				default:

@@ -45,7 +45,7 @@ func TestAggregation(t *testing.T) {
 
 	var config *Config
 	for _, tc := range testCases {
-		config = &Config{Interval: time.Second, PassThrough: PassThrough{Gauge: tc.passThrough, Summary: tc.passThrough}}
+		config = &Config{Interval: time.Second, PassThrough: PassThrough{Gauge: tc.passThrough, Summary: tc.passThrough}, MaxBuckets: 160}
 
 		t.Run(tc.name, func(t *testing.T) {
 			// next stores the results of the filter metric processor
@@ -124,7 +124,7 @@ func TestFlushOnShutdown(t *testing.T) {
 	t.Parallel()
 
 	// Use a very long interval so the ticker never fires during the test.
-	config := &Config{Interval: time.Hour}
+	config := &Config{Interval: time.Hour, MaxBuckets: 160}
 	next := &consumertest.MetricsSink{}
 
 	factory := NewFactory()

@@ -10,7 +10,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-var ErrInvalidIntervalValue = errors.New("invalid interval value")
+var (
+	ErrInvalidIntervalValue   = errors.New("invalid interval value")
+	ErrInvalidMaxBucketsValue = errors.New("invalid max_buckets value")
+)
 
 var _ component.Config = (*Config)(nil)
 
@@ -21,6 +24,8 @@ type Config struct {
 	// PassThrough is a configuration that determines whether gauge and summary metrics should be passed through
 	// as they are or aggregated.
 	PassThrough PassThrough `mapstructure:"pass_through"`
+	// MaxBuckets is the maximum number of buckets per sign of an aggregated exponential histogram.
+	MaxBuckets int `mapstructure:"max_buckets"`
 }
 
 type PassThrough struct {
@@ -37,6 +42,9 @@ type PassThrough struct {
 func (config *Config) Validate() error {
 	if config.Interval <= 0 {
 		return ErrInvalidIntervalValue
+	}
+	if config.MaxBuckets <= 0 {
+		return ErrInvalidMaxBucketsValue
 	}
 
 	return nil

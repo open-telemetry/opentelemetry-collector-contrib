@@ -46,6 +46,10 @@ interval:
     [ gauge: <bool> | default = false ]
     # Whether summaries should be aggregated or passed through to the next component as they are
     [ summary: <boo>l | default = false ]
+
+  # The maximum number of buckets per sign when merging exponential histograms.
+  # A merge that would need more buckets is downscaled until it fits.
+  [ max_buckets: <int> | default = 160 ]
 ```
 
 ## Example of metric flows

@@ -31,6 +31,7 @@ func createDefaultConfig() component.Config {
 			Gauge:   false,
 			Summary: false,
 		},
+		MaxBuckets: 160,
 	}
 }
 

@@ -27,9 +27,10 @@ type Aggregator interface {
 var _ Aggregator = (*Adder)(nil)
 
 // Adder adds (+) datapoints.
-type Adder struct{}
-
-var maxBuckets = 160
+type Adder struct {
+	// MaxBuckets caps the bucket count of merged exponential histograms.
+	MaxBuckets int
+}
 
 func (Adder) Numbers(state, dp pmetric.NumberDataPoint) {
 	switch dp.ValueType() {
@@ -79,7 +80,7 @@ func (Adder) Histograms(state, dp pmetric.HistogramDataPoint) {
 	}
 }
 
-func (Adder) Exponential(state, dp pmetric.ExponentialHistogramDataPoint) {
+func (add Adder) Exponential(state, dp pmetric.ExponentialHistogramDataPoint) {
 	type H = pmetric.ExponentialHistogramDataPoint
 
 	if state.Scale() != dp.Scale() {
@@ -93,8 +94,8 @@ func (Adder) Exponential(state, dp pmetric.ExponentialHistogramDataPoint) {
 	// Downscale if an expected number of buckets after the merge is too large.
 	from := expo.Scale(state.Scale())
 	to := min(
-		expo.Limit(maxBuckets, from, state.Positive(), dp.Positive()),
-		expo.Limit(maxBuckets, from, state.Negative(), dp.Negative()),
+		expo.Limit(add.MaxBuckets, from, state.Positive(), dp.Positive()),
+		expo.Limit(add.MaxBuckets, from, state.Negative(), dp.Negative()),
 	)
 	if from != to {
 		expo.Downscale(state.Positive(), from, to)

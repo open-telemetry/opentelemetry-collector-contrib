@@ -1,0 +1,6 @@
+change_type: enhancement
+component: processor/interval
+note: Add `max_buckets` to configure the bucket limit when merging delta exponential histograms.
+issues: [53482]
+subtext:
+change_logs: [user]

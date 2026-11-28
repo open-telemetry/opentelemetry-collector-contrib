@@ -15,6 +15,9 @@ properties:
     description: Interval is the time interval at which the processor will aggregate metrics.
     type: string
     format: duration
+  max_buckets:
+    description: MaxBuckets is the maximum number of buckets per sign of an aggregated exponential histogram.
+    type: integer
   pass_through:
     description: PassThrough is a configuration that determines whether gauge and summary metrics should be passed through as they are or aggregated.
     $ref: pass_through
