@@ -1,0 +1,12 @@
+change_type: enhancement
+
+component: receiver/receiver_creator
+
+note: Add a `Discoverable` interface that receivers implement to validate their own configuration built from K8s annotation hints
+
+issues: [36595]
+
+subtext: |
+  Receivers that do not implement it still only get their top-level `endpoint` field validated.
+
+change_logs: [api]
