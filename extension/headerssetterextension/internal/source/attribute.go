@@ -19,6 +19,9 @@ type AttributeSource struct {
 
 func (ts *AttributeSource) Get(ctx context.Context) (string, error) {
 	cl := client.FromContext(ctx)
+	if cl.Auth == nil {
+		return "", nil
+	}
 	attr := cl.Auth.GetAttribute(ts.Key)
 
 	switch a := attr.(type) {

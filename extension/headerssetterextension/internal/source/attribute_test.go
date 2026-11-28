@@ -65,3 +65,15 @@ func TestAttributeSourceNotFound(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, val)
 }
+
+func TestAttributeSourceNoAuthData(t *testing.T) {
+	t.Parallel()
+
+	ts := &AttributeSource{Key: "X-Scope-OrgID"}
+
+	// No auth data in the context, as when the receiver has no server authenticator.
+	val, err := ts.Get(t.Context())
+
+	assert.NoError(t, err)
+	assert.Empty(t, val)
+}
