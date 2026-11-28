@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"runtime"
 	"strings"
 
@@ -76,22 +77,37 @@ func newHoneycombLogsExporter(set exporter.Settings, config *Config) (*honeycomb
 }
 
 func (e *honeycombLogsExporter) exportMarkers(ctx context.Context, ld plog.Logs) error {
+	datasetSlugs := make([]string, len(e.markers))
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rlogs := ld.ResourceLogs().At(i)
+		for j, m := range e.markers {
+			datasetSlug := m.DatasetSlug
+			if datasetSlug == "" {
+				datasetSlug = defaultDatasetSlug
+			}
+			if m.UseServiceName {
+				if serviceName, found := rlogs.Resource().Attributes().Get("service.name"); found {
+					if name := serviceName.AsString(); name != "" {
+						datasetSlug = url.PathEscape(name)
+					}
+				}
+			}
+			datasetSlugs[j] = datasetSlug
+		}
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
 			slogs := rlogs.ScopeLogs().At(j)
 			logs := slogs.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				logRecord := logs.At(k)
 				tCtx := ottllog.NewTransformContext(rlogs, slogs, logRecord)
-				for _, m := range e.markers {
+				for markerIndex, m := range e.markers {
 					match, err := m.logBoolExpr.Eval(ctx, tCtx)
 					if err != nil {
 						tCtx.Close()
 						return err
 					}
 					if match {
-						err = e.sendMarker(ctx, m, logRecord)
+						err = e.sendMarker(ctx, m, logRecord, datasetSlugs[markerIndex])
 						if err != nil {
 							tCtx.Close()
 							return err
@@ -105,7 +121,7 @@ func (e *honeycombLogsExporter) exportMarkers(ctx context.Context, ld plog.Logs)
 	return nil
 }
 
-func (e *honeycombLogsExporter) sendMarker(ctx context.Context, m marker, logRecord plog.LogRecord) error {
+func (e *honeycombLogsExporter) sendMarker(ctx context.Context, m marker, logRecord plog.LogRecord, datasetSlug string) error {
 	requestMap := map[string]any{
 		"type": m.Type,
 	}
@@ -135,13 +151,8 @@ func (e *honeycombLogsExporter) sendMarker(ctx context.Context, m marker, logRec
 		return err
 	}
 
-	datasetSlug := m.DatasetSlug
-	if datasetSlug == "" {
-		datasetSlug = defaultDatasetSlug
-	}
-
-	url := fmt.Sprintf("%s/1/markers/%s", strings.TrimRight(e.apiURL, "/"), datasetSlug)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
+	requestURL := fmt.Sprintf("%s/1/markers/%s", strings.TrimRight(e.apiURL, "/"), datasetSlug)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, requestURL, bytes.NewReader(request))
 	if err != nil {
 		return err
 	}
