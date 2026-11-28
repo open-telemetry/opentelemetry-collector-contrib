@@ -1,4 +1,4 @@
-FROM golang:1.26@sha256:4165ee6bf3b7811fd7b40373290405c83d0167dcb87ee5f29c427cdcef45ff8f AS build
+FROM golang:1.27@sha256:5f1b98fa02fe396ebce2a0227a0e08309e11792915b9dd2e1f71053d7e7e6666 AS build
 
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates git make \
     && rm -rf /var/lib/apt/lists/*
