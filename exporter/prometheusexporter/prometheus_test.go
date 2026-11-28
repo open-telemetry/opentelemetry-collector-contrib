@@ -899,6 +899,54 @@ func TestPrometheusExporterResourceConstantLabels(t *testing.T) {
 	assert.NotContains(t, body, `ignored_attr="should-be-ignored"`)
 }
 
+func TestPrometheusExporterResourceConstantLabelsCollisions(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ServerConfig.NetAddr.Endpoint = "localhost:8889"
+	cfg.MetricExpiration = 120 * time.Minute
+	cfg.ConstLabels = map[string]string{
+		"env":        "const-env",
+		"const_only": "kept",
+	}
+	cfg.ResourceConstantLabels = resourcetotelemetry.Settings{
+		Included: []string{"*"},
+	}
+
+	factory := NewFactory()
+	set := exportertest.NewNopSettings(metadata.Type)
+	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
+	require.NoError(t, err)
+
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	resAttrs := rm.Resource().Attributes()
+	resAttrs.PutStr("service.name", "otel-collector")
+	resAttrs.PutStr("service.instance.id", "localhost:8888")
+	resAttrs.PutStr("job", "scraped-job")
+	resAttrs.PutStr("k8s_pod_name", "pod-b")
+	resAttrs.PutStr("k8s.pod.name", "pod-a")
+	resAttrs.PutStr("env", "res-env")
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName("my-scope")
+	sm.Scope().Attributes().PutStr("schema.url", "dropped")
+
+	metric := sm.Metrics().AppendEmpty()
+	metric.SetName("test_requests")
+	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetIntValue(5)
+
+	require.NoError(t, exp.ConsumeMetrics(t.Context(), md))
+
+	req := httptest.NewRequest(http.MethodGet, "/metrics", http.NoBody)
+	res := httptest.NewRecorder()
+	exp.(*wrapMetricsExporter).exporter.handler.ServeHTTP(res, req)
+	require.Equal(t, http.StatusOK, res.Code)
+
+	body := res.Body.String()
+	assert.Contains(t, body, `test_requests{const_only="kept",env="res-env",instance="localhost:8888",job="otel-collector",k8s_pod_name="pod-a;pod-b",otel_scope_name="my-scope",otel_scope_schema_url="",otel_scope_version="",service_instance_id="localhost:8888",service_name="otel-collector"} 5`)
+	assert.Contains(t, body, `target_info{env="res-env",instance="localhost:8888",job="otel-collector",k8s_pod_name="pod-a;pod-b"} 1`)
+}
+
 func TestPrometheusExporterDisableResourceToTelemetryConversion(t *testing.T) {
 	for _, tc := range []struct {
 		name        string

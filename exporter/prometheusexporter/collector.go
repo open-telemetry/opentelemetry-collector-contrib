@@ -4,9 +4,11 @@
 package prometheusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 
 import (
+	"cmp"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"sync"
 	"time"
@@ -45,6 +47,122 @@ type collector struct {
 type metricFamily struct {
 	lastSeen time.Time
 	mf       *dto.MetricFamily
+}
+
+type attrPair struct {
+	key   string
+	value string
+}
+
+type labelBuilder struct {
+	keys   []string
+	values []string
+	index  map[string]int
+}
+
+func newLabelBuilder(capacity int) labelBuilder {
+	return labelBuilder{
+		keys:   make([]string, 0, capacity),
+		values: make([]string, 0, capacity),
+		index:  make(map[string]int, capacity),
+	}
+}
+
+func (b *labelBuilder) set(key, value string) {
+	if idx, exists := b.index[key]; exists {
+		b.values[idx] = value
+		return
+	}
+	b.index[key] = len(b.keys)
+	b.keys = append(b.keys, key)
+	b.values = append(b.values, value)
+}
+
+// addMerged normalizes attrs in lexicographical order of original keys,
+// concatenating distinct values of colliding normalized labels with ";".
+// Distinct-value tracking is scoped to a single call, so callers should invoke
+// addMerged on a fresh or key-disjoint labelBuilder.
+func (b *labelBuilder) addMerged(
+	attrs pcommon.Map,
+	labelNamer otlptranslator.LabelNamer,
+	prefix string,
+	skipRaw, skipNormalized func(string) bool,
+) error {
+	if attrs.Len() == 0 {
+		return nil
+	}
+
+	pairs := make([]attrPair, 0, attrs.Len())
+	for k, v := range attrs.All() {
+		if skipRaw != nil && skipRaw(k) {
+			continue
+		}
+		pairs = append(pairs, attrPair{key: k, value: v.AsString()})
+	}
+	if len(pairs) > 1 {
+		slices.SortStableFunc(pairs, func(a, b attrPair) int {
+			return cmp.Compare(a.key, b.key)
+		})
+	}
+
+	var multiErrs error
+	var seenValues map[string][]string
+	for _, p := range pairs {
+		rawKey := p.key
+		if prefix != "" {
+			rawKey = prefix + rawKey
+		}
+		labelName, err := labelNamer.Build(rawKey)
+		if err != nil {
+			multiErrs = multierr.Append(multiErrs, err)
+			continue
+		}
+		if skipNormalized != nil && skipNormalized(labelName) {
+			continue
+		}
+		idx, exists := b.index[labelName]
+		if !exists {
+			b.index[labelName] = len(b.keys)
+			b.keys = append(b.keys, labelName)
+			b.values = append(b.values, p.value)
+			continue
+		}
+		existing := b.values[idx]
+		if seen, hasSeen := seenValues[labelName]; hasSeen {
+			if slices.Contains(seen, p.value) {
+				continue
+			}
+			seenValues[labelName] = append(seen, p.value)
+		} else {
+			if existing == p.value {
+				continue
+			}
+			if seenValues == nil {
+				seenValues = make(map[string][]string)
+			}
+			seenValues[labelName] = []string{existing, p.value}
+		}
+		b.values[idx] = existing + ";" + p.value
+	}
+	return multiErrs
+}
+
+func filterConstLabels(constLabels prometheus.Labels, variableLabels map[string]int) prometheus.Labels {
+	if len(constLabels) == 0 || len(variableLabels) == 0 {
+		return constLabels
+	}
+	for k := range constLabels {
+		if _, exists := variableLabels[k]; exists {
+			filtered := make(prometheus.Labels, len(constLabels)-1)
+			for ck, cv := range constLabels {
+				if _, dup := variableLabels[ck]; !dup {
+					filtered[ck] = cv
+				}
+			}
+			return filtered
+		}
+	}
+	return constLabels
 }
 
 func newCollector(config *Config, logger *zap.Logger) *collector {
@@ -275,8 +393,15 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 		return nil, nil, err
 	}
 
-	keys := make([]string, 0, attributes.Len()+scopeAttributes.Len()+5) // +2 for job and instance labels, +3 for scope name, version and schema url
-	values := make([]string, 0, attributes.Len()+scopeAttributes.Len()+5)
+	capacity := attributes.Len() + 2 // +2 for job and instance labels
+	if !c.withoutScopeInfo {
+		capacity += scopeAttributes.Len() + 3 // +3 for scope name, version and schema url
+	}
+
+	// Fast path: stream labels directly into slices and rely on prometheus.NewDesc's
+	// duplicate label check to detect collisions without extra allocations or sorting.
+	keys := make([]string, 0, capacity)
+	values := make([]string, 0, capacity)
 
 	var multiErrs error
 	for k, v := range attributes.All() {
@@ -291,24 +416,20 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 
 	if !c.withoutScopeInfo {
 		for k, v := range scopeAttributes.All() {
-			if isReservedScopeAttribute(k) {
-				continue
-			}
 			labelName, err := c.labelNamer.Build("otel_scope_" + k)
 			if err != nil {
 				multiErrs = multierr.Append(multiErrs, err)
+				continue
+			}
+			if isReservedScopeLabel(labelName) {
 				continue
 			}
 			keys = append(keys, labelName)
 			values = append(values, v.AsString())
 		}
 
-		keys = append(keys, "otel_scope_name")
-		values = append(values, scopeName)
-		keys = append(keys, "otel_scope_version")
-		values = append(values, scopeVersion)
-		keys = append(keys, "otel_scope_schema_url")
-		values = append(values, scopeSchemaURL)
+		keys = append(keys, "otel_scope_name", "otel_scope_version", "otel_scope_schema_url")
+		values = append(values, scopeName, scopeVersion, scopeSchemaURL)
 	}
 
 	if job, ok := extractJob(resourceAttrs); ok {
@@ -322,12 +443,68 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 	if multiErrs != nil {
 		return nil, nil, multiErrs
 	}
-	return prometheus.NewDesc(name, help, keys, c.constLabels), values, nil
+
+	desc := prometheus.NewDesc(name, help, keys, c.constLabels)
+	if desc.Err() == nil {
+		return desc, values, nil
+	}
+
+	return c.buildDeduplicatedDesc(name, help, capacity, attributes, resourceAttrs, scopeName, scopeVersion, scopeSchemaURL, scopeAttributes)
 }
 
-func isReservedScopeAttribute(k string) bool {
+func (c *collector) buildDeduplicatedDesc(
+	name, help string,
+	capacity int,
+	attributes, resourceAttrs pcommon.Map,
+	scopeName, scopeVersion, scopeSchemaURL string,
+	scopeAttributes pcommon.Map,
+) (*prometheus.Desc, []string, error) {
+	labels := newLabelBuilder(capacity)
+
+	var multiErrs error
+	multiErrs = multierr.Append(multiErrs, labels.addMerged(attributes, c.labelNamer, "", nil, nil))
+
+	if !c.withoutScopeInfo {
+		if scopeAttributes.Len() > 0 {
+			// Merge scope attributes separately so they concatenate intra-source
+			// and overwrite colliding datapoint labels via labels.set.
+			scopeLabels := newLabelBuilder(scopeAttributes.Len())
+			multiErrs = multierr.Append(multiErrs, scopeLabels.addMerged(scopeAttributes, c.labelNamer, "otel_scope_", nil, isReservedScopeLabel))
+			for i, k := range scopeLabels.keys {
+				labels.set(k, scopeLabels.values[i])
+			}
+		}
+
+		labels.set("otel_scope_name", scopeName)
+		labels.set("otel_scope_version", scopeVersion)
+		labels.set("otel_scope_schema_url", scopeSchemaURL)
+	}
+
+	if job, ok := extractJob(resourceAttrs); ok {
+		labels.set(model.JobLabel, job)
+	}
+	if instance, ok := extractInstance(resourceAttrs); ok {
+		labels.set(model.InstanceLabel, instance)
+	}
+	if multiErrs != nil {
+		return nil, nil, multiErrs
+	}
+	constLabels := filterConstLabels(c.constLabels, labels.index)
+	return prometheus.NewDesc(name, help, labels.keys, constLabels), labels.values, nil
+}
+
+func isReservedScopeLabel(labelName string) bool {
+	switch labelName {
+	case "otel_scope_name", "otel_scope_version", "otel_scope_schema_url":
+		return true
+	default:
+		return false
+	}
+}
+
+func isIdentifyingResourceAttribute(k string) bool {
 	switch k {
-	case "name", "version", "schema_url":
+	case string(conventions.ServiceNameKey), string(conventions.ServiceNamespaceKey), string(conventions.ServiceInstanceIDKey):
 		return true
 	default:
 		return false
@@ -521,50 +698,25 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 		}
 	}
 
+	var skipRaw func(string) bool
+	if !prometheustranslator.KeepIdentifyingResourceAttributesGate.IsEnabled() {
+		skipRaw = isIdentifyingResourceAttribute
+	}
+
 	metrics := make([]prometheus.Metric, 0, len(deduplicatedResourceAttrs))
 	for _, rAttributes := range deduplicatedResourceAttrs {
-		// map ensures no duplicate label name
-		labels := make(map[string]string, rAttributes.Len()+2) // +2 for job and instance labels.
-
-		// Use resource attributes as labels for the target info metric.
-		attributes := pcommon.NewMap()
-		rAttributes.CopyTo(attributes)
-		if !prometheustranslator.KeepIdentifyingResourceAttributesGate.IsEnabled() {
-			attributes.RemoveIf(func(k string, _ pcommon.Value) bool {
-				switch k {
-				case string(conventions.ServiceNameKey), string(conventions.ServiceNamespaceKey), string(conventions.ServiceInstanceIDKey):
-					// Remove resource attributes used for job + instance
-					return true
-				default:
-					return false
-				}
-			})
-		}
-
-		var multiErrs error
-		for k, v := range attributes.All() {
-			finalKey, err := c.labelNamer.Build(k)
-			if err != nil {
-				multiErrs = multierr.Append(multiErrs, err)
-				continue
-			}
-			if existingVal, ok := labels[finalKey]; ok {
-				labels[finalKey] = existingVal + ";" + v.AsString()
-			} else {
-				labels[finalKey] = v.AsString()
-			}
-		}
-		if multiErrs != nil {
-			return nil, multiErrs
+		labels := newLabelBuilder(rAttributes.Len() + 2) // +2 for job and instance labels.
+		if err := labels.addMerged(rAttributes, c.labelNamer, "", skipRaw, nil); err != nil {
+			return nil, err
 		}
 
 		// Map service.name + service.namespace to job
 		if job, ok := extractJob(rAttributes); ok {
-			labels[model.JobLabel] = job
+			labels.set(model.JobLabel, job)
 		}
 		// Map service.instance.id to instance
 		if instance, ok := extractInstance(rAttributes); ok {
-			labels[model.InstanceLabel] = instance
+			labels.set(model.InstanceLabel, instance)
 		}
 
 		name := prometheustranslator.TargetInfoMetricName
@@ -572,18 +724,11 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 			name = c.namespace + "_" + name
 		}
 
-		keys := make([]string, 0, len(labels))
-		values := make([]string, 0, len(labels))
-		for key, value := range labels {
-			keys = append(keys, key)
-			values = append(values, value)
-		}
-
 		metric, err := prometheus.NewConstMetric(
-			prometheus.NewDesc(name, "Target metadata", keys, nil),
+			prometheus.NewDesc(name, "Target metadata", labels.keys, nil),
 			prometheus.GaugeValue,
 			1,
-			values...,
+			labels.values...,
 		)
 		if err != nil {
 			lastErr = err
