@@ -68,6 +68,10 @@ func newPrometheusConverterV2(settings Settings) *prometheusConverterV2 {
 // fromMetrics converts pmetric.Metrics to Prometheus remote write format.
 func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Settings) (errs error) {
 	resourceMetricsSlice := md.ResourceMetrics()
+	var targetInfoCandidates []targetInfoCandidate
+	if !settings.DisableTargetInfo && resourceMetricsSlice.Len() > 1 {
+		targetInfoCandidates = make([]targetInfoCandidate, 0, resourceMetricsSlice.Len())
+	}
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		resourceMetrics := resourceMetricsSlice.At(i)
 		resource := resourceMetrics.Resource()
@@ -83,7 +87,6 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 			// TODO: decide if instrumentation library information should be exported as labels
 			for k := 0; k < metricSlice.Len(); k++ {
 				metric := metricSlice.At(k)
-				mostRecentTimestamp = max(mostRecentTimestamp, mostRecentTimestampInMetric(metric))
 
 				if !isValidAggregationTemporality(metric) {
 					errs = multierr.Append(errs, fmt.Errorf("invalid temporality and type combination for metric %q", metric.Name()))
@@ -95,6 +98,8 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					errs = multierr.Append(errs, err)
 					continue
 				}
+
+				mostRecentTimestamp = max(mostRecentTimestamp, mostRecentTimestampInMetric(metric))
 
 				// Initialize metadata
 				m := metadata{
@@ -147,7 +152,19 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 				}
 			}
 		}
-		errs = multierr.Append(errs, c.addResourceTargetInfoV2(resource, settings, mostRecentTimestamp))
+		if !settings.DisableTargetInfo && mostRecentTimestamp != 0 {
+			if resourceMetricsSlice.Len() == 1 {
+				errs = multierr.Append(errs, c.addResourceTargetInfoV2(resource, settings, mostRecentTimestamp))
+			} else {
+				targetInfoCandidates = append(targetInfoCandidates, targetInfoCandidate{
+					resource:  resource,
+					timestamp: mostRecentTimestamp,
+				})
+			}
+		}
+	}
+	for _, cand := range selectTargetInfoResources(targetInfoCandidates, settings) {
+		errs = multierr.Append(errs, c.addResourceTargetInfoV2(cand.resource, settings, cand.timestamp))
 	}
 
 	return errs

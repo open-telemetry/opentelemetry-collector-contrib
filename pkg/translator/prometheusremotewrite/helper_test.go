@@ -1010,6 +1010,298 @@ func TestTargetInfoIdentifyingResourceAttributes(t *testing.T) {
 	}
 }
 
+func TestTargetInfoConflictResolution(t *testing.T) {
+	appendRM := func(md pmetric.Metrics, job, instance, env, metricName string, ts pcommon.Timestamp) {
+		rm := md.ResourceMetrics().AppendEmpty()
+		attrs := rm.Resource().Attributes()
+		attrs.PutStr("service.name", job)
+		attrs.PutStr("service.instance.id", instance)
+		if env != "" {
+			attrs.PutStr("deployment.environment.name", env)
+		}
+		m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m.SetName(metricName)
+		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp.SetDoubleValue(1)
+		dp.SetTimestamp(ts)
+	}
+
+	tsOld := pcommon.Timestamp(1_000_000_000)
+	tsNew := pcommon.Timestamp(2_000_000_000)
+
+	tests := []struct {
+		name              string
+		build             func() pmetric.Metrics
+		wantEnv           string
+		wantTimestampMs   int64
+		wantTargetInfoCnt int
+	}{
+		{
+			name: "second resource has newer timestamp",
+			build: func() pmetric.Metrics {
+				md := pmetric.NewMetrics()
+				appendRM(md, "api", "replica-1", "staging", "metric_a", tsOld)
+				appendRM(md, "api", "replica-1", "prod", "metric_b", tsNew)
+				return md
+			},
+			wantEnv:           "prod",
+			wantTimestampMs:   convertTimeStamp(tsNew),
+			wantTargetInfoCnt: 1,
+		},
+		{
+			name: "first resource has newer timestamp",
+			build: func() pmetric.Metrics {
+				md := pmetric.NewMetrics()
+				appendRM(md, "api", "replica-1", "prod", "metric_a", tsNew)
+				appendRM(md, "api", "replica-1", "staging", "metric_b", tsOld)
+				return md
+			},
+			wantEnv:           "prod",
+			wantTimestampMs:   convertTimeStamp(tsNew),
+			wantTargetInfoCnt: 1,
+		},
+		{
+			name: "equal timestamps keeps last-seen resource",
+			build: func() pmetric.Metrics {
+				md := pmetric.NewMetrics()
+				appendRM(md, "api", "replica-1", "first", "metric_a", tsOld)
+				appendRM(md, "api", "replica-1", "second", "metric_b", tsOld)
+				return md
+			},
+			wantEnv:           "second",
+			wantTimestampMs:   convertTimeStamp(tsOld),
+			wantTargetInfoCnt: 1,
+		},
+		{
+			name: "identical resource attributes exports single target_info sample with latest timestamp",
+			build: func() pmetric.Metrics {
+				md := pmetric.NewMetrics()
+				appendRM(md, "api", "replica-1", "prod", "metric_a", tsNew)
+				appendRM(md, "api", "replica-1", "prod", "metric_b", tsOld)
+				return md
+			},
+			wantEnv:           "prod",
+			wantTimestampMs:   convertTimeStamp(tsNew),
+			wantTargetInfoCnt: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := tt.build()
+
+			v1, err := FromMetrics(md, Settings{})
+			require.NoError(t, err)
+
+			var v1Targets []*prompb.TimeSeries
+			for _, ts := range v1 {
+				for _, l := range ts.Labels {
+					if l.Name == model.MetricNameLabel && l.Value == "target_info" {
+						v1Targets = append(v1Targets, ts)
+					}
+				}
+			}
+			require.Len(t, v1Targets, tt.wantTargetInfoCnt)
+			require.Len(t, v1Targets[0].Samples, 1)
+			require.Equal(t, tt.wantTimestampMs, v1Targets[0].Samples[0].Timestamp)
+			v1Labels := map[string]string{}
+			for _, l := range v1Targets[0].Labels {
+				v1Labels[l.Name] = l.Value
+			}
+			require.Equal(t, map[string]string{
+				"__name__":                    "target_info",
+				"job":                         "api",
+				"instance":                    "replica-1",
+				"deployment_environment_name": tt.wantEnv,
+			}, v1Labels)
+
+			v2, table, err := FromMetricsV2(md, Settings{})
+			require.NoError(t, err)
+			symbols := table.Symbols()
+
+			var v2Targets []*writev2.TimeSeries
+			var v2Labels map[string]string
+			for _, ts := range v2 {
+				labels := map[string]string{}
+				for i := 0; i < len(ts.LabelsRefs); i += 2 {
+					labels[symbols[ts.LabelsRefs[i]]] = symbols[ts.LabelsRefs[i+1]]
+				}
+				if labels[model.MetricNameLabel] == "target_info" {
+					v2Targets = append(v2Targets, ts)
+					v2Labels = labels
+				}
+			}
+			require.Len(t, v2Targets, tt.wantTargetInfoCnt)
+			require.Len(t, v2Targets[0].Samples, 1)
+			require.Equal(t, tt.wantTimestampMs, v2Targets[0].Samples[0].Timestamp)
+			require.Equal(t, map[string]string{
+				"__name__":                    "target_info",
+				"job":                         "api",
+				"instance":                    "replica-1",
+				"deployment_environment_name": tt.wantEnv,
+			}, v2Labels)
+		})
+	}
+
+	collectTargets := func(t *testing.T, md pmetric.Metrics, settings Settings, expectErr bool) ([]map[string]string, []map[string]string) {
+		t.Helper()
+		v1, err := FromMetrics(md, settings)
+		if expectErr {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+		}
+		var v1Out []map[string]string
+		for _, ts := range v1 {
+			labels := map[string]string{}
+			for _, l := range ts.Labels {
+				labels[l.Name] = l.Value
+			}
+			if labels[model.MetricNameLabel] == "target_info" {
+				v1Out = append(v1Out, labels)
+			}
+		}
+
+		v2, table, err := FromMetricsV2(md, settings)
+		if expectErr {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+		}
+		symbols := table.Symbols()
+		var v2Out []map[string]string
+		for _, ts := range v2 {
+			labels := map[string]string{}
+			for i := 0; i < len(ts.LabelsRefs); i += 2 {
+				labels[symbols[ts.LabelsRefs[i]]] = symbols[ts.LabelsRefs[i+1]]
+			}
+			if labels[model.MetricNameLabel] == "target_info" {
+				v2Out = append(v2Out, labels)
+			}
+		}
+		return v1Out, v2Out
+	}
+
+	t.Run("service.namespace composes job and deduplicates matching job/instance", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		appendRM(md, "api", "replica-1", "old", "metric_a", tsOld)
+		md.ResourceMetrics().At(0).Resource().Attributes().PutStr("service.namespace", "shop")
+		appendRM(md, "api", "replica-1", "new", "metric_b", tsNew)
+		md.ResourceMetrics().At(1).Resource().Attributes().PutStr("service.namespace", "shop")
+
+		want := []map[string]string{{
+			"__name__":                    "target_info",
+			"job":                         "shop/api",
+			"instance":                    "replica-1",
+			"deployment_environment_name": "new",
+		}}
+		v1, v2 := collectTargets(t, md, Settings{}, false)
+		require.Equal(t, want, v1)
+		require.Equal(t, want, v2)
+	})
+
+	t.Run("raw job/instance resource attributes and ExternalLabels fallbacks", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		for _, tc := range []struct {
+			env    string
+			metric string
+			ts     pcommon.Timestamp
+		}{
+			{env: "old", metric: "metric_a", ts: tsOld},
+			{env: "new", metric: "metric_b", ts: tsNew},
+		} {
+			rm := md.ResourceMetrics().AppendEmpty()
+			rm.Resource().Attributes().PutStr("job", "raw-job")
+			rm.Resource().Attributes().PutStr("deployment.environment.name", tc.env)
+			m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+			m.SetName(tc.metric)
+			dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+			dp.SetDoubleValue(1)
+			dp.SetTimestamp(tc.ts)
+		}
+
+		settings := Settings{ExternalLabels: map[string]string{"instance": "ext-inst"}}
+		want := []map[string]string{{
+			"__name__":                    "target_info",
+			"job":                         "raw-job",
+			"instance":                    "ext-inst",
+			"deployment_environment_name": "new",
+		}}
+		v1, v2 := collectTargets(t, md, settings, false)
+		require.Equal(t, want, v1)
+		require.Equal(t, want, v2)
+	})
+
+	t.Run("partial identifier (job-only) deduplicates and distinct targets are preserved", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		rm1 := md.ResourceMetrics().AppendEmpty()
+		rm1.Resource().Attributes().PutStr("service.name", "api")
+		rm1.Resource().Attributes().PutStr("deployment.environment.name", "old")
+		m1 := rm1.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m1.SetName("metric_a")
+		dp1 := m1.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp1.SetDoubleValue(1)
+		dp1.SetTimestamp(tsOld)
+
+		rm2 := md.ResourceMetrics().AppendEmpty()
+		rm2.Resource().Attributes().PutStr("service.name", "api")
+		rm2.Resource().Attributes().PutStr("deployment.environment.name", "new")
+		m2 := rm2.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m2.SetName("metric_b")
+		dp2 := m2.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp2.SetDoubleValue(1)
+		dp2.SetTimestamp(tsNew)
+
+		appendRM(md, "worker", "replica-2", "prod", "metric_c", tsOld)
+
+		want := []map[string]string{
+			{
+				"__name__":                    "target_info",
+				"job":                         "api",
+				"deployment_environment_name": "new",
+			},
+			{
+				"__name__":                    "target_info",
+				"job":                         "worker",
+				"instance":                    "replica-2",
+				"deployment_environment_name": "prod",
+			},
+		}
+		v1, v2 := collectTargets(t, md, Settings{}, false)
+		require.ElementsMatch(t, want, v1)
+		require.ElementsMatch(t, want, v2)
+	})
+
+	t.Run("rejected metric with higher timestamp does not hijack target_info", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		appendRM(md, "api", "replica-1", "valid-env", "metric_a", tsOld)
+
+		// Second resource has only a Delta Sum (invalid temporality for PRW) with newer timestamp.
+		badRM := md.ResourceMetrics().AppendEmpty()
+		badRM.Resource().Attributes().PutStr("service.name", "api")
+		badRM.Resource().Attributes().PutStr("service.instance.id", "replica-1")
+		badRM.Resource().Attributes().PutStr("deployment.environment.name", "rejected-env")
+		bm := badRM.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		bm.SetName("delta_sum")
+		sum := bm.SetEmptySum()
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		sum.SetIsMonotonic(true)
+		dp := sum.DataPoints().AppendEmpty()
+		dp.SetDoubleValue(1)
+		dp.SetTimestamp(tsNew)
+
+		want := []map[string]string{{
+			"__name__":                    "target_info",
+			"job":                         "api",
+			"instance":                    "replica-1",
+			"deployment_environment_name": "valid-env",
+		}}
+		v1, v2 := collectTargets(t, md, Settings{}, true)
+		require.Equal(t, want, v1)
+		require.Equal(t, want, v2)
+	})
+}
+
 func TestMostRecentTimestampInMetric(t *testing.T) {
 	laterTimestamp := pcommon.NewTimestampFromTime(testdata.TestMetricTime.Add(1 * time.Minute))
 	metricMultipleTimestamps := testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
