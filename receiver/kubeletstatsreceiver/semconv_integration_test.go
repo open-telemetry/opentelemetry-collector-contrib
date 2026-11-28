@@ -44,10 +44,19 @@ var semconvCompliantMetrics = []string{
 // release_candidate (or stable) definition only when the
 // receiver.kubelet_stats.EmitV1K8sConventions feature gate is enabled.
 var semconvV1CompliantMetrics = []string{
+	"container.filesystem.available",
+	"container.filesystem.capacity",
+	"container.filesystem.usage",
 	"container.memory.available",
 	"container.memory.rss",
 	"container.memory.usage",
 	"container.memory.working_set",
+	"k8s.node.filesystem.available",
+	"k8s.node.filesystem.capacity",
+	"k8s.node.filesystem.usage",
+	"k8s.pod.filesystem.available",
+	"k8s.pod.filesystem.capacity",
+	"k8s.pod.filesystem.usage",
 }
 
 // TestSemconvCompliance checks the container, pod and node metrics, and the

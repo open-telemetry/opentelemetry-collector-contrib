@@ -69,6 +69,26 @@ func (ms *ContainerFilesystemAvailableMetricConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
+// ContainerFilesystemAvailableV1MetricConfig provides config for the container.filesystem.available@v1 metric.
+type ContainerFilesystemAvailableV1MetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerFilesystemAvailableV1MetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // ContainerFilesystemCapacityMetricConfig provides config for the container.filesystem.capacity metric.
 type ContainerFilesystemCapacityMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -89,6 +109,26 @@ func (ms *ContainerFilesystemCapacityMetricConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
+// ContainerFilesystemCapacityV1MetricConfig provides config for the container.filesystem.capacity@v1 metric.
+type ContainerFilesystemCapacityV1MetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerFilesystemCapacityV1MetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // ContainerFilesystemUsageMetricConfig provides config for the container.filesystem.usage metric.
 type ContainerFilesystemUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -96,6 +136,26 @@ type ContainerFilesystemUsageMetricConfig struct {
 }
 
 func (ms *ContainerFilesystemUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ContainerFilesystemUsageV1MetricConfig provides config for the container.filesystem.usage@v1 metric.
+type ContainerFilesystemUsageV1MetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerFilesystemUsageV1MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -557,6 +617,26 @@ func (ms *K8sNodeFilesystemAvailableMetricConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
+// K8sNodeFilesystemAvailableV1MetricConfig provides config for the k8s.node.filesystem.available@v1 metric.
+type K8sNodeFilesystemAvailableV1MetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sNodeFilesystemAvailableV1MetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // K8sNodeFilesystemCapacityMetricConfig provides config for the k8s.node.filesystem.capacity metric.
 type K8sNodeFilesystemCapacityMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -564,6 +644,26 @@ type K8sNodeFilesystemCapacityMetricConfig struct {
 }
 
 func (ms *K8sNodeFilesystemCapacityMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sNodeFilesystemCapacityV1MetricConfig provides config for the k8s.node.filesystem.capacity@v1 metric.
+type K8sNodeFilesystemCapacityV1MetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sNodeFilesystemCapacityV1MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -624,6 +724,26 @@ type K8sNodeFilesystemUsageMetricConfig struct {
 }
 
 func (ms *K8sNodeFilesystemUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sNodeFilesystemUsageV1MetricConfig provides config for the k8s.node.filesystem.usage@v1 metric.
+type K8sNodeFilesystemUsageV1MetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sNodeFilesystemUsageV1MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1115,6 +1235,26 @@ func (ms *K8sPodFilesystemAvailableMetricConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
+// K8sPodFilesystemAvailableV1MetricConfig provides config for the k8s.pod.filesystem.available@v1 metric.
+type K8sPodFilesystemAvailableV1MetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sPodFilesystemAvailableV1MetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // K8sPodFilesystemCapacityMetricConfig provides config for the k8s.pod.filesystem.capacity metric.
 type K8sPodFilesystemCapacityMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1135,6 +1275,26 @@ func (ms *K8sPodFilesystemCapacityMetricConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
+// K8sPodFilesystemCapacityV1MetricConfig provides config for the k8s.pod.filesystem.capacity@v1 metric.
+type K8sPodFilesystemCapacityV1MetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sPodFilesystemCapacityV1MetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // K8sPodFilesystemUsageMetricConfig provides config for the k8s.pod.filesystem.usage metric.
 type K8sPodFilesystemUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1142,6 +1302,26 @@ type K8sPodFilesystemUsageMetricConfig struct {
 }
 
 func (ms *K8sPodFilesystemUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// K8sPodFilesystemUsageV1MetricConfig provides config for the k8s.pod.filesystem.usage@v1 metric.
+type K8sPodFilesystemUsageV1MetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *K8sPodFilesystemUsageV1MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1578,8 +1758,11 @@ type MetricsConfig struct {
 	ContainerCPUTime                       ContainerCPUTimeMetricConfig                       `mapstructure:"container.cpu.time"`
 	ContainerCPUUsage                      ContainerCPUUsageMetricConfig                      `mapstructure:"container.cpu.usage"`
 	ContainerFilesystemAvailable           ContainerFilesystemAvailableMetricConfig           `mapstructure:"container.filesystem.available"`
+	ContainerFilesystemAvailableV1         ContainerFilesystemAvailableV1MetricConfig         `mapstructure:"container.filesystem.available@v1"`
 	ContainerFilesystemCapacity            ContainerFilesystemCapacityMetricConfig            `mapstructure:"container.filesystem.capacity"`
+	ContainerFilesystemCapacityV1          ContainerFilesystemCapacityV1MetricConfig          `mapstructure:"container.filesystem.capacity@v1"`
 	ContainerFilesystemUsage               ContainerFilesystemUsageMetricConfig               `mapstructure:"container.filesystem.usage"`
+	ContainerFilesystemUsageV1             ContainerFilesystemUsageV1MetricConfig             `mapstructure:"container.filesystem.usage@v1"`
 	ContainerMemoryAvailable               ContainerMemoryAvailableMetricConfig               `mapstructure:"container.memory.available"`
 	ContainerMemoryAvailableV1             ContainerMemoryAvailableV1MetricConfig             `mapstructure:"container.memory.available@v1"`
 	ContainerMemoryMajorPageFaults         ContainerMemoryMajorPageFaultsMetricConfig         `mapstructure:"container.memory.major_page_faults"`
@@ -1601,10 +1784,13 @@ type MetricsConfig struct {
 	K8sNodeCPUTime                         K8sNodeCPUTimeMetricConfig                         `mapstructure:"k8s.node.cpu.time"`
 	K8sNodeCPUUsage                        K8sNodeCPUUsageMetricConfig                        `mapstructure:"k8s.node.cpu.usage"`
 	K8sNodeFilesystemAvailable             K8sNodeFilesystemAvailableMetricConfig             `mapstructure:"k8s.node.filesystem.available"`
+	K8sNodeFilesystemAvailableV1           K8sNodeFilesystemAvailableV1MetricConfig           `mapstructure:"k8s.node.filesystem.available@v1"`
 	K8sNodeFilesystemCapacity              K8sNodeFilesystemCapacityMetricConfig              `mapstructure:"k8s.node.filesystem.capacity"`
+	K8sNodeFilesystemCapacityV1            K8sNodeFilesystemCapacityV1MetricConfig            `mapstructure:"k8s.node.filesystem.capacity@v1"`
 	K8sNodeFilesystemInodeCount            K8sNodeFilesystemInodeCountMetricConfig            `mapstructure:"k8s.node.filesystem.inode.count"`
 	K8sNodeFilesystemInodeFree             K8sNodeFilesystemInodeFreeMetricConfig             `mapstructure:"k8s.node.filesystem.inode.free"`
 	K8sNodeFilesystemUsage                 K8sNodeFilesystemUsageMetricConfig                 `mapstructure:"k8s.node.filesystem.usage"`
+	K8sNodeFilesystemUsageV1               K8sNodeFilesystemUsageV1MetricConfig               `mapstructure:"k8s.node.filesystem.usage@v1"`
 	K8sNodeMemoryAvailable                 K8sNodeMemoryAvailableMetricConfig                 `mapstructure:"k8s.node.memory.available"`
 	K8sNodeMemoryMajorPageFaults           K8sNodeMemoryMajorPageFaultsMetricConfig           `mapstructure:"k8s.node.memory.major_page_faults"`
 	K8sNodeMemoryPageFaults                K8sNodeMemoryPageFaultsMetricConfig                `mapstructure:"k8s.node.memory.page_faults"`
@@ -1626,8 +1812,11 @@ type MetricsConfig struct {
 	K8sPodCPULimitUtilization              K8sPodCPULimitUtilizationMetricConfig              `mapstructure:"k8s.pod.cpu_limit_utilization"`
 	K8sPodCPURequestUtilization            K8sPodCPURequestUtilizationMetricConfig            `mapstructure:"k8s.pod.cpu_request_utilization"`
 	K8sPodFilesystemAvailable              K8sPodFilesystemAvailableMetricConfig              `mapstructure:"k8s.pod.filesystem.available"`
+	K8sPodFilesystemAvailableV1            K8sPodFilesystemAvailableV1MetricConfig            `mapstructure:"k8s.pod.filesystem.available@v1"`
 	K8sPodFilesystemCapacity               K8sPodFilesystemCapacityMetricConfig               `mapstructure:"k8s.pod.filesystem.capacity"`
+	K8sPodFilesystemCapacityV1             K8sPodFilesystemCapacityV1MetricConfig             `mapstructure:"k8s.pod.filesystem.capacity@v1"`
 	K8sPodFilesystemUsage                  K8sPodFilesystemUsageMetricConfig                  `mapstructure:"k8s.pod.filesystem.usage"`
+	K8sPodFilesystemUsageV1                K8sPodFilesystemUsageV1MetricConfig                `mapstructure:"k8s.pod.filesystem.usage@v1"`
 	K8sPodMemoryAvailable                  K8sPodMemoryAvailableMetricConfig                  `mapstructure:"k8s.pod.memory.available"`
 	K8sPodMemoryMajorPageFaults            K8sPodMemoryMajorPageFaultsMetricConfig            `mapstructure:"k8s.pod.memory.major_page_faults"`
 	K8sPodMemoryNodeUtilization            K8sPodMemoryNodeUtilizationMetricConfig            `mapstructure:"k8s.pod.memory.node.utilization"`
@@ -1659,11 +1848,20 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerFilesystemAvailable: ContainerFilesystemAvailableMetricConfig{
 			Enabled: true,
 		},
+		ContainerFilesystemAvailableV1: ContainerFilesystemAvailableV1MetricConfig{
+			Enabled: false,
+		},
 		ContainerFilesystemCapacity: ContainerFilesystemCapacityMetricConfig{
 			Enabled: true,
 		},
+		ContainerFilesystemCapacityV1: ContainerFilesystemCapacityV1MetricConfig{
+			Enabled: false,
+		},
 		ContainerFilesystemUsage: ContainerFilesystemUsageMetricConfig{
 			Enabled: true,
+		},
+		ContainerFilesystemUsageV1: ContainerFilesystemUsageV1MetricConfig{
+			Enabled: false,
 		},
 		ContainerMemoryAvailable: ContainerMemoryAvailableMetricConfig{
 			Enabled: true,
@@ -1730,8 +1928,14 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sNodeFilesystemAvailable: K8sNodeFilesystemAvailableMetricConfig{
 			Enabled: true,
 		},
+		K8sNodeFilesystemAvailableV1: K8sNodeFilesystemAvailableV1MetricConfig{
+			Enabled: false,
+		},
 		K8sNodeFilesystemCapacity: K8sNodeFilesystemCapacityMetricConfig{
 			Enabled: true,
+		},
+		K8sNodeFilesystemCapacityV1: K8sNodeFilesystemCapacityV1MetricConfig{
+			Enabled: false,
 		},
 		K8sNodeFilesystemInodeCount: K8sNodeFilesystemInodeCountMetricConfig{
 			Enabled: false,
@@ -1741,6 +1945,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		K8sNodeFilesystemUsage: K8sNodeFilesystemUsageMetricConfig{
 			Enabled: true,
+		},
+		K8sNodeFilesystemUsageV1: K8sNodeFilesystemUsageV1MetricConfig{
+			Enabled: false,
 		},
 		K8sNodeMemoryAvailable: K8sNodeMemoryAvailableMetricConfig{
 			Enabled: true,
@@ -1809,11 +2016,20 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sPodFilesystemAvailable: K8sPodFilesystemAvailableMetricConfig{
 			Enabled: true,
 		},
+		K8sPodFilesystemAvailableV1: K8sPodFilesystemAvailableV1MetricConfig{
+			Enabled: false,
+		},
 		K8sPodFilesystemCapacity: K8sPodFilesystemCapacityMetricConfig{
 			Enabled: true,
 		},
+		K8sPodFilesystemCapacityV1: K8sPodFilesystemCapacityV1MetricConfig{
+			Enabled: false,
+		},
 		K8sPodFilesystemUsage: K8sPodFilesystemUsageMetricConfig{
 			Enabled: true,
+		},
+		K8sPodFilesystemUsageV1: K8sPodFilesystemUsageV1MetricConfig{
+			Enabled: false,
 		},
 		K8sPodMemoryAvailable: K8sPodMemoryAvailableMetricConfig{
 			Enabled: true,

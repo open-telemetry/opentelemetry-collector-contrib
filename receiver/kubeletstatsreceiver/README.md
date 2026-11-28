@@ -478,6 +478,9 @@ The metric names are unchanged. The breaking changes between the 2 schemas are t
 - `container.memory.rss`: Gauge -> non-monotonic cumulative Sum (UpDownCounter)
 - `container.memory.usage`: Gauge -> non-monotonic cumulative Sum (UpDownCounter)
 - `container.memory.working_set`: Gauge -> non-monotonic cumulative Sum (UpDownCounter)
+- `container.filesystem.{available,capacity,usage}`: Gauge -> non-monotonic cumulative Sum (UpDownCounter)
+- `k8s.node.filesystem.{available,capacity,usage}`: Gauge -> non-monotonic cumulative Sum (UpDownCounter)
+- `k8s.pod.filesystem.{available,capacity,usage}`: Gauge -> non-monotonic cumulative Sum (UpDownCounter)
 
 The list of migrated metrics will grow as more metrics reach release candidate status in the semantic conventions.
 

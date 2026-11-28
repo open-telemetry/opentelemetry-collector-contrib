@@ -7,9 +7,15 @@ all_set:
       enabled: true
     container.filesystem.available:
       enabled: true
+    container.filesystem.available@v1:
+      enabled: true
     container.filesystem.capacity:
       enabled: true
+    container.filesystem.capacity@v1:
+      enabled: true
     container.filesystem.usage:
+      enabled: true
+    container.filesystem.usage@v1:
       enabled: true
     container.memory.available:
       enabled: true
@@ -54,13 +60,19 @@ all_set:
       enabled: true
     k8s.node.filesystem.available:
       enabled: true
+    k8s.node.filesystem.available@v1:
+      enabled: true
     k8s.node.filesystem.capacity:
+      enabled: true
+    k8s.node.filesystem.capacity@v1:
       enabled: true
     k8s.node.filesystem.inode.count:
       enabled: true
     k8s.node.filesystem.inode.free:
       enabled: true
     k8s.node.filesystem.usage:
+      enabled: true
+    k8s.node.filesystem.usage@v1:
       enabled: true
     k8s.node.memory.available:
       enabled: true
@@ -106,9 +118,15 @@ all_set:
       enabled: true
     k8s.pod.filesystem.available:
       enabled: true
+    k8s.pod.filesystem.available@v1:
+      enabled: true
     k8s.pod.filesystem.capacity:
       enabled: true
+    k8s.pod.filesystem.capacity@v1:
+      enabled: true
     k8s.pod.filesystem.usage:
+      enabled: true
+    k8s.pod.filesystem.usage@v1:
       enabled: true
     k8s.pod.memory.available:
       enabled: true
@@ -177,9 +195,15 @@ reaggregate_set:
       enabled: true
     container.filesystem.available:
       enabled: true
+    container.filesystem.available@v1:
+      enabled: true
     container.filesystem.capacity:
       enabled: true
+    container.filesystem.capacity@v1:
+      enabled: true
     container.filesystem.usage:
+      enabled: true
+    container.filesystem.usage@v1:
       enabled: true
     container.memory.available:
       enabled: true
@@ -224,13 +248,19 @@ reaggregate_set:
       enabled: true
     k8s.node.filesystem.available:
       enabled: true
+    k8s.node.filesystem.available@v1:
+      enabled: true
     k8s.node.filesystem.capacity:
+      enabled: true
+    k8s.node.filesystem.capacity@v1:
       enabled: true
     k8s.node.filesystem.inode.count:
       enabled: true
     k8s.node.filesystem.inode.free:
       enabled: true
     k8s.node.filesystem.usage:
+      enabled: true
+    k8s.node.filesystem.usage@v1:
       enabled: true
     k8s.node.memory.available:
       enabled: true
@@ -276,9 +306,15 @@ reaggregate_set:
       enabled: true
     k8s.pod.filesystem.available:
       enabled: true
+    k8s.pod.filesystem.available@v1:
+      enabled: true
     k8s.pod.filesystem.capacity:
       enabled: true
+    k8s.pod.filesystem.capacity@v1:
+      enabled: true
     k8s.pod.filesystem.usage:
+      enabled: true
+    k8s.pod.filesystem.usage@v1:
       enabled: true
     k8s.pod.memory.available:
       enabled: true
@@ -347,9 +383,15 @@ none_set:
       enabled: false
     container.filesystem.available:
       enabled: false
+    container.filesystem.available@v1:
+      enabled: false
     container.filesystem.capacity:
       enabled: false
+    container.filesystem.capacity@v1:
+      enabled: false
     container.filesystem.usage:
+      enabled: false
+    container.filesystem.usage@v1:
       enabled: false
     container.memory.available:
       enabled: false
@@ -394,13 +436,19 @@ none_set:
       enabled: false
     k8s.node.filesystem.available:
       enabled: false
+    k8s.node.filesystem.available@v1:
+      enabled: false
     k8s.node.filesystem.capacity:
+      enabled: false
+    k8s.node.filesystem.capacity@v1:
       enabled: false
     k8s.node.filesystem.inode.count:
       enabled: false
     k8s.node.filesystem.inode.free:
       enabled: false
     k8s.node.filesystem.usage:
+      enabled: false
+    k8s.node.filesystem.usage@v1:
       enabled: false
     k8s.node.memory.available:
       enabled: false
@@ -446,9 +494,15 @@ none_set:
       enabled: false
     k8s.pod.filesystem.available:
       enabled: false
+    k8s.pod.filesystem.available@v1:
+      enabled: false
     k8s.pod.filesystem.capacity:
       enabled: false
+    k8s.pod.filesystem.capacity@v1:
+      enabled: false
     k8s.pod.filesystem.usage:
+      enabled: false
+    k8s.pod.filesystem.usage@v1:
       enabled: false
     k8s.pod.memory.available:
       enabled: false

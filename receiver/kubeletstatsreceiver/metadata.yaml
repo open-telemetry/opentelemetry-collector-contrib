@@ -103,6 +103,21 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+    migration:
+      to: container.filesystem.available@v1
+      through_gates:
+        disable_old: receiver.kubelet_stats.DontEmitV0K8sConventions
+        enable_new: receiver.kubelet_stats.EmitV1K8sConventions
+  container.filesystem.available@v1:
+    enabled: false
+    description: "Container filesystem available bytes."
+    unit: By
+    stability: beta
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: []
   container.filesystem.capacity:
     enabled: true
     description: "Container filesystem capacity"
@@ -111,6 +126,21 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+    migration:
+      to: container.filesystem.capacity@v1
+      through_gates:
+        disable_old: receiver.kubelet_stats.DontEmitV0K8sConventions
+        enable_new: receiver.kubelet_stats.EmitV1K8sConventions
+  container.filesystem.capacity@v1:
+    enabled: false
+    description: "Container filesystem capacity."
+    unit: By
+    stability: beta
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: []
   container.filesystem.usage:
     enabled: true
     description: "Container filesystem usage"
@@ -118,6 +148,21 @@ metrics:
     stability: development
     gauge:
       value_type: int
+    attributes: []
+    migration:
+      to: container.filesystem.usage@v1
+      through_gates:
+        disable_old: receiver.kubelet_stats.DontEmitV0K8sConventions
+        enable_new: receiver.kubelet_stats.EmitV1K8sConventions
+  container.filesystem.usage@v1:
+    enabled: false
+    description: "Container filesystem usage."
+    unit: By
+    stability: beta
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
     attributes: []
   container.memory.available:
     enabled: true
@@ -327,6 +372,21 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+    migration:
+      to: k8s.node.filesystem.available@v1
+      through_gates:
+        disable_old: receiver.kubelet_stats.DontEmitV0K8sConventions
+        enable_new: receiver.kubelet_stats.EmitV1K8sConventions
+  k8s.node.filesystem.available@v1:
+    enabled: false
+    description: "Node filesystem available bytes."
+    unit: By
+    stability: beta
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: []
   k8s.node.filesystem.capacity:
     enabled: true
     description: "Node filesystem capacity"
@@ -334,6 +394,21 @@ metrics:
     stability: development
     gauge:
       value_type: int
+    attributes: []
+    migration:
+      to: k8s.node.filesystem.capacity@v1
+      through_gates:
+        disable_old: receiver.kubelet_stats.DontEmitV0K8sConventions
+        enable_new: receiver.kubelet_stats.EmitV1K8sConventions
+  k8s.node.filesystem.capacity@v1:
+    enabled: false
+    description: "Node filesystem capacity."
+    unit: By
+    stability: beta
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
     attributes: []
   k8s.node.filesystem.inode.count:
     enabled: false
@@ -362,6 +437,21 @@ metrics:
     stability: development
     gauge:
       value_type: int
+    attributes: []
+    migration:
+      to: k8s.node.filesystem.usage@v1
+      through_gates:
+        disable_old: receiver.kubelet_stats.DontEmitV0K8sConventions
+        enable_new: receiver.kubelet_stats.EmitV1K8sConventions
+  k8s.node.filesystem.usage@v1:
+    enabled: false
+    description: "Node filesystem usage."
+    unit: By
+    stability: beta
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
     attributes: []
   k8s.node.memory.available:
     enabled: true
@@ -556,6 +646,21 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+    migration:
+      to: k8s.pod.filesystem.available@v1
+      through_gates:
+        disable_old: receiver.kubelet_stats.DontEmitV0K8sConventions
+        enable_new: receiver.kubelet_stats.EmitV1K8sConventions
+  k8s.pod.filesystem.available@v1:
+    enabled: false
+    description: "Pod filesystem available bytes."
+    unit: By
+    stability: beta
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: []
   k8s.pod.filesystem.capacity:
     enabled: true
     description: "Pod filesystem capacity"
@@ -564,6 +669,21 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+    migration:
+      to: k8s.pod.filesystem.capacity@v1
+      through_gates:
+        disable_old: receiver.kubelet_stats.DontEmitV0K8sConventions
+        enable_new: receiver.kubelet_stats.EmitV1K8sConventions
+  k8s.pod.filesystem.capacity@v1:
+    enabled: false
+    description: "Pod filesystem capacity."
+    unit: By
+    stability: beta
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: []
   k8s.pod.filesystem.usage:
     enabled: true
     description: "Pod filesystem usage"
@@ -571,6 +691,21 @@ metrics:
     stability: development
     gauge:
       value_type: int
+    attributes: []
+    migration:
+      to: k8s.pod.filesystem.usage@v1
+      through_gates:
+        disable_old: receiver.kubelet_stats.DontEmitV0K8sConventions
+        enable_new: receiver.kubelet_stats.EmitV1K8sConventions
+  k8s.pod.filesystem.usage@v1:
+    enabled: false
+    description: "Pod filesystem usage."
+    unit: By
+    stability: beta
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
     attributes: []
   k8s.pod.memory.available:
     enabled: true

@@ -7,7 +7,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -98,11 +97,20 @@ func TestScraper(t *testing.T) {
 }
 
 func TestScraperWithV1K8sConventions(t *testing.T) {
-	v1Metrics := []string{
-		"container.memory.available",
-		"container.memory.rss",
-		"container.memory.usage",
-		"container.memory.working_set",
+	v1MetricCounts := map[string]int{
+		"container.filesystem.available": numContainers,
+		"container.filesystem.capacity":  numContainers,
+		"container.filesystem.usage":     numContainers,
+		"container.memory.available":     numContainers,
+		"container.memory.rss":           numContainers,
+		"container.memory.usage":         numContainers,
+		"container.memory.working_set":   numContainers,
+		"k8s.node.filesystem.available":  numNodes,
+		"k8s.node.filesystem.capacity":   numNodes,
+		"k8s.node.filesystem.usage":      numNodes,
+		"k8s.pod.filesystem.available":   numPods,
+		"k8s.pod.filesystem.capacity":    numPods,
+		"k8s.pod.filesystem.usage":       numPods,
 	}
 	tests := []struct {
 		name     string
@@ -121,9 +129,7 @@ func TestScraperWithV1K8sConventions(t *testing.T) {
 				&fakeRestClient{},
 				receivertest.NewNopSettings(metadata.Type),
 				&scraperOptions{
-					metricGroupsToCollect: map[kubelet.MetricGroup]bool{
-						kubelet.ContainerMetricGroup: true,
-					},
+					metricGroupsToCollect: allMetricGroups,
 				},
 				metadata.NewDefaultMetricsBuilderConfig(),
 				"worker-42",
@@ -134,7 +140,7 @@ func TestScraperWithV1K8sConventions(t *testing.T) {
 			require.NoError(t, err)
 			// Legacy and v1 metrics share the same name, so only the v1 version is
 			// emitted and the number of data points stays the same.
-			require.Equal(t, numContainers*containerMetrics, md.DataPointCount())
+			require.Equal(t, dataLen, md.DataPointCount())
 
 			found := map[string]int{}
 			rms := md.ResourceMetrics()
@@ -144,19 +150,24 @@ func TestScraperWithV1K8sConventions(t *testing.T) {
 					ms := sms.At(j).Metrics()
 					for k := 0; k < ms.Len(); k++ {
 						m := ms.At(k)
-						if !slices.Contains(v1Metrics, m.Name()) {
+						if _, ok := v1MetricCounts[m.Name()]; !ok {
 							continue
 						}
 						found[m.Name()]++
+						require.Equal(t, "By", m.Unit(), m.Name())
 						require.Equal(t, pmetric.MetricTypeSum, m.Type(), m.Name())
 						require.False(t, m.Sum().IsMonotonic(), m.Name())
 						require.Equal(t, pmetric.AggregationTemporalityCumulative, m.Sum().AggregationTemporality(), m.Name())
 					}
 				}
 			}
-			for _, name := range v1Metrics {
-				require.Equal(t, numContainers, found[name], name)
-			}
+			require.Equal(t, v1MetricCounts, found)
+
+			// The v1 golden file contains the container resources.
+			md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
+				_, isContainer := rm.Resource().Attributes().Get("k8s.container.name")
+				return !isContainer
+			})
 
 			expectedFile := filepath.Join("testdata", "scraper", "test_scraper_with_v1_k8s_conventions_expected.yaml")
 

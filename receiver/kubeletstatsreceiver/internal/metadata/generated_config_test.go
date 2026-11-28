@@ -35,10 +35,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerFilesystemAvailable: ContainerFilesystemAvailableMetricConfig{
 						Enabled: true,
 					},
+					ContainerFilesystemAvailableV1: ContainerFilesystemAvailableV1MetricConfig{
+						Enabled: true,
+					},
 					ContainerFilesystemCapacity: ContainerFilesystemCapacityMetricConfig{
 						Enabled: true,
 					},
+					ContainerFilesystemCapacityV1: ContainerFilesystemCapacityV1MetricConfig{
+						Enabled: true,
+					},
 					ContainerFilesystemUsage: ContainerFilesystemUsageMetricConfig{
+						Enabled: true,
+					},
+					ContainerFilesystemUsageV1: ContainerFilesystemUsageV1MetricConfig{
 						Enabled: true,
 					},
 					ContainerMemoryAvailable: ContainerMemoryAvailableMetricConfig{
@@ -106,7 +115,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNodeFilesystemAvailable: K8sNodeFilesystemAvailableMetricConfig{
 						Enabled: true,
 					},
+					K8sNodeFilesystemAvailableV1: K8sNodeFilesystemAvailableV1MetricConfig{
+						Enabled: true,
+					},
 					K8sNodeFilesystemCapacity: K8sNodeFilesystemCapacityMetricConfig{
+						Enabled: true,
+					},
+					K8sNodeFilesystemCapacityV1: K8sNodeFilesystemCapacityV1MetricConfig{
 						Enabled: true,
 					},
 					K8sNodeFilesystemInodeCount: K8sNodeFilesystemInodeCountMetricConfig{
@@ -116,6 +131,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: true,
 					},
 					K8sNodeFilesystemUsage: K8sNodeFilesystemUsageMetricConfig{
+						Enabled: true,
+					},
+					K8sNodeFilesystemUsageV1: K8sNodeFilesystemUsageV1MetricConfig{
 						Enabled: true,
 					},
 					K8sNodeMemoryAvailable: K8sNodeMemoryAvailableMetricConfig{
@@ -185,10 +203,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodFilesystemAvailable: K8sPodFilesystemAvailableMetricConfig{
 						Enabled: true,
 					},
+					K8sPodFilesystemAvailableV1: K8sPodFilesystemAvailableV1MetricConfig{
+						Enabled: true,
+					},
 					K8sPodFilesystemCapacity: K8sPodFilesystemCapacityMetricConfig{
 						Enabled: true,
 					},
+					K8sPodFilesystemCapacityV1: K8sPodFilesystemCapacityV1MetricConfig{
+						Enabled: true,
+					},
 					K8sPodFilesystemUsage: K8sPodFilesystemUsageMetricConfig{
+						Enabled: true,
+					},
+					K8sPodFilesystemUsageV1: K8sPodFilesystemUsageV1MetricConfig{
 						Enabled: true,
 					},
 					K8sPodMemoryAvailable: K8sPodMemoryAvailableMetricConfig{
@@ -277,10 +304,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerFilesystemAvailable: ContainerFilesystemAvailableMetricConfig{
 						Enabled: false,
 					},
+					ContainerFilesystemAvailableV1: ContainerFilesystemAvailableV1MetricConfig{
+						Enabled: false,
+					},
 					ContainerFilesystemCapacity: ContainerFilesystemCapacityMetricConfig{
 						Enabled: false,
 					},
+					ContainerFilesystemCapacityV1: ContainerFilesystemCapacityV1MetricConfig{
+						Enabled: false,
+					},
 					ContainerFilesystemUsage: ContainerFilesystemUsageMetricConfig{
+						Enabled: false,
+					},
+					ContainerFilesystemUsageV1: ContainerFilesystemUsageV1MetricConfig{
 						Enabled: false,
 					},
 					ContainerMemoryAvailable: ContainerMemoryAvailableMetricConfig{
@@ -348,7 +384,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNodeFilesystemAvailable: K8sNodeFilesystemAvailableMetricConfig{
 						Enabled: false,
 					},
+					K8sNodeFilesystemAvailableV1: K8sNodeFilesystemAvailableV1MetricConfig{
+						Enabled: false,
+					},
 					K8sNodeFilesystemCapacity: K8sNodeFilesystemCapacityMetricConfig{
+						Enabled: false,
+					},
+					K8sNodeFilesystemCapacityV1: K8sNodeFilesystemCapacityV1MetricConfig{
 						Enabled: false,
 					},
 					K8sNodeFilesystemInodeCount: K8sNodeFilesystemInodeCountMetricConfig{
@@ -358,6 +400,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: false,
 					},
 					K8sNodeFilesystemUsage: K8sNodeFilesystemUsageMetricConfig{
+						Enabled: false,
+					},
+					K8sNodeFilesystemUsageV1: K8sNodeFilesystemUsageV1MetricConfig{
 						Enabled: false,
 					},
 					K8sNodeMemoryAvailable: K8sNodeMemoryAvailableMetricConfig{
@@ -427,10 +472,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodFilesystemAvailable: K8sPodFilesystemAvailableMetricConfig{
 						Enabled: false,
 					},
+					K8sPodFilesystemAvailableV1: K8sPodFilesystemAvailableV1MetricConfig{
+						Enabled: false,
+					},
 					K8sPodFilesystemCapacity: K8sPodFilesystemCapacityMetricConfig{
 						Enabled: false,
 					},
+					K8sPodFilesystemCapacityV1: K8sPodFilesystemCapacityV1MetricConfig{
+						Enabled: false,
+					},
 					K8sPodFilesystemUsage: K8sPodFilesystemUsageMetricConfig{
+						Enabled: false,
+					},
+					K8sPodFilesystemUsageV1: K8sPodFilesystemUsageV1MetricConfig{
 						Enabled: false,
 					},
 					K8sPodMemoryAvailable: K8sPodMemoryAvailableMetricConfig{
@@ -510,7 +564,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ContainerCPUTimeMetricConfig{}, ContainerCPUUsageMetricConfig{}, ContainerFilesystemAvailableMetricConfig{}, ContainerFilesystemCapacityMetricConfig{}, ContainerFilesystemUsageMetricConfig{}, ContainerMemoryAvailableMetricConfig{}, ContainerMemoryAvailableV1MetricConfig{}, ContainerMemoryMajorPageFaultsMetricConfig{}, ContainerMemoryPageFaultsMetricConfig{}, ContainerMemoryRssMetricConfig{}, ContainerMemoryRssV1MetricConfig{}, ContainerMemoryUsageMetricConfig{}, ContainerMemoryUsageV1MetricConfig{}, ContainerMemoryWorkingSetMetricConfig{}, ContainerMemoryWorkingSetV1MetricConfig{}, ContainerUptimeMetricConfig{}, K8sContainerCPUNodeUtilizationMetricConfig{}, K8sContainerCPULimitUtilizationMetricConfig{}, K8sContainerCPURequestUtilizationMetricConfig{}, K8sContainerEphemeralStorageUsageMetricConfig{}, K8sContainerMemoryNodeUtilizationMetricConfig{}, K8sContainerMemoryLimitUtilizationMetricConfig{}, K8sContainerMemoryRequestUtilizationMetricConfig{}, K8sNodeCPUTimeMetricConfig{}, K8sNodeCPUUsageMetricConfig{}, K8sNodeFilesystemAvailableMetricConfig{}, K8sNodeFilesystemCapacityMetricConfig{}, K8sNodeFilesystemInodeCountMetricConfig{}, K8sNodeFilesystemInodeFreeMetricConfig{}, K8sNodeFilesystemUsageMetricConfig{}, K8sNodeMemoryAvailableMetricConfig{}, K8sNodeMemoryMajorPageFaultsMetricConfig{}, K8sNodeMemoryPageFaultsMetricConfig{}, K8sNodeMemoryRssMetricConfig{}, K8sNodeMemoryUsageMetricConfig{}, K8sNodeMemoryWorkingSetMetricConfig{}, K8sNodeNetworkErrorsMetricConfig{}, K8sNodeNetworkIoMetricConfig{}, K8sNodePidLimitMetricConfig{}, K8sNodePidUsageMetricConfig{}, K8sNodeSystemContainerCPUTimeMetricConfig{}, K8sNodeSystemContainerCPUUsageMetricConfig{}, K8sNodeSystemContainerMemoryUsageMetricConfig{}, K8sNodeSystemContainerMemoryWorkingSetMetricConfig{}, K8sNodeUptimeMetricConfig{}, K8sPodCPUNodeUtilizationMetricConfig{}, K8sPodCPUTimeMetricConfig{}, K8sPodCPUUsageMetricConfig{}, K8sPodCPULimitUtilizationMetricConfig{}, K8sPodCPURequestUtilizationMetricConfig{}, K8sPodFilesystemAvailableMetricConfig{}, K8sPodFilesystemCapacityMetricConfig{}, K8sPodFilesystemUsageMetricConfig{}, K8sPodMemoryAvailableMetricConfig{}, K8sPodMemoryMajorPageFaultsMetricConfig{}, K8sPodMemoryNodeUtilizationMetricConfig{}, K8sPodMemoryPageFaultsMetricConfig{}, K8sPodMemoryRssMetricConfig{}, K8sPodMemoryUsageMetricConfig{}, K8sPodMemoryWorkingSetMetricConfig{}, K8sPodMemoryLimitUtilizationMetricConfig{}, K8sPodMemoryRequestUtilizationMetricConfig{}, K8sPodNetworkErrorsMetricConfig{}, K8sPodNetworkIoMetricConfig{}, K8sPodUptimeMetricConfig{}, K8sPodVolumeUsageMetricConfig{}, K8sVolumeAvailableMetricConfig{}, K8sVolumeCapacityMetricConfig{}, K8sVolumeInodesMetricConfig{}, K8sVolumeInodesFreeMetricConfig{}, K8sVolumeInodesUsedMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ContainerCPUTimeMetricConfig{}, ContainerCPUUsageMetricConfig{}, ContainerFilesystemAvailableMetricConfig{}, ContainerFilesystemAvailableV1MetricConfig{}, ContainerFilesystemCapacityMetricConfig{}, ContainerFilesystemCapacityV1MetricConfig{}, ContainerFilesystemUsageMetricConfig{}, ContainerFilesystemUsageV1MetricConfig{}, ContainerMemoryAvailableMetricConfig{}, ContainerMemoryAvailableV1MetricConfig{}, ContainerMemoryMajorPageFaultsMetricConfig{}, ContainerMemoryPageFaultsMetricConfig{}, ContainerMemoryRssMetricConfig{}, ContainerMemoryRssV1MetricConfig{}, ContainerMemoryUsageMetricConfig{}, ContainerMemoryUsageV1MetricConfig{}, ContainerMemoryWorkingSetMetricConfig{}, ContainerMemoryWorkingSetV1MetricConfig{}, ContainerUptimeMetricConfig{}, K8sContainerCPUNodeUtilizationMetricConfig{}, K8sContainerCPULimitUtilizationMetricConfig{}, K8sContainerCPURequestUtilizationMetricConfig{}, K8sContainerEphemeralStorageUsageMetricConfig{}, K8sContainerMemoryNodeUtilizationMetricConfig{}, K8sContainerMemoryLimitUtilizationMetricConfig{}, K8sContainerMemoryRequestUtilizationMetricConfig{}, K8sNodeCPUTimeMetricConfig{}, K8sNodeCPUUsageMetricConfig{}, K8sNodeFilesystemAvailableMetricConfig{}, K8sNodeFilesystemAvailableV1MetricConfig{}, K8sNodeFilesystemCapacityMetricConfig{}, K8sNodeFilesystemCapacityV1MetricConfig{}, K8sNodeFilesystemInodeCountMetricConfig{}, K8sNodeFilesystemInodeFreeMetricConfig{}, K8sNodeFilesystemUsageMetricConfig{}, K8sNodeFilesystemUsageV1MetricConfig{}, K8sNodeMemoryAvailableMetricConfig{}, K8sNodeMemoryMajorPageFaultsMetricConfig{}, K8sNodeMemoryPageFaultsMetricConfig{}, K8sNodeMemoryRssMetricConfig{}, K8sNodeMemoryUsageMetricConfig{}, K8sNodeMemoryWorkingSetMetricConfig{}, K8sNodeNetworkErrorsMetricConfig{}, K8sNodeNetworkIoMetricConfig{}, K8sNodePidLimitMetricConfig{}, K8sNodePidUsageMetricConfig{}, K8sNodeSystemContainerCPUTimeMetricConfig{}, K8sNodeSystemContainerCPUUsageMetricConfig{}, K8sNodeSystemContainerMemoryUsageMetricConfig{}, K8sNodeSystemContainerMemoryWorkingSetMetricConfig{}, K8sNodeUptimeMetricConfig{}, K8sPodCPUNodeUtilizationMetricConfig{}, K8sPodCPUTimeMetricConfig{}, K8sPodCPUUsageMetricConfig{}, K8sPodCPULimitUtilizationMetricConfig{}, K8sPodCPURequestUtilizationMetricConfig{}, K8sPodFilesystemAvailableMetricConfig{}, K8sPodFilesystemAvailableV1MetricConfig{}, K8sPodFilesystemCapacityMetricConfig{}, K8sPodFilesystemCapacityV1MetricConfig{}, K8sPodFilesystemUsageMetricConfig{}, K8sPodFilesystemUsageV1MetricConfig{}, K8sPodMemoryAvailableMetricConfig{}, K8sPodMemoryMajorPageFaultsMetricConfig{}, K8sPodMemoryNodeUtilizationMetricConfig{}, K8sPodMemoryPageFaultsMetricConfig{}, K8sPodMemoryRssMetricConfig{}, K8sPodMemoryUsageMetricConfig{}, K8sPodMemoryWorkingSetMetricConfig{}, K8sPodMemoryLimitUtilizationMetricConfig{}, K8sPodMemoryRequestUtilizationMetricConfig{}, K8sPodNetworkErrorsMetricConfig{}, K8sPodNetworkIoMetricConfig{}, K8sPodUptimeMetricConfig{}, K8sPodVolumeUsageMetricConfig{}, K8sVolumeAvailableMetricConfig{}, K8sVolumeCapacityMetricConfig{}, K8sVolumeInodesMetricConfig{}, K8sVolumeInodesFreeMetricConfig{}, K8sVolumeInodesUsedMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

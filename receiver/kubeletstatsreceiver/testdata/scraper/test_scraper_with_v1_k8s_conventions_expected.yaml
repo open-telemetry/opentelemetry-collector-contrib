@@ -34,24 +34,27 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: container.cpu.usage
             unit: '{cpu}'
-          - description: Container filesystem available
-            gauge:
+          - description: Container filesystem available bytes.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "13717454848"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.filesystem.available
             unit: By
-          - description: Container filesystem capacity
-            gauge:
+          - description: Container filesystem capacity.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "17361125376"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.filesystem.capacity
             unit: By
-          - description: Container filesystem usage
-            gauge:
+          - description: Container filesystem usage.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "32768"
                   startTimeUnixNano: "1000000"
@@ -148,24 +151,27 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: container.cpu.usage
             unit: '{cpu}'
-          - description: Container filesystem available
-            gauge:
+          - description: Container filesystem available bytes.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "13717454848"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.filesystem.available
             unit: By
-          - description: Container filesystem capacity
-            gauge:
+          - description: Container filesystem capacity.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "17361125376"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.filesystem.capacity
             unit: By
-          - description: Container filesystem usage
-            gauge:
+          - description: Container filesystem usage.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "32768"
                   startTimeUnixNano: "1000000"
@@ -262,24 +268,27 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: container.cpu.usage
             unit: '{cpu}'
-          - description: Container filesystem available
-            gauge:
+          - description: Container filesystem available bytes.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "13717454848"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.filesystem.available
             unit: By
-          - description: Container filesystem capacity
-            gauge:
+          - description: Container filesystem capacity.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "17361125376"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.filesystem.capacity
             unit: By
-          - description: Container filesystem usage
-            gauge:
+          - description: Container filesystem usage.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "32768"
                   startTimeUnixNano: "1000000"
@@ -376,24 +385,27 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: container.cpu.usage
             unit: '{cpu}'
-          - description: Container filesystem available
-            gauge:
+          - description: Container filesystem available bytes.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "13717454848"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.filesystem.available
             unit: By
-          - description: Container filesystem capacity
-            gauge:
+          - description: Container filesystem capacity.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "17361125376"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.filesystem.capacity
             unit: By
-          - description: Container filesystem usage
-            gauge:
+          - description: Container filesystem usage.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "53248"
                   startTimeUnixNano: "1000000"
@@ -490,24 +502,27 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: container.cpu.usage
             unit: '{cpu}'
-          - description: Container filesystem available
-            gauge:
+          - description: Container filesystem available bytes.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "13717454848"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.filesystem.available
             unit: By
-          - description: Container filesystem capacity
-            gauge:
+          - description: Container filesystem capacity.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "17361125376"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.filesystem.capacity
             unit: By
-          - description: Container filesystem usage
-            gauge:
+          - description: Container filesystem usage.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "77824"
                   startTimeUnixNano: "1000000"
@@ -604,24 +619,27 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: container.cpu.usage
             unit: '{cpu}'
-          - description: Container filesystem available
-            gauge:
+          - description: Container filesystem available bytes.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "13717454848"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.filesystem.available
             unit: By
-          - description: Container filesystem capacity
-            gauge:
+          - description: Container filesystem capacity.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "17361125376"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.filesystem.capacity
             unit: By
-          - description: Container filesystem usage
-            gauge:
+          - description: Container filesystem usage.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "94208"
                   startTimeUnixNano: "1000000"
@@ -718,24 +736,27 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: container.cpu.usage
             unit: '{cpu}'
-          - description: Container filesystem available
-            gauge:
+          - description: Container filesystem available bytes.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "13717454848"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.filesystem.available
             unit: By
-          - description: Container filesystem capacity
-            gauge:
+          - description: Container filesystem capacity.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "17361125376"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.filesystem.capacity
             unit: By
-          - description: Container filesystem usage
-            gauge:
+          - description: Container filesystem usage.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "12288"
                   startTimeUnixNano: "1000000"
@@ -832,24 +853,27 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: container.cpu.usage
             unit: '{cpu}'
-          - description: Container filesystem available
-            gauge:
+          - description: Container filesystem available bytes.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "13717454848"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.filesystem.available
             unit: By
-          - description: Container filesystem capacity
-            gauge:
+          - description: Container filesystem capacity.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "17361125376"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.filesystem.capacity
             unit: By
-          - description: Container filesystem usage
-            gauge:
+          - description: Container filesystem usage.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "36864"
                   startTimeUnixNano: "1000000"
@@ -946,24 +970,27 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: container.cpu.usage
             unit: '{cpu}'
-          - description: Container filesystem available
-            gauge:
+          - description: Container filesystem available bytes.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "13717454848"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.filesystem.available
             unit: By
-          - description: Container filesystem capacity
-            gauge:
+          - description: Container filesystem capacity.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "17361125376"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.filesystem.capacity
             unit: By
-          - description: Container filesystem usage
-            gauge:
+          - description: Container filesystem usage.
+            sum:
+              aggregationTemporality: 2
               dataPoints:
                 - asInt: "28672"
                   startTimeUnixNano: "1000000"
