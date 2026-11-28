@@ -4,12 +4,16 @@
 package prometheusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 
 import (
+	"cmp"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
+	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
@@ -116,20 +120,48 @@ func getTranslationConfiguration(config *Config) (bool, bool) {
 	}
 }
 
-func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
+func (c *collector) convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
 	length := exemplars.Len()
+	if length == 0 {
+		return nil
+	}
 	result := make([]prometheus.Exemplar, length)
 
 	for i := range length {
 		e := exemplars.At(i)
-		exemplarLabels := make(prometheus.Labels, 0)
+		var traceIDVal, spanIDVal string
+		baseRunes := 0
 
 		if traceID := e.TraceID(); !traceID.IsEmpty() {
-			exemplarLabels[otlptranslator.ExemplarTraceIDKey] = hex.EncodeToString(traceID[:])
+			traceIDVal = hex.EncodeToString(traceID[:])
+			baseRunes += utf8.RuneCountInString(otlptranslator.ExemplarTraceIDKey) + utf8.RuneCountInString(traceIDVal)
 		}
 
 		if spanID := e.SpanID(); !spanID.IsEmpty() {
-			exemplarLabels[otlptranslator.ExemplarSpanIDKey] = hex.EncodeToString(spanID[:])
+			spanIDVal = hex.EncodeToString(spanID[:])
+			baseRunes += utf8.RuneCountInString(otlptranslator.ExemplarSpanIDKey) + utf8.RuneCountInString(spanIDVal)
+		}
+
+		var exemplarLabels prometheus.Labels
+		if attrs := e.FilteredAttributes(); attrs.Len() > 0 {
+			filteredLabels := c.convertExemplarAttributes(attrs, traceIDVal != "", spanIDVal != "")
+			filteredRunes := 0
+			for k, v := range filteredLabels {
+				filteredRunes += utf8.RuneCountInString(k) + utf8.RuneCountInString(v)
+			}
+			if baseRunes+filteredRunes <= prometheus.ExemplarMaxRunes {
+				exemplarLabels = filteredLabels
+			}
+		}
+
+		if exemplarLabels == nil {
+			exemplarLabels = make(prometheus.Labels, 2)
+		}
+		if traceIDVal != "" {
+			exemplarLabels[otlptranslator.ExemplarTraceIDKey] = traceIDVal
+		}
+		if spanIDVal != "" {
+			exemplarLabels[otlptranslator.ExemplarSpanIDKey] = spanIDVal
 		}
 
 		var value float64
@@ -147,6 +179,79 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
 		}
 	}
 	return result
+}
+
+// convertExemplarAttributes normalizes and filters exemplar filtered_attributes into Prometheus labels.
+// Keys are normalized via c.labelNamer according to the configured translation_strategy.
+// Raw keys are UTF-8 validated before Build (otherwise underscore escaping turns invalid UTF-8 bytes into '_'),
+// and invalid, __-prefixed (e.g. "..foo" -> "__foo" with PreserveMultipleUnderscores), or non-UTF-8 attributes
+// are skipped per attribute to match client_golang's newExemplar checks without dropping the metric.
+// Post-normalization collisions with trace_id/span_id are dropped when trace context is present.
+func (c *collector) convertExemplarAttributes(attrs pcommon.Map, hasTraceID, hasSpanID bool) prometheus.Labels {
+	type normalizedAttr struct {
+		rawKey string
+		key    string
+		val    string
+	}
+
+	entries := make([]normalizedAttr, 0, attrs.Len())
+	for k, v := range attrs.All() {
+		if !utf8.ValidString(k) {
+			continue
+		}
+		labelName, err := c.labelNamer.Build(k)
+		if err != nil {
+			continue
+		}
+		if !model.UTF8Validation.IsValidLabelName(labelName) || strings.HasPrefix(labelName, model.ReservedLabelPrefix) {
+			continue
+		}
+		if (labelName == otlptranslator.ExemplarTraceIDKey && hasTraceID) ||
+			(labelName == otlptranslator.ExemplarSpanIDKey && hasSpanID) {
+			continue
+		}
+		val := v.AsString()
+		if !utf8.ValidString(val) {
+			continue
+		}
+		entries = append(entries, normalizedAttr{
+			rawKey: k,
+			key:    labelName,
+			val:    val,
+		})
+	}
+	if len(entries) == 0 {
+		return nil
+	}
+
+	slices.SortStableFunc(entries, func(a, b normalizedAttr) int {
+		return cmp.Compare(a.rawKey, b.rawKey)
+	})
+
+	filtered := make(prometheus.Labels, len(entries)+2)
+	var collidingVals map[string][]string
+	for _, entry := range entries {
+		existingVal, ok := filtered[entry.key]
+		if !ok {
+			filtered[entry.key] = entry.val
+			continue
+		}
+		seen := collidingVals[entry.key]
+		if seen == nil {
+			if existingVal == entry.val {
+				continue
+			}
+			if collidingVals == nil {
+				collidingVals = make(map[string][]string)
+			}
+			seen = []string{existingVal}
+		} else if slices.Contains(seen, entry.val) {
+			continue
+		}
+		collidingVals[entry.key] = append(seen, entry.val)
+		filtered[entry.key] = existingVal + ";" + entry.val
+	}
+	return filtered
 }
 
 // Describe is a no-op, because the collector dynamically allocates metrics.
@@ -251,7 +356,7 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 		return nil, err
 	}
 
-	exemplars := convertExemplars(dp.Exemplars())
+	exemplars := c.convertExemplars(dp.Exemplars())
 	if len(exemplars) > 0 {
 		m, err = prometheus.NewMetricWithExemplars(m, exemplars...)
 		if err != nil {
@@ -390,7 +495,7 @@ func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map,
 	var exemplars []prometheus.Exemplar
 	// Prometheus currently only supports exporting counters
 	if metricType == prometheus.CounterValue {
-		exemplars = convertExemplars(ip.Exemplars())
+		exemplars = c.convertExemplars(ip.Exemplars())
 	}
 
 	var m prometheus.Metric
@@ -479,7 +584,7 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 		points[bucket] = cumCount
 	}
 
-	exemplars := convertExemplars(ip.Exemplars())
+	exemplars := c.convertExemplars(ip.Exemplars())
 
 	var m prometheus.Metric
 	if ip.StartTimestamp().AsTime().Unix() > 0 {

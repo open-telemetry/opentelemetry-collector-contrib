@@ -355,6 +355,343 @@ func TestConvertExponentialHistogramExemplar(t *testing.T) {
 	exemplarsEqual(t, ex, h.GetExemplars()[0])
 }
 
+func exemplarLabelsMap(t *testing.T, promExemplar *io_prometheus_client.Exemplar) map[string]string {
+	t.Helper()
+	require.NotNil(t, promExemplar)
+	got := make(map[string]string, len(promExemplar.GetLabel()))
+	for _, l := range promExemplar.GetLabel() {
+		got[l.GetName()] = l.GetValue()
+	}
+	return got
+}
+
+func TestConvertExemplarFilteredAttributes(t *testing.T) {
+	const (
+		traceIDHex = "641d68e314a58152cc2581e7663435d1"
+		spanIDHex  = "7436d6ac76178623"
+	)
+
+	makeCounterWithExemplar := func(setup func(pmetric.Exemplar)) pmetric.Metric {
+		metric := pmetric.NewMetric()
+		metric.SetName("test_counter")
+		sum := metric.SetEmptySum()
+		sum.SetIsMonotonic(true)
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		dp := sum.DataPoints().AppendEmpty()
+		dp.SetIntValue(1)
+		ex := dp.Exemplars().AppendEmpty()
+		ex.SetIntValue(1)
+		ex.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1700000000, 0)))
+		setup(ex)
+		return metric
+	}
+
+	setTraceAndSpan := func(ex pmetric.Exemplar) {
+		var tBytes [16]byte
+		tb, _ := hex.DecodeString(traceIDHex)
+		copy(tBytes[:], tb)
+		ex.SetTraceID(pcommon.TraceID(tBytes))
+
+		var sBytes [8]byte
+		sb, _ := hex.DecodeString(spanIDHex)
+		copy(sBytes[:], sb)
+		ex.SetSpanID(pcommon.SpanID(sBytes))
+	}
+
+	tests := []struct {
+		name       string
+		strategy   translationStrategy
+		setup      func(pmetric.Exemplar)
+		wantLabels map[string]string
+	}{
+		{
+			name: "converts and normalizes filtered attributes with trace and span IDs",
+			setup: func(ex pmetric.Exemplar) {
+				setTraceAndSpan(ex)
+				ex.FilteredAttributes().PutStr("http.method", "GET")
+				ex.FilteredAttributes().PutInt("http.status_code", 200)
+				ex.FilteredAttributes().PutBool("123retry", true)
+			},
+			wantLabels: map[string]string{
+				"trace_id":         traceIDHex,
+				"span_id":          spanIDHex,
+				"http_method":      "GET",
+				"http_status_code": "200",
+				"key_123retry":     "true",
+			},
+		},
+		{
+			name:     "preserves UTF-8 attribute keys under NoTranslation",
+			strategy: noTranslation,
+			setup: func(ex pmetric.Exemplar) {
+				setTraceAndSpan(ex)
+				ex.FilteredAttributes().PutStr("http.method", "GET")
+				ex.FilteredAttributes().PutStr("..foo", "bar")
+				ex.FilteredAttributes().PutStr("trace.id", "kept_utf8")
+				ex.FilteredAttributes().PutStr("trace_id", "overridden")
+			},
+			wantLabels: map[string]string{
+				"trace_id":    traceIDHex,
+				"span_id":     spanIDHex,
+				"http.method": "GET",
+				"..foo":       "bar",
+				"trace.id":    "kept_utf8",
+			},
+		},
+		{
+			name:     "preserves UTF-8 attribute keys under NoUTF8EscapingWithSuffixes",
+			strategy: noUTF8EscapingWithSuffixes,
+			setup: func(ex pmetric.Exemplar) {
+				setTraceAndSpan(ex)
+				ex.FilteredAttributes().PutStr("http.method", "POST")
+			},
+			wantLabels: map[string]string{
+				"trace_id":    traceIDHex,
+				"span_id":     spanIDHex,
+				"http.method": "POST",
+			},
+		},
+		{
+			name: "resolves colliding normalized keys in original key lexicographical order",
+			setup: func(ex pmetric.Exemplar) {
+				// '.' (46) > '-' (45), inserted in reverse lexicographical order.
+				ex.FilteredAttributes().PutStr("a.b", "dot")
+				ex.FilteredAttributes().PutStr("a-b", "dash")
+			},
+			wantLabels: map[string]string{
+				"a_b": "dash;dot",
+			},
+		},
+		{
+			name: "deduplicates equal values on colliding normalized keys",
+			setup: func(ex pmetric.Exemplar) {
+				ex.FilteredAttributes().PutStr("a.b", "same")
+				ex.FilteredAttributes().PutStr("a-b", "same")
+			},
+			wantLabels: map[string]string{
+				"a_b": "same",
+			},
+		},
+		{
+			name: "deduplicates repeated values across 4-way key collision without false match on joined string",
+			setup: func(ex pmetric.Exemplar) {
+				// Lexicographical order: a-b (45), a.b (46), a/b (47), a:b (58).
+				ex.FilteredAttributes().PutStr("a:b", "1;2")
+				ex.FilteredAttributes().PutStr("a/b", "1")
+				ex.FilteredAttributes().PutStr("a.b", "2")
+				ex.FilteredAttributes().PutStr("a-b", "1")
+			},
+			wantLabels: map[string]string{
+				"a_b": "1;2;1;2",
+			},
+		},
+		{
+			name: "enforces post-normalization trace_id and span_id precedence without consuming rune budget",
+			setup: func(ex pmetric.Exemplar) {
+				setTraceAndSpan(ex)
+				ex.FilteredAttributes().PutStr("trace_id", "raw-override")
+				ex.FilteredAttributes().PutStr("trace.id", strings.Repeat("t", 150))
+				ex.FilteredAttributes().PutStr("span_id", "raw-override")
+				ex.FilteredAttributes().PutStr("span.id", strings.Repeat("s", 150))
+				ex.FilteredAttributes().PutStr("env", "prod")
+			},
+			wantLabels: map[string]string{
+				"trace_id": traceIDHex,
+				"span_id":  spanIDHex,
+				"env":      "prod",
+			},
+		},
+		{
+			name: "exports filtered trace_id and span_id when exemplar trace context is empty",
+			setup: func(ex pmetric.Exemplar) {
+				ex.FilteredAttributes().PutStr("trace.id", "custom-trace")
+				ex.FilteredAttributes().PutStr("span.id", "custom-span")
+			},
+			wantLabels: map[string]string{
+				"trace_id": "custom-trace",
+				"span_id":  "custom-span",
+			},
+		},
+		{
+			name: "skips invalid, reserved, and non-UTF-8 attributes per attribute under underscore escaping",
+			setup: func(ex pmetric.Exemplar) {
+				setTraceAndSpan(ex)
+				ex.FilteredAttributes().PutStr("", "empty-key")
+				ex.FilteredAttributes().PutStr("___", "underscores-only")
+				ex.FilteredAttributes().PutStr("---", "punctuation-only")
+				ex.FilteredAttributes().PutStr("__reserved", strings.Repeat("r", 150))
+				ex.FilteredAttributes().PutStr("..foo", "becomes-double-underscore")
+				ex.FilteredAttributes().PutStr(string([]byte{'k', 0xff}), "bad-key-utf8")
+				ex.FilteredAttributes().PutStr("bad_val", string([]byte{'v', 0xff}))
+				// Invalid UTF-8 colliding attribute must not taint valid colliding sibling.
+				ex.FilteredAttributes().PutStr("col.key", string([]byte{'x', 0xff}))
+				ex.FilteredAttributes().PutStr("col-key", "ok")
+				ex.FilteredAttributes().PutStr("valid", "kept")
+			},
+			wantLabels: map[string]string{
+				"trace_id": traceIDHex,
+				"span_id":  spanIDHex,
+				"col_key":  "ok",
+				"valid":    "kept",
+			},
+		},
+		{
+			name:     "skips invalid, reserved, and non-UTF-8 attributes per attribute under NoTranslation",
+			strategy: noTranslation,
+			setup: func(ex pmetric.Exemplar) {
+				setTraceAndSpan(ex)
+				ex.FilteredAttributes().PutStr("", "empty-key")
+				ex.FilteredAttributes().PutStr("___", "underscores-only")
+				ex.FilteredAttributes().PutStr("__reserved", "reserved")
+				ex.FilteredAttributes().PutStr(string([]byte{'k', 0xff}), "bad-key-utf8")
+				ex.FilteredAttributes().PutStr("bad_val", string([]byte{'v', 0xff}))
+				ex.FilteredAttributes().PutStr("valid.key", "kept")
+			},
+			wantLabels: map[string]string{
+				"trace_id":  traceIDHex,
+				"span_id":   spanIDHex,
+				"valid.key": "kept",
+			},
+		},
+		{
+			name: "preserves trace and span IDs when all filtered attributes are skipped or overridden",
+			setup: func(ex pmetric.Exemplar) {
+				setTraceAndSpan(ex)
+				ex.FilteredAttributes().PutStr("", "empty-key")
+				ex.FilteredAttributes().PutStr("__reserved", "reserved")
+				ex.FilteredAttributes().PutStr("..foo", "becomes-double-underscore")
+				ex.FilteredAttributes().PutStr("trace.id", "overridden")
+				ex.FilteredAttributes().PutStr("bad_val", string([]byte{'v', 0xff}))
+			},
+			wantLabels: map[string]string{
+				"trace_id": traceIDHex,
+				"span_id":  spanIDHex,
+			},
+		},
+		{
+			name: "keeps filtered attributes at exact 128-rune boundary including multi-byte UTF-8",
+			setup: func(ex pmetric.Exemplar) {
+				setTraceAndSpan(ex)
+				// trace_id (8+32=40) + span_id (7+16=23) = 63 runes.
+				// Remaining budget: 128 - 63 = 65 runes: key "k" (1) + 64 'é' runes (128 bytes, 64 runes).
+				ex.FilteredAttributes().PutStr("k", strings.Repeat("é", 64))
+			},
+			wantLabels: map[string]string{
+				"trace_id": traceIDHex,
+				"span_id":  spanIDHex,
+				"k":        strings.Repeat("é", 64),
+			},
+		},
+		{
+			name: "omits filtered attributes when total runes exceed 128 while preserving trace and span IDs",
+			setup: func(ex pmetric.Exemplar) {
+				setTraceAndSpan(ex)
+				// 63 + 1 + 65 = 129 runes > 128.
+				ex.FilteredAttributes().PutStr("k", strings.Repeat("é", 65))
+			},
+			wantLabels: map[string]string{
+				"trace_id": traceIDHex,
+				"span_id":  spanIDHex,
+			},
+		},
+		{
+			name: "omits filtered attributes without trace context when runes exceed 128",
+			setup: func(ex pmetric.Exemplar) {
+				// 1 + 128 = 129 runes > 128.
+				ex.FilteredAttributes().PutStr("k", strings.Repeat("a", 128))
+			},
+			wantLabels: map[string]string{},
+		},
+		{
+			name: "counts runes on merged colliding attributes rather than raw inputs",
+			setup: func(ex pmetric.Exemplar) {
+				setTraceAndSpan(ex)
+				// Raw inputs would total 63 (trace/span) + (3+60) + (3+60) = 189 > 128,
+				// but after equal-value deduplication merged label "a_b" has 3+60 = 63 runes (63+63 = 126 <= 128).
+				val := strings.Repeat("x", 60)
+				ex.FilteredAttributes().PutStr("a-b", val)
+				ex.FilteredAttributes().PutStr("a.b", val)
+			},
+			wantLabels: map[string]string{
+				"trace_id": traceIDHex,
+				"span_id":  spanIDHex,
+				"a_b":      strings.Repeat("x", 60),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metric := makeCounterWithExemplar(tt.setup)
+			c := newCollector(&Config{TranslationStrategy: tt.strategy}, zap.NewNop())
+
+			pm, err := c.convertMetric(metric, pcommon.NewMap(), "", "", "", pcommon.NewMap())
+			require.NoError(t, err)
+
+			var out io_prometheus_client.Metric
+			require.NoError(t, pm.Write(&out))
+
+			got := exemplarLabelsMap(t, out.GetCounter().GetExemplar())
+			require.Equal(t, tt.wantLabels, got)
+		})
+	}
+}
+
+func TestConvertExemplarFilteredAttributesAcrossMetricTypes(t *testing.T) {
+	addExemplar := func(ex pmetric.Exemplar, val float64) {
+		setTestExemplarWithDoubleValue(ex, val)
+		ex.FilteredAttributes().PutStr("http.route", "/orders")
+		ex.FilteredAttributes().PutStr("trace.id", "overridden")
+		ex.FilteredAttributes().PutStr("..ignored", "bad")
+	}
+
+	c := newCollector(&Config{}, zap.NewNop())
+	wantLabels := map[string]string{
+		"trace_id":   "641d68e314a58152cc2581e7663435d1",
+		"span_id":    "7436d6ac76178623",
+		"http_route": "/orders",
+	}
+
+	t.Run("classic histogram", func(t *testing.T) {
+		metric := pmetric.NewMetric()
+		metric.SetName("test_hist")
+		dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
+		dp.ExplicitBounds().FromRaw([]float64{5, 25})
+		dp.BucketCounts().FromRaw([]uint64{1, 1, 0})
+		dp.SetCount(2)
+		dp.SetSum(10)
+		addExemplar(dp.Exemplars().AppendEmpty(), 3.0)
+
+		pm, err := c.convertMetric(metric, pcommon.NewMap(), "", "", "", pcommon.NewMap())
+		require.NoError(t, err)
+		var out io_prometheus_client.Metric
+		require.NoError(t, pm.Write(&out))
+		require.Equal(t, wantLabels, exemplarLabelsMap(t, out.GetHistogram().GetBucket()[0].GetExemplar()))
+	})
+
+	t.Run("exponential histogram", func(t *testing.T) {
+		metric := pmetric.NewMetric()
+		metric.SetName("test_exp_hist")
+		eh := metric.SetEmptyExponentialHistogram()
+		eh.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		dp := eh.DataPoints().AppendEmpty()
+		dp.SetCount(1)
+		dp.SetSum(3.0)
+		dp.SetScale(0)
+		dp.SetZeroThreshold(1)
+		dp.Positive().SetOffset(0)
+		dp.Positive().BucketCounts().FromRaw([]uint64{1})
+		addExemplar(dp.Exemplars().AppendEmpty(), 3.0)
+
+		pm, err := c.convertMetric(metric, pcommon.NewMap(), "", "", "", pcommon.NewMap())
+		require.NoError(t, err)
+		var out io_prometheus_client.Metric
+		require.NoError(t, pm.Write(&out))
+		require.Len(t, out.GetHistogram().GetExemplars(), 1)
+		require.Equal(t, wantLabels, exemplarLabelsMap(t, out.GetHistogram().GetExemplars()[0]))
+	})
+}
+
 // errorCheckCore keeps track of logged errors
 type errorCheckCore struct {
 	errorMessages []string

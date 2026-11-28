@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: exporter/prometheus
+note: Convert exemplar `filtered_attributes` to normalized Prometheus exemplar labels, enforcing `trace_id`/`span_id` precedence and the 128-rune exemplar label limit.
+issues: [53376]
+change_logs: [user]
