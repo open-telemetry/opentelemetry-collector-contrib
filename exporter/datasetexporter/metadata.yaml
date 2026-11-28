@@ -12,7 +12,11 @@ status:
 
 # TODO: Update the exporter to pass the tests
 sending_queue:
-  support: default
+  support: has_overrides
+  overrides:
+    enabled: true
+    batch:
+      enabled: true
 
 tests:
   config:

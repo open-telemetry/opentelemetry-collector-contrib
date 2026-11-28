@@ -32,7 +32,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		LogsSettings:       newDefaultLogsSettings(),
 		ServerHostSettings: newDefaultServerHostSettings(),
 		BackOffConfig:      configretry.NewDefaultBackOffConfig(),
-		QueueSettings:      configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		QueueSettings:      metadata.NewDefaultSendingQueueConfig(),
 		TimeoutSettings:    exporterhelper.NewDefaultTimeoutConfig(),
 	}, cfg, "failed to create default config")
 
@@ -57,7 +57,7 @@ func TestLoadConfig(t *testing.T) {
 				LogsSettings:       newDefaultLogsSettings(),
 				ServerHostSettings: newDefaultServerHostSettings(),
 				BackOffConfig:      configretry.NewDefaultBackOffConfig(),
-				QueueSettings:      configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				QueueSettings:      metadata.NewDefaultSendingQueueConfig(),
 				TimeoutSettings:    exporterhelper.NewDefaultTimeoutConfig(),
 			},
 		},
@@ -80,7 +80,7 @@ func TestLoadConfig(t *testing.T) {
 				LogsSettings:       newDefaultLogsSettings(),
 				ServerHostSettings: newDefaultServerHostSettings(),
 				BackOffConfig:      configretry.NewDefaultBackOffConfig(),
-				QueueSettings:      configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				QueueSettings:      metadata.NewDefaultSendingQueueConfig(),
 				TimeoutSettings:    exporterhelper.NewDefaultTimeoutConfig(),
 			},
 		},
@@ -130,12 +130,12 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:         12 * time.Nanosecond,
 					MaxElapsedTime:      13 * time.Nanosecond,
 				},
-				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
-					queue := exporterhelper.NewDefaultQueueConfig()
-					queue.NumConsumers = 14
-					queue.QueueSize = 15
+				QueueSettings: func() configoptional.Optional[exporterhelper.QueueBatchConfig] {
+					queue := metadata.NewDefaultSendingQueueConfig()
+					queue.Get().NumConsumers = 14
+					queue.Get().QueueSize = 15
 					return queue
-				}()),
+				}(),
 				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 16 * time.Nanosecond,
 				},
