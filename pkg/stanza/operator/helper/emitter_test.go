@@ -247,3 +247,35 @@ func complexEntriesForNDifferentHosts(count, n int) []*entry.Entry {
 	}
 	return ret
 }
+
+func TestBatchingLogEmitterEmitsOnMaxBatchBytes(t *testing.T) {
+	var received [][]*entry.Entry
+	emitter := NewBatchingLogEmitter(
+		componenttest.NewNopTelemetrySettings(),
+		func(_ context.Context, entries []*entry.Entry) {
+			received = append(received, entries)
+		},
+	)
+	emitter.maxBatchBytes = 10
+
+	newEntry := func(body any) *entry.Entry {
+		e := entry.New()
+		e.Body = body
+		return e
+	}
+
+	ctx := t.Context()
+	require.NoError(t, emitter.Process(ctx, newEntry("1234")))
+	require.NoError(t, emitter.Process(ctx, newEntry(map[string]any{"not": "counted"})))
+	require.Empty(t, received)
+
+	require.NoError(t, emitter.Process(ctx, newEntry([]byte("123456"))))
+	require.Len(t, received, 1)
+	require.Len(t, received[0], 3)
+
+	require.NoError(t, emitter.ProcessBatch(ctx, []*entry.Entry{newEntry("12345"), newEntry("1234")}))
+	require.Len(t, received, 1)
+	require.NoError(t, emitter.ProcessBatch(ctx, []*entry.Entry{newEntry("1")}))
+	require.Len(t, received, 2)
+	require.Len(t, received[1], 3)
+}
