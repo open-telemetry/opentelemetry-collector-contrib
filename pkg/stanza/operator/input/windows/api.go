@@ -53,6 +53,10 @@ const (
 	EvtSubscribeStartAtOldestRecord uint32 = 2
 	// EvtSubscribeStartAfterBookmark is a flag that will subscribe to all events that begin after a bookmark.
 	EvtSubscribeStartAfterBookmark uint32 = 3
+	// EvtSubscribeTolerateQueryErrors is a flag that will complete the subscription even if part of the query fails,
+	// e.g. one of the channels of a multi-channel XML query does not exist. It also makes a subscription to a single
+	// missing channel succeed without delivering anything, so it must not be passed unconditionally.
+	EvtSubscribeTolerateQueryErrors uint32 = 0x1000
 	// EvtRPCLoginClass is a flag that indicates the login class.
 	EvtRPCLoginClass uint32 = 1
 )

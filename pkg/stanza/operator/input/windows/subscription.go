@@ -26,7 +26,9 @@ type Subscription struct {
 // Open will open the subscription handle.
 // It returns an error if the subscription handle is already open or if any step in the process fails.
 // If the remote server is not reachable, it returns an error indicating the failure.
-func (s *Subscription) Open(startAt string, sessionHandle uintptr, channel string, query, path *string, bookmark Bookmark) error {
+// If tolerateQueryErrors is set and the query can not be subscribed to because of some of its channels,
+// those channels are skipped with a warning instead of failing the whole subscription.
+func (s *Subscription) Open(startAt string, sessionHandle uintptr, channel string, query, path *string, bookmark Bookmark, tolerateQueryErrors bool) error {
 	if s.handle != 0 {
 		return errors.New("subscription handle is already open")
 	}
@@ -87,6 +89,13 @@ func (s *Subscription) Open(startAt string, sessionHandle uintptr, channel strin
 	} else {
 		flags := s.createFlags(startAt, bookmark)
 		subscriptionHandle, err = evtSubscribe(sessionHandle, signalEvent, channelPtr, queryPtr, bookmark.handle, 0, 0, flags)
+		// Only retried on failure, so that the channels being skipped are not skipped silently.
+		if tolerateQueryErrors && query != nil && isNonTransientError(err) {
+			if s.logger != nil {
+				s.logger.Warn("Failed to subscribe to some channels of the query, skipping them", zap.Error(err))
+			}
+			subscriptionHandle, err = evtSubscribe(sessionHandle, signalEvent, channelPtr, queryPtr, bookmark.handle, 0, 0, flags|EvtSubscribeTolerateQueryErrors)
+		}
 		if err != nil {
 			return fmt.Errorf("failed to subscribe to %s channel: %w", channel, err)
 		}

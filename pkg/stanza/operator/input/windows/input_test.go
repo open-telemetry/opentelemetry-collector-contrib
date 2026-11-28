@@ -66,6 +66,38 @@ func TestInputStart_NoErrorIfIgnoreChannelErrorEnabled(t *testing.T) {
 	assert.NoError(t, err, "Expected no error when ignoreMissingChannel is true")
 }
 
+// TestInputStart_QueryWithMissingChannel ensures a missing channel in a multi-channel query fails the subscription
+// by default, and is skipped with a warning in favor of the existing channels when ignore_channel_errors is enabled.
+func TestInputStart_QueryWithMissingChannel(t *testing.T) {
+	query := `<QueryList><Query Id="0"><Select Path="Application">*</Select><Select Path="no-such-channel">*</Select></Query></QueryList>`
+	core, logs := observer.New(zap.WarnLevel)
+	newQueryInput := func() *Input {
+		input := newInput(component.TelemetrySettings{Logger: zap.New(core)})
+		input.query = &query
+		input.startAt = "beginning"
+		input.pollInterval = time.Hour // the test reads the subscription itself
+		return input
+	}
+
+	input := newQueryInput()
+	require.ErrorIs(t, input.Start(testutil.NewMockPersister("")), windows.ERROR_EVT_CHANNEL_NOT_FOUND)
+	require.NoError(t, input.Stop())
+
+	input = newQueryInput()
+	input.ignoreChannelErrors = true
+	require.NoError(t, input.Start(testutil.NewMockPersister("")))
+	defer func() { require.NoError(t, input.Stop()) }()
+	assert.Equal(t, 1, logs.FilterMessageSnippet("skipping them").Len())
+
+	require.Eventually(t, func() bool {
+		events, err := input.subscription.Read(1)
+		for _, event := range events {
+			event.Close()
+		}
+		return err == nil && len(events) > 0
+	}, 5*time.Second, 50*time.Millisecond, "expected events from the existing channel")
+}
+
 // TestInputStart_RemoteSubscriptionError ensures the input correctly handles remote subscription errors.
 func TestInputStart_RemoteSubscriptionError(t *testing.T) {
 	persister := testutil.NewMockPersister("")
