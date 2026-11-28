@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: processor/drain
+note: Wait for the periodic snapshot worker before saving the final snapshot and closing storage during shutdown.
+issues: [53661]
+change_logs: [user]
