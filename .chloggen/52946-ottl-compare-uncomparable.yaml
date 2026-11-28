@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: pkg/ottl
+note: Prevent comparison panics and compare typed slices and string-keyed maps by content with OTTL lists, maps, and pdata values.
+issues: [52946, 53374]
+subtext:
+change_logs: [user]

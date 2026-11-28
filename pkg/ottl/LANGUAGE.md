@@ -353,7 +353,9 @@ If numeric values are of different types, they are compared as `float64`.
 
 For numeric values and strings, the comparison rules are those implemented by Go. Numeric values are done with signed comparisons. For binary values, `false` is considered to be less than `true`.
 
-For values that are not one of the basic primitive types, the only valid comparisons are Equal and Not Equal, which are implemented using Go's standard `==` and `!=` operators.
+For types without specific comparison rules, only equality and inequality are supported. OTTL uses Go equality when both values are comparable and deep equality otherwise.
+
+For equality and inequality, typed Go slices (such as the result of `Split`) and string-keyed maps can be compared with OTTL list or map literals and their corresponding pdata values. With mixed representations, the comparison preserves the Go types of the elements. Byte slices follow the byte-for-byte comparison rules below.
 
 A `pcommon.Value` is compared by extracting its underlying typed value and then applying the comparison rules for that type. When two `pcommon.Value` instances share the same underlying type, they are compared directly. A `pcommon.Value` with `ValueTypeEmpty` is considered equivalent to nil.
 
