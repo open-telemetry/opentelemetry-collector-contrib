@@ -11,7 +11,10 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/disk"
@@ -565,6 +568,158 @@ func TestScrape_UtilizationExcludesReservedBlocks(t *testing.T) {
 
 	actual := m.Gauge().DataPoints().At(0).DoubleValue()
 	assert.Equal(t, 0.63, actual, "utilization should be Used/(Used+Free), not Used/Total")
+}
+
+func TestScrape_BlockedUsageDoesNotStallScrape(t *testing.T) {
+	scraper, err := newFileSystemScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+	})
+	require.NoError(t, err)
+	scraper.usageTimeout = 50 * time.Millisecond
+
+	release := make(chan struct{})
+	t.Cleanup(func() { close(release) })
+	var stuckCalls atomic.Int32
+
+	scraper.partitions = func(context.Context, bool) ([]disk.PartitionStat, error) {
+		return []disk.PartitionStat{
+			{Device: "/dev/sda1", Mountpoint: "/", Fstype: "ext4"},
+			{Device: "nfs:/share", Mountpoint: "/mnt/stuck", Fstype: "nfs4"},
+		}, nil
+	}
+	scraper.usage = func(_ context.Context, mountpoint string) (*disk.UsageStat, error) {
+		if mountpoint == "/mnt/stuck" {
+			stuckCalls.Add(1)
+			<-release // ignores ctx, like statfs in D state
+		}
+		return &disk.UsageStat{Total: 100, Used: 60, Free: 40}, nil
+	}
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+	// Run the scrapes in a goroutine so a regression fails instead of hanging.
+	type scrapeResult struct {
+		md  pmetric.Metrics
+		err error
+	}
+	done := make(chan scrapeResult, 1)
+	go func() {
+		var r scrapeResult
+		for range 2 {
+			r.md, r.err = scraper.scrape(t.Context())
+		}
+		done <- r
+	}()
+
+	select {
+	case r := <-done:
+		require.Error(t, r.err)
+		assert.True(t, scrapererror.IsPartialScrapeError(r.err))
+		assert.Contains(t, r.err.Error(), "/mnt/stuck")
+
+		// The healthy mount is still reported.
+		m, err := findMetricByName(r.md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics(), "system.filesystem.usage")
+		require.NoError(t, err)
+		for _, dp := range m.Sum().DataPoints().All() {
+			mp, _ := dp.Attributes().Get("mountpoint")
+			assert.Equal(t, "/", mp.Str())
+		}
+		assert.Positive(t, m.Sum().DataPoints().Len())
+	case <-time.After(10 * time.Second):
+		t.Fatal("scrape blocked on a hung usage call")
+	}
+
+	// The second scrape must not start another call for the stuck mount.
+	assert.Equal(t, int32(1), stuckCalls.Load())
+}
+
+// With a receiver timeout, silent mounts listed first must not use up the
+// shared deadline before the healthy mounts after them are read, and the
+// scrape must wait for the deadline once, not once per silent mount.
+func TestScrape_SilentMountsDoNotStarveHealthyOnes(t *testing.T) {
+	scraper, err := newFileSystemScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+	})
+	require.NoError(t, err)
+
+	release := make(chan struct{})
+	t.Cleanup(func() { close(release) })
+
+	scraper.partitions = func(context.Context, bool) ([]disk.PartitionStat, error) {
+		return []disk.PartitionStat{
+			{Device: "nfs:/a", Mountpoint: "/mnt/stuck-a", Fstype: "nfs4"},
+			{Device: "nfs:/b", Mountpoint: "/mnt/stuck-b", Fstype: "nfs4"},
+			{Device: "/dev/sda1", Mountpoint: "/", Fstype: "ext4"},
+			{Device: "/dev/sdb1", Mountpoint: "/data", Fstype: "ext4"},
+		}, nil
+	}
+	scraper.usage = func(_ context.Context, mountpoint string) (*disk.UsageStat, error) {
+		if strings.HasPrefix(mountpoint, "/mnt/stuck") {
+			<-release // ignores ctx, like statfs in D state
+		}
+		return &disk.UsageStat{Total: 100, Used: 60, Free: 40}, nil
+	}
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+	const deadline = 300 * time.Millisecond
+	ctx, cancel := context.WithTimeout(t.Context(), deadline)
+	defer cancel()
+
+	start := time.Now()
+	md, err := scraper.scrape(ctx)
+	elapsed := time.Since(start)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "/mnt/stuck-a")
+	assert.Contains(t, err.Error(), "/mnt/stuck-b")
+	assert.NotContains(t, err.Error(), "/data")
+	assert.Less(t, elapsed, 2*deadline, "silent mounts were waited on one after another")
+
+	m, err := findMetricByName(md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics(), "system.filesystem.usage")
+	require.NoError(t, err)
+	reported := map[string]bool{}
+	for _, dp := range m.Sum().DataPoints().All() {
+		mp, _ := dp.Attributes().Get("mountpoint")
+		reported[mp.Str()] = true
+	}
+	assert.Equal(t, map[string]bool{"/": true, "/data": true}, reported)
+}
+
+// Two mount-table entries can share a mountpoint, e.g. an autofs placeholder
+// and the filesystem mounted over it. Both must be reported, and the shared
+// path must not race itself in usageInFlight.
+func TestScrape_SharedMountpointReportsBothEntries(t *testing.T) {
+	scraper, err := newFileSystemScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+	})
+	require.NoError(t, err)
+
+	scraper.partitions = func(context.Context, bool) ([]disk.PartitionStat, error) {
+		return []disk.PartitionStat{
+			{Device: "systemd-1", Mountpoint: "/mnt/auto", Fstype: "autofs"},
+			{Device: "nfs:/export", Mountpoint: "/mnt/auto", Fstype: "nfs4"},
+		}, nil
+	}
+	var calls atomic.Int32
+	scraper.usage = func(context.Context, string) (*disk.UsageStat, error) {
+		calls.Add(1)
+		// Slow enough that concurrent calls for the same path would overlap.
+		time.Sleep(100 * time.Millisecond)
+		return &disk.UsageStat{Total: 100, Used: 60, Free: 40}, nil
+	}
+	require.NoError(t, scraper.start(t.Context(), componenttest.NewNopHost()))
+
+	md, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, int32(1), calls.Load())
+
+	m, err := findMetricByName(md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics(), "system.filesystem.usage")
+	require.NoError(t, err)
+	devices := map[string]bool{}
+	for _, dp := range m.Sum().DataPoints().All() {
+		d, _ := dp.Attributes().Get("device")
+		devices[d.Str()] = true
+	}
+	assert.Equal(t, map[string]bool{"systemd-1": true, "nfs:/export": true}, devices)
 }
 
 func TestTranslateMountpoint(t *testing.T) {
