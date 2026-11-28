@@ -41,7 +41,7 @@ func newStreamTestReceiver(t *testing.T, processor receiverProcessor, ext compon
 		ReceiverCreateSettings: settings,
 	})
 	require.NoError(t, err)
-	return &awss3Receiver{
+	r := &awss3Receiver{
 		logger:        zap.NewNop(),
 		obsrecv:       obs,
 		dataProcessor: processor,
@@ -50,6 +50,8 @@ func newStreamTestReceiver(t *testing.T, processor receiverProcessor, ext compon
 			suffix:    ".txt",
 		}},
 	}
+	require.NoError(t, r.initDecompression())
+	return r
 }
 
 func newTextExtension(t *testing.T) extension.Extension {
@@ -364,6 +366,11 @@ func TestReceiveCompressedStreams(t *testing.T) {
 					name:    "truncated",
 					body:    body[:len(body)-3],
 					wantErr: true,
+				},
+				{
+					name:        "valid_after_truncated",
+					body:        body,
+					wantRecords: 1,
 				},
 				{
 					name:        "empty",
