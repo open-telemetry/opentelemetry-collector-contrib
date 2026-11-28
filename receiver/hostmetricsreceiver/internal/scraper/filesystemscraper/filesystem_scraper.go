@@ -82,7 +82,7 @@ func (s *filesystemsScraper) scrape(ctx context.Context) (pmetric.Metrics, error
 			// locked and unavailable. For this particular case, we do not want
 			// to log an error message on every poll.
 			// See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18236
-			s.settings.Logger.Debug("failed collecting locked partitions information: %w", zap.Error(err))
+			s.settings.Logger.Debug("failed collecting locked partitions information", zap.Error(err))
 		} else {
 			errors.AddPartial(0, fmt.Errorf("failed collecting partitions information: %w", err))
 		}

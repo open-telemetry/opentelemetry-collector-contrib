@@ -139,7 +139,7 @@ func (c *cgroupScanner) getCPUReservedInTask(taskID, clusterName string) int64 {
 func (c *cgroupScanner) getMEMReservedInTask(taskID, clusterName string, containers []ECSContainer) int64 {
 	memPath, err := getCGroupPathForTask(c.mountPoint, "memory", taskID, clusterName)
 	if err != nil {
-		c.logger.Warn("Failed to get memory cgroup path for task: %v", zap.Error(err))
+		c.logger.Warn("Failed to get memory cgroup path for task", zap.Error(err))
 		return int64(0)
 	}
 
