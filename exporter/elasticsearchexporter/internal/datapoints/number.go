@@ -78,9 +78,18 @@ func (dp Number) DynamicTemplate(metric pmetric.Metric, mode DynamicTemplateMode
 	}
 }
 
-// TODO: Numbers have a Temporality for Sum. https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52674
-func (Number) Temporality() string {
-	return ""
+func (dp Number) Temporality() string {
+	if dp.metric.Type() != pmetric.MetricTypeSum {
+		return ""
+	}
+	switch dp.metric.Sum().AggregationTemporality() {
+	case pmetric.AggregationTemporalityCumulative:
+		return "cumulative"
+	case pmetric.AggregationTemporalityDelta:
+		return "delta"
+	default:
+		return ""
+	}
 }
 
 func (Number) DocCount() uint64 {
