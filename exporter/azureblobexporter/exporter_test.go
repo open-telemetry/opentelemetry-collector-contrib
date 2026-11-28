@@ -36,6 +36,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression"
 )
 
 func TestNewExporter(t *testing.T) {
@@ -61,17 +62,32 @@ func TestNewExporter(t *testing.T) {
 		Encodings:  Encodings{},
 	}
 
-	me := newAzureBlobExporter(c, logger, pipeline.SignalMetrics)
+	me, createErr := newAzureBlobExporter(c, logger, pipeline.SignalMetrics)
+	require.NoError(t, createErr)
 	assert.NotNil(t, me)
 	assert.NoError(t, me.start(t.Context(), componenttest.NewNopHost()))
 
-	le := newAzureBlobExporter(c, logger, pipeline.SignalLogs)
+	le, createErr := newAzureBlobExporter(c, logger, pipeline.SignalLogs)
+	require.NoError(t, createErr)
 	assert.NotNil(t, le)
 	assert.NoError(t, le.start(t.Context(), componenttest.NewNopHost()))
 
-	te := newAzureBlobExporter(c, logger, pipeline.SignalTraces)
+	te, createErr := newAzureBlobExporter(c, logger, pipeline.SignalTraces)
+	require.NoError(t, createErr)
 	assert.NotNil(t, te)
 	assert.NoError(t, te.start(t.Context(), componenttest.NewNopHost()))
+}
+
+func TestNewExporterInvalidCompression(t *testing.T) {
+	t.Parallel()
+
+	c := &Config{
+		Compression:         configcompression.TypeGzip,
+		CompressionSettings: configcompression.CompressionParams{Level: 10},
+	}
+	ae, err := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.ErrorContains(t, err, "failed to create compression writer")
+	require.Nil(t, ae)
 }
 
 func TestExporterConsumeTelemetry(t *testing.T) {
@@ -107,7 +123,8 @@ func TestExporterConsumeTelemetry(t *testing.T) {
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
-			azureBlobExporter := newAzureBlobExporter(cfg.(*Config), zaptest.NewLogger(t), pipeline.SignalMetrics)
+			azureBlobExporter, createErr := newAzureBlobExporter(cfg.(*Config), zaptest.NewLogger(t), pipeline.SignalMetrics)
+			require.NoError(t, createErr)
 			assert.NoError(t, azureBlobExporter.start(t.Context(), componenttest.NewNopHost()))
 			azureBlobExporter.client = getMockAzBlobClient()
 
@@ -121,7 +138,8 @@ func TestExporterConsumeTelemetry(t *testing.T) {
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
-			azureBlobExporter := newAzureBlobExporter(cfg.(*Config), zaptest.NewLogger(t), pipeline.SignalMetrics)
+			azureBlobExporter, createErr := newAzureBlobExporter(cfg.(*Config), zaptest.NewLogger(t), pipeline.SignalMetrics)
+			require.NoError(t, createErr)
 			assert.NoError(t, azureBlobExporter.start(t.Context(), componenttest.NewNopHost()))
 			azureBlobExporter.client = getMockAzBlobClient()
 
@@ -135,7 +153,8 @@ func TestExporterConsumeTelemetry(t *testing.T) {
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
-			azureBlobExporter := newAzureBlobExporter(cfg.(*Config), zaptest.NewLogger(t), pipeline.SignalMetrics)
+			azureBlobExporter, createErr := newAzureBlobExporter(cfg.(*Config), zaptest.NewLogger(t), pipeline.SignalMetrics)
+			require.NoError(t, createErr)
 			assert.NoError(t, azureBlobExporter.start(t.Context(), componenttest.NewNopHost()))
 			azureBlobExporter.client = getMockAzBlobClient()
 
@@ -160,7 +179,8 @@ func TestGenerateBlobName(t *testing.T) {
 		},
 	}
 
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	ae, createErr := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	require.NoError(t, createErr)
 
 	now := time.Now()
 	metricsBlobName, err := ae.generateBlobNameWithCompression(pipeline.SignalMetrics, nil)
@@ -196,7 +216,8 @@ func TestGenerateBlobNameTimezoneSpecificLocation(t *testing.T) {
 		},
 	}
 
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	ae, createErr := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	require.NoError(t, createErr)
 	ae.timeLocation = loc
 
 	before := time.Now().In(loc)
@@ -231,7 +252,8 @@ func TestGenerateBlobNameSerialNumBefore(t *testing.T) {
 		},
 	}
 
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	ae, createErr := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	require.NoError(t, createErr)
 
 	assertFormat := func(blobName, format string) {
 		ext := filepath.Ext(format)
@@ -267,7 +289,8 @@ func TestGenerateBlobNameWithTemplate(t *testing.T) {
 	}
 	c.Auth.ConnectionString = "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net"
 
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	ae, createErr := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	require.NoError(t, createErr)
 	err := ae.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
@@ -350,7 +373,8 @@ func TestExporterAppendBlob(t *testing.T) {
 		Encodings: Encodings{},
 	}
 
-	ae := newAzureBlobExporter(c, logger, pipeline.SignalLogs)
+	ae, createErr := newAzureBlobExporter(c, logger, pipeline.SignalLogs)
+	require.NoError(t, createErr)
 	assert.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
 
 	mockClient := &mockAzBlobClient{url: "http://mock"}
@@ -364,7 +388,8 @@ func TestExporterAppendBlob(t *testing.T) {
 
 	// Test append blob disabled
 	c.AppendBlob.Enabled = false
-	ae = newAzureBlobExporter(c, logger, pipeline.SignalLogs)
+	ae, createErr = newAzureBlobExporter(c, logger, pipeline.SignalLogs)
+	require.NoError(t, createErr)
 	assert.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
 	mockClient = &mockAzBlobClient{url: "http://mock"}
 	mockClient.On("UploadStream", mock.Anything, "logs", mock.Anything, mock.Anything, mock.Anything).Return(azblob.UploadStreamResponse{}, nil)
@@ -401,7 +426,8 @@ func TestExporterAppendBlobError(t *testing.T) {
 		Encodings: Encodings{},
 	}
 
-	ae := newAzureBlobExporter(c, logger, pipeline.SignalLogs)
+	ae, createErr := newAzureBlobExporter(c, logger, pipeline.SignalLogs)
+	require.NoError(t, createErr)
 	assert.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
 
 	mockClient := &mockAzBlobClient{url: "http://mock"}
@@ -427,7 +453,8 @@ func TestGenerateBlobNameSerialNumberDisabled(t *testing.T) {
 		},
 	}
 
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	ae, createErr := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	require.NoError(t, createErr)
 
 	blobName, err := ae.generateBlobNameWithCompression(pipeline.SignalMetrics, nil)
 	require.NoError(t, err)
@@ -447,7 +474,8 @@ func TestGenerateBlobNameTimeParserDisabled(t *testing.T) {
 		},
 	}
 
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	ae, createErr := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	require.NoError(t, createErr)
 
 	blobName, err := ae.generateBlobNameWithCompression(pipeline.SignalMetrics, nil)
 	require.NoError(t, err)
@@ -468,7 +496,8 @@ func TestGenerateBlobNameTimeParserDisabledWithSerialNumber(t *testing.T) {
 		},
 	}
 
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	ae, createErr := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	require.NoError(t, createErr)
 
 	blobName, err := ae.generateBlobNameWithCompression(pipeline.SignalMetrics, nil)
 	require.NoError(t, err)
@@ -490,7 +519,8 @@ func TestGenerateBlobNameWithTimeParserRanges(t *testing.T) {
 		},
 	}
 
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	ae, createErr := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	require.NoError(t, createErr)
 
 	blobName, err := ae.generateBlobNameWithCompression(pipeline.SignalMetrics, nil)
 	require.NoError(t, err)
@@ -517,7 +547,8 @@ func TestGenerateBlobNameWithMultipleTimeParserRanges(t *testing.T) {
 		},
 	}
 
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	ae, createErr := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	require.NoError(t, createErr)
 
 	blobName, err := ae.generateBlobNameWithCompression(pipeline.SignalMetrics, nil)
 	require.NoError(t, err)
@@ -540,7 +571,8 @@ func TestGenerateBlobNameWithInvalidTimeParserRange(t *testing.T) {
 		},
 	}
 
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	ae, createErr := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+	require.NoError(t, createErr)
 
 	// Should not error, just skip invalid ranges and log warnings
 	blobName, err := ae.generateBlobNameWithCompression(pipeline.SignalMetrics, nil)
@@ -552,80 +584,74 @@ func TestGenerateBlobNameWithInvalidTimeParserRange(t *testing.T) {
 func TestCompression(t *testing.T) {
 	t.Parallel()
 
-	testData := []byte(`{"test":"data","value":42}`)
+	testData := bytes.Repeat([]byte(`{"test":"data","value":42}`+"\n"), 64)
 
 	tests := []struct {
 		name            string
 		compression     configcompression.Type
+		level           configcompression.Level
 		expectExtension string
+		storeOnly       bool
 	}{
-		{
-			name:            "gzip compression",
-			compression:     configcompression.TypeGzip,
-			expectExtension: ".gz",
-		},
-		{
-			name:            "zstd compression",
-			compression:     configcompression.TypeZstd,
-			expectExtension: ".zst",
-		},
-		{
-			name:            "no compression",
-			compression:     "",
-			expectExtension: "",
-		},
+		{name: "gzip", compression: configcompression.TypeGzip, level: 1, expectExtension: ".gz"},
+		{name: "gzip level zero", compression: configcompression.TypeGzip, expectExtension: ".gz", storeOnly: true},
+		{name: "zstd", compression: configcompression.TypeZstd, expectExtension: ".zst"},
+		{name: "zlib", compression: configcompression.TypeZlib, level: configcompression.DefaultCompressionLevel, expectExtension: ".zlib"},
+		{name: "deflate", compression: configcompression.TypeDeflate, level: configcompression.DefaultCompressionLevel, expectExtension: ".deflate"},
+		{name: "snappy", compression: configcompression.TypeSnappy, expectExtension: ".snappy"},
+		{name: "framed snappy", compression: configcompression.TypeSnappyFramed, expectExtension: ".snappy"},
+		{name: "lz4", compression: configcompression.TypeLz4, expectExtension: ".lz4"},
+		{name: "unset compression"},
+		{name: "explicit none", compression: "none"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			c := &Config{
 				BlobNameFormat: BlobNameFormat{
-					MetricsFormat:    "2006/01/02/metrics.json",
-					SerialNumEnabled: false,
+					MetricsFormat: "metrics.json",
+					TemplateScope: TemplateScopeRequest,
 				},
-				Compression: tt.compression,
-				FormatType:  "json",
+				Container:           TelemetryConfig{Metrics: "metrics"},
+				Compression:         tt.compression,
+				CompressionSettings: configcompression.CompressionParams{Level: tt.level},
+				FormatType:          formatTypeJSON,
 				Auth: Authentication{
 					Type:             ConnectionString,
 					ConnectionString: "DefaultEndpointsProtocol=https;AccountName=fake;AccountKey=ZmFrZQ==;EndpointSuffix=core.windows.net",
 				},
 			}
+			require.NoError(t, c.Validate())
 
-			ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+			ae, createErr := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+			require.NoError(t, createErr)
+			require.Equal(t, tt.compression.IsCompressed(), ae.writer != nil)
 			require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
 
-			compressedData, err := ae.compressContent(testData)
-			require.NoError(t, err)
-
-			switch tt.compression {
-			case "":
-				assert.Equal(t, testData, compressedData, "Uncompressed content should match original")
-			case configcompression.TypeGzip, configcompression.TypeZstd:
-				decompressed, closer := decompressData(t, compressedData, tt.compression)
-				if closer != nil {
-					defer closer()
-				}
-				assert.Equal(t, testData, decompressed, "Decompressed content should match original")
-				// Note: for very small payloads like our test data, compression may not reduce size due to header overhead.
-				// We still verify correctness via roundtrip.
-			}
-
-			// Test filename includes correct extension
+			client := &mockAzBlobClient{}
+			client.On("UploadStream", mock.Anything, "metrics", "metrics.json"+tt.expectExtension, mock.Anything, mock.Anything).
+				Run(func(args mock.Arguments) {
+					body, err := io.ReadAll(args.Get(3).(io.Reader))
+					require.NoError(t, err)
+					if tt.storeOnly {
+						assert.Greater(t, len(body), len(testData), "level zero should store the payload with format overhead")
+					} else if tt.compression.IsCompressed() {
+						assert.Less(t, len(body), len(testData), "the configured level should compress the repetitive payload")
+					}
+					assert.Equal(t, testData, decompressData(t, body, tt.compression))
+				}).Return(azblob.UploadStreamResponse{}, nil).Once()
+			ae.client = client
 			blobName, err := ae.generateBlobNameWithCompression(pipeline.SignalMetrics, nil)
 			require.NoError(t, err)
-			if tt.expectExtension != "" {
-				assert.True(t, strings.HasSuffix(blobName, tt.expectExtension),
-					"Generated blob name should end with %q, got %q", tt.expectExtension, blobName)
-			} else {
-				assert.False(t, strings.HasSuffix(blobName, ".gz") || strings.HasSuffix(blobName, ".zst"))
-			}
+			require.NoError(t, ae.consumeData(t.Context(), blobName, testData, pipeline.SignalMetrics))
+			client.AssertExpectations(t)
 		})
 	}
 }
 
-// decompressData decompresses data based on the compression type and returns the decompressed data
-// along with a closer function that should be deferred (or nil if no special closing needed)
-func decompressData(t *testing.T, compressedData []byte, compression configcompression.Type) ([]byte, func()) {
+func decompressData(t *testing.T, compressedData []byte, compression configcompression.Type) []byte {
 	t.Helper()
 	switch compression {
 	case configcompression.TypeGzip:
@@ -633,21 +659,64 @@ func decompressData(t *testing.T, compressedData []byte, compression configcompr
 		require.NoError(t, err)
 		decompressed, err := io.ReadAll(reader)
 		require.NoError(t, err)
-		return decompressed, func() {
-			closeErr := reader.Close()
-			require.NoError(t, closeErr)
-		}
+		require.NoError(t, reader.Close())
+		return decompressed
 	case configcompression.TypeZstd:
 		reader, err := zstd.NewReader(bytes.NewReader(compressedData))
 		require.NoError(t, err)
+		defer reader.Close()
 		decompressed, err := io.ReadAll(reader)
 		require.NoError(t, err)
-		return decompressed, func() {
-			reader.Close()
-		}
+		return decompressed
 	default:
-		t.Fatalf("Unsupported compression type: %s", compression)
-		return nil, nil
+		if compression == configcompression.TypeSnappyFramed {
+			compression = configcompression.TypeSnappy
+		}
+		reader, err := xcompression.NewReaderFactory().NewReader(compression, configcompression.CompressionParams{})
+		require.NoError(t, err)
+		var decoded bytes.Buffer
+		_, err = reader.DecompressBytes(&decoded, compressedData)
+		require.NoError(t, err)
+		return decoded.Bytes()
+	}
+}
+
+func TestAppendBlobCompression(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		compression configcompression.Type
+		suffix      string
+	}{
+		{compression: configcompression.TypeGzip, suffix: ".gz"},
+		{compression: configcompression.TypeZstd, suffix: ".zst"},
+	} {
+		t.Run(string(tc.compression), func(t *testing.T) {
+			t.Parallel()
+
+			c := createDefaultConfig().(*Config)
+			c.Auth.ConnectionString = "DefaultEndpointsProtocol=https;AccountName=fake;AccountKey=ZmFrZQ==;EndpointSuffix=core.windows.net"
+			c.AppendBlob = AppendBlob{Enabled: true, Separator: "\n"}
+			c.BlobNameFormat = BlobNameFormat{LogsFormat: "logs.json", TemplateScope: TemplateScopeRequest}
+			c.Compression = tc.compression
+			require.NoError(t, c.Validate())
+
+			ae, createErr := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+			require.NoError(t, createErr)
+			require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
+			var blob bytes.Buffer
+			client := &mockAzBlobClient{}
+			client.On("AppendBlock", mock.Anything, "logs", "logs.json"+tc.suffix, mock.Anything, mock.Anything).
+				Run(func(args mock.Arguments) { _, _ = blob.Write(args.Get(3).([]byte)) }).Return(nil).Twice()
+			ae.client = client
+			blobName, err := ae.generateBlobNameWithCompression(pipeline.SignalLogs, nil)
+			require.NoError(t, err)
+			for _, payload := range []string{"first", "second"} {
+				require.NoError(t, ae.consumeData(t.Context(), blobName, []byte(payload), pipeline.SignalLogs))
+			}
+			client.AssertExpectations(t)
+			assert.Equal(t, "first\nsecond\n", string(decompressData(t, blob.Bytes(), tc.compression)))
+		})
 	}
 }
 
@@ -768,7 +837,8 @@ func generateLogsWithActivities(activities ...string) plog.Logs {
 func TestConsumeLogsPartitionsByRenderedBlobName(t *testing.T) {
 	c := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
 
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	ae, createErr := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, createErr)
 	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
 
 	client := newRecordingAzBlobClient(nil)
@@ -803,7 +873,8 @@ func TestConsumeLogsPartitionsByRenderedBlobName(t *testing.T) {
 func TestConsumeLogsSingleUploadWhenBlobNamesMatch(t *testing.T) {
 	c := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
 
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	ae, createErr := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, createErr)
 	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
 
 	mockClient := &mockAzBlobClient{url: "http://mock"}
@@ -819,7 +890,8 @@ func TestConsumeLogsSingleUploadWhenBlobNamesMatch(t *testing.T) {
 func TestConsumeLogsSingleUploadWhenTemplateDisabled(t *testing.T) {
 	c := newPartitionTestConfig("static/logs.json", false)
 
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	ae, createErr := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, createErr)
 	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
 
 	mockClient := &mockAzBlobClient{url: "http://mock"}
@@ -837,7 +909,8 @@ func TestConsumeLogsPartitionFallsBackOnTemplateError(t *testing.T) {
 	// object) must fall back to a single upload with the default name format.
 	c := newPartitionTestConfig("{{ .NoSuchField }}", true)
 
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	ae, createErr := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, createErr)
 	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
 
 	mockClient := &mockAzBlobClient{url: "http://mock"}
@@ -916,7 +989,8 @@ func uploadedLogBodies(t *testing.T, payloads [][]byte) []string {
 func TestConsumeLogsPartialFailureRetriesOnlyFailedGroups(t *testing.T) {
 	c := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
 
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	ae, createErr := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, createErr)
 	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
 
 	// activity-b fails once, then succeeds; activity-a always succeeds.
@@ -965,7 +1039,8 @@ func TestPartitionWithExporterHelperRetry(t *testing.T) {
 	qCfg.WaitForResult = true
 	cfg.QueueSettings = configoptional.Some(qCfg)
 
-	ae := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+	ae, createErr := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, createErr)
 	le, err := exporterhelper.NewLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg,
 		ae.ConsumeLogs,
 		exporterhelper.WithStart(ae.start),
@@ -995,7 +1070,8 @@ func TestPartitionWithExporterHelperRetry(t *testing.T) {
 func TestConsumeLogsAllGroupsUploadedDespiteFailure(t *testing.T) {
 	c := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
 
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	ae, createErr := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, createErr)
 	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
 
 	// Middle group fails: the other groups must still be uploaded.
@@ -1015,7 +1091,8 @@ func TestConsumeLogsAllGroupsUploadedDespiteFailure(t *testing.T) {
 func TestConsumeLogsManyGroups(t *testing.T) {
 	c := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
 
-	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	ae, createErr := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, createErr)
 	require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
 
 	client := newRecordingAzBlobClient(nil)
@@ -1050,7 +1127,8 @@ func TestPartitionWithQueueBatching(t *testing.T) {
 	})
 	cfg.QueueSettings = configoptional.Some(qCfg)
 
-	ae := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+	ae, createErr := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, createErr)
 	le, err := exporterhelper.NewLogs(t.Context(), exportertest.NewNopSettings(metadata.Type), cfg,
 		ae.ConsumeLogs,
 		exporterhelper.WithStart(ae.start),

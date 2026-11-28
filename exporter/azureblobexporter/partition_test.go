@@ -35,7 +35,8 @@ import (
 func TestPartitionUploadsGroupsSequentially(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		cfg := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
-		exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+		exporter, createErr := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+		require.NoError(t, createErr)
 		require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
 
 		started := make(chan string, 3)
@@ -75,7 +76,8 @@ func TestPartitionGroupsShareRequestTime(t *testing.T) {
 		cfg.BlobNameFormat.TimeParserEnabled = true
 		// Parse only the hour, not the resource-specific prefix.
 		cfg.BlobNameFormat.TimeParserRanges = []string{"2-4"}
-		exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+		exporter, createErr := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+		require.NoError(t, createErr)
 		require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
 
 		var names []string
@@ -104,7 +106,8 @@ func TestPartitionGroupsByResolvedBlobName(t *testing.T) {
 	cfg.AppendBlob.Enabled = false
 	cfg.BlobNameFormat.TimeParserEnabled = true
 	cfg.BlobNameFormat.Timezone = "UTC"
-	exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+	exporter, createErr := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, createErr)
 	require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
 	client := newRecordingAzBlobClient(nil)
 	exporter.client = client
@@ -131,7 +134,8 @@ func TestPartitionCancellationPreservesUnsentLogs(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := newPartitionTestConfig(`{{ getResourceLogAttr . 0 "activity-id" }}.json`, true)
-			exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+			exporter, createErr := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+			require.NoError(t, createErr)
 			require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
 			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
@@ -178,7 +182,8 @@ func TestConsumeCanceledBeforePartitioning(t *testing.T) {
 		t.Run(signal.String(), func(t *testing.T) {
 			input := newPartitionSignalInput(signal, []int{1, 1, 2})
 			cfg := newPartitionTestConfig("logs.json", true)
-			exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), signal)
+			exporter, createErr := newAzureBlobExporter(cfg, zaptest.NewLogger(t), signal)
+			require.NoError(t, createErr)
 			require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
 			client := newRecordingAzBlobClient(nil)
 			exporter.client = client
@@ -209,7 +214,8 @@ func TestConsumeCanceledBeforePartitioning(t *testing.T) {
 func TestPartitionKeepsRenderedName(t *testing.T) {
 	cfg := newPartitionTestConfig("{{ .LogRecordCount }}.json", true)
 	cfg.AppendBlob.Enabled = false
-	exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+	exporter, createErr := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+	require.NoError(t, createErr)
 	require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
 	client := newRecordingAzBlobClient(nil)
 	exporter.client = client
@@ -234,7 +240,8 @@ func TestPartitionLaterResourceTemplateErrorFallsBack(t *testing.T) {
 	const nameTemplate = `{{ index (getResourceLogAttr . 0 "parts") 1 }}.json`
 	cfg := newPartitionTestConfig(nameTemplate, true)
 	core, observed := observer.New(zap.WarnLevel)
-	exporter := newAzureBlobExporter(cfg, zap.New(core), pipeline.SignalLogs)
+	exporter, createErr := newAzureBlobExporter(cfg, zap.New(core), pipeline.SignalLogs)
+	require.NoError(t, createErr)
 	require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
 	client := newRecordingAzBlobClient(nil)
 	exporter.client = client
@@ -277,7 +284,8 @@ func TestPartitionRenderedNamesAcrossSignals(t *testing.T) {
 				cfg.BlobNameFormat.TracesFormat = input.countTemplate
 				cfg.BlobNameFormat.TemplateScope = tc.scope
 				cfg.AppendBlob.Enabled = false
-				exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), signal)
+				exporter, createErr := newAzureBlobExporter(cfg, zaptest.NewLogger(t), signal)
+				require.NoError(t, createErr)
 				require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
 				client := newRecordingAzBlobClient(nil)
 				exporter.client = client
@@ -325,7 +333,8 @@ func TestPartitionFallbackAcrossSignals(t *testing.T) {
 			cfg.BlobNameFormat.MetricsFormat = input.failingTemplate
 			cfg.BlobNameFormat.TracesFormat = input.failingTemplate
 			core, observed := observer.New(zap.WarnLevel)
-			exporter := newAzureBlobExporter(cfg, zap.New(core), signal)
+			exporter, createErr := newAzureBlobExporter(cfg, zap.New(core), signal)
+			require.NoError(t, createErr)
 			require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
 			client := newRecordingAzBlobClient(nil)
 			exporter.client = client
@@ -353,7 +362,8 @@ func TestPartitionPartialFailureCarriesOnlyFailedData(t *testing.T) {
 			cfg := newPartitionTestConfig(input.countTemplate, true)
 			cfg.BlobNameFormat.MetricsFormat = input.countTemplate
 			cfg.BlobNameFormat.TracesFormat = input.countTemplate
-			exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), signal)
+			exporter, createErr := newAzureBlobExporter(cfg, zaptest.NewLogger(t), signal)
+			require.NoError(t, createErr)
 			require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
 			client := newRecordingAzBlobClient(map[string]int{"2.json": 1})
 			exporter.client = client
@@ -393,7 +403,7 @@ func TestPartitionPartialFailureCarriesOnlyFailedData(t *testing.T) {
 }
 
 func TestPartitionPreservesNameFormatting(t *testing.T) {
-	for _, compression := range []configcompression.Type{"", configcompression.TypeGzip, configcompression.TypeZstd} {
+	for _, compression := range []configcompression.Type{"", configcompression.TypeGzip, configcompression.TypeZstd, configcompression.TypeZlib} {
 		for _, serialBeforeExtension := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%s/before_extension=%t", compression, serialBeforeExtension), func(t *testing.T) {
 				cfg := newPartitionTestConfig(`{{ .LogRecordCount }}/2006.json`, true)
@@ -405,7 +415,8 @@ func TestPartitionPreservesNameFormatting(t *testing.T) {
 				cfg.BlobNameFormat.SerialNumEnabled = true
 				cfg.BlobNameFormat.SerialNumRange = 1
 				cfg.BlobNameFormat.SerialNumBeforeExtension = serialBeforeExtension
-				exporter := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+				exporter, createErr := newAzureBlobExporter(cfg, zaptest.NewLogger(t), pipeline.SignalLogs)
+				require.NoError(t, createErr)
 				require.NoError(t, exporter.start(t.Context(), componenttest.NewNopHost()))
 				client := newRecordingAzBlobClient(nil)
 				exporter.client = client
@@ -421,6 +432,8 @@ func TestPartitionPreservesNameFormatting(t *testing.T) {
 					suffix = `\.gz`
 				case configcompression.TypeZstd:
 					suffix = `\.zst`
+				case configcompression.TypeZlib:
+					suffix = `\.zlib`
 				}
 				for name, payloads := range client.uploads {
 					pattern := `^[12]/` + yearPattern + `\.json_0` + suffix + `$`

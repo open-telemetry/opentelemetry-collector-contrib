@@ -5,7 +5,6 @@ package azureblobexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -14,7 +13,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"text/template"
 	"time"
 
@@ -22,9 +20,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/appendblob"
-	"github.com/klauspost/compress/zstd"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -32,6 +28,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression"
 )
 
 type azureBlobExporter struct {
@@ -42,8 +40,7 @@ type azureBlobExporter struct {
 	marshaller       *marshaller
 	blobNameTemplate *blobNameTemplate
 	timeLocation     *time.Location
-	gzipWriterPool   *sync.Pool
-	zstdWriterPool   *sync.Pool
+	writer           xcompression.Writer
 }
 
 type blobNameTemplate struct {
@@ -202,35 +199,23 @@ func (c *azblobClientImpl) AppendBlock(ctx context.Context, containerName, blobN
 	return fmt.Errorf("failed to append block: %w", err)
 }
 
-func newAzureBlobExporter(config *Config, logger *zap.Logger, signal pipeline.Signal) *azureBlobExporter {
+func newAzureBlobExporter(config *Config, logger *zap.Logger, signal pipeline.Signal) (*azureBlobExporter, error) {
+	var w xcompression.Writer
+	if config.Compression.IsCompressed() {
+		writer, err := xcompression.NewWriterFactory().NewWriter(config.Compression, config.CompressionSettings)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create compression writer: %w", err)
+		}
+		w = writer
+	}
+
 	return &azureBlobExporter{
 		config:           config,
 		logger:           logger,
 		signal:           signal,
 		blobNameTemplate: &blobNameTemplate{},
-		gzipWriterPool: &sync.Pool{
-			New: func() any {
-				// Create a new gzip writer that writes to a dummy buffer initially
-				// It will be reset to the actual destination when used
-				writer := gzip.NewWriter(io.Discard)
-				return writer
-			},
-		},
-		zstdWriterPool: &sync.Pool{
-			New: func() any {
-				// Create a new zstd writer that writes to a dummy buffer initially
-				// It will be reset to the actual destination when used
-				writer, err := zstd.NewWriter(io.Discard)
-				if err != nil {
-					logger.Error("failed to create zstd writer for pool, falling back to on-demand creation",
-						zap.Error(err))
-					// Return nil on error - sync.Pool will handle this gracefully
-					return nil
-				}
-				return writer
-			},
-		},
-	}
+		writer:           w,
+	}, nil
 }
 
 func randomInRange(low, hi int) int {
@@ -404,13 +389,7 @@ func (e *azureBlobExporter) resolveBlobName(now time.Time, format string) resolv
 		resolved = resolvedBlobName{prefix: e.parseTimeInBlobName(now, format)}
 	}
 
-	switch e.config.Compression {
-	case configcompression.TypeGzip:
-		resolved.suffix += ".gz"
-	case configcompression.TypeZstd:
-		resolved.suffix += ".zst"
-	}
-
+	resolved.suffix = xcompression.AppendFileExtension(resolved.suffix, e.config.Compression)
 	return resolved
 }
 
@@ -516,7 +495,11 @@ func (e *azureBlobExporter) renderBlobNameTemplate(signal pipeline.Signal, telem
 }
 
 func (e *azureBlobExporter) consumeData(ctx context.Context, blobName string, data []byte, signal pipeline.Signal) error {
-	// Compress the content if compression is configured (note: for append_blob, compression is applied to each block)
+	if e.config.AppendBlob.Enabled {
+		// Keep the separator inside the frame so consecutive blocks form a decodable stream.
+		data = append(data, e.config.AppendBlob.Separator...)
+	}
+
 	compressedData, err := e.compressContent(data)
 	if err != nil {
 		return fmt.Errorf("failed to compress content: %w", err)
@@ -536,10 +519,6 @@ func (e *azureBlobExporter) consumeData(ctx context.Context, blobName string, da
 	}
 
 	if e.config.AppendBlob.Enabled {
-		// Add separator if configured
-		if e.config.AppendBlob.Separator != "" {
-			data = append(data, []byte(e.config.AppendBlob.Separator)...)
-		}
 		err = e.client.AppendBlock(ctx, containerName, blobName, data, nil)
 	} else {
 		blobContentReader := bytes.NewReader(data)
@@ -559,70 +538,15 @@ func (e *azureBlobExporter) consumeData(ctx context.Context, blobName string, da
 	return nil
 }
 
-// compressContent compresses the data using the configured compression type.
-// It uses a pool for reuse of compressors to reduce GC pressure.
 func (e *azureBlobExporter) compressContent(raw []byte) ([]byte, error) {
-	switch e.config.Compression {
-	case configcompression.TypeGzip:
-		return compress[*gzip.Writer](e.gzipWriterPool, raw, func(w io.Writer) (*gzip.Writer, error) {
-			return gzip.NewWriter(w), nil
-		})
-	case configcompression.TypeZstd:
-		return compress[*zstd.Encoder](e.zstdWriterPool, raw, func(w io.Writer) (*zstd.Encoder, error) {
-			return zstd.NewWriter(w)
-		})
-	default:
+	if e.writer == nil {
 		return raw, nil
 	}
-}
-
-type poolItem interface {
-	io.WriteCloser
-	Reset(io.Writer)
-}
-
-func compress[T poolItem](pool *sync.Pool, raw []byte, newItem func(io.Writer) (T, error)) ([]byte, error) {
-	if pool == nil {
-		return nil, errors.New("unexpected: compress pool is nil")
-	}
-
-	content := bytes.NewBuffer(nil)
-
-	// Get writer from pool or create new one
-	pooled := pool.Get()
-	var zipper T
-	var fromPool bool
-	if pooled != nil {
-		if w, ok := pooled.(T); ok {
-			zipper = w
-			zipper.Reset(content)
-			fromPool = true
-		}
-	}
-	if !fromPool {
-		var err error
-		zipper, err = newItem(content)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Write the data
-	if _, err := zipper.Write(raw); err != nil {
-		// Always close to release resources, but ignore close error on write failure
-		_ = zipper.Close()
+	data := bytes.NewBuffer(nil)
+	if _, err := e.writer.CompressBytes(data, raw); err != nil {
 		return nil, err
 	}
-
-	// Close the writer
-	if err := zipper.Close(); err != nil {
-		return nil, err
-	}
-
-	// Only return the writer to the pool after successful write and close
-	pool.Put(zipper)
-
-	return content.Bytes(), nil
+	return data.Bytes(), nil
 }
 
 func newReadSeekCloserWrapper(data []byte) *readSeekCloserWrapper {

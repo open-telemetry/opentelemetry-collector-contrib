@@ -7,6 +7,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.15.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.8.3
 	github.com/klauspost/compress v1.20.5
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression v0.166.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.72.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/component/componenttest v0.166.1-0.20261126161120-4c6c46bf6bc6
@@ -51,6 +52,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.166.0
+	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pierrec/lz4/v4 v4.1.28 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/stretchr/objx v0.5.3 // indirect
@@ -103,3 +105,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression => ../../pkg/xcompression

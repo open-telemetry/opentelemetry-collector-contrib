@@ -44,7 +44,8 @@ The following settings can be optionally configured and have default values:
   - serial_num_before_extension (default `false`): places the serial number before the file extension if there is one. e.g `blob_name_{serial_num}.json` instead of `blob_name.json_{serial_num}`
   - time_parser_enabled (default `true`): controls whether the exporter interprets the format string as a Go time layout. When `false`, values such as `2006` or `15_04_05` are treated as literal text.
   - time_parser_ranges (default `nil`): limits time formatting to specific parts of the blob name. When not set (nil), the entire blob name is time-formatted if `time_parser_enabled` is `true`. Provide a list of character ranges like `["0-10", "15-25"]` to only apply time formatting within those positions. For example, if your blob name is `prefix/2006/01/02/file.json` and you set `time_parser_ranges: ["7-17"]`, only the `2006/01/02` portion will be replaced with actual date values, while `prefix/` and `/file.json` remain unchanged. This is helpful when your blob name contains patterns like `2006` that you want to keep as literal text.
-- compression (default `""`): sets the algorithm used to process the payload before uploading to Azure Blob Storage. Valid values are `gzip`, `zstd`, or no value set (uncompressed). The appropriate extension (`.gz` or `.zst`) is automatically appended to the blob name.
+- `compression` selects the algorithm for uploaded data. See [Compression](#compression).
+- `compression_settings.level` sets the compression level for `gzip`, `zstd`, `zlib`, or `deflate`.
 - format (default `json`): `json` or `proto`. which present otel json or otel protobuf format, the file extension will be `json` or `pb`.
 - encodings (default using encoding specified in `format`, which is `json`): if specified, uses the encoding extension to encode telemetry data. Overrides format.
   - logs (default `nil`): encoding component id.
@@ -58,6 +59,26 @@ The following settings can be optionally configured and have default values:
   - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
   - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
   - `max_elapsed_time` (default = 120s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
+
+### Compression
+
+The exporter appends the suffix for the selected compression format to the generated blob name.
+
+| `compression` | Format | Blob suffix |
+| --- | --- | --- |
+| `none` or unset | Uncompressed | None |
+| `gzip` | Gzip | `.gz` |
+| `zstd` | Zstandard | `.zst` |
+| `zlib` | Zlib | `.zlib` |
+| `deflate` | Raw DEFLATE | `.deflate` |
+| `snappy` or `x-snappy-framed` | Framed Snappy | `.snappy` |
+| `lz4` | LZ4 frame | `.lz4` |
+
+The exporter passes the configured level to the codec. If you omit the level, it uses `0`.
+For `gzip`, `zlib`, and `deflate`, level `0` stores the payload without compressing it inside
+the selected format. Set `-1` for the codec default, `-2` for Huffman-only compression, or
+a level from `1` through `9` to trade speed for compression. For `zstd`, level `0` selects
+the fastest encoder setting, and level `3` selects the codec default.
 
 ### Blob Name Templates
 
@@ -112,7 +133,9 @@ exporter:
     append_blob:
       enabled: true
       separator: "\n"
-    compression: gzip  # or "zstd" or leave unset for no compression
+    compression: gzip
+    compression_settings:
+      level: 1
 ```
 
 ### Append Blob
@@ -122,3 +145,8 @@ When `append_blob` is enabled:
 - New data will be appended to existing blobs rather than creating new ones
 - The configured separator will be inserted between data blocks
 - If the blob doesn't exist, it will be created automatically
+
+Append blobs support `gzip` and `zstd` compression. Each append is compressed as a separate
+frame that includes the configured separator. Use a reader that supports concatenated frames.
+Use a new blob name when switching from an existing compressed append blob that contains
+uncompressed separators between frames.

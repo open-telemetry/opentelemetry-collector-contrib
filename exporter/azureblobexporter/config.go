@@ -15,8 +15,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-var errUnknownCompression = errors.New("unknown compression type")
-
 type TelemetryConfig struct {
 	Logs    string `mapstructure:"logs"`
 	Metrics string `mapstructure:"metrics"`
@@ -114,8 +112,11 @@ type Config struct {
 
 	// Compression sets the algorithm used to process the payload
 	// before uploading to Azure Blob Storage.
-	// Valid values are: `gzip`, `zstd`, or no value set.
+	// Supported values are gzip, zstd, zlib, deflate, snappy, x-snappy-framed, lz4, and none.
 	Compression configcompression.Type `mapstructure:"compression"`
+
+	// CompressionSettings configures the selected compression algorithm.
+	CompressionSettings configcompression.CompressionParams `mapstructure:"compression_settings,omitempty"`
 
 	// Encoding extension to apply for logs/metrics/traces. If present, overrides the marshaler configuration option and format.
 	Encodings Encodings `mapstructure:"encodings"`
@@ -158,14 +159,13 @@ func (c *Config) Validate() error {
 		return errors.New("unknown format type: " + c.FormatType)
 	}
 
-	if c.Compression.IsCompressed() {
-		if c.Compression != configcompression.TypeGzip && c.Compression != configcompression.TypeZstd {
-			return fmt.Errorf(
-				"%w %q, valid values are %q and %q",
-				errUnknownCompression, c.Compression,
-				configcompression.TypeGzip, configcompression.TypeZstd,
-			)
-		}
+	if err := c.Compression.ValidateParams(c.CompressionSettings); err != nil {
+		return fmt.Errorf("compression settings invalid: %w", err)
+	}
+
+	if c.AppendBlob.Enabled && c.Compression.IsCompressed() &&
+		c.Compression != configcompression.TypeGzip && c.Compression != configcompression.TypeZstd {
+		return errors.New("append_blob supports gzip or zstd compression")
 	}
 
 	return nil

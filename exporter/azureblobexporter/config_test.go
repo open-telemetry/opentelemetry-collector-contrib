@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
@@ -19,6 +20,58 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter/internal/metadata"
 )
+
+func TestCompressionSettings(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name        string
+		compression string
+		settings    map[string]any
+		appendBlob  bool
+		wantLevel   configcompression.Level
+		wantError   string
+	}{
+		{name: "default gzip", compression: "gzip"},
+		{name: "default zstd", compression: "zstd"},
+		{name: "empty settings", compression: "gzip", settings: map[string]any{}},
+		{name: "null level", compression: "gzip", settings: map[string]any{"level": nil}},
+		{name: "explicit zero", compression: "gzip", settings: map[string]any{"level": 0}},
+		{name: "custom deflate", compression: "deflate", settings: map[string]any{"level": 1}, wantLevel: 1},
+		{name: "invalid gzip level", compression: "gzip", settings: map[string]any{"level": 10}, wantError: "unsupported parameters"},
+		{name: "level without compression", compression: "none", settings: map[string]any{"level": 1}, wantError: "unsupported parameters"},
+		{name: "level with lz4", compression: "lz4", settings: map[string]any{"level": 1}, wantError: "unsupported parameters"},
+		{name: "zstd append blob", compression: "zstd", appendBlob: true},
+		{name: "zlib append blob", compression: "zlib", appendBlob: true, wantError: "append_blob supports gzip or zstd"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			values := map[string]any{
+				"auth":        map[string]any{"connection_string": "test"},
+				"compression": tc.compression,
+				"append_blob": map[string]any{"enabled": tc.appendBlob},
+			}
+			if tc.settings != nil {
+				values["compression_settings"] = tc.settings
+			}
+			cfg := createDefaultConfig().(*Config)
+			require.NoError(t, confmap.NewFromStringMap(values).Unmarshal(cfg))
+			if tc.wantError != "" {
+				require.ErrorContains(t, confmap.Validate(cfg), tc.wantError)
+				return
+			}
+			require.NoError(t, confmap.Validate(cfg))
+			assert.Equal(t, tc.wantLevel, cfg.CompressionSettings.Level)
+
+			roundTrip := confmap.New()
+			require.NoError(t, roundTrip.Marshal(cfg))
+			decoded := createDefaultConfig().(*Config)
+			require.NoError(t, roundTrip.Unmarshal(decoded))
+			assert.Equal(t, cfg.CompressionSettings, decoded.CompressionSettings)
+		})
+	}
+}
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
