@@ -5,6 +5,7 @@ package prometheusexporter
 
 import (
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 
@@ -57,10 +58,11 @@ func TestLoadConfig(t *testing.T) {
 						"label1":        "value1",
 						"another label": "spaced value",
 					},
-					SendTimestamps:    true,
-					MetricExpiration:  60 * time.Minute,
-					AddMetricSuffixes: false,
-					QueueBatchConfig:  createDefaultConfig().(*Config).QueueBatchConfig,
+					SendTimestamps:      true,
+					MetricExpiration:    60 * time.Minute,
+					AddMetricSuffixes:   false,
+					TranslationStrategy: TranslationStrategyUnderscoreEscapingWithSuffixes,
+					QueueBatchConfig:    createDefaultConfig().(*Config).QueueBatchConfig,
 				}
 			}(),
 		},
@@ -130,4 +132,156 @@ func TestConfigValidate_SendingQueue(t *testing.T) {
 	// Default config (HasValue() == false) must remain valid even when the feature gate is enabled
 	defaultCfg := createDefaultConfig().(*Config)
 	assert.NoError(t, defaultCfg.Validate())
+}
+
+func TestConfigValidate_MetricExpiration(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		expiration time.Duration
+		wantErr    string
+	}{
+		{
+			name:       "negative duration",
+			expiration: -time.Second,
+			wantErr:    "metric_expiration must be greater than 0",
+		},
+		{
+			name:       "zero duration",
+			expiration: 0,
+			wantErr:    "metric_expiration must be greater than 0",
+		},
+		{
+			name:       "smallest positive duration",
+			expiration: time.Nanosecond,
+		},
+		{
+			name:       "default duration",
+			expiration: 5 * time.Minute,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cfg := createDefaultConfig().(*Config)
+			cfg.MetricExpiration = tt.expiration
+			err := cfg.Validate()
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestConfigValidate_TranslationStrategy(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		strategy TranslationStrategy
+		wantErr  string
+	}{
+		{
+			name:     "empty falls back to default",
+			strategy: "",
+		},
+		{
+			name:     "UnderscoreEscapingWithSuffixes",
+			strategy: TranslationStrategyUnderscoreEscapingWithSuffixes,
+		},
+		{
+			name:     "UnderscoreEscapingWithoutSuffixes",
+			strategy: TranslationStrategyUnderscoreEscapingWithoutSuffixes,
+		},
+		{
+			name:     "NoUTF8EscapingWithSuffixes",
+			strategy: TranslationStrategyNoUTF8EscapingWithSuffixes,
+		},
+		{
+			name:     "NoTranslation",
+			strategy: TranslationStrategyNoTranslation,
+		},
+		{
+			name:     "invalid strategy",
+			strategy: TranslationStrategy("InvalidStrategy"),
+			wantErr:  "invalid translation_strategy: InvalidStrategy",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cfg := createDefaultConfig().(*Config)
+			cfg.TranslationStrategy = tt.strategy
+			err := cfg.Validate()
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestUnmarshalConfigFields(t *testing.T) {
+	t.Parallel()
+
+	// Verify Config.ConstLabels is map[string]string rather than a named third-party type.
+	var cfg Config
+	require.Equal(t, reflect.TypeFor[map[string]string](), reflect.TypeOf(cfg.ConstLabels))
+
+	tests := []struct {
+		name            string
+		raw             map[string]any
+		wantStrategy    TranslationStrategy
+		wantValidateErr string
+	}{
+		{
+			name:         "unmarshal explicit translation_strategy",
+			raw:          map[string]any{"translation_strategy": "NoTranslation"},
+			wantStrategy: TranslationStrategyNoTranslation,
+		},
+		{
+			name:         "unmarshal empty translation_strategy",
+			raw:          map[string]any{"translation_strategy": ""},
+			wantStrategy: "",
+		},
+		{
+			name:            "reject invalid translation_strategy",
+			raw:             map[string]any{"translation_strategy": "Unknown"},
+			wantValidateErr: "invalid translation_strategy: Unknown",
+		},
+		{
+			name:            "reject zero metric_expiration",
+			raw:             map[string]any{"metric_expiration": "0s"},
+			wantValidateErr: "metric_expiration must be greater than 0",
+		},
+		{
+			name:            "reject negative metric_expiration",
+			raw:             map[string]any{"metric_expiration": "-5m"},
+			wantValidateErr: "metric_expiration must be greater than 0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			factory := NewFactory()
+			got := factory.CreateDefaultConfig().(*Config)
+			cm := confmap.NewFromStringMap(tt.raw)
+			require.NoError(t, cm.Unmarshal(got))
+
+			err := confmap.Validate(got)
+			if tt.wantValidateErr != "" {
+				require.ErrorContains(t, err, tt.wantValidateErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantStrategy, got.TranslationStrategy)
+		})
+	}
 }

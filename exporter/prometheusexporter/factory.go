@@ -33,13 +33,14 @@ func createDefaultConfig() component.Config {
 	queueCfg.Batch = configoptional.Default(batchCfg)
 
 	return &Config{
-		ServerConfig:      confighttp.NewDefaultServerConfig(),
-		ConstLabels:       map[string]string{},
-		SendTimestamps:    false,
-		MetricExpiration:  time.Minute * 5,
-		EnableOpenMetrics: false,
-		AddMetricSuffixes: true,
-		QueueBatchConfig:  configoptional.Default(queueCfg),
+		ServerConfig:        confighttp.NewDefaultServerConfig(),
+		ConstLabels:         map[string]string{},
+		SendTimestamps:      false,
+		MetricExpiration:    time.Minute * 5,
+		EnableOpenMetrics:   false,
+		AddMetricSuffixes:   true,
+		TranslationStrategy: TranslationStrategyUnderscoreEscapingWithSuffixes,
+		QueueBatchConfig:    configoptional.Default(queueCfg),
 	}
 }
 

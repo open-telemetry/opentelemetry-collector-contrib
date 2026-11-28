@@ -102,13 +102,13 @@ func configureLabelNamer(config *Config) otlptranslator.LabelNamer {
 // Returns (withSuffixes, allowUTF8)
 func getTranslationConfiguration(config *Config) (bool, bool) {
 	switch config.TranslationStrategy {
-	case underscoreEscapingWithSuffixes:
+	case TranslationStrategyUnderscoreEscapingWithSuffixes:
 		return true, false
-	case underscoreEscapingWithoutSuffixes:
+	case TranslationStrategyUnderscoreEscapingWithoutSuffixes:
 		return false, false
-	case noUTF8EscapingWithSuffixes:
+	case TranslationStrategyNoUTF8EscapingWithSuffixes:
 		return true, true
-	case noTranslation:
+	case TranslationStrategyNoTranslation:
 		return false, true
 	default:
 		// Default to UnderscoreEscapingWithSuffixes behavior

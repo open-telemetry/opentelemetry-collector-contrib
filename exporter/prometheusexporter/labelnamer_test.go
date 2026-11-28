@@ -13,7 +13,7 @@ import (
 )
 
 func TestConfigureLabelNamer(t *testing.T) {
-	for _, strategy := range []translationStrategy{"", underscoreEscapingWithSuffixes, underscoreEscapingWithoutSuffixes, noUTF8EscapingWithSuffixes, noTranslation} {
+	for _, strategy := range []TranslationStrategy{"", TranslationStrategyUnderscoreEscapingWithSuffixes, TranslationStrategyUnderscoreEscapingWithoutSuffixes, TranslationStrategyNoUTF8EscapingWithSuffixes, TranslationStrategyNoTranslation} {
 		t.Run(string(strategy), func(t *testing.T) {
 			namer := configureLabelNamer(&Config{TranslationStrategy: strategy})
 			for _, label := range []string{"_foo", "a__b", "__name__"} {
