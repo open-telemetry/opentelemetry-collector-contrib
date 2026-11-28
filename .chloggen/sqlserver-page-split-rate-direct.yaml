@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/sql_server
+
+note: Emit `sqlserver.page.split.rate` on direct SQL connections.
+
+issues: [52425]
+
+subtext: The metric is enabled by default, so it is now emitted on direct connections.
+
+change_logs: [user]

@@ -1288,7 +1288,6 @@ metrics:
     unit: "{pages}/s"
     gauge:
       value_type: double
-    extended_documentation: This metric is only available when running on Windows.
   sqlserver.parameterization.rate:
     enabled: false
     description: Rate of auto-parameterization activity, broken down by result.
