@@ -19,7 +19,7 @@ feature_gates:
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/48861
   - id: exporter.prometheus.DisableSendingQueue
     description: When enabled, the deprecated sending_queue configuration option is disabled and rejected, as the Prometheus exporter is pull-based.
-    stage: alpha
+    stage: beta
     from_version: "v0.166.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/52830
   - id: exporter.prometheusexporter.DisableAddMetricSuffixes
