@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 	"time"
@@ -166,7 +167,7 @@ func parseBlobSubject(subject string) (containerName, blobName string, err error
 }
 
 func (p *eventHubEventHandler) processBlobCreatedEventType(ctx context.Context, containerName, blobName string) error {
-	var consume func(context.Context, []byte) error
+	var consume func(context.Context, io.Reader) error
 	switch containerName {
 	case p.logsContainerName:
 		if p.logsDataConsumer != nil {
@@ -190,7 +191,9 @@ func (p *eventHubEventHandler) processBlobCreatedEventType(ctx context.Context, 
 		return err
 	}
 
-	if err := consume(ctx, blobData.Bytes()); err != nil {
+	defer blobData.Close()
+
+	if err := consume(ctx, blobData); err != nil {
 		return err
 	}
 

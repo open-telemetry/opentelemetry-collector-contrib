@@ -16,7 +16,7 @@
 
 This receiver reads logs and trace data from [Azure Blob Storage](https://azure.microsoft.com/en-us/products/storage/blobs/).
 
-Each blob is expected to contain a single payload. By default the payload is decoded as OTLP/JSON, but the encoding is configurable per signal via `logs.encoding` and `traces.encoding` (see below). In addition to the built-in `otlp_json` and `otlp_proto` encodings, you may reference an [encoding extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding) by its component ID to decode other formats.
+By default, each blob is decoded as a single OTLP/JSON payload. The encoding is configurable per signal via `logs.encoding` and `traces.encoding` (see below). In addition to the built-in `otlp_json` and `otlp_proto` encodings, you may reference an [encoding extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding) by its component ID to decode other formats, including streams of log records.
 
 ## Modes of Operation
 
@@ -38,7 +38,7 @@ The following settings can be optionally configured:
 - `cloud` (default = "AzureCloud"): Defines which Azure Cloud to use when using the `service_principal` authentication method. Value is either `AzureCloud` or `AzureUSGovernment`.
 - `logs:`
   - `container_name:` (default = "logs"): Name of the blob container with the logs
-  - `encoding:` (default = "otlp_json"): Encoding of log blob payloads. Either one of the built-in values `otlp_json` or `otlp_proto`, or the ID of an encoding extension that implements `plog.Unmarshaler`.
+  - `encoding:` (default = "otlp_json"): Encoding of log blob payloads. Either one of the built-in values `otlp_json` or `otlp_proto`, or the ID of an encoding extension that implements `encoding.LogsDecoderExtension` or `plog.Unmarshaler`.
 - `traces:`
   - `container_name:` (default = "traces"): Name of the blob container with the traces
   - `encoding:` (default = "otlp_json"): Encoding of trace blob payloads. Either one of the built-in values `otlp_json` or `otlp_proto`, or the ID of an encoding extension that implements `ptrace.Unmarshaler`.
@@ -95,7 +95,7 @@ receivers:
     connection_string: DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=+idLkHYcL0MUWIKYHm2j4Q==;EndpointSuffix=core.windows.net
 ```
 
-Using an encoding extension to decode log blobs:
+Using an encoding extension to stream newline-delimited log blobs, with automatic gzip detection:
 
 ```yaml
 extensions:
@@ -104,9 +104,18 @@ extensions:
 receivers:
   azure_blob:
     connection_string: DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=+idLkHYcL0MUWIKYHm2j4Q==;EndpointSuffix=core.windows.net
+    compression: auto
     logs:
       encoding: text_encoding
+
+service:
+  extensions: [text_encoding]
 ```
+
+Add this receiver to a logs pipeline with your processors and exporters. Each line becomes a
+log record with a string body. For newline-delimited JSON, a
+[transform processor](../../processor/transformprocessor) can parse each record with
+`set(log.body, ParseJSON(log.body))` before applying field transformations.
 
 Reading gzip compressed blobs:
 
@@ -122,4 +131,23 @@ receivers:
 In **Event Hub mode**, the receiver subscribes to [blob events](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-blob-event-overview) published by Azure Blob Storage and handled by Azure Event Hub. When it receives a `Blob Create` event, it reads the logs or traces from the corresponding blob and deletes it after processing.
 
 In **polling mode**, the receiver periodically lists all blobs in the configured containers, processes each blob, and deletes it after processing.
+
+### Streaming logs
+
+When the configured log encoding supports streaming, the receiver downloads and decodes the
+blob incrementally, including gzip decompression. Each decoded batch is passed through the
+pipeline before decoding the next batch. The encoding extension controls the batch boundaries;
+`text_encoding` uses the decoder defaults of 1,000 records or 1 MiB of input text, whichever
+threshold is reached first. A single record can exceed the byte threshold. These thresholds
+do not limit serialized exporter message sizes or memory used by processors and exporter queues.
+
+The built-in OTLP encodings, extensions that only implement `plog.Unmarshaler`, and trace
+decoding still read the full decompressed payload into memory.
+
+In both modes, a blob is deleted only after decoding completes and every batch has been
+accepted by the downstream pipeline. A read, decompression, decoding, or consumer error leaves
+the blob in storage. If it is processed again, previously accepted batches can be delivered
+again; the receiver does not resume at a batch offset. Retaining a blob does not itself schedule
+another Event Hub notification. Downstream acceptance may mean enqueueing data in an exporter,
+so exporter queue and retry settings determine when that data reaches its destination.
 

@@ -4,9 +4,11 @@
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
 import (
+	"bufio"
 	"bytes"
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
@@ -18,16 +20,18 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver/internal/metadata"
 )
 
 type logsDataConsumer interface {
-	consumeLogs(ctx context.Context, data []byte) error
+	consumeLogs(ctx context.Context, data io.Reader) error
 	setNextLogsConsumer(nextLogsConsumer consumer.Logs)
 }
 
 type tracesDataConsumer interface {
-	consumeTraces(ctx context.Context, data []byte) error
+	consumeTraces(ctx context.Context, data io.Reader) error
 	setNextTracesConsumer(nextracesConsumer consumer.Traces)
 }
 
@@ -37,7 +41,7 @@ type blobReceiver struct {
 	logsEncoding       string
 	tracesEncoding     string
 	compression        string
-	logsUnmarshaler    plog.Unmarshaler
+	logsDecoder        encoding.LogsDecoderFactory
 	tracesUnmarshaler  ptrace.Unmarshaler
 	nextLogsConsumer   consumer.Logs
 	nextTracesConsumer consumer.Traces
@@ -45,21 +49,17 @@ type blobReceiver struct {
 }
 
 func (b *blobReceiver) Start(ctx context.Context, host component.Host) error {
-	// Unmarshalers are resolved here rather than at construction because
-	// extension-based encodings are only available once the host's extensions
-	// have been started.
-	if err := b.resolveUnmarshalers(host); err != nil {
+	// Encoding extensions are available after the host has started them.
+	if err := b.resolveEncodings(host); err != nil {
 		return err
 	}
 
 	return b.blobEventHandler.run(ctx)
 }
 
-// resolveUnmarshalers resolves the configured logs and traces encodings into
-// unmarshalers, looking up encoding extensions from the host as needed.
-func (b *blobReceiver) resolveUnmarshalers(host component.Host) error {
+func (b *blobReceiver) resolveEncodings(host component.Host) error {
 	var err error
-	if b.logsUnmarshaler, err = newLogsUnmarshaler(b.logsEncoding, host); err != nil {
+	if b.logsDecoder, err = newLogsDecoder(b.logsEncoding, host); err != nil {
 		return err
 	}
 	if b.tracesUnmarshaler, err = newTracesUnmarshaler(b.tracesEncoding, host); err != nil {
@@ -82,43 +82,74 @@ func (b *blobReceiver) setNextTracesConsumer(nextTracesConsumer consumer.Traces)
 	b.blobEventHandler.setTracesDataConsumer(b)
 }
 
-func (b *blobReceiver) consumeLogs(ctx context.Context, data []byte) error {
+func (b *blobReceiver) consumeLogs(ctx context.Context, data io.Reader) error {
 	if b.nextLogsConsumer == nil {
 		return nil
 	}
 
-	data, err := b.decompress(data)
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	reader, err := b.decompress(data)
 	if err != nil {
 		return fmt.Errorf("failed to decompress logs: %w", err)
 	}
+	defer reader.Close()
 
-	logsContext := b.obsrecv.StartLogsOp(ctx)
-
-	logs, err := b.logsUnmarshaler.UnmarshalLogs(data)
+	decoder, err := b.logsDecoder.NewLogsDecoder(reader)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal logs: %w", err)
+		return fmt.Errorf("failed to create logs decoder: %w", err)
 	}
 
-	err = b.nextLogsConsumer.ConsumeLogs(logsContext, logs)
+	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		logs, err := decoder.DecodeLogs()
+		if errors.Is(err, io.EOF) {
+			// A decoder can finish before reading the gzip trailer.
+			if _, readErr := io.Copy(io.Discard, reader); readErr != nil {
+				return fmt.Errorf("failed to finish reading logs: %w", readErr)
+			}
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("failed to decode logs: %w", err)
+		}
+		count := logs.LogRecordCount()
+		if count == 0 {
+			continue
+		}
 
-	b.obsrecv.EndLogsOp(logsContext, metadata.Type.String(), 1, err)
-
-	return err
+		logsContext := b.obsrecv.StartLogsOp(ctx)
+		err = b.nextLogsConsumer.ConsumeLogs(logsContext, logs)
+		b.obsrecv.EndLogsOp(logsContext, metadata.Type.String(), count, err)
+		if err != nil {
+			return err
+		}
+	}
 }
 
-func (b *blobReceiver) consumeTraces(ctx context.Context, data []byte) error {
+func (b *blobReceiver) consumeTraces(ctx context.Context, data io.Reader) error {
 	if b.nextTracesConsumer == nil {
 		return nil
 	}
 
-	data, err := b.decompress(data)
+	reader, err := b.decompress(data)
 	if err != nil {
 		return fmt.Errorf("failed to decompress traces: %w", err)
+	}
+	defer reader.Close()
+
+	payload, err := io.ReadAll(reader)
+	if err != nil {
+		return fmt.Errorf("failed to read traces: %w", err)
 	}
 
 	tracesContext := b.obsrecv.StartTracesOp(ctx)
 
-	traces, err := b.tracesUnmarshaler.UnmarshalTraces(data)
+	traces, err := b.tracesUnmarshaler.UnmarshalTraces(payload)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal traces: %w", err)
 	}
@@ -133,21 +164,25 @@ func (b *blobReceiver) consumeTraces(ctx context.Context, data []byte) error {
 // gzipMagic is the two byte header every gzip stream starts with, see RFC 1952.
 var gzipMagic = []byte{0x1f, 0x8b}
 
-// decompress returns the decompressed payload according to the configured
-// compression format. In "auto" mode, payloads without a gzip header are
-// returned unchanged.
-func (b *blobReceiver) decompress(data []byte) ([]byte, error) {
-	if b.compression == CompressionNone || (b.compression == CompressionAuto && !bytes.HasPrefix(data, gzipMagic)) {
-		return data, nil
+// The caller closes the decompressor; the event handler owns the blob reader.
+func (b *blobReceiver) decompress(data io.Reader) (io.ReadCloser, error) {
+	if b.compression == CompressionNone {
+		return io.NopCloser(data), nil
 	}
 
-	reader, err := gzip.NewReader(bytes.NewReader(data))
-	if err != nil {
-		return nil, err
+	if b.compression == CompressionAuto {
+		buffered := bufio.NewReader(data)
+		header, err := buffered.Peek(len(gzipMagic))
+		if err != nil && !errors.Is(err, io.EOF) {
+			return nil, err
+		}
+		if !bytes.Equal(header, gzipMagic) {
+			return io.NopCloser(buffered), nil
+		}
+		data = buffered
 	}
-	defer reader.Close()
 
-	return io.ReadAll(reader)
+	return gzip.NewReader(data)
 }
 
 // Returns a new instance of the log receiver
@@ -171,25 +206,25 @@ func newReceiver(set receiver.Settings, eventHandler eventHandler, logsEncoding,
 	}, nil
 }
 
-// newLogsUnmarshaler resolves encoding into a plog.Unmarshaler. Built-in
-// encodings are handled directly; any other value is treated as the ID of an
-// encoding extension looked up from the host.
-func newLogsUnmarshaler(encoding string, host component.Host) (plog.Unmarshaler, error) {
-	switch encoding {
+func newLogsDecoder(name string, host component.Host) (encoding.LogsDecoderFactory, error) {
+	switch name {
 	case EncodingOTLPJSON:
-		return &plog.JSONUnmarshaler{}, nil
+		return xstreamencoding.NewLogsUnmarshalerDecoderFactory(&plog.JSONUnmarshaler{}), nil
 	case EncodingOTLPProto:
-		return &plog.ProtoUnmarshaler{}, nil
+		return xstreamencoding.NewLogsUnmarshalerDecoderFactory(&plog.ProtoUnmarshaler{}), nil
 	}
-	ext, err := encodingExtension(encoding, host)
+	ext, err := encodingExtension(name, host)
 	if err != nil {
 		return nil, fmt.Errorf("logs.%w", err)
 	}
+	if decoder, ok := ext.(encoding.LogsDecoderExtension); ok {
+		return decoder, nil
+	}
 	unmarshaler, ok := ext.(plog.Unmarshaler)
 	if !ok {
-		return nil, fmt.Errorf("logs.encoding extension %q is not a logs unmarshaler", encoding)
+		return nil, fmt.Errorf("logs.encoding extension %q is not a logs decoder or unmarshaler", name)
 	}
-	return unmarshaler, nil
+	return xstreamencoding.NewLogsUnmarshalerDecoderFactory(unmarshaler), nil
 }
 
 // newTracesUnmarshaler resolves encoding into a ptrace.Unmarshaler. Built-in

@@ -4,8 +4,8 @@
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
 import (
-	"bytes"
 	"context"
+	"io"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
@@ -13,7 +13,7 @@ import (
 )
 
 type blobClient interface {
-	readBlob(ctx context.Context, containerName, blobName string) (*bytes.Buffer, error)
+	readBlob(ctx context.Context, containerName, blobName string) (io.ReadCloser, error)
 	listBlobs(ctx context.Context, containerName string) ([]string, error)
 	deleteBlob(ctx context.Context, containerName, blobName string) error
 }
@@ -42,19 +42,13 @@ func (bc *azureBlobClient) listBlobs(ctx context.Context, containerName string) 
 	return blobs, nil
 }
 
-func (bc *azureBlobClient) readBlob(ctx context.Context, containerName, blobName string) (*bytes.Buffer, error) {
+func (bc *azureBlobClient) readBlob(ctx context.Context, containerName, blobName string) (io.ReadCloser, error) {
 	get, err := bc.serviceClient.DownloadStream(ctx, containerName, blobName, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	downloadedData := &bytes.Buffer{}
-	retryReader := get.NewRetryReader(ctx, &azblob.RetryReaderOptions{})
-	defer retryReader.Close()
-
-	_, err = downloadedData.ReadFrom(retryReader)
-
-	return downloadedData, err
+	return get.NewRetryReader(ctx, &azblob.RetryReaderOptions{}), nil
 }
 
 func (bc *azureBlobClient) deleteBlob(ctx context.Context, containerName, blobName string) error {

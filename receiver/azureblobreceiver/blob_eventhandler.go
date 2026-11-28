@@ -5,6 +5,7 @@ package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"io"
 	"sync"
 	"time"
 
@@ -54,19 +55,19 @@ func (p *blobEventHandler) pollBlobs(ctx context.Context) {
 
 func (p *blobEventHandler) processContainers(ctx context.Context) {
 	if p.logsContainerName != "" && p.logsDataConsumer != nil {
-		p.processContainer(ctx, p.logsContainerName, func(ctx context.Context, data []byte) error {
+		p.processContainer(ctx, p.logsContainerName, func(ctx context.Context, data io.Reader) error {
 			return p.logsDataConsumer.consumeLogs(ctx, data)
 		})
 	}
 
 	if p.tracesContainerName != "" && p.tracesDataConsumer != nil {
-		p.processContainer(ctx, p.tracesContainerName, func(ctx context.Context, data []byte) error {
+		p.processContainer(ctx, p.tracesContainerName, func(ctx context.Context, data io.Reader) error {
 			return p.tracesDataConsumer.consumeTraces(ctx, data)
 		})
 	}
 }
 
-func (p *blobEventHandler) processContainer(ctx context.Context, containerName string, consume func(context.Context, []byte) error) {
+func (p *blobEventHandler) processContainer(ctx context.Context, containerName string, consume func(context.Context, io.Reader) error) {
 	blobs, err := p.blobClient.listBlobs(ctx, containerName)
 	if err != nil {
 		p.logger.Error("failed to list blobs", zap.String("container", containerName), zap.Error(err))
@@ -78,7 +79,7 @@ func (p *blobEventHandler) processContainer(ctx context.Context, containerName s
 	}
 }
 
-func (p *blobEventHandler) processBlob(ctx context.Context, containerName, blobName string, consume func(context.Context, []byte) error) {
+func (p *blobEventHandler) processBlob(ctx context.Context, containerName, blobName string, consume func(context.Context, io.Reader) error) {
 	if ctx.Err() != nil {
 		return
 	}
@@ -89,7 +90,9 @@ func (p *blobEventHandler) processBlob(ctx context.Context, containerName, blobN
 		return
 	}
 
-	if err := consume(ctx, blobData.Bytes()); err != nil {
+	defer blobData.Close()
+
+	if err := consume(ctx, blobData); err != nil {
 		p.logger.Error("failed to consume blob data", zap.String("container", containerName), zap.String("blob", blobName), zap.Error(err))
 		return
 	}

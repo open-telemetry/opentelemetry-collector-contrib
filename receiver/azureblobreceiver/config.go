@@ -58,7 +58,7 @@ type LogsConfig struct {
 	ContainerName string `mapstructure:"container_name"`
 	// Encoding of log blobs in this container (default = "otlp_json").
 	// Either one of the built-in values "otlp_json" or "otlp_proto", or the
-	// ID of an encoding extension that implements plog.Unmarshaler.
+	// ID of an encoding extension that implements encoding.LogsDecoderExtension or plog.Unmarshaler.
 	Encoding string `mapstructure:"encoding"`
 	// prevent unkeyed literal initialization
 	_ struct{}

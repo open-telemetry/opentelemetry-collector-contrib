@@ -5,6 +5,7 @@ package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	context "context"
+	"io"
 
 	mock "github.com/stretchr/testify/mock"
 	consumer "go.opentelemetry.io/collector/consumer"
@@ -15,11 +16,11 @@ type mockLogsDataConsumer struct {
 }
 
 // ConsumeLogs provides a mock function with given fields: ctx, data
-func (_m *mockLogsDataConsumer) consumeLogs(ctx context.Context, data []byte) error {
+func (_m *mockLogsDataConsumer) consumeLogs(ctx context.Context, data io.Reader) error {
 	ret := _m.Called(ctx, data)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, []byte) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, io.Reader) error); ok {
 		r0 = rf(ctx, data)
 	} else {
 		r0 = ret.Error(0)
