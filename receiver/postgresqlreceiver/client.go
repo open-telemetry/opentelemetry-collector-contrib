@@ -78,7 +78,8 @@ type client interface {
 	getVersion(ctx context.Context) (string, error)
 	getQuerySamples(ctx context.Context, limit int64, newestQueryTimestamp float64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, float64, error)
 	getTopQuery(ctx context.Context, limit int64, excludedDatabases []string, logger *zap.Logger) ([]map[string]any, error)
-	explainQuery(ctx context.Context, query, queryID string, logger *zap.Logger) (string, error)
+	explainQuery(ctx context.Context, query, queryID, explainFunction string, logger *zap.Logger) (string, error)
+	probeExplainFunction(ctx context.Context, quotedFunctionName string) error
 }
 
 type postgreSQLClient struct {
@@ -341,17 +342,7 @@ func isIdentifierByte(b byte) bool {
 }
 
 // explainQuery implements client.
-//
-// The real parameter count comes from pg_prepared_statements, not from counting "$N"
-// occurrences in the query text: a placeholder can repeat (e.g. "$1" used twice for one
-// real parameter) or appear inside a string literal ("$1" is not a placeholder there), and
-// either case makes a text-based count wrong. Once PREPARE succeeds, PostgreSQL has already
-// parsed and deduplicated the real list, so pg_prepared_statements.parameter_types is
-// authoritative. Reading it back requires a second round trip after PREPARE, and since
-// PREPARE is session-scoped, every step (PREPARE, the count lookup, EXPLAIN EXECUTE,
-// DEALLOCATE) has to run on the one connection that ran PREPARE, not just whatever the pool
-// hands out for each call.
-func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID string, logger *zap.Logger) (string, error) {
+func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID, explainFunction string, logger *zap.Logger) (string, error) {
 	// Check if the query is explainable before attempting EXPLAIN
 	if !isExplainableQuery(query) {
 		logger.Debug("skipping EXPLAIN for non-explainable query", zap.String("queryID", queryID))
@@ -366,6 +357,24 @@ func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID stri
 		query = repaired
 	}
 
+	if explainFunction != "" {
+		return c.explainQueryViaFunction(ctx, query, queryID, explainFunction, logger)
+	}
+	return c.explainQueryInline(ctx, query, queryID, logger)
+}
+
+// explainQueryInline runs EXPLAIN directly as the monitoring user.
+//
+// The real parameter count comes from pg_prepared_statements, not from counting "$N"
+// occurrences in the query text: a placeholder can repeat (e.g. "$1" used twice for one
+// real parameter) or appear inside a string literal ("$1" is not a placeholder there), and
+// either case makes a text-based count wrong. Once PREPARE succeeds, PostgreSQL has already
+// parsed and deduplicated the real list, so pg_prepared_statements.parameter_types is
+// authoritative. Reading it back requires a second round trip after PREPARE, and since
+// PREPARE is session-scoped, every step (PREPARE, the count lookup, EXPLAIN EXECUTE,
+// DEALLOCATE) has to run on the one connection that ran PREPARE, not just whatever the pool
+// hands out for each call.
+func (c *postgreSQLClient) explainQueryInline(ctx context.Context, query, queryID string, logger *zap.Logger) (string, error) {
 	normalizedQueryID := strings.ReplaceAll(queryID, "-", "_")
 
 	conn, err := c.client.Conn(ctx)
@@ -390,6 +399,17 @@ func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID stri
 
 	prepareDb := sqlquery.NewDbClient(sqlquery.ConnWrapper{Conn: conn}, setPlanCacheMode+prepareStatement, logger, sqlquery.TelemetryConfig{})
 	if _, err = prepareDb.QueryRows(ctx); err != nil {
+		var pgErr *pq.Error
+		if errors.As(err, &pgErr) && pgErr.SQLState() == "42P18" {
+			var version int
+			versionErr := conn.QueryRowContext(ctx, "/* otel-collector-ignore */ SHOW server_version_num").Scan(&version)
+			if versionErr != nil {
+				return "", fmt.Errorf("check PostgreSQL version for EXPLAIN fallback: %w", versionErr)
+			}
+			if version >= 160000 {
+				return runInlineExplain(ctx, conn, "/* otel-collector-ignore */ EXPLAIN (FORMAT JSON, GENERIC_PLAN) "+query, queryID, logger)
+			}
+		}
 		// A syntax error's character position refers to the repaired text, not the caller's.
 		logger.Error("failed to prepare statement for EXPLAIN", zap.Error(err), zap.String("queryID", queryID), zap.String("preparedQuery", query))
 		return "", err
@@ -425,8 +445,11 @@ func (c *postgreSQLClient) explainQuery(ctx context.Context, query, queryID stri
 		nullsString = "(" + strings.Join(nulls, ", ") + ")"
 	}
 	explainStatement := fmt.Sprintf("EXPLAIN(FORMAT JSON) EXECUTE otel_%s%s;", normalizedQueryID, nullsString)
+	return runInlineExplain(ctx, conn, explainStatement, queryID, logger)
+}
 
-	explainDb := sqlquery.NewDbClient(sqlquery.ConnWrapper{Conn: conn}, explainStatement, logger, sqlquery.TelemetryConfig{})
+func runInlineExplain(ctx context.Context, conn *sql.Conn, statement, queryID string, logger *zap.Logger) (string, error) {
+	explainDb := sqlquery.NewDbClient(sqlquery.ConnWrapper{Conn: conn}, statement, logger, sqlquery.TelemetryConfig{})
 	result, err := explainDb.QueryRows(ctx)
 	if err != nil {
 		logger.Error("failed to explain statement", zap.Error(err))

@@ -28,6 +28,13 @@ $defs:
       collection_interval:
         type: string
         format: duration
+      explain_function_cache_ttl:
+        description: ExplainFunctionCacheTTL controls how often the function is probed per database.
+        type: string
+        format: duration
+      explain_function_name:
+        description: ExplainFunctionName names a DBA-provisioned SECURITY DEFINER function. Empty disables it.
+        type: string
       max_explain_each_interval:
         type: integer
         x-customType: int64

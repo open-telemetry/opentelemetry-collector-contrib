@@ -651,7 +651,7 @@ func explainQueryParamCountTest(pgVersion string) func(*testing.T) {
 					t.Skipf("requires PostgreSQL %d or later", tc.minMajor)
 				}
 
-				plan, err := client.explainQuery(t.Context(), tc.query, fmt.Sprintf("paramcount%d", i), logger)
+				plan, err := client.explainQuery(t.Context(), tc.query, fmt.Sprintf("paramcount%d", i), "", logger)
 				require.NoError(t, err)
 				require.NotEmpty(t, plan)
 				require.Contains(t, plan, tc.wantPlanContains)
