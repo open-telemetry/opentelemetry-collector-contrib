@@ -29,16 +29,13 @@ func nodeSummary(usageCoreNanoSeconds uint64, sampleTime time.Time) *stats.Summa
 			CPU: &stats.CPUStats{
 				Time:                 v1.Time{Time: sampleTime},
 				UsageCoreNanoSeconds: &usageCoreNanoSeconds,
-				// UsageNanoCores is deliberately left unset: with the feature gate
-				// enabled it must not be consulted at all.
+				// UsageNanoCores is deliberately left unset: it must not be consulted at all.
 			},
 		},
 	}
 }
 
 func TestScrapeBasedCPUUsage(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, true)()
-
 	mbs := &metadata.MetricsBuilders{
 		NodeMetricsBuilder: metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 	}
@@ -61,36 +58,6 @@ func TestScrapeBasedCPUUsage(t *testing.T) {
 	usageMetrics, found := secondMetrics["k8s.node.cpu.usage"]
 	require.True(t, found)
 	require.InDelta(t, 2.0, usageMetrics[0].Gauge().DataPoints().At(0).DoubleValue(), 1e-9)
-}
-
-func TestScrapeBasedCPUUsage_DisabledGateUsesUsageNanoCores(t *testing.T) {
-	// The gate is beta (on by default); disable it explicitly to test the legacy UsageNanoCores path.
-	defer testutil.SetFeatureGateForTest(t, metadata.ReceiverKubeletstatsCPUUsageScrapeBasedFeatureGate, false)()
-
-	mbs := &metadata.MetricsBuilders{
-		NodeMetricsBuilder: metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
-	}
-	nodeGroup := map[MetricGroup]bool{NodeMetricGroup: true}
-	calc := NewCPUUsageCalculator()
-
-	usageNanoCores := uint64(1_500_000_000) // 1.5 cores
-	usageCoreNanoSeconds := uint64(10_000_000_000)
-	summary := &stats.Summary{
-		Node: stats.NodeStats{
-			NodeName:  "worker-42",
-			StartTime: v1.Time{Time: time.Now().Add(-time.Hour)},
-			CPU: &stats.CPUStats{
-				Time:                 v1.Time{Time: time.Now()},
-				UsageNanoCores:       &usageNanoCores,
-				UsageCoreNanoSeconds: &usageCoreNanoSeconds,
-			},
-		},
-	}
-
-	metrics := indexedFakeMetrics(MetricsData(zap.NewNop(), summary, Metadata{}, nodeGroup, nil, mbs, calc))
-	usageMetrics, found := metrics["k8s.node.cpu.usage"]
-	require.True(t, found)
-	require.InDelta(t, 1.5, usageMetrics[0].Gauge().DataPoints().At(0).DoubleValue(), 1e-9)
 }
 
 func TestRoundedUtilization(t *testing.T) {

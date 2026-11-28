@@ -421,29 +421,6 @@ See [documentation.md](./documentation.md#feature-gates) for the feature
 gates supported by this receiver.
 
 
-### `receiver.kubeletstats.cpuUsageScrapeBased`
-
-This feature gate controls how the receiver calculates CPU usage for
-`container.cpu.usage`, `k8s.pod.cpu.usage`, and `k8s.node.cpu.usage`,
-along with CPU utilization metrics derived from them.
-
-When enabled, the receiver calculates CPU usage from the rate of the
-corresponding cumulative CPU-time counter between consecutive scrapes.
-When disabled, the receiver uses the CPU usage reported by kubelet through
-`UsageNanoCores`.
-
-The scrape-based calculation maintains previous CPU-time samples in memory.
-A usage value cannot be calculated for a resource until a previous valid
-sample is available. After a Collector restart, the baseline is rebuilt
-from subsequent scrapes.
-
-This feature gate is at the beta stage and is enabled by default. To disable
-it and use the CPU usage reported by kubelet, start the Collector with:
-
-```shell
-otelcol --config=config.yaml --feature-gates=-receiver.kubeletstats.cpuUsageScrapeBased
-```
-
 ### `receiver.kubelet_stats.cpuUtilizationRounding`
 
 This feature gate is at the alpha stage and is disabled by default. It affects the
@@ -508,7 +485,7 @@ see the [Collector internal telemetry documentation](https://opentelemetry.io/do
 
 ## Graceful Shutdown and Statefulness
 
-When `receiver.kubeletstats.cpuUsageScrapeBased` is enabled, the receiver retains previous CPU-time samples in memory to calculate CPU usage from consecutive scrapes. These samples are transient calculation state and are not persisted across restarts.
+The receiver retains previous CPU-time samples in memory to calculate CPU usage from consecutive scrapes. These samples are transient calculation state and are not persisted across restarts.
 
 After a Collector restart, the receiver needs to establish a new baseline from subsequent scrapes before it can calculate CPU usage. As a result, CPU usage values may be temporarily unavailable.
 
@@ -539,7 +516,7 @@ When tuning collection for larger clusters, consider the following:
 
 - **Duplicate collection:** Ensure that each kubelet is scraped by the intended Collector instance. Multiple Collectors scraping the same kubelet for the same metrics can produce duplicate telemetry.
 
-- **Scrape-based CPU usage gaps:** When `receiver.kubeletstats.cpuUsageScrapeBased` is enabled, CPU usage is calculated from consecutive CPU-time samples. A value may be unavailable on the first scrape for a resource, after a Collector restart, or after a container restart or CPU-time counter reset. A subsequent valid sample is needed before usage can be calculated again.
+- **Scrape-based CPU usage gaps:** CPU usage is calculated from consecutive CPU-time samples. A value may be unavailable on the first scrape for a resource, after a Collector restart, or after a container restart or CPU-time counter reset. A subsequent valid sample is needed before usage can be calculated again.
 
 - **Deprecated node-utilization metrics:** `k8s.container.cpu.node.utilization`, `k8s.pod.cpu.node.utilization`, `k8s.container.memory.node.utilization`, and `k8s.pod.memory.node.utilization` are deprecated. Consider the corresponding CPU or memory usage metrics and `k8s.node.allocatable_cpu` or `k8s.node.allocatable_memory`, as appropriate. These alternatives use allocatable capacity and are not equivalent to the deprecated node-capacity-based calculation.
 

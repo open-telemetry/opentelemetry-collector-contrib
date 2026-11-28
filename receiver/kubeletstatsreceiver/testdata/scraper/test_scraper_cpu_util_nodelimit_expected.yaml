@@ -16,7 +16,7 @@ resourceMetrics:
           - description: Pod cpu utilization as a ratio of the node's capacity
             gauge:
               dataPoints:
-                - asDouble: 0
+                - asDouble: 0.125
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.pod.cpu.node.utilization
@@ -41,7 +41,7 @@ resourceMetrics:
           - description: Pod cpu utilization as a ratio of the node's capacity
             gauge:
               dataPoints:
-                - asDouble: 0.000436807625
+                - asDouble: 0.125
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.pod.cpu.node.utilization
@@ -66,7 +66,7 @@ resourceMetrics:
           - description: Pod cpu utilization as a ratio of the node's capacity
             gauge:
               dataPoints:
-                - asDouble: 0.000428771875
+                - asDouble: 0.125
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.pod.cpu.node.utilization
@@ -91,7 +91,7 @@ resourceMetrics:
           - description: Pod cpu utilization as a ratio of the node's capacity
             gauge:
               dataPoints:
-                - asDouble: 0.002475833875
+                - asDouble: 0.125
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.pod.cpu.node.utilization
@@ -116,7 +116,7 @@ resourceMetrics:
           - description: Pod cpu utilization as a ratio of the node's capacity
             gauge:
               dataPoints:
-                - asDouble: 0.005777949
+                - asDouble: 0.125
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.pod.cpu.node.utilization
@@ -141,7 +141,7 @@ resourceMetrics:
           - description: Pod cpu utilization as a ratio of the node's capacity
             gauge:
               dataPoints:
-                - asDouble: 0.0022641755
+                - asDouble: 0.125
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.pod.cpu.node.utilization
@@ -166,7 +166,7 @@ resourceMetrics:
           - description: Pod cpu utilization as a ratio of the node's capacity
             gauge:
               dataPoints:
-                - asDouble: 3.45535e-05
+                - asDouble: 0.125
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.pod.cpu.node.utilization
@@ -191,7 +191,7 @@ resourceMetrics:
           - description: Pod cpu utilization as a ratio of the node's capacity
             gauge:
               dataPoints:
-                - asDouble: 0.000452512875
+                - asDouble: 0.125
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.pod.cpu.node.utilization
@@ -216,7 +216,7 @@ resourceMetrics:
           - description: Pod cpu utilization as a ratio of the node's capacity
             gauge:
               dataPoints:
-                - asDouble: 4.7302625e-05
+                - asDouble: 0.125
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.pod.cpu.node.utilization
@@ -244,7 +244,7 @@ resourceMetrics:
           - description: Container cpu utilization as a ratio of the node's capacity
             gauge:
               dataPoints:
-                - asDouble: 0.000569754
+                - asDouble: 0.125
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.container.cpu.node.utilization
@@ -272,7 +272,7 @@ resourceMetrics:
           - description: Container cpu utilization as a ratio of the node's capacity
             gauge:
               dataPoints:
-                - asDouble: 0.00043856325
+                - asDouble: 0.12499999999999997
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.container.cpu.node.utilization
@@ -300,7 +300,7 @@ resourceMetrics:
           - description: Container cpu utilization as a ratio of the node's capacity
             gauge:
               dataPoints:
-                - asDouble: 0.002483161375
+                - asDouble: 0.125
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.container.cpu.node.utilization
@@ -328,7 +328,7 @@ resourceMetrics:
           - description: Container cpu utilization as a ratio of the node's capacity
             gauge:
               dataPoints:
-                - asDouble: 0.005768109875
+                - asDouble: 0.125
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.container.cpu.node.utilization
@@ -356,7 +356,7 @@ resourceMetrics:
           - description: Container cpu utilization as a ratio of the node's capacity
             gauge:
               dataPoints:
-                - asDouble: 0.00228089325
+                - asDouble: 0.125
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.container.cpu.node.utilization
@@ -384,7 +384,7 @@ resourceMetrics:
           - description: Container cpu utilization as a ratio of the node's capacity
             gauge:
               dataPoints:
-                - asDouble: 4.9618125e-05
+                - asDouble: 0.12499999999999999
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.container.cpu.node.utilization
@@ -412,7 +412,7 @@ resourceMetrics:
           - description: Container cpu utilization as a ratio of the node's capacity
             gauge:
               dataPoints:
-                - asDouble: 0.000429828125
+                - asDouble: 0.125
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.container.cpu.node.utilization
@@ -440,7 +440,7 @@ resourceMetrics:
           - description: Container cpu utilization as a ratio of the node's capacity
             gauge:
               dataPoints:
-                - asDouble: 0
+                - asDouble: 0.125
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.container.cpu.node.utilization
@@ -468,7 +468,7 @@ resourceMetrics:
           - description: Container cpu utilization as a ratio of the node's capacity
             gauge:
               dataPoints:
-                - asDouble: 4.086125e-05
+                - asDouble: 0.125
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.container.cpu.node.utilization

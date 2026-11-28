@@ -752,7 +752,7 @@ feature_gates:
     from_version: v0.165.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47988
   - id: receiver.kubeletstats.cpuUsageScrapeBased
-    stage: beta
+    stage: stable
     description: >-
       When enabled, container.cpu.usage, k8s.pod.cpu.usage and k8s.node.cpu.usage
       (and the cpu utilization metrics derived from them) are calculated by the
@@ -760,6 +760,7 @@ feature_gates:
       consecutive scrapes, instead of being read directly from the kubelet's
       UsageNanoCores value.
     from_version: v0.156.0
+    to_version: v0.170.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/49477
 
 tests:
