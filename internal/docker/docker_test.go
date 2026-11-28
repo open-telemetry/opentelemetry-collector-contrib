@@ -425,6 +425,57 @@ func TestEventLoopHandlesError(t *testing.T) {
 	}
 }
 
+func TestEventLoopRemovesDeletedContainer(t *testing.T) {
+	const containerID = "abc123"
+
+	tests := []struct {
+		name   string
+		action string
+	}{
+		{name: "remove event", action: "remove"},
+		{name: "die event for a container that no longer exists", action: "die"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch {
+				case strings.Contains(r.URL.Path, "/events"):
+					_, err := fmt.Fprintf(w, `{"Type":"container","Action":%q,"Actor":{"ID":%q}}`+"\n", tt.action, containerID)
+					assert.NoError(t, err)
+					w.(http.Flusher).Flush()
+					<-r.Context().Done()
+				case strings.Contains(r.URL.Path, "/containers/"+containerID+"/json"):
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusNotFound)
+					_, err := w.Write([]byte(`{"message":"no such container"}`))
+					assert.NoError(t, err)
+				default:
+					_, err := w.Write([]byte{})
+					assert.NoError(t, err)
+				}
+			}))
+			defer srv.Close()
+
+			cli, err := NewDockerClient(&Config{Endpoint: srv.URL, Timeout: time.Second}, zap.NewNop())
+			require.NoError(t, err)
+			defer cli.Close()
+
+			cli.containersLock.Lock()
+			cli.containers[containerID] = Container{}
+			cli.containersLock.Unlock()
+
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			go cli.ContainerEventLoop(ctx)
+
+			assert.EventuallyWithT(t, func(c *assert.CollectT) {
+				assert.Empty(c, cli.Containers())
+			}, 5*time.Second, 10*time.Millisecond, "container was not removed from the cache")
+		})
+	}
+}
+
 func portableEndpoint(addr string) string {
 	endpoint := fmt.Sprintf("unix://%s", addr)
 	if runtime.GOOS == "windows" {
