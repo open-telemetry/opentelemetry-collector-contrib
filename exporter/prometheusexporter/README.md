@@ -36,7 +36,6 @@ The following settings can be optionally configured:
 - `enable_open_metrics`: (default = `false`): If true, metrics will be exported using the OpenMetrics format. Exemplars are only exported in the OpenMetrics format, and only for histogram and monotonic sum (i.e. counter) metrics.
 - `without_scope_info`: (default = `false`): If true, metrics will be exported without scope name, version, schemaURL, and attributes encoded as labels.
 - `sending_queue` **[Deprecated]**: The Prometheus exporter is pull-based and does not use a sending queue. Can be disabled and rejected via the `exporter.prometheus.DisableSendingQueue` feature gate.
-- `add_metric_suffixes`: (default = `true`): **Deprecated and ignored**: The `exporter.prometheusexporter.DisableAddMetricSuffixes` feature gate is now stable, so `add_metric_suffixes` is always ignored and `translation_strategy` is used instead.
 - `translation_strategy`: Controls how OTLP metric and attribute names are translated into Prometheus metric and label names. Available options:
   - `UnderscoreEscapingWithSuffixes`: Fully escapes metric names for classic Prometheus metric name compatibility, and includes appending type and unit suffixes.
   - `UnderscoreEscapingWithoutSuffixes`: Metric names will continue to escape special characters to `_`, but suffixes won't be attached.

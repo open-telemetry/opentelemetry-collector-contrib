@@ -513,10 +513,8 @@ func TestPrometheusExporter_TranslationStrategies(t *testing.T) {
 		want         string
 	}{
 		{
-			name: "Legacy AddMetricSuffixes=false is ignored (no translation_strategy set)",
-			config: &Config{
-				AddMetricSuffixes: false, // Ignored since DisableAddMetricSuffixes is stable; default translation_strategy (UnderscoreEscapingWithSuffixes) is used.
-			},
+			name:   "Default (no translation_strategy set)",
+			config: &Config{},
 			want: `# HELP target_info Target metadata
 # TYPE target_info gauge
 target_info{instance="test-instance",job="test-service"} 1
@@ -524,21 +522,6 @@ target_info{instance="test-instance",job="test-service"} 1
 # TYPE this_one_there_where_bytes_total counter
 this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
 this_one_there_where_bytes_total{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
-`,
-		},
-		{
-			name: "TranslationStrategy takes precedence over AddMetricSuffixes",
-			config: &Config{
-				AddMetricSuffixes:   true, // This should be ignored
-				TranslationStrategy: underscoreEscapingWithoutSuffixes,
-			},
-			want: `# HELP target_info Target metadata
-# TYPE target_info gauge
-target_info{instance="test-instance",job="test-service"} 1
-# HELP this_one_there_where Extra ones
-# TYPE this_one_there_where counter
-this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="linux",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 100
-this_one_there_where{arch="x86",instance="test-instance",job="test-service",os="windows",otel_scope_name="",otel_scope_schema_url="",otel_scope_version=""} 99
 `,
 		},
 		{

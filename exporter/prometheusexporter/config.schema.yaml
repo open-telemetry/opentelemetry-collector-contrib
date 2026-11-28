@@ -1,9 +1,6 @@
 description: Config defines configuration for Prometheus exporter.
 type: object
 properties:
-  add_metric_suffixes:
-    description: 'AddMetricSuffixes controls whether suffixes are added to metric names. Defaults to true. Deprecated: This setting is ignored and TranslationStrategy is always used.'
-    type: boolean
   const_labels:
     description: ConstLabels are values that are applied for every exported metric.
     x-customType: github.com/prometheus/client_golang/prometheus.labels

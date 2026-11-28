@@ -129,11 +129,6 @@ exclusions:
       enabled: false
     shutdown_test:
       enabled: false
-  - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter
-    feature_gates:
-      - name: exporter.prometheusexporter.DisableAddMetricSuffixes
-        validation:
-          enabled: false
   - component: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter
     feature_gates:
       - name: exporter.prometheusremotewritexporter.EnableMultipleWorkers
