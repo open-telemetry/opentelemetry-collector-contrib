@@ -168,6 +168,11 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 			// Attributes can also be part of span events
 			s.processSpanEvents(ctx, span.Events())
 
+			// Apply the same rules to attributes on every span link.
+			for l := 0; l < span.Links().Len(); l++ {
+				s.processAttrs(ctx, span.Links().At(l).Attributes())
+			}
+
 			s.sanitizeSpanName(span)
 		}
 	}
