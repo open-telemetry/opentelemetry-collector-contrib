@@ -54,12 +54,12 @@ func TestLoadConfig(t *testing.T) {
 			RandomizationFactor: backoff.DefaultRandomizationFactor,
 			Multiplier:          backoff.DefaultMultiplier,
 		},
-		QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
-			queue := exporterhelper.NewDefaultQueueConfig()
-			queue.NumConsumers = 10
-			queue.QueueSize = 1000
+		QueueSettings: func() configoptional.Optional[exporterhelper.QueueBatchConfig] {
+			queue := metadata.NewDefaultSendingQueueConfig()
+			queue.Get().NumConsumers = 10
+			queue.Get().QueueSize = 1000
 			return queue
-		}()),
+		}(),
 		Table: Table{
 			Logs:    "otel_logs",
 			Traces:  "otel_traces",
