@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: exporter/influxdb
+note: "Retry writes that fail with HTTP 429 instead of dropping them, and honor `Retry-After` on 429 and 503 responses"
+issues: [53655]
+change_logs: [user]
