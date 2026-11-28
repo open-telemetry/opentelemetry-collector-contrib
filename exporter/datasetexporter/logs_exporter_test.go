@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/scalyr/dataset-go/pkg/api/add_events"
-	"github.com/scalyr/dataset-go/pkg/api/request"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -770,11 +769,17 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		attempt.Add(1)
 		cer, err := extract(req)
+		assert.NoError(t, err, "Error reading request: %v", err)
+		// dataset-go up to v0.21.1 sends the API key in the body; later
+		// versions send it only in the Authorization header. Accept either,
+		// then drop it so the expected requests below match both.
+		assert.True(t,
+			req.Header.Get("Authorization") == "Bearer key-lib" || cer.Token == "key-lib",
+			"API key must be sent in the Authorization header or the body")
+		cer.Token = ""
 		lock.Lock()
 		addRequests = append(addRequests, cer)
 		lock.Unlock()
-
-		assert.NoError(t, err, "Error reading request: %v", err)
 
 		wasSuccessful.Store(true)
 		payload, err := json.Marshal(map[string]any{
@@ -883,9 +888,6 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 	assert.Equal(t,
 		[]add_events.AddEventsRequest{
 			{
-				AuthParams: request.AuthParams{
-					Token: "key-lib",
-				},
 				AddEventsRequestParams: add_events.AddEventsRequestParams{
 					Session: addRequests[0].Session,
 					SessionInfo: &add_events.SessionInfo{
@@ -917,9 +919,6 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 				},
 			},
 			{
-				AuthParams: request.AuthParams{
-					Token: "key-lib",
-				},
 				AddEventsRequestParams: add_events.AddEventsRequestParams{
 					Session: addRequests[1].Session,
 					SessionInfo: &add_events.SessionInfo{
@@ -950,9 +949,6 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 				},
 			},
 			{
-				AuthParams: request.AuthParams{
-					Token: "key-lib",
-				},
 				AddEventsRequestParams: add_events.AddEventsRequestParams{
 					Session: addRequests[2].Session,
 					SessionInfo: &add_events.SessionInfo{
@@ -984,9 +980,6 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 				},
 			},
 			{
-				AuthParams: request.AuthParams{
-					Token: "key-lib",
-				},
 				AddEventsRequestParams: add_events.AddEventsRequestParams{
 					Session: addRequests[3].Session,
 					SessionInfo: &add_events.SessionInfo{
