@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: receivercreator-e2e-discovery-annotation
+  namespace: default
+  labels:
+    app: receivercreator-e2e-workload
+  annotations:
+    io.opentelemetry.discovery.logs/enabled: "true"
+    io.opentelemetry.discovery.logs/config: |
+      start_at: beginning
+      operators:
+        - type: container
+          id: container-parser
+        - type: regex_parser
+          id: level-seq-parser
+          regex: '^(?P<time>\S+) (?P<level>\w+) seq=(?P<seq>\d+) (?P<message>.*)'
+        - type: add
+          field: attributes.parsed_by
+          value: discovery-annotation
+spec:
+  terminationGracePeriodSeconds: 1
+  containers:
+    - name: app
+      image: busybox:1.37.0
+      command:
+        - /bin/sh
+        - -c
+        - i=0; while true; do echo "2026-01-01T00:00:00Z INFO seq=$i message from discovery-annotation"; i=$((i+1)); sleep 1; done
+

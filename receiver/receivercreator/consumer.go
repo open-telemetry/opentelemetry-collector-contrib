@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
@@ -33,7 +34,9 @@ type enhancingConsumer struct {
 	metrics  consumer.Metrics
 	traces   consumer.Traces
 	profiles xconsumer.Profiles
-	attrs    map[string]string
+	// attrsLock guards attrs, which changes when the endpoint of a running receiver changes.
+	attrsLock sync.RWMutex
+	attrs     map[string]string
 }
 
 func newEnhancingConsumer(
@@ -137,7 +140,16 @@ func (ec *enhancingConsumer) ConsumeProfiles(ctx context.Context, pd pprofile.Pr
 	return ec.profiles.ConsumeProfiles(ctx, pd)
 }
 
+// setAttrs replaces the resource attributes added to the telemetry that passes through.
+func (ec *enhancingConsumer) setAttrs(attrs map[string]string) {
+	ec.attrsLock.Lock()
+	defer ec.attrsLock.Unlock()
+	ec.attrs = attrs
+}
+
 func (ec *enhancingConsumer) putAttrs(attrs pcommon.Map) {
+	ec.attrsLock.RLock()
+	defer ec.attrsLock.RUnlock()
 	for attr, val := range ec.attrs {
 		if _, found := attrs.Get(attr); !found {
 			attrs.PutStr(attr, val)

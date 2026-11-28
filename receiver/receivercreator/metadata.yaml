@@ -21,3 +21,5 @@ tests:
     ignore:
       top:
         - "github.com/SAP/go-hdb/driver.(*metrics).collect"
+        - "internal/poll.runtime_pollWait"
+        - "net/http.(*persistConn).writeLoop"

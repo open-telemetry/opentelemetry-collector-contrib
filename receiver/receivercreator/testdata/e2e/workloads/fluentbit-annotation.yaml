@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: receivercreator-e2e-fluentbit-annotation
+  namespace: default
+  labels:
+    app: receivercreator-e2e-workload
+  annotations:
+    fluentbit.io/parser: level-seq
+spec:
+  terminationGracePeriodSeconds: 1
+  containers:
+    - name: app
+      image: busybox:1.37.0
+      command:
+        - /bin/sh
+        - -c
+        - i=0; while true; do echo "2026-01-01T00:00:00Z INFO seq=$i message from fluentbit-annotation"; i=$((i+1)); sleep 1; done
+

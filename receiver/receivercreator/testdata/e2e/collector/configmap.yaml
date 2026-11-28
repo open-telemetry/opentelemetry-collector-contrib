@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-config
+  namespace: default
+data:
+  relay: |
+    exporters:
+      otlp_grpc:
+        endpoint: {{ .HostEndpoint }}:4317
+        tls:
+          insecure: true
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+      k8s_observer:
+        auth_type: serviceAccount
+        node: ${env:K8S_NODE_NAME}
+        observe_pods: true
+        namespaces:
+          - default
+    receivers:
+      receiver_creator:
+        watch_observers: [k8s_observer]
+        # Pods that carry the io.opentelemetry.discovery.logs annotations get a
+        # receiver built from those annotations. The templates below are not
+        # evaluated for them.
+        discovery:
+          enabled: true
+        receivers:
+          # Pods that still select a parser with the Fluent Bit annotation.
+          filelog/fluentbit-parser:
+            rule: type == "pod.container" && pod.annotations["fluentbit.io/parser"] == "level-seq"
+            config:
+              include:
+                - /var/log/pods/`pod.namespace`_`pod.name`_`pod.uid`/`container_name`/*.log
+              start_at: beginning
+              include_file_path: true
+              include_file_name: false
+              operators:
+                - type: container
+                  id: container-parser
+                - type: regex_parser
+                  id: level-seq-parser
+                  regex: '^(?P<time>\S+) (?P<level>\w+) seq=(?P<seq>\d+) (?P<message>.*)'
+                - type: add
+                  field: attributes.parsed_by
+                  value: fluentbit-annotation
+    service:
+      extensions:
+        - health_check
+        - k8s_observer
+      pipelines:
+        logs:
+          receivers:
+            - receiver_creator
+          exporters:
+            - otlp_grpc

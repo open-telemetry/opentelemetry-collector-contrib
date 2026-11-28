@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"sync"
 
 	"github.com/spf13/cast"
@@ -25,6 +26,9 @@ import (
 type runner interface {
 	// start a metrics receiver instance from its static config and discovered config.
 	start(receiver receiverConfig, discoveredConfig userConfigMap, consumer *enhancingConsumer) (component.Component, error)
+	// effectiveConfig returns the config a receiver would be started with: its static config
+	// merged with the discovered config.
+	effectiveConfig(receiver receiverConfig, discoveredConfig userConfigMap) (map[string]any, error)
 	// shutdown a receiver.
 	shutdown(rcvr component.Component) error
 }
@@ -125,6 +129,20 @@ func (run *receiverRunner) start(
 	}
 
 	return wr, nil
+}
+
+func (run *receiverRunner) effectiveConfig(receiver receiverConfig, discoveredConfig userConfigMap) (map[string]any, error) {
+	factory := run.host.GetFactory(component.KindReceiver, receiver.id.Type())
+	if factory == nil {
+		return nil, fmt.Errorf("unable to lookup factory for receiver %q", receiver.id.String())
+	}
+
+	// The merge changes the discovered config, which is still needed to start the receiver.
+	mergedConfig, _, err := mergeTemplatedAndDiscoveredConfigs(factory.(rcvr.Factory), receiver.config, maps.Clone(discoveredConfig))
+	if err != nil {
+		return nil, fmt.Errorf("failed to merge constituent template configs: %w", err)
+	}
+	return mergedConfig.ToStringMap(), nil
 }
 
 // shutdown the given receiver.
