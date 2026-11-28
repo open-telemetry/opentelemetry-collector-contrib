@@ -23,6 +23,12 @@ tests:
         - "go.opencensus.io/stats/view.(*worker).start"
 
 feature_gates:
+  - id: receiver.prometheus.EmitServerPortAsInt
+    stage: alpha
+    description: >-
+      When enabled, emits the server.port resource attribute as an integer instead of a string when a valid numeric port (1-65535) is present, and omits it otherwise.
+    from_version: v0.167.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/53546
   - id: receiver.prometheus.EnableOpenMetrics2
     stage: alpha
     description: >-

@@ -6,6 +6,14 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var ReceiverPrometheusEmitServerPortAsIntFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.prometheus.EmitServerPortAsInt",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, emits the server.port resource attribute as an integer instead of a string when a valid numeric port (1-65535) is present, and omits it otherwise."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/53546"),
+	featuregate.WithRegisterFromVersion("v0.167.0"),
+)
+
 var ReceiverPrometheusEnableOpenMetrics2FeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheus.EnableOpenMetrics2",
 	featuregate.StageAlpha,
