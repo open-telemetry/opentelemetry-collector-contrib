@@ -73,7 +73,7 @@ func AssertEqualExporterRequestsSent(t *testing.T, tt *componenttest.Telemetry, 
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_requests_sent",
 		Description: "Number of requests [Development]",
-		Unit:        "1",
+		Unit:        "{request}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,

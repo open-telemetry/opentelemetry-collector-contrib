@@ -81,7 +81,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ExporterRequestsSent, err = builder.meter.Int64Counter(
 		"otelcol_exporter_requests_sent",
 		metric.WithDescription("Number of requests [Development]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{request}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

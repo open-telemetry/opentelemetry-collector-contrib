@@ -59,4 +59,4 @@ Number of requests
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {request} | Sum | Int | true | Development |

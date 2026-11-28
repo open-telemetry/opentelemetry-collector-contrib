@@ -53,7 +53,7 @@ telemetry:
       enabled: true
       stability: development
       description: Number of requests
-      unit: "1"
+      unit: "{request}"
       sum:
         value_type: int
         monotonic: true
