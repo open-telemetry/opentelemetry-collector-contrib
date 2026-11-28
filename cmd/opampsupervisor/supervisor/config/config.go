@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.uber.org/zap/zapcore"
@@ -376,18 +375,48 @@ type AgentDescription struct {
 type Telemetry struct {
 	// TODO: Add more telemetry options
 	// Issue here: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35582
-	Logs    Logs                           `mapstructure:"logs"`
-	Metrics Metrics                        `mapstructure:"metrics"`
-	Traces  otelconftelemetry.TracesConfig `mapstructure:"traces"`
+	Logs    Logs    `mapstructure:"logs"`
+	Metrics Metrics `mapstructure:"metrics"`
+	Traces  Traces  `mapstructure:"traces"`
 
 	Resource ResourceConfig `mapstructure:"resource"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
+// ResourceConfig is the supervisor's own telemetry resource configuration, with
+// backward-compatible support for legacy inline attributes.
 type ResourceConfig struct {
-	otelconftelemetry.ResourceConfig `mapstructure:",squash"`
-	DetectionDevelopment             configoptional.Optional[xotelconf.ExperimentalResourceDetection] `mapstructure:"detection/development,omitempty"`
+	config.Resource `mapstructure:",squash"`
+
+	DetectionDevelopment configoptional.Optional[xotelconf.ExperimentalResourceDetection] `mapstructure:"detection/development,omitempty"`
+	LegacyAttributes     map[string]any                                                   `mapstructure:",remain"`
+}
+
+var _ confmap.Validator = (*ResourceConfig)(nil)
+
+func (cfg *ResourceConfig) Validate() error {
+	// resource::attributes_list isn't currently supported by otelconf, so the supervisor's
+	// default values are put under resource::attributes. Since attributes_list would have a
+	// lower priority than attributes, we explicitly disallow it for now.
+	if cfg.AttributesList != nil {
+		return errors.New("resource::attributes_list is not currently supported, please use resource::attributes")
+	}
+
+	// mapstructure only supports map[string]any for ",remain" fields, but we need it to be equivalent to map[string]*string
+	for key, val := range cfg.LegacyAttributes {
+		switch val.(type) {
+		case nil, string:
+		default:
+			return fmt.Errorf("legacy resource attribute %q must be string or null", key)
+		}
+	}
+
+	if len(cfg.Attributes) > 0 && len(cfg.LegacyAttributes) > 0 {
+		return errors.New("resource::attributes cannot be used together with legacy inline resource attributes")
+	}
+
+	return nil
 }
 
 type HealthCheck struct {
@@ -426,6 +455,21 @@ type Logs struct {
 	// Processors allow configuration of log record processors to emit logs to
 	// any number of supported backends.
 	Processors []config.LogRecordProcessor `mapstructure:"processors,omitempty"`
+}
+
+type Traces struct {
+	// Level configures whether spans are emitted or not, the possible values are:
+	//  - "none" indicates that no tracing data should be collected;
+	//  - "basic" is the recommended and covers the basics of the service telemetry.
+	Level configtelemetry.Level `mapstructure:"level"`
+	// Propagators is a list of TextMapPropagators from the supported propagators list.
+	Propagators []string `mapstructure:"propagators"`
+
+	// Processors allow configuration of span processors to emit spans to
+	// any number of supported backends.
+	Processors []config.SpanProcessor `mapstructure:"processors,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Metrics struct {

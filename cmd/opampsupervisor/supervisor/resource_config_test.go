@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configoptional"
-	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	otelconf "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.uber.org/zap"
@@ -29,15 +28,13 @@ func TestInitTelemetrySettingsWithDeclarativeResourceConfig(t *testing.T) {
 			ErrorOutputPaths: []string{"stderr"},
 		},
 		Resource: config.ResourceConfig{
-			ResourceConfig: otelconftelemetry.ResourceConfig{
-				Resource: otelconf.Resource{
-					SchemaUrl: &schemaURL,
-					Attributes: []otelconf.AttributeNameValue{
-						{Name: "custom.bool", Value: true},
-						{Name: "service.name", Value: "custom-supervisor"},
-					},
-					Detectors: &otelconf.Detectors{},
+			Resource: otelconf.Resource{
+				SchemaUrl: &schemaURL,
+				Attributes: []otelconf.AttributeNameValue{
+					{Name: "custom.bool", Value: true},
+					{Name: "service.name", Value: "custom-supervisor"},
 				},
+				Detectors: &otelconf.Detectors{},
 			},
 		},
 	})
@@ -63,10 +60,8 @@ func TestInitTelemetrySettingsWithLegacyNilResourceOverride(t *testing.T) {
 			ErrorOutputPaths: []string{"stderr"},
 		},
 		Resource: config.ResourceConfig{
-			ResourceConfig: otelconftelemetry.ResourceConfig{
-				LegacyAttributes: map[string]any{
-					"service.name": nil,
-				},
+			LegacyAttributes: map[string]any{
+				"service.name": nil,
 			},
 		},
 	})
@@ -110,12 +105,10 @@ func TestInitTelemetrySettingsStableDetectorsIgnored(t *testing.T) {
 			ErrorOutputPaths: []string{"stderr"},
 		},
 		Resource: config.ResourceConfig{
-			ResourceConfig: otelconftelemetry.ResourceConfig{
-				Resource: otelconf.Resource{
-					Detectors: &otelconf.Detectors{
-						Attributes: &otelconf.DetectorsAttributes{
-							Included: []string{"host.*", "os.*"},
-						},
+			Resource: otelconf.Resource{
+				Detectors: &otelconf.Detectors{
+					Attributes: &otelconf.DetectorsAttributes{
+						Included: []string{"host.*", "os.*"},
 					},
 				},
 			},
@@ -138,12 +131,10 @@ func TestInitTelemetrySettingsResourceDetectionKeepsSupervisorServiceAttributes(
 			ErrorOutputPaths: []string{"stderr"},
 		},
 		Resource: config.ResourceConfig{
-			ResourceConfig: otelconftelemetry.ResourceConfig{
-				Resource: otelconf.Resource{
-					Attributes: []otelconf.AttributeNameValue{
-						{Name: "service.name", Value: "custom-supervisor"},
-						{Name: "service.instance.id", Value: "configured-instance"},
-					},
+			Resource: otelconf.Resource{
+				Attributes: []otelconf.AttributeNameValue{
+					{Name: "service.name", Value: "custom-supervisor"},
+					{Name: "service.instance.id", Value: "configured-instance"},
 				},
 			},
 			DetectionDevelopment: configoptional.Some(xotelconf.ExperimentalResourceDetection{

@@ -955,7 +955,7 @@ service:
 		assert.False(t, conf.IsSet("service::telemetry::resource::service.instance.id"))
 		assert.False(t, conf.IsSet("service::telemetry::resource::service.version"))
 
-		var resourceCfg otelconftelemetry.ResourceConfig
+		var resourceCfg config.ResourceConfig
 		require.NoError(t, confmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
 		require.Empty(t, resourceCfg.LegacyAttributes)
 
@@ -1029,7 +1029,7 @@ service:
 		resource, ok := conf.Get("service::telemetry::resource").(map[string]any)
 		require.True(t, ok)
 
-		var resourceCfg otelconftelemetry.ResourceConfig
+		var resourceCfg config.ResourceConfig
 		require.NoError(t, confmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
 		require.Empty(t, resourceCfg.LegacyAttributes)
 
@@ -1094,7 +1094,7 @@ service:
 		resource, ok := conf.Get("service::telemetry::resource").(map[string]any)
 		require.True(t, ok)
 
-		var resourceCfg otelconftelemetry.ResourceConfig
+		var resourceCfg config.ResourceConfig
 		require.NoError(t, confmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
 		require.Empty(t, resourceCfg.LegacyAttributes)
 
@@ -1181,7 +1181,7 @@ service:
 		resource, ok := conf.Get("service::telemetry::resource").(map[string]any)
 		require.True(t, ok)
 
-		var resourceCfg otelconftelemetry.ResourceConfig
+		var resourceCfg config.ResourceConfig
 		require.NoError(t, confmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
 		require.Empty(t, resourceCfg.LegacyAttributes)
 
@@ -1260,7 +1260,7 @@ service:
 		resource, ok := conf.Get("service::telemetry::resource").(map[string]any)
 		require.True(t, ok)
 
-		var resourceCfg otelconftelemetry.ResourceConfig
+		var resourceCfg config.ResourceConfig
 		require.NoError(t, confmap.NewFromStringMap(resource).Unmarshal(&resourceCfg))
 		require.Empty(t, resourceCfg.LegacyAttributes)
 
