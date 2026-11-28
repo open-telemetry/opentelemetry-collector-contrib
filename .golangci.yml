@@ -128,31 +128,46 @@ linters:
       - linters:
           - revive
         path: processor/transformprocessor/internal/common/
-        text: "var-naming: avoid meaningless package names"
+        text: "package-naming: don't use \"common\""
 
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45004
       - linters:
           - revive
         path: cmd/telemetrygen/pkg/
-        text: "var-naming: avoid meaningless package names"
+        text: "package-naming: don't use \"types\""
 
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45005
       - linters:
           - revive
         path: extension/encoding/googlecloudlogentryencodingextension/internal/shared/
-        text: "var-naming: avoid meaningless package names"
+        text: "package-naming: don't use \"shared\""
 
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45008
       - linters:
           - revive
         path: extension/jaegerremotesampling/internal/server/http/
-        text: "var-naming: avoid package names that conflict with Go standard library package names"
+        text: "package-naming: don't use \"http\""
 
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45008
       - linters:
           - revive
         path: extension/sumologicextension/internal/api/
-        text: "var-naming: avoid meaningless package names"
+        text: "package-naming: don't use \"api\""
+
+      - linters:
+          - revive
+        path: cmd/telemetrygen/internal/log/
+        text: "package-naming: don't use \"log\""
+
+      - linters:
+          - revive
+        path: internal/filter/filterset/regexp/
+        text: "package-naming: don't use \"regexp\""
+
+      - linters:
+          - revive
+        path: processor/redactionprocessor/internal/url/
+        text: "package-naming: don't use \"url\""
 
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47586
       - linters:
@@ -415,6 +430,14 @@ linters:
         - name: increment-decrement
         # highlights redundant else-blocks that can be eliminated from the code
         - name: indent-error-flow
+        # warns when package naming conventions are not followed
+        - name: package-naming
+          arguments:
+            - userDefinedBadNames:
+                - api
+                - miscellaneous
+                - shared
+                - utilities
         # This rule suggests a shorter way of writing ranges that do not use the second value.
         - name: range
         # receiver names in a method should reflect the struct name (p for Person, for example)
