@@ -5,7 +5,11 @@ package xcompression
 
 import (
 	"bytes"
+	"io"
+	"runtime"
 	"testing"
+	"time"
+	"weak"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -59,6 +63,52 @@ func TestDecompressReader(t *testing.T) {
 			assert.Equal(t, expect, fromReader.Bytes())
 		})
 	}
+}
+
+func TestGzipLeaseCloseAfterResetError(t *testing.T) {
+	t.Parallel()
+
+	leaser, err := NewReaderFactory().NewReadLeaser(configcompression.TypeGzip, configcompression.CompressionParams{})
+	require.NoError(t, err)
+	require.NoError(t, leaser.LeaseReader(func(reader ResettableReader) error {
+		require.Error(t, reader.Reset(bytes.NewReader([]byte("invalid gzip"))))
+		return reader.Close()
+	}))
+}
+
+func TestZstdLeaseCloseReleasesInput(t *testing.T) {
+	t.Parallel()
+
+	params := configcompression.CompressionParams{}
+	writer, err := NewWriterFactory().NewWriter(configcompression.TypeZstd, params)
+	require.NoError(t, err)
+	payload := []byte("zstd payload")
+	var compressed bytes.Buffer
+	_, err = writer.CompressBytes(&compressed, payload)
+	require.NoError(t, err)
+
+	leaser, err := NewReaderFactory().NewReadLeaser(configcompression.TypeZstd, params)
+	require.NoError(t, err)
+	require.NoError(t, leaser.LeaseReader(func(reader ResettableReader) error {
+		// Hide the buffer methods so the decoder uses its streaming path.
+		src := &struct{ io.Reader }{bytes.NewReader(compressed.Bytes())}
+		previous := weak.Make(src)
+		require.NoError(t, reader.Reset(src))
+		_, err := io.ReadFull(reader, make([]byte, 1))
+		require.NoError(t, err)
+		require.NoError(t, reader.Close())
+
+		require.Eventually(t, func() bool {
+			runtime.GC()
+			return previous.Value() == nil
+		}, time.Second, 10*time.Millisecond)
+		require.NoError(t, reader.Reset(bytes.NewReader(compressed.Bytes())))
+		defer func() { require.NoError(t, reader.Close()) }()
+		got, err := io.ReadAll(reader)
+		require.NoError(t, err)
+		require.Equal(t, payload, got)
+		return nil
+	}))
 }
 
 func TestLeaseReaders(t *testing.T) {
