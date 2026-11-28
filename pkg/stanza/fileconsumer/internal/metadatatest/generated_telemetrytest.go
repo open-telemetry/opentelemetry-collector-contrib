@@ -15,7 +15,7 @@ func AssertEqualFileconsumerOpenFiles(t *testing.T, tt *componenttest.Telemetry,
 	want := metricdata.Metrics{
 		Name:        "otelcol_fileconsumer_open_files",
 		Description: "Number of open files [Development]",
-		Unit:        "1",
+		Unit:        "{file}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: false,
@@ -31,7 +31,7 @@ func AssertEqualFileconsumerReadingFiles(t *testing.T, tt *componenttest.Telemet
 	want := metricdata.Metrics{
 		Name:        "otelcol_fileconsumer_reading_files",
 		Description: "Number of open files that are being read [Development]",
-		Unit:        "1",
+		Unit:        "{file}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: false,

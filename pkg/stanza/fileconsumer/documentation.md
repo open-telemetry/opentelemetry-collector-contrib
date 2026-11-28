@@ -12,7 +12,7 @@ Number of open files
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | false | Development |
+| {file} | Sum | Int | false | Development |
 
 ### otelcol_fileconsumer_reading_files
 
@@ -20,7 +20,7 @@ Number of open files that are being read
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | false | Development |
+| {file} | Sum | Int | false | Development |
 
 ## Feature Gates
 
