@@ -6,6 +6,7 @@ status:
   stability:
     alpha: [traces]
   distributions: [contrib]
+  warnings: [Memory consumption]
   codeowners:
     active: [atoulme, rnterbush, pavankrish123]
 
