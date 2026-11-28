@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: pkg/xcompression
+note: Use the default level when the compression level is unset for gzip, zlib, and deflate writers, so they no longer store data uncompressed.
+issues: [53568]
+change_logs: [user, api]
