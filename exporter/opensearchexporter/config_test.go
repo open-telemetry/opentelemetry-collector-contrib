@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/metadata"
 )
@@ -77,7 +76,7 @@ func TestLoadConfig(t *testing.T) {
 				MappingsSettings: MappingsSettings{
 					Mode: "ss4o",
 				},
-				QueueConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				QueueConfig: metadata.NewDefaultSendingQueueConfig(),
 			},
 			configValidateAssert: assert.NoError,
 		},
