@@ -5,6 +5,7 @@ package resourcedetectionprocessor // import "github.com/open-telemetry/opentele
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper"
 	"go.opentelemetry.io/collector/processor/xprocessor"
+	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -50,6 +52,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openstack/nova"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/oraclecloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/scaleway"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/sdkbridge"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 	tencentcvm "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/tencent/cvm"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/upcloud"
@@ -223,6 +226,9 @@ func (f *factory) getResourceDetectionProcessor(
 
 	warnDeprecatedPerDetectorFlags(params.Logger, oCfg)
 
+	oCfg = resolveDetection(params.Logger, oCfg, f.compiledDetectors,
+		metadata.ProcessorResourceDetectionDetectHostIDByDefaultFeatureGate.IsEnabled())
+
 	// The deprecated per-detector fail_on_missing_metadata fields are OR'd with this
 	// top-level flag inside each affected detector, preserving per-detector scope.
 	provider, err := f.getResourceProvider(params, oCfg.Retry, oCfg.Detectors, oCfg.DetectorConfig, oCfg.FailOnMissingMetadata)
@@ -237,6 +243,48 @@ func (f *factory) getResourceDetectionProcessor(
 		refreshInterval:    oCfg.RefreshInterval,
 		telemetrySettings:  params.TelemetrySettings,
 	}, nil
+}
+
+// resolveDetection returns the configuration the processor runs with.
+//
+// It returns cfg as is, unless detectHostIDByDefault is set and the processor is not configured.
+// Then it returns a copy in which the detectors follow the host.id semantic conventions priority order.
+func resolveDetection(logger *zap.Logger, cfg *Config, compiledDetectors []string, detectHostIDByDefault bool) *Config {
+	if !detectHostIDByDefault {
+		return cfg
+	}
+	if cfg.configuredByUser {
+		logger.Debug("default host.id detection skipped because the processor is configured")
+		return cfg
+	}
+
+	resolved := *cfg
+	resolved.Detectors = nil
+	// Do not overwrite incoming host.id (e.g. gateway Collector setup)
+	resolved.Override = false
+	add := func(detector string, resourceAttributes any) {
+		if !slices.Contains(compiledDetectors, detector) {
+			return
+		}
+		resolved.Detectors = append(resolved.Detectors, detector)
+		sdkbridge.SetEnabledAttributes(resourceAttributes, func(attribute string) bool {
+			switch attribute {
+			case string(conventions.HostIDKey), string(conventions.CloudProviderKey), string(conventions.CloudPlatformKey):
+				return true
+			}
+			return false
+		})
+	}
+
+	add(eks.TypeStr, &resolved.DetectorConfig.EKSConfig.ResourceAttributes)
+	add(ec2.TypeStr, &resolved.DetectorConfig.EC2Config.ResourceAttributes)
+	add(azure.TypeStr, &resolved.DetectorConfig.AzureConfig.ResourceAttributes)
+	add(gcp.TypeStr, &resolved.DetectorConfig.GcpConfig.ResourceAttributes)
+	add(k8sapi.TypeStr, &resolved.DetectorConfig.K8SAPIConfig.ResourceAttributes)
+	// TODO: include the system detector after making it skip the container's machine ID.
+	add(env.TypeStr, nil)
+
+	return &resolved
 }
 
 // warnDeprecatedPerDetectorFlags emits a deprecation warning if any per-detector

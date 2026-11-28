@@ -91,3 +91,29 @@ func TestRemoveDisabledAttributes_DynamicAttributesAddedAfter(t *testing.T) {
 		"ec2.tag.team":   "platform",
 	}, res.Attributes().AsRaw())
 }
+
+func TestSetEnabledAttributes(t *testing.T) {
+	rac := &resourceAttributesConfig{
+		CloudProvider: resourceAttributeConfig{Enabled: false},
+		ServiceName:   resourceAttributeConfig{Enabled: true},
+		InstanceID:    resourceAttributeConfig{Enabled: true},
+	}
+
+	SetEnabledAttributes(rac, func(key string) bool { return key == "cloud.provider" })
+
+	assert.Equal(t, &resourceAttributesConfig{
+		CloudProvider: resourceAttributeConfig{Enabled: true},
+		ServiceName:   resourceAttributeConfig{Enabled: false},
+		InstanceID:    resourceAttributeConfig{Enabled: false},
+	}, rac)
+}
+
+func TestSetEnabledAttributes_NotAPointer(t *testing.T) {
+	rac := resourceAttributesConfig{ServiceName: resourceAttributeConfig{Enabled: true}}
+	for _, v := range []any{nil, "not a struct", rac, (*resourceAttributesConfig)(nil)} {
+		assert.NotPanics(t, func() {
+			SetEnabledAttributes(v, func(string) bool { return false })
+		})
+	}
+	assert.True(t, rac.ServiceName.Enabled)
+}
