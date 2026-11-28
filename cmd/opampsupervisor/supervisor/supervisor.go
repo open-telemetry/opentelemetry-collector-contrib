@@ -162,6 +162,10 @@ type Supervisor struct {
 	remoteConfig atomic.Pointer[protobufs.AgentRemoteConfig]
 	// Last known-good remote config.
 	lastWorkingRemoteConfig atomic.Pointer[protobufs.AgentRemoteConfig]
+
+	// lastWorkingLocalConfig is the running local configuration captured before
+	// accepting a remote config for the first time in this Supervisor process.
+	lastWorkingLocalConfig atomic.Pointer[configState]
 	// If true, we are starting from a last known-good remote configuration.
 	// This is used to help control behavior that must be different in this scenario.
 	usingLastWorkingRemoteConfig atomic.Bool
@@ -1658,13 +1662,12 @@ func (s *Supervisor) remoteConfigForStartup(lastReceivedRemoteConfig *protobufs.
 	return lastWorkingRemoteConfig
 }
 
-// restoreLastWorkingRemoteConfig attempts to restore the last working remote
-// config if is available. In case the restoration works, it signals to the
-// Supervisor that there's new configuration.
+// restoreLastWorkingRemoteConfig restores a known working configuration and
+// signals the Supervisor to apply it.
 func (s *Supervisor) restoreLastWorkingRemoteConfig() bool {
 	restored, err := s.composeWithLastWorkingRemoteConfig()
 	if err != nil {
-		s.telemetrySettings.Logger.Error("Could not restore last working remote config", zap.Error(err))
+		s.telemetrySettings.Logger.Error("Could not restore last working config", zap.Error(err))
 		return false
 	}
 	if restored {
@@ -1677,8 +1680,8 @@ func (s *Supervisor) restoreLastWorkingRemoteConfig() bool {
 }
 
 // composeWithLastWorkingRemoteConfig composes the Collector configuration
-// with the last working remote config if it is available and automatic
-// rollback is enabled.
+// with the last working remote config, or restores the captured local
+// configuration when no working remote configuration exists.
 func (s *Supervisor) composeWithLastWorkingRemoteConfig() (bool, error) {
 	if !s.config.Agent.AutomaticConfigRollback {
 		return false, nil
@@ -1693,7 +1696,17 @@ func (s *Supervisor) composeWithLastWorkingRemoteConfig() (bool, error) {
 
 	lastWorkingRemoteConfig := s.lastWorkingRemoteConfig.Load()
 	if lastWorkingRemoteConfig == nil {
-		return false, nil
+		localConfig := s.lastWorkingLocalConfig.Load()
+		if localConfig == nil {
+			return false, nil
+		}
+		if err := os.WriteFile(s.agentConfigFilePath(), []byte(localConfig.mergedConfig), 0o600); err != nil {
+			return false, fmt.Errorf("write last working local config: %w", err)
+		}
+		s.cfgState.Store(localConfig)
+		s.remoteConfig.Store(nil)
+		s.usingLastWorkingRemoteConfig.Store(true)
+		return true, nil
 	}
 
 	clonedConfig := proto.Clone(lastWorkingRemoteConfig).(*protobufs.AgentRemoteConfig)
@@ -2525,13 +2538,17 @@ func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStat
 }
 
 // reportActiveConfigStatus reports the given status for the currently active
-// config. When the active config is the restored last working remote config,
-// the status is reported without overwriting the persisted status of the
-// config that triggered the rollback, and true is returned.
+// config. When the active config was restored, true is returned and the
+// persisted failure of the configuration that triggered rollback is preserved.
 func (s *Supervisor) reportActiveConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) bool {
 	if !s.config.Capabilities.AcceptsRemoteConfig {
 		s.telemetrySettings.Logger.Debug("supervisor is not configured to report remote config status")
 		return false
+	}
+	// A restored local configuration has no remote hash to report. Preserve
+	// the failed status of the remote configuration that triggered rollback.
+	if s.remoteConfig.Load() == nil && s.lastWorkingLocalConfig.Load() != nil {
+		return true
 	}
 	if s.shouldReportLastWorkingRemoteConfigStatus() {
 		s.reportLastWorkingRemoteConfigStatus(status, errorMessage)
@@ -2674,6 +2691,17 @@ func (s *Supervisor) processRemoteConfigMessage(ctx context.Context, msg *protob
 	if !s.config.Capabilities.AcceptsRemoteConfig {
 		s.telemetrySettings.Logger.Warn("Got remote config message, but the agent does not accept remote config. Ignoring remote config.")
 		return false
+	}
+
+	if s.config.Agent.AutomaticConfigRollback && s.remoteConfig.Load() == nil && s.lastHealthFromClient.Load().GetHealthy() {
+		// Capture the file the healthy Collector was started with, before
+		// composing or writing the candidate remote configuration.
+		localConfig, err := os.ReadFile(s.agentConfigFilePath())
+		if err != nil {
+			s.telemetrySettings.Logger.Warn("Could not capture last working local config", zap.Error(err))
+		} else if len(localConfig) > 0 {
+			s.lastWorkingLocalConfig.Store(&configState{mergedConfig: string(localConfig)})
+		}
 	}
 
 	s.usingLastWorkingRemoteConfig.Store(false)

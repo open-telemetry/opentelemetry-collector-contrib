@@ -5176,3 +5176,54 @@ service:
 		require.Equal(t, expectedMergedConfigMulti, gotConfig)
 	})
 }
+
+func TestRestoreLocalConfigAfterFirstRemoteConfigFails(t *testing.T) {
+	s := newComposeMergedConfigTestSupervisor(t, "", false)
+	s.config.Agent.AutomaticConfigRollback = true
+	var err error
+	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFilePath(), "", zap.NewNop())
+	require.NoError(t, err)
+	var reportedStatus *protobufs.RemoteConfigStatus
+	s.opampClient = &mockOpAMPClient{
+		setRemoteConfigStatusFunc: func(status *protobufs.RemoteConfigStatus) error {
+			reportedStatus = status
+			return nil
+		},
+	}
+
+	require.NoError(t, s.loadAndWriteInitialMergedConfig())
+	localConfig, err := os.ReadFile(s.agentConfigFilePath())
+	require.NoError(t, err)
+	require.NotEmpty(t, localConfig)
+	s.lastHealthFromClient.Store(&protobufs.ComponentHealth{Healthy: true})
+
+	candidate := &protobufs.AgentRemoteConfig{
+		ConfigHash: []byte("first-remote-config"),
+		Config: &protobufs.AgentConfigMap{
+			ConfigMap: map[string]*protobufs.AgentConfigObject{
+				"": {Body: []byte("receivers:\n  nop/remote: {}\n")},
+			},
+		},
+	}
+	require.True(t, s.processRemoteConfigMessage(t.Context(), candidate))
+	require.NoError(t, s.writeAgentConfig())
+	candidateConfig, err := os.ReadFile(s.agentConfigFilePath())
+	require.NoError(t, err)
+	require.NotEqual(t, localConfig, candidateConfig)
+
+	const failed = protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED
+	require.False(t, s.reportActiveConfigStatus(failed, "collector exited"))
+	require.True(t, s.restoreLastWorkingRemoteConfig())
+	require.Len(t, s.hasNewConfig, 1)
+	restoredConfig, err := os.ReadFile(s.agentConfigFilePath())
+	require.NoError(t, err)
+	require.Equal(t, localConfig, restoredConfig)
+	require.Equal(t, string(localConfig), s.cfgState.Load().(*configState).mergedConfig)
+	require.Nil(t, s.remoteConfig.Load())
+	require.False(t, s.restoreLastWorkingRemoteConfig(), "do not restore the same local config again")
+
+	require.True(t, s.reportActiveConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, ""))
+	require.Equal(t, failed, reportedStatus.GetStatus())
+	require.Equal(t, candidate.ConfigHash, reportedStatus.GetLastRemoteConfigHash())
+	require.Equal(t, failed, s.persistentState.GetLastRemoteConfigStatus().GetStatus())
+}
