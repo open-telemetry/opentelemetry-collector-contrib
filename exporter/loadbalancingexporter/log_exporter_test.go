@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
 	metricnoop "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -1491,8 +1492,8 @@ func TestSplitLogsByTraceID(t *testing.T) {
 		batches := splitLogsByTraceID(ld)
 		require.Len(t, batches, 2, "two different traceIDs should produce two batches")
 
-		tid1 := pcommon.TraceID([16]byte{1, 2, 3, 4}).String()
-		tid2 := pcommon.TraceID([16]byte{5, 6, 7, 8}).String()
+		tid1 := traceIDKey(pcommon.TraceID([16]byte{1, 2, 3, 4}))
+		tid2 := traceIDKey(pcommon.TraceID([16]byte{5, 6, 7, 8}))
 
 		require.Contains(t, batches, tid1)
 		require.Contains(t, batches, tid2)
@@ -2174,8 +2175,8 @@ func TestSplitLogsByTraceIDEmptyAndNonEmptyMixed(t *testing.T) {
 
 	batches := splitLogsByTraceID(ld)
 
-	tid1 := pcommon.TraceID([16]byte{1, 2, 3, 4}).String()
-	tid2 := pcommon.TraceID([16]byte{5, 6, 7, 8}).String()
+	tid1 := traceIDKey(pcommon.TraceID([16]byte{1, 2, 3, 4}))
+	tid2 := traceIDKey(pcommon.TraceID([16]byte{5, 6, 7, 8}))
 
 	// 4 batches: each empty traceID record gets its own random key, plus
 	// one batch per non-empty traceID.
@@ -2230,7 +2231,7 @@ func TestSplitLogsByTraceIDPreservesSchemaURLAndScopeMetadata(t *testing.T) {
 	batches := splitLogsByTraceID(ld)
 	require.Len(t, batches, 1)
 
-	tid := pcommon.TraceID([16]byte{1, 2, 3, 4}).String()
+	tid := traceIDKey(pcommon.TraceID([16]byte{1, 2, 3, 4}))
 	b := batches[tid]
 
 	resultRL := b.ResourceLogs().At(0)
@@ -2644,4 +2645,146 @@ func newMockLogsExporter(consumelogsfn func(ctx context.Context, ld plog.Logs) e
 
 func newNopMockLogsExporter() exporter.Logs {
 	return &mockLogsExporter{Component: mockComponent{}}
+}
+
+// traceIDKey is the routing key splitLogsByTraceID uses for a trace ID.
+func traceIDKey(tid pcommon.TraceID) string {
+	return string(tid[:])
+}
+
+// Trace ID routing: logs and spans co-location
+
+func colocationTraceIDs(n int) []pcommon.TraceID {
+	r := rand.New(rand.NewPCG(1, 2))
+	ids := make([]pcommon.TraceID, n)
+	for i := range ids {
+		for j := range ids[i] {
+			ids[i][j] = byte(r.Uint32())
+		}
+	}
+	return ids
+}
+
+// The log routing key for a trace ID must be the same byte sequence the trace
+// exporter hashes for that trace ID; otherwise the two signals use unrelated
+// ring positions.
+func TestTraceIDRoutingKeyMatchesAcrossSignals(t *testing.T) {
+	for _, tid := range colocationTraceIDs(100) {
+		span := ptrace.NewSpan()
+		span.SetTraceID(tid)
+
+		ld := plog.NewLogs()
+		ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().SetTraceID(tid)
+		batches := splitLogsByTraceID(ld)
+		require.Len(t, batches, 1)
+
+		for key := range batches {
+			require.Equal(t, string(spanTraceIDIdentifier(span)), key, "trace ID %s", tid)
+		}
+	}
+}
+
+// Exporter level: a traces and a logs load-balancing exporter with the same
+// static backends and routing_key traceID must deliver a trace's spans and its
+// logs to the same backend. Batches mix many trace IDs in one ResourceLogs /
+// ResourceSpans, plus log records without a trace ID.
+func TestTraceIDRoutingColocatesSpansAndLogsThroughExporters(t *testing.T) {
+	for _, n := range []int{2, 3, 5} {
+		t.Run(fmt.Sprintf("backends=%d", n), func(t *testing.T) {
+			endpoints := make([]string, n)
+			for i := range endpoints {
+				endpoints[i] = fmt.Sprintf("backend-%d:4317", i+1)
+			}
+			cfg := &Config{
+				Resolver:   ResolverSettings{Static: configoptional.Some(StaticResolver{Hostnames: endpoints})},
+				RoutingKey: traceIDRoutingStr,
+			}
+
+			var mu sync.Mutex
+			spanEP := map[pcommon.TraceID]map[string]bool{}
+			logEP := map[pcommon.TraceID]map[string]bool{}
+			record := func(m map[pcommon.TraceID]map[string]bool, tid pcommon.TraceID, ep string) {
+				mu.Lock()
+				defer mu.Unlock()
+				if m[tid] == nil {
+					m[tid] = map[string]bool{}
+				}
+				m[tid][ep] = true
+			}
+
+			ts, tb := getTelemetryAssets(t)
+			traceLB, err := newLoadBalancer(ts.Logger, cfg, func(_ context.Context, ep string) (component.Component, error) {
+				return newMockTracesExporter(func(_ context.Context, td ptrace.Traces) error {
+					for i := 0; i < td.ResourceSpans().Len(); i++ {
+						ss := td.ResourceSpans().At(i).ScopeSpans()
+						for j := 0; j < ss.Len(); j++ {
+							for k := 0; k < ss.At(j).Spans().Len(); k++ {
+								record(spanEP, ss.At(j).Spans().At(k).TraceID(), ep)
+							}
+						}
+					}
+					return nil
+				}), nil
+			}, tb)
+			require.NoError(t, err)
+			te, err := newTracesExporter(ts, cfg)
+			require.NoError(t, err)
+			te.loadBalancer = traceLB
+
+			logLB, err := newLoadBalancer(ts.Logger, cfg, func(_ context.Context, ep string) (component.Component, error) {
+				return newMockLogsExporter(func(_ context.Context, ld plog.Logs) error {
+					for i := 0; i < ld.ResourceLogs().Len(); i++ {
+						sl := ld.ResourceLogs().At(i).ScopeLogs()
+						for j := 0; j < sl.Len(); j++ {
+							for k := 0; k < sl.At(j).LogRecords().Len(); k++ {
+								record(logEP, sl.At(j).LogRecords().At(k).TraceID(), ep)
+							}
+						}
+					}
+					return nil
+				}), nil
+			}, tb)
+			require.NoError(t, err)
+			le, err := newLogsExporter(ts, cfg)
+			require.NoError(t, err)
+			le.loadBalancer = logLB
+
+			require.NoError(t, te.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() { require.NoError(t, te.Shutdown(t.Context())) }()
+			require.NoError(t, le.Start(t.Context(), componenttest.NewNopHost()))
+			defer func() { require.NoError(t, le.Shutdown(t.Context())) }()
+
+			ids := colocationTraceIDs(200)
+			td := ptrace.NewTraces()
+			spans := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
+			ld := plog.NewLogs()
+			records := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+			for i, tid := range ids {
+				for s := range 2 { // two spans and two logs per trace
+					sp := spans.AppendEmpty()
+					sp.SetTraceID(tid)
+					sp.SetSpanID(pcommon.SpanID{byte(i), byte(s), 1})
+					records.AppendEmpty().SetTraceID(tid)
+				}
+				records.AppendEmpty().Body().SetStr("no trace id")
+			}
+			require.NoError(t, te.ConsumeTraces(t.Context(), td))
+			require.NoError(t, le.ConsumeLogs(t.Context(), ld))
+
+			mu.Lock()
+			defer mu.Unlock()
+			differ := 0
+			for _, tid := range ids {
+				require.Len(t, spanEP[tid], 1, "spans of one trace must stay on one backend")
+				require.Len(t, logEP[tid], 1, "logs of one trace must stay on one backend")
+				for ep := range spanEP[tid] {
+					if !logEP[tid][ep] {
+						differ++
+					}
+				}
+			}
+			assert.Zero(t, differ, "%d of %d traces have spans and logs on different backends", differ, len(ids))
+			assert.Len(t, logEP[pcommon.NewTraceIDEmpty()], n, "logs without a trace ID should still spread over all backends")
+		})
+	}
 }

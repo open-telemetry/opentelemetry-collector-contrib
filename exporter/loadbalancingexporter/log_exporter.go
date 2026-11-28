@@ -234,7 +234,7 @@ func splitLogsByTraceID(ld plog.Logs) map[string]plog.Logs {
 				if traceID.IsEmpty() {
 					key = randomTraceID().String()
 				} else {
-					key = traceID.String()
+					key = string(traceID[:])
 				}
 
 				sb, ok := batches[key]
