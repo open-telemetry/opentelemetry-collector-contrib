@@ -16,7 +16,8 @@
 The Syslog exporter sends logs in [syslog][syslog_wikipedia] format to a remote syslog server.
 It supports syslog protocols [RFC5424][RFC5424] and [RFC3164][RFC3164] and can send data over `TCP`, `UDP` or Unix sockets.
 The exporter aims to be compatible with the [Syslog receiver][syslog_receiver].
-This means that syslog messages received via the Syslog receiver and exported via the Syslog exporter should be unchanged.
+This means that syslog messages received via the Syslog receiver and exported via the Syslog exporter should be unchanged,
+except for the [line breaks](#line-breaks) that the exporter replaces.
 
 ## Configuration
 
@@ -52,6 +53,17 @@ This means that syslog messages received via the Syslog receiver and exported vi
     - `requests_per_second` is the average number of requests per seconds.
   - `storage` (default = `none`): When set, enables persistence and uses the component specified as a storage extension for the [persistent queue][persistent_queue]
 - `timeout` (default = 5s) Time to wait per individual attempt to send data to a backend
+
+## Line breaks
+
+When `network` is `tcp` or `unix` and `enable_octet_counting` is `false`, a receiver ends a syslog message at an LF or NUL character.
+So that each log record always produces exactly one syslog message, the exporter replaces LF, CR and NUL with a space:
+
+- always, in the attributes used for the syslog header, such as `hostname` and `appname`, and in the keys of `structured_data`;
+- in the `message` attribute, unless `network` is `udp` or `unixgram` or `enable_octet_counting` is `true`,
+  because then each syslog message is delimited by its datagram or by its octet count.
+
+The values of `structured_data` are written quoted and escaped.
 
 ## Examples
 
