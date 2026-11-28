@@ -100,6 +100,13 @@ resources:
                   method: POST
 ```
 
+The schema is validated when the file is read. An unknown key or operator
+suffix on the document, a resource, a scope, a metric, or a datapoint (for
+example a misspelled `metrics/cuont`) is a schema error, as is an invalid
+operator argument. Attribute maps are the exception: attribute keys are
+arbitrary and may contain `/`, so a key with an unrecognized suffix, such as
+`app.kubernetes.io/name`, is a literal attribute key.
+
 ### Attribute presence matcher
 
 Attribute keys can use the `/exists: true` suffix when the attribute must be
@@ -149,7 +156,11 @@ attributes:
 
 Regex matchers are supported for resource attributes and datapoint attributes.
 The attribute map remains exact: unexpected attributes still fail the
-assertion.
+assertion. A pattern that is not a string or does not compile is a schema
+error.
+
+Use at most one of `key:`, `key/exists:`, or `key/regex:` for the same
+attribute in one map; specifying more than one is a schema error.
 
 ### Scope version matchers
 
@@ -199,7 +210,9 @@ attributes:
 ```
 
 The expected and actual values must both be numeric. Integers are compared
-exactly; other numeric values fall back to a float64 comparison.
+exactly; other numeric values fall back to a float64 comparison. A non-numeric
+expected value is a schema error, and so is combining a numeric operator with
+`key:`, `key/exists:`, or `key/regex:` for the same attribute.
 
 An unrecognized operator suffix on a `int_value`/`double_value` key is rejected
 when the assertion file is read. On attribute keys, a key with an unrecognized
