@@ -53,13 +53,13 @@ func TestLoadConfig(t *testing.T) {
 					AdditionalSuccessStatusCodes: []int{404, 409},
 				}}}},
 				ClientConfig: clientConfig,
-				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
-					queue := exporterhelper.NewDefaultQueueConfig()
-					queue.QueueSize = 1000
-					queue.NumConsumers = 10
-					queue.StorageID = configoptional.Some(configstorage.ID(disk))
+				QueueSettings: func() configoptional.Optional[exporterhelper.QueueBatchConfig] {
+					queue := metadata.NewDefaultSendingQueueConfig()
+					queue.Get().QueueSize = 1000
+					queue.Get().NumConsumers = 10
+					queue.Get().StorageID = configoptional.Some(configstorage.ID(disk))
 					return queue
-				}()),
+				}(),
 				ShutdownTimeout: 2 * time.Second,
 				TagMappings: TagMappingsConfig{
 					CloudRoleInstance:  []string{"service.instance.id"},
