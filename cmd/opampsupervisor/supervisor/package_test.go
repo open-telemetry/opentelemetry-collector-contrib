@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
+	"syscall"
 	"testing"
 	"time"
 
@@ -24,10 +26,19 @@ import (
 
 const supervisorRestartHelperEnv = "OTEL_SUPERVISOR_RESTART_HELPER"
 
+// supervisorStopMarkerEnv names a file the opamp-healthy test agent creates when it is
+// interrupted, before it takes a second to exit, so that a test can act while the
+// Supervisor is still stopping the agent.
+const supervisorStopMarkerEnv = "OTEL_SUPERVISOR_STOP_MARKER"
+
+// supervisorPIDFileEnv names a file the opamp test agent writes its process ID to once it
+// is connected, so that a test can kill the agent the Supervisor is running.
+const supervisorPIDFileEnv = "OTEL_SUPERVISOR_PID_FILE"
+
 func TestMain(m *testing.M) {
 	switch os.Getenv(supervisorRestartHelperEnv) {
-	case "opamp":
-		if err := runOpAMPTestAgent(); err != nil {
+	case "opamp", "opamp-healthy":
+		if err := runOpAMPTestAgent(os.Getenv(supervisorRestartHelperEnv) == "opamp-healthy"); err != nil {
 			_, _ = fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
@@ -49,8 +60,10 @@ func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m)
 }
 
-// runOpAMPTestAgent supplies bootstrap information without a Collector binary.
-func runOpAMPTestAgent() error {
+// runOpAMPTestAgent supplies bootstrap information without a Collector binary. With
+// reportHealth, it reports healthy periodically and keeps running on SIGHUP, like a
+// Collector that reloads its config.
+func runOpAMPTestAgent(reportHealth bool) error {
 	if os.Args[1] == "featuregate" {
 		return nil
 	}
@@ -82,12 +95,47 @@ func runOpAMPTestAgent() error {
 	}); err != nil {
 		return err
 	}
+	if pidFile := os.Getenv(supervisorPIDFileEnv); pidFile != "" {
+		if err := os.WriteFile(pidFile, []byte(strconv.Itoa(os.Getpid())), 0o600); err != nil {
+			return err
+		}
+	}
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt)
+	if reportHealth {
+		return reportHealthUntilInterrupted(opampClient, sigCh)
+	}
 	<-sigCh
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	return opampClient.Stop(ctx)
+}
+
+// reportHealthUntilInterrupted reports healthy every 100ms until interrupted, and keeps
+// running on SIGHUP. It returns without stopping the client, so that the process exits
+// well within the Supervisor's stop grace period when the Supervisor restarts it.
+func reportHealthUntilInterrupted(opampClient client.OpAMPClient, sigCh chan os.Signal) error {
+	signal.Notify(sigCh, syscall.SIGHUP)
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		if err := opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: true}); err != nil {
+			return err
+		}
+		select {
+		case sig := <-sigCh:
+			if sig == os.Interrupt {
+				if marker := os.Getenv(supervisorStopMarkerEnv); marker != "" {
+					if err := os.WriteFile(marker, nil, 0o600); err != nil {
+						return err
+					}
+					time.Sleep(time.Second)
+				}
+				return nil
+			}
+		case <-ticker.C:
+		}
+	}
 }
