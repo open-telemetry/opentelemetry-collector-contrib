@@ -48,6 +48,7 @@ Each target has the following properties:
 - `endpoints` (optional): A list of URLs to be monitored.
 - `method` (optional, default: `GET`): The HTTP method used to call the endpoint or endpoints.
 - `body` (optional): Request body content for POST, PUT, PATCH, and other methods.
+- `auto_content_type` (optional, default: `false`): When `true` and `body` is set, the `Content-Type` header is set automatically from the body content (see Content-Type Auto-Detection below). A `Content-Type` given in `headers` always takes precedence.
 
 At least one of `endpoint` or `endpoints` must be specified. Additionally, each target supports the client configuration options of [confighttp].
 
