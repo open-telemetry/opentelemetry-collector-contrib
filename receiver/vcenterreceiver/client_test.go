@@ -186,6 +186,7 @@ func TestVMs(t *testing.T) {
 			vimDriver: c,
 			finder:    finder,
 			vm:        vm,
+			cfg:       createDefaultConfig().(*Config),
 		}
 		dc, err := finder.DefaultDatacenter(ctx)
 		require.NoError(t, err)
@@ -193,6 +194,38 @@ func TestVMs(t *testing.T) {
 		require.NoError(t, err)
 		require.NotEmpty(t, vms)
 	})
+}
+
+func TestVMsPerDatastoreUsage(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		t.Run(fmt.Sprintf("metric enabled %t", enabled), func(t *testing.T) {
+			simulator.Test(func(ctx context.Context, c *vim25.Client) {
+				cfg := createDefaultConfig().(*Config)
+				cfg.MetricsBuilderConfig.Metrics.VcenterVMDatastoreUsage.Enabled = enabled
+				finder := find.NewFinder(c)
+				client := vcenterClient{
+					logger:    zap.NewNop(),
+					vimDriver: c,
+					finder:    finder,
+					vm:        view.NewManager(c),
+					cfg:       cfg,
+				}
+				dc, err := finder.DefaultDatacenter(ctx)
+				require.NoError(t, err)
+				vms, err := client.VMs(ctx, dc.Reference())
+				require.NoError(t, err)
+				require.NotEmpty(t, vms)
+				for _, vm := range vms {
+					if enabled {
+						require.NotNil(t, vm.Storage)
+						require.NotEmpty(t, vm.Storage.PerDatastoreUsage)
+					} else {
+						require.Nil(t, vm.Storage)
+					}
+				}
+			})
+		})
+	}
 }
 
 func TestEmptyVMs(t *testing.T) {
@@ -206,6 +239,7 @@ func TestEmptyVMs(t *testing.T) {
 			vimDriver: c,
 			finder:    finder,
 			vm:        vm,
+			cfg:       createDefaultConfig().(*Config),
 		}
 		dc, err := finder.DefaultDatacenter(ctx)
 		require.NoError(t, err)

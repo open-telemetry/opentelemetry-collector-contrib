@@ -332,6 +332,21 @@ func (v *vcenterMetricScraper) recordHostVSANMetrics(vSANMetrics *vSANMetricResu
 	}
 }
 
+// recordVMDatastoreUsage records the storage used by a vSphere Virtual Machine on each of its datastores
+func (v *vcenterMetricScraper) recordVMDatastoreUsage(ts pcommon.Timestamp, vm *mo.VirtualMachine) {
+	if vm.Storage == nil {
+		return
+	}
+	for _, usage := range vm.Storage.PerDatastoreUsage {
+		dsName, ok := v.scrapeData.datastoreNamesByRef[usage.Datastore.Value]
+		if !ok {
+			continue
+		}
+		v.mb.RecordVcenterVMDatastoreUsageDataPoint(ts, usage.Committed, dsName, metadata.AttributeDiskStateUsed)
+		v.mb.RecordVcenterVMDatastoreUsageDataPoint(ts, usage.Uncommitted, dsName, metadata.AttributeDiskStateAvailable)
+	}
+}
+
 // recordVMStats records stat metrics for a vSphere Virtual Machine
 func (v *vcenterMetricScraper) recordVMStats(
 	ts pcommon.Timestamp,
@@ -347,6 +362,8 @@ func (v *vcenterMetricScraper) recordVMStats(
 			v.mb.RecordVcenterVMPowerStatusDataPoint(ts, val, state)
 		})
 	}
+
+	v.recordVMDatastoreUsage(ts, vm)
 
 	if vm.Summary.Storage == nil || vm.Config == nil || hs == nil || hs.Summary.Hardware == nil {
 		return

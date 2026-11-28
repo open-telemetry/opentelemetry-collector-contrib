@@ -151,6 +151,9 @@ all_set:
       enabled: true
     vcenter.vm.cpu.utilization:
       enabled: true
+    vcenter.vm.datastore.usage:
+      enabled: true
+      attributes: ["vcenter.datastore.name","disk_state"]
     vcenter.vm.disk.latency.avg:
       enabled: true
       attributes: ["direction","disk_type","object"]
@@ -384,6 +387,9 @@ reaggregate_set:
       enabled: true
     vcenter.vm.cpu.utilization:
       enabled: true
+    vcenter.vm.datastore.usage:
+      enabled: true
+      attributes: []
     vcenter.vm.disk.latency.avg:
       enabled: true
       attributes: []
@@ -617,6 +623,9 @@ none_set:
       enabled: false
     vcenter.vm.cpu.utilization:
       enabled: false
+    vcenter.vm.datastore.usage:
+      enabled: false
+      attributes: ["vcenter.datastore.name","disk_state"]
     vcenter.vm.disk.latency.avg:
       enabled: false
       attributes: ["direction","disk_type","object"]

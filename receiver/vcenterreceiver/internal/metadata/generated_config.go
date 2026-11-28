@@ -2058,6 +2058,55 @@ func (ms *VcenterVMCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
+// VcenterVMDatastoreUsageMetricAttributeKey specifies the key of an attribute for the vcenter.vm.datastore.usage metric.
+type VcenterVMDatastoreUsageMetricAttributeKey string
+
+const (
+	VcenterVMDatastoreUsageMetricAttributeKeyVcenterDatastoreName VcenterVMDatastoreUsageMetricAttributeKey = "vcenter.datastore.name"
+	VcenterVMDatastoreUsageMetricAttributeKeyDiskState            VcenterVMDatastoreUsageMetricAttributeKey = "disk_state"
+)
+
+// VcenterVMDatastoreUsageMetricConfig provides config for the vcenter.vm.datastore.usage metric.
+type VcenterVMDatastoreUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []VcenterVMDatastoreUsageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *VcenterVMDatastoreUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *VcenterVMDatastoreUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case VcenterVMDatastoreUsageMetricAttributeKeyVcenterDatastoreName, VcenterVMDatastoreUsageMetricAttributeKeyDiskState:
+		default:
+			return fmt.Errorf("metric vcenter.vm.datastore.usage doesn't have an attribute %v, valid attributes: [vcenter.datastore.name, disk_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // VcenterVMDiskLatencyAvgMetricAttributeKey specifies the key of an attribute for the vcenter.vm.disk.latency.avg metric.
 type VcenterVMDiskLatencyAvgMetricAttributeKey string
 
@@ -2940,6 +2989,7 @@ type MetricsConfig struct {
 	VcenterVMCPUTime                    VcenterVMCPUTimeMetricConfig                    `mapstructure:"vcenter.vm.cpu.time"`
 	VcenterVMCPUUsage                   VcenterVMCPUUsageMetricConfig                   `mapstructure:"vcenter.vm.cpu.usage"`
 	VcenterVMCPUUtilization             VcenterVMCPUUtilizationMetricConfig             `mapstructure:"vcenter.vm.cpu.utilization"`
+	VcenterVMDatastoreUsage             VcenterVMDatastoreUsageMetricConfig             `mapstructure:"vcenter.vm.datastore.usage"`
 	VcenterVMDiskLatencyAvg             VcenterVMDiskLatencyAvgMetricConfig             `mapstructure:"vcenter.vm.disk.latency.avg"`
 	VcenterVMDiskLatencyMax             VcenterVMDiskLatencyMaxMetricConfig             `mapstructure:"vcenter.vm.disk.latency.max"`
 	VcenterVMDiskThroughput             VcenterVMDiskThroughputMetricConfig             `mapstructure:"vcenter.vm.disk.throughput"`
@@ -3204,6 +3254,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		VcenterVMCPUUtilization: VcenterVMCPUUtilizationMetricConfig{
 			Enabled: true,
+		},
+		VcenterVMDatastoreUsage: VcenterVMDatastoreUsageMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []VcenterVMDatastoreUsageMetricAttributeKey{VcenterVMDatastoreUsageMetricAttributeKeyVcenterDatastoreName, VcenterVMDatastoreUsageMetricAttributeKeyDiskState},
 		},
 		VcenterVMDiskLatencyAvg: VcenterVMDiskLatencyAvgMetricConfig{
 			Enabled:             true,

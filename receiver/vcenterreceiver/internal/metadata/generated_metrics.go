@@ -735,6 +735,10 @@ var MetricsInfo = metricsInfo{
 	VcenterVMCPUUtilization: metricInfo{
 		Name: "vcenter.vm.cpu.utilization",
 	},
+	VcenterVMDatastoreUsage: metricInfo{
+		Name:       "vcenter.vm.datastore.usage",
+		Attributes: []string{"vcenter.datastore.name", "disk_state"},
+	},
 	VcenterVMDiskLatencyAvg: metricInfo{
 		Name:       "vcenter.vm.disk.latency.avg",
 		Attributes: []string{"disk_direction", "disk_type", "object_name"},
@@ -875,6 +879,7 @@ type metricsInfo struct {
 	VcenterVMCPUTime                    metricInfo
 	VcenterVMCPUUsage                   metricInfo
 	VcenterVMCPUUtilization             metricInfo
+	VcenterVMDatastoreUsage             metricInfo
 	VcenterVMDiskLatencyAvg             metricInfo
 	VcenterVMDiskLatencyMax             metricInfo
 	VcenterVMDiskThroughput             metricInfo
@@ -5238,6 +5243,102 @@ func newMetricVcenterVMCPUUtilization(cfg VcenterVMCPUUtilizationMetricConfig) m
 	return m
 }
 
+type metricVcenterVMDatastoreUsage struct {
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        VcenterVMDatastoreUsageMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
+	dpIndex       map[uint64]int                      // maps a data point's hash to its index, for O(1) dedup lookup.
+}
+
+// init fills vcenter.vm.datastore.usage metric with initial data.
+func (m *metricVcenterVMDatastoreUsage) init() {
+	m.data.SetName("vcenter.vm.datastore.usage")
+	m.data.SetDescription("The amount of storage space used by the virtual machine on each datastore.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+	m.dpIndex = make(map[uint64]int, m.capacity)
+}
+
+func (m *metricVcenterVMDatastoreUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcenterDatastoreNameAttributeValue string, diskStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, VcenterVMDatastoreUsageMetricAttributeKeyVcenterDatastoreName) {
+		dp.Attributes().PutStr("vcenter.datastore.name", vcenterDatastoreNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcenterVMDatastoreUsageMetricAttributeKeyDiskState) {
+		dp.Attributes().PutStr("disk_state", diskStateAttributeValue)
+	}
+
+	var s string
+	key := dataPointKey(dp)
+	dps := m.data.Sum().DataPoints()
+	if i, ok := m.dpIndex[key]; ok {
+		dpi := dps.At(i)
+		switch s = m.config.AggregationStrategy; s {
+		case AggregationStrategySum, AggregationStrategyAvg:
+			dpi.SetIntValue(dpi.IntValue() + val)
+			m.aggDataPoints[i] += 1
+			return
+		case AggregationStrategyMin:
+			if dpi.IntValue() > val {
+				dpi.SetIntValue(val)
+			}
+			return
+		case AggregationStrategyMax:
+			if dpi.IntValue() < val {
+				dpi.SetIntValue(val)
+			}
+			return
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	m.dpIndex[key] = dps.Len()
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterVMDatastoreUsage) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterVMDatastoreUsage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterVMDatastoreUsage(cfg VcenterVMDatastoreUsageMetricConfig) metricVcenterVMDatastoreUsage {
+	m := metricVcenterVMDatastoreUsage{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricVcenterVMDiskLatencyAvg struct {
 	data          pmetric.Metric                      // data buffer for generated metric.
 	config        VcenterVMDiskLatencyAvgMetricConfig // metric config provided by user.
@@ -6974,6 +7075,7 @@ type MetricsBuilder struct {
 	metricVcenterVMCPUTime                    metricVcenterVMCPUTime
 	metricVcenterVMCPUUsage                   metricVcenterVMCPUUsage
 	metricVcenterVMCPUUtilization             metricVcenterVMCPUUtilization
+	metricVcenterVMDatastoreUsage             metricVcenterVMDatastoreUsage
 	metricVcenterVMDiskLatencyAvg             metricVcenterVMDiskLatencyAvg
 	metricVcenterVMDiskLatencyMax             metricVcenterVMDiskLatencyMax
 	metricVcenterVMDiskThroughput             metricVcenterVMDiskThroughput
@@ -7080,6 +7182,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricVcenterVMCPUTime:                    newMetricVcenterVMCPUTime(mbc.Metrics.VcenterVMCPUTime),
 		metricVcenterVMCPUUsage:                   newMetricVcenterVMCPUUsage(mbc.Metrics.VcenterVMCPUUsage),
 		metricVcenterVMCPUUtilization:             newMetricVcenterVMCPUUtilization(mbc.Metrics.VcenterVMCPUUtilization),
+		metricVcenterVMDatastoreUsage:             newMetricVcenterVMDatastoreUsage(mbc.Metrics.VcenterVMDatastoreUsage),
 		metricVcenterVMDiskLatencyAvg:             newMetricVcenterVMDiskLatencyAvg(mbc.Metrics.VcenterVMDiskLatencyAvg),
 		metricVcenterVMDiskLatencyMax:             newMetricVcenterVMDiskLatencyMax(mbc.Metrics.VcenterVMDiskLatencyMax),
 		metricVcenterVMDiskThroughput:             newMetricVcenterVMDiskThroughput(mbc.Metrics.VcenterVMDiskThroughput),
@@ -7305,6 +7408,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricVcenterVMCPUTime.emit(ils.Metrics())
 	mb.metricVcenterVMCPUUsage.emit(ils.Metrics())
 	mb.metricVcenterVMCPUUtilization.emit(ils.Metrics())
+	mb.metricVcenterVMDatastoreUsage.emit(ils.Metrics())
 	mb.metricVcenterVMDiskLatencyAvg.emit(ils.Metrics())
 	mb.metricVcenterVMDiskLatencyMax.emit(ils.Metrics())
 	mb.metricVcenterVMDiskThroughput.emit(ils.Metrics())
@@ -7655,6 +7759,11 @@ func (mb *MetricsBuilder) RecordVcenterVMCPUUsageDataPoint(ts pcommon.Timestamp,
 // RecordVcenterVMCPUUtilizationDataPoint adds a data point to vcenter.vm.cpu.utilization metric.
 func (mb *MetricsBuilder) RecordVcenterVMCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricVcenterVMCPUUtilization.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordVcenterVMDatastoreUsageDataPoint adds a data point to vcenter.vm.datastore.usage metric.
+func (mb *MetricsBuilder) RecordVcenterVMDatastoreUsageDataPoint(ts pcommon.Timestamp, val int64, vcenterDatastoreNameAttributeValue string, diskStateAttributeValue AttributeDiskState) {
+	mb.metricVcenterVMDatastoreUsage.recordDataPoint(mb.startTime, ts, val, vcenterDatastoreNameAttributeValue, diskStateAttributeValue.String())
 }
 
 // RecordVcenterVMDiskLatencyAvgDataPoint adds a data point to vcenter.vm.disk.latency.avg metric.

@@ -97,6 +97,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["vcenter.resource_pool.memory.granted"] = mb.metricVcenterResourcePoolMemoryGranted.config.AggregationStrategy
 			aggMap["vcenter.resource_pool.memory.usage"] = mb.metricVcenterResourcePoolMemoryUsage.config.AggregationStrategy
 			aggMap["vcenter.vm.cpu.time"] = mb.metricVcenterVMCPUTime.config.AggregationStrategy
+			aggMap["vcenter.vm.datastore.usage"] = mb.metricVcenterVMDatastoreUsage.config.AggregationStrategy
 			aggMap["vcenter.vm.disk.latency.avg"] = mb.metricVcenterVMDiskLatencyAvg.config.AggregationStrategy
 			aggMap["vcenter.vm.disk.latency.max"] = mb.metricVcenterVMDiskLatencyMax.config.AggregationStrategy
 			aggMap["vcenter.vm.disk.throughput"] = mb.metricVcenterVMDiskThroughput.config.AggregationStrategy
@@ -479,6 +480,15 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMCPUUtilizationDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordVcenterVMDatastoreUsageDataPoint(ts, 1, "vcenter.datastore.name-val", AttributeDiskStateAvailable)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterVMDatastoreUsageDataPoint(ts, 3, "vcenter.datastore.name-val-2", AttributeDiskStateUsed)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordVcenterVMDatastoreUsageDataPoint(ts+1, 3, "vcenter.datastore.name-val-2", AttributeDiskStateUsed)
+				assert.Equal(t, 2, mb.metricVcenterVMDatastoreUsage.data.Sum().DataPoints().Len())
+			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirectionRead, AttributeDiskTypeVirtual, "object_name-val")
@@ -673,6 +683,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricVcenterResourcePoolMemoryGranted.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterResourcePoolMemoryUsage.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterVMCPUTime.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterVMDatastoreUsage.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterVMDiskLatencyAvg.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterVMDiskLatencyMax.aggDataPoints)
 				assert.Empty(t, mb.metricVcenterVMDiskThroughput.aggDataPoints)
@@ -2493,6 +2504,57 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "vcenter.vm.datastore.usage":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.vm.datastore.usage"], "Found a duplicate in the metrics slice: vcenter.vm.datastore.usage")
+						validatedMetrics["vcenter.vm.datastore.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of storage space used by the virtual machine on each datastore.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						vcenterDatastoreNameAttrVal, ok := dp.Attributes().Get("vcenter.datastore.name")
+						assert.True(t, ok)
+						assert.Equal(t, "vcenter.datastore.name-val", vcenterDatastoreNameAttrVal.Str())
+						diskStateAttrVal, ok := dp.Attributes().Get("disk_state")
+						assert.True(t, ok)
+						assert.Equal(t, "available", diskStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.vm.datastore.usage"], "Found a duplicate in the metrics slice: vcenter.vm.datastore.usage")
+						validatedMetrics["vcenter.vm.datastore.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "The amount of storage space used by the virtual machine on each datastore.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.vm.datastore.usage"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("vcenter.datastore.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("disk_state")
+						assert.False(t, ok)
+					}
 				case "vcenter.vm.disk.latency.avg":
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["vcenter.vm.disk.latency.avg"], "Found a duplicate in the metrics slice: vcenter.vm.disk.latency.avg")

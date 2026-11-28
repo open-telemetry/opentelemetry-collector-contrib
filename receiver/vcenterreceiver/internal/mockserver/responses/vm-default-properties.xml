@@ -77,6 +77,17 @@
                         <name>summary.storage.uncommitted</name>
                         <val xsi:type="xsd:long">258847277056</val>
                     </propSet>
+                    <propSet>
+                        <name>storage.perDatastoreUsage</name>
+                        <val xsi:type="ArrayOfVirtualMachineUsageOnDatastore">
+                            <VirtualMachineUsageOnDatastore>
+                                <datastore type="Datastore">datastore-1003</datastore>
+                                <committed>16311648256</committed>
+                                <uncommitted>258847277056</uncommitted>
+                                <unshared>16311648256</unshared>
+                            </VirtualMachineUsageOnDatastore>
+                        </val>
+                    </propSet>
                 </objects>
             </returnval>
             <returnval>
@@ -153,6 +164,17 @@
                     <propSet>
                         <name>summary.storage.uncommitted</name>
                         <val xsi:type="xsd:long">258847277056</val>
+                    </propSet>
+                    <propSet>
+                        <name>storage.perDatastoreUsage</name>
+                        <val xsi:type="ArrayOfVirtualMachineUsageOnDatastore">
+                            <VirtualMachineUsageOnDatastore>
+                                <datastore type="Datastore">datastore-1003</datastore>
+                                <committed>16311648256</committed>
+                                <uncommitted>258847277056</uncommitted>
+                                <unshared>16311648256</unshared>
+                            </VirtualMachineUsageOnDatastore>
+                        </val>
                     </propSet>
                 </objects>
             </returnval>
@@ -231,6 +253,17 @@
                         <name>summary.storage.uncommitted</name>
                         <val xsi:type="xsd:long">258847277056</val>
                     </propSet>
+                    <propSet>
+                        <name>storage.perDatastoreUsage</name>
+                        <val xsi:type="ArrayOfVirtualMachineUsageOnDatastore">
+                            <VirtualMachineUsageOnDatastore>
+                                <datastore type="Datastore">datastore-1003</datastore>
+                                <committed>16311648256</committed>
+                                <uncommitted>258847277056</uncommitted>
+                                <unshared>16311648256</unshared>
+                            </VirtualMachineUsageOnDatastore>
+                        </val>
+                    </propSet>
                 </objects>
             </returnval>
             <returnval>
@@ -295,6 +328,17 @@
                     <propSet>
                         <name>summary.storage.uncommitted</name>
                         <val xsi:type="xsd:long">258847277056</val>
+                    </propSet>
+                    <propSet>
+                        <name>storage.perDatastoreUsage</name>
+                        <val xsi:type="ArrayOfVirtualMachineUsageOnDatastore">
+                            <VirtualMachineUsageOnDatastore>
+                                <datastore type="Datastore">datastore-1003</datastore>
+                                <committed>16311648256</committed>
+                                <uncommitted>258847277056</uncommitted>
+                                <unshared>16311648256</unshared>
+                            </VirtualMachineUsageOnDatastore>
+                        </val>
                     </propSet>
                 </objects>
             </returnval>
