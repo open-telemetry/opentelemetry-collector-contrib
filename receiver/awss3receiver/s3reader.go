@@ -129,60 +129,104 @@ func (s3Reader *s3TimeBasedReader) readAll(ctx context.Context, telemetryType st
 	return nil
 }
 
-func (s3Reader *s3TimeBasedReader) readTelemetryForTime(ctx context.Context, t time.Time, telemetryType string, dataCallback s3ObjectCallback) error {
+type partitionConfig struct {
+	bucket                         string
+	prefix                         string
+	partitionFormat                string
+	partitionTimeLocation          *time.Location
+	filePrefix                     string
+	filePrefixIncludeTelemetryType bool
+	skipIngestingTaggedObjects     bool
+	tagObjectAfterIngestion        bool
+}
+
+func readTelemetryForPartition(
+	ctx context.Context,
+	logger *zap.Logger,
+	listObjectsClient ListObjectsAPI,
+	singleObjectClient SingleObjectAPI,
+	cfg partitionConfig,
+	t time.Time,
+	telemetryType string,
+	dataCallback s3ObjectCallback,
+) error {
 	params := &s3.ListObjectsV2Input{
-		Bucket: &s3Reader.s3Bucket,
+		Bucket: &cfg.bucket,
 	}
-	prefix := s3Reader.getObjectPrefixForTime(t, telemetryType)
+	prefix := buildObjectPrefixForTime(
+		cfg.prefix,
+		cfg.filePrefix,
+		cfg.partitionFormat,
+		cfg.partitionTimeLocation,
+		cfg.filePrefixIncludeTelemetryType,
+		t,
+		telemetryType,
+	)
 	params.Prefix = &prefix
-	s3Reader.logger.Debug("Finding telemetry with prefix", zap.String("prefix", prefix))
-	p := s3Reader.listObjectsClient.NewListObjectsV2Paginator(params)
+	logger.Debug("Finding telemetry with prefix", zap.String("prefix", prefix))
+	p := listObjectsClient.NewListObjectsV2Paginator(params)
 
 	firstPage := true
 	for p.HasMorePages() {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
 		page, err := p.NextPage(ctx)
 		if err != nil {
 			return err
 		}
 		if firstPage && len(page.Contents) == 0 {
-			s3Reader.logger.Info("No telemetry found for time", zap.String("prefix", prefix), zap.Time("time", t))
+			logger.Info("No telemetry found for time", zap.String("prefix", prefix), zap.Time("time", t))
 		} else {
 			for _, obj := range page.Contents {
-				if s3Reader.skipIngestingTaggedObjects {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				default:
+				}
+
+				if obj.Key == nil {
+					continue
+				}
+
+				if cfg.skipIngestingTaggedObjects {
 					var hasTag bool
-					hasTag, err = hasIngestedTag(ctx, s3Reader.singleObjectClient, s3Reader.s3Bucket, *obj.Key)
+					hasTag, err = hasIngestedTag(ctx, singleObjectClient, cfg.bucket, *obj.Key)
 					if err != nil {
-						s3Reader.logger.Error("Failed to check object tags",
+						logger.Error("Failed to check object tags",
 							zap.String("key", *obj.Key),
 							zap.Error(err))
 						return err
 					} else if hasTag {
-						s3Reader.logger.Info("Skipping already ingested object",
+						logger.Info("Skipping already ingested object",
 							zap.String("key", *obj.Key))
 						continue
 					}
 				}
 
-				data, err := retrieveS3Object(ctx, s3Reader.singleObjectClient, s3Reader.s3Bucket, *obj.Key)
+				data, err := retrieveS3Object(ctx, singleObjectClient, cfg.bucket, *obj.Key)
 				if err != nil {
 					return err
 				}
 
-				s3Reader.logger.Debug("Retrieved telemetry", zap.String("key", *obj.Key))
+				logger.Debug("Retrieved telemetry", zap.String("key", *obj.Key))
 				if callbackErr := processS3Object(ctx, *obj.Key, data, dataCallback); callbackErr != nil {
 					return callbackErr
 				}
 
-				if s3Reader.tagObjectAfterIngestion {
-					if err = tagS3Object(ctx, s3Reader.singleObjectClient, s3Reader.s3Bucket, *obj.Key); err != nil {
-						s3Reader.logger.Warn("Failed to tag S3 object",
-							zap.String("bucket", s3Reader.s3Bucket),
+				if cfg.tagObjectAfterIngestion {
+					if err = tagS3Object(ctx, singleObjectClient, cfg.bucket, *obj.Key); err != nil {
+						logger.Warn("Failed to tag S3 object",
+							zap.String("bucket", cfg.bucket),
 							zap.String("key", *obj.Key),
 							zap.Error(err))
 						// Don't return error as the object was processed successfully
 					} else {
-						s3Reader.logger.Debug("Tagged S3 object",
-							zap.String("bucket", s3Reader.s3Bucket),
+						logger.Debug("Tagged S3 object",
+							zap.String("bucket", cfg.bucket),
 							zap.String("key", *obj.Key))
 					}
 				}
@@ -193,27 +237,61 @@ func (s3Reader *s3TimeBasedReader) readTelemetryForTime(ctx context.Context, t t
 	return nil
 }
 
+func (s3Reader *s3TimeBasedReader) readTelemetryForTime(ctx context.Context, t time.Time, telemetryType string, dataCallback s3ObjectCallback) error {
+	return readTelemetryForPartition(
+		ctx,
+		s3Reader.logger,
+		s3Reader.listObjectsClient,
+		s3Reader.singleObjectClient,
+		partitionConfig{
+			bucket:                         s3Reader.s3Bucket,
+			prefix:                         s3Reader.s3Prefix,
+			partitionFormat:                s3Reader.s3PartitionFormat,
+			partitionTimeLocation:          s3Reader.S3PartitionTimeLocation,
+			filePrefix:                     s3Reader.filePrefix,
+			filePrefixIncludeTelemetryType: s3Reader.filePrefixIncludeTelemetryType,
+			skipIngestingTaggedObjects:     s3Reader.skipIngestingTaggedObjects,
+			tagObjectAfterIngestion:        s3Reader.tagObjectAfterIngestion,
+		},
+		t,
+		telemetryType,
+		dataCallback,
+	)
+}
+
 func (s3Reader *s3TimeBasedReader) getObjectPrefixForTime(t time.Time, telemetryType string) string {
-	timeKey := getTimeKey(s3Reader.s3PartitionFormat, t, s3Reader.S3PartitionTimeLocation)
+	return buildObjectPrefixForTime(
+		s3Reader.s3Prefix,
+		s3Reader.filePrefix,
+		s3Reader.s3PartitionFormat,
+		s3Reader.S3PartitionTimeLocation,
+		s3Reader.filePrefixIncludeTelemetryType,
+		t,
+		telemetryType,
+	)
+}
+
+func buildObjectPrefixForTime(s3Prefix, filePrefix, s3PartitionFormat string, location *time.Location, filePrefixIncludeTelemetryType bool, t time.Time, telemetryType string) string {
+	timeKey := getTimeKey(s3PartitionFormat, t, location)
 	var telemetryTypeSuffix string
-	if s3Reader.filePrefixIncludeTelemetryType {
+	if filePrefixIncludeTelemetryType {
 		telemetryTypeSuffix = fmt.Sprintf("%s_", telemetryType)
 	}
 	// Retrieve the configured S3 prefix (may be empty, "/", "//", "logs/", etc.)
-	prefix := s3Reader.s3Prefix
+	prefix := s3Prefix
 
 	// Case 1: No prefix provided → use only timeKey + filePrefix
 	if prefix == "" {
-		return fmt.Sprintf("%s/%s%s", timeKey, s3Reader.filePrefix, telemetryTypeSuffix)
+		return fmt.Sprintf("%s/%s%s", timeKey, filePrefix, telemetryTypeSuffix)
 	}
 	// Case 2: Prefix contains only slashes (e.g., "/", "//", "///")
 	// Keep the exact number of slashes and directly append timeKey without adding an extra "/"
 	if strings.Trim(prefix, "/") == "" {
-		return fmt.Sprintf("%s%s/%s%s", prefix, timeKey, s3Reader.filePrefix, telemetryTypeSuffix)
+		return fmt.Sprintf("%s%s/%s%s", prefix, timeKey, filePrefix, telemetryTypeSuffix)
 	}
 	// Case 3: Normal prefix (e.g., "logs", "logs/", "/logs/", "//raw//")
 	// Always add a "/" between prefix and timeKey to build a valid S3 path
-	return fmt.Sprintf("%s/%s/%s%s", prefix, timeKey, s3Reader.filePrefix, telemetryTypeSuffix)
+	return fmt.Sprintf("%s/%s/%s%s", prefix, timeKey, filePrefix, telemetryTypeSuffix)
 }
 
 func (s3Reader *s3TimeBasedReader) sendStatus(ctx context.Context, status statusNotification) {
@@ -223,6 +301,9 @@ func (s3Reader *s3TimeBasedReader) sendStatus(ctx context.Context, status status
 }
 
 func getTimeKey(partitionFormat string, t time.Time, location *time.Location) string {
+	if location == nil {
+		location = time.Local
+	}
 	return timefmt.Format(t.In(location), partitionFormat)
 }
 

@@ -16,6 +16,18 @@ $defs:
         x-pointer: true
         type: string
         x-customType: go.opentelemetry.io/collector/component.ID
+  poll_config:
+    description: PollConfig holds configuration for continuous polling mode.
+    type: object
+    properties:
+      interval:
+        description: Interval specifies the duration between polling cycles.
+        type: string
+        format: duration
+      lookback:
+        description: Lookback specifies the duration to look back from current wall-clock time on each polling pass. Defaults to Interval if not specified (or set to 0).
+        type: string
+        format: duration
   s_3_downloader_config:
     description: S3DownloaderConfig contains aws s3 downloader related config to controls things like bucket, prefix, batching, connections, retries, etc.
     type: object
@@ -90,6 +102,10 @@ properties:
     type: string
   notifications:
     $ref: notifications
+  poll:
+    description: Poll configures continuous polling mode for time-partitioned S3 storage.
+    x-pointer: true
+    $ref: poll_config
   s3downloader:
     $ref: s_3_downloader_config
   sqs:

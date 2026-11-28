@@ -1,0 +1,5 @@
+change_type: enhancement
+component: receiver/aws_s3
+note: Add continuous polling mode for time-partitioned S3 storage without SQS notifications.
+issues: [52702]
+subtext:

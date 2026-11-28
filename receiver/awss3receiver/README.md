@@ -58,13 +58,45 @@ The following exporter configuration parameters are supported.
 | `suffix`                | Key suffix to match against.                                                                                                               |             | Required |
 | `notifications:`        |                                                                                                                                            |             |          |
 | `opampextension`        | Name of the OpAMP Extension to use to send ingest progress notifications.                                                                  |             |          |
-| `tag_object_after_ingestion`        | If enabled the receiver will attempt to tag the object after successfully ingesting it.                                                                  | false       | Optional |
-| `skip_ingesting_tagged_objects`        | If enabled the receiver will skip objects tagged by `tag_object_after_ingestion`. This can be used as a checkpointing mechanism, and requires an additional `s3:GetObjectTagging` permission                                                                  | false       | Optional |
+| `poll:`                 |                                                                                                                                            |             |          |
+| `interval`              | Duration between polling passes in continuous polling mode (e.g. `5m`).                                                                     |             | Required if fetching by continuous polling |
+| `lookback`              | Duration to look back from current wall-clock time on each polling pass (e.g. `30m`).                                                       | `interval`  | Optional |
+| `tag_object_after_ingestion`        | If enabled the receiver will attempt to tag the object after successfully ingesting it.                                                                  | false       | Optional (Required for polling) |
+| `skip_ingesting_tagged_objects`        | If enabled the receiver will skip objects tagged by `tag_object_after_ingestion`. This can be used as a checkpointing mechanism, and requires an additional `s3:GetObjectTagging` permission                                                                  | false       | Optional (Required for polling) |
 
-There are two modes of operation:
+There are three modes of operation:
 
 1. **Time Range Mode** - Specify `starttime` and `endtime` to fetch data from a specific time range.
 2. **SQS Message Mode** - Subscribe to SQS messages to process new objects as they arrive.
+3. **Continuous Polling Mode** - Configure `poll.interval` to periodically scan time-partitioned object storage without requiring SQS notifications.
+
+### Continuous Polling Mode Configuration
+
+For S3-compatible object storages that do not support bucket event notifications (or where SQS is unavailable), continuous polling mode periodically scans partitions from `now - lookback` to `now`:
+
+```yaml
+receivers:
+  aws_s3:
+    poll:
+      interval: 5m       # Periodic scan interval
+      lookback: 30m      # Re-scan partitions from (now - lookback) to now (defaults to interval)
+    # Optional starttime for historical backfill:
+    # starttime: "2026-11-01 00:00"
+    s3downloader:
+      s3_bucket: "my-bucket"
+      s3_prefix: "logs"
+      s3_partition_format: "year=%Y/month=%m/day=%d/hour=%H/minute=%M"
+      tag_object_after_ingestion: true     # Required: checkpoint ingested objects
+      skip_ingesting_tagged_objects: true  # Required: skip previously checkpointed objects
+```
+
+#### Key Considerations for Continuous Polling:
+- **Required Tagging Permissions:** Both `tag_object_after_ingestion` and `skip_ingesting_tagged_objects` are **mandatory** in polling mode. The IAM identity requires `s3:GetObjectTagging` and `s3:PutObjectTagging` permissions. Without tagging, every poll pass would re-ingest all objects within the lookback window.
+- **Initial Historical Backfill:** If `starttime` is configured with `poll`, the receiver first backfills partitions from `starttime` up to the current time, and then transitions to continuous polling using `lookback`. `endtime` must not be set with `poll`.
+- **Collector Restarts:** Checkpointing is persisted directly on S3 objects using the `tag_object_after_ingestion` tag. When the receiver restarts, previously ingested objects in the scanned partitions are skipped via `s3:GetObjectTagging` without re-downloading object data. Once an initial historical backfill completes, `starttime` can be removed from configuration so that restarts only poll recent partitions.
+- **Delivery Guarantees:** S3 object-tag checkpointing provides **at-least-once** delivery. Objects are tagged only after downstream processing succeeds; if the Collector crashes or tagging fails after processing, untagged objects will be re-processed on subsequent passes. Exactly-once delivery is not guaranteed.
+- **Late-Arriving Objects and Lookback Sizing:** On each pass, the receiver scans all partitions within `[now - lookback, now]`. To ensure late-arriving objects written with a timestamp delay are not missed, `lookback` should be configured to exceed the maximum expected write latency. For partition formats with coarser granularity (e.g. hourly or daily partitions), `lookback` should typically be configured to at least match the partition step (e.g. `lookback: 1h` for hourly partitions).
+- **Ingestion Progress Notifications:** Continuously polling receivers do not send ingestion progress notifications.
 
 ### SQS Message Configuration
 

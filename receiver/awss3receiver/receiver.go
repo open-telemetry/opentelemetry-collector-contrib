@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 
 	"github.com/klauspost/compress/zstd"
 	"go.opentelemetry.io/collector/component"
@@ -40,6 +41,7 @@ type awss3Receiver struct {
 	reader           s3Reader
 	logger           *zap.Logger
 	cancel           context.CancelFunc
+	wg               sync.WaitGroup
 	obsrecv          *receiverhelper.ObsReport
 	encodingsConfig  []Encoding
 	telemetryType    string
@@ -52,11 +54,20 @@ type awss3Receiver struct {
 
 func newAWSS3Receiver(ctx context.Context, cfg *Config, telemetryType string, settings receiver.Settings, processor receiverProcessor) (*awss3Receiver, error) {
 	notifier := newNotifier(cfg, settings.Logger)
+	if cfg.Poll != nil {
+		// Continuously polling receivers do not send ingestion progress notifications.
+		notifier = nil
+	}
 	var reader s3Reader
 	var err error
 
 	// Create the appropriate reader based on configuration
 	switch {
+	case cfg.Poll != nil:
+		reader, err = newS3PollingReader(ctx, settings.Logger, cfg)
+		if err != nil {
+			return nil, err
+		}
 	case cfg.StartTime != "" && cfg.EndTime != "":
 		reader, err = newS3TimeBasedReader(ctx, notifier, settings.Logger, cfg)
 		if err != nil {
@@ -68,7 +79,7 @@ func newAWSS3Receiver(ctx context.Context, cfg *Config, telemetryType string, se
 			return nil, err
 		}
 	default:
-		return nil, errors.New("invalid configuration: either time-based (StartTime/EndTime) or SQS-based configuration must be provided")
+		return nil, errors.New("invalid configuration: either time-based (StartTime/EndTime), SQS-based, or poll configuration must be provided")
 	}
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -109,9 +120,9 @@ func (r *awss3Receiver) Start(ctx context.Context, host component.Host) error {
 
 	var cancelCtx context.Context
 	cancelCtx, r.cancel = context.WithCancel(context.Background())
-	go func() {
+	r.wg.Go(func() {
 		_ = r.reader.readAll(cancelCtx, r.telemetryType, r.receive)
-	}()
+	})
 	return nil
 }
 
@@ -124,7 +135,17 @@ func (r *awss3Receiver) Shutdown(ctx context.Context) error {
 	if r.cancel != nil {
 		r.cancel()
 	}
-	return nil
+	done := make(chan struct{})
+	go func() {
+		r.wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func (r *awss3Receiver) receive(ctx context.Context, key string, data io.Reader) (err error) {
