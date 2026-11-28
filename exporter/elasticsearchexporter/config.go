@@ -127,6 +127,10 @@ type Config struct {
 	// VersionDetection configures whether the exporter queries Elasticsearch
 	// at startup for its version and build flavor.
 	VersionDetection VersionDetectionSettings `mapstructure:"version_detection"`
+
+	// LoadBalance configures whether data sent will be loadbalanced among configured endpoints
+	// When disabled, data is routed to one host at a time, if connection fails, a new target is selected.
+	LoadBalance bool `mapstructure:"loadbalance"`
 }
 
 // VersionDetectionSettings defines settings controlling whether the exporter

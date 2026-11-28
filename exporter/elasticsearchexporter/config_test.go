@@ -130,6 +130,7 @@ func TestConfig(t *testing.T) {
 				VersionDetection: VersionDetectionSettings{
 					Enabled: true,
 				},
+				LoadBalance: true,
 			},
 		},
 		{
@@ -203,6 +204,7 @@ func TestConfig(t *testing.T) {
 				VersionDetection: VersionDetectionSettings{
 					Enabled: true,
 				},
+				LoadBalance: true,
 			},
 		},
 		{
@@ -276,6 +278,7 @@ func TestConfig(t *testing.T) {
 				VersionDetection: VersionDetectionSettings{
 					Enabled: true,
 				},
+				LoadBalance: true,
 			},
 		},
 		{
@@ -381,6 +384,14 @@ func TestConfig(t *testing.T) {
 				cfg.ClientConfig.Endpoint = "https://elastic.example.com:9200"
 				cfg.Retry.RetryOnStatus = []int{http.StatusTooManyRequests, http.StatusInternalServerError}
 				cfg.Retry.RetryOnDocumentStatus = []int{}
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "loadbalance_disabled"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"https://primary.example.com:9200", "https://secondary.example.com:9200"}
+				cfg.LoadBalance = false
 			}),
 		},
 	}

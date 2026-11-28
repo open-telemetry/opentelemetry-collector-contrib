@@ -537,6 +537,8 @@ type bulkIndexers struct {
 	profilingExecutables bulkIndexer // For profiling-executables
 
 	telemetryBuilder *metadata.TelemetryBuilder
+
+	client elastictransport.Interface
 }
 
 func (b *bulkIndexers) start(
@@ -554,7 +556,8 @@ func (b *bulkIndexers) start(
 		runtime.GOARCH,
 	)
 
-	esClient, err := newElasticsearchClient(ctx, cfg, host, set.TelemetrySettings, userAgent)
+	var err error
+	b.client, err = newElasticsearchClient(ctx, cfg, host, set.TelemetrySettings, userAgent)
 	if err != nil {
 		return err
 	}
@@ -564,7 +567,7 @@ func (b *bulkIndexers) start(
 		modeSpecificErrorHintFunc := func(index, errorType string) string {
 			return getErrorHint(mode, index, errorType)
 		}
-		bi := newBulkIndexer(esClient, cfg, requireDataStream, b.telemetryBuilder, set.Logger, modeSpecificErrorHintFunc)
+		bi := newBulkIndexer(b.client, cfg, requireDataStream, b.telemetryBuilder, set.Logger, modeSpecificErrorHintFunc)
 		b.modes[mode] = &wgTrackingBulkIndexer{bulkIndexer: bi, wg: &b.wg}
 	}
 
@@ -572,16 +575,16 @@ func (b *bulkIndexers) start(
 		return getErrorHint(MappingNone, index, errorType)
 	}
 
-	profilingEvents := newBulkIndexer(esClient, cfg, true, b.telemetryBuilder, set.Logger, mappingModeNoneErrorHintFunc)
+	profilingEvents := newBulkIndexer(b.client, cfg, true, b.telemetryBuilder, set.Logger, mappingModeNoneErrorHintFunc)
 	b.profilingEvents = &wgTrackingBulkIndexer{bulkIndexer: profilingEvents, wg: &b.wg}
 
-	profilingStackTraces := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger, mappingModeNoneErrorHintFunc)
+	profilingStackTraces := newBulkIndexer(b.client, cfg, false, b.telemetryBuilder, set.Logger, mappingModeNoneErrorHintFunc)
 	b.profilingStackTraces = &wgTrackingBulkIndexer{bulkIndexer: profilingStackTraces, wg: &b.wg}
 
-	profilingStackFrames := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger, mappingModeNoneErrorHintFunc)
+	profilingStackFrames := newBulkIndexer(b.client, cfg, false, b.telemetryBuilder, set.Logger, mappingModeNoneErrorHintFunc)
 	b.profilingStackFrames = &wgTrackingBulkIndexer{bulkIndexer: profilingStackFrames, wg: &b.wg}
 
-	profilingExecutables := newBulkIndexer(esClient, cfg, false, b.telemetryBuilder, set.Logger, mappingModeNoneErrorHintFunc)
+	profilingExecutables := newBulkIndexer(b.client, cfg, false, b.telemetryBuilder, set.Logger, mappingModeNoneErrorHintFunc)
 	b.profilingExecutables = &wgTrackingBulkIndexer{bulkIndexer: profilingExecutables, wg: &b.wg}
 	return nil
 }
@@ -621,12 +624,21 @@ func (b *bulkIndexers) shutdown(ctx context.Context) error {
 		b.wg.Wait()
 		close(doneCh)
 	}()
+
+	// The transport rejects new attempts once closed, so wait for in-flight requests first.
+	var err error
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		err = ctx.Err()
 	case <-doneCh:
 	}
-	return nil
+
+	if c, ok := b.client.(elastictransport.Closeable); ok {
+		if closeErr := c.Close(ctx); closeErr != nil && !errors.Is(closeErr, ctx.Err()) {
+			err = errors.Join(err, closeErr)
+		}
+	}
+	return err
 }
 
 type wgTrackingBulkIndexer struct {

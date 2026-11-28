@@ -27,7 +27,7 @@ Exactly one of the following settings is required:
 - `endpoint` (no default): The target Elasticsearch URL to which data will be sent
   (e.g. `https://elasticsearch:9200`)
 - `endpoints` (no default): A list of Elasticsearch URLs to which data will be sent,
-  attempted in round-robin order
+  attempted in round-robin order by default (see [Load balancing](#load-balancing))
 - `cloudid` (no default): The [Elastic Cloud ID](https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html)
   of the Elastic Cloud Cluster to which data will be sent (e.g. `foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY=`)
 
@@ -503,6 +503,29 @@ Settings related to node discovery are:
   - `interval` (optional): Interval to update the list of Elasticsearch nodes.
 
 Node discovery can be disabled by setting `discover.interval` to 0.
+
+### Load balancing
+
+When multiple endpoints are configured, the exporter distributes requests across them.
+
+- `loadbalance` (default=true): If `true`, requests are sent to the available endpoints in round-robin order.
+  If `false`, all requests are sent to a single endpoint, starting with the first one in `endpoints`.
+
+When `loadbalance` is `false`:
+
+- The exporter switches to the next available endpoint after a connection-level failure.
+- After switching, the exporter keeps sending to the new endpoint. It does not switch back when the previous endpoint recovers; a recovered endpoint is used again only after the current one fails.
+- The request that hit the failed endpoint is retried on the next endpoint only if `retry::enabled` is `true`.
+- The setting has no effect when only one endpoint is configured.
+
+```yaml
+exporters:
+  elasticsearch:
+    endpoints:
+      - https://primary.example.com:9200
+      - https://secondary.example.com:9200
+    loadbalance: false
+```
 
 ### Elasticsearch version detection
 

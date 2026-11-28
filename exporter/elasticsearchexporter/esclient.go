@@ -202,6 +202,17 @@ func (e *esClient) Perform(req *http.Request) (*http.Response, error) {
 	return res, nil
 }
 
+func (e *esClient) Close(ctx context.Context) error {
+	c, ok := e.transport.(elastictransport.Closeable)
+	if !ok {
+		return nil
+	}
+	if err := c.Close(ctx); err != nil && !errors.Is(err, elastictransport.ErrAlreadyClosed) {
+		return err
+	}
+	return nil
+}
+
 func (e *esClient) doProductCheck(f func() error) error {
 	if e.productCheckSuccess.Load() {
 		return nil
@@ -245,6 +256,12 @@ func newElasticsearchClient(
 	maxRetries := defaultMaxRetries
 	if config.Retry.MaxRetries != 0 {
 		maxRetries = config.Retry.MaxRetries
+	}
+
+	var selector elastictransport.Selector
+
+	if !config.LoadBalance && len(endpoints) > 1 {
+		selector = &singleSelector{}
 	}
 
 	// Convert addresses to URLs
@@ -298,6 +315,7 @@ func newElasticsearchClient(
 			timeoutInterceptor(httpClient.Timeout),
 			countRetriesInterceptor(),
 		},
+		Selector: selector,
 	}
 
 	tp, err := elastictransport.New(tpConfig)
@@ -357,4 +375,19 @@ func httpRecoverableErrorStatus(statusCode int) bool {
 	// state, we will still wait until we get an actual 200 OK before changing
 	// our state back).
 	return statusCode >= 300 && statusCode != http.StatusConflict
+}
+
+var _ elastictransport.Selector = &singleSelector{}
+
+// singleSelector always returns the same connection from the pool
+// until the connection fails in which case the next conn is selected
+type singleSelector struct{}
+
+func (*singleSelector) Select(conn []*elastictransport.Connection) (*elastictransport.Connection, error) {
+	// Select receives a slice of live connections
+	// we always return the first element from the live list until it is marked dead
+	// dead connection are automtically removed from the live list
+	connection := conn[0]
+
+	return connection, nil
 }
