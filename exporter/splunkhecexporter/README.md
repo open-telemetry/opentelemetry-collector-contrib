@@ -64,11 +64,9 @@ The following configuration options can also be configured:
 - `otel_to_hec_fields/severity_text` (default = `otel.log.severity.text`): Specifies the name of the field to map the severity text field of log events.
 - `otel_to_hec_fields/severity_number` (default = `otel.log.severity.number`): Specifies the name of the field to map the severity number field of log events.
 - `otel_to_hec_fields/name` (default = `otel.log.name`): Specifies the name of the field to map the [event name](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-eventname) of log events.
-- `heartbeat/interval` (no default): Specifies the interval of sending hec heartbeat to the destination. If not specified, heartbeat is not enabled.
+- `heartbeat/interval` (no default): Specifies the interval of sending hec heartbeat to the destination. If not specified, heartbeat is not enabled. When set, the heartbeat metrics `otelcol_exporter_splunkhec_heartbeats_sent` and `otelcol_exporter_splunkhec_heartbeats_failed` are emitted.
 - `heartbeat/startup` (default: false): Check heartbeat at start up time. This action enforces a synchronous heartbeat action during the collector start up sequence. The collector will fail to start if the heartbeat returns an error.
-- `telemetry/enabled` (default: false): Specifies whether to enable telemetry inside splunk hec exporter.
-- `telemetry/override_metrics_names` (default: empty map): Specifies the metrics name to overrides in splunk hec exporter.
-- `telemetry/extra_attributes` (default: empty map): Specifies the extra metrics attributes in splunk hec exporter.
+- `telemetry` (**Deprecated**): the whole block will be removed in a future release. `telemetry/enabled` no longer has any effect, `telemetry/override_metrics_names` cannot override the fixed metric names, and `telemetry/extra_attributes` should be replaced by a processor.
 - `sending_queue` (enabled by default): Specifies [queue batch config](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#sending-queue).
 
 In addition, this exporter offers queued retry which is enabled by default.
@@ -129,14 +127,6 @@ exporters:
     splunk_app_version: "v0.0.1"
     heartbeat:
       interval: 30s
-    telemetry:
-      enabled: true
-      override_metrics_names:
-        otelcol_exporter_splunkhec_heartbeats_sent: app_heartbeats_success_total
-        otelcol_exporter_splunkhec_heartbeats_failed: app_heartbeats_failed_total
-      extra_attributes:
-        dataset_name: SplunkCloudBeaverStack
-        custom_key: custom_value
 ```
 
 The full list of settings exposed for this exporter are documented in [config.go](./config.go)
