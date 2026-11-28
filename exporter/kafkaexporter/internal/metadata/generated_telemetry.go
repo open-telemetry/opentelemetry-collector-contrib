@@ -69,13 +69,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.KafkaBrokerClosed, err = builder.meter.Int64Counter(
 		"otelcol_kafka_broker_closed",
 		metric.WithDescription("The total number of connections closed. [Development]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{connection}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaBrokerConnects, err = builder.meter.Int64Counter(
 		"otelcol_kafka_broker_connects",
 		metric.WithDescription("The total number of connections opened. [Development]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{connection}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaBrokerThrottlingDuration, err = builder.meter.Int64Histogram(
@@ -112,13 +112,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.KafkaExporterMessages, err = builder.meter.Int64Counter(
 		"otelcol_kafka_exporter_messages",
 		metric.WithDescription("The number of exported messages. [Deprecated]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{message}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaExporterRecords, err = builder.meter.Int64Counter(
 		"otelcol_kafka_exporter_records",
 		metric.WithDescription("The number of exported records. [Development]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{record}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.KafkaExporterWriteLatency, err = builder.meter.Float64Histogram(

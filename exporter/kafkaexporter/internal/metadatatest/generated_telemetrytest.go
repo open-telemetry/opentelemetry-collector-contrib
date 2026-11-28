@@ -25,7 +25,7 @@ func AssertEqualKafkaBrokerClosed(t *testing.T, tt *componenttest.Telemetry, dps
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_broker_closed",
 		Description: "The total number of connections closed. [Development]",
-		Unit:        "1",
+		Unit:        "{connection}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -41,7 +41,7 @@ func AssertEqualKafkaBrokerConnects(t *testing.T, tt *componenttest.Telemetry, d
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_broker_connects",
 		Description: "The total number of connections opened. [Development]",
-		Unit:        "1",
+		Unit:        "{connection}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -134,7 +134,7 @@ func AssertEqualKafkaExporterMessages(t *testing.T, tt *componenttest.Telemetry,
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_exporter_messages",
 		Description: "The number of exported messages. [Deprecated]",
-		Unit:        "1",
+		Unit:        "{message}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -150,7 +150,7 @@ func AssertEqualKafkaExporterRecords(t *testing.T, tt *componenttest.Telemetry, 
 	want := metricdata.Metrics{
 		Name:        "otelcol_kafka_exporter_records",
 		Description: "The number of exported records. [Development]",
-		Unit:        "1",
+		Unit:        "{record}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,

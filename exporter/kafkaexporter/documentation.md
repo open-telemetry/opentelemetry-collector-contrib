@@ -37,7 +37,7 @@ Only produced when franz-go is enabled.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {connection} | Sum | Int | true | Development |
 
 #### Attributes
 
@@ -54,7 +54,7 @@ Only produced when franz-go is enabled.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {connection} | Sum | Int | true | Development |
 
 #### Attributes
 
@@ -164,7 +164,7 @@ Deprecated in favor of kafka_exporter_records.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Deprecated |
+| {message} | Sum | Int | true | Deprecated |
 
 #### Attributes
 
@@ -182,7 +182,7 @@ The number of exported records.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {record} | Sum | Int | true | Development |
 
 #### Attributes
 
