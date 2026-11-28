@@ -8,9 +8,11 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2 v2.0.2
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.8.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.166.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression v0.166.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.72.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/component/componenttest v0.166.1-0.20261126161120-4c6c46bf6bc6
+	go.opentelemetry.io/collector/config/configcompression v1.72.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/config/configopaque v1.72.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/confmap v1.72.1-0.20261126161120-4c6c46bf6bc6
 	go.opentelemetry.io/collector/consumer v1.72.1-0.20261126161120-4c6c46bf6bc6
@@ -62,6 +64,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pandatix/go-abnf v0.5.5 // indirect
+	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pierrec/lz4/v4 v4.1.34 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/power-devops/perfstat v0.0.0-20260805114148-88456608a4f6 // indirect
@@ -153,3 +156,5 @@ retract (
 	v0.76.1
 	v0.65.0
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xcompression => ../../pkg/xcompression

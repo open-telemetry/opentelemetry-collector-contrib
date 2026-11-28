@@ -298,7 +298,13 @@ func TestConsumeCompressedLogsJSON(t *testing.T) {
 			err = receiver.(logsDataConsumer).consumeLogs(tt.Context(), tc.data)
 			if tc.expectErr {
 				require.Error(tt, err)
-				return
+				require.Empty(tt, logsSink.AllLogs())
+
+				payload := logsJSON
+				if tc.compression != CompressionNone {
+					payload = gzipBytes(tt, payload)
+				}
+				err = receiver.(logsDataConsumer).consumeLogs(tt.Context(), payload)
 			}
 
 			require.NoError(tt, err)
