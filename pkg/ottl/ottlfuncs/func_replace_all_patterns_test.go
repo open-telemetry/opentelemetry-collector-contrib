@@ -6,6 +6,7 @@ package ottlfuncs
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -533,6 +534,21 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutStr("hash(7)", "")
 			},
 		},
+		{
+			name:    "function error drops matching keys",
+			mode:    modeKey,
+			pattern: `test(\d)`,
+			replacement: ottl.StandardStringGetter[pcommon.Map]{
+				Getter: func(context.Context, pcommon.Map) (any, error) {
+					return "$1", nil
+				},
+			},
+			replacementFormat: ottl.NewTestingOptional[ottl.StringGetter[pcommon.Map]](invalidPrefix),
+			function:          optionalArg,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutStr("test", "hello world")
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -573,6 +589,126 @@ func Test_replaceAllPatterns(t *testing.T) {
 			assert.Equal(t, expected, scenarioMap)
 		})
 	}
+}
+
+func Test_replaceAllPatterns_key_collisions(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       [][2]string
+		pattern     string
+		replacement string
+		want        string
+		wantKeys    []string
+	}{
+		{
+			name:        "later rewritten key wins",
+			input:       [][2]string{{"source1", "first"}, {"middle", "unchanged"}, {"source2", "second"}},
+			pattern:     `^source\d$`,
+			replacement: "destination",
+			want:        "second",
+			wantKeys:    []string{"destination", "middle"},
+		},
+		{
+			name:        "later rewritten key wins over unchanged key",
+			input:       [][2]string{{"destination", "first"}, {"middle", "unchanged"}, {"source", "second"}},
+			pattern:     `^source$`,
+			replacement: "destination",
+			want:        "second",
+			wantKeys:    []string{"destination", "middle"},
+		},
+		{
+			name:        "later unchanged key wins over rewritten key",
+			input:       [][2]string{{"source", "first"}, {"middle", "unchanged"}, {"destination", "second"}},
+			pattern:     `^source$`,
+			replacement: "destination",
+			want:        "second",
+			wantKeys:    []string{"destination", "middle"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			target := ottl.StandardPMapGetSetter[pcommon.Map]{
+				Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+					return tCtx, nil
+				},
+				Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+					m.(pcommon.Map).CopyTo(tCtx)
+					return nil
+				},
+			}
+			pattern := &ottl.StandardStringGetter[pcommon.Map]{
+				Getter: func(context.Context, pcommon.Map) (any, error) {
+					return tt.pattern, nil
+				},
+			}
+			replacement := ottl.StandardStringGetter[pcommon.Map]{
+				Getter: func(context.Context, pcommon.Map) (any, error) {
+					return tt.replacement, nil
+				},
+			}
+			exprFunc, err := replaceAllPatterns[pcommon.Map](target, modeKey, pattern, replacement, ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{}, ottl.Optional[ottl.StringGetter[pcommon.Map]]{})
+			require.NoError(t, err)
+
+			input := pcommon.NewMap()
+			for _, entry := range tt.input {
+				input.PutStr(entry[0], entry[1])
+			}
+			_, err = exprFunc(t.Context(), input)
+			require.NoError(t, err)
+
+			require.Equal(t, len(tt.wantKeys), input.Len())
+			actual, ok := input.Get("destination")
+			require.True(t, ok)
+			assert.Equal(t, tt.want, actual.Str())
+
+			actualKeys := make([]string, 0, input.Len())
+			for key := range input.All() {
+				actualKeys = append(actualKeys, key)
+			}
+			assert.Equal(t, tt.wantKeys, actualKeys)
+		})
+	}
+}
+
+func Test_replaceAllPatterns_key_preserves_value_types(t *testing.T) {
+	input := pcommon.NewMap()
+	input.PutEmpty("empty")
+	input.PutEmptyBytes("bytes").FromRaw([]byte{1, 2, 3})
+	input.PutEmptyMap("map").PutStr("nested", "value")
+	input.PutEmptySlice("slice").AppendEmpty().SetInt(42)
+
+	target := ottl.StandardPMapGetSetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+			return tCtx, nil
+		},
+		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+			m.(pcommon.Map).CopyTo(tCtx)
+			return nil
+		},
+	}
+	pattern := &ottl.StandardStringGetter[pcommon.Map]{
+		Getter: func(context.Context, pcommon.Map) (any, error) {
+			return `^`, nil
+		},
+	}
+	replacement := ottl.StandardStringGetter[pcommon.Map]{
+		Getter: func(context.Context, pcommon.Map) (any, error) {
+			return "renamed.", nil
+		},
+	}
+	exprFunc, err := replaceAllPatterns[pcommon.Map](target, modeKey, pattern, replacement, ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{}, ottl.Optional[ottl.StringGetter[pcommon.Map]]{})
+	require.NoError(t, err)
+
+	_, err = exprFunc(t.Context(), input)
+	require.NoError(t, err)
+
+	expected := pcommon.NewMap()
+	expected.PutEmpty("renamed.empty")
+	expected.PutEmptyBytes("renamed.bytes").FromRaw([]byte{1, 2, 3})
+	expected.PutEmptyMap("renamed.map").PutStr("nested", "value")
+	expected.PutEmptySlice("renamed.slice").AppendEmpty().SetInt(42)
+	assert.True(t, expected.Equal(input), "expected %v, got %v", expected.AsRaw(), input.AsRaw())
 }
 
 func Test_replaceAllPatterns_bad_input(t *testing.T) {
@@ -860,6 +996,66 @@ func BenchmarkReplaceAllPatterns(b *testing.B) {
 		input.CopyTo(scenarioMap)
 		if _, err := exprFunc(ctx, scenarioMap); err != nil {
 			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkReplaceAllPatternsKey(b *testing.B) {
+	benchmarks := []struct {
+		name        string
+		pattern     string
+		replacement string
+	}{
+		{name: "no_match", pattern: `^does-not-match$`, replacement: "unused"},
+		{name: "all_unique", pattern: `^k`, replacement: "renamed"},
+		{name: "all_collide", pattern: `^k.*$`, replacement: "same"},
+	}
+
+	for _, bm := range benchmarks {
+		for _, size := range []int{8, 32, 128, 1000, 4000, 16000, 64000} {
+			b.Run(fmt.Sprintf("%s/keys=%d", bm.name, size), func(b *testing.B) {
+				rawInput := make(map[string]any, size)
+				for i := range size {
+					rawInput[fmt.Sprintf("k%07d", i)] = "value"
+				}
+				input := pcommon.NewMap()
+				require.NoError(b, input.FromRaw(rawInput))
+
+				target := ottl.StandardPMapGetSetter[pcommon.Map]{
+					Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
+						return tCtx, nil
+					},
+					Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+						m.(pcommon.Map).CopyTo(tCtx)
+						return nil
+					},
+				}
+				pattern := &ottl.StandardStringGetter[pcommon.Map]{
+					Getter: func(context.Context, pcommon.Map) (any, error) {
+						return bm.pattern, nil
+					},
+				}
+				replacement := ottl.StandardStringGetter[pcommon.Map]{
+					Getter: func(context.Context, pcommon.Map) (any, error) {
+						return bm.replacement, nil
+					},
+				}
+				exprFunc, err := replaceAllPatterns[pcommon.Map](target, modeKey, pattern, replacement, ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{}, ottl.Optional[ottl.StringGetter[pcommon.Map]]{})
+				require.NoError(b, err)
+
+				ctx := b.Context()
+				b.ReportAllocs()
+				b.ResetTimer()
+				for b.Loop() {
+					b.StopTimer()
+					scenarioMap := pcommon.NewMap()
+					input.CopyTo(scenarioMap)
+					b.StartTimer()
+					if _, err = exprFunc(ctx, scenarioMap); err != nil {
+						b.Fatal(err)
+					}
+				}
+			})
 		}
 	}
 }
