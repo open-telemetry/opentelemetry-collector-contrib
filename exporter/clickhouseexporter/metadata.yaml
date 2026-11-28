@@ -13,7 +13,11 @@ status:
     emeritus: [dmitryax, hanjm]
 
 sending_queue:
-  support: default
+  support: has_overrides
+  overrides:
+    enabled: true
+    batch:
+      enabled: true
 
 tests:
   config:
