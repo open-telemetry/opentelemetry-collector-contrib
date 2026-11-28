@@ -10,6 +10,7 @@ status:
   stability:
     alpha: [metrics]
   distributions: [contrib]
+  warnings: [Identity Conflict]
   codeowners:
     active: [atoulme, YElayyat, jmacd]
 
