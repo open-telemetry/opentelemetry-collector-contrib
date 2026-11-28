@@ -855,7 +855,7 @@ func TestJwtOAuthClientIDFile(t *testing.T) {
 	}, zap.NewNop())
 	require.NoError(t, err)
 
-	_, err = oauth2Authenticator.Token(context.Background())
+	_, err = oauth2Authenticator.Token(t.Context())
 	require.NoError(t, err)
 
 	assert.Equal(t, "testcreds", gotIss)
