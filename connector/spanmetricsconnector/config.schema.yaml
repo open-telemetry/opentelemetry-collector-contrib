@@ -77,6 +77,9 @@ properties:
     type: array
     items:
       $ref: dimension
+  delta_start_time:
+    description: DeltaStartTime determines the start timestamp used for delta metrics. "previous_data_point" (default) keeps each series contiguous with its last exported point, which delta-to-cumulative converters such as the Prometheus exporter need to avoid treating gaps as counter resets. "previous_flush" uses the previous flush time, matching the OpenTelemetry SDK, for backends that use start_time_unix_nano as the point timestamp. Only applies to delta temporality.
+    type: string
   dimensions:
     description: 'Dimensions defines the list of additional dimensions on top of the provided: - service.name - span.name - span.kind - status.code - collector.instance.id The dimensions will be fetched from the span''s attributes. Examples of some conventionally used attributes: https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.'
     type: array

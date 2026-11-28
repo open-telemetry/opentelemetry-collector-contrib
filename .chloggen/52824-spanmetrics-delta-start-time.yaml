@@ -1,0 +1,6 @@
+change_type: enhancement
+component: connector/span_metrics
+note: Add `delta_start_time` config option to select how the start timestamp of delta metrics is calculated.
+issues: [52824]
+subtext: "`previous_flush` leaves gaps for series that were not reported in the previous flush, so it is not suitable for delta-to-cumulative conversion (e.g. the Prometheus exporter)."
+change_logs: [user]

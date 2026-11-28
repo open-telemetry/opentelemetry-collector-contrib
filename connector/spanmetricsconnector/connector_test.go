@@ -2565,6 +2565,68 @@ func TestTimestampsForUninterruptedStream(t *testing.T) {
 	}
 }
 
+func TestDeltaStartTimePreviousFlush(t *testing.T) {
+	const flushInterval = 30 * time.Second
+
+	clock := clockwork.NewFakeClockAt(time.Unix(1_700_000_000, 0))
+	cfg := createDefaultConfig().(*Config)
+	cfg.AggregationTemporality = delta
+	cfg.DeltaStartTime = deltaStartTimePreviousFlush
+	cfg.MetricsFlushInterval = flushInterval
+
+	p, err := newConnector(zaptest.NewLogger(t), cfg, clock, instanceID)
+	require.NoError(t, err)
+	t.Cleanup(p.ticker.Stop)
+	sink := &consumertest.MetricsSink{}
+	p.metricsConsumer = sink
+
+	consume := func() {
+		traces := ptrace.NewTraces()
+		rs := traces.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr(serviceNameKey, "checkout")
+		span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("GET /checkout")
+		span.SetKind(ptrace.SpanKindServer)
+		now := pcommon.NewTimestampFromTime(clock.Now())
+		span.SetStartTimestamp(now)
+		span.SetEndTimestamp(now + pcommon.Timestamp(time.Millisecond))
+		require.NoError(t, p.ConsumeTraces(t.Context(), traces))
+	}
+	flush := func() {
+		clock.Advance(flushInterval)
+		p.exportMetrics(t.Context())
+	}
+
+	firstSpanTime := pcommon.NewTimestampFromTime(clock.Now())
+
+	consume()
+	flush()
+	firstFlushTime := pcommon.NewTimestampFromTime(clock.Now())
+
+	// Several quiet flushes with nothing emitted, lastFlushTimestamp advancing
+	flush()
+	flush()
+	flush()
+	previousFlush := pcommon.NewTimestampFromTime(clock.Now())
+
+	consume()
+	flush()
+	finalFlushTime := pcommon.NewTimestampFromTime(clock.Now())
+
+	all := sink.AllMetrics()
+	require.Len(t, all, 5)
+
+	start1, end1 := verifyAndCollectCommonTimestamps(t, all[0])
+	assert.Equal(t, firstSpanTime, start1)
+	assert.Equal(t, firstFlushTime, end1)
+
+	start2, end2 := verifyAndCollectCommonTimestamps(t, all[4])
+	assert.Equal(t, previousFlush, start2)
+	assert.Equal(t, finalFlushTime, end2)
+	// Default strategy would be start2==end1 here (T1->T2, T2->T3)
+	assert.NotEqual(t, end1, start2)
+}
+
 func verifyAndCollectCommonTimestamps(t *testing.T, m pmetric.Metrics) (start, timestamp pcommon.Timestamp) {
 	// Go through all data points and collect the start timestamp and timestamp. They should be the same value for each data point
 	for i := 0; i < m.ResourceMetrics().Len(); i++ {

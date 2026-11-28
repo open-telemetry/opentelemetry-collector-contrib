@@ -95,6 +95,14 @@ span_metrics/invalid_delta_timestamp_cache_size:
 span_metrics/default_delta_timestamp_cache_size:
   aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"
 
+span_metrics/delta_previous_flush:
+  aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"
+  delta_start_time: "previous_flush"
+
+span_metrics/invalid_delta_start_time:
+  aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"
+  delta_start_time: "previous_flush_typo"
+
 span_metrics/separate_calls_and_duration_dimensions:
   histogram:
     dimensions:

@@ -208,6 +208,26 @@ func TestLoadConfig(t *testing.T) {
 			errorMessage: "invalid delta timestamp cache size: 0, the maximum number of the items in the cache should be positive",
 		},
 		{
+			name: "delta_previous_flush",
+			id:   component.NewIDWithName(metadata.Type, "delta_previous_flush"),
+			expected: &Config{
+				AggregationTemporality:   "AGGREGATION_TEMPORALITY_DELTA",
+				DeltaStartTime:           "previous_flush",
+				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
+				MetricsFlushInterval:     60 * time.Second,
+				Exemplars: ExemplarsConfig{
+					MaxPerDataPoint: defaultMaxPerDatapoint,
+				},
+				Histogram: HistogramConfig{Disable: false, Unit: defaultUnit},
+				Namespace: DefaultNamespace,
+			},
+		},
+		{
+			name:         "invalid_delta_start_time",
+			id:           component.NewIDWithName(metadata.Type, "invalid_delta_start_time"),
+			errorMessage: "invalid delta_start_time",
+		},
+		{
 			name: "separate_calls_and_duration_dimensions",
 			id:   component.NewIDWithName(metadata.Type, "separate_calls_and_duration_dimensions"),
 			expected: &Config{
@@ -279,6 +299,11 @@ func TestGetAggregationTemporality(t *testing.T) {
 
 	cfg = &Config{}
 	assert.Equal(t, pmetric.AggregationTemporalityCumulative, cfg.GetAggregationTemporality())
+}
+
+func TestGetDeltaStartTime(t *testing.T) {
+	assert.Equal(t, deltaStartTimePreviousDataPoint, Config{}.GetDeltaStartTime())
+	assert.Equal(t, deltaStartTimePreviousFlush, Config{DeltaStartTime: deltaStartTimePreviousFlush}.GetDeltaStartTime())
 }
 
 func TestValidateDimensions(t *testing.T) {
@@ -514,6 +539,25 @@ func TestConfigValidate(t *testing.T) {
 				TimestampCacheSize:       new(int), // zero value
 			},
 			expectedErr: "invalid delta timestamp cache size: 0, the maximum number of the items in the cache should be positive",
+		},
+		{
+			name: "invalid delta start time",
+			config: Config{
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     60 * time.Second,
+				DeltaStartTime:           "bogus",
+			},
+			expectedErr: "invalid delta_start_time",
+		},
+		{
+			name: "previous_flush does not require timestamp cache",
+			config: Config{
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     60 * time.Second,
+				AggregationTemporality:   delta,
+				DeltaStartTime:           deltaStartTimePreviousFlush,
+				TimestampCacheSize:       new(int), // zero value
+			},
 		},
 		{
 			name: "invalid aggregation cardinality limit",

@@ -20,6 +20,9 @@ import (
 const (
 	delta      = "AGGREGATION_TEMPORALITY_DELTA"
 	cumulative = "AGGREGATION_TEMPORALITY_CUMULATIVE"
+
+	deltaStartTimePreviousDataPoint = "previous_data_point"
+	deltaStartTimePreviousFlush     = "previous_flush"
 )
 
 var defaultHistogramBucketsMs = []float64{
@@ -77,6 +80,15 @@ type Config struct {
 	ResourceMetricsKeyAttributes []string `mapstructure:"resource_metrics_key_attributes"`
 
 	AggregationTemporality string `mapstructure:"aggregation_temporality"`
+
+	// DeltaStartTime determines the start timestamp used for delta metrics.
+	// "previous_data_point" (default) keeps each series contiguous with its last
+	// exported point, which delta-to-cumulative converters such as the Prometheus
+	// exporter need to avoid treating gaps as counter resets.
+	// "previous_flush" uses the previous flush time, matching the OpenTelemetry SDK,
+	// for backends that use start_time_unix_nano as the point timestamp.
+	// Only applies to delta temporality.
+	DeltaStartTime string `mapstructure:"delta_start_time"`
 
 	Histogram HistogramConfig `mapstructure:"histogram"`
 
@@ -196,7 +208,9 @@ func (c Config) Validate() error {
 		return fmt.Errorf("invalid series_expiration: %v, the duration should be positive", c.SeriesExpiration)
 	}
 
-	if c.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta && c.GetDeltaTimestampCacheSize() <= 0 {
+	if c.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta &&
+		c.GetDeltaStartTime() == deltaStartTimePreviousDataPoint &&
+		c.GetDeltaTimestampCacheSize() <= 0 {
 		return fmt.Errorf(
 			"invalid delta timestamp cache size: %v, the maximum number of the items in the cache should be positive",
 			c.GetDeltaTimestampCacheSize(),
@@ -209,6 +223,12 @@ func (c Config) Validate() error {
 
 	if c.Exemplars.Enabled && c.Exemplars.MaxPerDataPoint < 0 {
 		return fmt.Errorf("invalid max_per_data_point: %v, the value should be positive", c.Exemplars.MaxPerDataPoint)
+	}
+
+	switch c.GetDeltaStartTime() {
+	case deltaStartTimePreviousDataPoint, deltaStartTimePreviousFlush:
+	default:
+		return fmt.Errorf("invalid delta_start_time: %q, must be one of %q or %q", c.DeltaStartTime, deltaStartTimePreviousDataPoint, deltaStartTimePreviousFlush)
 	}
 
 	return nil
@@ -228,6 +248,14 @@ func (c Config) GetDeltaTimestampCacheSize() int {
 		return *c.TimestampCacheSize
 	}
 	return max(minDefaultDeltaTimestampCacheSize, c.ResourceMetricsCacheSize*defaultDeltaTimestampCacheSizeMultiplier)
+}
+
+// GetDeltaStartTime returns the configured delta start time strategy, defaulting to previous_data_point
+func (c Config) GetDeltaStartTime() string {
+	if c.DeltaStartTime == "" {
+		return deltaStartTimePreviousDataPoint
+	}
+	return c.DeltaStartTime
 }
 
 // validateDimensions checks duplicates for reserved dimensions and additional dimensions, and
