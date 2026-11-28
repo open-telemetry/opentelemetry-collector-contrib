@@ -171,9 +171,8 @@ func (h *handler) OnDelete(objectInterface any) {
 	var endpoints []observer.Endpoint
 
 	switch object := objectInterface.(type) {
-	case *cache.DeletedFinalStateUnknown:
-		// Assuming we never saw the pod state where new endpoints would have been created
-		// to begin with it seems that we can't leak endpoints here.
+	case cache.DeletedFinalStateUnknown:
+		// The informer missed the delete event and passes the last state it knows.
 		h.OnDelete(object.Obj)
 		return
 	case *v1.Pod:

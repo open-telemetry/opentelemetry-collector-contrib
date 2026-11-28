@@ -6,10 +6,14 @@ package k8sobserver
 import (
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/tools/cache"
+	fcache "k8s.io/client-go/tools/cache/testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -78,6 +82,61 @@ func TestPodEndpointsRemoved(t *testing.T) {
 	th.OnAdd(podWithNamedPorts, true)
 	th.OnDelete(podWithNamedPorts)
 	assert.Empty(t, th.ListEndpoints())
+}
+
+func TestEndpointsRemovedAfterMissedDelete(t *testing.T) {
+	// An informer that missed the delete event passes the last state it knows wrapped in a
+	// cache.DeletedFinalStateUnknown value.
+	for name, object := range map[string]any{
+		"pod":     podWithNamedPorts,
+		"service": serviceWithClusterIP,
+		"ingress": ingress,
+		"node":    node1V1,
+	} {
+		t.Run(name, func(t *testing.T) {
+			th := newTestHandler()
+			th.OnAdd(object, true)
+			require.NotEmpty(t, th.ListEndpoints())
+
+			th.OnDelete(cache.DeletedFinalStateUnknown{Key: name, Obj: object})
+			assert.Empty(t, th.ListEndpoints())
+		})
+	}
+}
+
+// TestPodEndpointsRemovedWhenInformerMissedDelete deletes a pod without a delete event and
+// breaks the watch of the informer, so the informer lists again and finds the pod gone.
+func TestPodEndpointsRemovedWhenInformerMissedDelete(t *testing.T) {
+	pod := podWithNamedPorts.DeepCopy()
+	source := fcache.NewFakeControllerSource()
+	source.Add(pod)
+
+	th := newTestHandler()
+	informer := cache.NewSharedInformer(source, &v1.Pod{}, 0)
+	_, err := informer.AddEventHandler(th)
+	require.NoError(t, err)
+
+	stop := make(chan struct{})
+	stopped := make(chan struct{})
+	go func() {
+		informer.Run(stop)
+		close(stopped)
+	}()
+	defer func() {
+		close(stop)
+		<-stopped
+	}()
+
+	require.Eventually(t, func() bool {
+		return len(th.ListEndpoints()) == 3
+	}, 10*time.Second, 10*time.Millisecond, "the endpoints of the pod were not added")
+
+	source.DeleteDropWatch(pod)
+	source.ResetWatch()
+
+	require.Eventually(t, func() bool {
+		return len(th.ListEndpoints()) == 0
+	}, 30*time.Second, 10*time.Millisecond, "the endpoints of the pod were not removed")
 }
 
 func TestPodEndpointsChanged(t *testing.T) {
