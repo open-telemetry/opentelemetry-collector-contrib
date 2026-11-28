@@ -25,21 +25,21 @@ telemetry:
       enabled: true
       description: Distribution of groups extracted for logs
       stability: development
-      unit: "1"
+      unit: "{group}"
       histogram:
         value_type: int
     processor_groupbyattrs_metric_groups:
       enabled: true
       description: Distribution of groups extracted for metrics
       stability: development
-      unit: "1"
+      unit: "{group}"
       histogram:
         value_type: int
     processor_groupbyattrs_num_grouped_logs:
       enabled: true
       description: Number of logs that had attributes grouped
       stability: development
-      unit: "1"
+      unit: "{log}"
       sum:
         value_type: int
         monotonic: true
@@ -47,7 +47,7 @@ telemetry:
       enabled: true
       description: Number of metrics that had attributes grouped
       stability: development
-      unit: "1"
+      unit: "{metric}"
       sum:
         value_type: int
         monotonic: true
@@ -55,7 +55,7 @@ telemetry:
       enabled: true
       description: Number of spans that had attributes grouped
       stability: development
-      unit: "1"
+      unit: "{span}"
       sum:
         value_type: int
         monotonic: true
@@ -63,7 +63,7 @@ telemetry:
       enabled: true
       description: Number of logs that did not have attributes grouped
       stability: development
-      unit: "1"
+      unit: "{log}"
       sum:
         value_type: int
         monotonic: true
@@ -71,7 +71,7 @@ telemetry:
       enabled: true
       description: Number of metrics that did not have attributes grouped
       stability: development
-      unit: "1"
+      unit: "{metric}"
       sum:
         value_type: int
         monotonic: true
@@ -79,7 +79,7 @@ telemetry:
       enabled: true
       description: Number of spans that did not have attributes grouped
       stability: development
-      unit: "1"
+      unit: "{span}"
       sum:
         value_type: int
         monotonic: true
@@ -87,6 +87,6 @@ telemetry:
       enabled: true
       description: Distribution of groups extracted for spans
       stability: development
-      unit: "1"
+      unit: "{group}"
       histogram:
         value_type: int

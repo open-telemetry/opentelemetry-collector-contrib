@@ -12,7 +12,7 @@ Distribution of groups extracted for logs
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Histogram | Int | Development |
+| {group} | Histogram | Int | Development |
 
 ### otelcol_processor_groupbyattrs_metric_groups
 
@@ -20,7 +20,7 @@ Distribution of groups extracted for metrics
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Histogram | Int | Development |
+| {group} | Histogram | Int | Development |
 
 ### otelcol_processor_groupbyattrs_num_grouped_logs
 
@@ -28,7 +28,7 @@ Number of logs that had attributes grouped
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {log} | Sum | Int | true | Development |
 
 ### otelcol_processor_groupbyattrs_num_grouped_metrics
 
@@ -36,7 +36,7 @@ Number of metrics that had attributes grouped
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {metric} | Sum | Int | true | Development |
 
 ### otelcol_processor_groupbyattrs_num_grouped_spans
 
@@ -44,7 +44,7 @@ Number of spans that had attributes grouped
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {span} | Sum | Int | true | Development |
 
 ### otelcol_processor_groupbyattrs_num_non_grouped_logs
 
@@ -52,7 +52,7 @@ Number of logs that did not have attributes grouped
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {log} | Sum | Int | true | Development |
 
 ### otelcol_processor_groupbyattrs_num_non_grouped_metrics
 
@@ -60,7 +60,7 @@ Number of metrics that did not have attributes grouped
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {metric} | Sum | Int | true | Development |
 
 ### otelcol_processor_groupbyattrs_num_non_grouped_spans
 
@@ -68,7 +68,7 @@ Number of spans that did not have attributes grouped
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| 1 | Sum | Int | true | Development |
+| {span} | Sum | Int | true | Development |
 
 ### otelcol_processor_groupbyattrs_span_groups
 
@@ -76,4 +76,4 @@ Distribution of groups extracted for spans
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Histogram | Int | Development |
+| {group} | Histogram | Int | Development |
