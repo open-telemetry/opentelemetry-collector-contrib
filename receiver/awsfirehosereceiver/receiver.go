@@ -243,7 +243,7 @@ func (fmr *firehoseReceiver) validate(r *http.Request) (int, error) {
 		// No access key is configured - accept all requests.
 		return http.StatusAccepted, nil
 	}
-	if accessKey := r.Header.Get(headerFirehoseAccessKey); accessKey == string(fmr.config.AccessKey) {
+	if accessKey := r.Header.Get(headerFirehoseAccessKey); fmr.config.AccessKey.Equal(accessKey) {
 		return http.StatusAccepted, nil
 	}
 	return http.StatusUnauthorized, errInvalidAccessKey
