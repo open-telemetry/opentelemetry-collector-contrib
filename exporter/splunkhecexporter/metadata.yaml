@@ -33,7 +33,7 @@ telemetry:
       enabled: true
       stability: development
       description: Number of heartbeats failed by the Splunk HEC exporter.
-      unit: "1"
+      unit: "{heartbeat}"
       sum:
         value_type: int
         monotonic: true
@@ -41,7 +41,7 @@ telemetry:
       enabled: true
       stability: development
       description: Number of heartbeats sent by the Splunk HEC exporter.
-      unit: "1"
+      unit: "{heartbeat}"
       sum:
         value_type: int
         monotonic: true

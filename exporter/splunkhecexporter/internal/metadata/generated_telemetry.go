@@ -75,13 +75,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ExporterSplunkhecHeartbeatsFailed, err = builder.meter.Int64Counter(
 		"otelcol_exporter_splunkhec_heartbeats_failed",
 		metric.WithDescription("Number of heartbeats failed by the Splunk HEC exporter. [Development]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{heartbeat}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterSplunkhecHeartbeatsSent, err = builder.meter.Int64Counter(
 		"otelcol_exporter_splunkhec_heartbeats_sent",
 		metric.WithDescription("Number of heartbeats sent by the Splunk HEC exporter. [Development]"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{heartbeat}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

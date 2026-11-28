@@ -57,7 +57,7 @@ func AssertEqualExporterSplunkhecHeartbeatsFailed(t *testing.T, tt *componenttes
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_splunkhec_heartbeats_failed",
 		Description: "Number of heartbeats failed by the Splunk HEC exporter. [Development]",
-		Unit:        "1",
+		Unit:        "{heartbeat}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
@@ -73,7 +73,7 @@ func AssertEqualExporterSplunkhecHeartbeatsSent(t *testing.T, tt *componenttest.
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_splunkhec_heartbeats_sent",
 		Description: "Number of heartbeats sent by the Splunk HEC exporter. [Development]",
-		Unit:        "1",
+		Unit:        "{heartbeat}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,

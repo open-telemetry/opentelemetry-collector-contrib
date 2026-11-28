@@ -46,7 +46,7 @@ func heartbeatCounter(meter metric.Meter, defaultCounter metric.Int64Counter, ov
 		return meter.Int64Counter(
 			name,
 			metric.WithDescription(description),
-			metric.WithUnit("1"),
+			metric.WithUnit("{heartbeat}"),
 		)
 	}
 	return defaultCounter, nil
