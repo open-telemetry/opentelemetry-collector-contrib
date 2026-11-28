@@ -4,9 +4,12 @@
 package parser
 
 import (
+	"net"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
 
 var benchTags = []string{
@@ -42,6 +45,28 @@ func BenchmarkParseMessageToMetric(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
 				if _, err := parseMessageToMetric(line, true, false); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkAggregateGauge(b *testing.B) {
+	addr := &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 5678}
+	for _, n := range []int{0, 4, 12, 20} {
+		line := "system.memory.usage:42|g"
+		if n > 0 {
+			line += "|#" + strings.Join(benchTags[:n], ",")
+		}
+		b.Run("tags"+strconv.Itoa(n), func(b *testing.B) {
+			p := &StatsDParser{}
+			if err := p.Initialize(false, false, false, false, false, nil, protocol.CounterTypeInt); err != nil {
+				b.Fatal(err)
+			}
+			b.ReportAllocs()
+			for b.Loop() {
+				if err := p.Aggregate(line, addr); err != nil {
 					b.Fatal(err)
 				}
 			}

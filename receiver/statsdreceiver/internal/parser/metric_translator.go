@@ -98,6 +98,7 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pmetric.Scop
 	dp := nm.SetEmptyGauge().DataPoints().AppendEmpty()
 	dp.SetDoubleValue(parsedMetric.gaugeValue())
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+	dp.Attributes().EnsureCapacity(parsedMetric.description.attrs.Len())
 	for i := parsedMetric.description.attrs.Iter(); i.Next(); {
 		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
