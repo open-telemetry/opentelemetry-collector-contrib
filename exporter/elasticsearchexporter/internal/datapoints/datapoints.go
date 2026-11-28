@@ -40,6 +40,7 @@ type DataPoint interface {
 	HasMappingHint(elasticsearch.MappingHint) bool
 	Metric() pmetric.Metric
 	Temporality() string
+	Exemplars() pmetric.ExemplarSlice
 }
 
 func (hm HistogramMapping) String() string {

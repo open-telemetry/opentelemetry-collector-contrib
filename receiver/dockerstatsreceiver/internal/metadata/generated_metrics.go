@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 	conventions "go.opentelemetry.io/otel/semconv/v1.43.0"
 )
 
@@ -5048,8 +5048,8 @@ type MetricsBuilder struct {
 	metricsCapacity                                  int                  // maximum observed number of metrics per resource.
 	metricsBuffer                                    pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                                        component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter                   map[string]filter.Filter
-	resourceAttributeExcludeFilter                   map[string]filter.Filter
+	resourceAttributeIncludeFilter                   map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter                   map[string]strmatch.Matcher
 	metricContainerBlockioIoMergedRecursive          metricContainerBlockioIoMergedRecursive
 	metricContainerBlockioIoQueuedRecursive          metricContainerBlockioIoQueuedRecursive
 	metricContainerBlockioIoServiceBytesRecursive    metricContainerBlockioIoServiceBytesRecursive
@@ -5221,50 +5221,50 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricContainerStateHealthStatus:                 newMetricContainerStateHealthStatus(mbc.Metrics.ContainerStateHealthStatus),
 		metricContainerStateStatus:                       newMetricContainerStateStatus(mbc.Metrics.ContainerStateStatus),
 		metricContainerUptime:                            newMetricContainerUptime(mbc.Metrics.ContainerUptime),
-		resourceAttributeIncludeFilter:                   make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:                   make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter:                   make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter:                   make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.ContainerCommandLine.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["container.command_line"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerCommandLine.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["container.command_line"] = strmatch.New(mbc.ResourceAttributes.ContainerCommandLine.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ContainerCommandLine.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["container.command_line"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerCommandLine.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["container.command_line"] = strmatch.New(mbc.ResourceAttributes.ContainerCommandLine.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ContainerHostname.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["container.hostname"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerHostname.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["container.hostname"] = strmatch.New(mbc.ResourceAttributes.ContainerHostname.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ContainerHostname.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["container.hostname"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerHostname.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["container.hostname"] = strmatch.New(mbc.ResourceAttributes.ContainerHostname.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ContainerID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["container.id"] = strmatch.New(mbc.ResourceAttributes.ContainerID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ContainerID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["container.id"] = strmatch.New(mbc.ResourceAttributes.ContainerID.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ContainerImageID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["container.image.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageID.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["container.image.id"] = strmatch.New(mbc.ResourceAttributes.ContainerImageID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ContainerImageID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["container.image.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageID.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["container.image.id"] = strmatch.New(mbc.ResourceAttributes.ContainerImageID.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ContainerImageName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["container.image.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["container.image.name"] = strmatch.New(mbc.ResourceAttributes.ContainerImageName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ContainerImageName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["container.image.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["container.image.name"] = strmatch.New(mbc.ResourceAttributes.ContainerImageName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ContainerName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["container.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["container.name"] = strmatch.New(mbc.ResourceAttributes.ContainerName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ContainerName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["container.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["container.name"] = strmatch.New(mbc.ResourceAttributes.ContainerName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.ContainerRuntime.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["container.runtime"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerRuntime.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["container.runtime"] = strmatch.New(mbc.ResourceAttributes.ContainerRuntime.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.ContainerRuntime.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["container.runtime"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerRuntime.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["container.runtime"] = strmatch.New(mbc.ResourceAttributes.ContainerRuntime.MetricsExclude)
 	}
 
 	for _, op := range options {

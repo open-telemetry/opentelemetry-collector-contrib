@@ -17,5 +17,5 @@ tests:
     endpoint: https://company.logicmonitor.com/rest
     api_token:
       access_id: "accessid"
-      access_key: "accesskey"
+      access_key: "access-key-at-least-14-bytes"
   expect_consumer_error: true

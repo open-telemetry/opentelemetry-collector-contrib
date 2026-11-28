@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
@@ -306,6 +307,34 @@ func TestSpansWithOneAttrs(t *testing.T) {
 	}
 }
 
+func TestSpansWithMapAttrs(t *testing.T) {
+	// prepare
+	syncer := &mockSyncer{}
+
+	tracerProvider := sdktrace.NewTracerProvider()
+	sp := sdktrace.NewSimpleSpanProcessor(syncer)
+	tracerProvider.RegisterSpanProcessor(sp)
+	otel.SetTracerProvider(tracerProvider)
+
+	cfg := configWithMapAttribute(2, "")
+
+	// test
+	require.NoError(t, run(cfg, zap.NewNop()))
+
+	// verify
+	assert.Len(t, syncer.spans, 4) // each trace has two spans
+	for _, span := range syncer.spans {
+		found := false
+		for _, attr := range span.Attributes() {
+			if attr.Key == "kubernetes" {
+				found = true
+				assert.Equal(t, expectedMapAttributeValue(), attr.Value)
+			}
+		}
+		assert.True(t, found, "map attribute should be present")
+	}
+}
+
 func TestSpansWithMultipleAttrs(t *testing.T) {
 	// prepare
 	syncer := &mockSyncer{}
@@ -411,6 +440,31 @@ func configWithOneAttribute(qty int, statusCode string) *Config {
 		NumTraces:  qty,
 		StatusCode: statusCode,
 	}
+}
+
+func configWithMapAttribute(qty int, statusCode string) *Config {
+	return &Config{
+		Config: config.Config{
+			WorkerCount: 1,
+			TelemetryAttributes: config.KeyValue{
+				"kubernetes": map[string]any{
+					"namespace_name": "test-ns",
+					"pod_name":       "test-pod",
+					"labels":         map[string]any{"some_label": "test"},
+				},
+			},
+		},
+		NumTraces:  qty,
+		StatusCode: statusCode,
+	}
+}
+
+func expectedMapAttributeValue() attribute.Value {
+	return attribute.MapValue(
+		attribute.String("namespace_name", "test-ns"),
+		attribute.String("pod_name", "test-pod"),
+		attribute.Map("labels", attribute.String("some_label", "test")),
+	)
 }
 
 func configWithMultipleAttributes(qty int, statusCode string) *Config {

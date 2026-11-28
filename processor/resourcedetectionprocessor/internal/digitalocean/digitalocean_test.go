@@ -1,123 +1,167 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build (!remove_all_resourcedetection_detectors || enable_detector_digitalocean) && !omit_detector_digitalocean
+
 package digitalocean
 
 import (
-	"net/http"
-	"net/http/httptest"
-	"net/url"
+	"context"
+	"errors"
+	"fmt"
 	"testing"
 
-	do "github.com/digitalocean/go-metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"go.opentelemetry.io/otel/attribute"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 )
 
-const digitalOceanMetadataJSON = `{
-  "droplet_id": 2756294,
-  "hostname": "sample-droplet",
-  "region": "nyc3",
-  "public_keys": [],
-  "interfaces": {},
-  "floating_ip": {},
-  "reserved_ip": {},
-  "dns": {},
-  "features": {}
-}`
+const testSchemaURL = "https://opentelemetry.io/schemas/1.45.0"
 
-func TestNewDetector(t *testing.T) {
-	// Harmless test server
-	srv := httptest.NewServer(http.NotFoundHandler())
-	t.Cleanup(srv.Close)
-
-	orig := newDigitalOceanClient
-	t.Cleanup(func() { newDigitalOceanClient = orig })
-
-	base, err := url.Parse(srv.URL)
-	require.NoError(t, err)
-
-	// Force the SDK to hit our test server.
-	newDigitalOceanClient = func() *do.Client {
-		return do.NewClient(
-			do.WithBaseURL(base),
-			do.WithHTTPClient(srv.Client()),
-		)
-	}
-
-	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
-	require.NoError(t, err)
-	require.NotNil(t, det)
+// fakeDetector stands in for the upstream SDK detector, whose metadata endpoint is
+// not injectable.
+type fakeDetector struct {
+	attrs []attribute.KeyValue
+	err   error
 }
 
-func TestDigitalOceanDetector_Detect_OK_JSON(t *testing.T) {
-	// Serve the entire payload on /metadata/v1.json (bulk endpoint)
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/metadata/v1.json" {
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(digitalOceanMetadataJSON))
-			return
-		}
-		http.NotFound(w, r)
-	}))
-	t.Cleanup(srv.Close)
+func (f fakeDetector) Detect(context.Context) (*sdkresource.Resource, error) {
+	return sdkresource.NewWithAttributes(testSchemaURL, f.attrs...), f.err
+}
 
-	orig := newDigitalOceanClient
-	t.Cleanup(func() { newDigitalOceanClient = orig })
+func withFakeDetector(t *testing.T, f fakeDetector) {
+	t.Helper()
 
-	base, err := url.Parse(srv.URL)
-	require.NoError(t, err)
+	orig := newResourceDetector
+	newResourceDetector = func() sdkresource.Detector { return f }
+	t.Cleanup(func() { newResourceDetector = orig })
+}
 
-	newDigitalOceanClient = func() *do.Client {
-		return do.NewClient(
-			do.WithBaseURL(base),
-			do.WithHTTPClient(srv.Client()),
-		)
+func fullAttributes() []attribute.KeyValue {
+	return []attribute.KeyValue{
+		attribute.String("cloud.provider", "digitalocean"),
+		attribute.String("host.id", "123456789"),
+		attribute.String("host.name", "my-droplet"),
+		attribute.String("cloud.region", "nyc3"),
 	}
+}
 
-	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
-	require.NoError(t, err)
-
-	res, schemaURL, err := det.Detect(t.Context())
-	require.NoError(t, err)
-	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
-
-	attrs := res.Attributes().AsRaw()
-	want := map[string]any{
+func fullWant() map[string]any {
+	return map[string]any{
 		"cloud.provider": "digitalocean",
-		"host.id":        "2756294",
-		"host.name":      "sample-droplet",
+		"host.id":        "123456789",
+		"host.name":      "my-droplet",
 		"cloud.region":   "nyc3",
 	}
-	assert.Equal(t, want, attrs)
 }
 
-func TestDigitalOceanDetector_NotOnDigitalOcean_JSON(t *testing.T) {
-	// 404 everything (including /metadata/v1.json)
-	srv := httptest.NewServer(http.NotFoundHandler())
-	t.Cleanup(srv.Close)
+func TestNewDetector(t *testing.T) {
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
+	require.NoError(t, err)
+	assert.NotNil(t, d)
+}
 
-	orig := newDigitalOceanClient
-	t.Cleanup(func() { newDigitalOceanClient = orig })
+func TestDetect_OK(t *testing.T) {
+	withFakeDetector(t, fakeDetector{attrs: fullAttributes()})
 
-	base, err := url.Parse(srv.URL)
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
 	require.NoError(t, err)
 
-	newDigitalOceanClient = func() *do.Client {
-		return do.NewClient(
-			do.WithBaseURL(base),
-			do.WithHTTPClient(srv.Client()),
-		)
+	res, schemaURL, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, testSchemaURL, schemaURL)
+	assert.Equal(t, fullWant(), res.Attributes().AsRaw())
+}
+
+func TestDetect_DisabledAttributeRemoved(t *testing.T) {
+	withFakeDetector(t, fakeDetector{attrs: fullAttributes()})
+
+	cfg := CreateDefaultConfig()
+	cfg.ResourceAttributes.HostName.Enabled = false
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg, false)
+	require.NoError(t, err)
+
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+
+	want := fullWant()
+	delete(want, "host.name")
+	assert.Equal(t, want, res.Attributes().AsRaw())
+}
+
+// A partial result still came from a reachable metadata service, so it is kept even
+// with fail_on_missing_metadata.
+func TestDetect_PartialResult(t *testing.T) {
+	withFakeDetector(t, fakeDetector{
+		attrs: fullAttributes()[:2],
+		err:   fmt.Errorf("%w: [hostname: not present in metadata]", sdkresource.ErrPartialResource),
+	})
+
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), true)
+	require.NoError(t, err)
+
+	res, _, err := d.Detect(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{
+		"cloud.provider": "digitalocean",
+		"host.id":        "123456789",
+	}, res.Attributes().AsRaw())
+}
+
+func TestDetect_EmptyResult(t *testing.T) {
+	tests := []struct {
+		name                  string
+		failOnMissingMetadata bool
+	}{
+		{name: "default"},
+		{name: "fail_on_missing_metadata", failOnMissingMetadata: true},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			withFakeDetector(t, fakeDetector{})
 
-	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), false)
-	require.NoError(t, err)
+			d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), tt.failOnMissingMetadata)
+			require.NoError(t, err)
 
-	res, schemaURL, err := det.Detect(t.Context())
-	require.NoError(t, err)
-	assert.True(t, internal.IsEmptyResource(res))
-	assert.Empty(t, schemaURL)
+			res, schemaURL, err := d.Detect(t.Context())
+			if tt.failOnMissingMetadata {
+				require.EqualError(t, err, "digitalocean metadata unavailable")
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, 0, res.Attributes().Len())
+			assert.Empty(t, schemaURL)
+		})
+	}
+}
+
+func TestDetect_Error(t *testing.T) {
+	errBoom := errors.New("received unexpected status code 500")
+
+	tests := []struct {
+		name                  string
+		failOnMissingMetadata bool
+	}{
+		{name: "default"},
+		{name: "fail_on_missing_metadata", failOnMissingMetadata: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			withFakeDetector(t, fakeDetector{err: errBoom})
+
+			d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig(), tt.failOnMissingMetadata)
+			require.NoError(t, err)
+
+			res, schemaURL, err := d.Detect(t.Context())
+			if tt.failOnMissingMetadata {
+				require.ErrorIs(t, err, errBoom)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, 0, res.Attributes().Len())
+			assert.Empty(t, schemaURL)
+		})
+	}
 }

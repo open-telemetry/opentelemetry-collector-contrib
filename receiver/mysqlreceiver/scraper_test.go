@@ -2500,6 +2500,42 @@ func TestScrapeTopQueriesMariaDB(t *testing.T) {
 	}
 }
 
+// TestScrapeTopQueriesSkipsEmptyDigestText verifies that the digest-overflow row (NULL schema,
+// digest and digest_text) is dropped before ranking: it is neither emitted nor passed to the
+// obfuscator, and it does not take a top_query_count slot from a real query.
+func TestScrapeTopQueriesSkipsEmptyDigestText(t *testing.T) {
+	const schema = "mysql"
+	const digest = "c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739"
+
+	mc := &mockClient{topQueriesFile: "top_queries_null_digest"}
+	s := newTopQueryScraper(t, mc)
+	s.config.TopQueryCollection.TopQueryCount = 1
+	core, observed := observer.New(zapcore.DebugLevel)
+	s.logger = zap.New(core)
+
+	// Prime both rows so each has a positive diff; the overflow row has the larger one and
+	// would win the single slot if it were ranked.
+	s.cacheAndDiff(schema, digest, "count_star", 1)
+	s.cacheAndDiff(schema, digest, "sum_timer_wait", 1)
+	s.cacheAndDiff("", "", "count_star", 1)
+	s.cacheAndDiff("", "", "sum_timer_wait", 1)
+
+	logs, err := s.scrapeTopQueryFunc(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, logs.LogRecordCount())
+
+	lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	gotDigest, ok := lr.Attributes().Get("mysql.events_statements_summary_by_digest.digest")
+	require.True(t, ok)
+	assert.Equal(t, digest, gotDigest.Str())
+
+	assert.Zero(t, observed.FilterLevelExact(zapcore.ErrorLevel).Len(), "no error must be logged for the overflow row")
+	dropped := observed.FilterMessage("dropped top queries due to missing digest_text").All()
+	require.Len(t, dropped, 1)
+	assert.Equal(t, zapcore.DebugLevel, dropped[0].Level)
+	assert.Equal(t, int64(1), dropped[0].ContextMap()["count"])
+}
+
 // TestScrapeTopQueriesRowsExaminedSent verifies that SUM_ROWS_EXAMINED/SUM_ROWS_SENT
 // are diffed per scrape cycle exactly like count_star, on both the with-sample-text
 // and no-sample-text (MariaDB/MySQL<8) template paths.

@@ -21,8 +21,11 @@ $defs:
         description: ACL is the canned ACL to use when uploading objects.
         type: string
       compression:
-        description: 'Compression sets the algorithm used to process the payload before uploading to S3. Valid values are: `gzip`, `zstd`, or no value set.'
+        description: Compression sets the algorithm used before uploading to S3. Supported values are gzip, zstd, zlib, deflate, snappy, x-snappy-framed, lz4, and none.
         $ref: go.opentelemetry.io/collector/config/configcompression.type
+      compression_settings:
+        description: CompressionSettings configures the selected compression algorithm.
+        $ref: go.opentelemetry.io/collector/config/configcompression.compression_params
       disable_ssl:
         description: DisableSLL forces communication to happen via HTTP instead of HTTPS.
         type: boolean

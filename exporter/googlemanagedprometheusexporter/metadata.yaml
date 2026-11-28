@@ -10,7 +10,13 @@ status:
     active: [aabmass, dashpole, braydonk, jsuereth, psx95, ridwanmsharif]
 
 sending_queue:
-  support: default
+  support: has_overrides
+  overrides:
+    enabled: true
+    batch:
+      enabled: true
+      min_size: 200
+      max_size: 200
 
 tests:
   goleak:

@@ -45,7 +45,8 @@ func isAllowedDataStreamType(dsType string) bool {
 		defaultDataStreamTypeMetrics,
 		defaultDataStreamTypeTraces,
 		defaultDataStreamTypeProfiles,
-		defaultDataStreamTypeSynthetics:
+		defaultDataStreamTypeSynthetics,
+		defaultDataStreamTypeExemplars:
 		return true
 	default:
 		return false
