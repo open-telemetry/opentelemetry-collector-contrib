@@ -40,7 +40,11 @@ type Config struct {
 	// advances. At the end of each epoch the processor takes the completed
 	// epoch's values as the new baseline and starts a fresh sketch for the new
 	// epoch. The delta check then measures growth relative to the last epoch,
-	// not the lifetime of the processor.
+	// not the lifetime of the processor. Set it longer than the longest
+	// interval at which a label reports; otherwise a stable label whose values
+	// do not all arrive within one epoch can be flagged as growing. One epoch
+	// in which a label sends nothing keeps its baseline; two in a row evict
+	// the label, and its next report counts as new.
 	//
 	// Shorter epochs are more sensitive to sudden cardinality explosions but
 	// may produce noisier decisions for metrics with naturally bursty label
