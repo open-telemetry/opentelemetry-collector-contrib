@@ -118,6 +118,7 @@ func (s *solaceTracesReceiver) Start(ctx context.Context, _ component.Host) erro
 
 	s.settings.Logger.Info("Starting receiver")
 	// start the reconnection loop with a cancellable context and a factory to build new messaging services
+	s.shutdownWaitGroup.Add(1)
 	go s.connectAndReceive(cancelableContext)
 
 	s.settings.Logger.Info("Receiver successfully started")
@@ -141,8 +142,6 @@ func (s *solaceTracesReceiver) Shutdown(_ context.Context) error {
 }
 
 func (s *solaceTracesReceiver) connectAndReceive(ctx context.Context) {
-	// indicate we are started in the reconnection loop
-	s.shutdownWaitGroup.Add(1)
 	defer func() {
 		s.settings.Logger.Info("Reconnection loop completed successfully")
 		s.shutdownWaitGroup.Done()

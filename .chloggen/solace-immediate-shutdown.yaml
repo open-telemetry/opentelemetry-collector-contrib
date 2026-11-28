@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: receiver/solace
+note: Prevent shutdown from returning before the Solace receiver worker exits.
+issues: [53428]
+subtext:
+change_logs: [user]
